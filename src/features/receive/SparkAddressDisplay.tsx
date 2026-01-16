@@ -1,6 +1,7 @@
 import React from 'react';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { QRCodeContainer, CopyableText } from '../../components/ui';
+import { QRCodeContainer } from '../../components/ui';
+import { useToast } from '../../contexts/ToastContext';
 
 interface Props {
   address: string | null;
@@ -8,6 +9,8 @@ interface Props {
 }
 
 const SparkAddressDisplay: React.FC<Props> = ({ address, isLoading }) => {
+  const { showToast } = useToast();
+
   if (isLoading || !address) {
     return (
       <div className="text-center py-8">
@@ -16,19 +19,43 @@ const SparkAddressDisplay: React.FC<Props> = ({ address, isLoading }) => {
     );
   }
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(address);
+      showToast('success', 'Copied!');
+    } catch {
+      // no-op fallback
+    }
+  };
+
   return (
     <div className="pt-4 space-y-6 flex flex-col items-center">
       <div className="text-center">
-        <h3 className="text-lg font-medium text-[rgb(var(--text-white))] mb-2">Spark Address</h3>
-        <p className="text-[rgb(var(--text-white))] opacity-75 text-sm">
+        <h3 className="font-display text-lg font-semibold text-spark-text-primary mb-2">Spark Address</h3>
+        <p className="text-spark-text-secondary text-sm">
           Send to this Spark address for instant Lightning payments
         </p>
       </div>
 
       <QRCodeContainer value={address} />
 
-      <div className="w-full">
-        <CopyableText text={address} />
+      <div className="flex flex-col items-center w-full gap-3">
+        {/* Centered address text */}
+        <div className="text-center font-mono text-spark-amber text-sm sm:text-base break-all px-2">
+          {address}
+        </div>
+        
+        {/* Copy button */}
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-2 px-4 py-2 bg-spark-amber text-black rounded-xl font-medium text-sm hover:bg-spark-amber-light transition-colors"
+          title="Copy Spark Address"
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M8 2a2 2 0 00-2 2v1H5a2 2 0 00-2 2v7a2 2 0 002 2h6a2 2 0 002-2v-1h1a2 2 0 002-2V6l-4-4H8zm6 6h-2a2 2 0 01-2-2V4H8v1h3a1 1 0 011 1v2h2v2z"/>
+          </svg>
+          Copy
+        </button>
       </div>
     </div>
   );

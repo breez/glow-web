@@ -20,12 +20,10 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isCopied, setIsCopied] = useState<boolean>(false);
 
-  // Generate mnemonic on component mount
   useEffect(() => {
     const generateMnemonic = async () => {
       try {
-        // Generate a random mnemonic (128-256 bits of entropy)
-        const newMnemonic = bip39.generateMnemonic(128); // 24 words
+        const newMnemonic = bip39.generateMnemonic(128);
         setMnemonic(newMnemonic);
       } catch (error) {
         console.error('Failed to generate mnemonic:', error);
@@ -59,56 +57,101 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
       </PageLayout>
     );
   }
+
   const footer = (
     <div className="flex w-full p-4 max-w-1xl items-center">
       <PrimaryButton className="flex-0" onClick={handleConfirmMnemonic}>
-        I've written it down
+        I've Saved My Phrase
       </PrimaryButton>
     </div>
-  )
+  );
+
+  const words = mnemonic.split(' ');
 
   return (
     <PageLayout onBack={onBack} footer={footer} title="Create New Wallet" onClearError={onClearError}>
-
       <div className="flex flex-grow h-full flex-col max-w-2xl mx-auto px-4">
+        {/* Icon */}
+        <div className="flex justify-center mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-spark-amber/20 flex items-center justify-center">
+            <svg className="w-8 h-8 text-spark-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+          </div>
+        </div>
 
-        <p className="text-[rgb(var(--text-white))] mb-4">
-          Write down these 24 words in order and keep them safe. This recovery phrase is the only way to access your wallet if you lose your device.
+        <p className="text-spark-text-secondary text-center mb-6">
+          Write down these words in order. This is your only backup to recover your wallet.
         </p>
 
-        <div className="bg-[rgb(var(--card-bg))] p-4 rounded-lg mb-4">
+        {/* Mnemonic grid */}
+        <div className="bg-spark-dark border border-spark-border rounded-2xl p-4 mb-4">
           <div className="grid grid-cols-3 gap-2">
-            {mnemonic.split(' ').map((word, index) => (
-              <div key={index} className="flex items-center">
-                <span className="text-[rgb(var(--text-white))] opacity-50 mr-2 w-6 text-right">
+            {words.map((word, index) => (
+              <div 
+                key={index} 
+                className="flex items-center gap-2 bg-spark-surface rounded-lg px-3 py-2"
+              >
+                <span className="text-spark-text-muted text-xs font-mono w-5 text-right">
                   {index + 1}.
                 </span>
-                <span className="text-[rgb(var(--text-white))] font-mono">
+                <span className="text-spark-text-primary font-mono text-sm font-medium">
                   {word}
                 </span>
               </div>
             ))}
           </div>
         </div>
-        <div className="flex justify-center my-4">
+
+        {/* Copy button */}
+        <div className="flex justify-center mb-6">
           <button
             onClick={handleCopyToClipboard}
-            className="text-[rgb(var(--secondary-blue))] hover:underline flex items-center"
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded-lg transition-all
+              ${isCopied 
+                ? 'bg-spark-success/20 text-spark-success' 
+                : 'text-spark-amber hover:bg-spark-amber/10'
+              }
+            `}
           >
-            {isCopied ? '✓ Copied!' : '📋 Copy to clipboard'}
+            {isCopied ? (
+              <>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="font-medium">Copied!</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span className="font-medium">Copy to clipboard</span>
+              </>
+            )}
           </button>
         </div>
 
-        <div className="text-center bg-yellow-800 bg-opacity-20 border border-yellow-600 text-yellow-200 p-4 rounded-md">
-          <h3 className="font-bold mb-2">⚠️ Important Warning</h3>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Never share your recovery phrase with anyone.</li>
-          </ul>
+        {/* Warning */}
+        <div className="bg-spark-warning/10 border border-spark-warning/30 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-spark-warning/20 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-spark-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-display font-bold text-spark-warning mb-1">Keep it Secret</h3>
+              <p className="text-spark-text-secondary text-sm">
+                Never share your recovery phrase. Anyone with these words can access your funds.
+              </p>
+            </div>
+          </div>
         </div>
+
         <div className="flex-1" />
       </div>
-
-
     </PageLayout>
   );
 };

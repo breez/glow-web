@@ -29,7 +29,6 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
     };
   }, []);
 
-  // Also recalc offset when the menu opens to capture any layout shifts
   useLayoutEffect(() => {
     if (!isOpen) return;
     const el = document.getElementById('content-root');
@@ -37,6 +36,38 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
     const rect = el.getBoundingClientRect();
     setLeftOffset(rect.left);
   }, [isOpen]);
+
+  const menuItems = [
+    {
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+        </svg>
+      ),
+      label: 'Backup',
+      onClick: () => { onOpenBackup(); onClose(); }
+    },
+    {
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      ),
+      label: 'Settings',
+      onClick: () => { onOpenSettings(); onClose(); }
+    },
+    {
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+      ),
+      label: 'Logout',
+      onClick: () => { onClose(); onLogout(); },
+      danger: true
+    }
+  ];
 
   return createPortal(
     <Transition show={isOpen} as="div" className="fixed inset-0 z-50">
@@ -51,13 +82,13 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
         leaveTo="opacity-0"
         className="fixed inset-0"
       >
-        <div className="fixed inset-0 bg-black bg-opacity-30" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       </Transition.Child>
 
       {/* Panel */}
       {leftOffset !== null && (
         <div
-          className="fixed top-0 bottom-0 w-64 overflow-hidden"
+          className="fixed top-0 bottom-0 w-72 overflow-hidden"
           style={{ left: leftOffset }}
         >
           <Transition.Child
@@ -68,37 +99,58 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             leave="transition transform ease-in duration-200"
             leaveFrom="translate-x-0"
             leaveTo="-translate-x-full"
-            className="w-64 h-full bg-[var(--card-bg)] shadow-xl p-4"
+            className="w-72 h-full bg-spark-surface border-r border-spark-border shadow-glass-lg p-6 flex flex-col"
           >
-            <div className="flex items-center justify-between mb-6">
-              <div className="text-[rgb(var(--text-white))] font-semibold">Menu</div>
-              <button onClick={onClose} className="text-[rgb(var(--text-white))] opacity-75 hover:opacity-100" aria-label="Close">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-spark-amber to-spark-amber/80 flex items-center justify-center shadow-glow-amber">
+                  <svg className="w-6 h-6 text-black" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-spark-text-primary">Spark</h2>
+                  <p className="text-xs text-spark-text-muted">Wallet</p>
+                </div>
+              </div>
+              <button 
+                onClick={onClose} 
+                className="p-2 -mr-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors" 
+                aria-label="Close"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <nav className="space-y-2">
-              <button
-                className="w-full text-left px-3 py-2 rounded hover:bg-[rgb(var(--card-border))] text-[rgb(var(--text-white))]"
-                onClick={() => { onOpenBackup(); onClose(); }}
-              >
-                Backup
-              </button>
-              <button
-                className="w-full text-left px-3 py-2 rounded hover:bg-[rgb(var(--card-border))] text-[rgb(var(--text-white))]"
-                onClick={() => { onOpenSettings(); onClose(); }}
-              >
-                Settings
-              </button>
-              <button
-                className="w-full text-left px-3 py-2 rounded hover:bg-[rgb(var(--card-border))] text-[rgb(var(--text-white))]"
-                onClick={() => { onClose(); onLogout(); }}
-              >
-                Logout
-              </button>
+            {/* Navigation */}
+            <nav className="space-y-1 flex-1">
+              {menuItems.map((item, index) => (
+                <button
+                  key={index}
+                  className={`
+                    w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all
+                    ${item.danger 
+                      ? 'text-spark-error hover:bg-spark-error/10' 
+                      : 'text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5'
+                    }
+                  `}
+                  onClick={item.onClick}
+                >
+                  {item.icon}
+                  <span className="font-display font-medium">{item.label}</span>
+                </button>
+              ))}
             </nav>
+
+            {/* Footer */}
+            <div className="pt-6 border-t border-spark-border">
+              <p className="text-xs text-spark-text-muted text-center">
+                Powered by Breez SDK
+              </p>
+            </div>
           </Transition.Child>
         </div>
       )}

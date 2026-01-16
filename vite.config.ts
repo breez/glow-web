@@ -18,7 +18,8 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'same-origin',
     },
     fs: {
-      allow: ['/Users/roeierez/breez/rust-spark/packages/wasm', '/Users/roeierez/breez/brez-wasm-wallet'],
+      // Allow serving files from project root and node_modules
+      allow: ['..'],
     },
   },
   resolve: {

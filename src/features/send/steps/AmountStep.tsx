@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FormGroup, FormError, PrimaryButton, FormDescription } from '../../../components/ui';
-import LoadingSpinner from '../../../components/LoadingSpinner';
+import { FormError, PrimaryButton } from '../../../components/ui';
 
 export interface AmountStepProps {
   paymentInput: string;
@@ -21,58 +20,86 @@ const AmountStep: React.FC<AmountStepProps> = ({
 }) => {
   const [localAmount, setLocalAmount] = useState<string>(amount || '');
 
-  // keep local input in sync when parent-provided amount changes (e.g., prefilled)
   useEffect(() => {
     setLocalAmount(amount || '');
   }, [amount]);
 
   const validAmount = localAmount && parseInt(localAmount) > 0;
+  const amountNum = parseInt(localAmount) || 0;
 
   return (
-    <FormGroup>
-      <div className="text-center mb-6">
-        <FormDescription>Enter the amount you want to send</FormDescription>
-      </div>
-
-      {/* Show the payment destination */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-[rgb(var(--text-white))] mb-2">Payment Destination</label>
-        <div className="p-3 bg-[rgb(var(--card-border))] rounded-lg">
-          <code className="text-sm text-[rgb(var(--text-white))] break-all">{paymentInput}</code>
+    <div className="space-y-5">
+      {/* Destination */}
+      <div>
+        <label className="block text-sm font-medium text-spark-text-primary mb-2">
+          Destination
+        </label>
+        <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-secondary font-mono text-sm break-all">
+          {paymentInput}
         </div>
       </div>
 
       {/* Amount input */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-[rgb(var(--text-white))] mb-2">Amount (sats)</label>
+      <div>
+        <label className="block text-sm font-medium text-spark-text-primary mb-2">
+          Amount (sats)
+        </label>
         <input
           type="number"
           value={localAmount}
           onChange={(e) => setLocalAmount(e.target.value)}
           placeholder="Enter amount in satoshis"
-          className="w-full p-3 border border-[rgb(var(--card-border))] rounded-lg bg-[rgb(var(--card-bg))] text-[rgb(var(--text-white))] placeholder-[rgb(var(--text-white))] placeholder-opacity-50 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-blue))]"
+          className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           disabled={isLoading}
           min={1}
         />
+        
+        {/* Quick amount buttons */}
+        <div className="flex gap-2 mt-3">
+          {[100, 1000, 10000, 100000].map((quickAmount) => (
+            <button
+              key={quickAmount}
+              onClick={() => setLocalAmount(String(quickAmount))}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                amountNum === quickAmount
+                  ? 'bg-spark-amber text-black'
+                  : 'bg-spark-dark border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+              }`}
+            >
+              {quickAmount.toLocaleString('en-US').replace(/,/g, ' ')}
+            </button>
+          ))}
+        </div>
       </div>
-
-      {/* Fee selection removed from generic AmountStep; handled in workflow-specific steps */}
 
       <FormError error={error} />
 
-      <div className="flex gap-3 mt-6">
-        <PrimaryButton onClick={onBack} disabled={isLoading} className="flex-1 bg-gray-600 hover:bg-gray-700">
+      {/* Action buttons */}
+      <div className="flex gap-3 pt-2">
+        <button
+          onClick={onBack}
+          disabled={isLoading}
+          className="flex-1 py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50"
+        >
           Back
-        </PrimaryButton>
+        </button>
         <PrimaryButton
           onClick={() => validAmount && onNext(parseInt(localAmount))}
           disabled={isLoading || !validAmount}
           className="flex-1"
         >
-          {isLoading ? <LoadingSpinner text="Processing..." size="small" /> : 'Continue'}
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Processing...
+            </span>
+          ) : 'Continue'}
         </PrimaryButton>
       </div>
-    </FormGroup>
+    </div>
   );
 };
 

@@ -54,39 +54,32 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const transactionsContainerRef = useRef<HTMLDivElement>(null);
-  const collapseThreshold = 100; // pixels of scroll before header is fully collapsed
+  const collapseThreshold = 100;
 
-  // Handle scroll events
   const handleScroll = useCallback(() => {
     if (transactionsContainerRef.current) {
       const scrollTop = transactionsContainerRef.current.scrollTop;
-      // Calculate scroll progress from 0 to 1
       const progress = Math.min(1, scrollTop / collapseThreshold);
       setScrollProgress(progress);
     }
   }, [collapseThreshold]);
 
-  // Handler for payment selection from the transaction list
   const handlePaymentSelected = useCallback((payment: Payment) => {
     setSelectedPayment(payment);
   }, []);
 
-  // Handler for closing payment details dialog
   const handlePaymentDetailsClose = useCallback(() => {
     setSelectedPayment(null);
   }, []);
 
-  // Handler for closing the send dialog and refreshing data
   const handleSendDialogClose = useCallback(() => {
     setIsSendDialogOpen(false);
-    setPaymentInput(null); // Clear scanned data when dialog closes
-    // Refresh wallet data to show any new transactions
+    setPaymentInput(null);
     refreshWalletData(false);
   }, [refreshWalletData]);
 
   const handleReceiveDialogClose = useCallback(() => {
     setIsReceiveDialogOpen(false);
-    // Refresh wallet data to show any new transactions
     refreshWalletData(false);
   }, [refreshWalletData]);
 
@@ -98,17 +91,10 @@ const WalletPage: React.FC<WalletPageProps> = ({
     if (!data) return;
 
     try {
-      // Parse the QR code result with SDK
       const parseResult = await wallet.parseInput(data);
       console.log('Parsed QR result:', parseResult);
-
-      // Close QR scanner
       setIsQrScannerOpen(false);
-
-      // Set the scanned payment data to pass to SendPaymentDialog
       setPaymentInput({ rawInput: data, parsedInput: parseResult });
-
-      // Open send dialog - it will automatically route to the appropriate step
       setIsSendDialogOpen(true);
     } catch (error) {
       console.error('Failed to parse QR code:', error);
@@ -116,17 +102,22 @@ const WalletPage: React.FC<WalletPageProps> = ({
   };
 
   return (
+    <div className="flex flex-col h-[calc(100dvh)] relative overflow-hidden">
+      {/* Atmospheric background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-gradient-radial from-spark-amber/15 via-spark-amber/5 to-transparent blur-3xl" />
+        <div className="absolute bottom-1/4 right-0 w-[300px] h-[300px] bg-gradient-radial from-spark-violet/10 to-transparent blur-3xl" />
+      </div>
 
-    <div className="flex flex-col h-[calc(100dvh)] relative bg-[var(--card-bg)]">
-      {/* Show restoration overlay if we're restoring */}
+      {/* Restoration overlay */}
       {isRestoring && (
-        <div className="absolute inset-0 bg-[rgb(var(--background-rgb))] bg-opacity-80 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-spark-void/90 backdrop-blur-sm z-50 flex items-center justify-center">
           <LoadingSpinner text="Restoring wallet data..." />
         </div>
       )}
 
-      {/* Fixed position header that collapses on scroll */}
-      <div className="sticky top-0 z-10 bg-[rgb(var(--background-rgb))]">
+      {/* Fixed header */}
+      <div className="sticky top-0 z-10">
         <CollapsingWalletHeader
           walletInfo={walletInfo}
           usdRate={usdRate}
@@ -142,7 +133,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
       {/* Scrollable transaction list */}
       <div
         ref={transactionsContainerRef}
-        className="flex-grow overflow-y-auto"
+        className="flex-grow overflow-y-auto relative z-0"
         onScroll={handleScroll}
       >
         <TransactionList
@@ -177,28 +168,39 @@ const WalletPage: React.FC<WalletPageProps> = ({
         onClose={handlePaymentDetailsClose}
       />
 
-      <div className="bottom-bar gap-x-8 h-16 bg-[var(--primary-blue)] shadow-lg flex items-center justify-center z-30">
+      {/* Bottom action bar */}
+      <div className="bottom-bar flex items-center justify-center gap-4 z-30">
+        {/* Send button */}
         <button
           onClick={() => setIsSendDialogOpen(true)}
-          className="flex items-center text-white px-4 py-2 rounded-lg hover:bg-[var(--secondary-blue)] transition-colors"
+          className="action-button action-button-send"
         >
-          <span className="font-medium">Send</span>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7 11l5-5m0 0l5 5m-5-5v12" />
+          </svg>
+          <span>Send</span>
         </button>
 
+        {/* QR Scanner button */}
         <button
           onClick={() => setIsQrScannerOpen(true)}
-          className="flex items-center justify-center text-white p-3 rounded-lg hover:bg-[var(--secondary-blue)] transition-colors"
+          className="action-button action-button-scan"
+          aria-label="Scan QR Code"
         >
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
             <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM19 13h2v2h-2zM13 13h2v2h-2zM15 15h2v2h-2zM13 17h2v2h-2zM15 19h2v2h-2zM17 17h2v2h-2zM17 13h2v2h-2zM19 15h2v2h-2zM19 19h2v2h-2z" />
           </svg>
         </button>
 
+        {/* Receive button */}
         <button
           onClick={() => setIsReceiveDialogOpen(true)}
-          className="flex items-center text-white px-4 py-2 rounded-lg hover:bg-[var(--secondary-blue)] transition-colors"
+          className="action-button action-button-receive"
         >
-          <span className="font-medium">Receive</span>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
+          </svg>
+          <span>Receive</span>
         </button>
       </div>
 

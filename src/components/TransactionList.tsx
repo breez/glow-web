@@ -8,108 +8,186 @@ interface TransactionListProps {
 
 const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPaymentSelected }) => {
   if (!transactions.length) {
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-6">
+        {/* Empty state illustration */}
+        <div className="w-20 h-20 rounded-2xl bg-spark-surface border border-spark-border flex items-center justify-center mb-6">
+          <svg className="w-10 h-10 text-spark-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+        </div>
+        <h3 className="font-display text-lg font-semibold text-spark-text-primary mb-2">No transactions yet</h3>
+        <p className="text-spark-text-muted text-sm text-center max-w-xs">
+          Your transaction history will appear here once you send or receive your first payment.
+        </p>
+      </div>
+    );
   }
 
-  // Format relative time (time ago)
   const formatTimeAgo = (timestamp: number): string => {
-    const now = Math.floor(Date.now() / 1000); // Current time in seconds
+    const now = Math.floor(Date.now() / 1000);
     const diffSeconds = now - timestamp;
 
-    // Convert to appropriate time unit
     if (diffSeconds < 60) {
-      return `${diffSeconds} seconds ago`;
+      return 'Just now';
     } else if (diffSeconds < 3600) {
       const minutes = Math.floor(diffSeconds / 60);
-      return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+      return `${minutes}m ago`;
     } else if (diffSeconds < 86400) {
       const hours = Math.floor(diffSeconds / 3600);
-      return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
-    } else if (diffSeconds < 2592000) { // 30 days
+      return `${hours}h ago`;
+    } else if (diffSeconds < 2592000) {
       const days = Math.floor(diffSeconds / 86400);
-      return `${days} ${days === 1 ? 'day' : 'days'} ago`;
-    } else if (diffSeconds < 31536000) { // 365 days
+      return `${days}d ago`;
+    } else if (diffSeconds < 31536000) {
       const months = Math.floor(diffSeconds / 2592000);
-      return `${months} ${months === 1 ? 'month' : 'months'} ago`;
+      return `${months}mo ago`;
     } else {
       const years = Math.floor(diffSeconds / 31536000);
-      return `${years} ${years === 1 ? 'year' : 'years'} ago`;
+      return `${years}y ago`;
     }
   };
 
-  // Get transaction icon based on type
-  const getTransactionIcon = (payment: Payment): string => {
+  const getTransactionIcon = (payment: Payment): React.ReactNode => {
     if (payment.paymentType === 'receive') {
-      return '+';
-    } else if (payment.paymentType === 'send') {
-      return '−'; // Using minus sign (not hyphen) for better visual
-    }
-    return '•';
-  };
-
-  // Get transaction color based on type and status
-  const getTransactionColor = (payment: Payment): string => {
-    if (payment.status === 'failed') {
-      return 'text-[rgb(var(--accent-red))]';
-    } else if (payment.status === 'pending') {
-      return 'text-yellow-400';
-    } else if (payment.paymentType === 'receive') {
-      return 'text-[rgb(var(--accent-green))]';
+      return (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
+      );
     } else {
-      return 'text-[rgb(var(--accent-red))]';
+      return (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+        </svg>
+      );
     }
   };
 
-  // Get short description from payment details
   const getDescription = (payment: Payment): string => {
-    let description = '';
-
-    if (payment.method == 'lightning') {
-      if (payment.details?.type == 'lightning') {
-        description = payment.details?.description || 'Lightning Payment';
-      } else {
-        description = 'Lightning Payment';
+    if (payment.method === 'lightning') {
+      if (payment.details?.type === 'lightning') {
+        return payment.details?.description || 'Lightning Payment';
       }
-    } else if (payment.method == 'spark') {
-      description = "Spark Transfer"
-    } else if (payment.method == 'deposit') {
-      description = "Deposit"
-    } else if (payment.method == 'withdraw') {
-      description = "Withdraw"
+      return 'Lightning Payment';
+    } else if (payment.method === 'spark') {
+      return 'Spark Transfer';
+    } else if (payment.method === 'deposit') {
+      return 'Deposit';
+    } else if (payment.method === 'withdraw') {
+      return 'Withdrawal';
     }
+    return 'Payment';
+  };
 
-    return description || 'Unknown Payment';
+  const getMethodIcon = (payment: Payment): React.ReactNode => {
+    if (payment.method === 'lightning') {
+      return (
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
+        </svg>
+      );
+    } else if (payment.method === 'spark') {
+      return (
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2L2 12l10 10 10-10L12 2zm0 3.414L18.586 12 12 18.586 5.414 12 12 5.414z" />
+        </svg>
+      );
+    }
+    return null;
   };
 
   return (
-    <div className="card-no-border">
-      <ul className="space-y-2">
-        {transactions.map((tx) => (
-          <li
-            key={tx.id || `${tx.timestamp}-${tx.amount}`}
-            className="list-item flex justify-between items-center py-2 px-3 hover:bg-[rgb(var(--card-border))] cursor-pointer transition-colors"
-            onClick={() => onPaymentSelected(tx)}
-          >
-            <div className="flex flex-none items-center space-x-3">
-              <div className={`w-8 h-8 rounded-full bg-[rgb(var(--card-border))] flex items-center justify-center ${getTransactionColor(tx)}`}>
-                <span className="text-lg font-bold">{getTransactionIcon(tx)}</span>
-              </div>
-              <div className="flex flex-none flex-col">
-                <p className="text-sm text-[rgb(var(--text-white))]">{getDescription(tx)}</p>
-                <p className="text-[rgb(var(--text-white))] opacity-70 text-xs">{formatTimeAgo(tx.timestamp)} {tx.status === 'pending' && <span className='text-yellow-400'>(Pending)</span>}</p>
+    <div className="px-4 py-4">
+      {/* Section header */}
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="font-display text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
+          Transactions
+        </h2>
+        <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
+      </div>
+
+      {/* Transaction list */}
+      <ul className="space-y-3">
+        {transactions.map((tx, index) => {
+          const isReceive = tx.paymentType === 'receive';
+          const isPending = tx.status === 'pending';
+          const isFailed = tx.status === 'failed';
+
+          return (
+            <li
+              key={tx.id || `${tx.timestamp}-${tx.amount}-${index}`}
+              className="list-item flex items-center gap-4 cursor-pointer group"
+              onClick={() => onPaymentSelected(tx)}
+            >
+              {/* Transaction type icon */}
+              <div className={`
+                transaction-icon flex-shrink-0
+                ${isReceive ? 'transaction-icon-receive' : 'transaction-icon-send'}
+                ${isPending ? 'animate-pulse' : ''}
+              `}>
+                {getTransactionIcon(tx)}
               </div>
 
-              <div className="ml-auto pl-3 flex-1">
-                <div className="flex flex-col items-end justify-center">
-                  <p className={`font-medium text-sm ${tx.paymentType === 'receive' ? 'text-[rgb(var(--accent-green))]' : 'text-[rgb(var(--accent-red))]'}`}>
-                    {tx.paymentType === 'receive' ? '+' : '-'} {tx.amount.toLocaleString()}
+              {/* Transaction details */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-display font-medium text-spark-text-primary truncate">
+                    {getDescription(tx)}
                   </p>
-                  {tx.fees > 0 && <p className="text-[rgb(var(--text-white))] opacity-70 text-xs">Fee {tx.fees.toString()}</p>}
+                  {/* Method badge */}
+                  <span className="flex items-center gap-1 text-spark-text-muted text-xs">
+                    {getMethodIcon(tx)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-spark-text-muted text-xs">
+                    {formatTimeAgo(tx.timestamp)}
+                  </span>
+                  {isPending && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-spark-warning/15 text-spark-warning text-xs font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-spark-warning animate-pulse" />
+                      Pending
+                    </span>
+                  )}
+                  {isFailed && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-spark-error/15 text-spark-error text-xs font-medium">
+                      Failed
+                    </span>
+                  )}
                 </div>
               </div>
-            </div>
-          </li>
-        ))}
+
+              {/* Amount */}
+              <div className="flex flex-col items-end flex-shrink-0">
+                <span className={`
+                  font-mono font-semibold text-sm
+                  ${isFailed ? 'text-spark-text-muted line-through' : ''}
+                  ${!isFailed && isReceive ? 'text-spark-success' : ''}
+                  ${!isFailed && !isReceive ? 'text-spark-electric' : ''}
+                `}>
+                  {isReceive ? '+' : '-'}{tx.amount.toLocaleString()}
+                </span>
+                {tx.fees > 0 && (
+                  <span className="text-spark-text-muted text-xs">
+                    Fee: {tx.fees.toLocaleString()}
+                  </span>
+                )}
+              </div>
+
+              {/* Chevron indicator */}
+              <svg 
+                className="w-4 h-4 text-spark-text-muted opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor" 
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
