@@ -30,11 +30,11 @@ const RestorePage: React.FC<RestorePageProps> = ({
   };
 
   const footer = (
-    <div className="flex w-full p-4 max-w-1xl items-center">
+    <div className="w-full p-4">
       <PrimaryButton
         onClick={handleSubmit}
         disabled={!mnemonic.trim()}
-        className="ml-auto"
+        className="w-full"
       >
         Restore Wallet
       </PrimaryButton>

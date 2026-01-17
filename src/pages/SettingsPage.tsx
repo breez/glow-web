@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Transition } from '@headlessui/react';
-import { PrimaryButton, FormGroup, FormInput, FormError, LoadingSpinner } from '../components/ui';
+import { FormGroup, FormInput, LoadingSpinner, PrimaryButton } from '../components/ui';
 import { getSettings, saveSettings, UserSettings } from '../services/settings';
 import type { Config } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
@@ -16,7 +16,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
   const [isDevMode, setIsDevMode] = useState<boolean>(false);
   const [feeType, setFeeType] = useState<'fixed' | 'rate' | 'networkRecommended'>('fixed');
   const [feeValue, setFeeValue] = useState<string>('1');
-  const [error, setError] = useState<string | null>(null);
   const [syncIntervalSecs, setSyncIntervalSecs] = useState<string>('');
   const [lnurlDomain, setLnurlDomain] = useState<string>('');
   const [preferSparkOverLightning, setPreferSparkOverLightning] = useState<boolean>(false);
@@ -76,11 +75,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
 
   const handleSave = async () => {
     const n = Number(feeValue);
-    if (Number.isNaN(n) || n < 0) {
-      setError('Please enter a valid fee');
-      return;
-    }
-    setError(null);
     if (isDevMode) {
       const updated: UserSettings = {
         ...(feeType === 'fixed'
@@ -150,7 +144,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto min-h-0">
               <div className="max-w-xl mx-auto w-full p-4 space-y-4">
                 {/* Dev Mode Fee Settings */}
                 {isDevMode && (
@@ -179,7 +173,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
                           />
                         </div>
                       </div>
-                      <FormError error={error} />
                     </FormGroup>
                   </div>
                 )}
@@ -195,7 +188,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    Download SDK Logs
+                    Download Logs
                   </button>
                 </div>
 
@@ -276,10 +269,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-spark-border">
-              <PrimaryButton className="w-full" onClick={handleSave}>
-                Save Changes
-              </PrimaryButton>
+            <div className="flex-shrink-0 p-4 pb-8 border-t border-spark-border bg-spark-surface">
+              <div className="max-w-xl mx-auto">
+                <PrimaryButton className="w-full" onClick={handleSave}>
+                  Save Changes
+                </PrimaryButton>
+              </div>
             </div>
           </div>
         </Transition.Child>

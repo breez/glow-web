@@ -59,8 +59,8 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
   }
 
   const footer = (
-    <div className="flex w-full p-4 max-w-1xl items-center">
-      <PrimaryButton className="flex-0" onClick={handleConfirmMnemonic}>
+    <div className="w-full p-4">
+      <PrimaryButton className="w-full" onClick={handleConfirmMnemonic}>
         I've Saved My Phrase
       </PrimaryButton>
     </div>

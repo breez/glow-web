@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { QRCodeContainer, PrimaryButton, FormGroup, FormInput, FormError } from '../../components/ui';
@@ -22,6 +22,34 @@ const EditableAddressText: React.FC<{
   onEdit: () => void;
 }> = ({ text, onEdit }) => {
   const { showToast } = useToast();
+  const [canShare, setCanShare] = useState(false);
+
+  useEffect(() => {
+    setCanShare(typeof navigator !== 'undefined' && !!navigator.share);
+  }, []);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('success', 'Copied!');
+    } catch {
+      // no-op fallback
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.share({
+        title: 'Lightning Address',
+        text: text,
+      });
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        showToast('error', 'Failed to share');
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col items-center w-full gap-3">
       {/* Centered address text */}
@@ -32,14 +60,7 @@ const EditableAddressText: React.FC<{
       {/* Action buttons */}
       <div className="flex gap-2">
         <button
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(text);
-              showToast('success', 'Copied!');
-            } catch {
-              // no-op fallback
-            }
-          }}
+          onClick={handleCopy}
           className="flex items-center gap-2 px-4 py-2 bg-spark-amber text-black rounded-xl font-medium text-sm hover:bg-spark-amber-light transition-colors"
           title="Copy Lightning Address"
         >
@@ -48,6 +69,20 @@ const EditableAddressText: React.FC<{
           </svg>
           Copy
         </button>
+
+        {canShare && (
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-2 px-4 py-2 border border-spark-border text-spark-text-secondary rounded-xl font-medium text-sm hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
+            title="Share Lightning Address"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
+            </svg>
+            Share
+          </button>
+        )}
+
         <button
           onClick={onEdit}
           className="flex items-center gap-2 px-4 py-2 border border-spark-border text-spark-text-secondary rounded-xl font-medium text-sm hover:text-spark-text-primary hover:border-spark-border-light transition-colors"

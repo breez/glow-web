@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Transition } from '@headlessui/react';
-import { Alert, PrimaryButton } from '@/components/ui';
+import { Alert } from '@/components/ui';
 import { useWallet } from '@/contexts/WalletContext';
 
 interface BackupPageProps {
@@ -151,12 +151,6 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="p-4 border-t border-spark-border">
-              <PrimaryButton className="w-full" onClick={handleClose}>
-                Done
-              </PrimaryButton>
-            </div>
           </div>
         </Transition.Child>
       </Transition>

@@ -10,9 +10,9 @@ interface CollapsingWalletHeaderProps {
   onOpenUnclaimedDeposits: () => void;
 }
 
-// Format number with space as thousand separator
-const formatWithSpaces = (num: number): string => {
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+// Format number with thin space as thousand separator (for monospace fonts)
+const formatWithThinSpaces = (num: number): string => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u2009');
 };
 
 const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
@@ -93,8 +93,8 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           
           {/* Main balance */}
           <div className="flex items-baseline justify-center gap-2">
-            <span className="balance-display font-mono">
-              {formatWithSpaces(balanceSat)}
+            <span className="balance-display">
+              {formatWithThinSpaces(balanceSat)}
             </span>
             <span className="text-spark-text-secondary text-xl font-display font-medium">
               sats

@@ -44,9 +44,16 @@ export const useLightningAddress = (): UseLightningAddress => {
     try {
       let addr = await wallet.getLightningAddress();
       if (!addr) {
-        const randomString = generateRandomLetterString(6);
-        await wallet.registerLightningAddress(randomString, `Pay to ${randomString}@breez.tips`);
-        addr = await wallet.getLightningAddress();
+        // Try up to 3 times with different random usernames
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const randomString = generateRandomLetterString(8); // Use 8 chars for less collision
+          const isAvailable = await wallet.checkLightningAddressAvailable(randomString);
+          if (isAvailable) {
+            await wallet.registerLightningAddress(randomString, `Pay to ${randomString}@breez.tips`);
+            addr = await wallet.getLightningAddress();
+            break;
+          }
+        }
       }
       setAddress(addr);
     } catch (err) {

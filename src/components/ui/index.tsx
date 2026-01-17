@@ -530,7 +530,7 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, DialogCardProps>(
       >
         {/* Drag handle indicator */}
         <div className="bottom-sheet-handle" />
-        <div className="px-6 pb-8 pt-3">
+        <div className="px-6 pb-10 pt-3">
           {children}
         </div>
       </div>

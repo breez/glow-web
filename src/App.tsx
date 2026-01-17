@@ -429,8 +429,8 @@ function App() {
   return (
     <ToastProvider>
       <WalletProvider>
-        <div className="flex-grow flex main-wrapper">
-          <div id="content-root" className="flex-grow max-w-4xl mx-auto relative">
+        <div className="h-full flex main-wrapper">
+          <div id="content-root" className="h-full w-full max-w-4xl mx-auto relative">
             <AppContent />
           </div>
         </div>

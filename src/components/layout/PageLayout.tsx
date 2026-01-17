@@ -48,7 +48,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
         <div className="flex-1 w-full overflow-y-auto py-6">
           {children}
         </div>
-        <div className="flex-shrink-0 w-full border-t border-spark-border bg-spark-surface/80 backdrop-blur-sm">
+        <div className="flex-shrink-0 w-full pb-4 border-t border-spark-border bg-spark-surface/80 backdrop-blur-sm">
           {footer}
         </div>
       </main>

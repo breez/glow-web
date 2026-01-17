@@ -117,7 +117,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
       </div>
 
       {/* Transaction list */}
-      <ul className="space-y-2">
+      <ul className="space-y-1.5">
         {transactions.map((tx, index) => {
           const isReceive = tx.paymentType === 'receive';
           const isPending = tx.status === 'pending';
@@ -126,13 +126,13 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
           return (
             <li
               key={tx.id || `${tx.timestamp}-${tx.amount}-${index}`}
-              className="list-item flex items-center gap-3 cursor-pointer group"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all hover:bg-white/[0.03] active:bg-white/[0.05] active:scale-[0.99]"
               onClick={() => onPaymentSelected(tx)}
             >
               {/* Transaction type icon */}
               <div className={`
-                transaction-icon flex-shrink-0
-                ${isReceive ? 'transaction-icon-receive' : 'transaction-icon-send'}
+                w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0
+                ${isReceive ? 'bg-spark-success/15 text-spark-success' : 'bg-spark-electric/15 text-spark-electric'}
                 ${isPending ? 'animate-pulse' : ''}
               `}>
                 {getTransactionIcon(tx)}
@@ -140,60 +140,40 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
 
               {/* Transaction details */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-display font-medium text-spark-text-primary truncate">
+                <div className="flex items-center gap-1.5">
+                  <p className="font-display text-[15px] font-medium text-spark-text-primary truncate">
                     {getDescription(tx)}
                   </p>
-                  {/* Method badge */}
-                  <span className="flex items-center gap-1 text-spark-text-muted text-xs">
-                    {getMethodIcon(tx)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-spark-text-muted text-xs">
-                    {formatTimeAgo(tx.timestamp)}
-                  </span>
+                  <span className="text-spark-text-muted flex-shrink-0">{getMethodIcon(tx)}</span>
                   {isPending && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-spark-warning/15 text-spark-warning text-xs font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-spark-warning animate-pulse" />
-                      Pending
-                    </span>
+                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-spark-warning animate-pulse" />
                   )}
                   {isFailed && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-spark-error/15 text-spark-error text-xs font-medium">
+                    <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-spark-error/15 text-spark-error text-[10px] font-medium uppercase">
                       Failed
                     </span>
                   )}
                 </div>
+                <div className="flex items-center gap-1 text-xs text-spark-text-muted">
+                  <span>{formatTimeAgo(tx.timestamp)}</span>
+                  {tx.fees > 0 && (
+                    <>
+                      <span>·</span>
+                      <span>fee {formatWithSpaces(Number(tx.fees))}</span>
+                    </>
+                  )}
+                </div>
               </div>
 
-              {/* Amount */}
-              <div className="flex flex-col items-end flex-shrink-0">
-                <span className={`
-                  font-mono font-semibold text-sm
-                  ${isFailed ? 'text-spark-text-muted line-through' : ''}
-                  ${!isFailed && isReceive ? 'text-spark-success' : ''}
-                  ${!isFailed && !isReceive ? 'text-spark-electric' : ''}
-                `}>
-                  {isReceive ? '+' : '-'}{formatWithSpaces(Number(tx.amount))}
-                </span>
-                {tx.fees > 0 && (
-                  <span className="text-spark-text-muted text-xs">
-                    Fee: {formatWithSpaces(Number(tx.fees))}
-                  </span>
-                )}
-              </div>
-
-              {/* Chevron indicator */}
-              <svg 
-                className="w-4 h-4 text-spark-text-muted opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor" 
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
+              {/* Amount - right aligned */}
+              <span className={`
+                font-mono font-semibold text-[15px] flex-shrink-0
+                ${isFailed ? 'text-spark-text-muted line-through' : ''}
+                ${!isFailed && isReceive ? 'text-spark-success' : ''}
+                ${!isFailed && !isReceive ? 'text-spark-electric' : ''}
+              `}>
+                {isReceive ? '+' : '-'}{formatWithSpaces(Number(tx.amount))}
+              </span>
             </li>
           );
         })}

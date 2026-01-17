@@ -69,7 +69,7 @@ body {
    ============================================ */
 
 .main-wrapper {
-  min-height: 100vh;
+  height: 100%;
   background: 
     radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.15), transparent),
     radial-gradient(ellipse 60% 40% at 100% 0%, rgba(247, 147, 26, 0.08), transparent),
@@ -140,14 +140,15 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Balance display - large glowing numbers */
 .balance-display {
-  font-family: 'Outfit', system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 3rem;
-  background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 600;
+  font-size: 2.75rem;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.85) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-shadow: 0 0 60px rgba(247, 147, 26, 0.3);
+  filter: drop-shadow(0 0 40px rgba(247, 147, 26, 0.35));
 }
 
 .balance-label {
