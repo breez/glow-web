@@ -6,7 +6,7 @@
   "id": "/",
   "display": "standalone",
   "background_color": "#0a0a0f",
-  "theme_color": "#f7931a",
+  "theme_color": "#0a0a0f",
   "orientation": "portrait-primary",
   "categories": ["finance", "utilities"],
   "icons": [

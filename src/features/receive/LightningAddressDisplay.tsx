@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { QRCodeContainer, PrimaryButton, FormGroup, FormInput, FormError } from '../../components/ui';
+import { QRCodeContainer, PrimaryButton, FormError } from '../../components/ui';
 import { useToast } from '../../contexts/ToastContext';
 
 export interface LightningAddressDisplayProps {
@@ -133,34 +133,65 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   }
 
   if (isEditing) {
+    const previewAddress = editValue ? `${editValue}@breez.tips` : '';
+    
     return (
-      <div className="pt-4 space-y-6">
-        <div className="text-center">
-          <h3 className="font-display text-lg font-semibold text-spark-text-primary mb-2">
-            {address ? 'Edit Lightning Address' : 'Create Lightning Address'}
+      <div className="pt-2 space-y-5">
+        {/* Header with icon */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-14 h-14 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
+            <svg className="w-7 h-7 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
+            </svg>
+          </div>
+          <h3 className="font-display text-lg font-semibold text-spark-text-primary">
+            {address ? 'Edit Address' : 'Create Address'}
           </h3>
         </div>
 
-        <FormGroup>
-          <FormInput
-            id="lightning-address"
-            type="text"
-            value={editValue}
-            onChange={(e) => onEditValueChange(e.target.value)}
-            placeholder="username"
-            disabled={isLoading}
-          />
+        {/* Input with suffix */}
+        <div className="space-y-3">
+          <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary focus-within:ring-2 focus-within:ring-spark-primary/20 transition-all">
+            <input
+              id="lightning-address"
+              type="text"
+              value={editValue}
+              onChange={(e) => onEditValueChange(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+              placeholder="username"
+              disabled={isLoading}
+              className="flex-1 bg-transparent px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:outline-none font-mono"
+              autoComplete="off"
+              autoCapitalize="off"
+            />
+            <span className="px-4 py-3 text-spark-text-muted font-mono text-sm border-l border-spark-border bg-spark-surface/50">
+              @breez.tips
+            </span>
+          </div>
+          
+          {/* Live preview */}
+          {previewAddress && (
+            <div className="text-center">
+              <span className="text-spark-text-muted text-xs">Preview: </span>
+              <span className="font-mono text-spark-primary text-sm">{previewAddress}</span>
+            </div>
+          )}
+          
           <FormError error={error} />
-        </FormGroup>
+        </div>
 
-        <div className="flex gap-3 justify-center">
+        {/* Action buttons */}
+        <div className="flex gap-3 justify-center pt-2">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
+            className="flex-1 px-4 py-3 text-spark-text-secondary border border-spark-border rounded-xl font-medium hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
           >
             Cancel
           </button>
-          <PrimaryButton onClick={onSave} disabled={isLoading}>
+          <PrimaryButton 
+            onClick={onSave} 
+            disabled={isLoading || !editValue.trim()}
+            className="flex-1"
+          >
             {isLoading ? <LoadingSpinner size="small" /> : 'Save'}
           </PrimaryButton>
         </div>
