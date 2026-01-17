@@ -33,16 +33,49 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   
-  <!-- Splash screens for iOS -->
+  <!-- Initial loading styles -->
   <style>
     /* Prevent pull-to-refresh on iOS */
     html, body {
       overscroll-behavior-y: none;
+      background: #0a0a0f;
+    }
+    
+    /* Initial splash screen */
+    #splash {
+      position: fixed;
+      inset: 0;
+      background: #0a0a0f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.3s ease-out;
+    }
+    #splash.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #splash svg {
+      width: 64px;
+      height: 64px;
+      animation: pulse-icon 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-icon {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.05); }
     }
   </style>
 </head>
 
 <body>
+  <!-- Splash screen shown during initial load -->
+  <div id="splash">
+    <svg viewBox="0 0 24 24" fill="#d4a574">
+      <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
+    </svg>
+  </div>
+  
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
   

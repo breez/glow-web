@@ -33,9 +33,9 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
           <svg className="w-full h-full animate-spin" viewBox="0 0 100 100">
             <defs>
               <linearGradient id="spinner-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#f7931a" stopOpacity="1" />
+                <stop offset="0%" stopColor="#d4a574" stopOpacity="1" />
                 <stop offset="50%" stopColor="#00d4ff" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="#f7931a" stopOpacity="0" />
+                <stop offset="100%" stopColor="#d4a574" stopOpacity="0" />
               </linearGradient>
             </defs>
             <circle

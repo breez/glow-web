@@ -16,7 +16,7 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
       id: i,
       x: Math.random() * 100,
       delay: Math.random() * 0.5,
-      color: ['#f7931a', '#00d4ff', '#8b5cf6', '#22c55e', '#ffffff'][Math.floor(Math.random() * 5)],
+      color: ['#d4a574', '#00d4ff', '#e8c9a8', '#22c55e', '#ffffff'][Math.floor(Math.random() * 5)],
     }));
     setParticles(newParticles);
 
