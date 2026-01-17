@@ -41,7 +41,7 @@
       background: #0a0a0f;
     }
     
-    /* Initial splash screen */
+    /* Initial splash screen - simple and clean */
     #splash {
       position: fixed;
       inset: 0;
@@ -50,20 +50,17 @@
       align-items: center;
       justify-content: center;
       z-index: 9999;
-      transition: opacity 0.3s ease-out;
+      opacity: 1;
+      transition: opacity 0.2s ease-out;
     }
     #splash.hidden {
       opacity: 0;
       pointer-events: none;
     }
     #splash svg {
-      width: 64px;
-      height: 64px;
-      animation: pulse-icon 1.5s ease-in-out infinite;
-    }
-    @keyframes pulse-icon {
-      0%, 100% { opacity: 0.6; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.05); }
+      width: 48px;
+      height: 48px;
+      opacity: 0.7;
     }
   </style>
 </head>
