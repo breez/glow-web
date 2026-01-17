@@ -149,24 +149,21 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
 
         {/* Input with suffix */}
         <div className="space-y-4">
-          <div>
-            <label className="block text-spark-text-secondary text-sm font-medium mb-2">Username</label>
-            <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary focus-within:ring-2 focus-within:ring-spark-primary/20 transition-all">
-              <input
-                id="lightning-address"
-                type="text"
-                value={editValue}
-                onChange={(e) => onEditValueChange(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
-                placeholder="satoshi"
-                disabled={isLoading}
-                className="flex-1 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none"
-                autoComplete="off"
-                autoCapitalize="off"
-              />
-              <span className="px-4 py-3 text-spark-text-muted font-medium text-sm">
-                @breez.tips
-              </span>
-            </div>
+          <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary focus-within:ring-2 focus-within:ring-spark-primary/20 transition-all">
+            <input
+              id="lightning-address"
+              type="text"
+              value={editValue}
+              onChange={(e) => onEditValueChange(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+              placeholder="satoshi"
+              disabled={isLoading}
+              className="flex-1 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none"
+              autoComplete="off"
+              autoCapitalize="off"
+            />
+            <span className="px-4 py-3 text-spark-text-muted font-medium text-sm">
+              @breez.tips
+            </span>
           </div>
           
           <FormError error={error} />
