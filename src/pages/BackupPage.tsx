@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Transition } from '@headlessui/react';
-import { Alert } from '@/components/ui';
 import { useWallet } from '@/contexts/WalletContext';
 
 interface BackupPageProps {
@@ -67,11 +66,6 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
               <div className="max-w-xl mx-auto w-full p-4 space-y-6">
-                {/* Warning alert */}
-                <Alert type="warning">
-                  Your recovery phrase grants full access to your funds. Keep it offline and never share it with anyone.
-                </Alert>
-
                 {/* Reveal toggle */}
                 {!isRevealed && mnemonic && (
                   <button
