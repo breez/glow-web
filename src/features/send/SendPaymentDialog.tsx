@@ -161,7 +161,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     if (currentStep === 'amount' || currentStep === 'workflow') {
       return getPaymentMethodName();
     }
-    return 'Send Payment';
+    return 'Send';
   };
 
   // Generic send handler: transitions to processing/result with error handling
