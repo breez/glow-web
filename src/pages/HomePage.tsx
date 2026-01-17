@@ -33,7 +33,7 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
 
         {/* Title */}
         <h1 className="font-display text-display-lg md:text-display-xl font-bold text-center mb-3">
-          <span className="text-gradient-amber">Spark</span>{' '}
+          <span className="text-gradient-primary">Spark</span>{' '}
           <span className="text-white">Wallet</span>
         </h1>
 

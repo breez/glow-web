@@ -547,8 +547,8 @@ select {
    UTILITY CLASSES
    ============================================ */
 
-.text-gradient-amber {
-  background: linear-gradient(135deg, var(--spark-amber) 0%, var(--spark-amber-light) 100%);
+.text-gradient-primary {
+  background: linear-gradient(135deg, var(--spark-primary) 0%, var(--spark-primary-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
