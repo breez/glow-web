@@ -1,6 +1,11 @@
 import React from 'react';
 import { Payment } from '@breeztech/breez-sdk-spark';
 
+// Format number with space as thousand separator
+const formatWithSpaces = (num: number): string => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
+
 interface TransactionListProps {
   transactions: Payment[];
   onPaymentSelected: (payment: Payment) => void;
@@ -16,9 +21,9 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
         </div>
-        <h3 className="font-display text-lg font-semibold text-spark-text-primary mb-2">No transactions yet</h3>
+        <h3 className="font-display text-lg font-semibold text-spark-text-primary mb-2">No payments yet</h3>
         <p className="text-spark-text-muted text-sm text-center max-w-xs">
-          Your transaction history will appear here once you send or receive your first payment.
+          Your payment history will appear here once you send or receive your first payment.
         </p>
       </div>
     );
@@ -51,13 +56,13 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
   const getTransactionIcon = (payment: Payment): React.ReactNode => {
     if (payment.paymentType === 'receive') {
       return (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
         </svg>
       );
@@ -67,6 +72,10 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
   const getDescription = (payment: Payment): string => {
     if (payment.method === 'lightning') {
       if (payment.details?.type === 'lightning') {
+        // Show Lightning address if available
+        if (payment.details.lnurlPayInfo?.lnAddress) {
+          return payment.details.lnurlPayInfo.lnAddress;
+        }
         return payment.details?.description || 'Lightning Payment';
       }
       return 'Lightning Payment';
@@ -98,17 +107,17 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
   };
 
   return (
-    <div className="px-4 py-4">
+    <div className="px-4 py-3">
       {/* Section header */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-3">
         <h2 className="font-display text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
-          Transactions
+          Payments
         </h2>
         <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
       </div>
 
       {/* Transaction list */}
-      <ul className="space-y-3">
+      <ul className="space-y-2">
         {transactions.map((tx, index) => {
           const isReceive = tx.paymentType === 'receive';
           const isPending = tx.status === 'pending';
@@ -117,7 +126,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
           return (
             <li
               key={tx.id || `${tx.timestamp}-${tx.amount}-${index}`}
-              className="list-item flex items-center gap-4 cursor-pointer group"
+              className="list-item flex items-center gap-3 cursor-pointer group"
               onClick={() => onPaymentSelected(tx)}
             >
               {/* Transaction type icon */}
@@ -166,11 +175,11 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
                   ${!isFailed && isReceive ? 'text-spark-success' : ''}
                   ${!isFailed && !isReceive ? 'text-spark-electric' : ''}
                 `}>
-                  {isReceive ? '+' : '-'}{tx.amount.toLocaleString()}
+                  {isReceive ? '+' : '-'}{formatWithSpaces(Number(tx.amount))}
                 </span>
                 {tx.fees > 0 && (
                   <span className="text-spark-text-muted text-xs">
-                    Fee: {tx.fees.toLocaleString()}
+                    Fee: {formatWithSpaces(Number(tx.fees))}
                   </span>
                 )}
               </div>

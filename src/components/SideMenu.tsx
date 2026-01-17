@@ -12,6 +12,7 @@ interface SideMenuProps {
 
 const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSettings, onOpenBackup }) => {
   const [leftOffset, setLeftOffset] = useState<number | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     const calc = () => {
@@ -64,10 +65,16 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
         </svg>
       ),
       label: 'Logout',
-      onClick: () => { onClose(); onLogout(); },
+      onClick: () => { setShowLogoutConfirm(true); },
       danger: true
     }
   ];
+
+  const handleConfirmLogout = () => {
+    setShowLogoutConfirm(false);
+    onClose();
+    onLogout();
+  };
 
   return createPortal(
     <Transition show={isOpen} as="div" className="fixed inset-0 z-50">
@@ -151,6 +158,64 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                 Powered by Breez SDK
               </p>
             </div>
+
+            {/* Logout Confirmation Dialog */}
+            <Transition show={showLogoutConfirm} as="div" className="fixed inset-0 z-60">
+              <Transition.Child
+                as="div"
+                enter="transition-opacity ease-out duration-150"
+                enterFrom="opacity-0"
+                enterTo="opacity-100"
+                leave="transition-opacity ease-in duration-100"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
+                className="fixed inset-0 bg-black/70"
+                onClick={() => setShowLogoutConfirm(false)}
+              />
+              <div className="fixed inset-0 flex items-center justify-center p-4">
+                <Transition.Child
+                  as="div"
+                  enter="transition transform ease-out duration-200"
+                  enterFrom="opacity-0 scale-95"
+                  enterTo="opacity-100 scale-100"
+                  leave="transition transform ease-in duration-150"
+                  leaveFrom="opacity-100 scale-100"
+                  leaveTo="opacity-0 scale-95"
+                  className="w-full max-w-sm bg-spark-surface border border-spark-border rounded-2xl p-6 shadow-glass-lg"
+                >
+                  {/* Warning Icon */}
+                  <div className="flex justify-center mb-4">
+                    <div className="w-14 h-14 rounded-full bg-spark-warning/15 flex items-center justify-center">
+                      <svg className="w-7 h-7 text-spark-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <h3 className="font-display text-lg font-semibold text-spark-text-primary text-center mb-2">
+                    Logout Warning
+                  </h3>
+                  <p className="text-spark-text-secondary text-sm text-center mb-6">
+                    Make sure you've saved your recovery phrase before logging out. You'll need it to access your wallet again.
+                  </p>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowLogoutConfirm(false)}
+                      className="flex-1 px-4 py-3 border border-spark-border text-spark-text-secondary rounded-xl font-medium hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleConfirmLogout}
+                      className="flex-1 px-4 py-3 bg-spark-error text-white rounded-xl font-medium hover:bg-spark-error/90 transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </Transition.Child>
+              </div>
+            </Transition>
           </Transition.Child>
         </div>
       )}

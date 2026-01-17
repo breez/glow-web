@@ -48,7 +48,7 @@
 
 html, body, #root {
   height: 100%;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 body {
@@ -319,9 +319,8 @@ select {
 .list-item {
   background: var(--spark-elevated);
   border: 1px solid var(--spark-border);
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 12px;
+  border-radius: 12px;
+  padding: 10px 12px;
   transition: all 0.2s ease;
 }
 
@@ -332,13 +331,13 @@ select {
 }
 
 .transaction-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -433,6 +432,16 @@ select {
 @keyframes glow-pulse {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
+}
+
+@keyframes scan-line {
+  0% { top: 0; }
+  50% { top: calc(100% - 2px); }
+  100% { top: 0; }
+}
+
+.animate-scan-line {
+  animation: scan-line 2s ease-in-out infinite;
 }
 
 @keyframes shimmer {

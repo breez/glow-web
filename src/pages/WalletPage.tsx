@@ -10,7 +10,7 @@ import PaymentDetailsDialog from '../components/PaymentDetailsDialog';
 import CollapsingWalletHeader from '../components/CollapsingWalletHeader';
 import SideMenu from '../components/SideMenu';
 import TransactionList from '../components/TransactionList';
-import { GetInfoResponse, Payment, Config, Network } from '@breeztech/breez-sdk-spark';
+import { GetInfoResponse, Payment } from '@breeztech/breez-sdk-spark';
 import { SendInput } from '@/types/domain';
 
 interface WalletPageProps {
@@ -22,8 +22,6 @@ interface WalletPageProps {
   error: string | null;
   onClearError: () => void;
   onLogout: () => void;
-  config: Config | null;
-  onChangeNetwork: (network: Network) => void;
   hasUnclaimedDeposits: boolean;
   onOpenUnclaimedDeposits: () => void;
   onOpenSettings: () => void;
@@ -37,8 +35,6 @@ const WalletPage: React.FC<WalletPageProps> = ({
   refreshWalletData,
   isRestoring,
   onLogout,
-  config,
-  onChangeNetwork,
   hasUnclaimedDeposits,
   onOpenUnclaimedDeposits,
   onOpenSettings,
@@ -121,10 +117,8 @@ const WalletPage: React.FC<WalletPageProps> = ({
         <CollapsingWalletHeader
           walletInfo={walletInfo}
           usdRate={usdRate}
-          config={config}
           scrollProgress={scrollProgress}
           onOpenMenu={() => setIsMenuOpen(true)}
-          onChangeNetwork={onChangeNetwork}
           hasUnclaimedDeposits={hasUnclaimedDeposits}
           onOpenUnclaimedDeposits={onOpenUnclaimedDeposits}
         />

@@ -7,7 +7,7 @@ interface HomePageProps {
 
 const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet }) => {
   return (
-    <div className="min-h-[100dvh] flex flex-col relative overflow-hidden">
+    <div className="h-[100dvh] flex flex-col relative overflow-hidden">
       {/* Atmospheric background elements */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Main glow */}

@@ -393,7 +393,6 @@ const AppContent: React.FC = () => {
           <WalletPage
             walletInfo={walletInfo}
             transactions={transactions}
-            config={config}
             usdRate={usdRate}
             refreshWalletData={refreshWalletData}
             isRestoring={isRestoring}
@@ -404,40 +403,6 @@ const AppContent: React.FC = () => {
             onOpenUnclaimedDeposits={() => setCurrentScreen('unclaimedDeposits')}
             onOpenSettings={() => setCurrentScreen('settings')}
             onOpenBackup={() => setCurrentScreen('backup')}
-            onChangeNetwork={async (network) => {
-              try {
-                setIsLoading(true);
-                // Disconnect current session if connected
-                if (isConnected) {
-                  // Clean event listener if exists
-                  if (eventListenerIdRef.current) {
-                    try { await wallet.removeEventListener(eventListenerIdRef.current); } catch { }
-                    eventListenerIdRef.current = null;
-                  }
-                  await wallet.disconnect();
-                  setIsConnected(false);
-                }
-
-                // Update URL param so refresh preserves network choice
-                const url = new URL(window.location.href);
-                url.searchParams.set('network', network);
-                window.history.replaceState({}, '', url.toString());
-
-                // Reconnect if mnemonic is present
-                const mnemonic = wallet.getSavedMnemonic();
-                if (mnemonic) {
-                  await connectWallet(mnemonic, false, network);
-                } else {
-                  // No mnemonic means route to home
-                  setCurrentScreen('home');
-                }
-              } catch (err) {
-                console.error('Failed to switch network:', err);
-                setError('Failed to switch network');
-              } finally {
-                setIsLoading(false);
-              }
-            }}
           />
         );
 

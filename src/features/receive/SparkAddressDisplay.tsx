@@ -29,26 +29,17 @@ const SparkAddressDisplay: React.FC<Props> = ({ address, isLoading }) => {
   };
 
   return (
-    <div className="pt-4 space-y-6 flex flex-col items-center">
-      <div className="text-center">
-        <h3 className="font-display text-lg font-semibold text-spark-text-primary mb-2">Spark Address</h3>
-        <p className="text-spark-text-secondary text-sm">
-          Send to this Spark address for instant Lightning payments
-        </p>
-      </div>
-
+    <div className="flex flex-col items-center gap-6 py-2">
       <QRCodeContainer value={address} />
 
-      <div className="flex flex-col items-center w-full gap-3">
-        {/* Centered address text */}
-        <div className="text-center font-mono text-spark-amber text-sm sm:text-base break-all px-2">
+      <div className="w-full flex flex-col items-center gap-4">
+        <div className="text-center font-mono text-spark-amber text-sm break-all px-2">
           {address}
         </div>
         
-        {/* Copy button */}
         <button
           onClick={handleCopy}
-          className="flex items-center gap-2 px-4 py-2 bg-spark-amber text-black rounded-xl font-medium text-sm hover:bg-spark-amber-light transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 bg-spark-amber text-black rounded-xl font-medium text-sm hover:bg-spark-amber-light transition-colors"
           title="Copy Spark Address"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

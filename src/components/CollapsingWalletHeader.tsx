@@ -1,24 +1,25 @@
 import React from 'react';
-import type { Config, GetInfoResponse, Network } from '@breeztech/breez-sdk-spark';
+import type { GetInfoResponse } from '@breeztech/breez-sdk-spark';
 
 interface CollapsingWalletHeaderProps {
   walletInfo: GetInfoResponse | null;
   usdRate: number | null;
   scrollProgress: number;
   onOpenMenu: () => void;
-  config: Config | null;
-  onChangeNetwork: (network: Network) => void;
   hasUnclaimedDeposits: boolean;
   onOpenUnclaimedDeposits: () => void;
 }
+
+// Format number with space as thousand separator
+const formatWithSpaces = (num: number): string => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
 
 const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   walletInfo,
   scrollProgress,
   usdRate,
   onOpenMenu,
-  config,
-  onChangeNetwork,
   hasUnclaimedDeposits,
   onOpenUnclaimedDeposits
 }) => {
@@ -58,20 +59,8 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             </svg>
           </button>
 
-          {/* Network selector */}
+          {/* Action buttons */}
           <div className="flex items-center gap-3">
-            {config && (
-              <select
-                value={config.network}
-                onChange={(e) => onChangeNetwork(e.currentTarget.value as Network)}
-                className="network-badge bg-transparent border-spark-violet/30 text-spark-violet-light cursor-pointer hover:border-spark-violet transition-colors"
-                title="Select Network"
-              >
-                <option className="bg-spark-surface text-spark-text-primary" value="mainnet">Mainnet</option>
-                <option className="bg-spark-surface text-spark-text-primary" value="regtest">Regtest</option>
-              </select>
-            )}
-
             {/* Unclaimed deposits warning */}
             {hasUnclaimedDeposits && (
               <button
@@ -105,7 +94,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           {/* Main balance */}
           <div className="flex items-baseline justify-center gap-2">
             <span className="balance-display font-mono">
-              {balanceSat.toLocaleString()}
+              {formatWithSpaces(balanceSat)}
             </span>
             <span className="text-spark-text-secondary text-xl font-display font-medium">
               sats

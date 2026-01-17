@@ -5,6 +5,11 @@ import {
   CollapsibleCodeField, BottomSheetContainer, BottomSheetCard
 } from './ui';
 
+// Format number with space as thousand separator
+const formatWithSpaces = (num: number | bigint): string => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
+
 interface PaymentDetailsDialogProps {
   optionalPayment: Payment | null;
   onClose: () => void;
@@ -18,8 +23,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
     txId: false,
     swapId: false,
     assetId: false,
-    destination: false,
-    lnurlMetadata: false
+    destination: false
   });
 
   // Format date and time
@@ -57,18 +61,46 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
           <PaymentInfoCard>
             <PaymentInfoRow
               label="Amount"
-              value={`${payment.paymentType === 'receive' ? '+' : '-'} ${payment.amount.toLocaleString()} sats`}
+              value={`${payment.paymentType === 'receive' ? '+' : '-'} ${formatWithSpaces(payment.amount)} sats`}
             />
 
             <PaymentInfoRow
               label="Fee"
-              value={`${payment.fees.toLocaleString()} sats`}
+              value={`${formatWithSpaces(payment.fees)} sats`}
             />
 
             <PaymentInfoRow
               label="Date & Time"
               value={formatDateTime(payment.timestamp)}
             />
+
+            {payment.details?.type === 'lightning' && payment.details.description && (
+              <PaymentInfoRow
+                label="Description"
+                value={payment.details.description}
+              />
+            )}
+
+            {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo?.lnAddress && (
+              <PaymentInfoRow
+                label="Lightning Address"
+                value={payment.details.lnurlPayInfo.lnAddress}
+              />
+            )}
+
+            {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo && !payment.details.lnurlPayInfo.lnAddress && payment.details.lnurlPayInfo.domain && (
+              <PaymentInfoRow
+                label="LNURL Payment"
+                value={payment.details.lnurlPayInfo.domain}
+              />
+            )}
+
+            {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo?.comment && (
+              <PaymentInfoRow
+                label="Comment"
+                value={payment.details.lnurlPayInfo.comment}
+              />
+            )}
 
             {payment.details?.type === 'lightning' && payment.details.invoice && (
               <CollapsibleCodeField
@@ -97,50 +129,25 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               />
             )}
 
-            {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo && (
+            {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo?.rawSuccessAction && (
               <>
                 <PaymentInfoRow
-                  label="LNURL Payment"
-                  value={payment.details.lnurlPayInfo.domain || 'Unknown'}
+                  label="Success Action"
+                  value={payment.details.lnurlPayInfo.rawSuccessAction.type || 'Unknown'}
                 />
-
-                {payment.details.lnurlPayInfo.metadata && (
-                  <CollapsibleCodeField
-                    label="LNURL Metadata"
-                    value={payment.details.lnurlPayInfo.metadata}
-                    isVisible={visibleFields.lnurlMetadata}
-                    onToggle={() => toggleField('lnurlMetadata')}
-                  />
-                )}
-                
-                {payment.details.lnurlPayInfo.comment && (
+                {payment.details.lnurlPayInfo.rawSuccessAction.type === 'message' && 
+                  payment.details.lnurlPayInfo.rawSuccessAction.data && (
                   <PaymentInfoRow
-                    label="Comment"
-                    value={payment.details.lnurlPayInfo.comment}
+                    label="Message"
+                    value={payment.details.lnurlPayInfo.rawSuccessAction.data.message || ''}
                   />
                 )}
-                
-                {payment.details.lnurlPayInfo.rawSuccessAction && (
-                  <>
-                    <PaymentInfoRow
-                      label="Success Action Type"
-                      value={payment.details.lnurlPayInfo.rawSuccessAction.type || 'Unknown'}
-                    />
-                    {payment.details.lnurlPayInfo.rawSuccessAction.type === 'message' && 
-                      payment.details.lnurlPayInfo.rawSuccessAction.data && (
-                      <PaymentInfoRow
-                        label="Success Message"
-                        value={payment.details.lnurlPayInfo.rawSuccessAction.data.message || ''}
-                      />
-                    )}
-                    {payment.details.lnurlPayInfo.rawSuccessAction.type === 'url' && 
-                      payment.details.lnurlPayInfo.rawSuccessAction.data && (
-                      <PaymentInfoRow
-                        label="Success URL"
-                        value={payment.details.lnurlPayInfo.rawSuccessAction.data.url || ''}
-                      />
-                    )}
-                  </>
+                {payment.details.lnurlPayInfo.rawSuccessAction.type === 'url' && 
+                  payment.details.lnurlPayInfo.rawSuccessAction.data && (
+                  <PaymentInfoRow
+                    label="URL"
+                    value={payment.details.lnurlPayInfo.rawSuccessAction.data.url || ''}
+                  />
                 )}
               </>
             )}

@@ -134,22 +134,18 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   }
 
   return (
-    <div className="pt-4 space-y-6 flex flex-col items-center">
-      <div className="text-center">
-        <h3 className="font-display text-lg font-semibold text-spark-text-primary mb-2">Lightning Address</h3>
-        <p className="text-spark-text-secondary text-sm">
-          Share this address to receive Lightning payments
-        </p>
-      </div>
-
+    <div className="flex flex-col items-center gap-6 py-2">
       <QRCodeContainer value={address?.lnurl || ''} />
 
-      <div className="w-full space-y-5">
+      <div className="w-full flex flex-col items-center gap-4">
         <EditableAddressText text={address?.lightningAddress || ''} onEdit={onEdit} />
 
-        <div className="flex justify-center">
-          <PrimaryButton onClick={onCustomizeAmount}>Create Invoice</PrimaryButton>
-        </div>
+        <button
+          onClick={onCustomizeAmount}
+          className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors mt-2"
+        >
+          Create invoice with specific amount →
+        </button>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { ReactNode, forwardRef } from 'react';
+import React, { ReactNode, forwardRef, useState, useRef } from 'react';
 import QRCode from 'react-qr-code';
 import { Transition } from '@headlessui/react';
 
@@ -50,9 +50,13 @@ DialogCard.displayName = 'DialogCard';
 export const DialogHeader: React.FC<{
   title: string;
   onClose: () => void;
-}> = ({ title, onClose }) => (
-  <div className="flex justify-center items-center mb-6 relative">
-    <h2 className="font-display text-xl font-bold text-spark-text-primary">{title}</h2>
+  icon?: ReactNode;
+}> = ({ title, onClose, icon }) => (
+  <div className="flex justify-center items-center mb-5 relative">
+    <div className="flex items-center gap-2">
+      {icon && <span className="text-spark-amber">{icon}</span>}
+      <h2 className="font-display text-lg font-bold text-spark-text-primary">{title}</h2>
+    </div>
     <button
       onClick={onClose}
       className="absolute right-0 top-1/2 -translate-y-1/2 p-2 -mr-2 text-spark-text-muted hover:text-spark-error transition-colors rounded-lg hover:bg-white/5"
@@ -326,9 +330,18 @@ export const QRCodeContainer: React.FC<{
   value: string;
   size?: number;
   className?: string;
-}> = ({ value, size = 220, className = "" }) => (
-  <div className={`qr-container inline-block ${className}`}>
-    <QRCode value={value} size={size} />
+}> = ({ value, size = 200, className = "" }) => (
+  <div className={`relative ${className}`}>
+    {/* Decorative corners */}
+    <div className="absolute -inset-3 pointer-events-none">
+      <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-spark-amber/50 rounded-tl-lg" />
+      <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-spark-amber/50 rounded-tr-lg" />
+      <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-spark-amber/50 rounded-bl-lg" />
+      <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-spark-amber/50 rounded-br-lg" />
+    </div>
+    <div className="qr-container">
+      <QRCode value={value} size={size} />
+    </div>
   </div>
 );
 
@@ -457,7 +470,35 @@ export const BottomSheetContainer: React.FC<{
   children: ReactNode;
   className?: string;
   onClose?: () => void;
-}> = ({ isOpen, children, className = "" }) => {
+}> = ({ isOpen, children, className = "", onClose }) => {
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const startY = useRef(0);
+  const currentY = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startY.current = e.touches[0].clientY;
+    currentY.current = e.touches[0].clientY;
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    currentY.current = e.touches[0].clientY;
+    const diff = currentY.current - startY.current;
+    if (diff > 0) {
+      setDragY(diff);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    if (dragY > 100 && onClose) {
+      onClose();
+    }
+    setDragY(0);
+  };
+
   return (
     <Transition show={isOpen} as="div" className="absolute inset-0 z-50 overflow-hidden">
       <Transition.Child
@@ -469,6 +510,10 @@ export const BottomSheetContainer: React.FC<{
         leaveFrom="translate-y-0"
         leaveTo="translate-y-full"
         className={`mx-auto h-full max-w-full ${className}`}
+        style={{ transform: dragY > 0 ? `translateY(${dragY}px)` : undefined }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {children}
       </Transition.Child>
@@ -483,9 +528,9 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, DialogCardProps>(
         ref={ref}
         className={`bg-spark-surface border-t border-spark-border rounded-t-3xl shadow-glass-lg overflow-hidden w-full ${className}`}
       >
-        {/* Handle */}
+        {/* Drag handle indicator */}
         <div className="bottom-sheet-handle" />
-        <div className="p-6 pt-2">
+        <div className="px-6 pb-8 pt-3">
           {children}
         </div>
       </div>
@@ -526,10 +571,10 @@ export const Tab: React.FC<{
   <button
     onClick={onClick}
     className={`
-      flex-1 px-4 py-2.5 rounded-lg text-sm font-display font-semibold transition-all duration-200
+      flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-display font-semibold transition-all duration-200
       ${isActive
         ? 'bg-spark-amber text-black shadow-glow-amber'
-        : 'text-spark-text-secondary hover:text-spark-text-primary'
+        : 'text-spark-text-muted hover:text-spark-text-primary hover:bg-white/5'
       }
       ${className}
     `}

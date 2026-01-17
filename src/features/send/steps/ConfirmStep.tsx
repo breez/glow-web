@@ -1,6 +1,11 @@
 import React from 'react';
 import { PrimaryButton, FormError } from '../../../components/ui';
 
+// Format number with space as thousand separator
+const formatWithSpaces = (num: number): string => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
+
 export interface ConfirmStepProps {
   amountSats: bigint | null;
   feesSat: number | null;
@@ -22,7 +27,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, error, i
         <p className="text-spark-text-secondary text-sm mb-2">You're sending</p>
         <div className="flex items-baseline justify-center gap-2">
           <span className="text-4xl font-display font-bold text-spark-text-primary">
-            {total.toLocaleString()}
+            {formatWithSpaces(total)}
           </span>
           <span className="text-xl font-display text-spark-text-secondary">sats</span>
         </div>
@@ -41,7 +46,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, error, i
             <span className="text-spark-text-secondary">Amount</span>
           </div>
           <span className="font-mono font-medium text-spark-text-primary">
-            {amount.toLocaleString()} sats
+            {formatWithSpaces(amount)} sats
           </span>
         </div>
 
@@ -59,7 +64,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, error, i
             <span className="text-spark-text-secondary">Network fee</span>
           </div>
           <span className="font-mono font-medium text-spark-text-primary">
-            {fee.toLocaleString()} sats
+            {formatWithSpaces(fee)} sats
           </span>
         </div>
 
@@ -70,7 +75,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, error, i
         <div className="flex items-center justify-between px-4 py-3 bg-spark-surface/50">
           <span className="font-display font-semibold text-spark-text-primary">Total</span>
           <span className="font-mono font-bold text-spark-amber">
-            {total.toLocaleString()} sats
+            {formatWithSpaces(total)} sats
           </span>
         </div>
       </div>
