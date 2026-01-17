@@ -20,7 +20,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
     <div className="h-[calc(100dvh)] w-full flex flex-col bg-spark-surface relative overflow-hidden">
       {/* Atmospheric background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[300px] bg-gradient-radial from-spark-violet/10 to-transparent blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[300px] bg-gradient-radial from-spark-primary/10 to-transparent blur-3xl" />
       </div>
 
       {showHeader && (

@@ -68,13 +68,13 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
 
       {/* Lightning bolts background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <svg className="absolute top-1/4 left-1/4 w-16 h-16 text-spark-violet/30 animate-ping" fill="currentColor" viewBox="0 0 24 24">
+        <svg className="absolute top-1/4 left-1/4 w-16 h-16 text-spark-primary/30 animate-ping" fill="currentColor" viewBox="0 0 24 24">
           <path d="M11 19v-5.111L7.5 15.5 13 5v5.111L16.5 8.5 11 19z" />
         </svg>
         <svg className="absolute top-1/3 right-1/4 w-12 h-12 text-spark-primary-blue/30 animate-ping" style={{ animationDelay: '0.2s' }} fill="currentColor" viewBox="0 0 24 24">
           <path d="M11 19v-5.111L7.5 15.5 13 5v5.111L16.5 8.5 11 19z" />
         </svg>
-        <svg className="absolute bottom-1/3 left-1/3 w-10 h-10 text-spark-violet/30 animate-ping" style={{ animationDelay: '0.4s' }} fill="currentColor" viewBox="0 0 24 24">
+        <svg className="absolute bottom-1/3 left-1/3 w-10 h-10 text-spark-primary/30 animate-ping" style={{ animationDelay: '0.4s' }} fill="currentColor" viewBox="0 0 24 24">
           <path d="M11 19v-5.111L7.5 15.5 13 5v5.111L16.5 8.5 11 19z" />
         </svg>
       </div>
@@ -103,7 +103,7 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
         {/* Amount with glow effect */}
         <div className="relative animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
           <div className="absolute inset-0 blur-lg bg-spark-success/50 rounded-2xl" />
-          <div className="relative px-8 py-4 rounded-2xl bg-gradient-to-r from-spark-success/20 to-spark-violet/20 border border-spark-success/50">
+          <div className="relative px-8 py-4 rounded-2xl bg-gradient-to-r from-spark-success/20 to-spark-primary/20 border border-spark-success/50">
             <span className="text-5xl font-display font-bold text-spark-success">
               +{formatAmount(amount)}
             </span>
@@ -113,7 +113,7 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
 
         {/* Lightning icon */}
         <div className="mt-6 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-          <svg className="w-12 h-12 text-spark-violet animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12 text-spark-primary animate-pulse" fill="currentColor" viewBox="0 0 24 24">
             <path d="M11 19v-5.111L7.5 15.5 13 5v5.111L16.5 8.5 11 19z" />
           </svg>
         </div>

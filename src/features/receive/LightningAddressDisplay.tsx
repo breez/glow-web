@@ -53,7 +53,7 @@ const EditableAddressText: React.FC<{
   return (
     <div className="flex flex-col items-center w-full gap-3">
       {/* Centered address text */}
-      <div className="text-center font-mono text-spark-violet text-sm sm:text-base break-all px-2">
+      <div className="text-center font-mono text-spark-primary text-sm sm:text-base break-all px-2">
         {text}
       </div>
       
@@ -61,7 +61,7 @@ const EditableAddressText: React.FC<{
       <div className="flex gap-2">
         <button
           onClick={handleCopy}
-          className="flex items-center gap-2 px-4 py-2 bg-spark-violet text-white rounded-xl font-medium text-sm hover:bg-spark-violet-light transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-spark-primary text-white rounded-xl font-medium text-sm hover:bg-spark-primary-light transition-colors"
           title="Copy Lightning Address"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

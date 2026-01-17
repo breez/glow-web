@@ -40,7 +40,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
       
       {/* Glow effect behind balance */}
       <div 
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[150px] bg-gradient-radial from-spark-violet/20 to-transparent blur-3xl pointer-events-none transition-opacity duration-300"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[150px] bg-gradient-radial from-spark-primary/20 to-transparent blur-3xl pointer-events-none transition-opacity duration-300"
         style={{ opacity: 1 - scrollProgress * 0.7 }}
       />
 
@@ -103,11 +103,11 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
 
           {/* Lightning bolt decoration */}
           <div className="flex items-center justify-center gap-1 mt-1 opacity-60">
-            <div className="w-4 h-px bg-gradient-to-r from-transparent to-spark-violet/50" />
-            <svg className="w-4 h-4 text-spark-violet" viewBox="0 0 24 24" fill="currentColor">
+            <div className="w-4 h-px bg-gradient-to-r from-transparent to-spark-primary/50" />
+            <svg className="w-4 h-4 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
               <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
             </svg>
-            <div className="w-4 h-px bg-gradient-to-l from-transparent to-spark-violet/50" />
+            <div className="w-4 h-px bg-gradient-to-l from-transparent to-spark-primary/50" />
           </div>
         </div>
 

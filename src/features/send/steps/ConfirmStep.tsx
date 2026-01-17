@@ -56,8 +56,8 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, error, i
         {/* Fee row */}
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-spark-violet/20 flex items-center justify-center">
-              <svg className="w-4 h-4 text-spark-violet" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="w-8 h-8 rounded-lg bg-spark-primary/20 flex items-center justify-center">
+              <svg className="w-4 h-4 text-spark-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
@@ -74,7 +74,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, error, i
         {/* Total row */}
         <div className="flex items-center justify-between px-4 py-3 bg-spark-surface/50">
           <span className="font-display font-semibold text-spark-text-primary">Total</span>
-          <span className="font-mono font-bold text-spark-violet">
+          <span className="font-mono font-bold text-spark-primary">
             {formatWithSpaces(total)} sats
           </span>
         </div>

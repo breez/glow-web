@@ -71,7 +71,7 @@ const BitcoinAddressDisplay: React.FC<Props> = ({ address, isLoading }) => {
         <div className="flex gap-2">
           <button
             onClick={handleCopy}
-            className="flex items-center gap-2 px-4 py-2 bg-spark-violet text-white rounded-xl font-medium text-sm hover:bg-spark-violet-light transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-spark-primary text-white rounded-xl font-medium text-sm hover:bg-spark-primary-light transition-colors"
             title="Copy Bitcoin Address"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

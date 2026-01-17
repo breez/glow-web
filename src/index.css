@@ -8,6 +8,13 @@
    ============================================ */
 
 :root {
+  /* ========================================
+     PRIMARY ACCENT - Change this one line!
+     ======================================== */
+  --spark-primary: #d4a574;           /* Soft Gold - warm, elegant, premium */
+  --spark-primary-light: #e8c9a8;
+  --glow-primary: rgba(212, 165, 116, 0.35);
+  
   /* Core colors */
   --spark-void: #0a0a0f;
   --spark-dark: #0f0f18;
@@ -16,13 +23,9 @@
   --spark-border: #252535;
   --spark-border-light: #35354a;
   
-  /* Accent colors */
-  --spark-amber: #f7931a;
-  --spark-amber-light: #ffb347;
+  /* Secondary accents (for send/receive) */
   --spark-electric: #00d4ff;
   --spark-electric-light: #7df3ff;
-  --spark-violet: #8b5cf6;
-  --spark-violet-light: #a78bfa;
   
   /* Semantic colors */
   --spark-success: #10b981;
@@ -35,9 +38,7 @@
   --spark-text-muted: rgba(255, 255, 255, 0.4);
   
   /* Glows */
-  --glow-amber: rgba(247, 147, 26, 0.4);
   --glow-electric: rgba(0, 212, 255, 0.3);
-  --glow-violet: rgba(139, 92, 246, 0.3);
   --glow-success: rgba(16, 185, 129, 0.4);
   --glow-error: rgba(239, 68, 68, 0.4);
 }
@@ -148,7 +149,7 @@ h1, h2, h3, h4, h5, h6 {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 40px rgba(139, 92, 246, 0.35));
+  filter: drop-shadow(0 0 40px var(--glow-primary));
 }
 
 .balance-label {
@@ -169,19 +170,19 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   padding: 14px 28px;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--spark-violet) 0%, #7c3aed 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--spark-primary) 0%, var(--spark-primary-light) 100%);
+  color: #000;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 20px var(--glow-violet);
+  box-shadow: 0 4px 20px var(--glow-primary);
   border: none;
   cursor: pointer;
 }
 
 .button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px var(--glow-violet);
+  box-shadow: 0 8px 30px var(--glow-primary);
 }
 
 .button:active {
@@ -202,9 +203,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .button-secondary:hover {
-  border-color: var(--spark-violet);
-  color: var(--spark-violet);
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.15);
+  border-color: var(--spark-primary);
+  color: var(--spark-primary);
+  box-shadow: 0 4px 20px var(--glow-primary);
 }
 
 .button-ghost {
@@ -271,8 +272,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .action-button-scan:hover {
   background: rgba(255, 255, 255, 0.15);
-  border-color: var(--spark-violet);
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2);
+  border-color: var(--spark-primary);
+  box-shadow: 0 4px 20px var(--glow-primary);
 }
 
 /* ============================================
@@ -295,8 +296,8 @@ textarea:focus,
 input:focus,
 select:focus {
   outline: none;
-  border-color: var(--spark-violet);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+  border-color: var(--spark-primary);
+  box-shadow: 0 0 0 3px var(--glow-primary);
 }
 
 input::placeholder,
@@ -625,9 +626,9 @@ main {
 
 /* Network badge styling */
 .network-badge {
-  background: rgba(139, 92, 246, 0.2);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  color: var(--spark-violet-light);
+  background: var(--glow-primary);
+  border: 1px solid var(--spark-primary);
+  color: var(--spark-primary-light);
   padding: 4px 12px;
   border-radius: 20px;
   font-family: 'Outfit', system-ui, sans-serif;

@@ -110,7 +110,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-spark-violet to-spark-violet/80 flex items-center justify-center shadow-glow-violet">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-spark-primary to-spark-primary/80 flex items-center justify-center shadow-glow-primary">
                   <svg className="w-6 h-6 text-black" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
                   </svg>

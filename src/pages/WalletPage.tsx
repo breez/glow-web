@@ -101,8 +101,8 @@ const WalletPage: React.FC<WalletPageProps> = ({
     <div className="flex flex-col h-[calc(100dvh)] relative overflow-hidden">
       {/* Atmospheric background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-gradient-radial from-spark-violet/15 via-spark-violet/5 to-transparent blur-3xl" />
-        <div className="absolute bottom-1/4 right-0 w-[300px] h-[300px] bg-gradient-radial from-spark-violet/10 to-transparent blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-gradient-radial from-spark-primary/15 via-spark-primary/5 to-transparent blur-3xl" />
+        <div className="absolute bottom-1/4 right-0 w-[300px] h-[300px] bg-gradient-radial from-spark-primary/10 to-transparent blur-3xl" />
       </div>
 
       {/* Restoration overlay */}

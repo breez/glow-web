@@ -180,12 +180,12 @@ const UnclaimedDepositsPage: React.FC<UnclaimedDepositsPageProps> = ({ onBack, o
                                 <span className="text-spark-text-muted text-xs">Tx:</span>
                                 <span className="font-mono text-sm text-spark-text-secondary">{truncateTxid(id)}</span>
                               </div>
-                              <div className="font-display font-bold text-spark-violet text-lg">
+                              <div className="font-display font-bold text-spark-primary text-lg">
                                 {typeof amount === 'number' ? `${amount.toLocaleString()} sats` : 'Unknown amount'}
                               </div>
                             </div>
                             {hasRefundTx && (
-                              <span className="px-2 py-1 text-xs font-medium bg-spark-violet/20 text-spark-violet-light rounded-lg">
+                              <span className="px-2 py-1 text-xs font-medium bg-spark-primary/20 text-spark-primary-light rounded-lg">
                                 Refunded
                               </span>
                             )}
@@ -308,7 +308,7 @@ const UnclaimedDepositsPage: React.FC<UnclaimedDepositsPageProps> = ({ onBack, o
                     <button
                       className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
                         feeType === 'fixed' 
-                          ? 'bg-spark-violet text-white' 
+                          ? 'bg-spark-primary text-white' 
                           : 'bg-spark-dark border border-spark-border text-spark-text-secondary hover:text-spark-text-primary'
                       }`}
                       onClick={() => setFeeType('fixed')}
@@ -319,7 +319,7 @@ const UnclaimedDepositsPage: React.FC<UnclaimedDepositsPageProps> = ({ onBack, o
                     <button
                       className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
                         feeType === 'relative' 
-                          ? 'bg-spark-violet text-white' 
+                          ? 'bg-spark-primary text-white' 
                           : 'bg-spark-dark border border-spark-border text-spark-text-secondary hover:text-spark-text-primary'
                       }`}
                       onClick={() => setFeeType('relative')}

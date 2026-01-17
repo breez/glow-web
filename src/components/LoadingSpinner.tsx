@@ -26,7 +26,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       {/* Spinner container */}
       <div className={`relative ${config.container}`}>
         {/* Outer glow */}
-        <div className="absolute inset-0 rounded-full bg-spark-violet/20 blur-xl animate-pulse" />
+        <div className="absolute inset-0 rounded-full bg-spark-primary/20 blur-xl animate-pulse" />
         
         {/* Rotating ring */}
         <div className={`absolute inset-0 ${config.ring}`}>
@@ -71,7 +71,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         {/* Center lightning bolt */}
         <div className="absolute inset-0 flex items-center justify-center">
           <svg 
-            className={`${config.bolt} text-spark-violet drop-shadow-lg`} 
+            className={`${config.bolt} text-spark-primary drop-shadow-lg`} 
             viewBox="0 0 24 24" 
             fill="currentColor"
             style={{
@@ -88,7 +88,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className="absolute w-1.5 h-1.5 rounded-full bg-spark-violet"
+              className="absolute w-1.5 h-1.5 rounded-full bg-spark-primary"
               style={{
                 top: '50%',
                 left: '50%',

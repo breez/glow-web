@@ -7,38 +7,30 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Core palette - Deep space with electric accents
+        // Core palette - Deep space with elegant accents
         spark: {
           // Base backgrounds
-          void: '#0a0a0f',      // Deepest background
-          dark: '#0f0f18',      // Primary background
-          surface: '#151520',   // Card backgrounds
-          elevated: '#1a1a28',  // Elevated surfaces
+          void: '#0a0a0f',
+          dark: '#0f0f18',
+          surface: '#151520',
+          elevated: '#1a1a28',
           
-          // Borders and subtle elements
+          // Borders
           border: '#252535',
           'border-light': '#35354a',
           
-          // Primary accent - Electric amber/gold (Bitcoin inspired)
-          amber: '#f7931a',
-          'amber-light': '#ffb347',
-          'amber-glow': 'rgba(247, 147, 26, 0.4)',
+          // PRIMARY ACCENT - Change these to update the entire theme!
+          primary: 'var(--spark-primary)',
+          'primary-light': 'var(--spark-primary-light)',
+          'primary-glow': 'var(--glow-primary)',
           
-          // Secondary accent - Electric blue (Lightning inspired)
+          // Secondary accent - Electric blue (for Send)
           electric: '#00d4ff',
           'electric-light': '#7df3ff',
-          'electric-glow': 'rgba(0, 212, 255, 0.3)',
-          
-          // Tertiary - Purple/violet for depth
-          violet: '#8b5cf6',
-          'violet-light': '#a78bfa',
-          'violet-glow': 'rgba(139, 92, 246, 0.3)',
           
           // Semantic colors
           success: '#10b981',
-          'success-glow': 'rgba(16, 185, 129, 0.3)',
           error: '#ef4444',
-          'error-glow': 'rgba(239, 68, 68, 0.3)',
           warning: '#f59e0b',
           
           // Text
@@ -66,13 +58,11 @@ export default {
         // Gradient backgrounds
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'glow-amber': 'radial-gradient(ellipse at center, rgba(247, 147, 26, 0.15) 0%, transparent 70%)',
+        'glow-primary': 'radial-gradient(ellipse at center, var(--glow-primary) 0%, transparent 70%)',
         'glow-electric': 'radial-gradient(ellipse at center, rgba(0, 212, 255, 0.1) 0%, transparent 70%)',
-        'glow-violet': 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.1) 0%, transparent 70%)',
-        'mesh': 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, transparent 50%), linear-gradient(225deg, rgba(247, 147, 26, 0.05) 0%, transparent 50%)',
       },
       boxShadow: {
-        'glow-amber': '0 0 40px rgba(247, 147, 26, 0.3)',
+        'glow-primary': '0 0 40px var(--glow-primary)',
         'glow-electric': '0 0 40px rgba(0, 212, 255, 0.3)',
         'glow-success': '0 0 30px rgba(16, 185, 129, 0.4)',
         'glow-error': '0 0 30px rgba(239, 68, 68, 0.4)',

@@ -33,13 +33,13 @@ const SparkAddressDisplay: React.FC<Props> = ({ address, isLoading }) => {
       <QRCodeContainer value={address} />
 
       <div className="w-full flex flex-col items-center gap-4">
-        <div className="text-center font-mono text-spark-violet text-sm break-all px-2">
+        <div className="text-center font-mono text-spark-primary text-sm break-all px-2">
           {address}
         </div>
         
         <button
           onClick={handleCopy}
-          className="flex items-center gap-2 px-5 py-2.5 bg-spark-violet text-white rounded-xl font-medium text-sm hover:bg-spark-violet-light transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 bg-spark-primary text-white rounded-xl font-medium text-sm hover:bg-spark-primary-light transition-colors"
           title="Copy Spark Address"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
