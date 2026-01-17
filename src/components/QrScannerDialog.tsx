@@ -157,13 +157,13 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-64 h-64 relative">
               {/* Corner brackets */}
-              <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-spark-amber rounded-tl-lg" />
-              <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-spark-amber rounded-tr-lg" />
-              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-spark-amber rounded-bl-lg" />
-              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-spark-amber rounded-br-lg" />
+              <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-spark-violet rounded-tl-lg" />
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-spark-violet rounded-tr-lg" />
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-spark-violet rounded-bl-lg" />
+              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-spark-violet rounded-br-lg" />
               {/* Scanning line animation */}
               {isScanning && (
-                <div className="absolute left-2 right-2 h-0.5 bg-spark-amber animate-scan-line" />
+                <div className="absolute left-2 right-2 h-0.5 bg-spark-violet animate-scan-line" />
               )}
             </div>
           </div>
@@ -171,7 +171,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
           {isInitializing && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/70">
               <div className="text-center text-white p-4">
-                <div className="animate-spin rounded-full h-10 w-10 border-2 border-spark-amber border-t-transparent mx-auto mb-3"></div>
+                <div className="animate-spin rounded-full h-10 w-10 border-2 border-spark-violet border-t-transparent mx-auto mb-3"></div>
                 <p className="text-sm text-spark-text-secondary">Initializing camera...</p>
               </div>
             </div>

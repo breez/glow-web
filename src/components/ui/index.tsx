@@ -54,7 +54,7 @@ export const DialogHeader: React.FC<{
 }> = ({ title, onClose, icon }) => (
   <div className="flex justify-center items-center mb-5 relative">
     <div className="flex items-center gap-2">
-      {icon && <span className="text-spark-amber">{icon}</span>}
+      {icon && <span className="text-spark-violet">{icon}</span>}
       <h2 className="font-display text-lg font-bold text-spark-text-primary">{title}</h2>
     </div>
     <button
@@ -114,7 +114,7 @@ export const FormInput: React.FC<{
     type={type}
     value={value}
     onChange={onChange}
-    className={`w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-amber focus:ring-2 focus:ring-spark-amber/20 transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+    className={`w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-violet focus:ring-2 focus:ring-spark-violet/20 transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
     placeholder={placeholder}
     min={min}
     max={max}
@@ -133,7 +133,7 @@ export const FormTextarea: React.FC<{
   <textarea
     value={value}
     onChange={onChange}
-    className={`w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-amber focus:ring-2 focus:ring-spark-amber/20 transition-all resize-none ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+    className={`w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-violet focus:ring-2 focus:ring-spark-violet/20 transition-all resize-none ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
     placeholder={placeholder}
     disabled={disabled}
     rows={rows}
@@ -248,7 +248,7 @@ export const CollapsibleCodeField: React.FC<{
       <span className="text-spark-text-secondary text-sm">{label}</span>
       <button
         onClick={onToggle}
-        className="text-spark-amber text-sm hover:text-spark-amber-light flex items-center gap-1 transition-colors"
+        className="text-spark-violet text-sm hover:text-spark-violet-light flex items-center gap-1 transition-colors"
       >
         {isVisible ? 'Hide' : 'Show'}
         <svg 
@@ -334,10 +334,10 @@ export const QRCodeContainer: React.FC<{
   <div className={`relative ${className}`}>
     {/* Decorative corners */}
     <div className="absolute -inset-3 pointer-events-none">
-      <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-spark-amber/50 rounded-tl-lg" />
-      <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-spark-amber/50 rounded-tr-lg" />
-      <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-spark-amber/50 rounded-bl-lg" />
-      <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-spark-amber/50 rounded-br-lg" />
+      <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-spark-violet/50 rounded-tl-lg" />
+      <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-spark-violet/50 rounded-tr-lg" />
+      <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-spark-violet/50 rounded-bl-lg" />
+      <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-spark-violet/50 rounded-br-lg" />
     </div>
     <div className="qr-container">
       <QRCode value={value} size={size} />
@@ -373,7 +373,7 @@ export const CopyableText: React.FC<{
           absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all
           ${copied 
             ? 'bg-spark-success/20 text-spark-success' 
-            : 'bg-spark-amber text-black hover:bg-spark-amber-light'
+            : 'bg-spark-violet text-white hover:bg-spark-violet-light'
           }
         `}
       >
@@ -573,7 +573,7 @@ export const Tab: React.FC<{
     className={`
       flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-display font-semibold transition-all duration-200
       ${isActive
-        ? 'bg-spark-amber text-black shadow-glow-amber'
+        ? 'bg-spark-violet text-white shadow-glow-violet'
         : 'text-spark-text-muted hover:text-spark-text-primary hover:bg-white/5'
       }
       ${className}
@@ -611,7 +611,7 @@ export const LoadingSpinner: React.FC<{
   return (
     <div className={`flex flex-col items-center justify-center ${className}`}>
       <div className="relative">
-        <div className={`${sizeClasses[size]} border-2 border-spark-border border-t-spark-amber rounded-full animate-spin`} />
+        <div className={`${sizeClasses[size]} border-2 border-spark-border border-t-spark-violet rounded-full animate-spin`} />
       </div>
       {text && (
         <p className="mt-3 text-sm text-spark-text-secondary">{text}</p>

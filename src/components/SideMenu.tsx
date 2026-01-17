@@ -65,8 +65,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
         </svg>
       ),
       label: 'Logout',
-      onClick: () => { setShowLogoutConfirm(true); },
-      danger: true
+      onClick: () => { setShowLogoutConfirm(true); }
     }
   ];
 
@@ -111,7 +110,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-spark-amber to-spark-amber/80 flex items-center justify-center shadow-glow-amber">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-spark-violet to-spark-violet/80 flex items-center justify-center shadow-glow-violet">
                   <svg className="w-6 h-6 text-black" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
                   </svg>
@@ -137,13 +136,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
               {menuItems.map((item, index) => (
                 <button
                   key={index}
-                  className={`
-                    w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all
-                    ${item.danger 
-                      ? 'text-spark-error hover:bg-spark-error/10' 
-                      : 'text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5'
-                    }
-                  `}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5"
                   onClick={item.onClick}
                 >
                   {item.icon}

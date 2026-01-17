@@ -74,7 +74,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, error, i
         {/* Total row */}
         <div className="flex items-center justify-between px-4 py-3 bg-spark-surface/50">
           <span className="font-display font-semibold text-spark-text-primary">Total</span>
-          <span className="font-mono font-bold text-spark-amber">
+          <span className="font-mono font-bold text-spark-violet">
             {formatWithSpaces(total)} sats
           </span>
         </div>

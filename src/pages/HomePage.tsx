@@ -11,7 +11,7 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
       {/* Atmospheric background elements */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Main glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-radial from-spark-amber/20 via-spark-amber/5 to-transparent blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-radial from-spark-violet/20 via-spark-violet/5 to-transparent blur-3xl" />
         {/* Secondary glow */}
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-gradient-radial from-spark-violet/15 to-transparent blur-3xl" />
         {/* Electric accent */}
@@ -22,13 +22,13 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative z-10">
         {/* Lightning bolt icon */}
         <div className="mb-8 relative">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-spark-amber to-spark-amber/80 flex items-center justify-center shadow-glow-amber animate-float">
+          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-spark-violet to-spark-violet/80 flex items-center justify-center shadow-glow-violet animate-float">
             <svg className="w-14 h-14 text-black" viewBox="0 0 24 24" fill="currentColor">
               <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
             </svg>
           </div>
           {/* Glow ring */}
-          <div className="absolute inset-0 rounded-3xl bg-spark-amber/30 blur-xl animate-glow-pulse" />
+          <div className="absolute inset-0 rounded-3xl bg-spark-violet/30 blur-xl animate-glow-pulse" />
         </div>
 
         {/* Title */}
@@ -65,7 +65,7 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
           {/* Secondary CTA */}
           <button
             onClick={onRestoreWallet}
-            className="w-full py-4 border-2 border-spark-border-light text-spark-text-primary rounded-xl hover:border-spark-amber hover:text-spark-amber transition-all duration-300 font-display font-semibold tracking-wide"
+            className="w-full py-4 border-2 border-spark-border-light text-spark-text-primary rounded-xl hover:border-spark-violet hover:text-spark-violet transition-all duration-300 font-display font-semibold tracking-wide"
           >
             Restore Existing Wallet
           </button>
@@ -117,7 +117,7 @@ interface FeatureCardProps {
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ icon, label }) => (
   <div className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-spark-surface/50 border border-spark-border hover:border-spark-border-light transition-colors">
-    <div className="text-spark-amber">
+    <div className="text-spark-violet">
       {icon}
     </div>
     <span className="text-spark-text-secondary text-xs font-medium">{label}</span>

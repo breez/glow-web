@@ -148,7 +148,7 @@ h1, h2, h3, h4, h5, h6 {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 40px rgba(247, 147, 26, 0.35));
+  filter: drop-shadow(0 0 40px rgba(139, 92, 246, 0.35));
 }
 
 .balance-label {
@@ -169,19 +169,19 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   padding: 14px 28px;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--spark-amber) 0%, #e67e00 100%);
-  color: #000;
+  background: linear-gradient(135deg, var(--spark-violet) 0%, #7c3aed 100%);
+  color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 20px var(--glow-amber);
+  box-shadow: 0 4px 20px var(--glow-violet);
   border: none;
   cursor: pointer;
 }
 
 .button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px var(--glow-amber);
+  box-shadow: 0 8px 30px var(--glow-violet);
 }
 
 .button:active {
@@ -202,9 +202,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .button-secondary:hover {
-  border-color: var(--spark-amber);
-  color: var(--spark-amber);
-  box-shadow: 0 4px 20px rgba(247, 147, 26, 0.15);
+  border-color: var(--spark-violet);
+  color: var(--spark-violet);
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.15);
 }
 
 .button-ghost {
@@ -271,8 +271,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .action-button-scan:hover {
   background: rgba(255, 255, 255, 0.15);
-  border-color: var(--spark-amber);
-  box-shadow: 0 4px 20px rgba(247, 147, 26, 0.2);
+  border-color: var(--spark-violet);
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2);
 }
 
 /* ============================================
@@ -295,8 +295,8 @@ textarea:focus,
 input:focus,
 select:focus {
   outline: none;
-  border-color: var(--spark-amber);
-  box-shadow: 0 0 0 3px rgba(247, 147, 26, 0.15);
+  border-color: var(--spark-violet);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
 }
 
 input::placeholder,

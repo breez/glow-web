@@ -155,7 +155,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
                         <select
                           value={feeType}
                           onChange={(e) => setFeeType(e.currentTarget.value as 'fixed' | 'rate' | 'networkRecommended')}
-                          className="min-w-[160px] bg-spark-surface border border-spark-border rounded-xl px-3 py-3 text-spark-text-primary text-sm focus:border-spark-amber focus:ring-2 focus:ring-spark-amber/20"
+                          className="min-w-[160px] bg-spark-surface border border-spark-border rounded-xl px-3 py-3 text-spark-text-primary text-sm focus:border-spark-violet focus:ring-2 focus:ring-spark-violet/20"
                           aria-label="Max fee type"
                         >
                           <option className="bg-spark-surface" value="fixed">Fixed (sats)</option>
@@ -232,7 +232,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
-                          className="w-5 h-5 rounded border-spark-border bg-spark-surface text-spark-amber focus:ring-spark-amber/20 focus:ring-2"
+                          className="w-5 h-5 rounded border-spark-border bg-spark-surface text-spark-violet focus:ring-spark-violet/20 focus:ring-2"
                           checked={preferSparkOverLightning}
                           onChange={(e) => setPreferSparkOverLightning(e.currentTarget.checked)}
                         />
@@ -254,7 +254,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
-                      className="w-5 h-5 mt-0.5 rounded border-spark-border bg-spark-surface text-spark-amber focus:ring-spark-amber/20 focus:ring-2"
+                      className="w-5 h-5 mt-0.5 rounded border-spark-border bg-spark-surface text-spark-violet focus:ring-spark-violet/20 focus:ring-2"
                       checked={sparkPrivateModeEnabled}
                       disabled={isLoadingUserSettings}
                       onChange={(e) => setSparkPrivateModeEnabled(e.currentTarget.checked)}

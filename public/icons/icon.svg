@@ -1,7 +1,7 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="512" height="512" rx="96" fill="#0a0a0f"/>
   <rect x="32" y="32" width="448" height="448" rx="80" fill="url(#gradient)"/>
-  <path d="M288 96L144 288h112l-32 128 144-192H256l32-128z" fill="#f7931a"/>
+  <path d="M288 96L144 288h112l-32 128 144-192H256l32-128z" fill="#8b5cf6"/>
   <defs>
     <linearGradient id="gradient" x1="32" y1="32" x2="480" y2="480" gradientUnits="userSpaceOnUse">
       <stop stop-color="#1a1a28"/>

@@ -61,7 +61,7 @@ const RestorePage: React.FC<RestorePageProps> = ({
           <textarea
             value={mnemonic}
             onChange={(e) => setMnemonic(e.target.value)}
-            className="w-full h-36 px-4 py-3 text-spark-text-primary bg-spark-dark border border-spark-border rounded-xl focus:border-spark-amber focus:ring-2 focus:ring-spark-amber/20 resize-none font-mono text-sm"
+            className="w-full h-36 px-4 py-3 text-spark-text-primary bg-spark-dark border border-spark-border rounded-xl focus:border-spark-violet focus:ring-2 focus:ring-spark-violet/20 resize-none font-mono text-sm"
             placeholder="word1 word2 word3 ..."
           />
         </div>
