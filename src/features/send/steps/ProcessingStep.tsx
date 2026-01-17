@@ -43,7 +43,7 @@ const ProcessingStep: React.FC = () => {
 
       {/* Text */}
       <h3 className="font-display text-xl font-semibold text-spark-text-primary mb-2">
-        Sending Payment
+        Sending...
       </h3>
       <p className="text-spark-text-secondary text-sm text-center max-w-xs">
         Please wait while we process your transaction...
