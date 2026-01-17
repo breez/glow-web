@@ -534,6 +534,10 @@ select {
   to { transform: translateY(0); }
 }
 
+.animate-slide-up {
+  animation: slideUp 0.25s ease-out forwards;
+}
+
 .slide-down {
   animation: slideDown 0.2s ease-in forwards;
 }

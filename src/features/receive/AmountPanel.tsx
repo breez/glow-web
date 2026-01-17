@@ -1,6 +1,6 @@
 import React from 'react';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { FormGroup, FormInput, FormError, PrimaryButton } from '../../components/ui';
+import { FormError, PrimaryButton } from '../../components/ui';
 
 interface AmountPanelProps {
   isOpen: boolean;
@@ -15,6 +15,12 @@ interface AmountPanelProps {
   onClose: () => void;
 }
 
+const formatWithSpaces = (num: number): string => {
+  return num.toLocaleString('en-US').replace(/,/g, '\u2009');
+};
+
+const QUICK_AMOUNTS = [100, 1000, 10000, 100000];
+
 const AmountPanel: React.FC<AmountPanelProps> = ({
   isOpen,
   amount,
@@ -27,65 +33,117 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   onCreateInvoice,
   onClose,
 }) => {
-  return (
-    <div className="relative">
-      <div
-        className={`fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-600 transition-transform duration-300 ease-in-out z-40 shadow-lg ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
-        style={{ height: 'calc(100vh - 200px)', maxHeight: '400px' }}
-      >
-        <div className="p-6 h-full flex flex-col">
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="text-lg font-medium text-[rgb(var(--text-white))]">Create Invoice</h4>
-            <button onClick={onClose} className="text-[rgb(var(--text-white))] opacity-75 hover:opacity-100 p-1">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
+  if (!isOpen) return null;
 
-          <div className="flex-1 overflow-y-auto">
-            <FormGroup>
-              <FormGroup className="pt-2">
+  return (
+    <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/60 z-40 transition-opacity"
+        onClick={onClose}
+      />
+      
+      {/* Panel */}
+      <div className="fixed inset-x-0 bottom-0 z-50 animate-slide-up">
+        <div className="bg-spark-surface border-t border-spark-border rounded-t-3xl shadow-glass-lg">
+          {/* Handle */}
+          <div className="flex justify-center pt-3 pb-2">
+            <div className="w-10 h-1 rounded-full bg-spark-border-light" />
+          </div>
+          
+          <div className="px-6 pb-8">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-spark-primary/20 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
+                  </svg>
+                </div>
                 <div>
-                  <FormInput
-                    id="amount"
+                  <h3 className="font-display font-semibold text-spark-text-primary">Create Invoice</h3>
+                  <p className="text-spark-text-muted text-xs">Request a specific amount</p>
+                </div>
+              </div>
+              <button 
+                onClick={onClose} 
+                className="p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Amount Input */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-spark-text-secondary text-sm font-medium mb-2">Amount</label>
+                <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary focus-within:ring-2 focus-within:ring-spark-primary/20 transition-all">
+                  <input
                     type="number"
                     min={limits.min}
                     max={limits.max}
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Amount in sats"
+                    placeholder="0"
                     disabled={isLoading}
+                    className="flex-1 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none"
                   />
+                  <span className="px-4 py-3 text-spark-text-muted font-medium text-sm">sats</span>
                 </div>
+              </div>
 
-                <div>
-                  <FormInput
-                    id="description"
-                    type="text"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Description (optional)"
+              {/* Quick amount buttons */}
+              <div className="flex gap-2">
+                {QUICK_AMOUNTS.map((quickAmount) => (
+                  <button
+                    key={quickAmount}
+                    onClick={() => setAmount(quickAmount.toString())}
                     disabled={isLoading}
-                  />
-                </div>
+                    className={`
+                      flex-1 py-2 rounded-lg text-sm font-mono font-medium transition-all
+                      ${amount === quickAmount.toString()
+                        ? 'bg-spark-primary text-black'
+                        : 'bg-spark-elevated border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+                      }
+                    `}
+                  >
+                    {formatWithSpaces(quickAmount)}
+                  </button>
+                ))}
+              </div>
 
-                <FormError error={error} />
-              </FormGroup>
-            </FormGroup>
-          </div>
+              {/* Description */}
+              <div>
+                <label className="block text-spark-text-secondary text-sm font-medium mb-2">Description (optional)</label>
+                <input
+                  type="text"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What's this for?"
+                  disabled={isLoading}
+                  className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 focus:outline-none transition-all"
+                />
+              </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-600">
-            <PrimaryButton onClick={onCreateInvoice} disabled={isLoading} className="w-full">
-              {isLoading ? <LoadingSpinner text="Generating invoice..." size="small" /> : 'Generate'}
-            </PrimaryButton>
+              <FormError error={error} />
+            </div>
+
+            {/* Generate Button */}
+            <div className="mt-6">
+              <PrimaryButton 
+                onClick={onCreateInvoice} 
+                disabled={isLoading || !amount} 
+                className="w-full"
+              >
+                {isLoading ? <LoadingSpinner size="small" /> : 'Generate Invoice'}
+              </PrimaryButton>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Backdrop overlay when panel is open */}
-      {isOpen && <div className="fixed inset-0 bg-black bg-opacity-30 z-30" onClick={onClose} />}
-    </div>
+    </>
   );
 };
 
