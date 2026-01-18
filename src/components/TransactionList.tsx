@@ -138,25 +138,24 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
                 </div>
                 <div className="flex items-center gap-1 text-xs text-spark-text-muted mt-0.5">
                   <span>{formatTimeAgo(tx.timestamp)}</span>
+                  {tx.fees > 0 && !isFailed && (
+                    <>
+                      <span>·</span>
+                      <span>fee {formatWithSpaces(Number(tx.fees))}</span>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* Amount and fee - right aligned */}
-              <div className="text-right flex-shrink-0">
-                <span className={`
-                  font-mono font-semibold text-[15px] block
-                  ${isFailed ? 'text-spark-text-muted line-through' : ''}
-                  ${!isFailed && isReceive ? 'text-spark-success' : ''}
-                  ${!isFailed && !isReceive ? 'text-spark-electric' : ''}
-                `}>
-                  {isReceive ? '+' : '-'}{formatWithSpaces(Number(tx.amount))}
-                </span>
-                {tx.fees > 0 && !isFailed && (
-                  <span className="text-[11px] text-spark-text-muted">
-                    Fee: {formatWithSpaces(Number(tx.fees))}
-                  </span>
-                )}
-              </div>
+              {/* Amount - right aligned */}
+              <span className={`
+                font-mono font-semibold text-[15px] flex-shrink-0
+                ${isFailed ? 'text-spark-text-muted line-through' : ''}
+                ${!isFailed && isReceive ? 'text-spark-success' : ''}
+                ${!isFailed && !isReceive ? 'text-spark-electric' : ''}
+              `}>
+                {isReceive ? '+' : '-'}{formatWithSpaces(Number(tx.amount))}
+              </span>
             </li>
           );
         })}

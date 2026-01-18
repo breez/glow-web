@@ -104,18 +104,24 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             </span>
           </div>
 
-          {/* Lightning bolt decoration with fading lines */}
-          <div className="flex items-center justify-center gap-2 mt-3">
-            {/* Left fading line */}
-            <div className="w-10 h-[2px] rounded-full bg-gradient-to-l from-spark-primary/70 to-transparent" />
+          {/* Lightning bolt decoration with lines */}
+          <div className="flex items-center justify-center gap-3 mt-3">
+            {/* Left line - fades left */}
+            <div className="w-8 h-0.5 bg-spark-primary" style={{ 
+              maskImage: 'linear-gradient(to right, transparent, black)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent, black)'
+            }} />
             
             {/* Lightning bolt */}
-            <svg className="w-5 h-5 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="w-4 h-4 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
               <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
             </svg>
             
-            {/* Right fading line */}
-            <div className="w-10 h-[2px] rounded-full bg-gradient-to-r from-spark-primary/70 to-transparent" />
+            {/* Right line - fades right */}
+            <div className="w-8 h-0.5 bg-spark-primary" style={{ 
+              maskImage: 'linear-gradient(to left, transparent, black)',
+              WebkitMaskImage: 'linear-gradient(to left, transparent, black)'
+            }} />
           </div>
         </div>
 
