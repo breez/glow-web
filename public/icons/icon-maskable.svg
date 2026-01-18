@@ -8,43 +8,40 @@
       <stop offset="100%" stop-color="#92400e"/>
     </radialGradient>
     <radialGradient id="halo" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#fcd34d" stop-opacity="0.5"/>
-      <stop offset="50%" stop-color="#d4a574" stop-opacity="0.2"/>
+      <stop offset="0%" stop-color="#fcd34d" stop-opacity="0.6"/>
+      <stop offset="40%" stop-color="#d4a574" stop-opacity="0.25"/>
       <stop offset="100%" stop-color="#000" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="ray" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#fcd34d" stop-opacity="0"/>
-      <stop offset="40%" stop-color="#fcd34d" stop-opacity="0.7"/>
+      <stop offset="35%" stop-color="#fcd34d" stop-opacity="0.9"/>
       <stop offset="100%" stop-color="#d4a574" stop-opacity="0"/>
     </linearGradient>
-    <filter id="softBlur" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="6"/>
-    </filter>
     <filter id="coreGlow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="4"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5"/>
     </filter>
   </defs>
   
   <!-- Full bleed background for maskable -->
   <rect width="512" height="512" fill="#0a0a0f"/>
   
-  <!-- Scaled content for safe zone (70%) -->
-  <g transform="translate(256,256) scale(0.6) translate(-256,-256)">
-    <circle cx="256" cy="256" r="150" fill="url(#halo)" filter="url(#softBlur)"/>
+  <!-- Scaled content for safe zone (55%) -->
+  <g transform="translate(256,256) scale(0.55) translate(-256,-256)">
+    <circle cx="256" cy="256" r="180" fill="url(#halo)"/>
     
-    <g opacity="0.8">
-      <ellipse cx="256" cy="130" rx="3.5" ry="90" fill="url(#ray)" transform="rotate(0 256 256)"/>
-      <ellipse cx="256" cy="130" rx="3.5" ry="90" fill="url(#ray)" transform="rotate(45 256 256)"/>
-      <ellipse cx="256" cy="130" rx="3.5" ry="90" fill="url(#ray)" transform="rotate(90 256 256)"/>
-      <ellipse cx="256" cy="130" rx="3.5" ry="90" fill="url(#ray)" transform="rotate(135 256 256)"/>
-      <ellipse cx="256" cy="130" rx="3.5" ry="90" fill="url(#ray)" transform="rotate(180 256 256)"/>
-      <ellipse cx="256" cy="130" rx="3.5" ry="90" fill="url(#ray)" transform="rotate(225 256 256)"/>
-      <ellipse cx="256" cy="130" rx="3.5" ry="90" fill="url(#ray)" transform="rotate(270 256 256)"/>
-      <ellipse cx="256" cy="130" rx="3.5" ry="90" fill="url(#ray)" transform="rotate(315 256 256)"/>
+    <g opacity="0.9">
+      <ellipse cx="256" cy="110" rx="5" ry="110" fill="url(#ray)" transform="rotate(0 256 256)"/>
+      <ellipse cx="256" cy="110" rx="5" ry="110" fill="url(#ray)" transform="rotate(45 256 256)"/>
+      <ellipse cx="256" cy="110" rx="5" ry="110" fill="url(#ray)" transform="rotate(90 256 256)"/>
+      <ellipse cx="256" cy="110" rx="5" ry="110" fill="url(#ray)" transform="rotate(135 256 256)"/>
+      <ellipse cx="256" cy="110" rx="5" ry="110" fill="url(#ray)" transform="rotate(180 256 256)"/>
+      <ellipse cx="256" cy="110" rx="5" ry="110" fill="url(#ray)" transform="rotate(225 256 256)"/>
+      <ellipse cx="256" cy="110" rx="5" ry="110" fill="url(#ray)" transform="rotate(270 256 256)"/>
+      <ellipse cx="256" cy="110" rx="5" ry="110" fill="url(#ray)" transform="rotate(315 256 256)"/>
     </g>
     
-    <circle cx="256" cy="256" r="70" fill="#fcd34d" opacity="0.4" filter="url(#coreGlow)"/>
-    <circle cx="256" cy="256" r="50" fill="url(#core)"/>
-    <circle cx="256" cy="256" r="20" fill="#ffffff"/>
+    <circle cx="256" cy="256" r="90" fill="#fcd34d" opacity="0.5" filter="url(#coreGlow)"/>
+    <circle cx="256" cy="256" r="65" fill="url(#core)"/>
+    <circle cx="256" cy="256" r="28" fill="#ffffff"/>
   </g>
 </svg>
