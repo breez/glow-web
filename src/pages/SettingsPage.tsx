@@ -24,7 +24,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
   const [syncIntervalSecs, setSyncIntervalSecs] = useState<string>('');
   const [lnurlDomain, setLnurlDomain] = useState<string>('');
   const [preferSparkOverLightning, setPreferSparkOverLightning] = useState<boolean>(false);
-  const [sparkPrivateModeEnabled, setSparkPrivateModeEnabled] = useState<boolean>(false);
+  const [sparkPrivateModeEnabled, setSparkPrivateModeEnabled] = useState<boolean>(true);
   const [isLoadingUserSettings, setIsLoadingUserSettings] = useState<boolean>(true);
 
   useEffect(() => {
@@ -71,7 +71,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
       try {
         setIsLoadingUserSettings(true);
         const us = await wallet.getUserSettings();
-        setSparkPrivateModeEnabled(!!us.sparkPrivateModeEnabled);
+        setSparkPrivateModeEnabled(us.sparkPrivateModeEnabled !== false);
       } catch (e) {
         console.warn('Failed to load user settings from SDK:', e);
       } finally {
