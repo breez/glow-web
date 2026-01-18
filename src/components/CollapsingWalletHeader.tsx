@@ -104,22 +104,18 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             </span>
           </div>
 
-          {/* Lightning bolt decoration with >< chevrons */}
-          <div className="flex items-center justify-center gap-2 mt-2">
-            {/* Left chevron > */}
-            <svg className="w-3 h-3 text-spark-primary/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
+          {/* Lightning bolt decoration with fading lines */}
+          <div className="flex items-center justify-center gap-3 mt-3">
+            {/* Left fading line */}
+            <div className="w-12 h-[1px] bg-gradient-to-r from-transparent via-spark-primary/40 to-spark-primary/60" />
             
             {/* Lightning bolt */}
-            <svg className="w-5 h-5 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="w-4 h-4 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
               <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
             </svg>
             
-            {/* Right chevron < */}
-            <svg className="w-3 h-3 text-spark-primary/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
+            {/* Right fading line */}
+            <div className="w-12 h-[1px] bg-gradient-to-l from-transparent via-spark-primary/40 to-spark-primary/60" />
           </div>
         </div>
 

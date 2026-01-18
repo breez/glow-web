@@ -151,10 +151,10 @@ h1, h2, h3, h4, h5, h6 {
 
 .balance-label {
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  font-weight: 600;
-  font-size: 1.25rem;
-  color: var(--spark-text-secondary);
-  letter-spacing: 0.15em;
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: var(--spark-text-muted);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -164,13 +164,13 @@ h1, h2, h3, h4, h5, h6 {
 
 .button {
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  font-weight: 700;
+  font-weight: 600;
   padding: 14px 28px;
   border-radius: 14px;
   background: linear-gradient(135deg, var(--spark-primary) 0%, var(--spark-primary-light) 100%);
   color: #000;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.04em;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 20px var(--glow-primary);
   border: none;
@@ -227,9 +227,9 @@ h1, h2, h3, h4, h5, h6 {
   padding: 14px 32px;
   border-radius: 50px;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: normal;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   border: none;

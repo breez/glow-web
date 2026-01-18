@@ -1,5 +1,5 @@
 // Glow Service Worker
-const CACHE_NAME = 'glow-v4';
+const CACHE_NAME = 'glow-v5';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
