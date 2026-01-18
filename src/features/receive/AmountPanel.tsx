@@ -102,10 +102,10 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                     onClick={() => setAmount(quickAmount.toString())}
                     disabled={isLoading}
                     className={`
-                      flex-1 py-2.5 rounded-xl text-sm font-mono font-medium transition-all
+                      flex-1 py-2 rounded-lg text-sm font-mono font-medium transition-all
                       ${amount === quickAmount.toString()
-                        ? 'bg-spark-primary text-white'
-                        : 'text-spark-text-secondary hover:text-spark-text-primary'
+                        ? 'bg-spark-primary text-black'
+                        : 'bg-spark-elevated border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
                       }
                     `}
                   >
