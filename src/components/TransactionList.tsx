@@ -108,9 +108,10 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
 
   return (
     <div className="px-4 py-3 relative">
-      {/* Background glow for list */}
+      {/* Background glow for list - more visible */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[300px] h-[200px] bg-gradient-radial from-spark-primary/10 via-spark-primary/5 to-transparent blur-3xl opacity-60" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-gradient-radial from-spark-primary/20 via-spark-primary/8 to-transparent blur-2xl" />
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[250px] h-[150px] bg-gradient-radial from-amber-500/15 to-transparent blur-3xl" />
       </div>
       
       {/* Section header */}
