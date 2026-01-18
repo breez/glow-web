@@ -30,7 +30,9 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
     description: false,
     comment: false,
     message: false,
-    url: false
+    url: false,
+    lnAddress: false,
+    lnurlDomain: false
   });
 
   // Format date and time
@@ -100,17 +102,35 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
             )}
 
             {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo?.lnAddress && (
-              <PaymentInfoRow
-                label="Lightning Address"
-                value={payment.details.lnurlPayInfo.lnAddress}
-              />
+              payment.details.lnurlPayInfo.lnAddress.length > LONG_TEXT_THRESHOLD ? (
+                <CollapsibleCodeField
+                  label="Lightning Address"
+                  value={payment.details.lnurlPayInfo.lnAddress}
+                  isVisible={visibleFields.lnAddress}
+                  onToggle={() => toggleField('lnAddress')}
+                />
+              ) : (
+                <PaymentInfoRow
+                  label="Lightning Address"
+                  value={payment.details.lnurlPayInfo.lnAddress}
+                />
+              )
             )}
 
             {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo && !payment.details.lnurlPayInfo.lnAddress && payment.details.lnurlPayInfo.domain && (
-              <PaymentInfoRow
-                label="LNURL Payment"
-                value={payment.details.lnurlPayInfo.domain}
-              />
+              payment.details.lnurlPayInfo.domain.length > LONG_TEXT_THRESHOLD ? (
+                <CollapsibleCodeField
+                  label="LNURL Payment"
+                  value={payment.details.lnurlPayInfo.domain}
+                  isVisible={visibleFields.lnurlDomain}
+                  onToggle={() => toggleField('lnurlDomain')}
+                />
+              ) : (
+                <PaymentInfoRow
+                  label="LNURL Payment"
+                  value={payment.details.lnurlPayInfo.domain}
+                />
+              )
             )}
 
             {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo?.comment && (
