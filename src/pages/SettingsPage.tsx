@@ -189,7 +189,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
                   <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
                     <h3 className="font-display font-semibold text-spark-text-primary mb-3">Network</h3>
                     <div className="flex gap-2">
-                      {(['mainnet', 'testnet', 'regtest'] as Network[]).map((network) => (
+                      {(['mainnet', 'regtest'] as Network[]).map((network) => (
                         <button
                           key={network}
                           onClick={() => handleNetworkChange(network)}
@@ -199,7 +199,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
                               : 'bg-spark-surface border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
                           }`}
                         >
-                          {network === 'mainnet' ? 'Mainnet' : network === 'testnet' ? 'Testnet' : 'Regtest'}
+                          {network === 'mainnet' ? 'Mainnet' : 'Regtest'}
                         </button>
                       ))}
                     </div>
