@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { LnurlPayRequestDetails, PrepareLnurlPayRequest, PrepareLnurlPayResponse } from '@breeztech/breez-sdk-spark';
 import type { PaymentStep } from '../../../types/domain';
-import { FormError, PrimaryButton } from '../../../components/ui';
+import { FormError, PrimaryButton, SecondaryButton } from '../../../components/ui';
 import ConfirmStep from '../steps/ConfirmStep';
 
 interface LnurlWorkflowProps {
@@ -164,13 +164,9 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, onBack, onRun, on
 
       {/* Action buttons */}
       <div className="flex gap-3 pt-2">
-        <button
-          onClick={onBack}
-          disabled={isLoading}
-          className="flex-1 py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50"
-        >
+        <SecondaryButton onClick={onBack} disabled={isLoading} className="flex-1">
           Back
-        </button>
+        </SecondaryButton>
         <PrimaryButton onClick={onAmountNext} disabled={isLoading || !amount} className="flex-1">
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">

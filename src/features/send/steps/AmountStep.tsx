@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FormError, PrimaryButton } from '../../../components/ui';
+import { FormError, PrimaryButton, SecondaryButton } from '../../../components/ui';
 
 export interface AmountStepProps {
   paymentInput: string;
@@ -76,13 +76,9 @@ const AmountStep: React.FC<AmountStepProps> = ({
 
       {/* Action buttons */}
       <div className="flex gap-3 pt-2">
-        <button
-          onClick={onBack}
-          disabled={isLoading}
-          className="flex-1 py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50"
-        >
+        <SecondaryButton onClick={onBack} disabled={isLoading} className="flex-1">
           Back
-        </button>
+        </SecondaryButton>
         <PrimaryButton
           onClick={() => validAmount && onNext(parseInt(localAmount))}
           disabled={isLoading || !validAmount}

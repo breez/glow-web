@@ -1,7 +1,7 @@
 import React from 'react';
 import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { QRCodeContainer, PrimaryButton, FormError, CopyableText } from '../../components/ui';
+import { QRCodeContainer, PrimaryButton, SecondaryButton, FormError, CopyableText, TextButton } from '../../components/ui';
 import { useToast } from '../../contexts/ToastContext';
 
 export interface LightningAddressDisplayProps {
@@ -104,12 +104,9 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
 
         {/* Action buttons */}
         <div className="flex gap-3 justify-center pt-2">
-          <button
-            onClick={onCancel}
-            className="flex-1 px-4 py-3 text-spark-text-secondary border border-spark-border rounded-xl font-medium hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
-          >
+          <SecondaryButton onClick={onCancel} className="flex-1">
             Cancel
-          </button>
+          </SecondaryButton>
           <PrimaryButton 
             onClick={onSave} 
             disabled={isLoading || !editValue.trim()}
@@ -137,12 +134,9 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
           additionalActions={<EditButton onClick={onEdit} />}
         />
 
-        <button
-          onClick={onCustomizeAmount}
-          className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors mt-2"
-        >
+        <TextButton onClick={onCustomizeAmount} className="mt-2">
           Create invoice with specific amount →
-        </button>
+        </TextButton>
       </div>
     </div>
   );

@@ -190,7 +190,20 @@ export const SecondaryButton: React.FC<{
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`px-4 py-3 font-display font-semibold text-spark-text-secondary hover:text-spark-text-primary transition-colors rounded-xl hover:bg-white/5 ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+    className={`py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50 ${className}`}
+  >
+    {children}
+  </button>
+);
+
+export const TextButton: React.FC<{
+  onClick: () => void;
+  children: ReactNode;
+  className?: string;
+}> = ({ onClick, children, className = "" }) => (
+  <button
+    onClick={onClick}
+    className={`text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors ${className}`}
   >
     {children}
   </button>

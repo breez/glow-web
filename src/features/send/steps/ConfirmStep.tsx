@@ -1,5 +1,5 @@
 import React from 'react';
-import { PrimaryButton, FormError } from '../../../components/ui';
+import { PrimaryButton, SecondaryButton, FormError } from '../../../components/ui';
 
 // Format number with space as thousand separator
 const formatWithSpaces = (num: number): string => {
@@ -85,13 +85,9 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, error, i
       {/* Action buttons */}
       <div className="flex gap-3">
         {onBack && (
-          <button
-            onClick={onBack}
-            disabled={isLoading}
-            className="flex-1 py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50"
-          >
+          <SecondaryButton onClick={onBack} disabled={isLoading} className="flex-1">
             Back
-          </button>
+          </SecondaryButton>
         )}
         <PrimaryButton
           onClick={onConfirm}
