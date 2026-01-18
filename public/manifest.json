@@ -28,22 +28,7 @@
       "type": "image/svg+xml"
     }
   ],
-  "shortcuts": [
-    {
-      "name": "Send Payment",
-      "short_name": "Send",
-      "description": "Send a Lightning payment",
-      "url": "/?action=send",
-      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
-    },
-    {
-      "name": "Receive Payment",
-      "short_name": "Receive",
-      "description": "Receive a Lightning payment",
-      "url": "/?action=receive",
-      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
-    }
-  ],
+  "shortcuts": [],
   "related_applications": [],
   "prefer_related_applications": false
 }
