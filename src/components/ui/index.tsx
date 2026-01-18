@@ -1,13 +1,16 @@
-import React, { ReactNode, forwardRef } from 'react';
+import React, { ReactNode, forwardRef, useState, useRef } from 'react';
 import QRCode from 'react-qr-code';
 import { Transition } from '@headlessui/react';
 
-// Dialog Components
+// ============================================
+// DIALOG COMPONENTS
+// ============================================
+
 export const DialogContainer: React.FC<{
   children: ReactNode;
   className?: string;
 }> = ({ children, className = "" }) => (
-  <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 transition-opacity duration-300 ${className}`}>
+  <div className={`fixed inset-0 bg-spark-void/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300 ${className}`}>
     {children}
   </div>
 );
@@ -20,14 +23,13 @@ interface DialogCardProps {
 
 export const DialogCard = forwardRef<HTMLDivElement, DialogCardProps>(
   ({ children, className = "", maxWidth = "md" }, ref) => {
-    // Map string sizes to actual pixel values
     const maxWidthMap: Record<string, string> = {
-      'sm': 'max-w-sm', // 384px
-      'md': 'max-w-md', // 448px
-      'lg': 'max-w-lg', // 512px
-      'xl': 'max-w-xl', // 576px
-      '2xl': 'max-w-2xl', // 672px
-      'full': 'max-w-full' // 100%
+      'sm': 'max-w-sm',
+      'md': 'max-w-md',
+      'lg': 'max-w-lg',
+      'xl': 'max-w-xl',
+      '2xl': 'max-w-2xl',
+      'full': 'max-w-full'
     };
 
     const widthClass = maxWidthMap[maxWidth] || 'max-w-md';
@@ -35,7 +37,7 @@ export const DialogCard = forwardRef<HTMLDivElement, DialogCardProps>(
     return (
       <div
         ref={ref}
-        className={`card w-full ${widthClass} overflow-hidden relative ${className}`}
+        className={`glass-card w-full ${widthClass} overflow-hidden relative p-6 ${className}`}
       >
         {children}
       </div>
@@ -48,19 +50,28 @@ DialogCard.displayName = 'DialogCard';
 export const DialogHeader: React.FC<{
   title: string;
   onClose: () => void;
-}> = ({ title, onClose }) => (
-  <div className="flex justify-center items-center mb-4 relative">
-    <h2 className="text-xl font-bold text-[rgb(var(--text-white))]">{title}</h2>
+  icon?: ReactNode;
+}> = ({ title, onClose, icon }) => (
+  <div className="flex justify-center items-center mb-5 relative">
+    <div className="flex items-center gap-2">
+      {icon && <span className="text-spark-primary">{icon}</span>}
+      <h2 className="font-display text-lg font-bold text-spark-text-primary">{title}</h2>
+    </div>
     <button
       onClick={onClose}
-      className="right-0 top-0 absolute text-[rgb(var(--text-white))] hover:text-[rgb(var(--accent-red))] text-2xl"
+      className="absolute right-0 top-1/2 -translate-y-1/2 p-2 -mr-2 text-spark-text-muted hover:text-spark-error transition-colors rounded-lg hover:bg-white/5"
     >
-      &times;
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
     </button>
   </div>
 );
 
-// Form Components
+// ============================================
+// FORM COMPONENTS
+// ============================================
+
 export const FormGroup: React.FC<{
   children: ReactNode;
   className?: string;
@@ -74,7 +85,7 @@ export const FormLabel: React.FC<{
   htmlFor: string;
   children: ReactNode;
 }> = ({ htmlFor, children }) => (
-  <label htmlFor={htmlFor} className="block text-sm font-medium text-[rgb(var(--text-white))]">
+  <label htmlFor={htmlFor} className="block text-sm font-medium text-spark-text-secondary mb-1">
     {children}
   </label>
 );
@@ -82,7 +93,7 @@ export const FormLabel: React.FC<{
 export const FormDescription: React.FC<{
   children: ReactNode;
 }> = ({ children }) => (
-  <p className="text-sm text-[rgb(var(--text-white))] opacity-70">
+  <p className="text-sm text-spark-text-muted">
     {children}
   </p>
 );
@@ -103,7 +114,7 @@ export const FormInput: React.FC<{
     type={type}
     value={value}
     onChange={onChange}
-    className={`w-full px-3 py-2 mt-1 ${className}`}
+    className={`w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
     placeholder={placeholder}
     min={min}
     max={max}
@@ -122,7 +133,7 @@ export const FormTextarea: React.FC<{
   <textarea
     value={value}
     onChange={onChange}
-    className={`w-full px-3 py-2 resize-none ${className}`}
+    className={`w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all resize-none ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
     placeholder={placeholder}
     disabled={disabled}
     rows={rows}
@@ -134,21 +145,27 @@ export const FormError: React.FC<{
 }> = ({ error }) => {
   if (!error) return null;
   return (
-    <p className="text-[rgb(var(--accent-red))] text-sm mt-1">
-      {error}
-    </p>
+    <div className="flex items-center gap-2 text-spark-error text-sm mt-2">
+      <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+      </svg>
+      <span>{error}</span>
+    </div>
   );
 };
 
 export const FormHint: React.FC<{
   children: ReactNode;
 }> = ({ children }) => (
-  <p className="text-xs mt-1 text-[rgb(var(--text-white))] opacity-70">
+  <p className="text-xs mt-1.5 text-spark-text-muted">
     {children}
   </p>
 );
 
-// Button Components
+// ============================================
+// BUTTON COMPONENTS
+// ============================================
+
 export const PrimaryButton: React.FC<{
   onClick: () => void;
   disabled?: boolean;
@@ -173,18 +190,34 @@ export const SecondaryButton: React.FC<{
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`px-4 py-2 text-[rgb(var(--text-white))] hover:underline ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+    className={`py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50 ${className}`}
   >
     {children}
   </button>
 );
 
-// Payment Information Components
+export const TextButton: React.FC<{
+  onClick: () => void;
+  children: ReactNode;
+  className?: string;
+}> = ({ onClick, children, className = "" }) => (
+  <button
+    onClick={onClick}
+    className={`text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors ${className}`}
+  >
+    {children}
+  </button>
+);
+
+// ============================================
+// PAYMENT INFO COMPONENTS
+// ============================================
+
 export const PaymentInfoCard: React.FC<{
   children: ReactNode;
   className?: string;
 }> = ({ children, className = "" }) => (
-  <div className={`bg-[rgb(var(--card-border))] p-4 rounded-lg space-y-6 ${className}`}>
+  <div className={`bg-spark-dark/50 border border-spark-border rounded-2xl p-5 space-y-4 ${className}`}>
     {children}
   </div>
 );
@@ -193,52 +226,68 @@ export const PaymentInfoRow: React.FC<{
   label: string;
   value: string | number;
   isBold?: boolean;
-}> = ({ label, value, isBold = false }) => (
-  <div className="flex justify-between">
-    <span className={`text-[rgb(var(--text-white))] ${isBold ? 'font-bold' : ''}`}>{label}:</span>
-    <span className={`text-[rgb(var(--text-white))] ${isBold ? 'font-bold' : 'font-medium'}`}>
+  icon?: ReactNode;
+  iconBgColor?: string;
+  valueColor?: string;
+  className?: string;
+}> = ({ label, value, isBold = false, icon, iconBgColor, valueColor = 'text-spark-text-primary', className = '' }) => (
+  <div className={`flex items-center justify-between py-2 ${className}`}>
+    <div className="flex items-center gap-3">
+      {icon && (
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBgColor || ''}`}>
+          {icon}
+        </div>
+      )}
+      <span className="text-spark-text-secondary text-sm">{label}</span>
+    </div>
+    <span className={`font-mono text-sm ${isBold ? 'font-bold' : 'font-medium'} ${valueColor}`}>
       {value}
     </span>
   </div>
 );
 
 export const PaymentInfoDivider: React.FC = () => (
-  <div className="border-t border-[rgba(255,255,255,0.1)] my-2"></div>
+  <div className="border-t border-spark-border/50 my-1" />
 );
 
-// Add this new component for payment details sections
 export const PaymentDetailsSection: React.FC<{
   title: string;
   children: ReactNode;
   className?: string;
 }> = ({ title, children, className = "" }) => (
-  <div className={`space-y-3 mt-4 ${className}`}>
-    <h3 className="text-lg font-medium text-[rgb(var(--text-white))]">{title}</h3>
+  <div className={`space-y-3 mt-5 ${className}`}>
+    <h3 className="font-display text-base font-semibold text-spark-text-primary">{title}</h3>
     {children}
   </div>
 );
 
-// Also add this collapsible code field component
 export const CollapsibleCodeField: React.FC<{
   label: string;
   value: string;
   isVisible: boolean;
   onToggle: () => void;
 }> = ({ label, value, isVisible, onToggle }) => (
-  <div className="flex flex-col">
+  <div className="py-2">
     <div className="flex justify-between items-center">
-      <span className="text-[rgb(var(--text-white))]">{label}:</span>
+      <span className="text-spark-text-secondary text-sm">{label}</span>
       <button
         onClick={onToggle}
-        className="text-[rgb(var(--text-white))] text-sm hover:underline flex items-center"
+        className="text-spark-primary hover:text-spark-primary-light focus:outline-none focus:text-spark-primary active:text-spark-primary flex items-center transition-colors p-1"
       >
-        {isVisible ? 'Hide' : 'Show'}
-        <span className={`ml-1 transition-transform ${isVisible ? 'rotate-180' : ''}`}>▾</span>
+        <svg 
+          className={`w-5 h-5 transition-transform ${isVisible ? 'rotate-180' : ''}`} 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor" 
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
       </button>
     </div>
     {isVisible && (
-      <div className="bg-[rgb(var(--card-border))] p-2 rounded mt-1 overflow-x-auto">
-        <code className="text-[rgb(var(--text-white))] font-mono text-xs break-all">
+      <div className="bg-spark-dark border border-spark-border rounded-xl p-3 mt-2 overflow-x-auto">
+        <code className="text-spark-text-secondary font-mono text-xs break-all">
           {value}
         </code>
       </div>
@@ -246,16 +295,38 @@ export const CollapsibleCodeField: React.FC<{
   </div>
 );
 
-// Result Components
+// ============================================
+// RESULT COMPONENTS
+// ============================================
+
 export const ResultIcon: React.FC<{
   type: 'success' | 'failure';
 }> = ({ type }) => {
-  const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
-  const icon = type === 'success' ? '✓' : '✗';
+  const isSuccess = type === 'success';
 
   return (
-    <div className={`w-16 h-16 rounded-full ${bgColor} flex items-center justify-center text-white text-2xl`}>
-      {icon}
+    <div className={`
+      relative w-20 h-20 rounded-2xl flex items-center justify-center
+      ${isSuccess ? 'bg-spark-success/20' : 'bg-spark-error/20'}
+    `}>
+      {/* Glow effect */}
+      <div className={`
+        absolute inset-0 rounded-2xl blur-xl
+        ${isSuccess ? 'bg-spark-success/30' : 'bg-spark-error/30'}
+      `} />
+      
+      {/* Icon */}
+      <div className="relative z-10">
+        {isSuccess ? (
+          <svg className="w-10 h-10 text-spark-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        ) : (
+          <svg className="w-10 h-10 text-spark-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        )}
+      </div>
     </div>
   );
 };
@@ -265,84 +336,188 @@ export const ResultMessage: React.FC<{
   description?: string;
 }> = ({ title, description }) => (
   <>
-    <p className="mt-4 text-lg font-medium text-[rgb(var(--text-white))]">{title}</p>
+    <p className="mt-5 font-display text-xl font-bold text-spark-text-primary">{title}</p>
     {description && (
-      <p className="text-sm text-[rgb(var(--text-white))] opacity-70 mt-2">
+      <p className="text-sm text-spark-text-muted mt-2 max-w-xs text-center">
         {description}
       </p>
     )}
   </>
 );
 
-// QR Code Components
+// ============================================
+// QR CODE COMPONENTS
+// ============================================
+
 export const QRCodeContainer: React.FC<{
   value: string;
   size?: number;
   className?: string;
-}> = ({ value, size = 250, className = "" }) => (
-  <div className={`p-4 bg-white rounded-lg ${className}`}>
-    <QRCode value={value} size={size} />
+}> = ({ value, size = 200, className = "" }) => (
+  <div className={`relative ${className}`}>
+    {/* Decorative corners */}
+    <div className="absolute -inset-3 pointer-events-none">
+      <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-spark-primary/50 rounded-tl-lg" />
+      <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-spark-primary/50 rounded-tr-lg" />
+      <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-spark-primary/50 rounded-bl-lg" />
+      <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-spark-primary/50 rounded-br-lg" />
+    </div>
+    <div className="qr-container">
+      <QRCode value={value} size={size} />
+    </div>
   </div>
 );
 
 export const CopyableText: React.FC<{
   text: string;
-}> = ({ text }) => {
+  truncate?: boolean;
+  showShare?: boolean;
+  onCopied?: () => void;
+  onShareError?: () => void;
+  label?: string;
+  additionalActions?: ReactNode;
+  textColor?: string;
+}> = ({ text, truncate = false, showShare = false, onCopied, onShareError, label = 'Address', additionalActions, textColor = 'text-spark-text-muted' }) => {
   const [copied, setCopied] = React.useState(false);
+  const [canShare, setCanShare] = React.useState(false);
+
+  React.useEffect(() => {
+    setCanShare(typeof navigator !== 'undefined' && !!navigator.share);
+  }, []);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(text)
       .then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+        onCopied?.();
       })
       .catch(err => console.error('Failed to copy: ', err));
   };
 
+  const handleShare = async () => {
+    try {
+      await navigator.share({
+        title: label,
+        text: text,
+      });
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        onShareError?.();
+      }
+    }
+  };
+
+  // Truncate text for display if requested
+  const displayText = truncate && text.length > 24
+    ? `${text.slice(0, 12)}...${text.slice(-12)}`
+    : text;
+
   return (
-    <div className="relative w-full">
-      <input
-        type="text"
-        value={text}
-        readOnly
-        className="w-full px-3 py-2 pr-20 bg-[rgb(var(--card-border))] text-[rgb(var(--text-white))] rounded text-center"
-      />
+    <div className="flex flex-col items-center gap-4 w-full">
+      {/* Clickable text display */}
       <button
         onClick={handleCopy}
-        className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 text-sm bg-[var(--primary-blue)] text-white rounded hover:bg-[var(--secondary-blue)]"
+        className={`text-center font-mono text-xs sm:text-sm break-all hover:opacity-80 transition-opacity ${textColor}`}
+        title="Tap to copy"
       >
-        {copied ? 'Copied!' : 'Copy'}
+        {displayText}
       </button>
+      
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={handleCopy}
+          className={`
+            flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all
+            ${copied 
+              ? 'bg-spark-success/20 text-spark-success' 
+              : 'bg-spark-primary text-white hover:bg-spark-primary-light'
+            }
+          `}
+          title={`Copy ${label}`}
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M8 2a2 2 0 00-2 2v1H5a2 2 0 00-2 2v7a2 2 0 002 2h6a2 2 0 002-2v-1h1a2 2 0 002-2V6l-4-4H8zm6 6h-2a2 2 0 01-2-2V4H8v1h3a1 1 0 011 1v2h2v2z"/>
+          </svg>
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+        
+        {showShare && canShare && (
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-2 px-4 py-2 border border-spark-border text-spark-text-secondary rounded-xl font-medium text-sm hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
+            title={`Share ${label}`}
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
+            </svg>
+            Share
+          </button>
+        )}
+        
+        {additionalActions}
+      </div>
     </div>
   );
 };
 
-// Alert Components
+// ============================================
+// ALERT COMPONENTS
+// ============================================
+
 export const Alert: React.FC<{
   type: 'info' | 'warning' | 'success' | 'error';
   children: ReactNode;
   className?: string;
 }> = ({ type, children, className = "" }) => {
-  const colorMap = {
-    info: 'bg-blue-100 text-blue-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    success: 'bg-green-100 text-green-800',
-    error: 'bg-red-100 text-red-800',
+  const styles = {
+    info: 'bg-spark-electric/10 border-spark-electric/30 text-spark-electric-light',
+    warning: 'bg-spark-warning/10 border-spark-warning/30 text-spark-warning',
+    success: 'bg-spark-success/10 border-spark-success/30 text-spark-success',
+    error: 'bg-spark-error/10 border-spark-error/30 text-spark-error',
+  };
+
+  const icons = {
+    info: (
+      <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+      </svg>
+    ),
+    warning: (
+      <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l6.518 11.6c.75 1.336-.213 3.001-1.742 3.001H3.48c-1.53 0-2.492-1.665-1.742-3.001l6.52-11.6zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 01-1-1V7a1 1 0 112 0v3a1 1 0 01-1 1z" clipRule="evenodd" />
+      </svg>
+    ),
+    success: (
+      <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+      </svg>
+    ),
+    error: (
+      <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+      </svg>
+    ),
   };
 
   return (
-    <div className={`${colorMap[type]} p-3 rounded-md text-sm ${className}`}>
-      {children}
+    <div className={`flex items-start gap-3 p-4 rounded-xl border ${styles[type]} ${className}`}>
+      {icons[type]}
+      <div className="text-sm">{children}</div>
     </div>
   );
 };
 
-// Layout Components for Step-based Flows
+// ============================================
+// STEP-BASED FLOW COMPONENTS
+// ============================================
+
 export const StepContainer: React.FC<{
   children: ReactNode;
   className?: string;
 }> = ({ children, className = "" }) => (
-  <div className={`relative ${className}`} style={{ minHeight: '240px' }}>
+  <div className={`relative ${className}`} style={{ minHeight: '280px' }}>
     {children}
   </div>
 );
@@ -359,24 +534,52 @@ export const StepContent: React.FC<{
       : 'translate-x-full opacity-0';
 
   return (
-    <div className={`absolute inset-0 transform transition-all duration-300 ease-in-out ${transformClass}`}>
+    <div className={`absolute inset-0 transform transition-all duration-300 ease-out ${transformClass}`}>
       {children}
     </div>
   );
 };
 
-// Bottom Sheet Modal Components
+// ============================================
+// BOTTOM SHEET COMPONENTS
+// ============================================
+
 export const BottomSheetContainer: React.FC<{
   isOpen: boolean;
   children: ReactNode;
   className?: string;
   onClose?: () => void;
-}> = ({ isOpen, children, className = "" }) => {
+}> = ({ isOpen, children, className = "", onClose }) => {
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const startY = useRef(0);
+  const currentY = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startY.current = e.touches[0].clientY;
+    currentY.current = e.touches[0].clientY;
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    currentY.current = e.touches[0].clientY;
+    const diff = currentY.current - startY.current;
+    if (diff > 0) {
+      setDragY(diff);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    if (dragY > 100 && onClose) {
+      onClose();
+    }
+    setDragY(0);
+  };
 
   return (
     <Transition show={isOpen} as="div" className="absolute inset-0 z-50 overflow-hidden">
-
-      {/* Sheet container - slides up and down */}
       <Transition.Child
         as="div"
         enter="transform transition ease-out duration-300"
@@ -385,11 +588,11 @@ export const BottomSheetContainer: React.FC<{
         leave="transform transition ease-in duration-200"
         leaveFrom="translate-y-0"
         leaveTo="translate-y-full"
-        className={`mx-auto ${className}`}
-        style={{
-          height: "100%",
-          maxWidth: '100%',
-        }}
+        className={`mx-auto h-full max-w-full ${className}`}
+        style={{ transform: dragY > 0 ? `translateY(${dragY}px)` : undefined }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {children}
       </Transition.Child>
@@ -402,9 +605,13 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, DialogCardProps>(
     return (
       <div
         ref={ref}
-        className={`card w-full overflow-hidden relative rounded-t-xl shadow-xl ${className}`}
+        className={`bg-spark-surface border-t border-spark-border rounded-t-3xl shadow-glass-lg overflow-hidden w-full ${className}`}
       >
-        {children}
+        {/* Drag handle indicator */}
+        <div className="bottom-sheet-handle" />
+        <div className="px-6 pb-10 pt-3">
+          {children}
+        </div>
       </div>
     );
   }
@@ -412,7 +619,10 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, DialogCardProps>(
 
 BottomSheetCard.displayName = 'BottomSheetCard';
 
-// Tab Components
+// ============================================
+// TAB COMPONENTS
+// ============================================
+
 export const TabContainer: React.FC<{
   children: ReactNode;
   className?: string;
@@ -426,7 +636,7 @@ export const TabList: React.FC<{
   children: ReactNode;
   className?: string;
 }> = ({ children, className = "" }) => (
-  <div className={`flex border-b border-[rgb(var(--card-border))] ${className}`}>
+  <div className={`flex bg-spark-dark/50 rounded-xl p-1 ${className}`}>
     {children}
   </div>
 );
@@ -439,11 +649,14 @@ export const Tab: React.FC<{
 }> = ({ children, isActive, onClick, className = "" }) => (
   <button
     onClick={onClick}
-    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors duration-200 ${
-      isActive
-        ? 'text-[rgb(var(--primary-blue))] border-b-2 border-[rgb(var(--primary-blue))]'
-        : 'text-[rgb(var(--text-white))] opacity-70 hover:opacity-100'
-    } ${className}`}
+    className={`
+      flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-display font-semibold transition-all duration-200
+      ${isActive
+        ? 'bg-spark-primary text-white shadow-glow-primary'
+        : 'text-spark-text-muted hover:text-spark-text-primary hover:bg-white/5'
+      }
+      ${className}
+    `}
   >
     {children}
   </button>
@@ -459,23 +672,28 @@ export const TabPanel: React.FC<{
   </div>
 );
 
-// Loading Spinner Component
+// ============================================
+// LOADING SPINNER
+// ============================================
+
 export const LoadingSpinner: React.FC<{
   text?: string;
   size?: 'small' | 'medium' | 'large';
   className?: string;
 }> = ({ text, size = 'medium', className = "" }) => {
   const sizeClasses = {
-    small: 'w-4 h-4',
+    small: 'w-5 h-5',
     medium: 'w-8 h-8',
     large: 'w-12 h-12'
   };
 
   return (
     <div className={`flex flex-col items-center justify-center ${className}`}>
-      <div className={`${sizeClasses[size]} border-2 border-[rgb(var(--primary-blue))] border-t-transparent rounded-full animate-spin`}></div>
+      <div className="relative">
+        <div className={`${sizeClasses[size]} border-2 border-spark-border border-t-spark-primary rounded-full animate-spin`} />
+      </div>
       {text && (
-        <p className="mt-2 text-sm text-[rgb(var(--text-white))] opacity-70">{text}</p>
+        <p className="mt-3 text-sm text-spark-text-secondary">{text}</p>
       )}
     </div>
   );

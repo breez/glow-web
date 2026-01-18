@@ -2,81 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   GLOW - PREMIUM UI THEME
+   A distinctive, atmospheric Bitcoin wallet UI
+   ============================================ */
+
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-rgb: 10, 15, 30;
-  /* Darker outside frame background */
-  --primary-blue: #0051a3;
-  /* Primary blue for buttons and accents */
-  --secondary-blue: #007aff;
-  /* Secondary blue for hover states */
-  --text-white: #ffffff;
-  /* White font */
-  --card-bg: #0f1a3a;
-  /* Darker balance background */
-  --list-item-bg: #1a2e5a;
-  /* Lighter list item background */
-  --card-border: #2a3e6a;
-  /* Border color for cards */
-  --accent-green: #00ff00;
-  /* Accent green for positive values */
-  --accent-red: #ff0000;
-  /* Accent red for negative values */
+  /* ========================================
+     PRIMARY ACCENT - Change this one line!
+     ======================================== */
+  --spark-primary: #d4a574;           /* Soft Gold - warm, elegant, premium */
+  --spark-primary-light: #e8c9a8;
+  --glow-primary: rgba(212, 165, 116, 0.35);
+  
+  /* Core colors */
+  --spark-void: #0a0a0f;
+  --spark-dark: #0f0f18;
+  --spark-surface: #151520;
+  --spark-elevated: #1a1a28;
+  --spark-border: #252535;
+  --spark-border-light: #35354a;
+  
+  /* Secondary accents (for send/receive) */
+  --spark-electric: #00d4ff;
+  --spark-electric-light: #7df3ff;
+  
+  /* Semantic colors */
+  --spark-success: #10b981;
+  --spark-error: #ef4444;
+  --spark-warning: #d4a574;
+  
+  /* Text */
+  --spark-text-primary: #ffffff;
+  --spark-text-secondary: rgba(255, 255, 255, 0.7);
+  --spark-text-muted: rgba(255, 255, 255, 0.4);
+  
+  /* Glows */
+  --glow-electric: rgba(0, 212, 255, 0.3);
+  --glow-success: rgba(16, 185, 129, 0.4);
+  --glow-error: rgba(239, 68, 68, 0.4);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-rgb: 24, 24, 27;
-  }
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
-  font-family: 'Inter', sans-serif;
-  background: rgb(var(--background-rgb));
-  color: var(--text-white);
-}
-
-/* Custom scrollbar styles */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Dark mode scrollbar */
-@media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
-}
-
-/* Ensure footer stays at the bottom */
-html,
-body,
-#root {
-  height: 100%;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background: var(--spark-void);
+  color: var(--spark-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
@@ -84,178 +65,453 @@ body,
   flex-direction: column;
 }
 
-main {
-  flex: 1;
-  background-color: var(--card-bg);
+/* ============================================
+   ATMOSPHERIC BACKGROUND
+   ============================================ */
+
+.main-wrapper {
+  height: 100%;
+  background: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.15), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(247, 147, 26, 0.08), transparent),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(0, 212, 255, 0.06), transparent),
+    var(--spark-void);
+  position: relative;
 }
 
-/* Transition effects */
-.transition-all {
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-  transition-duration: 0.3s;
-  transition-timing-function: ease-out;
+/* Subtle grid overlay */
+.main-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
 }
 
-/* Add card styles */
+/* ============================================
+   GLASSMORPHISM CARDS
+   ============================================ */
+
+.glass-card {
+  background: rgba(21, 21, 32, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+}
+
+.glass-card-subtle {
+  background: rgba(21, 21, 32, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+}
+
 .card {
-  background-color: var(--card-bg);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  padding: 20px;
+  background: var(--spark-surface);
+  border: 1px solid var(--spark-border);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  padding: 24px;
 }
 
 .card-no-border {
-  background-color: var(--card-bg);
-  border: none;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  background: var(--spark-surface);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-.bottom-bar {
-  padding: 20px 0px;
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
-/* List item styles */
-.list-item {
-  background-color: var(--list-item-bg);
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 8px;
+.font-display {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
-/* Button styles */
-.button {
-  background-color: var(--primary-blue);
-  color: var(--text-white);
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: bold;
+/* Balance display - large clean numbers with background glow */
+.balance-display {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 600;
+  font-size: 2.75rem;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  text-shadow: 0 0 40px var(--glow-primary);
+}
+
+.balance-label {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: var(--spark-text-muted);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  transition: background-color 0.3s ease;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+.button {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--spark-primary) 0%, var(--spark-primary-light) 100%);
+  color: #000;
+  letter-spacing: 0.01em;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px var(--glow-primary);
+  border: none;
+  cursor: pointer;
 }
 
 .button:hover {
-  background-color: var(--secondary-blue);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px var(--glow-primary);
 }
 
-/* Input styles */
+.button:active {
+  transform: translateY(0);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.button-secondary {
+  background: transparent;
+  border: 2px solid var(--spark-border-light);
+  color: var(--spark-text-primary);
+  box-shadow: none;
+}
+
+.button-secondary:hover {
+  border-color: var(--spark-primary);
+  color: var(--spark-primary);
+  box-shadow: 0 4px 20px var(--glow-primary);
+}
+
+.button-ghost {
+  background: transparent;
+  border: none;
+  color: var(--spark-text-secondary);
+  box-shadow: none;
+  padding: 10px 16px;
+}
+
+.button-ghost:hover {
+  color: var(--spark-text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Action buttons (Send/Receive) */
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 32px;
+  border-radius: 50px;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: normal;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border: none;
+}
+
+.action-button-send {
+  background: linear-gradient(135deg, var(--spark-electric) 0%, #0099cc 100%);
+  color: #000;
+  box-shadow: 0 4px 20px var(--glow-electric);
+}
+
+.action-button-send:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px var(--glow-electric);
+}
+
+.action-button-receive {
+  background: linear-gradient(135deg, var(--spark-success) 0%, #059669 100%);
+  color: #000;
+  box-shadow: 0 4px 20px var(--glow-success);
+}
+
+.action-button-receive:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px var(--glow-success);
+}
+
+.action-button-scan {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid var(--spark-border-light);
+  color: var(--spark-text-primary);
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.action-button-scan:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--spark-primary);
+  box-shadow: 0 4px 20px var(--glow-primary);
+}
+
+/* ============================================
+   FORM ELEMENTS
+   ============================================ */
+
 textarea,
 input,
 select {
-  background-color: var(--card-bg);
-  color: var(--text-white);
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
-  padding: 8px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--spark-dark);
+  color: var(--spark-text-primary);
+  border: 1px solid var(--spark-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  transition: all 0.2s ease;
 }
 
 textarea:focus,
 input:focus,
 select:focus {
   outline: none;
-  border-color: var(--primary-blue);
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.5);
+  border-color: var(--spark-primary);
+  box-shadow: 0 0 0 3px var(--glow-primary);
 }
 
-/* Footer adjustments */
-footer {
-  display: none;
+input::placeholder,
+textarea::placeholder {
+  color: var(--spark-text-muted);
 }
 
-/* Add smooth scrolling for the transaction list */
-.overflow-y-auto {
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
+/* Custom select styling */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 40px;
 }
 
-/* Make wallet header transitions smooth */
-.sticky {
-  transition: transform 0.2s ease-out;
+/* ============================================
+   LIST ITEMS / TRANSACTIONS
+   ============================================ */
+
+.list-item {
+  background: var(--spark-elevated);
+  border: 1px solid var(--spark-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  transition: all 0.2s ease;
 }
 
-/* Action button styles for Send/Receive */
-.action-button {
+.list-item:hover {
+  background: rgba(37, 37, 53, 0.8);
+  border-color: var(--spark-border-light);
+  transform: translateX(4px);
+}
+
+.transaction-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: center;
-  padding: 10px 20px;
-  border-radius: 24px;
-  color: var(--text-white);
-  font-weight: 600;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  transition: all 0.2s ease-in-out;
-  min-width: 120px;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
-.action-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+.transaction-icon-receive {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--spark-success);
 }
 
-.action-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+.transaction-icon-send {
+  background: rgba(0, 212, 255, 0.15);
+  color: var(--spark-electric);
 }
 
-.action-icon {
-  font-size: 1.2rem;
-  margin-right: 8px;
-  font-weight: bold;
+/* ============================================
+   BOTTOM BAR
+   ============================================ */
+
+.bottom-bar {
+  background: rgba(15, 15, 24, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--spark-border);
+  padding: 16px 24px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
-/* Add padding to the transaction list to accommodate the floating buttons */
-.transaction-list-container {
-  padding-top: 1.5rem;
+/* ============================================
+   SCROLLBARS
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-/* Toast notification container */
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--spark-border);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--spark-border-light);
+}
+
+/* Hidden scrollbar - keeps scroll functionality */
+.scrollbar-hidden {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
+/* ============================================
+   TOAST NOTIFICATIONS
+   ============================================ */
+
 .toast-container {
   position: fixed;
-  top: 20px;
-  right: 20px;
+  top: 24px;
+  right: 24px;
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-width: 350px;
+  gap: 12px;
+  max-width: 380px;
 }
 
-/* Keep single toasts from being too wide */
 .toast-notification {
-  max-width: 100%;
-  overflow: hidden;
+  background: rgba(21, 21, 32, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--spark-border);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
-.main-wrapper {
-  min-height: 100vh;
+.toast-success {
+  border-color: var(--spark-success);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px var(--glow-success);
 }
 
-/* Bottom Navigation Bar */
-.bottom-nav {
-  background-color: var(--primary-blue);
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-  padding-bottom: env(safe-area-inset-bottom);
-  /* For iOS devices with home indicator */
+.toast-error {
+  border-color: var(--spark-error);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px var(--glow-error);
 }
 
-/* Ensure bottom padding on main content to make room for the nav bar */
-.pb-nav {
-  padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }
 
-p {
-  padding: 2px;
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
-/* Bottom Sheet Styles */
+@keyframes scan-line {
+  0% { top: 0; }
+  50% { top: calc(100% - 2px); }
+  100% { top: 0; }
+}
+
+.animate-scan-line {
+  animation: scan-line 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes lightning-bolt {
+  0%, 100% { opacity: 0; transform: translateY(-5px); }
+  10%, 30% { opacity: 1; transform: translateY(0); }
+  40% { opacity: 0; transform: translateY(5px); }
+}
+
+@keyframes spark-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* ============================================
+   BOTTOM SHEET / DIALOG
+   ============================================ */
+
+.bottom-sheet-card {
+  background: var(--spark-surface);
+  border-top: 1px solid var(--spark-border);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
+  width: 100%;
+  height: 100%;
+}
+
 .bottom-sheet-handle {
   width: 40px;
-  height: 5px;
-  border-radius: 3px;
-  background-color: rgba(255, 255, 255, 0.3);
-  margin: 8px auto;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--spark-border-light);
+  margin: 12px auto 8px;
 }
+
+/* ============================================
+   SLIDE ANIMATIONS
+   ============================================ */
 
 .slide-up-enter {
   transform: translateY(100%);
@@ -263,7 +519,7 @@ p {
 
 .slide-up-enter-active {
   transform: translateY(0);
-  transition: transform 300ms ease-out;
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slide-up-exit {
@@ -272,41 +528,216 @@ p {
 
 .slide-up-exit-active {
   transform: translateY(100%);
-  transition: transform 300ms ease-in;
+  transition: transform 200ms ease-in;
 }
 
 .slide-up {
-  animation: slideUp 0.3s ease-out forwards;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
 
-  to {
-    transform: translateY(0);
-  }
+.animate-slide-up {
+  animation: slideUp 0.25s ease-out forwards;
 }
 
 .slide-down {
-  animation: slideDown 0.3s ease-in forwards;
+  animation: slideDown 0.2s ease-in forwards;
 }
 
 @keyframes slideDown {
-  from {
-    transform: translateY(0);
-  }
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
 
-  to {
-    transform: translateY(100%);
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.text-gradient-primary {
+  background: linear-gradient(135deg, var(--spark-primary) 0%, var(--spark-primary-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-electric {
+  background: linear-gradient(135deg, var(--spark-electric) 0%, var(--spark-electric-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glow-amber {
+  box-shadow: 0 0 40px var(--glow-amber);
+}
+
+.glow-electric {
+  box-shadow: 0 0 40px var(--glow-electric);
+}
+
+.glow-success {
+  box-shadow: 0 0 40px var(--glow-success);
+}
+
+.border-glow-amber {
+  border: 1px solid var(--spark-amber);
+  box-shadow: 0 0 20px var(--glow-amber);
+}
+
+/* ============================================
+   SMOOTH SCROLLING
+   ============================================ */
+
+.overflow-y-auto {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+   RESPONSIVE PADDING
+   ============================================ */
+
+.pb-nav {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+
+/* ============================================
+   HEADER TRANSITIONS
+   ============================================ */
+
+.sticky {
+  transition: all 0.2s ease-out;
+}
+
+/* ============================================
+   MISCELLANEOUS
+   ============================================ */
+
+p {
+  padding: 2px 0;
+}
+
+footer {
+  display: none;
+}
+
+main {
+  flex: 1;
+  background: transparent;
+}
+
+.transaction-list-container {
+  padding-top: 1.5rem;
+}
+
+/* Network badge styling */
+.network-badge {
+  background: var(--glow-primary);
+  border: 1px solid var(--spark-primary);
+  color: var(--spark-primary-light);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* QR Code container */
+.qr-container {
+  background: #fff;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Amount display in dialogs */
+.amount-display {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2.5rem;
+  color: var(--spark-text-primary);
+}
+
+.amount-unit {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  color: var(--spark-text-secondary);
+  margin-left: 8px;
+}
+
+/* ============================================
+   PAYMENT CELEBRATION ANIMATIONS
+   ============================================ */
+
+@keyframes confetti {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
   }
 }
 
-/* Create styles for the dialog card that specifically appears in a bottom sheet */
-.bottom-sheet-card {
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
-  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
-  width: 100%;
-  height: 100%
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes celebration-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px var(--glow-success), 0 0 40px var(--glow-success);
+  }
+  50% {
+    box-shadow: 0 0 40px var(--glow-success), 0 0 80px var(--glow-success), 0 0 120px var(--glow-amber);
+  }
+}
+
+.animate-confetti {
+  animation: confetti 3s ease-out forwards;
+}
+
+.animate-fade-in-up {
+  opacity: 0;
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-celebration-glow {
+  animation: celebration-glow 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: celebration-glow 2s ease-in-out infinite;
 }

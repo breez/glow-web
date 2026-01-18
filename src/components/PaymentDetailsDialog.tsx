@@ -5,10 +5,18 @@ import {
   CollapsibleCodeField, BottomSheetContainer, BottomSheetCard
 } from './ui';
 
+// Format number with space as thousand separator
+const formatWithSpaces = (num: number | bigint): string => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
+
 interface PaymentDetailsDialogProps {
   optionalPayment: Payment | null;
   onClose: () => void;
 }
+
+// Threshold for when to use collapsible chevron
+const LONG_TEXT_THRESHOLD = 35;
 
 const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPayment, onClose }) => {
   const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({
@@ -19,7 +27,12 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
     swapId: false,
     assetId: false,
     destination: false,
-    lnurlMetadata: false
+    description: false,
+    comment: false,
+    message: false,
+    url: false,
+    lnAddress: false,
+    lnurlDomain: false
   });
 
   // Format date and time
@@ -57,18 +70,84 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
           <PaymentInfoCard>
             <PaymentInfoRow
               label="Amount"
-              value={`${payment.paymentType === 'receive' ? '+' : '-'} ${payment.amount.toLocaleString()} sats`}
+              value={`${payment.paymentType === 'receive' ? '+' : '-'} ${formatWithSpaces(payment.amount)} sats`}
             />
 
-            <PaymentInfoRow
-              label="Fee"
-              value={`${payment.fees.toLocaleString()} sats`}
-            />
+            {payment.fees > 0 && (
+              <PaymentInfoRow
+                label="Fee"
+                value={`${formatWithSpaces(payment.fees)} sats`}
+              />
+            )}
 
             <PaymentInfoRow
               label="Date & Time"
               value={formatDateTime(payment.timestamp)}
             />
+
+            {payment.details?.type === 'lightning' && payment.details.description && (
+              payment.details.description.length > LONG_TEXT_THRESHOLD ? (
+                <CollapsibleCodeField
+                  label="Description"
+                  value={payment.details.description}
+                  isVisible={visibleFields.description}
+                  onToggle={() => toggleField('description')}
+                />
+              ) : (
+                <PaymentInfoRow
+                  label="Description"
+                  value={payment.details.description}
+                />
+              )
+            )}
+
+            {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo?.lnAddress && (
+              payment.details.lnurlPayInfo.lnAddress.length > LONG_TEXT_THRESHOLD ? (
+                <CollapsibleCodeField
+                  label="Lightning Address"
+                  value={payment.details.lnurlPayInfo.lnAddress}
+                  isVisible={visibleFields.lnAddress}
+                  onToggle={() => toggleField('lnAddress')}
+                />
+              ) : (
+                <PaymentInfoRow
+                  label="Lightning Address"
+                  value={payment.details.lnurlPayInfo.lnAddress}
+                />
+              )
+            )}
+
+            {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo && !payment.details.lnurlPayInfo.lnAddress && payment.details.lnurlPayInfo.domain && (
+              payment.details.lnurlPayInfo.domain.length > LONG_TEXT_THRESHOLD ? (
+                <CollapsibleCodeField
+                  label="LNURL Payment"
+                  value={payment.details.lnurlPayInfo.domain}
+                  isVisible={visibleFields.lnurlDomain}
+                  onToggle={() => toggleField('lnurlDomain')}
+                />
+              ) : (
+                <PaymentInfoRow
+                  label="LNURL Payment"
+                  value={payment.details.lnurlPayInfo.domain}
+                />
+              )
+            )}
+
+            {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo?.comment && (
+              payment.details.lnurlPayInfo.comment.length > LONG_TEXT_THRESHOLD ? (
+                <CollapsibleCodeField
+                  label="Comment"
+                  value={payment.details.lnurlPayInfo.comment}
+                  isVisible={visibleFields.comment}
+                  onToggle={() => toggleField('comment')}
+                />
+              ) : (
+                <PaymentInfoRow
+                  label="Comment"
+                  value={payment.details.lnurlPayInfo.comment}
+                />
+              )
+            )}
 
             {payment.details?.type === 'lightning' && payment.details.invoice && (
               <CollapsibleCodeField
@@ -97,50 +176,43 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               />
             )}
 
-            {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo && (
+            {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo?.rawSuccessAction && (
               <>
                 <PaymentInfoRow
-                  label="LNURL Payment"
-                  value={payment.details.lnurlPayInfo.domain || 'Unknown'}
+                  label="Success Action"
+                  value={payment.details.lnurlPayInfo.rawSuccessAction.type || 'Unknown'}
                 />
-
-                {payment.details.lnurlPayInfo.metadata && (
-                  <CollapsibleCodeField
-                    label="LNURL Metadata"
-                    value={payment.details.lnurlPayInfo.metadata}
-                    isVisible={visibleFields.lnurlMetadata}
-                    onToggle={() => toggleField('lnurlMetadata')}
-                  />
-                )}
-                
-                {payment.details.lnurlPayInfo.comment && (
-                  <PaymentInfoRow
-                    label="Comment"
-                    value={payment.details.lnurlPayInfo.comment}
-                  />
-                )}
-                
-                {payment.details.lnurlPayInfo.rawSuccessAction && (
-                  <>
-                    <PaymentInfoRow
-                      label="Success Action Type"
-                      value={payment.details.lnurlPayInfo.rawSuccessAction.type || 'Unknown'}
+                {payment.details.lnurlPayInfo.rawSuccessAction.type === 'message' && 
+                  payment.details.lnurlPayInfo.rawSuccessAction.data && (
+                  (payment.details.lnurlPayInfo.rawSuccessAction.data.message || '').length > LONG_TEXT_THRESHOLD ? (
+                    <CollapsibleCodeField
+                      label="Message"
+                      value={payment.details.lnurlPayInfo.rawSuccessAction.data.message || ''}
+                      isVisible={visibleFields.message}
+                      onToggle={() => toggleField('message')}
                     />
-                    {payment.details.lnurlPayInfo.rawSuccessAction.type === 'message' && 
-                      payment.details.lnurlPayInfo.rawSuccessAction.data && (
-                      <PaymentInfoRow
-                        label="Success Message"
-                        value={payment.details.lnurlPayInfo.rawSuccessAction.data.message || ''}
-                      />
-                    )}
-                    {payment.details.lnurlPayInfo.rawSuccessAction.type === 'url' && 
-                      payment.details.lnurlPayInfo.rawSuccessAction.data && (
-                      <PaymentInfoRow
-                        label="Success URL"
-                        value={payment.details.lnurlPayInfo.rawSuccessAction.data.url || ''}
-                      />
-                    )}
-                  </>
+                  ) : (
+                    <PaymentInfoRow
+                      label="Message"
+                      value={payment.details.lnurlPayInfo.rawSuccessAction.data.message || ''}
+                    />
+                  )
+                )}
+                {payment.details.lnurlPayInfo.rawSuccessAction.type === 'url' && 
+                  payment.details.lnurlPayInfo.rawSuccessAction.data && (
+                  (payment.details.lnurlPayInfo.rawSuccessAction.data.url || '').length > LONG_TEXT_THRESHOLD ? (
+                    <CollapsibleCodeField
+                      label="URL"
+                      value={payment.details.lnurlPayInfo.rawSuccessAction.data.url || ''}
+                      isVisible={visibleFields.url}
+                      onToggle={() => toggleField('url')}
+                    />
+                  ) : (
+                    <PaymentInfoRow
+                      label="URL"
+                      value={payment.details.lnurlPayInfo.rawSuccessAction.data.url || ''}
+                    />
+                  )
                 )}
               </>
             )}

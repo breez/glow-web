@@ -1,12 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QrScanner from 'qr-scanner';
-import { 
-  DialogHeader, 
-  BottomSheetContainer,
-  BottomSheetCard,
-  PrimaryButton,
-  FormError
-} from './ui';
+import { BottomSheetContainer } from './ui';
 
 interface QrScannerDialogProps {
   isOpen: boolean;
@@ -149,61 +143,68 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
 
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={handleClose}>
-      <BottomSheetCard className="bottom-sheet-card">
-        <DialogHeader title="Scan QR Code" onClose={handleClose} />
-        
-        <div className="p-6 space-y-4">
-          <div className="text-center mb-4">
-            <p className="text-sm text-[rgb(var(--text-white))] opacity-70">
-              Point your camera at a QR code to scan
-            </p>
+      <div className="h-full w-full bg-black flex flex-col">
+        {/* Full screen video */}
+        <div className="flex-1 relative">
+          <video
+            ref={videoRef}
+            className="absolute inset-0 w-full h-full object-cover"
+            playsInline
+            muted
+          />
+          
+          {/* Scan overlay */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-64 h-64 relative">
+              {/* Corner brackets */}
+              <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-spark-primary rounded-tl-lg" />
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-spark-primary rounded-tr-lg" />
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-spark-primary rounded-bl-lg" />
+              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-spark-primary rounded-br-lg" />
+              {/* Scanning line animation */}
+              {isScanning && (
+                <div className="absolute left-2 right-2 h-0.5 bg-spark-primary animate-scan-line" />
+              )}
+            </div>
           </div>
+          
+          {isInitializing && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+              <div className="text-center text-white p-4">
+                <div className="animate-spin rounded-full h-10 w-10 border-2 border-spark-primary border-t-transparent mx-auto mb-3"></div>
+                <p className="text-sm text-spark-text-secondary">Initializing camera...</p>
+              </div>
+            </div>
+          )}
 
-          <div className="relative">
-            <video
-              ref={videoRef}
-              className="w-full h-64 bg-black rounded-lg object-cover"
-              playsInline
-              muted
-            />
-            
-            {isInitializing && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
-                <div className="text-center text-white p-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                  <p className="text-sm">Initializing camera...</p>
+          {!isScanning && !isInitializing && error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+              <div className="text-center text-white p-6 max-w-xs">
+                <div className="w-16 h-16 rounded-full bg-spark-error/20 flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-spark-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
                 </div>
+                <p className="text-sm mb-2 font-medium">Camera not available</p>
+                <p className="text-xs text-spark-text-muted">{error}</p>
               </div>
-            )}
-
-            {isScanning && !isInitializing && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-48 h-48 border-2 border-[rgb(var(--primary-blue))] rounded-lg opacity-50"></div>
-              </div>
-            )}
-
-            {!isScanning && !isInitializing && error && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
-                <div className="text-center text-white p-4">
-                  <p className="text-sm mb-2">Camera not available</p>
-                  <p className="text-xs opacity-70">{error}</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <FormError error={error} />
-
-          <div className="flex gap-3">
-            <PrimaryButton
-              onClick={handleClose}
-              className="flex-1 bg-gray-600 hover:bg-gray-700"
-            >
-              Cancel
-            </PrimaryButton>
-          </div>
+            </div>
+          )}
         </div>
-      </BottomSheetCard>
+
+        {/* Bottom controls */}
+        <div className="safe-area-bottom bg-black/90 backdrop-blur-sm p-6">
+          <p className="text-spark-text-secondary text-sm text-center mb-4">
+            Point camera at QR code
+          </p>
+          <button
+            onClick={handleClose}
+            className="w-full py-3 border border-spark-border text-spark-text-primary rounded-xl font-medium hover:bg-white/10 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
     </BottomSheetContainer>
   );
 };

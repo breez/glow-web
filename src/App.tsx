@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Config, GetInfoResponse, Network, Payment, SdkEvent, defaultConfig } from '@breeztech/breez-sdk-spark';
 import { WalletProvider, useWallet } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
+import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 
 // Import our page components
@@ -28,6 +29,7 @@ const AppContent: React.FC = () => {
   const [usdRate, setUsdRate] = useState<number | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
   const [hasUnclaimedDeposits, setHasUnclaimedDeposits] = useState<boolean>(false);
+  const [celebrationAmount, setCelebrationAmount] = useState<number | null>(null);
 
   const { showToast } = useToast();
 
@@ -98,12 +100,19 @@ const AppContent: React.FC = () => {
       fetchUnclaimedDeposits();
     } else if (event.type === 'paymentSucceeded') {
       console.log('Payment succeeded event received');
-      let direction = event.payment.paymentType === 'send' ? 'sent' : 'received';
-      showToast(
-        'success',
-        'Payment Succeeded',
-        `${event.payment.amount} sats were ${direction}`
-      );
+      const isReceived = event.payment.paymentType === 'receive';
+      
+      if (isReceived) {
+        // Show celebration animation for received payments
+        setCelebrationAmount(Number(event.payment.amount));
+      } else {
+        // Show toast for sent payments
+        showToast(
+          'success',
+          'Payment Sent',
+          `${event.payment.amount} sats sent successfully`
+        );
+      }
       refreshWalletData(false);
     } else if (event.type === 'claimedDeposits') {
       console.log('Claim deposits succeeded event received');
@@ -226,7 +235,8 @@ const AppContent: React.FC = () => {
       const breezApiKey = import.meta.env.VITE_BREEZ_API_KEY;
 
       if (!breezApiKey) {
-        throw new Error('Breez API key not found in environment variables');
+        showToast('error', 'Missing API Key', 'Please add VITE_BREEZ_API_KEY to your .env file');
+        throw new Error('Breez API key not found. Create a .env file with VITE_BREEZ_API_KEY=your_key');
       }
 
       const urlParams = new URLSearchParams(window.location.search);
@@ -326,7 +336,7 @@ const AppContent: React.FC = () => {
   const renderCurrentScreen = () => {
     if (isLoading) {
       return (
-        <div className="absolute inset-0 bg-[rgb(var(--background-rgb))] bg-opacity-80 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-spark-void/95 backdrop-blur-sm z-50 flex items-center justify-center">
           <LoadingSpinner />
         </div>
       );
@@ -383,7 +393,6 @@ const AppContent: React.FC = () => {
           <WalletPage
             walletInfo={walletInfo}
             transactions={transactions}
-            config={config}
             usdRate={usdRate}
             refreshWalletData={refreshWalletData}
             isRestoring={isRestoring}
@@ -394,40 +403,6 @@ const AppContent: React.FC = () => {
             onOpenUnclaimedDeposits={() => setCurrentScreen('unclaimedDeposits')}
             onOpenSettings={() => setCurrentScreen('settings')}
             onOpenBackup={() => setCurrentScreen('backup')}
-            onChangeNetwork={async (network) => {
-              try {
-                setIsLoading(true);
-                // Disconnect current session if connected
-                if (isConnected) {
-                  // Clean event listener if exists
-                  if (eventListenerIdRef.current) {
-                    try { await wallet.removeEventListener(eventListenerIdRef.current); } catch { }
-                    eventListenerIdRef.current = null;
-                  }
-                  await wallet.disconnect();
-                  setIsConnected(false);
-                }
-
-                // Update URL param so refresh preserves network choice
-                const url = new URL(window.location.href);
-                url.searchParams.set('network', network);
-                window.history.replaceState({}, '', url.toString());
-
-                // Reconnect if mnemonic is present
-                const mnemonic = wallet.getSavedMnemonic();
-                if (mnemonic) {
-                  await connectWallet(mnemonic, false, network);
-                } else {
-                  // No mnemonic means route to home
-                  setCurrentScreen('home');
-                }
-              } catch (err) {
-                console.error('Failed to switch network:', err);
-                setError('Failed to switch network');
-              } finally {
-                setIsLoading(false);
-              }
-            }}
           />
         );
 
@@ -436,7 +411,17 @@ const AppContent: React.FC = () => {
     }
   };
 
-  return renderCurrentScreen();
+  return (
+    <>
+      {renderCurrentScreen()}
+      {celebrationAmount !== null && (
+        <PaymentReceivedCelebration
+          amount={celebrationAmount}
+          onClose={() => setCelebrationAmount(null)}
+        />
+      )}
+    </>
+  );
 };
 
 // Wrap the App with ToastProvider
@@ -444,8 +429,8 @@ function App() {
   return (
     <ToastProvider>
       <WalletProvider>
-        <div className="flex-grow flex main-wrapper">
-          <div id="content-root" className="flex-grow max-w-4xl mx-auto relative">
+        <div className="h-full flex main-wrapper">
+          <div id="content-root" className="h-full w-full max-w-4xl mx-auto relative">
             <AppContent />
           </div>
         </div>

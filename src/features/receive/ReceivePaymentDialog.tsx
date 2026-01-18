@@ -247,14 +247,26 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={onClose}>
       <BottomSheetCard className="bottom-sheet-card">
-        <DialogHeader title="Receive Payment" onClose={onClose} />
+        <DialogHeader 
+          title="Receive" 
+          onClose={onClose}
+          icon={
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          }
+        />
 
         <TabContainer>
           <TabList>
             <Tab isActive={activeTab === 'lightning'} onClick={() => handleTabChange('lightning')}>
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
+              </svg>
               Lightning
             </Tab>
             <Tab isActive={activeTab === 'bitcoin'} onClick={() => handleTabChange('bitcoin')}>
+              <span className="font-bold text-sm">₿</span>
               Bitcoin
             </Tab>
           </TabList>

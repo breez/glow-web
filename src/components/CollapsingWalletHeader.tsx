@@ -1,120 +1,140 @@
 import React from 'react';
-import type { Config, GetInfoResponse, Network } from '@breeztech/breez-sdk-spark';
+import type { GetInfoResponse } from '@breeztech/breez-sdk-spark';
 
 interface CollapsingWalletHeaderProps {
   walletInfo: GetInfoResponse | null;
   usdRate: number | null;
   scrollProgress: number;
   onOpenMenu: () => void;
-  config: Config | null;
-  onChangeNetwork: (network: Network) => void;
   hasUnclaimedDeposits: boolean;
   onOpenUnclaimedDeposits: () => void;
 }
+
+// Format number with thin space as thousand separator (for monospace fonts)
+const formatWithThinSpaces = (num: number): string => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u2009');
+};
 
 const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   walletInfo,
   scrollProgress,
   usdRate,
   onOpenMenu,
-  config,
-  onChangeNetwork,
   hasUnclaimedDeposits,
   onOpenUnclaimedDeposits
 }) => {
   if (!walletInfo) return null;
 
-  // New WASM API has balanceSats directly on GetInfoResponse
   const balanceSat = walletInfo.balanceSats || 0;
-
-  // Calculate opacity for pending amounts section (fade out first)
-  const pendingOpacity = Math.max(0, 1 - scrollProgress * 2); // Fully transparent at 50% scroll
-
-  // Calculate scale for the main balance (shrink after pending is gone)
-  const balanceScale = scrollProgress > 0.5
-    ? Math.max(0.8, 1 - (scrollProgress - 0.5)) // Scale down to 80% during the second half of scroll
-    : 1; // Don't scale during first half
-
-  // Height of the pending section when fully visible
+  const pendingOpacity = Math.max(0, 1 - scrollProgress * 2);
   const maxPendingHeight = '80px';
-
-  // Calculate USD value if rate is available
   const usdValue = usdRate !== null ? ((balanceSat / 100000000) * usdRate).toFixed(2) : null;
 
   return (
-    <div className="card-no-border transition-all duration-200 overflow-hidden relative">
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
-        <button
-          onClick={onOpenMenu}
-          className="text-[rgb(var(--text-white))]"
-          aria-label="Open menu"
-          title="Open menu"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-        {config && (
-          <select
-            value={config.network}
-            onChange={(e) => onChangeNetwork(e.currentTarget.value as Network)}
-            className="bg-transparent border border-[rgb(var(--card-border))] rounded-md px-2 py-1 text-[rgb(var(--text-white))] text-sm opacity-80 capitalize focus:outline-none focus:ring-2 focus:ring-[rgb(var(--primary-blue))]"
-            title="Select Network"
-          >
-            <option className="bg-[rgb(var(--card-bg))] text-[rgb(var(--text-white))]" value="mainnet">Mainnet</option>
-            <option className="bg-[rgb(var(--card-bg))] text-[rgb(var(--text-white))]" value="regtest">Regtest</option>
-          </select>
-        )}
+    <div className="relative overflow-hidden transition-all duration-200">
+      {/* Glassmorphism background */}
+      <div className="absolute inset-0 bg-spark-surface/80 backdrop-blur-xl border-b border-spark-border" />
+      
+      {/* Strong glow effect behind balance */}
+      <div 
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[200px] pointer-events-none transition-opacity duration-300"
+        style={{ opacity: 1 - scrollProgress * 0.7 }}
+      >
+        <div className="absolute inset-0 bg-gradient-radial from-spark-primary/30 via-spark-primary/15 to-transparent blur-3xl" />
+        <div className="absolute inset-4 bg-gradient-radial from-amber-400/20 to-transparent blur-2xl" />
       </div>
-      {/* Top-right warning icon for unclaimed deposits */}
-      {hasUnclaimedDeposits && (
-        <div className="absolute top-4 right-4 z-10">
+
+      {/* Header content */}
+      <div className="relative z-10 px-4 pt-4 pb-2">
+        {/* Top bar with menu and network */}
+        <div className="flex items-center justify-between mb-4">
+          {/* Menu button */}
           <button
-            type="button"
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/40"
-            title="There are unclaimed deposits that need attention"
-            aria-label="Unclaimed deposits"
-            onClick={onOpenUnclaimedDeposits}
+            onClick={onOpenMenu}
+            className="p-2 -ml-2 text-spark-text-secondary hover:text-spark-text-primary transition-colors rounded-xl hover:bg-white/5"
+            aria-label="Open menu"
           >
-            {/* Exclamation triangle icon */}
-            <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l6.518 11.6c.75 1.336-.213 3.001-1.742 3.001H3.48c-1.53 0-2.492-1.665-1.742-3.001l6.52-11.6zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 01-1-1V7a1 1 0 112 0v3a1 1 0 01-1 1z" clipRule="evenodd" />
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-        </div>
-      )}
-      {/* Main Balance - always visible but scales down */}
-      <div
-        className="text-center transition-all duration-200 pt-12"
-        style={{
-          transform: `scale(${balanceScale})`,
-          transformOrigin: 'center top'
-        }}
-      >
-        <div className="text-4xl font-bold text-[rgb(var(--text-white))]">
-          {balanceSat.toLocaleString()} sats
-        </div>
-      </div>
 
-      {/* Pending Amounts - fade out and collapse */}
-      <div
-        className="flex flex-col overflow-hidden transition-all duration-200"
-        style={{
-          opacity: pendingOpacity,
-          maxHeight: pendingOpacity > 0 ? maxPendingHeight : '0px',
-          marginTop: pendingOpacity > 0 ? '1rem' : '0'
-        }}
-      >
-        {/* USD Value - only show if we have a rate */}
-        {usdValue && (
-          <div className="text-center text-lg text-[rgb(var(--text-white))] opacity-75 mt-1">
-            ${usdValue}
+          {/* Action buttons */}
+          <div className="flex items-center gap-3">
+            {/* Unclaimed deposits warning */}
+            {hasUnclaimedDeposits && (
+              <button
+                type="button"
+                className="flex items-center justify-center w-9 h-9 rounded-xl bg-spark-warning/15 text-spark-warning border border-spark-warning/30 hover:bg-spark-warning/25 transition-colors"
+                title="Unclaimed deposits need attention"
+                aria-label="Unclaimed deposits"
+                onClick={onOpenUnclaimedDeposits}
+              >
+                <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l6.518 11.6c.75 1.336-.213 3.001-1.742 3.001H3.48c-1.53 0-2.492-1.665-1.742-3.001l6.52-11.6zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 01-1-1V7a1 1 0 112 0v3a1 1 0 01-1 1z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Add extra padding at the bottom to accommodate the floating buttons */}
-      <div className="h-6"></div>
+        {/* Balance display */}
+        <div className="text-center">
+          {/* Sats label */}
+          <div className="text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase mb-1">
+            Balance
+          </div>
+          
+          {/* Main balance */}
+          <div className="flex items-baseline justify-center gap-2">
+            <span className="balance-display">
+              {formatWithThinSpaces(balanceSat)}
+            </span>
+            <span className="text-spark-text-secondary text-xl font-display font-medium">
+              sats
+            </span>
+          </div>
+
+          {/* Lightning bolt decoration with lines */}
+          <div className="flex items-center justify-center gap-3 mt-3">
+            {/* Left line - fades left */}
+            <div className="w-8 h-0.5 bg-spark-primary" style={{ 
+              maskImage: 'linear-gradient(to right, transparent, black)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent, black)'
+            }} />
+            
+            {/* Lightning bolt */}
+            <svg className="w-4 h-4 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
+            </svg>
+            
+            {/* Right line - fades right */}
+            <div className="w-8 h-0.5 bg-spark-primary" style={{ 
+              maskImage: 'linear-gradient(to left, transparent, black)',
+              WebkitMaskImage: 'linear-gradient(to left, transparent, black)'
+            }} />
+          </div>
+        </div>
+
+        {/* USD value - fades on scroll */}
+        <div
+          className="flex flex-col overflow-hidden transition-all duration-200"
+          style={{
+            opacity: pendingOpacity,
+            maxHeight: pendingOpacity > 0 ? maxPendingHeight : '0px',
+            marginTop: pendingOpacity > 0 ? '0.75rem' : '0'
+          }}
+        >
+          {usdValue && (
+            <div className="text-center text-spark-text-secondary text-lg font-display">
+              ≈ ${usdValue}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom spacing */}
+        <div className="h-4" />
+      </div>
     </div>
   );
 };
