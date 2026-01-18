@@ -40,12 +40,11 @@ export default {
         }
       },
       fontFamily: {
-        // Outfit for display/headlines - geometric, modern, bold
-        display: ['Outfit', 'system-ui', 'sans-serif'],
-        // DM Sans for body text - readable, clean
-        sans: ['DM Sans', 'system-ui', 'sans-serif'],
-        // JetBrains Mono for code/numbers
-        mono: ['JetBrains Mono', 'Consolas', 'monospace'],
+        // Plus Jakarta Sans for all UI text
+        display: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        // JetBrains Mono for numbers/amounts
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       fontSize: {
         // Custom large display sizes
