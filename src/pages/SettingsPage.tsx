@@ -347,14 +347,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="flex-shrink-0 p-4 pb-8 border-t border-spark-border bg-spark-surface">
-              <div className="max-w-xl mx-auto">
-                <PrimaryButton className="w-full" onClick={handleSave}>
-                  Save Changes
-                </PrimaryButton>
+            {/* Footer - Dev Mode only */}
+            {isDevMode && (
+              <div className="flex-shrink-0 p-4 pb-8 border-t border-spark-border bg-spark-surface">
+                <div className="max-w-xl mx-auto">
+                  <PrimaryButton className="w-full" onClick={handleSave}>
+                    Save Changes
+                  </PrimaryButton>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </Transition.Child>
       </Transition>

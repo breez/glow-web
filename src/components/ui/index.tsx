@@ -272,11 +272,10 @@ export const CollapsibleCodeField: React.FC<{
       <span className="text-spark-text-secondary text-sm">{label}</span>
       <button
         onClick={onToggle}
-        className="text-spark-primary text-sm hover:text-spark-primary-light focus:outline-none focus:text-spark-primary active:text-spark-primary flex items-center gap-1 transition-colors"
+        className="text-spark-primary hover:text-spark-primary-light focus:outline-none focus:text-spark-primary active:text-spark-primary flex items-center transition-colors p-1"
       >
-        {isVisible ? 'Hide' : 'Show'}
         <svg 
-          className={`w-4 h-4 transition-transform ${isVisible ? 'rotate-180' : ''}`} 
+          className={`w-5 h-5 transition-transform ${isVisible ? 'rotate-180' : ''}`} 
           fill="none" 
           viewBox="0 0 24 24" 
           stroke="currentColor" 

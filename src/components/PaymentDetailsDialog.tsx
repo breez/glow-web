@@ -15,8 +15,8 @@ interface PaymentDetailsDialogProps {
   onClose: () => void;
 }
 
-// Threshold for when to use collapsible "Show" button
-const LONG_TEXT_THRESHOLD = 40;
+// Threshold for when to use collapsible chevron
+const LONG_TEXT_THRESHOLD = 35;
 
 const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPayment, onClose }) => {
   const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({
