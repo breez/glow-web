@@ -305,29 +305,29 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
                         </div>
                       </label>
                     </div>
+
+                    {/* Privacy Settings - Dev Mode only */}
+                    <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <h3 className="font-display font-semibold text-spark-text-primary">Privacy</h3>
+                        {isLoadingUserSettings && <LoadingSpinner size="small" />}
+                      </div>
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="w-5 h-5 mt-0.5 rounded border-spark-border bg-spark-surface text-spark-primary focus:ring-spark-primary/20 focus:ring-2"
+                          checked={sparkPrivateModeEnabled}
+                          disabled={isLoadingUserSettings}
+                          onChange={(e) => setSparkPrivateModeEnabled(e.currentTarget.checked)}
+                        />
+                        <div>
+                          <span className="font-display font-medium text-spark-text-primary block">Private Mode</span>
+                          <span className="text-sm text-spark-text-muted">Hide your address from public explorers (not suitable for zaps)</span>
+                        </div>
+                      </label>
+                    </div>
                   </>
                 )}
-
-                {/* Privacy Settings */}
-                <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <h3 className="font-display font-semibold text-spark-text-primary">Privacy</h3>
-                    {isLoadingUserSettings && <LoadingSpinner size="small" />}
-                  </div>
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="w-5 h-5 mt-0.5 rounded border-spark-border bg-spark-surface text-spark-primary focus:ring-spark-primary/20 focus:ring-2"
-                      checked={sparkPrivateModeEnabled}
-                      disabled={isLoadingUserSettings}
-                      onChange={(e) => setSparkPrivateModeEnabled(e.currentTarget.checked)}
-                    />
-                    <div>
-                      <span className="font-display font-medium text-spark-text-primary block">Private Mode</span>
-                      <span className="text-sm text-spark-text-muted">Hide your address from public explorers (not suitable for zaps)</span>
-                    </div>
-                  </label>
-                </div>
 
                 {/* Version / Dev Mode Toggle */}
                 <div className="text-center pt-4">

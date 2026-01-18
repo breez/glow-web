@@ -384,6 +384,16 @@ select {
   background: var(--spark-border-light);
 }
 
+/* Hidden scrollbar - keeps scroll functionality */
+.scrollbar-hidden {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
 /* ============================================
    TOAST NOTIFICATIONS
    ============================================ */

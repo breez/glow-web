@@ -27,9 +27,6 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
 
   const balanceSat = walletInfo.balanceSats || 0;
   const pendingOpacity = Math.max(0, 1 - scrollProgress * 2);
-  const balanceScale = scrollProgress > 0.5
-    ? Math.max(0.8, 1 - (scrollProgress - 0.5))
-    : 1;
   const maxPendingHeight = '80px';
   const usdValue = usdRate !== null ? ((balanceSat / 100000000) * usdRate).toFixed(2) : null;
 
@@ -82,13 +79,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
         </div>
 
         {/* Balance display */}
-        <div
-          className="text-center transition-all duration-200"
-          style={{
-            transform: `scale(${balanceScale})`,
-            transformOrigin: 'center top'
-          }}
-        >
+        <div className="text-center">
           {/* Sats label */}
           <div className="text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase mb-1">
             Balance
