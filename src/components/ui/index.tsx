@@ -231,16 +231,16 @@ export const PaymentInfoRow: React.FC<{
   valueColor?: string;
   className?: string;
 }> = ({ label, value, isBold = false, icon, iconBgColor, valueColor = 'text-spark-text-primary', className = '' }) => (
-  <div className={`flex items-center justify-between px-4 py-3 ${className}`}>
+  <div className={`flex items-center justify-between py-2 ${className}`}>
     <div className="flex items-center gap-3">
       {icon && (
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${iconBgColor || ''}`}>
           {icon}
         </div>
       )}
-      <span className="text-spark-text-secondary">{label}</span>
+      <span className="text-spark-text-secondary text-sm">{label}</span>
     </div>
-    <span className={`font-mono font-medium ${isBold ? 'font-bold' : ''} ${valueColor}`}>
+    <span className={`font-mono text-sm ${isBold ? 'font-bold' : 'font-medium'} ${valueColor}`}>
       {value}
     </span>
   </div>
@@ -267,7 +267,7 @@ export const CollapsibleCodeField: React.FC<{
   isVisible: boolean;
   onToggle: () => void;
 }> = ({ label, value, isVisible, onToggle }) => (
-  <div className="flex flex-col">
+  <div className="py-2">
     <div className="flex justify-between items-center">
       <span className="text-spark-text-secondary text-sm">{label}</span>
       <button
