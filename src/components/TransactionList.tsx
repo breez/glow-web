@@ -66,8 +66,8 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
       return 'Lightning Payment';
     }
     if (payment.method === 'spark') return 'Spark Transfer';
-    if (payment.method === 'deposit') return 'Deposit';
-    if (payment.method === 'withdraw') return 'Withdrawal';
+    if (payment.method === 'deposit') return 'BTC Transfer';
+    if (payment.method === 'withdraw') return 'BTC Transfer';
     return 'Payment';
   };
 
@@ -81,7 +81,13 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
     } else if (payment.method === 'spark') {
       return (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2L2 12l10 10 10-10L12 2zm0 3.414L18.586 12 12 18.586 5.414 12 12 5.414z" />
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      );
+    } else if (payment.method === 'deposit' || payment.method === 'withdraw') {
+      return (
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M14.24 10.56c-.31 1.24-2.24.61-2.84.44l.55-2.18c.62.18 2.61.44 2.29 1.74zm-3.11 1.56l-.6 2.41c.74.19 3.03.92 3.37-.44.36-1.42-2.03-1.79-2.77-1.97zm10.57 2.3c-1.34 5.36-6.76 8.62-12.12 7.28S1.04 14.84 2.38 9.48C3.72 4.12 9.14.86 14.5 2.2s8.62 6.76 7.28 12.12l-.08.1zM14.11 9.19c.38-1.57-1.08-2.24-2.85-2.61l.46-1.86-1.14-.28-.45 1.82c-.3-.07-.61-.14-.92-.21l.45-1.84-1.14-.28-.46 1.86c-.25-.06-.49-.12-.73-.18l-1.57-.39-.3 1.22s.84.19.82.2c.46.12.55.42.53.66l-.53 2.15.12.03-.12-.03-.75 2.98c-.06.14-.2.35-.52.27.01.02-.83-.21-.83-.21l-.57 1.31 1.49.37c.28.07.55.14.81.21l-.47 1.89 1.14.28.46-1.86c.31.09.62.17.92.24l-.46 1.85 1.14.28.47-1.88c1.95.37 3.42.22 4.03-1.54.5-1.42-.02-2.24-1.05-2.77.75-.18 1.31-.68 1.46-1.72z"/>
         </svg>
       );
     }
