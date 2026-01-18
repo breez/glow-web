@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Transition } from '@headlessui/react';
 import { FormGroup, FormInput, LoadingSpinner, PrimaryButton } from '../components/ui';
 import { getSettings, saveSettings, UserSettings } from '../services/settings';
-import type { Config } from '@breeztech/breez-sdk-spark';
+import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
+
+const DEV_MODE_TAP_COUNT = 5;
+const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -14,6 +17,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
   const wallet = useWallet();
   const [isOpen, setIsOpen] = useState(true);
   const [isDevMode, setIsDevMode] = useState<boolean>(false);
+  const [devTapCount, setDevTapCount] = useState(0);
+  const [selectedNetwork, setSelectedNetwork] = useState<Network>('mainnet');
   const [feeType, setFeeType] = useState<'fixed' | 'rate' | 'networkRecommended'>('fixed');
   const [feeValue, setFeeValue] = useState<string>('1');
   const [syncIntervalSecs, setSyncIntervalSecs] = useState<string>('');
@@ -24,7 +29,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    setIsDevMode(params.get('dev') === 'true');
+    // Check URL param or localStorage for dev mode
+    const urlDevMode = params.get('dev') === 'true';
+    const storedDevMode = localStorage.getItem(DEV_MODE_STORAGE_KEY) === 'true';
+    setIsDevMode(urlDevMode || storedDevMode);
+    
+    // Get current network from URL
+    const network = (params.get('network') || 'mainnet') as Network;
+    setSelectedNetwork(network);
 
     const s = getSettings();
     if (s.depositMaxFee.type === 'fixed') {
@@ -71,6 +83,32 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
   const handleClose = () => {
     setIsOpen(false);
     setTimeout(onBack, 220);
+  };
+
+  const handleVersionTap = () => {
+    const newCount = devTapCount + 1;
+    setDevTapCount(newCount);
+    
+    if (newCount >= DEV_MODE_TAP_COUNT) {
+      const newDevMode = !isDevMode;
+      setIsDevMode(newDevMode);
+      localStorage.setItem(DEV_MODE_STORAGE_KEY, String(newDevMode));
+      setDevTapCount(0);
+    }
+    
+    // Reset tap count after 2 seconds of inactivity
+    setTimeout(() => setDevTapCount(0), 2000);
+  };
+
+  const handleNetworkChange = (network: Network) => {
+    setSelectedNetwork(network);
+    // Update URL and reload to reconnect with new network
+    const url = new URL(window.location.href);
+    url.searchParams.set('network', network);
+    if (isDevMode) {
+      url.searchParams.set('dev', 'true');
+    }
+    window.location.href = url.toString();
   };
 
   const handleSave = async () => {
@@ -146,6 +184,31 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
             {/* Content */}
             <div className="flex-1 overflow-y-auto min-h-0">
               <div className="max-w-xl mx-auto w-full p-4 space-y-4">
+                {/* Dev Mode Network Selector */}
+                {isDevMode && (
+                  <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+                    <h3 className="font-display font-semibold text-spark-text-primary mb-3">Network</h3>
+                    <div className="flex gap-2">
+                      {(['mainnet', 'testnet', 'regtest'] as Network[]).map((network) => (
+                        <button
+                          key={network}
+                          onClick={() => handleNetworkChange(network)}
+                          className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
+                            selectedNetwork === network
+                              ? 'bg-spark-primary text-white'
+                              : 'bg-spark-surface border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+                          }`}
+                        >
+                          {network === 'mainnet' ? 'Mainnet' : network === 'testnet' ? 'Testnet' : 'Regtest'}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-spark-text-muted mt-2">
+                      Changing network will reload the app and reconnect.
+                    </p>
+                  </div>
+                )}
+
                 {/* Dev Mode Fee Settings */}
                 {isDevMode && (
                   <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
@@ -264,6 +327,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
                       <span className="text-sm text-spark-text-muted">Hide your address from public explorers (not suitable for zaps)</span>
                     </div>
                   </label>
+                </div>
+
+                {/* Version / Dev Mode Toggle */}
+                <div className="text-center pt-4">
+                  <button
+                    onClick={handleVersionTap}
+                    className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors select-none"
+                  >
+                    Spark Wallet v1.0.0
+                    {isDevMode && <span className="ml-1 text-spark-primary">(dev)</span>}
+                  </button>
+                  {devTapCount > 0 && devTapCount < DEV_MODE_TAP_COUNT && (
+                    <p className="text-xs text-spark-text-muted mt-1">
+                      {DEV_MODE_TAP_COUNT - devTapCount} more taps to {isDevMode ? 'disable' : 'enable'} dev mode
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
