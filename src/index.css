@@ -53,7 +53,7 @@ html, body, #root {
 }
 
 body {
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   background: var(--spark-void);
   color: var(--spark-text-primary);
   -webkit-font-smoothing: antialiased;
@@ -130,40 +130,31 @@ body {
    ============================================ */
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Outfit', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
 .font-display {
-  font-family: 'Outfit', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* Balance display - large glowing numbers */
+/* Balance display - large clean numbers with background glow */
 .balance-display {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-weight: 600;
   font-size: 2.75rem;
   letter-spacing: -0.02em;
-  background: linear-gradient(
-    180deg, 
-    #ffffff 0%, 
-    #fffbeb 30%,
-    var(--spark-primary-light) 70%,
-    var(--spark-primary) 100%
-  );
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  filter: drop-shadow(0 0 50px var(--glow-primary)) drop-shadow(0 0 20px rgba(252, 211, 77, 0.3));
+  color: #ffffff;
+  text-shadow: 0 0 40px var(--glow-primary);
 }
 
 .balance-label {
-  font-family: 'Outfit', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-weight: 500;
   font-size: 1.25rem;
   color: var(--spark-text-secondary);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -172,14 +163,14 @@ h1, h2, h3, h4, h5, h6 {
    ============================================ */
 
 .button {
-  font-family: 'Outfit', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-weight: 600;
   padding: 14px 28px;
   border-radius: 14px;
   background: linear-gradient(135deg, var(--spark-primary) 0%, var(--spark-primary-light) 100%);
   color: #000;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 20px var(--glow-primary);
   border: none;
@@ -235,10 +226,10 @@ h1, h2, h3, h4, h5, h6 {
   gap: 8px;
   padding: 14px 32px;
   border-radius: 50px;
-  font-family: 'Outfit', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-weight: 600;
   font-size: 0.95rem;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   border: none;

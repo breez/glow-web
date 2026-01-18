@@ -107,9 +107,14 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
   };
 
   return (
-    <div className="px-4 py-3">
+    <div className="px-4 py-3 relative">
+      {/* Background glow for list */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[300px] h-[200px] bg-gradient-radial from-spark-primary/10 via-spark-primary/5 to-transparent blur-3xl opacity-60" />
+      </div>
+      
       {/* Section header */}
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-3 relative">
         <h2 className="font-display text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
           Payments
         </h2>
@@ -117,7 +122,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
       </div>
 
       {/* Transaction list */}
-      <ul className="space-y-1.5">
+      <ul className="space-y-1.5 relative">
         {transactions.map((tx, index) => {
           const isReceive = tx.paymentType === 'receive';
           const isPending = tx.status === 'pending';
@@ -126,7 +131,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
           return (
             <li
               key={tx.id || `${tx.timestamp}-${tx.amount}-${index}`}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all hover:bg-white/[0.03] active:bg-white/[0.05] active:scale-[0.99]"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all hover:bg-white/[0.03] active:bg-white/[0.05] active:scale-[0.99] relative"
               onClick={() => onPaymentSelected(tx)}
             >
               {/* Transaction type icon */}

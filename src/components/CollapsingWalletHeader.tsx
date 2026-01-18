@@ -38,11 +38,14 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
       {/* Glassmorphism background */}
       <div className="absolute inset-0 bg-spark-surface/80 backdrop-blur-xl border-b border-spark-border" />
       
-      {/* Glow effect behind balance */}
+      {/* Strong glow effect behind balance */}
       <div 
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[150px] bg-gradient-radial from-spark-primary/20 to-transparent blur-3xl pointer-events-none transition-opacity duration-300"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[200px] pointer-events-none transition-opacity duration-300"
         style={{ opacity: 1 - scrollProgress * 0.7 }}
-      />
+      >
+        <div className="absolute inset-0 bg-gradient-radial from-spark-primary/30 via-spark-primary/15 to-transparent blur-3xl" />
+        <div className="absolute inset-4 bg-gradient-radial from-amber-400/20 to-transparent blur-2xl" />
+      </div>
 
       {/* Header content */}
       <div className="relative z-10 px-4 pt-4 pb-2">
