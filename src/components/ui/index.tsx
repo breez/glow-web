@@ -347,38 +347,94 @@ export const QRCodeContainer: React.FC<{
 
 export const CopyableText: React.FC<{
   text: string;
-}> = ({ text }) => {
+  truncate?: boolean;
+  showShare?: boolean;
+  onCopied?: () => void;
+  onShareError?: () => void;
+  label?: string;
+  additionalActions?: ReactNode;
+  textColor?: string;
+}> = ({ text, truncate = false, showShare = false, onCopied, onShareError, label = 'Address', additionalActions, textColor = 'text-spark-text-muted' }) => {
   const [copied, setCopied] = React.useState(false);
+  const [canShare, setCanShare] = React.useState(false);
+
+  React.useEffect(() => {
+    setCanShare(typeof navigator !== 'undefined' && !!navigator.share);
+  }, []);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(text)
       .then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+        onCopied?.();
       })
       .catch(err => console.error('Failed to copy: ', err));
   };
 
+  const handleShare = async () => {
+    try {
+      await navigator.share({
+        title: label,
+        text: text,
+      });
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        onShareError?.();
+      }
+    }
+  };
+
+  // Truncate text for display if requested
+  const displayText = truncate && text.length > 24
+    ? `${text.slice(0, 12)}...${text.slice(-12)}`
+    : text;
+
   return (
-    <div className="relative w-full">
-      <input
-        type="text"
-        value={text}
-        readOnly
-        className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 pr-24 text-spark-text-secondary font-mono text-sm text-center"
-      />
+    <div className="flex flex-col items-center gap-4 w-full">
+      {/* Clickable text display */}
       <button
         onClick={handleCopy}
-        className={`
-          absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all
-          ${copied 
-            ? 'bg-spark-success/20 text-spark-success' 
-            : 'bg-spark-primary text-white hover:bg-spark-primary-light'
-          }
-        `}
+        className={`text-center font-mono text-xs sm:text-sm break-all hover:opacity-80 transition-opacity ${textColor}`}
+        title="Tap to copy"
       >
-        {copied ? 'Copied!' : 'Copy'}
+        {displayText}
       </button>
+      
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={handleCopy}
+          className={`
+            flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all
+            ${copied 
+              ? 'bg-spark-success/20 text-spark-success' 
+              : 'bg-spark-primary text-white hover:bg-spark-primary-light'
+            }
+          `}
+          title={`Copy ${label}`}
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M8 2a2 2 0 00-2 2v1H5a2 2 0 00-2 2v7a2 2 0 002 2h6a2 2 0 002-2v-1h1a2 2 0 002-2V6l-4-4H8zm6 6h-2a2 2 0 01-2-2V4H8v1h3a1 1 0 011 1v2h2v2z"/>
+          </svg>
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+        
+        {showShare && canShare && (
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-2 px-4 py-2 border border-spark-border text-spark-text-secondary rounded-xl font-medium text-sm hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
+            title={`Share ${label}`}
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
+            </svg>
+            Share
+          </button>
+        )}
+        
+        {additionalActions}
+      </div>
     </div>
   );
 };
