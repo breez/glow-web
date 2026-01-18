@@ -1,26 +1,23 @@
-# WASM Demo App
+# Glow Demo App
 
-A demonstration web app showing how to implement Bitcoin payments via Lightning using the [Breez SDK - Nodeless](https://sdk-doc-spark.breez.technology/) with WebAssembly. 
+A demo web and PWA app showing how to implement [Breez SDK](https://sdk-doc-spark.breez.technology/) with WebAssembly. 
 
-See it in action [here](https://breez-sdk-spark-example.vercel.app/). 
+See it in action [here](https://glow-app.co). 
 
-Note: this is just a demo, for production usage, check out the security notes below.
+> **Note:** The demo is for demonstration purposes only and not intended for production use.
 
 ## Overview
 
 Built with React, this demo app showcases best practices for integrating Lightning in a web environment using the Breez SDK’s WebAssembly bindings. It enables users to:
 
-- Connect with a mnemonic seed phrase
-- Send Lightning payments using Bolt11 invoices
-- Receive Lightning payments by generating invoices
-- View transaction history
-- View detailed payment information
+- Send payments via various protocols such as: Lightning address, LNURL-Pay, Bolt11, BTC address, Spark address
+- Receive payments via various protocols such as: Lightning address, LNURL-Pay, Bolt11, BTC address
 
 ## Technologies Used
 
 - React with TypeScript
 - Tailwind CSS for styling
-- [Breez SDK - Nodeless](https://sdk-doc-spark.breez.technology/) for Lightning payments
+- [Breez SDK](https://sdk-doc-spark.breez.technology/) for all the bitcoin functionality
 
 
 ## Getting Started
