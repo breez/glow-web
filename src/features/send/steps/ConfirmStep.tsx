@@ -1,5 +1,5 @@
 import React from 'react';
-import { PrimaryButton, SecondaryButton, FormError } from '../../../components/ui';
+import { PrimaryButton, SecondaryButton, FormError, PaymentInfoRow } from '../../../components/ui';
 
 // Format number with space as thousand separator
 const formatWithSpaces = (num: number): string => {
@@ -35,38 +35,30 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, error, i
 
       {/* Breakdown card */}
       <div className="bg-spark-dark border border-spark-border rounded-2xl overflow-hidden">
-        {/* Amount row */}
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-spark-electric/20 flex items-center justify-center">
-              <svg className="w-4 h-4 text-spark-electric" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <span className="text-spark-text-secondary">Amount</span>
-          </div>
-          <span className="font-mono font-medium text-spark-text-primary">
-            {formatWithSpaces(amount)} sats
-          </span>
-        </div>
+        <PaymentInfoRow
+          label="Amount"
+          value={`${formatWithSpaces(amount)} sats`}
+          iconBgColor="bg-spark-electric/20"
+          icon={
+            <svg className="w-4 h-4 text-spark-electric" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
+        />
 
         {/* Divider */}
         <div className="border-t border-spark-border" />
 
-        {/* Fee row */}
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-spark-primary/20 flex items-center justify-center">
-              <svg className="w-4 h-4 text-spark-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <span className="text-spark-text-secondary">Network fee</span>
-          </div>
-          <span className="font-mono font-medium text-spark-text-primary">
-            {formatWithSpaces(fee)} sats
-          </span>
-        </div>
+        <PaymentInfoRow
+          label="Network fee"
+          value={`${formatWithSpaces(fee)} sats`}
+          iconBgColor="bg-spark-primary/20"
+          icon={
+            <svg className="w-4 h-4 text-spark-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          }
+        />
 
         {/* Divider */}
         <div className="border-t border-spark-border" />
