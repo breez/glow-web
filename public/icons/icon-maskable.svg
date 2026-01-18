@@ -1,4 +1,42 @@
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" fill="#d4a574"/>
-  <path d="M288 96L144 288h112l-32 128 144-192H256l32-128z" fill="#0a0a0f"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="glow-center" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff9e6"/>
+      <stop offset="30%" stop-color="#ffd93d"/>
+      <stop offset="60%" stop-color="#d4a574"/>
+      <stop offset="100%" stop-color="#8b6914"/>
+    </radialGradient>
+    <radialGradient id="glow-outer" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#d4a574" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#8b6914" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6"/>
+    </filter>
+  </defs>
+  
+  <!-- Background - full bleed for maskable -->
+  <rect width="512" height="512" fill="#0a0a0f"/>
+  
+  <!-- Outer glow rays - scaled down for safe zone -->
+  <g transform="translate(256,256) scale(0.7) translate(-256,-256)" filter="url(#blur)" opacity="0.6">
+    <polygon points="256,256 256,80 268,256" fill="#d4a574"/>
+    <polygon points="256,256 432,256 256,268" fill="#d4a574"/>
+    <polygon points="256,256 256,432 244,256" fill="#d4a574"/>
+    <polygon points="256,256 80,256 256,244" fill="#d4a574"/>
+    <polygon points="256,256 380,132 264,256" fill="#d4a574" opacity="0.7"/>
+    <polygon points="256,256 380,380 256,264" fill="#d4a574" opacity="0.7"/>
+    <polygon points="256,256 132,380 248,256" fill="#d4a574" opacity="0.7"/>
+    <polygon points="256,256 132,132 256,248" fill="#d4a574" opacity="0.7"/>
+  </g>
+  
+  <!-- Inner glow -->
+  <circle cx="256" cy="256" r="70" fill="url(#glow-outer)" filter="url(#blur)"/>
+  
+  <!-- Bright center -->
+  <circle cx="256" cy="256" r="30" fill="url(#glow-center)"/>
+  
+  <!-- Center highlight -->
+  <circle cx="256" cy="256" r="12" fill="#fffef0"/>
 </svg>

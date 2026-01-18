@@ -20,11 +20,23 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
 
       {/* Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative z-10">
-        {/* Lightning bolt icon */}
+        {/* Glow icon */}
         <div className="mb-8 relative">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-spark-primary to-spark-primary/80 flex items-center justify-center shadow-glow-primary animate-float">
-            <svg className="w-14 h-14 text-black" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
+          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-spark-dark to-spark-surface flex items-center justify-center shadow-glow-primary animate-float overflow-hidden">
+            <svg className="w-20 h-20" viewBox="0 0 64 64">
+              <defs>
+                <radialGradient id="home-glow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#fffef0"/>
+                  <stop offset="40%" stopColor="#ffd93d"/>
+                  <stop offset="100%" stopColor="#d4a574"/>
+                </radialGradient>
+                <filter id="home-blur">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+                </filter>
+              </defs>
+              <circle cx="32" cy="32" r="20" fill="#d4a574" opacity="0.3" filter="url(#home-blur)"/>
+              <circle cx="32" cy="32" r="12" fill="url(#home-glow)"/>
+              <circle cx="32" cy="32" r="4" fill="#fff"/>
             </svg>
           </div>
           {/* Glow ring */}
@@ -33,14 +45,10 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
 
         {/* Title */}
         <h1 className="font-display text-display-lg md:text-display-xl font-bold text-center mb-3">
-          <span className="text-gradient-primary">Spark</span>{' '}
-          <span className="text-white">Wallet</span>
+          <span className="text-gradient-primary">Glow</span>
         </h1>
 
         {/* Subtitle */}
-        <p className="text-spark-text-secondary text-lg md:text-xl text-center max-w-md mb-2">
-          Lightning-fast Bitcoin payments
-        </p>
         <p className="text-spark-text-muted text-sm text-center mb-12">
           Powered by Breez SDK
         </p>
@@ -52,7 +60,7 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
             onClick={onCreateNewWallet}
             className="button w-full py-4 text-base"
           >
-            Create New Wallet
+            Get Started
           </button>
 
           {/* Divider */}
@@ -67,7 +75,7 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
             onClick={onRestoreWallet}
             className="w-full py-4 border-2 border-spark-border-light text-spark-text-primary rounded-xl hover:border-spark-primary hover:text-spark-primary transition-all duration-300 font-display font-semibold tracking-wide"
           >
-            Restore Existing Wallet
+            Restore from Backup
           </button>
         </div>
 
@@ -100,12 +108,6 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="text-center pb-8 px-6">
-        <p className="text-spark-text-muted text-xs">
-          Self-custodial • Open Source • No KYC
-        </p>
-      </div>
     </div>
   );
 };

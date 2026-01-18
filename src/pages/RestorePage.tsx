@@ -42,7 +42,7 @@ const RestorePage: React.FC<RestorePageProps> = ({
   );
 
   return (
-    <PageLayout footer={footer} onBack={onBack} title="Restore Wallet" onClearError={onClearError}>
+    <PageLayout footer={footer} onBack={onBack} title="Restore from Backup" onClearError={onClearError}>
       <div className="flex flex-col container h-full mx-auto max-w-md px-4">
         {/* Icon */}
         <div className="flex justify-center mb-6">

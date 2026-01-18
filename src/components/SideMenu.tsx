@@ -110,14 +110,21 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-spark-primary to-spark-primary/80 flex items-center justify-center shadow-glow-primary">
-                  <svg className="w-6 h-6 text-black" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
+                <div className="w-10 h-10 rounded-xl bg-spark-dark border border-spark-border flex items-center justify-center shadow-glow-primary overflow-hidden">
+                  <svg className="w-8 h-8" viewBox="0 0 32 32">
+                    <defs>
+                      <radialGradient id="menu-glow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stopColor="#fffef0"/>
+                        <stop offset="40%" stopColor="#ffd93d"/>
+                        <stop offset="100%" stopColor="#d4a574"/>
+                      </radialGradient>
+                    </defs>
+                    <circle cx="16" cy="16" r="6" fill="url(#menu-glow)"/>
+                    <circle cx="16" cy="16" r="2" fill="#fff"/>
                   </svg>
                 </div>
                 <div>
-                  <h2 className="font-display font-bold text-spark-text-primary">Spark</h2>
-                  <p className="text-xs text-spark-text-muted">Wallet</p>
+                  <h2 className="font-display font-bold text-spark-text-primary">Glow</h2>
                 </div>
               </div>
               <button 
@@ -189,7 +196,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                     Logout Warning
                   </h3>
                   <p className="text-spark-text-secondary text-sm text-center mb-6">
-                    Make sure you've saved your recovery phrase before logging out. You'll need it to access your wallet again.
+                    Make sure you've saved your recovery phrase before logging out. You'll need it to access your funds again.
                   </p>
 
                   <div className="flex gap-3">

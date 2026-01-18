@@ -50,9 +50,9 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
 
   if (isLoading) {
     return (
-      <PageLayout onBack={onBack} footer={<div />} title="Create New Wallet" onClearError={onClearError}>
+      <PageLayout onBack={onBack} footer={<div />} title="Get Started" onClearError={onClearError}>
         <div className="flex items-center justify-center h-full">
-          <LoadingSpinner text="Generating secure wallet..." />
+          <LoadingSpinner text="Setting up Glow..." />
         </div>
       </PageLayout>
     );
@@ -69,7 +69,7 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
   const words = mnemonic.split(' ');
 
   return (
-    <PageLayout onBack={onBack} footer={footer} title="Create New Wallet" onClearError={onClearError}>
+    <PageLayout onBack={onBack} footer={footer} title="Get Started" onClearError={onClearError}>
       <div className="flex flex-grow h-full flex-col max-w-2xl mx-auto px-4">
         {/* Icon */}
         <div className="flex justify-center mb-4">

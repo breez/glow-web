@@ -27,7 +27,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
         <header className="relative z-10 px-4 py-4 border-b border-spark-border bg-spark-surface/80 backdrop-blur-sm">
           <div className="container mx-auto">
             <h1 className="text-center font-display text-xl font-bold text-spark-text-primary">
-              {title || "Spark Wallet"}
+              {title || "Glow"}
             </h1>
           </div>
           {onBack && (

@@ -108,7 +108,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
       {/* Restoration overlay */}
       {isRestoring && (
         <div className="absolute inset-0 bg-spark-void/90 backdrop-blur-sm z-50 flex items-center justify-center">
-          <LoadingSpinner text="Restoring wallet data..." />
+          <LoadingSpinner text="Loading..." />
         </div>
       )}
 

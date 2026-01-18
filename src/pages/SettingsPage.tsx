@@ -335,7 +335,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config }) => {
                     onClick={handleVersionTap}
                     className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors select-none"
                   >
-                    Spark Wallet v1.0.0
+                    Glow v1.0.0
                     {isDevMode && <span className="ml-1 text-spark-primary">(dev)</span>}
                   </button>
                   {devTapCount > 0 && devTapCount < DEV_MODE_TAP_COUNT && (

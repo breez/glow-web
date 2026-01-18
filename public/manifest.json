@@ -1,6 +1,6 @@
 {
-  "name": "Spark Wallet",
-  "short_name": "Spark",
+  "name": "Glow",
+  "short_name": "Glow",
   "description": "Lightning fast Bitcoin payments powered by Breez SDK",
   "start_url": "/",
   "id": "/",

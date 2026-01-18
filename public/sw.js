@@ -1,5 +1,5 @@
-// Spark Wallet Service Worker
-const CACHE_NAME = 'spark-wallet-v1';
+// Glow Service Worker
+const CACHE_NAME = 'glow-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -99,13 +99,13 @@ self.addEventListener('push', (event) => {
       vibrate: [200, 100, 200],
       data: data.data || {},
       actions: [
-        { action: 'open', title: 'Open Wallet' },
+        { action: 'open', title: 'Open Glow' },
         { action: 'dismiss', title: 'Dismiss' },
       ],
     };
     
     event.waitUntil(
-      self.registration.showNotification(data.title || 'Spark Wallet', options)
+      self.registration.showNotification(data.title || 'Glow', options)
     );
   }
 });
