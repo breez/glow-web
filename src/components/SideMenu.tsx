@@ -110,22 +110,25 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-spark-dark border border-spark-border flex items-center justify-center shadow-glow-primary overflow-hidden">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-spark-surface to-spark-dark border border-white/10 flex items-center justify-center overflow-hidden">
                   <svg className="w-8 h-8" viewBox="0 0 32 32">
                     <defs>
                       <radialGradient id="menu-glow" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stopColor="#fffef0"/>
-                        <stop offset="40%" stopColor="#ffd93d"/>
+                        <stop offset="0%" stopColor="#fff"/>
+                        <stop offset="40%" stopColor="#fcd34d"/>
                         <stop offset="100%" stopColor="#d4a574"/>
                       </radialGradient>
+                      <radialGradient id="menu-halo" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stopColor="#fcd34d" stopOpacity="0.4"/>
+                        <stop offset="100%" stopColor="#000" stopOpacity="0"/>
+                      </radialGradient>
                     </defs>
-                    <circle cx="16" cy="16" r="6" fill="url(#menu-glow)"/>
+                    <circle cx="16" cy="16" r="10" fill="url(#menu-halo)"/>
+                    <circle cx="16" cy="16" r="5" fill="url(#menu-glow)"/>
                     <circle cx="16" cy="16" r="2" fill="#fff"/>
                   </svg>
                 </div>
-                <div>
-                  <h2 className="font-display font-bold text-spark-text-primary">Glow</h2>
-                </div>
+                <h2 className="font-display font-bold text-spark-text-primary">Glow</h2>
               </div>
               <button 
                 onClick={onClose} 

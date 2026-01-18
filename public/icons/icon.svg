@@ -1,44 +1,76 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <radialGradient id="glow-center" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#fff9e6"/>
-      <stop offset="30%" stop-color="#ffd93d"/>
-      <stop offset="60%" stop-color="#d4a574"/>
-      <stop offset="100%" stop-color="#8b6914"/>
+    <!-- Core glow gradient -->
+    <radialGradient id="core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="20%" stop-color="#fffbeb"/>
+      <stop offset="50%" stop-color="#fcd34d"/>
+      <stop offset="80%" stop-color="#d4a574"/>
+      <stop offset="100%" stop-color="#92400e"/>
     </radialGradient>
-    <radialGradient id="glow-outer" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#d4a574" stop-opacity="0.8"/>
-      <stop offset="50%" stop-color="#8b6914" stop-opacity="0.3"/>
+    
+    <!-- Outer halo -->
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fcd34d" stop-opacity="0.4"/>
+      <stop offset="40%" stop-color="#d4a574" stop-opacity="0.15"/>
       <stop offset="100%" stop-color="#000" stop-opacity="0"/>
     </radialGradient>
-    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="8"/>
+    
+    <!-- Ray gradient -->
+    <linearGradient id="ray" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fcd34d" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#fcd34d" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#d4a574" stop-opacity="0"/>
+    </linearGradient>
+    
+    <!-- Soft blur -->
+    <filter id="softBlur" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="12"/>
+    </filter>
+    
+    <filter id="coreGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4"/>
     </filter>
   </defs>
   
   <!-- Background -->
-  <rect width="512" height="512" fill="#0a0a0f"/>
+  <rect width="512" height="512" fill="#0a0a0f" rx="90"/>
   
-  <!-- Outer glow rays -->
-  <g filter="url(#blur)" opacity="0.6">
-    <!-- Main rays -->
-    <polygon points="256,256 256,0 270,256" fill="#d4a574"/>
-    <polygon points="256,256 512,256 256,270" fill="#d4a574"/>
-    <polygon points="256,256 256,512 242,256" fill="#d4a574"/>
-    <polygon points="256,256 0,256 256,242" fill="#d4a574"/>
-    <!-- Diagonal rays -->
-    <polygon points="256,256 437,75 266,256" fill="#d4a574" opacity="0.7"/>
-    <polygon points="256,256 437,437 256,266" fill="#d4a574" opacity="0.7"/>
-    <polygon points="256,256 75,437 246,256" fill="#d4a574" opacity="0.7"/>
-    <polygon points="256,256 75,75 256,246" fill="#d4a574" opacity="0.7"/>
+  <!-- Ambient halo -->
+  <circle cx="256" cy="256" r="200" fill="url(#halo)" filter="url(#softBlur)"/>
+  
+  <!-- Light rays -->
+  <g opacity="0.7">
+    <!-- Cardinal rays -->
+    <ellipse cx="256" cy="128" rx="3" ry="100" fill="url(#ray)" transform="rotate(0 256 256)"/>
+    <ellipse cx="256" cy="128" rx="3" ry="100" fill="url(#ray)" transform="rotate(45 256 256)"/>
+    <ellipse cx="256" cy="128" rx="3" ry="100" fill="url(#ray)" transform="rotate(90 256 256)"/>
+    <ellipse cx="256" cy="128" rx="3" ry="100" fill="url(#ray)" transform="rotate(135 256 256)"/>
+    <ellipse cx="256" cy="128" rx="3" ry="100" fill="url(#ray)" transform="rotate(180 256 256)"/>
+    <ellipse cx="256" cy="128" rx="3" ry="100" fill="url(#ray)" transform="rotate(225 256 256)"/>
+    <ellipse cx="256" cy="128" rx="3" ry="100" fill="url(#ray)" transform="rotate(270 256 256)"/>
+    <ellipse cx="256" cy="128" rx="3" ry="100" fill="url(#ray)" transform="rotate(315 256 256)"/>
+    
+    <!-- Secondary thinner rays -->
+    <ellipse cx="256" cy="140" rx="1.5" ry="80" fill="url(#ray)" opacity="0.5" transform="rotate(22.5 256 256)"/>
+    <ellipse cx="256" cy="140" rx="1.5" ry="80" fill="url(#ray)" opacity="0.5" transform="rotate(67.5 256 256)"/>
+    <ellipse cx="256" cy="140" rx="1.5" ry="80" fill="url(#ray)" opacity="0.5" transform="rotate(112.5 256 256)"/>
+    <ellipse cx="256" cy="140" rx="1.5" ry="80" fill="url(#ray)" opacity="0.5" transform="rotate(157.5 256 256)"/>
+    <ellipse cx="256" cy="140" rx="1.5" ry="80" fill="url(#ray)" opacity="0.5" transform="rotate(202.5 256 256)"/>
+    <ellipse cx="256" cy="140" rx="1.5" ry="80" fill="url(#ray)" opacity="0.5" transform="rotate(247.5 256 256)"/>
+    <ellipse cx="256" cy="140" rx="1.5" ry="80" fill="url(#ray)" opacity="0.5" transform="rotate(292.5 256 256)"/>
+    <ellipse cx="256" cy="140" rx="1.5" ry="80" fill="url(#ray)" opacity="0.5" transform="rotate(337.5 256 256)"/>
   </g>
   
-  <!-- Inner glow -->
-  <circle cx="256" cy="256" r="100" fill="url(#glow-outer)" filter="url(#blur)"/>
+  <!-- Core glow haze -->
+  <circle cx="256" cy="256" r="60" fill="#fcd34d" opacity="0.3" filter="url(#coreGlow)"/>
   
-  <!-- Bright center -->
-  <circle cx="256" cy="256" r="40" fill="url(#glow-center)"/>
+  <!-- Main core -->
+  <circle cx="256" cy="256" r="36" fill="url(#core)"/>
   
-  <!-- Center highlight -->
-  <circle cx="256" cy="256" r="15" fill="#fffef0"/>
+  <!-- Hot center -->
+  <circle cx="256" cy="256" r="14" fill="#ffffff"/>
+  
+  <!-- Specular highlight -->
+  <circle cx="250" cy="250" r="6" fill="#ffffff" opacity="0.8"/>
 </svg>

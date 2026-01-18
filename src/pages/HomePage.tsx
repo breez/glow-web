@@ -7,122 +7,129 @@ interface HomePageProps {
 
 const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet }) => {
   return (
-    <div className="h-[100dvh] flex flex-col relative overflow-hidden">
-      {/* Atmospheric background elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Main glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gradient-radial from-spark-primary/20 via-spark-primary/5 to-transparent blur-3xl" />
-        {/* Secondary glow */}
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-gradient-radial from-spark-primary/15 to-transparent blur-3xl" />
-        {/* Electric accent */}
-        <div className="absolute top-1/3 left-0 w-[300px] h-[300px] bg-gradient-radial from-spark-electric/10 to-transparent blur-3xl" />
+    <div className="h-[100dvh] flex flex-col relative overflow-hidden bg-spark-dark">
+      {/* Animated background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Central glow */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px]">
+          <div className="absolute inset-0 bg-gradient-radial from-amber-500/20 via-amber-600/5 to-transparent blur-3xl animate-glow-pulse" />
+        </div>
+        
+        {/* Accent orbs */}
+        <div className="absolute top-20 right-10 w-32 h-32 bg-gradient-radial from-amber-400/10 to-transparent blur-2xl" />
+        <div className="absolute bottom-40 left-10 w-24 h-24 bg-gradient-radial from-amber-500/8 to-transparent blur-2xl" />
+        
+        {/* Subtle grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)`,
+            backgroundSize: '40px 40px'
+          }}
+        />
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative z-10">
-        {/* Glow icon */}
-        <div className="mb-8 relative">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-spark-dark to-spark-surface flex items-center justify-center shadow-glow-primary animate-float overflow-hidden">
-            <svg className="w-20 h-20" viewBox="0 0 64 64">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
+        
+        {/* Logo */}
+        <div className="mb-10 relative">
+          {/* Outer glow ring */}
+          <div className="absolute -inset-8 bg-gradient-radial from-amber-500/20 via-amber-600/5 to-transparent blur-2xl animate-glow-pulse" />
+          
+          {/* Icon container */}
+          <div className="relative w-28 h-28 rounded-[2rem] bg-gradient-to-br from-spark-surface to-spark-dark border border-white/10 flex items-center justify-center shadow-2xl">
+            {/* Rays */}
+            <svg className="absolute w-full h-full" viewBox="0 0 112 112">
               <defs>
-                <radialGradient id="home-glow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#fffef0"/>
-                  <stop offset="40%" stopColor="#ffd93d"/>
-                  <stop offset="100%" stopColor="#d4a574"/>
-                </radialGradient>
-                <filter id="home-blur">
-                  <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
-                </filter>
+                <linearGradient id="homeRay" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#fcd34d" stopOpacity="0"/>
+                  <stop offset="50%" stopColor="#fcd34d" stopOpacity="0.4"/>
+                  <stop offset="100%" stopColor="#d4a574" stopOpacity="0"/>
+                </linearGradient>
               </defs>
-              <circle cx="32" cy="32" r="20" fill="#d4a574" opacity="0.3" filter="url(#home-blur)"/>
-              <circle cx="32" cy="32" r="12" fill="url(#home-glow)"/>
-              <circle cx="32" cy="32" r="4" fill="#fff"/>
+              <g opacity="0.6">
+                {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
+                  <ellipse
+                    key={angle}
+                    cx="56"
+                    cy="28"
+                    rx="1"
+                    ry="20"
+                    fill="url(#homeRay)"
+                    transform={`rotate(${angle} 56 56)`}
+                  />
+                ))}
+              </g>
             </svg>
+            
+            {/* Core glow */}
+            <div className="absolute w-16 h-16 rounded-full bg-gradient-radial from-amber-400/40 via-amber-500/20 to-transparent blur-lg" />
+            
+            {/* Main orb */}
+            <div className="relative w-12 h-12 rounded-full bg-gradient-radial from-white via-amber-200 to-amber-500 shadow-lg">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/80 to-transparent" />
+              <div className="absolute top-2 left-2 w-3 h-3 rounded-full bg-white/90" />
+            </div>
           </div>
-          {/* Glow ring */}
-          <div className="absolute inset-0 rounded-3xl bg-spark-primary/30 blur-xl animate-glow-pulse" />
         </div>
 
         {/* Title */}
-        <h1 className="font-display text-display-lg md:text-display-xl font-bold text-center mb-3">
-          <span className="text-gradient-primary">Glow</span>
+        <h1 className="font-display text-5xl md:text-6xl font-bold text-center mb-2 tracking-tight">
+          <span className="bg-gradient-to-r from-amber-200 via-amber-100 to-amber-300 bg-clip-text text-transparent">
+            Glow
+          </span>
         </h1>
 
-        {/* Subtitle */}
-        <p className="text-spark-text-muted text-sm text-center mb-12">
+        {/* Tagline */}
+        <p className="text-spark-text-muted text-sm text-center mb-10">
           Powered by Breez SDK
         </p>
 
         {/* CTA Buttons */}
-        <div className="w-full max-w-sm space-y-4">
+        <div className="w-full max-w-xs space-y-3">
           {/* Primary CTA */}
           <button
             onClick={onCreateNewWallet}
-            className="button w-full py-4 text-base"
+            className="group relative w-full py-4 px-6 rounded-2xl font-display font-semibold text-base overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
           >
-            Get Started
+            {/* Button gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 opacity-100" />
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            {/* Shimmer effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+            
+            <span className="relative text-black">Get Started</span>
           </button>
-
-          {/* Divider */}
-          <div className="relative flex items-center gap-4 py-2">
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-spark-border-light to-transparent" />
-            <span className="text-spark-text-muted text-sm font-medium">or</span>
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-spark-border-light to-transparent" />
-          </div>
 
           {/* Secondary CTA */}
           <button
             onClick={onRestoreWallet}
-            className="w-full py-4 border-2 border-spark-border-light text-spark-text-primary rounded-xl hover:border-spark-primary hover:text-spark-primary transition-all duration-300 font-display font-semibold tracking-wide"
+            className="w-full py-4 px-6 rounded-2xl border border-white/10 bg-white/5 text-spark-text-secondary font-display font-medium text-sm hover:bg-white/10 hover:text-spark-text-primary hover:border-white/20 transition-all duration-300"
           >
             Restore from Backup
           </button>
         </div>
 
         {/* Features */}
-        <div className="mt-16 grid grid-cols-3 gap-6 max-w-md w-full">
-          <FeatureCard
-            icon={
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            }
-            label="Instant"
-          />
-          <FeatureCard
-            icon={
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            }
-            label="Secure"
-          />
-          <FeatureCard
-            icon={
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            }
-            label="Global"
-          />
+        <div className="mt-14 flex gap-8 max-w-sm w-full justify-center">
+          <FeaturePill icon="⚡" label="Instant" />
+          <FeaturePill icon="🔒" label="Secure" />
+          <FeaturePill icon="🌍" label="Global" />
         </div>
       </div>
 
+      {/* Bottom fade */}
+      <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-spark-dark to-transparent pointer-events-none" />
     </div>
   );
 };
 
-interface FeatureCardProps {
-  icon: React.ReactNode;
-  label: string;
-}
-
-const FeatureCard: React.FC<FeatureCardProps> = ({ icon, label }) => (
-  <div className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-spark-surface/50 border border-spark-border hover:border-spark-border-light transition-colors">
-    <div className="text-spark-primary">
-      {icon}
-    </div>
-    <span className="text-spark-text-secondary text-xs font-medium">{label}</span>
+const FeaturePill: React.FC<{ icon: string; label: string }> = ({ icon, label }) => (
+  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/5">
+    <span className="text-sm">{icon}</span>
+    <span className="text-spark-text-muted text-xs font-medium">{label}</span>
   </div>
 );
 
