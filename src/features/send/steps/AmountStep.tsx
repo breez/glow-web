@@ -60,13 +60,13 @@ const AmountStep: React.FC<AmountStepProps> = ({
             <button
               key={quickAmount}
               onClick={() => setLocalAmount(String(quickAmount))}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+              className={`flex-1 py-2 text-sm font-mono font-medium rounded-lg transition-all ${
                 amountNum === quickAmount
-                  ? 'bg-spark-primary text-white'
-                  : 'bg-spark-dark border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+                  ? 'bg-spark-primary text-black'
+                  : 'bg-spark-elevated border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
               }`}
             >
-              {quickAmount.toLocaleString('en-US').replace(/,/g, ' ')}
+              {quickAmount.toLocaleString('en-US').replace(/,/g, '\u2009')}
             </button>
           ))}
         </div>
