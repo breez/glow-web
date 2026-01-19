@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Config, GetInfoResponse, Network, Payment, SdkEvent, defaultConfig } from '@breeztech/breez-sdk-spark';
+import { Config, GetInfoResponse, Network, Payment, SdkEvent, defaultConfig, Rate, FiatCurrency } from '@breeztech/breez-sdk-spark';
 import { WalletProvider, useWallet } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
@@ -13,12 +13,13 @@ import WalletPage from './pages/WalletPage';
 import UnclaimedDepositsPage from './pages/UnclaimedDepositsPage';
 import BackupPage from './pages/BackupPage';
 import SettingsPage from './pages/SettingsPage';
+import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import { getSettings } from './services/settings';
 
 // Main App without toast functionality
 const AppContent: React.FC = () => {
   // Screen navigation state
-  const [currentScreen, setCurrentScreen] = useState<'home' | 'restore' | 'generate' | 'wallet' | 'unclaimedDeposits' | 'settings' | 'backup'>('home');
+  const [currentScreen, setCurrentScreen] = useState<'home' | 'restore' | 'generate' | 'wallet' | 'unclaimedDeposits' | 'settings' | 'backup' | 'fiatCurrencies'>('home');
 
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -26,7 +27,8 @@ const AppContent: React.FC = () => {
   const [walletInfo, setWalletInfo] = useState<GetInfoResponse | null>(null);
   const [transactions, setTransactions] = useState<Payment[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [usdRate, setUsdRate] = useState<number | null>(null);
+  const [fiatRates, setFiatRates] = useState<Rate[]>([]);
+  const [fiatCurrencies, setFiatCurrencies] = useState<FiatCurrency[]>([]);
   const [config, setConfig] = useState<Config | null>(null);
   const [hasUnclaimedDeposits, setHasUnclaimedDeposits] = useState<boolean>(false);
   const [celebrationAmount, setCelebrationAmount] = useState<number | null>(null);
@@ -140,26 +142,33 @@ const AppContent: React.FC = () => {
     refreshWalletData(false);
   }, [refreshWalletData, showToast, isRestoring, fetchUnclaimedDeposits, currentScreen]);
 
-  // Note: Fiat rate functionality removed as it's not available in the new WASM API
-  // USD rate will be set to null for now
-  const fetchUsdRate = useCallback(async () => {
-    // Placeholder - fiat rates not available in new API
-    setUsdRate(null);
-  }, []);
+  // Fetch fiat rates from SDK
+  const fetchFiatData = useCallback(async () => {
+    try {
+      const [rates, currencies] = await Promise.all([
+        wallet.listFiatRates(),
+        wallet.listFiatCurrencies(),
+      ]);
+      setFiatRates(rates);
+      setFiatCurrencies(currencies);
+    } catch (error) {
+      console.warn('Failed to fetch fiat data:', error);
+    }
+  }, [wallet]);
 
   // Set up periodic fiat rate fetching
   useEffect(() => {
     if (isConnected) {
       // Fetch immediately upon connection
-      fetchUsdRate();
+      fetchFiatData();
 
-      // Then set up interval for every 30 seconds
-      const interval = setInterval(fetchUsdRate, 30000);
+      // Then set up interval for every 60 seconds
+      const interval = setInterval(fetchFiatData, 60000);
 
       // Clean up interval on disconnect
       return () => clearInterval(interval);
     }
-  }, [isConnected, fetchUsdRate]);
+  }, [isConnected, fetchFiatData]);
 
   // Try to connect with saved mnemonic on app startup (run once)
   useEffect(() => {
@@ -361,7 +370,16 @@ const AppContent: React.FC = () => {
 
       case 'settings':
         return (
-          <SettingsPage onBack={() => setCurrentScreen('wallet')} config={config} />
+          <SettingsPage 
+            onBack={() => setCurrentScreen('wallet')} 
+            config={config}
+            onOpenFiatCurrencies={() => setCurrentScreen('fiatCurrencies')}
+          />
+        );
+
+      case 'fiatCurrencies':
+        return (
+          <FiatCurrenciesPage onBack={() => setCurrentScreen('settings')} />
         );
 
       case 'backup':
@@ -393,7 +411,8 @@ const AppContent: React.FC = () => {
           <WalletPage
             walletInfo={walletInfo}
             transactions={transactions}
-            usdRate={usdRate}
+            fiatRates={fiatRates}
+            fiatCurrencies={fiatCurrencies}
             refreshWalletData={refreshWalletData}
             isRestoring={isRestoring}
             error={error}

@@ -1,9 +1,11 @@
-import React from 'react';
-import type { GetInfoResponse } from '@breeztech/breez-sdk-spark';
+import React, { useMemo, useState, useCallback } from 'react';
+import type { GetInfoResponse, Rate, FiatCurrency } from '@breeztech/breez-sdk-spark';
+import { getFiatSettings } from '../services/settings';
 
 interface CollapsingWalletHeaderProps {
   walletInfo: GetInfoResponse | null;
-  usdRate: number | null;
+  fiatRates: Rate[];
+  fiatCurrencies: FiatCurrency[];
   scrollProgress: number;
   onOpenMenu: () => void;
   hasUnclaimedDeposits: boolean;
@@ -18,17 +20,60 @@ const formatWithThinSpaces = (num: number): string => {
 const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   walletInfo,
   scrollProgress,
-  usdRate,
+  fiatRates,
+  fiatCurrencies,
   onOpenMenu,
   hasUnclaimedDeposits,
   onOpenUnclaimedDeposits
 }) => {
+  const [activeFiatIndex, setActiveFiatIndex] = useState(0);
+
+  // Calculate fiat values for selected currencies
+  const fiatValues = useMemo(() => {
+    if (!walletInfo) return [];
+    
+    const balanceSat = walletInfo.balanceSats || 0;
+    if (balanceSat === 0) return []; // Don't show fiat for zero balance
+    
+    const balanceBtc = balanceSat / 100000000;
+    const settings = getFiatSettings();
+    
+    return settings.selectedCurrencies
+      .map(currencyId => {
+        const rate = fiatRates.find(r => r.coin === currencyId);
+        const currency = fiatCurrencies.find(c => c.id === currencyId);
+        
+        if (!rate || !currency) return null;
+        
+        const value = balanceBtc * rate.value;
+        const symbol = currency.info.symbol?.grapheme || currencyId;
+        const fractionSize = currency.info.fractionSize || 2;
+        
+        return {
+          currencyId,
+          symbol,
+          value: value.toFixed(fractionSize),
+          symbolPosition: currency.info.symbol?.rtl ? 'after' : 'before',
+        };
+      })
+      .filter((v): v is NonNullable<typeof v> => v !== null);
+  }, [walletInfo, fiatRates, fiatCurrencies]);
+
+  // Cycle through fiat currencies on tap
+  const handleFiatTap = useCallback(() => {
+    if (fiatValues.length > 1) {
+      setActiveFiatIndex(prev => (prev + 1) % fiatValues.length);
+    }
+  }, [fiatValues.length]);
+
+  // Get current fiat to display
+  const currentFiat = fiatValues.length > 0 
+    ? fiatValues[activeFiatIndex % fiatValues.length] 
+    : null;
+
   if (!walletInfo) return null;
 
   const balanceSat = walletInfo.balanceSats || 0;
-  const pendingOpacity = Math.max(0, 1 - scrollProgress * 2);
-  const maxPendingHeight = '80px';
-  const usdValue = usdRate !== null ? ((balanceSat / 100000000) * usdRate).toFixed(2) : null;
 
   return (
     <div className="relative overflow-hidden transition-all duration-200">
@@ -116,21 +161,31 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           </div>
         </div>
 
-        {/* USD value - fades on scroll */}
-        <div
-          className="flex flex-col overflow-hidden transition-all duration-200"
-          style={{
-            opacity: pendingOpacity,
-            maxHeight: pendingOpacity > 0 ? maxPendingHeight : '0px',
-            marginTop: pendingOpacity > 0 ? '0.75rem' : '0'
-          }}
-        >
-          {usdValue && (
-            <div className="text-center text-spark-text-secondary text-lg font-display">
-              ≈ ${usdValue}
-            </div>
-          )}
-        </div>
+        {/* Fiat value - single, tappable to cycle */}
+        {currentFiat && (
+          <div className="flex justify-center mt-2">
+            <button
+              onClick={handleFiatTap}
+              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-display transition-all focus:outline-none ${
+                fiatValues.length > 1 
+                  ? 'hover:bg-white/5 active:bg-white/10 cursor-pointer' 
+                  : 'cursor-default'
+              }`}
+              aria-label={fiatValues.length > 1 ? "Tap to switch currency" : undefined}
+            >
+              <span className="text-spark-text-muted">
+                ≈ {currentFiat.symbolPosition === 'before' ? currentFiat.symbol : ''}
+                {currentFiat.value}
+                {currentFiat.symbolPosition === 'after' ? ` ${currentFiat.symbol}` : ''}
+              </span>
+              {fiatValues.length > 1 && (
+                <svg className="w-3 h-3 text-spark-text-muted/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                </svg>
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Bottom spacing */}
         <div className="h-4" />

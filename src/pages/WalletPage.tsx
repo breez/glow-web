@@ -10,13 +10,14 @@ import PaymentDetailsDialog from '../components/PaymentDetailsDialog';
 import CollapsingWalletHeader from '../components/CollapsingWalletHeader';
 import SideMenu from '../components/SideMenu';
 import TransactionList from '../components/TransactionList';
-import { GetInfoResponse, Payment } from '@breeztech/breez-sdk-spark';
+import { GetInfoResponse, Payment, Rate, FiatCurrency } from '@breeztech/breez-sdk-spark';
 import { SendInput } from '@/types/domain';
 
 interface WalletPageProps {
   walletInfo: GetInfoResponse | null;
   transactions: Payment[];
-  usdRate: number | null;
+  fiatRates: Rate[];
+  fiatCurrencies: FiatCurrency[];
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
   isRestoring: boolean;
   error: string | null;
@@ -31,7 +32,8 @@ interface WalletPageProps {
 const WalletPage: React.FC<WalletPageProps> = ({
   walletInfo,
   transactions,
-  usdRate,
+  fiatRates,
+  fiatCurrencies,
   refreshWalletData,
   isRestoring,
   onLogout,
@@ -116,7 +118,8 @@ const WalletPage: React.FC<WalletPageProps> = ({
       <div className="sticky top-0 z-10">
         <CollapsingWalletHeader
           walletInfo={walletInfo}
-          usdRate={usdRate}
+          fiatRates={fiatRates}
+          fiatCurrencies={fiatCurrencies}
           scrollProgress={scrollProgress}
           onOpenMenu={() => setIsMenuOpen(true)}
           hasUnclaimedDeposits={hasUnclaimedDeposits}

@@ -26,6 +26,8 @@ import {
   Fee,
   UserSettings,
   UpdateUserSettingsRequest,
+  FiatCurrency,
+  Rate,
 } from '@breeztech/breez-sdk-spark';
 import type { WalletAPI } from './WalletAPI';
 
@@ -140,6 +142,20 @@ export const setUserSettings = async (settings: UpdateUserSettingsRequest): Prom
   if (!sdk) throw new Error('SDK not initialized');
   await sdk.updateUserSettings(settings);
 };
+
+// Fiat currencies
+export const listFiatCurrencies = async (): Promise<FiatCurrency[]> => {
+  if (!sdk) throw new Error('SDK not initialized');
+  const response = await sdk.listFiatCurrencies();
+  return response.currencies;
+};
+
+export const listFiatRates = async (): Promise<Rate[]> => {
+  if (!sdk) throw new Error('SDK not initialized');
+  const response = await sdk.listFiatRates();
+  return response.rates;
+};
+
 // Logs accessors
 export const getSdkLogs = (): string => {
   return sdkLogs.join('\n');
@@ -330,6 +346,9 @@ export const walletApi: WalletAPI = {
   // User settings
   getUserSettings,
   setUserSettings,
+  // Fiat currencies
+  listFiatCurrencies,
+  listFiatRates,
   // Logs
   getSdkLogs,
 };
