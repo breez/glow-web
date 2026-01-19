@@ -35,6 +35,9 @@ const AppContent: React.FC = () => {
 
   // Add a ref to store the event listener ID
   const eventListenerIdRef = useRef<string | null>(null);
+  
+  // Track recently shown payment celebrations to avoid duplicates
+  const shownPaymentIdsRef = useRef<Set<string>>(new Set());
 
   // Function to refresh wallet data (usable via a callback)
   const wallet = useWallet();
@@ -78,7 +81,6 @@ const AppContent: React.FC = () => {
   const handleSdkEvent = useCallback((event: SdkEvent) => {
     console.log('SDK event received:', event);
 
-    // Handle synced events
     if (event.type === 'synced') {
       console.log('Synced event received, refreshing data...');
 
@@ -90,28 +92,28 @@ const AppContent: React.FC = () => {
       // Don't show loading indicator for automatic refresh
       refreshWalletData(false);
       fetchUnclaimedDeposits();
-    }
-
-    // Handle SDK events with toast notifications
-    if (event.type === 'synced') {
-      console.log('Wallet synced event received');
-      // Refresh wallet data when synced
-      refreshWalletData(false);
-      fetchUnclaimedDeposits();
     } else if (event.type === 'paymentSucceeded') {
       console.log('Payment succeeded event received');
-      const isReceived = event.payment.paymentType === 'receive';
+      const paymentId = event.payment.id;
       
-      if (isReceived) {
-        // Show celebration animation for received payments
-        setCelebrationAmount(Number(event.payment.amount));
-      } else {
-        // Show toast for sent payments
-        showToast(
-          'success',
-          'Payment Sent',
-          `${event.payment.amount} sats sent successfully`
-        );
+      // Deduplicate: only show notification if we haven't shown it for this payment
+      if (!shownPaymentIdsRef.current.has(paymentId)) {
+        shownPaymentIdsRef.current.add(paymentId);
+        // Clean up old IDs after 30 seconds to prevent memory growth
+        setTimeout(() => shownPaymentIdsRef.current.delete(paymentId), 30000);
+        
+        const isReceived = event.payment.paymentType === 'receive';
+        if (isReceived) {
+          // Show celebration animation for received payments
+          setCelebrationAmount(Number(event.payment.amount));
+        } else {
+          // Show toast for sent payments
+          showToast(
+            'success',
+            'Payment Sent',
+            `${event.payment.amount} sats sent successfully`
+          );
+        }
       }
       refreshWalletData(false);
     } else if (event.type === 'claimedDeposits') {
@@ -137,7 +139,6 @@ const AppContent: React.FC = () => {
       // Refresh the list as some may remain unclaimed
       fetchUnclaimedDeposits();
     }
-    refreshWalletData(false);
   }, [refreshWalletData, showToast, isRestoring, fetchUnclaimedDeposits, currentScreen]);
 
   // Note: Fiat rate functionality removed as it's not available in the new WASM API
