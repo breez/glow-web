@@ -25,7 +25,7 @@ Built with React, this demo app showcases best practices for integrating Lightni
 ### Clone the repository
 
 ```bash
-git clone https://github.com:breez/breez-sdk-spark-example.git
+git clone https://github.com/breez/breez-sdk-spark-example.git
 cd breez-sdk-spark-example
 ```
 
