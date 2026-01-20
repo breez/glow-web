@@ -102,7 +102,8 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
           return (
             <li
               key={tx.id || `${tx.timestamp}-${tx.amount}-${index}`}
-              className="flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/[0.03] active:bg-white/[0.05]"
+              className="flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/[0.03] active:bg-white/[0.05] animate-list-item"
+              style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
               onClick={() => onPaymentSelected(tx)}
             >
               {/* Transaction type icon */}

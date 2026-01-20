@@ -182,7 +182,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .button:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 2px 10px var(--glow-primary), inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .button:disabled {
@@ -245,6 +246,12 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 8px 30px var(--glow-electric);
 }
 
+.action-button-send:active {
+  transform: translateY(0) scale(0.96);
+  box-shadow: 0 2px 15px var(--glow-electric), inset 0 2px 4px rgba(0, 0, 0, 0.15);
+  transition: all 0.1s ease;
+}
+
 .action-button-receive {
   background: linear-gradient(135deg, var(--spark-success) 0%, #059669 100%);
   color: #000;
@@ -254,6 +261,12 @@ h1, h2, h3, h4, h5, h6 {
 .action-button-receive:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 30px var(--glow-success);
+}
+
+.action-button-receive:active {
+  transform: translateY(0) scale(0.96);
+  box-shadow: 0 2px 15px var(--glow-success), inset 0 2px 4px rgba(0, 0, 0, 0.15);
+  transition: all 0.1s ease;
 }
 
 .action-button-scan {
@@ -696,6 +709,23 @@ main {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Staggered list item animation */
+@keyframes list-item-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-list-item {
+  opacity: 0;
+  animation: list-item-in 0.3s ease-out forwards;
 }
 
 @keyframes scale-in {
