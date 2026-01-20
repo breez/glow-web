@@ -135,23 +135,36 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             <span className="balance-display">
               {formatWithThinSpaces(balanceSat)}
             </span>
-            <span className="text-spark-text-secondary text-xl font-display font-medium">
+            <span className="text-spark-text-secondary text-base font-display font-medium">
               sats
             </span>
           </div>
 
-          {/* Lightning bolt decoration with lines */}
-          <div className="flex items-center justify-center gap-3 mt-3">
+          {/* Decoration with fading lines - shows fiat value or lightning bolt */}
+          <div 
+            className="flex items-center justify-center gap-3 mt-3"
+            onClick={currentFiat && fiatValues.length > 1 ? handleFiatTap : undefined}
+            role={currentFiat && fiatValues.length > 1 ? "button" : undefined}
+            tabIndex={currentFiat && fiatValues.length > 1 ? 0 : undefined}
+          >
             {/* Left line - fades left */}
             <div className="w-8 h-0.5 bg-spark-primary" style={{ 
               maskImage: 'linear-gradient(to right, transparent, black)',
               WebkitMaskImage: 'linear-gradient(to right, transparent, black)'
             }} />
             
-            {/* Lightning bolt */}
-            <svg className="w-4 h-4 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
-            </svg>
+            {/* Center: Fiat value or Lightning bolt */}
+            {currentFiat ? (
+              <span className="text-spark-text-secondary text-sm font-mono">
+                {currentFiat.symbolPosition === 'before' ? currentFiat.symbol : ''}
+                {currentFiat.value}
+                {currentFiat.symbolPosition === 'after' ? ` ${currentFiat.symbol}` : ''}
+              </span>
+            ) : (
+              <svg className="w-4 h-4 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
+              </svg>
+            )}
             
             {/* Right line - fades right */}
             <div className="w-8 h-0.5 bg-spark-primary" style={{ 
@@ -160,32 +173,6 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             }} />
           </div>
         </div>
-
-        {/* Fiat value - single, tappable to cycle */}
-        {currentFiat && (
-          <div className="flex justify-center mt-2">
-            <button
-              onClick={handleFiatTap}
-              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-display transition-all focus:outline-none ${
-                fiatValues.length > 1 
-                  ? 'hover:bg-white/5 active:bg-white/10 cursor-pointer' 
-                  : 'cursor-default'
-              }`}
-              aria-label={fiatValues.length > 1 ? "Tap to switch currency" : undefined}
-            >
-              <span className="text-spark-text-muted">
-                ≈ {currentFiat.symbolPosition === 'before' ? currentFiat.symbol : ''}
-                {currentFiat.value}
-                {currentFiat.symbolPosition === 'after' ? ` ${currentFiat.symbol}` : ''}
-              </span>
-              {fiatValues.length > 1 && (
-                <svg className="w-3 h-3 text-spark-text-muted/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                </svg>
-              )}
-            </button>
-          </div>
-        )}
 
         {/* Bottom spacing */}
         <div className="h-4" />
