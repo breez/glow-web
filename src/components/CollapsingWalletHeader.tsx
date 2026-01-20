@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import type { GetInfoResponse, Rate, FiatCurrency } from '@breeztech/breez-sdk-spark';
 import { getFiatSettings } from '../services/settings';
 
@@ -15,6 +15,52 @@ interface CollapsingWalletHeaderProps {
 // Format number with thin space as thousand separator (for monospace fonts)
 const formatWithThinSpaces = (num: number): string => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u2009');
+};
+
+// Animated number hook - smoothly transitions between values
+const useAnimatedNumber = (targetValue: number, duration: number = 400): number => {
+  const [displayValue, setDisplayValue] = useState(targetValue);
+  const animationRef = useRef<number | null>(null);
+  const startValueRef = useRef(targetValue);
+  const startTimeRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Skip animation if it's the initial render or value is 0
+    if (startValueRef.current === targetValue) return;
+    
+    const startValue = displayValue;
+    startValueRef.current = targetValue;
+    startTimeRef.current = null;
+
+    const animate = (currentTime: number) => {
+      if (startTimeRef.current === null) {
+        startTimeRef.current = currentTime;
+      }
+
+      const elapsed = currentTime - startTimeRef.current;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease-out cubic for smooth deceleration
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      
+      const currentValue = Math.round(startValue + (targetValue - startValue) * easeOut);
+      setDisplayValue(currentValue);
+
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [targetValue, duration]);
+
+  return displayValue;
 };
 
 const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
@@ -74,6 +120,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   if (!walletInfo) return null;
 
   const balanceSat = walletInfo.balanceSats || 0;
+  const animatedBalance = useAnimatedNumber(balanceSat);
 
   return (
     <div className="relative overflow-hidden transition-all duration-200">
@@ -133,7 +180,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           {/* Main balance */}
           <div className="flex items-baseline justify-center gap-2">
             <span className="balance-display">
-              {formatWithThinSpaces(balanceSat)}
+              {formatWithThinSpaces(animatedBalance)}
             </span>
             <span className="text-spark-text-secondary text-base font-display font-medium">
               sats
