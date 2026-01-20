@@ -7,10 +7,20 @@ export interface UserSettings {
   preferSparkOverLightning?: boolean;
 }
 
+export interface FiatSettings {
+  // Ordered list of selected currency IDs (e.g., ['USD', 'EUR', 'GBP'])
+  selectedCurrencies: string[];
+}
+
 const SETTINGS_KEY = 'user_settings_v1';
+const FIAT_SETTINGS_KEY = 'fiat_settings_v1';
 
 const defaultSettings: UserSettings = {
   depositMaxFee: { type: 'rate', satPerVbyte: 1 },
+};
+
+const defaultFiatSettings: FiatSettings = {
+  selectedCurrencies: ['USD'],
 };
 
 export function getSettings(): UserSettings {
@@ -45,4 +55,23 @@ export function getSettings(): UserSettings {
 
 export function saveSettings(settings: UserSettings): void {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+export function getFiatSettings(): FiatSettings {
+  try {
+    const raw = localStorage.getItem(FIAT_SETTINGS_KEY);
+    if (!raw) return defaultFiatSettings;
+    const parsed = JSON.parse(raw) as Partial<FiatSettings>;
+    return {
+      selectedCurrencies: Array.isArray(parsed.selectedCurrencies) 
+        ? parsed.selectedCurrencies 
+        : defaultFiatSettings.selectedCurrencies,
+    };
+  } catch {
+    return defaultFiatSettings;
+  }
+}
+
+export function saveFiatSettings(settings: FiatSettings): void {
+  localStorage.setItem(FIAT_SETTINGS_KEY, JSON.stringify(settings));
 }

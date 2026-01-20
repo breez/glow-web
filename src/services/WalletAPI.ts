@@ -19,6 +19,8 @@ import type {
   Fee,
   UserSettings,
   UpdateUserSettingsRequest,
+  FiatCurrency,
+  Rate,
 } from '@breeztech/breez-sdk-spark';
 
 export interface WalletAPI {
@@ -60,6 +62,10 @@ export interface WalletAPI {
   // User settings
   getUserSettings: () => Promise<UserSettings>;
   setUserSettings: (settings: UpdateUserSettingsRequest) => Promise<void>;
+
+  // Fiat currencies
+  listFiatCurrencies: () => Promise<FiatCurrency[]>;
+  listFiatRates: () => Promise<Rate[]>;
 
   // Logs
   getSdkLogs: () => string;
