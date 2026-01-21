@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Config, GetInfoResponse, Network, Payment, SdkEvent, defaultConfig, Rate, FiatCurrency } from '@breeztech/breez-sdk-spark';
+import { Config, GetInfoResponse, Network, Payment, SdkEvent, defaultConfig, Rate, FiatCurrency, DepositInfo } from '@breeztech/breez-sdk-spark';
 import { WalletProvider, useWallet } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
@@ -15,6 +15,7 @@ import BackupPage from './pages/BackupPage';
 import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import { getSettings } from './services/settings';
+import { isDepositRejected } from './services/depositState';
 
 // Main App without toast functionality
 const AppContent: React.FC = () => {
@@ -26,6 +27,7 @@ const AppContent: React.FC = () => {
   const [isRestoring, setIsRestoring] = useState<boolean>(false);
   const [walletInfo, setWalletInfo] = useState<GetInfoResponse | null>(null);
   const [transactions, setTransactions] = useState<Payment[]>([]);
+  const [unclaimedDeposits, setUnclaimedDeposits] = useState<DepositInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [fiatRates, setFiatRates] = useState<Rate[]>([]);
   const [fiatCurrencies, setFiatCurrencies] = useState<FiatCurrency[]>([]);
@@ -68,12 +70,17 @@ const AppContent: React.FC = () => {
   }, [isConnected, wallet]);
 
   // Fetch unclaimed deposits list and update indicator
+  // Warning icon should only show for REJECTED deposits
   const fetchUnclaimedDeposits = useCallback(async () => {
     try {
       const deposits = await wallet.unclaimedDeposits();
-      setHasUnclaimedDeposits((deposits?.length ?? 0) > 0);
+      setUnclaimedDeposits(deposits);
+      // Check if any of the unclaimed deposits have been rejected
+      const hasRejected = deposits.some(d => isDepositRejected(d.txid, d.vout));
+      setHasUnclaimedDeposits(hasRejected);
     } catch (e) {
       console.warn('Failed to fetch unclaimed deposits:', e);
+      setUnclaimedDeposits([]);
       setHasUnclaimedDeposits(false);
     }
   }, [wallet]);
@@ -412,6 +419,7 @@ const AppContent: React.FC = () => {
           <WalletPage
             walletInfo={walletInfo}
             transactions={transactions}
+            unclaimedDeposits={unclaimedDeposits}
             fiatRates={fiatRates}
             fiatCurrencies={fiatCurrencies}
             refreshWalletData={refreshWalletData}
@@ -423,6 +431,7 @@ const AppContent: React.FC = () => {
             onOpenUnclaimedDeposits={() => setCurrentScreen('unclaimedDeposits')}
             onOpenSettings={() => setCurrentScreen('settings')}
             onOpenBackup={() => setCurrentScreen('backup')}
+            onDepositChanged={fetchUnclaimedDeposits}
           />
         );
 

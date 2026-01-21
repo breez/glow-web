@@ -7,15 +7,18 @@ import SendPaymentDialog from '../features/send/SendPaymentDialog';
 import ReceivePaymentDialog from '../features/receive/ReceivePaymentDialog';
 import QrScannerDialog from '../components/QrScannerDialog';
 import PaymentDetailsDialog from '../components/PaymentDetailsDialog';
+import UnclaimedDepositDetailsPage from './UnclaimedDepositDetailsPage';
 import CollapsingWalletHeader from '../components/CollapsingWalletHeader';
 import SideMenu from '../components/SideMenu';
 import TransactionList from '../components/TransactionList';
-import { GetInfoResponse, Payment, Rate, FiatCurrency } from '@breeztech/breez-sdk-spark';
+import { GetInfoResponse, Payment, Rate, FiatCurrency, DepositInfo } from '@breeztech/breez-sdk-spark';
 import { SendInput } from '@/types/domain';
+import { mergeDepositsWithTransactions, ExtendedPayment, isUnclaimedDepositPayment } from '@/utils/depositHelpers';
 
 interface WalletPageProps {
   walletInfo: GetInfoResponse | null;
   transactions: Payment[];
+  unclaimedDeposits: DepositInfo[];
   fiatRates: Rate[];
   fiatCurrencies: FiatCurrency[];
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
@@ -27,11 +30,13 @@ interface WalletPageProps {
   onOpenUnclaimedDeposits: () => void;
   onOpenSettings: () => void;
   onOpenBackup: () => void;
+  onDepositChanged?: () => void;
 }
 
 const WalletPage: React.FC<WalletPageProps> = ({
   walletInfo,
   transactions,
+  unclaimedDeposits,
   fiatRates,
   fiatCurrencies,
   refreshWalletData,
@@ -40,7 +45,8 @@ const WalletPage: React.FC<WalletPageProps> = ({
   hasUnclaimedDeposits,
   onOpenUnclaimedDeposits,
   onOpenSettings,
-  onOpenBackup
+  onOpenBackup,
+  onDepositChanged
 }) => {
   const wallet = useWallet();
   const [scrollProgress, setScrollProgress] = useState<number>(0);
@@ -48,6 +54,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [selectedDeposit, setSelectedDeposit] = useState<DepositInfo | null>(null);
   const [paymentInput, setPaymentInput] = useState<SendInput | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -62,13 +69,30 @@ const WalletPage: React.FC<WalletPageProps> = ({
     }
   }, [collapseThreshold]);
 
-  const handlePaymentSelected = useCallback((payment: Payment) => {
-    setSelectedPayment(payment);
+  const handlePaymentSelected = useCallback((payment: Payment | ExtendedPayment) => {
+    // Check if this is an unclaimed deposit
+    if (isUnclaimedDepositPayment(payment) && payment.depositInfo) {
+      // Open deposit details dialog
+      setSelectedDeposit(payment.depositInfo);
+    } else {
+      // Open regular payment details
+      setSelectedPayment(payment);
+    }
   }, []);
 
   const handlePaymentDetailsClose = useCallback(() => {
     setSelectedPayment(null);
   }, []);
+
+  const handleDepositDetailsClose = useCallback(() => {
+    setSelectedDeposit(null);
+  }, []);
+
+  const handleDepositChanged = useCallback(async () => {
+    setSelectedDeposit(null);
+    onDepositChanged?.();
+    await refreshWalletData(false);
+  }, [onDepositChanged, refreshWalletData]);
 
   const handleSendDialogClose = useCallback(() => {
     setIsSendDialogOpen(false);
@@ -134,7 +158,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
         onScroll={handleScroll}
       >
         <TransactionList
-          transactions={transactions}
+          transactions={mergeDepositsWithTransactions(transactions, unclaimedDeposits)}
           onPaymentSelected={handlePaymentSelected}
         />
       </div>
@@ -163,6 +187,13 @@ const WalletPage: React.FC<WalletPageProps> = ({
       <PaymentDetailsDialog
         optionalPayment={selectedPayment}
         onClose={handlePaymentDetailsClose}
+      />
+
+      {/* Unclaimed Deposit Details */}
+      <UnclaimedDepositDetailsPage
+        deposit={selectedDeposit}
+        onBack={handleDepositDetailsClose}
+        onChanged={handleDepositChanged}
       />
 
       {/* Bottom action bar */}
