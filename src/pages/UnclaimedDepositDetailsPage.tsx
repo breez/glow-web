@@ -77,6 +77,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
 
 
   const handleClaim = async () => {
+    if (!deposit) return;
     setClaimError(null);
     setIsProcessing(true);
     try {
@@ -109,6 +110,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   };
 
   const handleReject = () => {
+    if (!deposit) return;
     // Mark transfer as rejected
     rejectDeposit(deposit.txid, deposit.vout);
     onChanged?.();
