@@ -82,79 +82,102 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
     return null;
   };
 
+  // Split transactions into pending approval (unclaimed deposits) and regular payments
+  const pendingApproval = transactions.filter(tx => tx.method === 'deposit' && tx.status === 'pending');
+  const regularPayments = transactions.filter(tx => !(tx.method === 'deposit' && tx.status === 'pending'));
+
+  const renderTransactionItem = (tx: Payment, index: number) => {
+    const isReceive = tx.paymentType === 'receive';
+    const isPending = tx.status === 'pending';
+    const isFailed = tx.status === 'failed';
+
+    return (
+      <li
+        key={tx.id || `${tx.timestamp}-${tx.amount}-${index}`}
+        className="flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/[0.03] active:bg-white/[0.05] animate-list-item"
+        style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
+        onClick={() => onPaymentSelected(tx)}
+      >
+        {/* Transaction type icon */}
+        <div className={`
+          w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
+          ${isReceive ? 'bg-spark-success/15 text-spark-success' : 'bg-spark-electric/15 text-spark-electric'}
+          ${isPending ? 'animate-pulse' : ''}
+        `}>
+          {getTransactionIcon(tx)}
+        </div>
+
+        {/* Transaction details */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className="text-[15px] font-medium text-spark-text-primary truncate">
+              {getDescription(tx)}
+            </p>
+            <span className="text-spark-text-muted flex-shrink-0">{getMethodIcon(tx)}</span>
+            {isPending && (
+              <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-spark-warning animate-pulse" />
+            )}
+            {isFailed && (
+              <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-spark-error/15 text-spark-error text-[10px] font-medium uppercase">
+                Failed
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1 text-xs text-spark-text-muted mt-0.5">
+            <span>{formatTimeAgo(tx.timestamp)}</span>
+            {tx.fees > 0 && !isFailed && (
+              <>
+                <span>·</span>
+                <span>fee {formatWithSpaces(Number(tx.fees))}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Amount - right aligned */}
+        <span className={`
+          font-mono font-semibold text-[15px] flex-shrink-0
+          ${isFailed ? 'text-spark-text-muted line-through' : ''}
+          ${!isFailed && isReceive ? 'text-spark-success' : ''}
+          ${!isFailed && !isReceive ? 'text-spark-electric' : ''}
+        `}>
+          {isReceive ? '+' : '-'}{formatWithSpaces(Number(tx.amount))}
+        </span>
+      </li>
+    );
+  };
+
   return (
     <div className="px-4 py-3">
-      {/* Section header */}
-      <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
-          Payments
-        </h2>
-        <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
-      </div>
+      {/* Pending Approval section */}
+      {pendingApproval.length > 0 && (
+        <>
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
+              Pending Approval
+            </h2>
+            <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
+          </div>
+          <ul className="space-y-1 mb-6">
+            {pendingApproval.map((tx, index) => renderTransactionItem(tx, index))}
+          </ul>
+        </>
+      )}
 
-      {/* Transaction list - compact rows */}
-      <ul className="space-y-1">
-        {transactions.map((tx, index) => {
-          const isReceive = tx.paymentType === 'receive';
-          const isPending = tx.status === 'pending';
-          const isFailed = tx.status === 'failed';
-
-          return (
-            <li
-              key={tx.id || `${tx.timestamp}-${tx.amount}-${index}`}
-              className="flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/[0.03] active:bg-white/[0.05] animate-list-item"
-              style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
-              onClick={() => onPaymentSelected(tx)}
-            >
-              {/* Transaction type icon */}
-              <div className={`
-                w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
-                ${isReceive ? 'bg-spark-success/15 text-spark-success' : 'bg-spark-electric/15 text-spark-electric'}
-                ${isPending ? 'animate-pulse' : ''}
-              `}>
-                {getTransactionIcon(tx)}
-              </div>
-
-              {/* Transaction details */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-[15px] font-medium text-spark-text-primary truncate">
-                    {getDescription(tx)}
-                  </p>
-                  <span className="text-spark-text-muted flex-shrink-0">{getMethodIcon(tx)}</span>
-                  {isPending && (
-                    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-spark-warning animate-pulse" />
-                  )}
-                  {isFailed && (
-                    <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-spark-error/15 text-spark-error text-[10px] font-medium uppercase">
-                      Failed
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-spark-text-muted mt-0.5">
-                  <span>{formatTimeAgo(tx.timestamp)}</span>
-                  {tx.fees > 0 && !isFailed && (
-                    <>
-                      <span>·</span>
-                      <span>fee {formatWithSpaces(Number(tx.fees))}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Amount - right aligned */}
-              <span className={`
-                font-mono font-semibold text-[15px] flex-shrink-0
-                ${isFailed ? 'text-spark-text-muted line-through' : ''}
-                ${!isFailed && isReceive ? 'text-spark-success' : ''}
-                ${!isFailed && !isReceive ? 'text-spark-electric' : ''}
-              `}>
-                {isReceive ? '+' : '-'}{formatWithSpaces(Number(tx.amount))}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      {/* Payments section */}
+      {regularPayments.length > 0 && (
+        <>
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
+              Payments
+            </h2>
+            <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
+          </div>
+          <ul className="space-y-1">
+            {regularPayments.map((tx, index) => renderTransactionItem(tx, index))}
+          </ul>
+        </>
+      )}
     </div>
   );
 };
