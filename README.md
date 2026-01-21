@@ -15,9 +15,9 @@ Built with React, this demo app showcases best practices for integrating Lightni
 
 ## Technologies Used
 
+- [Breez SDK](https://sdk-doc-spark.breez.technology/) for all the bitcoin functionality
 - React with TypeScript
 - Tailwind CSS for styling
-- [Breez SDK](https://sdk-doc-spark.breez.technology/) for all the bitcoin functionality
 
 
 ## Getting Started
@@ -50,28 +50,6 @@ npm run build
 ```
 
 The build output will be in the `dist` directory.
-
-## Project Structure
-
-```
-/src
-  /components        # UI components
-    /ui              # Reusable UI component library
-  /contexts          # React context providers
-  /services          # Business logic and API communication
-  App.tsx            # Main application component
-  main.tsx           # Application entry point
-  index.css          # Global styles
-/pkg                 # WebAssembly bindings for Breez SDK
-```
-
-## Key Components
-
-- **walletService.ts** - Handles communication with the Breez SDK
-- **SendPaymentDialog** - Dialog for making Lightning payments
-- **ReceivePaymentDialog** - Dialog for generating invoices
-- **PaymentDetailsDialog** - Shows detailed information about transactions
-
 
 ## Security Notes
 
