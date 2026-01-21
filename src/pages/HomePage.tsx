@@ -38,39 +38,12 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
           <div className="absolute -inset-10 bg-gradient-radial from-spark-primary/25 via-spark-primary/5 to-transparent blur-2xl animate-glow-pulse" />
           
           {/* Icon container */}
-          <div className="relative w-28 h-28 rounded-[2rem] bg-gradient-to-br from-spark-surface via-spark-dark to-spark-surface border border-spark-primary/20 flex items-center justify-center shadow-2xl shadow-spark-primary/20">
-            {/* Rays */}
-            <svg className="absolute w-full h-full" viewBox="0 0 112 112">
-              <defs>
-                <linearGradient id="homeRay" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#fcd34d" stopOpacity="0"/>
-                  <stop offset="50%" stopColor="#fcd34d" stopOpacity="0.5"/>
-                  <stop offset="100%" stopColor="#d4a574" stopOpacity="0"/>
-                </linearGradient>
-              </defs>
-              <g opacity="0.7">
-                {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
-                  <ellipse
-                    key={angle}
-                    cx="56"
-                    cy="26"
-                    rx="1.2"
-                    ry="22"
-                    fill="url(#homeRay)"
-                    transform={`rotate(${angle} 56 56)`}
-                  />
-                ))}
-              </g>
-            </svg>
-            
-            {/* Core glow */}
-            <div className="absolute w-20 h-20 rounded-full bg-gradient-radial from-amber-400/50 via-amber-500/20 to-transparent blur-xl" />
-            
-            {/* Main orb */}
-            <div className="relative w-14 h-14 rounded-full bg-gradient-radial from-white via-amber-100 to-amber-400 shadow-lg shadow-amber-500/40">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/90 to-transparent" />
-              <div className="absolute top-2.5 left-2.5 w-4 h-4 rounded-full bg-white/95 blur-[1px]" />
-            </div>
+          <div className="relative w-36 h-36 flex items-center justify-center">
+            <img 
+              src="/assets/new.png" 
+              alt="Glow" 
+              className="w-full h-full object-contain"
+            />
           </div>
         </div>
 

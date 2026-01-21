@@ -14,9 +14,9 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   className = ''
 }) => {
   const sizeConfig = {
-    small: { container: 'w-8 h-8', bolt: 'w-4 h-4', ring: 'w-8 h-8' },
-    medium: { container: 'w-16 h-16', bolt: 'w-8 h-8', ring: 'w-16 h-16' },
-    large: { container: 'w-24 h-24', bolt: 'w-12 h-12', ring: 'w-24 h-24' }
+    small: { container: 'w-6 h-6', outer: 2, inner: 1.5 },
+    medium: { container: 'w-10 h-10', outer: 2, inner: 1.5 },
+    large: { container: 'w-12 h-12', outer: 2.5, inner: 2 }
   };
 
   const config = sizeConfig[size];
@@ -25,94 +25,73 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     <div className={`flex flex-col items-center justify-center ${className}`}>
       {/* Spinner container */}
       <div className={`relative ${config.container}`}>
-        {/* Outer glow */}
-        <div className="absolute inset-0 rounded-full bg-spark-primary/20 blur-xl animate-pulse" />
-        
-        {/* Rotating ring */}
-        <div className={`absolute inset-0 ${config.ring}`}>
-          <svg className="w-full h-full animate-spin" viewBox="0 0 100 100">
-            <defs>
-              <linearGradient id="spinner-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#d4a574" stopOpacity="1" />
-                <stop offset="50%" stopColor="#00d4ff" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="#d4a574" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <circle
-              cx="50"
-              cy="50"
-              r="45"
-              fill="none"
-              stroke="url(#spinner-gradient)"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeDasharray="200"
-              strokeDashoffset="50"
-            />
-          </svg>
-        </div>
-
-        {/* Inner ring (slower) */}
-        <div className={`absolute inset-2`}>
-          <svg className="w-full h-full animate-spin" style={{ animationDuration: '2s', animationDirection: 'reverse' }} viewBox="0 0 100 100">
-            <circle
-              cx="50"
-              cy="50"
-              r="40"
-              fill="none"
-              stroke="rgba(139, 92, 246, 0.3)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray="60 200"
-            />
-          </svg>
-        </div>
-
-        {/* Center lightning bolt */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <svg 
-            className={`${config.bolt} text-spark-primary drop-shadow-lg`} 
-            viewBox="0 0 24 24" 
-            fill="currentColor"
+        {/* Outer ring */}
+        <svg className="w-full h-full" viewBox="0 0 40 40">
+          <circle
+            cx="20"
+            cy="20"
+            r="17"
+            fill="none"
+            stroke="rgba(212, 165, 116, 0.15)"
+            strokeWidth={config.outer}
+          />
+          <circle
+            cx="20"
+            cy="20"
+            r="17"
+            fill="none"
+            stroke="#d4a574"
+            strokeWidth={config.outer}
+            strokeLinecap="round"
+            strokeDasharray="80 27"
             style={{
-              filter: 'drop-shadow(0 0 10px rgba(247, 147, 26, 0.5))',
-              animation: 'glow-pulse 1.5s ease-in-out infinite'
+              animation: 'spin 1s cubic-bezier(0.5, 0.2, 0.5, 0.8) infinite',
+              transformOrigin: 'center'
             }}
-          >
-            <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
-          </svg>
-        </div>
-
-        {/* Spark particles */}
-        <div className="absolute inset-0">
-          {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="absolute w-1.5 h-1.5 rounded-full bg-spark-primary"
-              style={{
-                top: '50%',
-                left: '50%',
-                transform: `rotate(${i * 90}deg) translateY(-${size === 'large' ? 40 : size === 'medium' ? 28 : 16}px)`,
-                animation: `glow-pulse 1s ease-in-out infinite`,
-                animationDelay: `${i * 0.25}s`,
-                boxShadow: '0 0 6px rgba(247, 147, 26, 0.8)'
-              }}
-            />
-          ))}
-        </div>
+          />
+        </svg>
+        
+        {/* Inner ring (counter-rotating) */}
+        <svg 
+          className="absolute inset-0 w-full h-full" 
+          viewBox="0 0 40 40"
+          style={{ padding: '15%' }}
+        >
+          <circle
+            cx="20"
+            cy="20"
+            r="17"
+            fill="none"
+            stroke="rgba(212, 165, 116, 0.4)"
+            strokeWidth={config.inner}
+            strokeLinecap="round"
+            strokeDasharray="40 67"
+            style={{
+              animation: 'spin 0.7s cubic-bezier(0.5, 0.2, 0.5, 0.8) infinite reverse',
+              transformOrigin: 'center'
+            }}
+          />
+        </svg>
       </div>
 
       {/* Text */}
       {text && (
-        <p className="mt-6 font-display font-medium text-spark-text-primary">
+        <p className="mt-4 font-display font-medium text-spark-text-primary text-sm">
           {text}
         </p>
       )}
       {subtext && (
-        <p className="mt-1 text-spark-text-muted text-sm">
+        <p className="mt-1 text-spark-text-muted text-xs">
           {subtext}
         </p>
       )}
+      
+      {/* Keyframes for spin animation */}
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

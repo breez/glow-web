@@ -110,34 +110,12 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-spark-surface to-spark-dark border border-amber-500/20 flex items-center justify-center overflow-hidden shadow-lg shadow-amber-500/10">
-                  <svg className="w-9 h-9" viewBox="0 0 36 36">
-                    <defs>
-                      <radialGradient id="menu-glow" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stopColor="#fff"/>
-                        <stop offset="30%" stopColor="#fcd34d"/>
-                        <stop offset="100%" stopColor="#d4a574"/>
-                      </radialGradient>
-                      <radialGradient id="menu-halo" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stopColor="#fcd34d" stopOpacity="0.5"/>
-                        <stop offset="100%" stopColor="#000" stopOpacity="0"/>
-                      </radialGradient>
-                      <linearGradient id="menu-ray" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#fcd34d" stopOpacity="0"/>
-                        <stop offset="50%" stopColor="#fcd34d" stopOpacity="0.7"/>
-                        <stop offset="100%" stopColor="#d4a574" stopOpacity="0"/>
-                      </linearGradient>
-                    </defs>
-                    {/* Light rays */}
-                    <g opacity="0.6">
-                      {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
-                        <ellipse key={angle} cx="18" cy="8" rx="0.8" ry="6" fill="url(#menu-ray)" transform={`rotate(${angle} 18 18)`}/>
-                      ))}
-                    </g>
-                    <circle cx="18" cy="18" r="8" fill="url(#menu-halo)"/>
-                    <circle cx="18" cy="18" r="4.5" fill="url(#menu-glow)"/>
-                    <circle cx="18" cy="18" r="1.8" fill="#fff"/>
-                  </svg>
+                <div className="w-10 h-10 flex items-center justify-center">
+                  <img 
+                    src="/assets/new.png" 
+                    alt="Glow" 
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <h2 className="font-display font-bold text-spark-text-primary">Glow</h2>
               </div>
