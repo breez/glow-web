@@ -27,7 +27,7 @@ interface WalletPageProps {
   onClearError: () => void;
   onLogout: () => void;
   hasUnclaimedDeposits: boolean;
-  onOpenUnclaimedDeposits: () => void;
+  onOpenGetRefund: () => void;
   onOpenSettings: () => void;
   onOpenBackup: () => void;
   onDepositChanged?: () => void;
@@ -43,7 +43,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   isRestoring,
   onLogout,
   hasUnclaimedDeposits,
-  onOpenUnclaimedDeposits,
+  onOpenGetRefund,
   onOpenSettings,
   onOpenBackup,
   onDepositChanged
@@ -147,7 +147,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
           scrollProgress={scrollProgress}
           onOpenMenu={() => setIsMenuOpen(true)}
           hasUnclaimedDeposits={hasUnclaimedDeposits}
-          onOpenUnclaimedDeposits={onOpenUnclaimedDeposits}
+          onOpenGetRefund={onOpenGetRefund}
         />
       </div>
 
@@ -239,6 +239,8 @@ const WalletPage: React.FC<WalletPageProps> = ({
         onLogout={onLogout}
         onOpenSettings={onOpenSettings}
         onOpenBackup={onOpenBackup}
+        onOpenRefund={onOpenGetRefund}
+        hasRejectedDeposits={hasUnclaimedDeposits}
       />
     </div>
   );

@@ -9,7 +9,7 @@ interface CollapsingWalletHeaderProps {
   scrollProgress: number;
   onOpenMenu: () => void;
   hasUnclaimedDeposits: boolean;
-  onOpenUnclaimedDeposits: () => void;
+  onOpenGetRefund: () => void;
 }
 
 // Format number with thin space as thousand separator (for monospace fonts)
@@ -70,7 +70,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   fiatCurrencies,
   onOpenMenu,
   hasUnclaimedDeposits,
-  onOpenUnclaimedDeposits
+  onOpenGetRefund
 }) => {
   const [activeFiatIndex, setActiveFiatIndex] = useState(0);
 
@@ -153,14 +153,14 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
 
           {/* Action buttons */}
           <div className="flex items-center gap-3">
-            {/* Unclaimed deposits warning */}
+            {/* Rejected deposits warning */}
             {hasUnclaimedDeposits && (
               <button
                 type="button"
                 className="flex items-center justify-center w-9 h-9 rounded-xl bg-spark-warning/15 text-spark-warning border border-spark-warning/30 hover:bg-spark-warning/25 transition-colors"
-                title="Unclaimed deposits need attention"
-                aria-label="Unclaimed deposits"
-                onClick={onOpenUnclaimedDeposits}
+                title="Rejected deposits need refund"
+                aria-label="Get refund for rejected deposits"
+                onClick={onOpenGetRefund}
               >
                 <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l6.518 11.6c.75 1.336-.213 3.001-1.742 3.001H3.48c-1.53 0-2.492-1.665-1.742-3.001l6.52-11.6zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 01-1-1V7a1 1 0 112 0v3a1 1 0 01-1 1z" clipRule="evenodd" />

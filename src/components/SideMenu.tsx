@@ -8,9 +8,11 @@ interface SideMenuProps {
   onLogout: () => void;
   onOpenSettings: () => void;
   onOpenBackup: () => void;
+  onOpenRefund?: () => void;
+  hasRejectedDeposits?: boolean;
 }
 
-const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSettings, onOpenBackup }) => {
+const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSettings, onOpenBackup, onOpenRefund, hasRejectedDeposits = false }) => {
   const [leftOffset, setLeftOffset] = useState<number | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -39,6 +41,17 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
   }, [isOpen]);
 
   const menuItems = [
+    // Get Refund - only show when there are rejected deposits
+    ...(hasRejectedDeposits && onOpenRefund ? [{
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+        </svg>
+      ),
+      label: 'Get Refund',
+      onClick: () => { onOpenRefund(); onClose(); },
+      highlight: true
+    }] : []),
     {
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -135,7 +148,11 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
               {menuItems.map((item, index) => (
                 <button
                   key={index}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5"
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                    (item as any).highlight
+                      ? 'text-spark-warning hover:text-spark-warning hover:bg-spark-warning/10'
+                      : 'text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5'
+                  }`}
                   onClick={item.onClick}
                 >
                   {item.icon}
