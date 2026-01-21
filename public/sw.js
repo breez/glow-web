@@ -1,12 +1,14 @@
 // Glow Service Worker
-const CACHE_NAME = 'glow-v12';
+const CACHE_NAME = 'glow-v13';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.svg',
-  '/icons/icon.svg',
-  '/icons/icon-maskable.svg',
+  '/favicon.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/icon-maskable-192.png',
+  '/icons/icon-maskable-512.png',
 ];
 
 // Install event - cache static assets
@@ -94,8 +96,8 @@ self.addEventListener('push', (event) => {
     const data = event.data.json();
     const options = {
       body: data.body || 'You received a payment!',
-      icon: '/icons/icon.svg',
-      badge: '/icons/icon.svg',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
       vibrate: [200, 100, 200],
       data: data.data || {},
       actions: [
