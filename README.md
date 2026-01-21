@@ -1,4 +1,4 @@
-# Glow Demo App
+# Glow Web App
 
 A demo web and PWA app showing how to implement [Breez SDK](https://sdk-doc-spark.breez.technology/) with WebAssembly. 
 
