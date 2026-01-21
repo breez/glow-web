@@ -19,9 +19,9 @@
   <meta name="description" content="Lightning fast Bitcoin payments powered by Breez SDK" />
   
   <!-- Icons -->
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="apple-touch-icon" href="/icons/icon.svg" />
-  <link rel="mask-icon" href="/icons/icon.svg" color="#d4a574" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="mask-icon" href="/icons/icon-192.png" color="#d4a574" />
   
   <!-- Manifest -->
   <link rel="manifest" href="/manifest.json" />
@@ -57,9 +57,37 @@
       opacity: 0;
       pointer-events: none;
     }
-    #splash svg {
-      width: 80px;
-      height: 80px;
+    
+    /* Elegant spinner */
+    .splash-loader {
+      width: 32px;
+      height: 32px;
+      position: relative;
+    }
+    
+    .splash-loader::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: #d4a574;
+      border-right-color: rgba(212, 165, 116, 0.3);
+      animation: spin 1s cubic-bezier(0.5, 0.2, 0.5, 0.8) infinite;
+    }
+    
+    .splash-loader::after {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      border: 1.5px solid transparent;
+      border-top-color: rgba(212, 165, 116, 0.6);
+      animation: spin 0.6s cubic-bezier(0.5, 0.2, 0.5, 0.8) infinite reverse;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -67,42 +95,7 @@
 <body>
   <!-- Splash screen shown during initial load -->
   <div id="splash">
-    <svg viewBox="0 0 80 80" width="80" height="80">
-      <defs>
-        <radialGradient id="sg" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#fff"/>
-          <stop offset="20%" stop-color="#fffbeb"/>
-          <stop offset="50%" stop-color="#fcd34d"/>
-          <stop offset="100%" stop-color="#d4a574"/>
-        </radialGradient>
-        <radialGradient id="sh" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#fcd34d" stop-opacity="0.6"/>
-          <stop offset="100%" stop-color="#000" stop-opacity="0"/>
-        </radialGradient>
-        <linearGradient id="sr" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#fcd34d" stop-opacity="0"/>
-          <stop offset="50%" stop-color="#fcd34d" stop-opacity="0.8"/>
-          <stop offset="100%" stop-color="#d4a574" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <!-- Light rays - more visible -->
-      <g opacity="0.7">
-        <ellipse cx="40" cy="12" rx="1.5" ry="18" fill="url(#sr)" transform="rotate(0 40 40)"/>
-        <ellipse cx="40" cy="12" rx="1.5" ry="18" fill="url(#sr)" transform="rotate(45 40 40)"/>
-        <ellipse cx="40" cy="12" rx="1.5" ry="18" fill="url(#sr)" transform="rotate(90 40 40)"/>
-        <ellipse cx="40" cy="12" rx="1.5" ry="18" fill="url(#sr)" transform="rotate(135 40 40)"/>
-        <ellipse cx="40" cy="12" rx="1.5" ry="18" fill="url(#sr)" transform="rotate(180 40 40)"/>
-        <ellipse cx="40" cy="12" rx="1.5" ry="18" fill="url(#sr)" transform="rotate(225 40 40)"/>
-        <ellipse cx="40" cy="12" rx="1.5" ry="18" fill="url(#sr)" transform="rotate(270 40 40)"/>
-        <ellipse cx="40" cy="12" rx="1.5" ry="18" fill="url(#sr)" transform="rotate(315 40 40)"/>
-      </g>
-      <!-- Glow halo -->
-      <circle cx="40" cy="40" r="20" fill="url(#sh)"/>
-      <!-- Main orb - larger -->
-      <circle cx="40" cy="40" r="12" fill="url(#sg)"/>
-      <!-- Hot center -->
-      <circle cx="40" cy="40" r="5" fill="#fff"/>
-    </svg>
+    <div class="splash-loader"></div>
   </div>
   
   <div id="root"></div>
