@@ -10,7 +10,7 @@ import HomePage from './pages/HomePage';
 import RestorePage from './pages/RestorePage';
 import GeneratePage from './pages/GeneratePage';
 import WalletPage from './pages/WalletPage';
-import UnclaimedDepositsPage from './pages/UnclaimedDepositsPage';
+import GetRefundPage from './pages/GetRefundPage';
 import BackupPage from './pages/BackupPage';
 import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
@@ -20,7 +20,7 @@ import { isDepositRejected } from './services/depositState';
 // Main App without toast functionality
 const AppContent: React.FC = () => {
   // Screen navigation state
-  const [currentScreen, setCurrentScreen] = useState<'home' | 'restore' | 'generate' | 'wallet' | 'unclaimedDeposits' | 'settings' | 'backup' | 'fiatCurrencies'>('home');
+  const [currentScreen, setCurrentScreen] = useState<'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies'>('home');
 
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -127,7 +127,7 @@ const AppContent: React.FC = () => {
       refreshWalletData(false);
     } else if (event.type === 'claimedDeposits') {
       console.log('Claim deposits succeeded event received');
-      if (currentScreen !== 'unclaimedDeposits') {
+      if (currentScreen !== 'getRefund') {
         showToast(
           'success',
           'Deposits Claimed Successfully',
@@ -138,7 +138,7 @@ const AppContent: React.FC = () => {
       fetchUnclaimedDeposits();
     } else if (event.type === 'unclaimedDeposits') {
       console.log('Claim deposits failed event received');
-      if (currentScreen !== 'unclaimedDeposits') {
+      if (currentScreen !== 'getRefund') {
         showToast(
           'error',
           'Failed to Claim Deposits',
@@ -368,11 +368,10 @@ const AppContent: React.FC = () => {
           />
         );
 
-      case 'unclaimedDeposits':
+      case 'getRefund':
         return (
-          <UnclaimedDepositsPage
+          <GetRefundPage
             onBack={() => setCurrentScreen('wallet')}
-            onChanged={fetchUnclaimedDeposits}
           />
         );
 
@@ -428,7 +427,7 @@ const AppContent: React.FC = () => {
             onClearError={clearError}
             onLogout={handleLogout}
             hasUnclaimedDeposits={hasUnclaimedDeposits}
-            onOpenUnclaimedDeposits={() => setCurrentScreen('unclaimedDeposits')}
+            onOpenGetRefund={() => setCurrentScreen('getRefund')}
             onOpenSettings={() => setCurrentScreen('settings')}
             onOpenBackup={() => setCurrentScreen('backup')}
             onDepositChanged={fetchUnclaimedDeposits}
