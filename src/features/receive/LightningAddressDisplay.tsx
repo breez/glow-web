@@ -132,6 +132,9 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
           onCopied={() => showToast('success', 'Copied!')}
           onShareError={() => showToast('error', 'Failed to share')}
           additionalActions={<EditButton onClick={onEdit} />}
+          textToCopy={address?.lightningAddress || ''}
+          textToShare={address?.lnurl || ''}
+          shareLabel="LNURL-Pay"
         />
 
         <TextButton onClick={onCustomizeAmount} className="mt-2">

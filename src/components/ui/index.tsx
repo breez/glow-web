@@ -392,7 +392,10 @@ export const CopyableText: React.FC<{
   label?: string;
   additionalActions?: ReactNode;
   textColor?: string;
-}> = ({ text, truncate = false, showShare = false, onCopied, onShareError, label = 'Address', additionalActions, textColor = 'text-spark-text-muted' }) => {
+  textToCopy?: string;
+  textToShare?: string;
+  shareLabel?: string;
+}> = ({ text, truncate = false, showShare = false, onCopied, onShareError, label = 'Address', additionalActions, textColor = 'text-spark-text-muted', textToCopy, textToShare, shareLabel }) => {
   const [copied, setCopied] = React.useState(false);
   const [canShare, setCanShare] = React.useState(false);
 
@@ -401,7 +404,8 @@ export const CopyableText: React.FC<{
   }, []);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(text)
+    const textToUse = textToCopy || text;
+    navigator.clipboard.writeText(textToUse)
       .then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -412,9 +416,11 @@ export const CopyableText: React.FC<{
 
   const handleShare = async () => {
     try {
+      const textToUse = textToShare || text;
+      const shareTitle = shareLabel || label;
       await navigator.share({
-        title: label,
-        text: text,
+        title: shareTitle,
+        text: textToUse,
       });
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
