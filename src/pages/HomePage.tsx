@@ -40,7 +40,7 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
           {/* Icon container */}
           <div className="relative w-36 h-36 flex items-center justify-center">
             <img 
-              src="/assets/new.png" 
+              src="/assets/Glow_Logo.png" 
               alt="Glow" 
               className="w-full h-full object-contain"
             />

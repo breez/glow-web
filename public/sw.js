@@ -4,11 +4,11 @@ const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.png',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/icon-maskable-192.png',
-  '/icons/icon-maskable-512.png',
+  '/icons/Glow_favicon.png',
+  '/icons/Glow-icon-192.png',
+  '/icons/Glow-icon-512.png',
+  '/icons/Glow-icon-maskable-192.png',
+  '/icons/Glow-icon-maskable-512.png',
 ];
 
 // Install event - cache static assets
@@ -96,8 +96,8 @@ self.addEventListener('push', (event) => {
     const data = event.data.json();
     const options = {
       body: data.body || 'You received a payment!',
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      icon: '/icons/Glow-icon-192.png',
+      badge: '/icons/Glow-icon-192.png',
       vibrate: [200, 100, 200],
       data: data.data || {},
       actions: [
