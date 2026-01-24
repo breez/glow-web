@@ -11,9 +11,8 @@ interface QrScannerDialogProps {
 const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onScan }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const qrScannerRef = useRef<QrScanner | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(false);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -35,7 +34,11 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
     } else {
       stopScanning();
     }
-  }, [isOpen]);
+  }, [isOpen, facingMode]);
+
+  const handleToggleCamera = () => {
+    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
+  };
 
   const startScanning = async () => {
     try {
@@ -58,17 +61,13 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
       }
 
       // Try to get available cameras
-      const cameras = await QrScanner.listCameras(true);
-      console.log('Available cameras:', cameras);
-      
-      // Select camera - prefer back camera on mobile, any camera on desktop
-      let selectedCamera = 'environment';
-      if (cameras.length > 0) {
-        const backCamera = cameras.find(camera => 
-          camera.label.toLowerCase().includes('back') || 
-          camera.label.toLowerCase().includes('rear')
-        );
-        selectedCamera = backCamera ? backCamera.id : cameras[0].id;
+      try {
+        const cameras = await QrScanner.listCameras(true);
+        console.log('Available cameras:', cameras);
+        setHasMultipleCameras(cameras.length > 1);
+      } catch (e) {
+        console.warn('Failed to list cameras:', e);
+        setHasMultipleCameras(false);
       }
 
       qrScannerRef.current = new QrScanner(
@@ -86,7 +85,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
           },
           highlightScanRegion: true,
           highlightCodeOutline: true,
-          preferredCamera: selectedCamera,
+          preferredCamera: facingMode,
           maxScansPerSecond: 5, // Limit scan frequency
         }
       );
@@ -107,7 +106,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
     } catch (err) {
       console.error('Failed to start QR scanner:', err);
       let errorMessage = 'Camera access denied or not available';
-      
+
       if (err instanceof Error) {
         if (err.name === 'NotAllowedError') {
           errorMessage = 'Camera access denied. Please allow camera access and try again.';
@@ -119,7 +118,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
           errorMessage = 'Camera constraints not supported';
         }
       }
-      
+
       setError(errorMessage);
       setIsInitializing(false);
       setIsScanning(false);
@@ -152,7 +151,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
             playsInline
             muted
           />
-          
+
           {/* Scan overlay */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-64 h-64 relative">
@@ -167,7 +166,20 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
               )}
             </div>
           </div>
-          
+
+          {/* Camera toggle button */}
+          {hasMultipleCameras && (
+            <button
+              onClick={handleToggleCamera}
+              className="absolute top-4 right-4 p-3 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-colors z-20 border border-white/10"
+              aria-label="Switch camera"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          )}
+
           {isInitializing && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/70">
               <div className="text-center text-white p-4">
