@@ -30,14 +30,23 @@ export const useLightningAddress = (): UseLightningAddress => {
     return value.includes('@') ? value.split('@')[0] : value;
   };
 
-  const generateRandomLetterString = (length: number): string => {
-    const characters = "abcdefghijklmnopqrstuvwxyz";
-    let result = "";
-    for (let i = 0; i < length; i++) {
-      result += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return result;
-  }
+  const generateRandomName = (): string => {
+    // Extracted from Misty Breez
+    const colors = [
+      "Salmon", "Blue", "Turquoise", "Orchid", "Purple", "Tomato", "Cyan", "Crimson",
+      "Orange", "Lime", "Pink", "Green", "Red", "Yellow", "Azure", "Silver", "Magenta",
+      "Olive", "Violet", "Rose", "Wine", "Mint", "Indigo", "Jade", "Coral"
+    ];
+    const animals = [
+      "Bat", "Bear", "Boar", "Cat", "Chick", "Cow", "Deer", "Dog", "Eagle", "Elephant",
+      "Fox", "Frog", "Hippo", "Hummingbird", "Koala", "Lion", "Monkey", "Mouse", "Owl",
+      "Ox", "Panda", "Pig", "Rabbit", "Seagull", "Sheep", "Snake"
+    ];
+
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const animal = animals[Math.floor(Math.random() * animals.length)];
+    return `${color}${animal}`; // No space for Lightning Address username
+  };
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -46,7 +55,7 @@ export const useLightningAddress = (): UseLightningAddress => {
       if (!addr) {
         // Try up to 3 times with different random usernames
         for (let attempt = 0; attempt < 3; attempt++) {
-          const randomString = generateRandomLetterString(8); // Use 8 chars for less collision
+          const randomString = generateRandomName();
           const isAvailable = await wallet.checkLightningAddressAvailable(randomString);
           if (isAvailable) {
             await wallet.registerLightningAddress(randomString, `Pay to ${randomString}@breez.tips`);

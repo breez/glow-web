@@ -195,7 +195,23 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
   // Lightning Address management via hook
   const handleEditLightningAddress = () => beginEditLightningAddress(lightningAddress);
   const handleCancelEditLightningAddress = () => cancelEditLightningAddress();
-  const handleSaveLightningAddress = async () => saveLightningAddress();
+  const handleSaveLightningAddress = async () => {
+    if (lightningAddress) {
+      // Extract username and domain for the message
+      const parts = lightningAddress.lightningAddress.split('@');
+      const username = parts[0];
+      const domain = parts[1] || 'breez.tips';
+
+      const title = "Confirm Username Change";
+      const message = `Changing your Lightning Address username will permanently release '${username}@${domain}', making it available for other users.\n\nDo you want to proceed?`;
+
+      // We use the Title as the first line since window.confirm doesn't support titles
+      if (!window.confirm(`${title}\n\n${message}`)) {
+        return;
+      }
+    }
+    await saveLightningAddress();
+  };
 
   const handleCustomizeAmount = () => {
     setShowAmountPanel(true);
@@ -247,8 +263,8 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={onClose}>
       <BottomSheetCard className="bottom-sheet-card">
-        <DialogHeader 
-          title="Receive" 
+        <DialogHeader
+          title="Receive"
           onClose={onClose}
           icon={
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
