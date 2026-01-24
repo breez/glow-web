@@ -123,8 +123,10 @@ export async function showPaymentReceivedNotification(
     return;
   }
 
-  // Check if app is in foreground - skip notification if visible
-  if (document.visibilityState === 'visible') {
+  // Check if app is in foreground - skip notification if visible and focused
+  // visibilityState is 'hidden' when minimized or screen off
+  // hasFocus() is false when user switched to another app/window
+  if (document.visibilityState === 'visible' && document.hasFocus()) {
     return;
   }
 
@@ -166,8 +168,8 @@ export async function showDepositClaimedNotification(
     return;
   }
 
-  // Check if app is in foreground - skip notification if visible
-  if (document.visibilityState === 'visible') {
+  // Check if app is in foreground - skip notification if visible and focused
+  if (document.visibilityState === 'visible' && document.hasFocus()) {
     return;
   }
 
@@ -194,3 +196,4 @@ export async function showDepositClaimedNotification(
     console.error('Failed to show deposit notification:', error);
   }
 }
+
