@@ -4,6 +4,7 @@ import { WalletProvider, useWallet } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
 import NotificationPrompt from './components/NotificationPrompt';
+import InstallPrompt from './components/InstallPrompt';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 
 // Import our page components
@@ -461,6 +462,8 @@ const AppContent: React.FC = () => {
       )}
       {/* Show notification prompt after wallet is connected */}
       {isConnected && <NotificationPrompt />}
+      {/* Show install prompt for PWA installation */}
+      <InstallPrompt />
     </>
   );
 };
