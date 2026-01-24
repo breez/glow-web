@@ -56,6 +56,7 @@ export const DialogHeader: React.FC<{
     <div className="flex items-center gap-2">
       {icon && <span className="text-spark-primary">{icon}</span>}
       <h2 className="font-display text-lg font-bold text-spark-text-primary">{title}</h2>
+       <span className="w-5 h-5" aria-hidden="true" />
     </div>
     <button
       onClick={onClose}
