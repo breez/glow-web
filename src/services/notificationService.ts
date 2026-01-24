@@ -28,6 +28,10 @@ const defaultSettings: NotificationSettings = {
  * Check if the browser supports notifications
  */
 export function isNotificationSupported(): boolean {
+  // Disable notifications in production
+  if (import.meta.env.PROD) {
+    return false;
+  }
   return 'Notification' in window && 'serviceWorker' in navigator;
 }
 
