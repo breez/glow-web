@@ -123,14 +123,14 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             {/* Header */}
             <div className="flex items-center justify-between mb-8 pt-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 flex items-center justify-center">
+                <div className="w-16 h-16 flex items-center justify-center">
                   <img 
                     src="/assets/Glow_Logo.png" 
                     alt="Glow" 
                     className="w-full h-full object-contain"
                   />
                 </div>
-                <h2 className="font-display font-bold text-spark-text-primary">Glow</h2>
+                <h2 className="font-display text-xl font-bold text-spark-text-primary">Glow</h2>
               </div>
               <button 
                 onClick={onClose} 
