@@ -207,6 +207,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" d="M7 11l5-5m0 0l5 5m-5-5v12" />
           </svg>
           <span>Send</span>
+          <span className="w-5 h-5" aria-hidden="true" />
         </button>
 
         {/* QR Scanner button */}
@@ -229,6 +230,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
           </svg>
           <span>Receive</span>
+          <span className="w-5 h-5" aria-hidden="true" />
         </button>
       </div>
 

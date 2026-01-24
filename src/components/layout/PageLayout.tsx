@@ -24,23 +24,23 @@ const PageLayout: React.FC<PageLayoutProps> = ({
       </div>
 
       {showHeader && (
-        <header className="relative z-10 px-4 py-4 border-b border-spark-border bg-spark-surface/80 backdrop-blur-sm">
-          <div className="container mx-auto">
+        <header className="relative z-10 border-b border-spark-border bg-spark-surface/80 backdrop-blur-sm safe-area-top">
+          <div className="relative px-4 py-4 flex items-center justify-center">
             <h1 className="text-center font-display text-xl font-bold text-spark-text-primary">
               {title || "Glow"}
             </h1>
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
+                aria-label="Go back"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
           </div>
-          {onBack && (
-            <button 
-              onClick={onBack} 
-              className="absolute top-1/2 left-4 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
-              aria-label="Go back"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          )}
         </header>
       )}
 
@@ -48,8 +48,10 @@ const PageLayout: React.FC<PageLayoutProps> = ({
         <div className="flex-1 w-full overflow-y-auto py-6">
           {children}
         </div>
-        <div className="flex-shrink-0 w-full pb-4 border-t border-spark-border bg-spark-surface/80 backdrop-blur-sm">
-          {footer}
+        <div className="flex-shrink-0 w-full border-t border-spark-border bg-spark-surface/80 backdrop-blur-sm safe-area-bottom">
+          <div className="p-4">
+            {footer}
+          </div>
         </div>
       </main>
     </div>
