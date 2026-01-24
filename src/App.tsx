@@ -3,6 +3,7 @@ import { Config, GetInfoResponse, Network, Payment, SdkEvent, defaultConfig, Rat
 import { WalletProvider, useWallet } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
+import NotificationPrompt from './components/NotificationPrompt';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 
 // Import our page components
@@ -16,6 +17,11 @@ import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import { getSettings } from './services/settings';
 import { isDepositRejected } from './services/depositState';
+import {
+  showPaymentReceivedNotification,
+  showPaymentSentNotification,
+  showDepositClaimedNotification,
+} from './services/notificationService';
 
 // Main App without toast functionality
 const AppContent: React.FC = () => {
@@ -104,17 +110,21 @@ const AppContent: React.FC = () => {
     } else if (event.type === 'paymentSucceeded') {
       console.log('Payment succeeded event received');
       const paymentId = event.payment.id;
-      
+
       // Deduplicate: only show notification if we haven't shown it for this payment
       if (!shownPaymentIdsRef.current.has(paymentId)) {
         shownPaymentIdsRef.current.add(paymentId);
         // Clean up old IDs after 30 seconds to prevent memory growth
         setTimeout(() => shownPaymentIdsRef.current.delete(paymentId), 30000);
-        
+
         const isReceived = event.payment.paymentType === 'receive';
+        const amountSats = Number(event.payment.amount);
+
         if (isReceived) {
           // Show celebration animation for received payments
-          setCelebrationAmount(Number(event.payment.amount));
+          setCelebrationAmount(amountSats);
+          // Also show push notification (will only show if app is in background)
+          showPaymentReceivedNotification(amountSats);
         } else {
           // Show toast for sent payments
           showToast(
@@ -122,6 +132,8 @@ const AppContent: React.FC = () => {
             'Payment Sent',
             `${event.payment.amount} sats sent successfully`
           );
+          // Also show push notification (will only show if app is in background)
+          showPaymentSentNotification(amountSats);
         }
       }
       refreshWalletData(false);
@@ -134,6 +146,8 @@ const AppContent: React.FC = () => {
           `${event.claimedDeposits.length} deposits were claimed`
         );
       }
+      // Show push notification for claimed deposits
+      showDepositClaimedNotification(event.claimedDeposits.length);
       refreshWalletData(false);
       fetchUnclaimedDeposits();
     } else if (event.type === 'unclaimedDeposits') {
@@ -448,6 +462,8 @@ const AppContent: React.FC = () => {
           onClose={() => setCelebrationAmount(null)}
         />
       )}
+      {/* Show notification prompt after wallet is connected */}
+      {isConnected && <NotificationPrompt />}
     </>
   );
 };

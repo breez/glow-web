@@ -1,5 +1,5 @@
 // Glow Service Worker
-const CACHE_NAME = 'glow-v13';
+const CACHE_NAME = 'glow-v14';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -90,22 +90,31 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Handle push notifications (for future use)
+// Handle push notifications from server (for future offline payment notifications)
 self.addEventListener('push', (event) => {
   if (event.data) {
-    const data = event.data.json();
+    let data;
+    try {
+      data = event.data.json();
+    } catch (e) {
+      // If not JSON, treat as text
+      data = { body: event.data.text() };
+    }
+
     const options = {
       body: data.body || 'You received a payment!',
       icon: '/icons/Glow-icon-192.png',
       badge: '/icons/Glow-icon-192.png',
       vibrate: [200, 100, 200],
+      tag: data.tag || 'glow-notification',
+      renotify: true,
       data: data.data || {},
       actions: [
         { action: 'open', title: 'Open Glow' },
         { action: 'dismiss', title: 'Dismiss' },
       ],
     };
-    
+
     event.waitUntil(
       self.registration.showNotification(data.title || 'Glow', options)
     );

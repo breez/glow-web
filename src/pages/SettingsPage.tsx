@@ -4,6 +4,14 @@ import { FormGroup, FormInput, LoadingSpinner, PrimaryButton } from '../componen
 import { getSettings, saveSettings, UserSettings } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
+import {
+  isNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermission,
+  getNotificationSettings,
+  saveNotificationSettings,
+  NotificationSettings,
+} from '../services/notificationService';
 
 const DEV_MODE_TAP_COUNT = 5;
 const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
@@ -27,6 +35,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
   const [preferSparkOverLightning, setPreferSparkOverLightning] = useState<boolean>(false);
   const [sparkPrivateModeEnabled, setSparkPrivateModeEnabled] = useState<boolean>(true);
   const [isLoadingUserSettings, setIsLoadingUserSettings] = useState<boolean>(true);
+
+  // Notification settings state
+  const [notificationsSupported, setNotificationsSupported] = useState<boolean>(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
+    enabled: false,
+    paymentReceived: true,
+    paymentSent: false,
+  });
+  const [isRequestingPermission, setIsRequestingPermission] = useState<boolean>(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -68,6 +86,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
         : (typeof cfg.preferSparkOverLightning === 'boolean' ? cfg.preferSparkOverLightning : false)
     );
 
+    // Load notification settings
+    setNotificationsSupported(isNotificationSupported());
+    setNotificationPermission(getNotificationPermission());
+    setNotificationSettings(getNotificationSettings());
+
     (async () => {
       try {
         setIsLoadingUserSettings(true);
@@ -80,6 +103,40 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
       }
     })();
   }, [config, wallet]);
+
+  const handleEnableNotifications = async () => {
+    setIsRequestingPermission(true);
+    try {
+      const permission = await requestNotificationPermission();
+      setNotificationPermission(permission);
+
+      if (permission === 'granted') {
+        const newSettings = { ...notificationSettings, enabled: true };
+        setNotificationSettings(newSettings);
+        saveNotificationSettings(newSettings);
+      }
+    } finally {
+      setIsRequestingPermission(false);
+    }
+  };
+
+  const handleToggleNotifications = (enabled: boolean) => {
+    const newSettings = { ...notificationSettings, enabled };
+    setNotificationSettings(newSettings);
+    saveNotificationSettings(newSettings);
+  };
+
+  const handleTogglePaymentReceived = (paymentReceived: boolean) => {
+    const newSettings = { ...notificationSettings, paymentReceived };
+    setNotificationSettings(newSettings);
+    saveNotificationSettings(newSettings);
+  };
+
+  const handleTogglePaymentSent = (paymentSent: boolean) => {
+    const newSettings = { ...notificationSettings, paymentSent };
+    setNotificationSettings(newSettings);
+    saveNotificationSettings(newSettings);
+  };
 
   const handleClose = () => {
     setIsOpen(false);
@@ -238,6 +295,77 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
                         </div>
                       </div>
                     </FormGroup>
+                  </div>
+                )}
+
+                {/* Notifications */}
+                {notificationsSupported && (
+                  <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+                    <h3 className="font-display font-semibold text-spark-text-primary mb-3">Notifications</h3>
+
+                    {notificationPermission === 'denied' ? (
+                      <p className="text-sm text-spark-text-muted">
+                        Notifications are blocked. Please enable them in your browser settings.
+                      </p>
+                    ) : notificationPermission !== 'granted' ? (
+                      <button
+                        onClick={handleEnableNotifications}
+                        disabled={isRequestingPermission}
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-spark-primary text-white rounded-xl hover:bg-spark-primary-light transition-colors disabled:opacity-50"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        {isRequestingPermission ? 'Enabling...' : 'Enable Notifications'}
+                      </button>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Master toggle */}
+                        <label className="flex items-center justify-between cursor-pointer">
+                          <span className="text-sm text-spark-text-secondary">Enable notifications</span>
+                          <input
+                            type="checkbox"
+                            className="w-5 h-5 rounded border-spark-border bg-spark-surface text-spark-primary focus:ring-spark-primary/20 focus:ring-2"
+                            checked={notificationSettings.enabled}
+                            onChange={(e) => handleToggleNotifications(e.target.checked)}
+                          />
+                        </label>
+
+                        {notificationSettings.enabled && (
+                          <>
+                            <div className="border-t border-spark-border/50 my-2" />
+
+                            {/* Payment received toggle */}
+                            <label className="flex items-center justify-between cursor-pointer">
+                              <div>
+                                <span className="text-sm text-spark-text-secondary block">Payment received</span>
+                                <span className="text-xs text-spark-text-muted">Get notified when you receive sats</span>
+                              </div>
+                              <input
+                                type="checkbox"
+                                className="w-5 h-5 rounded border-spark-border bg-spark-surface text-spark-primary focus:ring-spark-primary/20 focus:ring-2"
+                                checked={notificationSettings.paymentReceived}
+                                onChange={(e) => handleTogglePaymentReceived(e.target.checked)}
+                              />
+                            </label>
+
+                            {/* Payment sent toggle */}
+                            <label className="flex items-center justify-between cursor-pointer">
+                              <div>
+                                <span className="text-sm text-spark-text-secondary block">Payment sent</span>
+                                <span className="text-xs text-spark-text-muted">Get notified when you send sats</span>
+                              </div>
+                              <input
+                                type="checkbox"
+                                className="w-5 h-5 rounded border-spark-border bg-spark-surface text-spark-primary focus:ring-spark-primary/20 focus:ring-2"
+                                checked={notificationSettings.paymentSent}
+                                onChange={(e) => handleTogglePaymentSent(e.target.checked)}
+                              />
+                            </label>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
