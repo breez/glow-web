@@ -56,7 +56,7 @@ export const DialogHeader: React.FC<{
     <div className="flex items-center gap-2">
       {icon && <span className="text-spark-primary">{icon}</span>}
       <h2 className="font-display text-lg font-bold text-spark-text-primary">{title}</h2>
-       <span className="w-5 h-5" aria-hidden="true" />
+      <span className="w-5 h-5" aria-hidden="true" />
     </div>
     <button
       onClick={onClose}
@@ -330,7 +330,7 @@ export const ResultIcon: React.FC<{
         absolute inset-0 rounded-2xl blur-xl
         ${isSuccess ? 'bg-spark-success/30' : 'bg-spark-error/30'}
       `} />
-      
+
       {/* Icon */}
       <div className="relative z-10">
         {isSuccess ? (
@@ -445,26 +445,26 @@ export const CopyableText: React.FC<{
       >
         {displayText}
       </button>
-      
+
       {/* Action buttons */}
       <div className="flex gap-2">
         <button
           onClick={handleCopy}
           className={`
             flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all
-            ${copied 
-              ? 'bg-spark-success/20 text-spark-success' 
+            ${copied
+              ? 'bg-spark-success/20 text-spark-success'
               : 'bg-spark-primary text-white hover:bg-spark-primary-light'
             }
           `}
           title={`Copy ${label}`}
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M8 2a2 2 0 00-2 2v1H5a2 2 0 00-2 2v7a2 2 0 002 2h6a2 2 0 002-2v-1h1a2 2 0 002-2V6l-4-4H8zm6 6h-2a2 2 0 01-2-2V4H8v1h3a1 1 0 011 1v2h2v2z"/>
+            <path d="M8 2a2 2 0 00-2 2v1H5a2 2 0 00-2 2v7a2 2 0 002 2h6a2 2 0 002-2v-1h1a2 2 0 002-2V6l-4-4H8zm6 6h-2a2 2 0 01-2-2V4H8v1h3a1 1 0 011 1v2h2v2z" />
           </svg>
           {copied ? 'Copied!' : 'Copy'}
         </button>
-        
+
         {showShare && canShare && (
           <button
             onClick={handleShare}
@@ -472,12 +472,12 @@ export const CopyableText: React.FC<{
             title={`Share ${label}`}
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
+              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
             </svg>
             Share
           </button>
         )}
-        
+
         {additionalActions}
       </div>
     </div>
@@ -601,7 +601,7 @@ export const BottomSheetContainer: React.FC<{
   };
 
   return (
-    <Transition show={isOpen} as="div" className="absolute inset-0 z-50 overflow-hidden">
+    <Transition show={isOpen} as="div" className="absolute inset-0 z-50 overflow-hidden flex flex-col justify-end pointer-events-none">
       <Transition.Child
         as="div"
         enter="transform transition ease-out duration-300"
@@ -610,7 +610,7 @@ export const BottomSheetContainer: React.FC<{
         leave="transform transition ease-in duration-200"
         leaveFrom="translate-y-0"
         leaveTo="translate-y-full"
-        className={`mx-auto h-full max-w-full ${className}`}
+        className={`mx-auto w-full max-w-md max-h-[90vh] pointer-events-auto ${className}`}
         style={{ transform: dragY > 0 ? `translateY(${dragY}px)` : undefined }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
