@@ -42,7 +42,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
     enabled: false,
     paymentReceived: true,
-    paymentSent: false,
   });
   const [isRequestingPermission, setIsRequestingPermission] = useState<boolean>(false);
 
@@ -128,12 +127,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
 
   const handleTogglePaymentReceived = (paymentReceived: boolean) => {
     const newSettings = { ...notificationSettings, paymentReceived };
-    setNotificationSettings(newSettings);
-    saveNotificationSettings(newSettings);
-  };
-
-  const handleTogglePaymentSent = (paymentSent: boolean) => {
-    const newSettings = { ...notificationSettings, paymentSent };
     setNotificationSettings(newSettings);
     saveNotificationSettings(newSettings);
   };
@@ -349,20 +342,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
                               />
                             </label>
 
-                            {/* Payment sent toggle */}
-                            <label className="flex items-center justify-between cursor-pointer">
-                              <div>
-                                <span className="text-sm text-spark-text-secondary block">Payment sent</span>
-                                <span className="text-xs text-spark-text-muted">Get notified when you send sats</span>
-                              </div>
-                              <input
-                                type="checkbox"
-                                className="w-5 h-5 rounded border-spark-border bg-spark-surface text-spark-primary focus:ring-spark-primary/20 focus:ring-2"
-                                checked={notificationSettings.paymentSent}
-                                onChange={(e) => handleTogglePaymentSent(e.target.checked)}
-                              />
-                            </label>
-                          </>
+                            </>
                         )}
                       </div>
                     )}

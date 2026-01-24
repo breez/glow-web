@@ -19,7 +19,6 @@ import { getSettings } from './services/settings';
 import { isDepositRejected } from './services/depositState';
 import {
   showPaymentReceivedNotification,
-  showPaymentSentNotification,
   showDepositClaimedNotification,
 } from './services/notificationService';
 
@@ -132,8 +131,6 @@ const AppContent: React.FC = () => {
             'Payment Sent',
             `${event.payment.amount} sats sent successfully`
           );
-          // Also show push notification (will only show if app is in background)
-          showPaymentSentNotification(amountSats);
         }
       }
       refreshWalletData(false);

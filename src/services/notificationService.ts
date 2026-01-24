@@ -17,13 +17,11 @@ const NOTIFICATION_SETTINGS_KEY = 'notification_settings_v1';
 export interface NotificationSettings {
   enabled: boolean;
   paymentReceived: boolean;
-  paymentSent: boolean;
 }
 
 const defaultSettings: NotificationSettings = {
   enabled: false,
   paymentReceived: true,
-  paymentSent: false,
 };
 
 /**
@@ -81,7 +79,6 @@ export function getNotificationSettings(): NotificationSettings {
     return {
       enabled: typeof parsed.enabled === 'boolean' ? parsed.enabled : defaultSettings.enabled,
       paymentReceived: typeof parsed.paymentReceived === 'boolean' ? parsed.paymentReceived : defaultSettings.paymentReceived,
-      paymentSent: typeof parsed.paymentSent === 'boolean' ? parsed.paymentSent : defaultSettings.paymentSent,
     };
   } catch {
     return { ...defaultSettings };
@@ -154,51 +151,6 @@ export async function showPaymentReceivedNotification(
     };
 
     await registration.showNotification('Payment Received', options);
-  } catch (error) {
-    console.error('Failed to show payment notification:', error);
-  }
-}
-
-/**
- * Show a payment sent notification
- */
-export async function showPaymentSentNotification(
-  amountSats: number,
-  destination?: string
-): Promise<void> {
-  const settings = getNotificationSettings();
-
-  if (!canShowNotifications() || !settings.paymentSent) {
-    return;
-  }
-
-  // Check if app is in foreground - skip notification if visible
-  if (document.visibilityState === 'visible') {
-    return;
-  }
-
-  try {
-    const registration = await navigator.serviceWorker.ready;
-
-    const options: ExtendedNotificationOptions = {
-      body: destination
-        ? `-${formatSats(amountSats)} sats to ${destination}`
-        : `-${formatSats(amountSats)} sats`,
-      icon: '/icons/Glow-icon-192.png',
-      badge: '/icons/Glow-icon-192.png',
-      tag: 'payment-sent',
-      renotify: true,
-      data: {
-        type: 'payment_sent',
-        amount: amountSats,
-      },
-      actions: [
-        { action: 'open', title: 'Open Glow' },
-        { action: 'dismiss', title: 'Dismiss' },
-      ],
-    };
-
-    await registration.showNotification('Payment Sent', options);
   } catch (error) {
     console.error('Failed to show payment notification:', error);
   }
