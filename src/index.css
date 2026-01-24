@@ -233,6 +233,8 @@ h1, h2, h3, h4, h5, h6 {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   border: none;
+  min-height: 48px;
+  flex-shrink: 0;
 }
 
 .action-button-send {
@@ -277,12 +279,18 @@ h1, h2, h3, h4, h5, h6 {
   height: 56px;
   padding: 0;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .action-button-scan:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: var(--spark-primary);
   box-shadow: 0 4px 20px var(--glow-primary);
+}
+
+.action-button-scan:active {
+  transform: scale(0.92);
+  transition: all 0.1s ease;
 }
 
 /* ============================================
@@ -770,4 +778,45 @@ main {
 
 .animate-pulse-glow {
   animation: celebration-glow 2s ease-in-out infinite;
+}
+
+/* ============================================
+   MOBILE OPTIMIZATIONS
+   ============================================ */
+
+/* Optimize for small mobile screens */
+@media screen and (max-width: 390px) {
+  .action-button-send,
+  .action-button-receive {
+    padding: 12px 24px;
+    font-size: 0.9375rem;
+    gap: 6px;
+  }
+
+  .bottom-bar {
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    gap: 0.75rem;
+  }
+
+  .action-button-scan {
+    padding: 0;
+  }
+}
+
+/* Optimize touch targets for mobile */
+@media (hover: none) and (pointer: coarse) {
+  .action-button {
+    min-height: 50px;
+  }
+
+  .action-button-scan {
+    min-width: 56px;
+    min-height: 56px;
+  }
+
+  .action-button-scan svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
 }
