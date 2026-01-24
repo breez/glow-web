@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Transition } from '@headlessui/react';
-import { LoadingSpinner } from '../components/ui';
+import { LoadingSpinner, Checkbox } from '../components/ui';
 import { useWallet } from '@/contexts/WalletContext';
 import { getFiatSettings, saveFiatSettings } from '../services/settings';
 import type { FiatCurrency } from '@breeztech/breez-sdk-spark';
@@ -177,12 +177,10 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                         }`}
                     >
                       {/* Checkbox */}
-                      <button
-                        onClick={() => handleToggleCurrency(currency.id)}
-                        className="w-6 h-6 rounded border-2 border-spark-primary bg-spark-primary/20 flex items-center justify-center flex-shrink-0"
-                      >
-                        <CheckIcon size="sm" className="text-spark-primary" />
-                      </button>
+                      <Checkbox
+                        checked={selectedCurrencies.includes(currency.id)}
+                        onChange={() => handleToggleCurrency(currency.id)}
+                      />
 
                       {/* Currency info */}
                       <div className="flex-1 min-w-0">

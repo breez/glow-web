@@ -658,3 +658,25 @@ export const ConfirmDialog: React.FC<{
     </DialogContainer>
   );
 };
+export const Checkbox: React.FC<{
+    checked: boolean;
+    onChange: () => void;
+    className?: string;
+}> = ({ checked, onChange, className = "" }) => (
+    <button
+        type="button"
+        onClick={onChange}
+        className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked
+                ? 'bg-spark-primary border-spark-primary'
+                : 'bg-transparent border-spark-text-muted hover:border-spark-text-secondary'
+            } ${className}`}
+        role="checkbox"
+        aria-checked={checked}
+    >
+        {checked && (
+            <svg className="w-4 h-4 text-spark-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+        )}
+    </button>
+);
