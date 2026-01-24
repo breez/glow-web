@@ -11,10 +11,11 @@
   /* ========================================
      PRIMARY ACCENT - Change this one line!
      ======================================== */
-  --spark-primary: #d4a574;           /* Soft Gold - warm, elegant, premium */
+  --spark-primary: #d4a574;
+  /* Soft Gold - warm, elegant, premium */
   --spark-primary-light: #e8c9a8;
   --glow-primary: rgba(212, 165, 116, 0.35);
-  
+
   /* Core colors */
   --spark-void: #0a0a0f;
   --spark-dark: #0f0f18;
@@ -22,21 +23,21 @@
   --spark-elevated: #1a1a28;
   --spark-border: #252535;
   --spark-border-light: #35354a;
-  
+
   /* Secondary accents (for send/receive) */
   --spark-electric: #00d4ff;
   --spark-electric-light: #7df3ff;
-  
+
   /* Semantic colors */
   --spark-success: #10b981;
   --spark-error: #ef4444;
   --spark-warning: #d4a574;
-  
+
   /* Text */
   --spark-text-primary: #ffffff;
   --spark-text-secondary: rgba(255, 255, 255, 0.7);
   --spark-text-muted: rgba(255, 255, 255, 0.4);
-  
+
   /* Glows */
   --glow-electric: rgba(0, 212, 255, 0.3);
   --glow-success: rgba(16, 185, 129, 0.4);
@@ -47,7 +48,9 @@
    BASE STYLES
    ============================================ */
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   overflow: hidden;
 }
@@ -71,7 +74,7 @@ body {
 
 .main-wrapper {
   height: 100%;
-  background: 
+  background:
     radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.15), transparent),
     radial-gradient(ellipse 60% 40% at 100% 0%, rgba(247, 147, 26, 0.08), transparent),
     radial-gradient(ellipse 60% 40% at 0% 100%, rgba(0, 212, 255, 0.06), transparent),
@@ -84,7 +87,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: 
+  background-image:
     linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 60px 60px;
@@ -129,7 +132,12 @@ body {
    TYPOGRAPHY
    ============================================ */
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -407,12 +415,15 @@ select {
 
 /* Hidden scrollbar - keeps scroll functionality */
 .scrollbar-hidden {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .scrollbar-hidden::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari, Opera */
+  display: none;
+  /* Chrome, Safari, Opera */
 }
 
 /* ============================================
@@ -421,7 +432,7 @@ select {
 
 .toast-container {
   position: fixed;
-  top: calc(24px + env(safe-area-inset-top));
+  bottom: calc(24px + env(safe-area-inset-bottom));
   right: calc(24px + env(safe-area-inset-right));
   z-index: 9999;
   display: flex;
@@ -454,19 +465,41 @@ select {
    ============================================ */
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 @keyframes glow-pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 @keyframes scan-line {
-  0% { top: 0; }
-  50% { top: calc(100% - 2px); }
-  100% { top: 0; }
+  0% {
+    top: 0;
+  }
+
+  50% {
+    top: calc(100% - 2px);
+  }
+
+  100% {
+    top: 0;
+  }
 }
 
 .animate-scan-line {
@@ -474,24 +507,55 @@ select {
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes lightning-bolt {
-  0%, 100% { opacity: 0; transform: translateY(-5px); }
-  10%, 30% { opacity: 1; transform: translateY(0); }
-  40% { opacity: 0; transform: translateY(5px); }
+
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  10%,
+  30% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  40% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
 }
 
 @keyframes spark-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse-ring {
-  0% { transform: scale(0.8); opacity: 1; }
-  100% { transform: scale(1.5); opacity: 0; }
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
 }
 
 .animate-float {
@@ -557,8 +621,13 @@ select {
 }
 
 @keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
 }
 
 .animate-slide-up {
@@ -570,8 +639,13 @@ select {
 }
 
 @keyframes slideDown {
-  from { transform: translateY(0); }
-  to { transform: translateY(100%); }
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(100%);
+  }
 }
 
 /* ============================================
@@ -731,6 +805,7 @@ main {
     transform: translateY(0) rotate(0deg);
     opacity: 1;
   }
+
   100% {
     transform: translateY(100vh) rotate(720deg);
     opacity: 0;
@@ -742,6 +817,7 @@ main {
     opacity: 0;
     transform: translateY(20px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -754,6 +830,7 @@ main {
     opacity: 0;
     transform: translateY(8px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -770,9 +847,11 @@ main {
     opacity: 0;
     transform: scale(0.5);
   }
+
   50% {
     transform: scale(1.1);
   }
+
   100% {
     opacity: 1;
     transform: scale(1);
@@ -780,9 +859,12 @@ main {
 }
 
 @keyframes celebration-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px var(--glow-success), 0 0 40px var(--glow-success);
   }
+
   50% {
     box-shadow: 0 0 40px var(--glow-success), 0 0 80px var(--glow-success), 0 0 120px var(--glow-amber);
   }
@@ -815,6 +897,7 @@ main {
 
 /* Optimize for small mobile screens */
 @media screen and (max-width: 390px) {
+
   .action-button-send,
   .action-button-receive {
     padding: 12px 24px;

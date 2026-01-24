@@ -21,11 +21,11 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        
+
         // Load saved settings
         const settings = getFiatSettings();
         setSelectedCurrencies(settings.selectedCurrencies);
-        
+
         // Load available currencies from SDK
         const fiatCurrencies = await wallet.listFiatCurrencies();
         setCurrencies(fiatCurrencies);
@@ -35,7 +35,7 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
         setIsLoading(false);
       }
     };
-    
+
     loadData();
   }, [wallet]);
 
@@ -67,17 +67,17 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
   const handleDragOver = useCallback((e: React.DragEvent, targetId: string) => {
     e.preventDefault();
     if (!draggedItem || draggedItem === targetId) return;
-    
+
     setSelectedCurrencies(prev => {
       const draggedIndex = prev.indexOf(draggedItem);
       const targetIndex = prev.indexOf(targetId);
-      
+
       if (draggedIndex === -1 || targetIndex === -1) return prev;
-      
+
       const newOrder = [...prev];
       newOrder.splice(draggedIndex, 1);
       newOrder.splice(targetIndex, 0, draggedItem);
-      
+
       // Save immediately
       saveFiatSettings({ selectedCurrencies: newOrder });
       return newOrder;
@@ -92,10 +92,10 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
     setSelectedCurrencies(prev => {
       const index = prev.indexOf(currencyId);
       if (index <= 0) return prev;
-      
+
       const newOrder = [...prev];
       [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
-      
+
       saveFiatSettings({ selectedCurrencies: newOrder });
       return newOrder;
     });
@@ -105,10 +105,10 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
     setSelectedCurrencies(prev => {
       const index = prev.indexOf(currencyId);
       if (index === -1 || index >= prev.length - 1) return prev;
-      
+
       const newOrder = [...prev];
       [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
-      
+
       saveFiatSettings({ selectedCurrencies: newOrder });
       return newOrder;
     });
@@ -123,7 +123,7 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
   const selectedCurrencyList = selectedCurrencies
     .map(id => getCurrencyInfo(id))
     .filter((c): c is FiatCurrency => c !== undefined);
-  
+
   const unselectedCurrencyList = currencies
     .filter(c => !selectedCurrencies.includes(c.id))
     .sort((a, b) => a.id.localeCompare(b.id));
@@ -141,7 +141,7 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
           leaveTo="translate-x-full"
           className="absolute inset-0"
         >
-          <div className="flex flex-col h-full bg-spark-surface">
+          <div className="flex flex-col h-full bg-spark-surface safe-area-top">
             {/* Header */}
             <div className="relative px-4 py-4 border-b border-spark-border">
               <button
@@ -174,9 +174,8 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                       onDragStart={() => handleDragStart(currency.id)}
                       onDragOver={(e) => handleDragOver(e, currency.id)}
                       onDragEnd={handleDragEnd}
-                      className={`flex items-center gap-3 p-3 bg-spark-dark border border-spark-border rounded-xl transition-all ${
-                        draggedItem === currency.id ? 'opacity-50' : ''
-                      }`}
+                      className={`flex items-center gap-3 p-3 bg-spark-dark border border-spark-border rounded-xl transition-all ${draggedItem === currency.id ? 'opacity-50' : ''
+                        }`}
                     >
                       {/* Checkbox */}
                       <button
