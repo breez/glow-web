@@ -90,11 +90,11 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
               onChange={(e) => onEditValueChange(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
               placeholder="satoshi"
               disabled={isLoading}
-              className="flex-1 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none"
+              className="flex-1 min-w-0 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none"
               autoComplete="off"
               autoCapitalize="off"
             />
-            <span className="px-4 py-3 text-spark-text-muted font-medium text-sm">
+            <span className="flex-shrink-0 px-4 py-3 text-spark-text-muted font-medium text-sm">
               @breez.tips
             </span>
           </div>

@@ -14,13 +14,13 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px]">
           <div className="absolute inset-0 bg-gradient-radial from-spark-primary/25 via-spark-primary/8 to-transparent blur-3xl animate-glow-pulse" />
         </div>
-        
+
         {/* Accent orbs */}
         <div className="absolute top-20 right-10 w-32 h-32 bg-gradient-radial from-spark-primary/15 to-transparent blur-2xl" />
         <div className="absolute bottom-40 left-10 w-24 h-24 bg-gradient-radial from-spark-electric/10 to-transparent blur-2xl" />
-        
+
         {/* Subtle grid pattern */}
-        <div 
+        <div
           className="absolute inset-0 opacity-[0.015]"
           style={{
             backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.4) 1px, transparent 0)`,
@@ -28,6 +28,9 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
           }}
         />
       </div>
+
+      {/* Safe area spacer top */}
+      <div className="safe-area-top" />
 
       {/* Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
@@ -106,6 +109,9 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
           />
         </div>
       </div>
+
+      {/* Safe area spacer bottom */}
+      <div className="safe-area-bottom" />
 
       {/* Bottom fade */}
       <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-spark-dark to-transparent pointer-events-none" />

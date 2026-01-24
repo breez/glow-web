@@ -215,21 +215,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
           leave="transform transition ease-in duration-200"
           leaveFrom="translate-x-0"
           leaveTo="translate-x-[-100%]"
-          className="absolute inset-0"
+          className="absolute inset-0 flex flex-col bg-spark-surface will-change-transform"
         >
-          <div className="flex flex-col h-full bg-spark-surface">
             {/* Header */}
-            <div className="relative px-4 py-4 border-b border-spark-border">
-              <h1 className="text-center font-display text-lg font-semibold text-spark-text-primary">Settings</h1>
-              <button
-                onClick={handleClose}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
-                aria-label="Close"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+            <div className="border-b border-spark-border safe-area-top">
+              <div className="relative px-4 py-4 flex items-center justify-center">
+                <h1 className="text-center font-display text-lg font-semibold text-spark-text-primary">Settings</h1>
+                <button
+                  onClick={handleClose}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
+                  aria-label="Close"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Content */}
@@ -478,15 +479,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
 
             {/* Footer - Dev Mode only */}
             {isDevMode && (
-              <div className="flex-shrink-0 p-4 pb-8 border-t border-spark-border bg-spark-surface">
-                <div className="max-w-xl mx-auto">
-                  <PrimaryButton className="w-full" onClick={handleSave}>
-                    Save Changes
-                  </PrimaryButton>
+              <div className="flex-shrink-0 border-t border-spark-border bg-spark-surface safe-area-bottom">
+                <div className="p-4">
+                  <div className="max-w-xl mx-auto">
+                    <PrimaryButton className="w-full" onClick={handleSave}>
+                      Save Changes
+                    </PrimaryButton>
+                  </div>
                 </div>
               </div>
             )}
-          </div>
         </Transition.Child>
       </Transition>
     </div>

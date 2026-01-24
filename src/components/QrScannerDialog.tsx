@@ -193,16 +193,18 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
         </div>
 
         {/* Bottom controls */}
-        <div className="safe-area-bottom bg-black/90 backdrop-blur-sm p-6">
-          <p className="text-spark-text-secondary text-sm text-center mb-4">
-            Point camera at QR code
-          </p>
-          <button
-            onClick={handleClose}
-            className="w-full py-3 border border-spark-border text-spark-text-primary rounded-xl font-medium hover:bg-white/10 transition-colors"
-          >
-            Cancel
-          </button>
+        <div className="bg-black/90 backdrop-blur-sm safe-area-bottom">
+          <div className="p-6">
+            <p className="text-spark-text-secondary text-sm text-center mb-4">
+              Point camera at QR code
+            </p>
+            <button
+              onClick={handleClose}
+              className="w-full py-3 border border-spark-border text-spark-text-primary rounded-xl font-medium hover:bg-white/10 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </BottomSheetContainer>

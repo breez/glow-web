@@ -118,10 +118,10 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             leave="transition transform ease-in duration-200"
             leaveFrom="translate-x-0"
             leaveTo="-translate-x-full"
-            className="w-72 h-full bg-spark-surface border-r border-spark-border shadow-glass-lg p-6 flex flex-col"
+            className="w-72 h-full bg-spark-surface border-r border-spark-border shadow-glass-lg px-6 flex flex-col safe-area-top safe-area-bottom"
           >
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-8 pt-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 flex items-center justify-center">
                   <img 
@@ -162,7 +162,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             </nav>
 
             {/* Footer */}
-            <div className="pt-6 border-t border-spark-border">
+            <div className="pt-6 pb-6 border-t border-spark-border">
               <p className="text-xs text-spark-text-muted text-center">
                 Powered by Breez SDK
               </p>
