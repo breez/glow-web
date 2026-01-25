@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Transition } from '@headlessui/react';
-import { LoadingSpinner, Checkbox } from '../components/ui';
+import { LoadingSpinner, Switch } from '../components/ui';
 import { useWallet } from '@/contexts/WalletContext';
 import { getFiatSettings, saveFiatSettings } from '../services/settings';
 import type { FiatCurrency } from '@breeztech/breez-sdk-spark';
@@ -176,12 +176,6 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                       className={`flex items-center gap-3 p-3 bg-spark-dark border border-spark-border rounded-xl transition-all ${draggedItem === currency.id ? 'opacity-50' : ''
                         }`}
                     >
-                      {/* Checkbox */}
-                      <Checkbox
-                        checked={selectedCurrencies.includes(currency.id)}
-                        onChange={() => handleToggleCurrency(currency.id)}
-                      />
-
                       {/* Currency info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -229,6 +223,12 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" />
                         </svg>
                       </div>
+
+                      {/* Switch on the right */}
+                      <Switch
+                        checked={selectedCurrencies.includes(currency.id)}
+                        onChange={() => handleToggleCurrency(currency.id)}
+                      />
                     </div>
                   ))}
 
@@ -238,14 +238,6 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                       key={currency.id}
                       className="flex items-center gap-3 p-3 bg-spark-dark/50 border border-spark-border/50 rounded-xl"
                     >
-                      {/* Checkbox (empty) */}
-                      <button
-                        onClick={() => handleToggleCurrency(currency.id)}
-                        className="w-6 h-6 rounded border-2 border-spark-border bg-transparent flex items-center justify-center flex-shrink-0 hover:border-spark-primary/50 transition-colors"
-                      >
-                        {/* Empty checkbox */}
-                      </button>
-
                       {/* Currency info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -262,6 +254,12 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                           {currency.info.name}
                         </p>
                       </div>
+
+                      {/* Switch on the right */}
+                      <Switch
+                        checked={false}
+                        onChange={() => handleToggleCurrency(currency.id)}
+                      />
                     </div>
                   ))}
                 </div>

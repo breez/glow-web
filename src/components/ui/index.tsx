@@ -658,25 +658,24 @@ export const ConfirmDialog: React.FC<{
     </DialogContainer>
   );
 };
-export const Checkbox: React.FC<{
-    checked: boolean;
-    onChange: () => void;
-    className?: string;
+export const Switch: React.FC<{
+  checked: boolean;
+  onChange: () => void;
+  className?: string;
 }> = ({ checked, onChange, className = "" }) => (
-    <button
-        type="button"
-        onClick={onChange}
-        className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked
-                ? 'bg-spark-primary border-spark-primary'
-                : 'bg-transparent border-spark-text-muted hover:border-spark-text-secondary'
-            } ${className}`}
-        role="checkbox"
-        aria-checked={checked}
-    >
-        {checked && (
-            <svg className="w-4 h-4 text-spark-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-        )}
-    </button>
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    onClick={onChange}
+    className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-spark-primary focus-visible:ring-offset-2 focus-visible:ring-offset-spark-dark ${
+      checked ? 'bg-spark-primary' : 'bg-spark-border'
+    } ${className}`}
+  >
+    <span
+      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+        checked ? 'translate-x-6' : 'translate-x-1'
+      } mt-1`}
+    />
+  </button>
 );
