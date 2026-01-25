@@ -783,3 +783,64 @@ export const LoadingSpinner: React.FC<{
     </div>
   );
 };
+
+// ============================================
+// CONFIRM DIALOG
+// ============================================
+
+export const ConfirmDialog: React.FC<{
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: 'danger' | 'warning' | 'default';
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({
+  isOpen,
+  title,
+  message,
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  variant = 'default',
+  onConfirm,
+  onCancel,
+}) => {
+  if (!isOpen) return null;
+
+  const confirmButtonStyles = {
+    danger: 'bg-spark-error hover:bg-spark-error/80 text-white',
+    warning: 'bg-spark-warning hover:bg-spark-warning/80 text-spark-dark',
+    default: 'bg-spark-primary hover:bg-spark-primary-light text-white',
+  };
+
+  return (
+    <DialogContainer>
+      <DialogCard maxWidth="sm">
+        <div className="text-center">
+          <h3 className="font-display text-lg font-bold text-spark-text-primary mb-3">
+            {title}
+          </h3>
+          <p className="text-sm text-spark-text-secondary whitespace-pre-line mb-6">
+            {message}
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="flex-1 py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
+            >
+              {cancelLabel}
+            </button>
+            <button
+              onClick={onConfirm}
+              className={`flex-1 py-3 font-display font-semibold rounded-xl transition-colors ${confirmButtonStyles[variant]}`}
+            >
+              {confirmLabel}
+            </button>
+          </div>
+        </div>
+      </DialogCard>
+    </DialogContainer>
+  );
+};
