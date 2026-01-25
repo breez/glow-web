@@ -56,7 +56,7 @@ export const DialogHeader: React.FC<{
     <div className="flex items-center gap-2">
       {icon && <span className="text-spark-primary">{icon}</span>}
       <h2 className="font-display text-lg font-bold text-spark-text-primary">{title}</h2>
-      <span className="w-5 h-5" aria-hidden="true" />
+      {icon && <span className="w-5 h-5" aria-hidden="true" />}
     </div>
     <button
       onClick={onClose}
@@ -561,6 +561,42 @@ export const StepContent: React.FC<{
     </div>
   );
 };
+
+/**
+ * StepPanelGroup - Wrapper for StepPanels that ensures dynamic height
+ *
+ * Uses CSS grid to stack all panels in the same cell. This makes the container
+ * height dynamically match the active panel's height, preventing layout
+ * issues when switching between steps of different sizes.
+ */
+export const StepPanelGroup: React.FC<{
+  children: ReactNode;
+  className?: string;
+}> = ({ children, className = "" }) => (
+  <div className={`grid ${className}`}>
+    {children}
+  </div>
+);
+
+/**
+ * StepPanel - Container for step content with dynamic height
+ *
+ * Must be used inside StepPanelGroup for consistent height behavior.
+ * All panels stack in the same grid cell, with only the active one visible.
+ */
+export const StepPanel: React.FC<{
+  children: ReactNode;
+  isActive: boolean;
+  className?: string;
+}> = ({ children, isActive, className = "" }) => (
+  <div
+    className={`col-start-1 row-start-1 transition-opacity duration-200 ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+      } ${className}`}
+    aria-hidden={!isActive}
+  >
+    {children}
+  </div>
+);
 
 // ============================================
 // BOTTOM SHEET COMPONENTS
