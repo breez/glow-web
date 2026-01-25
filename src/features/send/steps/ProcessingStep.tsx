@@ -1,6 +1,44 @@
 import React from 'react';
 
-const ProcessingStep: React.FC = () => {
+export interface ProcessingStepProps {
+  /** Operation type to customize messaging (default: 'payment') */
+  operationType?: 'payment' | 'auth';
+}
+
+const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'payment' }) => {
+  const isAuth = operationType === 'auth';
+
+  const getTitle = () => isAuth ? 'Authenticating...' : 'Sending...';
+  const getDescription = () => isAuth
+    ? 'Please wait while we verify your identity...'
+    : 'Please wait while we process your transaction...';
+
+  // Key icon for auth, lightning bolt for payment
+  const renderIcon = () => {
+    if (isAuth) {
+      return (
+        <svg
+          className="w-10 h-10 text-spark-electric"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+        </svg>
+      );
+    }
+    return (
+      <svg
+        className="w-10 h-10 text-spark-electric"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
+      </svg>
+    );
+  };
+
   return (
     <div className="flex flex-col items-center justify-center py-12">
       {/* Animated Glow logo */}
@@ -10,7 +48,7 @@ const ProcessingStep: React.FC = () => {
           <div className="absolute w-28 h-28 rounded-full bg-spark-primary/15 animate-ping" style={{ animationDuration: '2s' }} />
           <div className="absolute w-24 h-24 rounded-full bg-spark-primary/20 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
         </div>
-        
+
         {/* Logo container with spinning ring */}
         <div className="relative w-24 h-24 flex items-center justify-center">
           {/* Spinning ring */}
@@ -34,23 +72,25 @@ const ProcessingStep: React.FC = () => {
               </defs>
             </svg>
           </span>
-          
-          {/* Glow logo */}
-          <img
-            src="/assets/Glow_Logo.png"
-            alt="Processing"
-            className="w-14 h-14 object-contain animate-pulse drop-shadow-[0_0_15px_rgba(212,165,116,0.4)]"
-            style={{ animationDuration: '2s' }}
-          />
+
+          {/* Icon */}
+          {isAuth ? renderIcon() : (
+            <img
+              src="/assets/Glow_Logo.png"
+              alt="Processing"
+              className="w-14 h-14 object-contain animate-pulse drop-shadow-[0_0_15px_rgba(212,165,116,0.4)]"
+              style={{ animationDuration: '2s' }}
+            />
+          )}
         </div>
       </div>
 
       {/* Text */}
       <h3 className="font-display text-xl font-semibold text-spark-text-primary mb-2">
-        Sending
+        {getTitle()}
       </h3>
       <p className="text-spark-text-secondary text-sm text-center max-w-xs">
-        Processing your payment...
+        {getDescription()}
       </p>
 
       {/* Animated dots in brand color */}

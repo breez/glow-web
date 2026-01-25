@@ -349,7 +349,9 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
         )}
 
         {/* Processing Step (generic) */}
-        {currentStep === 'processing' && <ProcessingStep />}
+        {currentStep === 'processing' && (
+          <ProcessingStep operationType={paymentInput?.parsedInput.type === 'lnurlAuth' ? 'auth' : 'payment'} />
+        )}
 
         {/* Result Step (generic) */}
         {currentStep === 'result' && (
