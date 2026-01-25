@@ -28,6 +28,8 @@ import {
   UpdateUserSettingsRequest,
   FiatCurrency,
   Rate,
+  BuyBitcoinRequest,
+  BuyBitcoinResponse,
 } from '@breeztech/breez-sdk-spark';
 import type { WalletAPI } from './WalletAPI';
 
@@ -307,6 +309,17 @@ export const deleteLightningAddress = async (): Promise<void> => {
   }
 };
 
+// Buy Bitcoin
+export const buyBitcoin = async (request: BuyBitcoinRequest): Promise<BuyBitcoinResponse> => {
+  if (!sdk) throw new Error('SDK not initialized');
+  try {
+    return await sdk.buyBitcoin(request);
+  } catch (error) {
+    console.error('Failed to get buy bitcoin URL:', error);
+    throw error;
+  }
+};
+
 // Aggregate API object implementing WalletAPI
 export const walletApi: WalletAPI = {
   // Lifecycle
@@ -351,4 +364,6 @@ export const walletApi: WalletAPI = {
   listFiatRates,
   // Logs
   getSdkLogs,
+  // Buy Bitcoin
+  buyBitcoin,
 };
