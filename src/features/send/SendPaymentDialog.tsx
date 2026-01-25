@@ -161,10 +161,11 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
 
   // Get dialog title based on current step
   const getDialogTitle = (): string => {
-    if (currentStep === 'amount' || currentStep === 'workflow') {
-      return getPaymentMethodName();
+    if (currentStep === 'input') {
+      return 'Send';
     }
-    return 'Send';
+    // For all other steps (amount, workflow, processing, result), use the payment method name
+    return getPaymentMethodName();
   };
 
   // Generic send handler: transitions to processing/result with error handling

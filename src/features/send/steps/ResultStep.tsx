@@ -1,5 +1,5 @@
 import React from 'react';
-import { PrimaryButton, Alert } from '../../../components/ui';
+import { PrimaryButton, ErrorMessageBox } from '../../../components/ui';
 
 export interface ResultStepProps {
   result: 'success' | 'failure';
@@ -77,10 +77,11 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
           {getSuccessDescription()}
         </p>
       ) : (
-        <div className="w-full max-w-xs mb-8">
-          <Alert type="error">
-            {error || getDefaultErrorMessage()}
-          </Alert>
+        <div className="w-full mb-8">
+          <ErrorMessageBox
+            title={getTitle()}
+            error={error || getDefaultErrorMessage()}
+          />
         </div>
       )}
 
