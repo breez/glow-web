@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DialogHeader, StepContainer, StepContent, BottomSheetContainer, BottomSheetCard } from '../../components/ui';
+import { DialogHeader, StepPanelGroup, StepPanel, BottomSheetContainer, BottomSheetCard } from '../../components/ui';
 import { useWallet } from '../../contexts/WalletContext';
 // No fee UI in generic amount step; BTC fee selection is handled inside Bitcoin workflow
 
@@ -126,17 +126,6 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     setAmount(String(amountNum));
     await prepareSendPayment(paymentInput?.rawInput || '', amountNum);
   };
-  const getStepIndex = (step: 'input' | 'amount' | 'workflow' | 'processing' | 'result'): number => {
-    const steps: Array<'input' | 'amount' | 'workflow' | 'processing' | 'result'> = [
-      'input',
-      'amount',
-      'workflow',
-      'processing',
-      'result',
-    ];
-    return steps.indexOf(step);
-  };
-
   // Get payment method display name
   const getPaymentMethodName = (): string => {
     if (!paymentInput) return '';
@@ -224,19 +213,19 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
           }
         />
 
-        <StepContainer>
+        <StepPanelGroup>
           {/* Input Step */}
-          <StepContent isActive={currentStep === 'input'} isLeft={getStepIndex('input') < getStepIndex(currentStep)}>
+          <StepPanel isActive={currentStep === 'input'}>
             <InputStep
               paymentInput={paymentInput?.rawInput || ''}
               isLoading={isLoading}
               error={error}
               onContinue={(paymentInput) => processPaymentInput(paymentInput)}
             />
-          </StepContent>
+          </StepPanel>
 
           {/* Amount Step (common) */}
-          <StepContent isActive={currentStep === 'amount'} isLeft={getStepIndex('amount') < getStepIndex(currentStep)}>
+          <StepPanel isActive={currentStep === 'amount'}>
             <AmountStep
               paymentInput={paymentInput?.rawInput || ''}
               amount={amount}
@@ -245,10 +234,10 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
               onBack={() => setCurrentStep('input')}
               onNext={onAmountNext}
             />
-          </StepContent>
+          </StepPanel>
 
           {/* Workflow Step: delegates to a specific workflow component */}
-          <StepContent isActive={currentStep === 'workflow'} isLeft={getStepIndex('workflow') < getStepIndex(currentStep)}>
+          <StepPanel isActive={currentStep === 'workflow'}>
             {prepareResponse && prepareResponse.paymentMethod.type === 'bolt11Invoice' && (
               <Bolt11Workflow
                 method={prepareResponse.paymentMethod}
@@ -286,18 +275,18 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 }}
               />
             )}
-          </StepContent>
+          </StepPanel>
 
           {/* Processing Step (generic) */}
-          <StepContent isActive={currentStep === 'processing'} isLeft={getStepIndex('processing') < getStepIndex(currentStep)}>
+          <StepPanel isActive={currentStep === 'processing'}>
             <ProcessingStep />
-          </StepContent>
+          </StepPanel>
 
           {/* Result Step (generic) */}
-          <StepContent isActive={currentStep === 'result'} isLeft={getStepIndex('result') < getStepIndex(currentStep)}>
+          <StepPanel isActive={currentStep === 'result'}>
             <ResultStep result={paymentResult === 'success' ? 'success' : 'failure'} error={error} onClose={onClose} />
-          </StepContent>
-        </StepContainer>
+          </StepPanel>
+        </StepPanelGroup>
       </BottomSheetCard>
     </BottomSheetContainer>
   );

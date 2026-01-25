@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { SendPaymentMethod } from '@breeztech/breez-sdk-spark';
 import type { PaymentStep } from '../../../types/domain';
-import { PrimaryButton, StepContainer, StepContent } from '../../../components/ui';
+import { PrimaryButton, StepPanelGroup, StepPanel } from '../../../components/ui';
 import ConfirmStep from '../steps/ConfirmStep';
 
 interface BitcoinWorkflowProps {
@@ -15,11 +15,6 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, o
   const [step, setStep] = useState<PaymentStep>('fee');
   // Fee selection happens here; processing/result are handled by parent
   const [selectedFeeRate, setSelectedFeeRate] = useState<'fast' | 'medium' | 'slow' | null>(null);
-
-  const getStepIndex = (s: PaymentStep) => {
-    const order: PaymentStep[] = ['fee', 'confirm', 'processing', 'result'];
-    return order.indexOf(s);
-  };
 
   const handleSend = async () => {
     if (!selectedFeeRate) return;
@@ -35,9 +30,9 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, o
   }
 
   return (
-    <StepContainer>
+    <StepPanelGroup>
       {/* Fee selection */}
-      <StepContent isActive={step === 'fee'} isLeft={getStepIndex('fee') < getStepIndex(step)}>
+      <StepPanel isActive={step === 'fee'}>
         <div className="mb-4">
           <label className="block text-sm font-medium text-[rgb(var(--text-white))] mb-2">Select Fee Rate</label>
           <div className="grid grid-cols-3 gap-2">
@@ -103,12 +98,12 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, o
             Continue
           </PrimaryButton>
         </div>
-      </StepContent>
+      </StepPanel>
       {/* Confirm */}
-      <StepContent isActive={step === 'confirm'} isLeft={getStepIndex('confirm') < getStepIndex(step)}>
+      <StepPanel isActive={step === 'confirm'}>
         <ConfirmStep amountSats={amountSats} feesSat={feesSat} error={null} isLoading={false} onConfirm={handleSend} />
-      </StepContent>
-    </StepContainer>
+      </StepPanel>
+    </StepPanelGroup>
   );
 };
 
