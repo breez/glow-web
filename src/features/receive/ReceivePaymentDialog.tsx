@@ -13,6 +13,7 @@ import {
   TabList,
   Tab,
   TabPanel,
+  ConfirmDialog,
 } from '../../components/ui';
 
 // Types
@@ -96,6 +97,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     reset: resetLightningAddress,
   } = useLightningAddress();
   const [showAmountPanel, setShowAmountPanel] = useState<boolean>(false);
+  const [showChangeConfirm, setShowChangeConfirm] = useState<boolean>(false);
 
   // Reset state when dialog opens and set default limits
   useEffect(() => {
@@ -197,20 +199,29 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
   const handleCancelEditLightningAddress = () => cancelEditLightningAddress();
   const handleSaveLightningAddress = async () => {
     if (lightningAddress) {
-      // Extract username and domain for the message
-      const parts = lightningAddress.lightningAddress.split('@');
-      const username = parts[0];
-      const domain = parts[1] || 'breez.tips';
-
-      const title = "Confirm Username Change";
-      const message = `Changing your Lightning Address username will permanently release '${username}@${domain}', making it available for other users.\n\nDo you want to proceed?`;
-
-      // We use the Title as the first line since window.confirm doesn't support titles
-      if (!window.confirm(`${title}\n\n${message}`)) {
-        return;
-      }
+      // Show confirmation dialog before changing address
+      setShowChangeConfirm(true);
+      return;
     }
     await saveLightningAddress();
+  };
+
+  const handleConfirmAddressChange = async () => {
+    setShowChangeConfirm(false);
+    await saveLightningAddress();
+  };
+
+  const handleCancelAddressChange = () => {
+    setShowChangeConfirm(false);
+  };
+
+  // Get confirmation message for Lightning Address change
+  const getAddressChangeMessage = () => {
+    if (!lightningAddress) return '';
+    const parts = lightningAddress.lightningAddress.split('@');
+    const username = parts[0];
+    const domain = parts[1] || 'breez.tips';
+    return `Changing your Lightning Address username will permanently release '${username}@${domain}', making it available for other users.\n\nDo you want to proceed?`;
   };
 
   const handleCustomizeAmount = () => {
@@ -352,6 +363,18 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
           />
         </TabContainer>
       </BottomSheetCard>
+
+      {/* Confirmation dialog for Lightning Address change */}
+      <ConfirmDialog
+        isOpen={showChangeConfirm}
+        title="Confirm Username Change"
+        message={getAddressChangeMessage()}
+        confirmLabel="Change"
+        cancelLabel="Cancel"
+        variant="warning"
+        onConfirm={handleConfirmAddressChange}
+        onCancel={handleCancelAddressChange}
+      />
     </BottomSheetContainer>
   );
 };
