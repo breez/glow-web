@@ -56,7 +56,7 @@ export const DialogHeader: React.FC<{
     <div className="flex items-center gap-2">
       {icon && <span className="text-spark-primary">{icon}</span>}
       <h2 className="font-display text-lg font-bold text-spark-text-primary">{title}</h2>
-       <span className="w-5 h-5" aria-hidden="true" />
+      <span className="w-5 h-5" aria-hidden="true" />
     </div>
     <button
       onClick={onClose}
@@ -330,7 +330,7 @@ export const ResultIcon: React.FC<{
         absolute inset-0 rounded-2xl blur-xl
         ${isSuccess ? 'bg-spark-success/30' : 'bg-spark-error/30'}
       `} />
-      
+
       {/* Icon */}
       <div className="relative z-10">
         {isSuccess ? (
@@ -445,26 +445,26 @@ export const CopyableText: React.FC<{
       >
         {displayText}
       </button>
-      
+
       {/* Action buttons */}
       <div className="flex gap-2">
         <button
           onClick={handleCopy}
           className={`
             flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all
-            ${copied 
-              ? 'bg-spark-success/20 text-spark-success' 
+            ${copied
+              ? 'bg-spark-success/20 text-spark-success'
               : 'bg-spark-primary text-white hover:bg-spark-primary-light'
             }
           `}
           title={`Copy ${label}`}
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M8 2a2 2 0 00-2 2v1H5a2 2 0 00-2 2v7a2 2 0 002 2h6a2 2 0 002-2v-1h1a2 2 0 002-2V6l-4-4H8zm6 6h-2a2 2 0 01-2-2V4H8v1h3a1 1 0 011 1v2h2v2z"/>
+            <path d="M8 2a2 2 0 00-2 2v1H5a2 2 0 00-2 2v7a2 2 0 002 2h6a2 2 0 002-2v-1h1a2 2 0 002-2V6l-4-4H8zm6 6h-2a2 2 0 01-2-2V4H8v1h3a1 1 0 011 1v2h2v2z" />
           </svg>
           {copied ? 'Copied!' : 'Copy'}
         </button>
-        
+
         {showShare && canShare && (
           <button
             onClick={handleShare}
@@ -472,12 +472,12 @@ export const CopyableText: React.FC<{
             title={`Share ${label}`}
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
+              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
             </svg>
             Share
           </button>
         )}
-        
+
         {additionalActions}
       </div>
     </div>
@@ -566,12 +566,30 @@ export const StepContent: React.FC<{
 // BOTTOM SHEET COMPONENTS
 // ============================================
 
+export type BottomSheetMaxWidth = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+
+const bottomSheetMaxWidthMap: Record<BottomSheetMaxWidth, string> = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+  full: 'max-w-full',
+};
+
 export const BottomSheetContainer: React.FC<{
   isOpen: boolean;
   children: ReactNode;
   className?: string;
   onClose?: () => void;
-}> = ({ isOpen, children, className = "", onClose }) => {
+  /** Maximum width of the sheet (default: 'full' - uses parent container width) */
+  maxWidth?: BottomSheetMaxWidth;
+  /** Maximum height as viewport percentage (default: 90) */
+  maxHeightVh?: number;
+  /** Whether sheet takes full height (for QR scanner, etc.) */
+  fullHeight?: boolean;
+  /** Whether to show a backdrop overlay (useful for nested sheets) */
+  showBackdrop?: boolean;
+}> = ({ isOpen, children, className = "", onClose, maxWidth = 'full', maxHeightVh = 90, fullHeight = false, showBackdrop = false }) => {
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startY = useRef(0);
@@ -600,8 +618,25 @@ export const BottomSheetContainer: React.FC<{
     setDragY(0);
   };
 
+  const maxWidthClass = bottomSheetMaxWidthMap[maxWidth];
+  const heightClass = fullHeight ? 'h-full' : `max-h-[${maxHeightVh}vh]`;
+
   return (
-    <Transition show={isOpen} as="div" className="absolute inset-0 z-50 overflow-hidden">
+    <Transition show={isOpen} as="div" className="absolute inset-0 z-50 overflow-hidden flex flex-col justify-end pointer-events-none">
+      {/* Optional backdrop for nested sheets */}
+      {showBackdrop && (
+        <Transition.Child
+          as="div"
+          enter="transition-opacity ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="transition-opacity ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+          className="absolute inset-0 bg-black/60 pointer-events-auto z-0"
+          onClick={onClose}
+        />
+      )}
       <Transition.Child
         as="div"
         enter="transform transition ease-out duration-300"
@@ -610,7 +645,7 @@ export const BottomSheetContainer: React.FC<{
         leave="transform transition ease-in duration-200"
         leaveFrom="translate-y-0"
         leaveTo="translate-y-full"
-        className={`mx-auto h-full max-w-full ${className}`}
+        className={`mx-auto w-full ${maxWidthClass} ${heightClass} pointer-events-auto z-10 ${className}`}
         style={{ transform: dragY > 0 ? `translateY(${dragY}px)` : undefined }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -684,12 +719,40 @@ export const Tab: React.FC<{
   </button>
 );
 
+/**
+ * TabPanelGroup - Wrapper for TabPanels that ensures consistent height
+ *
+ * Uses CSS grid to stack all panels in the same cell. This makes the container
+ * height dynamically match the tallest panel at any time, preventing layout
+ * shifts when switching tabs. All panels remain in the DOM and contribute to
+ * the height calculation, so if any panel's content grows, the container
+ * grows to accommodate it.
+ */
+export const TabPanelGroup: React.FC<{
+  children: ReactNode;
+  className?: string;
+}> = ({ children, className = "" }) => (
+  <div className={`grid ${className}`}>
+    {children}
+  </div>
+);
+
+/**
+ * TabPanel - Container for tab content
+ *
+ * Must be used inside TabPanelGroup for consistent height behavior.
+ * All panels stack in the same grid cell, with only the active one visible.
+ */
 export const TabPanel: React.FC<{
   children: ReactNode;
   isActive: boolean;
   className?: string;
 }> = ({ children, isActive, className = "" }) => (
-  <div className={`${isActive ? 'block' : 'hidden'} pt-6 ${className}`}>
+  <div
+    className={`col-start-1 row-start-1 pt-6 transition-opacity duration-200 ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+      } ${className}`}
+    aria-hidden={!isActive}
+  >
     {children}
   </div>
 );
@@ -764,3 +827,64 @@ export const SafeAreaSpacer: React.FC<{
 }> = ({ edge, className = "" }) => (
   <div className={`safe-area-${edge} ${className}`} aria-hidden="true" />
 );
+
+// ============================================
+// CONFIRM DIALOG
+// ============================================
+
+export const ConfirmDialog: React.FC<{
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: 'danger' | 'warning' | 'default';
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({
+  isOpen,
+  title,
+  message,
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  variant = 'default',
+  onConfirm,
+  onCancel,
+}) => {
+  if (!isOpen) return null;
+
+  const confirmButtonStyles = {
+    danger: 'bg-spark-error hover:bg-spark-error/80 text-white',
+    warning: 'bg-spark-warning hover:bg-spark-warning/80 text-spark-dark',
+    default: 'bg-spark-primary hover:bg-spark-primary-light text-white',
+  };
+
+  return (
+    <DialogContainer>
+      <DialogCard maxWidth="sm">
+        <div className="text-center">
+          <h3 className="font-display text-lg font-bold text-spark-text-primary mb-3">
+            {title}
+          </h3>
+          <p className="text-sm text-spark-text-secondary whitespace-pre-line mb-6">
+            {message}
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="flex-1 py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
+            >
+              {cancelLabel}
+            </button>
+            <button
+              onClick={onConfirm}
+              className={`flex-1 py-3 font-display font-semibold rounded-xl transition-colors ${confirmButtonStyles[variant]}`}
+            >
+              {confirmLabel}
+            </button>
+          </div>
+        </div>
+      </DialogCard>
+    </DialogContainer>
+  );
+};

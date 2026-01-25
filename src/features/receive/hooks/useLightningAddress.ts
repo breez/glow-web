@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../../../contexts/WalletContext';
+import { generateRandomName } from '../../../utils/randomName';
 
 export interface UseLightningAddress {
   address: LightningAddressInfo | null;
@@ -30,26 +31,19 @@ export const useLightningAddress = (): UseLightningAddress => {
     return value.includes('@') ? value.split('@')[0] : value;
   };
 
-  const generateRandomLetterString = (length: number): string => {
-    const characters = "abcdefghijklmnopqrstuvwxyz";
-    let result = "";
-    for (let i = 0; i < length; i++) {
-      result += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return result;
-  }
-
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
       let addr = await wallet.getLightningAddress();
       if (!addr) {
-        // Try up to 3 times with different random usernames
+        // Generate a base username, then try with random 4-digit suffixes on collision
+        const baseName = generateRandomName();
         for (let attempt = 0; attempt < 3; attempt++) {
-          const randomString = generateRandomLetterString(8); // Use 8 chars for less collision
-          const isAvailable = await wallet.checkLightningAddressAvailable(randomString);
+          const suffix = attempt === 0 ? '' : String(Math.floor(1000 + Math.random() * 9000));
+          const username = baseName + suffix;
+          const isAvailable = await wallet.checkLightningAddressAvailable(username);
           if (isAvailable) {
-            await wallet.registerLightningAddress(randomString, `Pay to ${randomString}@breez.tips`);
+            await wallet.registerLightningAddress(username, `Pay to ${username}@breez.tips`);
             addr = await wallet.getLightningAddress();
             break;
           }

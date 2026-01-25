@@ -13,6 +13,8 @@ import {
   TabList,
   Tab,
   TabPanel,
+ConfirmDialog,
+  TabPanelGroup,
 } from '../../components/ui';
 
 // Types
@@ -96,6 +98,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     reset: resetLightningAddress,
   } = useLightningAddress();
   const [showAmountPanel, setShowAmountPanel] = useState<boolean>(false);
+  const [showChangeConfirm, setShowChangeConfirm] = useState<boolean>(false);
 
   // Reset state when dialog opens and set default limits
   useEffect(() => {
@@ -195,7 +198,32 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
   // Lightning Address management via hook
   const handleEditLightningAddress = () => beginEditLightningAddress(lightningAddress);
   const handleCancelEditLightningAddress = () => cancelEditLightningAddress();
-  const handleSaveLightningAddress = async () => saveLightningAddress();
+  const handleSaveLightningAddress = async () => {
+    if (lightningAddress) {
+      // Show confirmation dialog before changing address
+      setShowChangeConfirm(true);
+      return;
+    }
+    await saveLightningAddress();
+  };
+
+  const handleConfirmAddressChange = async () => {
+    setShowChangeConfirm(false);
+    await saveLightningAddress();
+  };
+
+  const handleCancelAddressChange = () => {
+    setShowChangeConfirm(false);
+  };
+
+  // Get confirmation message for Lightning Address change
+  const getAddressChangeMessage = () => {
+    if (!lightningAddress) return '';
+    const parts = lightningAddress.lightningAddress.split('@');
+    const username = parts[0];
+    const domain = parts[1] || 'breez.tips';
+    return `Changing your Lightning Address username will permanently release '${username}@${domain}', making it available for other users.\n\nDo you want to proceed?`;
+  };
 
   const handleCustomizeAmount = () => {
     setShowAmountPanel(true);
@@ -247,8 +275,8 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={onClose}>
       <BottomSheetCard className="bottom-sheet-card">
-        <DialogHeader 
-          title="Receive" 
+        <DialogHeader
+          title="Receive"
           onClose={onClose}
           icon={
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -279,7 +307,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
             )}
 
             {currentStep === 'input' && (
-              <>
+              <TabPanelGroup>
                 <TabPanel isActive={activeTab === 'lightning'}>
                   <LightningAddressDisplay
                     address={lightningAddress}
@@ -302,7 +330,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
                 <TabPanel isActive={activeTab === 'bitcoin'}>
                   <BitcoinAddressDisplay address={bitcoinAddress} isLoading={bitcoinLoading} />
                 </TabPanel>
-              </>
+              </TabPanelGroup>
             )}
 
             {currentStep === 'loading' && (
@@ -336,6 +364,18 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
           />
         </TabContainer>
       </BottomSheetCard>
+
+      {/* Confirmation dialog for Lightning Address change */}
+      <ConfirmDialog
+        isOpen={showChangeConfirm}
+        title="Confirm Username Change"
+        message={getAddressChangeMessage()}
+        confirmLabel="Change"
+        cancelLabel="Cancel"
+        variant="warning"
+        onConfirm={handleConfirmAddressChange}
+        onCancel={handleCancelAddressChange}
+      />
     </BottomSheetContainer>
   );
 };
