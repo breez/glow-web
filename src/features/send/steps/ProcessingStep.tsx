@@ -1,13 +1,51 @@
 import React from 'react';
 
-const ProcessingStep: React.FC = () => {
+export interface ProcessingStepProps {
+  /** Operation type to customize messaging (default: 'payment') */
+  operationType?: 'payment' | 'auth';
+}
+
+const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'payment' }) => {
+  const isAuth = operationType === 'auth';
+
+  const getTitle = () => isAuth ? 'Authenticating...' : 'Sending...';
+  const getDescription = () => isAuth
+    ? 'Please wait while we verify your identity...'
+    : 'Please wait while we process your transaction...';
+
+  // Key icon for auth, lightning bolt for payment
+  const renderIcon = () => {
+    if (isAuth) {
+      return (
+        <svg
+          className="w-10 h-10 text-spark-electric"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+        </svg>
+      );
+    }
+    return (
+      <svg
+        className="w-10 h-10 text-spark-electric"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
+      </svg>
+    );
+  };
+
   return (
     <div className="flex flex-col items-center justify-center py-12">
-      {/* Animated payment icon */}
+      {/* Animated icon */}
       <div className="relative mb-8">
         {/* Outer glow */}
         <div className="absolute inset-0 w-24 h-24 rounded-full bg-spark-electric/20 blur-xl animate-pulse" />
-        
+
         {/* Main circle */}
         <div className="relative w-24 h-24 rounded-full bg-spark-surface border-2 border-spark-electric flex items-center justify-center">
           {/* Spinning ring */}
@@ -31,24 +69,18 @@ const ProcessingStep: React.FC = () => {
               </defs>
             </svg>
           </span>
-          
-          {/* Lightning bolt */}
-          <svg 
-            className="w-10 h-10 text-spark-electric" 
-            viewBox="0 0 24 24" 
-            fill="currentColor"
-          >
-            <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
-          </svg>
+
+          {/* Icon */}
+          {renderIcon()}
         </div>
       </div>
 
       {/* Text */}
       <h3 className="font-display text-xl font-semibold text-spark-text-primary mb-2">
-        Sending...
+        {getTitle()}
       </h3>
       <p className="text-spark-text-secondary text-sm text-center max-w-xs">
-        Please wait while we process your transaction...
+        {getDescription()}
       </p>
 
       {/* Animated dots */}

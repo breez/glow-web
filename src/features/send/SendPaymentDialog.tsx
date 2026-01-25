@@ -312,7 +312,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
 
           {/* Processing Step (generic) */}
           <StepPanel isActive={currentStep === 'processing'}>
-            <ProcessingStep />
+            <ProcessingStep operationType={paymentInput?.parsedInput.type === 'lnurlAuth' ? 'auth' : 'payment'} />
           </StepPanel>
 
           {/* Result Step (generic) */}
