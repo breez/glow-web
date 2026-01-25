@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import type { GetInfoResponse, Rate, FiatCurrency } from '@breeztech/breez-sdk-spark';
+import { Transition } from '@headlessui/react';
 import { getFiatSettings } from '../services/settings';
 
 interface CollapsingWalletHeaderProps {
@@ -27,7 +28,7 @@ const useAnimatedNumber = (targetValue: number, duration: number = 400): number 
   useEffect(() => {
     // Skip animation if it's the initial render or value is 0
     if (startValueRef.current === targetValue) return;
-    
+
     const startValue = displayValue;
     startValueRef.current = targetValue;
     startTimeRef.current = null;
@@ -39,10 +40,10 @@ const useAnimatedNumber = (targetValue: number, duration: number = 400): number 
 
       const elapsed = currentTime - startTimeRef.current;
       const progress = Math.min(elapsed / duration, 1);
-      
+
       // Ease-out cubic for smooth deceleration
       const easeOut = 1 - Math.pow(1 - progress, 3);
-      
+
       const currentValue = Math.round(startValue + (targetValue - startValue) * easeOut);
       setDisplayValue(currentValue);
 
@@ -77,24 +78,24 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   // Calculate fiat values for selected currencies
   const fiatValues = useMemo(() => {
     if (!walletInfo) return [];
-    
+
     const balanceSat = walletInfo.balanceSats || 0;
     if (balanceSat === 0) return []; // Don't show fiat for zero balance
-    
+
     const balanceBtc = balanceSat / 100000000;
     const settings = getFiatSettings();
-    
+
     return settings.selectedCurrencies
       .map(currencyId => {
         const rate = fiatRates.find(r => r.coin === currencyId);
         const currency = fiatCurrencies.find(c => c.id === currencyId);
-        
+
         if (!rate || !currency) return null;
-        
+
         const value = balanceBtc * rate.value;
         const symbol = currency.info.symbol?.grapheme || currencyId;
         const fractionSize = currency.info.fractionSize || 2;
-        
+
         return {
           currencyId,
           symbol,
@@ -113,8 +114,8 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   }, [fiatValues.length]);
 
   // Get current fiat to display
-  const currentFiat = fiatValues.length > 0 
-    ? fiatValues[activeFiatIndex % fiatValues.length] 
+  const currentFiat = fiatValues.length > 0
+    ? fiatValues[activeFiatIndex % fiatValues.length]
     : null;
 
   if (!walletInfo) return null;
@@ -126,9 +127,9 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
     <div className="relative overflow-hidden transition-all duration-200">
       {/* Glassmorphism background */}
       <div className="absolute inset-0 bg-spark-surface/80 backdrop-blur-xl border-b border-spark-border" />
-      
+
       {/* Strong glow effect behind balance */}
-      <div 
+      <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[200px] pointer-events-none transition-opacity duration-300"
         style={{ opacity: 1 - scrollProgress * 0.7 }}
       >
@@ -154,7 +155,15 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           {/* Action buttons */}
           <div className="flex items-center gap-3">
             {/* Rejected deposits warning */}
-            {hasUnclaimedDeposits && (
+            <Transition
+              show={hasUnclaimedDeposits}
+              enter="transform transition ease-out duration-300"
+              enterFrom="translate-y-full opacity-0"
+              enterTo="translate-y-0 opacity-100"
+              leave="transform transition ease-in duration-200"
+              leaveFrom="translate-y-0 opacity-100"
+              leaveTo="translate-y-full opacity-0"
+            >
               <button
                 type="button"
                 className="flex items-center justify-center w-9 h-9 rounded-xl bg-spark-warning/15 text-spark-warning border border-spark-warning/30 hover:bg-spark-warning/25 transition-colors"
@@ -166,7 +175,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l6.518 11.6c.75 1.336-.213 3.001-1.742 3.001H3.48c-1.53 0-2.492-1.665-1.742-3.001l6.52-11.6zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 01-1-1V7a1 1 0 112 0v3a1 1 0 01-1 1z" clipRule="evenodd" />
                 </svg>
               </button>
-            )}
+            </Transition>
           </div>
         </div>
 
@@ -176,7 +185,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           <div className="text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase mb-1">
             Balance
           </div>
-          
+
           {/* Main balance */}
           <div className="flex items-baseline justify-center gap-2">
             <span className="balance-display">
@@ -188,18 +197,18 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           </div>
 
           {/* Decoration with fading lines - shows fiat value or lightning bolt */}
-          <div 
+          <div
             className="flex items-center justify-center gap-3 mt-3"
             onClick={currentFiat && fiatValues.length > 1 ? handleFiatTap : undefined}
             role={currentFiat && fiatValues.length > 1 ? "button" : undefined}
             tabIndex={currentFiat && fiatValues.length > 1 ? 0 : undefined}
           >
             {/* Left line - fades left */}
-            <div className="w-8 h-0.5 bg-spark-primary" style={{ 
+            <div className="w-8 h-0.5 bg-spark-primary" style={{
               maskImage: 'linear-gradient(to right, transparent, black)',
               WebkitMaskImage: 'linear-gradient(to right, transparent, black)'
             }} />
-            
+
             {/* Center: Fiat value or Lightning bolt */}
             {currentFiat ? (
               <span className="text-spark-text-secondary text-sm font-mono">
@@ -212,9 +221,9 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
               </svg>
             )}
-            
+
             {/* Right line - fades right */}
-            <div className="w-8 h-0.5 bg-spark-primary" style={{ 
+            <div className="w-8 h-0.5 bg-spark-primary" style={{
               maskImage: 'linear-gradient(to left, transparent, black)',
               WebkitMaskImage: 'linear-gradient(to left, transparent, black)'
             }} />
