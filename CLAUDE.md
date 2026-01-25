@@ -4,6 +4,15 @@
 
 Glow is a Bitcoin/Lightning wallet web app built with React + TypeScript + Vite, using the Breez Spark SDK (WASM).
 
+## Key Paths (Hardcoded)
+
+```
+App:     ~/Documents/GitHub/breez-sdk-spark-example
+SDK:     ~/Documents/GitHub/spark-sdk
+WASM:    ~/Documents/GitHub/spark-sdk/packages/wasm
+Types:   ~/Documents/GitHub/spark-sdk/packages/wasm/bundler/breez_sdk_spark_wasm.d.ts
+```
+
 ## SDK Integration
 
 The app uses `@breeztech/breez-sdk-spark` for all wallet functionality. The SDK is a WASM module loaded at startup.
@@ -11,26 +20,15 @@ The app uses `@breeztech/breez-sdk-spark` for all wallet functionality. The SDK 
 **Key files:**
 - `src/services/walletService.ts` - SDK wrapper with all wallet operations
 - `src/services/WalletAPI.ts` - TypeScript interface contract
-- `src/services/wasmLoader.ts` - WASM initialization
 
 ## Local SDK Development
 
 When testing unreleased SDK changes (PRs, feature branches):
 
-### Build & Link SDK
+### Quick Setup (One Command)
 ```bash
-# 1. Switch SDK to target branch and build
-cd ~/Documents/GitHub/spark-sdk
-git checkout <branch-name>
-git pull origin <branch-name>
-cd packages/wasm && make build
-
-# 2. Link SDK (one-time in SDK dir)
-npm link
-
-# 3. Link to app
-cd ~/Documents/GitHub/breez-sdk-spark-example
-npm link @breeztech/breez-sdk-spark
+# Build SDK and link to app
+cd ~/Documents/GitHub/spark-sdk && git checkout <branch-name> && git pull origin <branch-name> && cd packages/wasm && make build && cd ~/Documents/GitHub/breez-sdk-spark-example && npm link @breeztech/breez-sdk-spark
 ```
 
 ### Verify Link
@@ -42,7 +40,6 @@ ls -la node_modules/@breeztech/breez-sdk-spark
 ### After SDK Changes
 ```bash
 cd ~/Documents/GitHub/spark-sdk/packages/wasm && make build
-# App automatically uses updated WASM
 ```
 
 ### Unlink (restore npm version)
@@ -52,8 +49,11 @@ npm unlink @breeztech/breez-sdk-spark && npm install
 
 ### Check SDK Types
 ```bash
-# Find type definitions for breaking changes
-grep "export interface <TypeName>" ~/Documents/GitHub/spark-sdk/packages/wasm/bundler/breez_sdk_spark_wasm.d.ts
+# Find specific type definition
+grep -A 10 "export interface TypeName" ~/Documents/GitHub/spark-sdk/packages/wasm/bundler/breez_sdk_spark_wasm.d.ts
+
+# Find method signature
+grep "methodName" ~/Documents/GitHub/spark-sdk/packages/wasm/bundler/breez_sdk_spark_wasm.d.ts
 ```
 
 ## Branch Strategy
@@ -73,14 +73,32 @@ grep "export interface <TypeName>" ~/Documents/GitHub/spark-sdk/packages/wasm/bu
 ## Common Tasks
 
 ### Testing an SDK PR
-1. Checkout SDK PR branch, build WASM, link to app
-2. Fix any breaking changes in app code
-3. Test locally with `npm run dev`
-4. Once confirmed working, PR can be merged on SDK side
-5. After SDK release, update app's package.json and unlink
+1. Create feature branch: `git checkout -b feat/sdk-pr-XXX-description staging`
+2. Build & link SDK (use Quick Setup above)
+3. Fix any breaking changes in app code
+4. Test locally with `npm run dev`
+5. Open **draft** PR against `staging` branch
+6. Once SDK PR merges and releases, update package.json and convert to ready
 
-### Updating SDK Version
-```bash
-npm unlink @breeztech/breez-sdk-spark  # if linked
-npm install @breeztech/breez-sdk-spark@<version>
-```
+### PR Naming Convention
+- Branch: `feat/sdk-pr-XXX-short-description`
+- PR title: `feat: short description (SDK PR #XXX)`
+- PR body should link to SDK PR and note it's blocked until SDK releases
+
+### Adding New SDK Methods
+1. Add types to `src/services/WalletAPI.ts` (import from SDK + add to interface)
+2. Implement in `src/services/walletService.ts` (function + add to walletApi object)
+3. Use via `useWallet()` hook in components
+
+### Adding Side Menu Items
+1. Add prop to `SideMenuProps` interface in `src/components/SideMenu.tsx`
+2. Add to `menuItems` array in SideMenu component
+3. Add prop to `WalletPageProps` in `src/pages/WalletPage.tsx`
+4. Pass prop through WalletPage to SideMenu
+5. Add screen type and case in `src/App.tsx`
+
+### Build Notes
+- `npm run dev` works with npm-linked SDK packages
+- `npm run build` may fail with linked packages (vite polyfill resolution)
+- Production builds require npm-published SDK version
+- Type check: `npx tsc --noEmit`
