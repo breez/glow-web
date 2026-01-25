@@ -634,6 +634,7 @@ export const BottomSheetContainer: React.FC<{
   const currentY = useRef(0);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
     startY.current = e.touches[0].clientY;
     currentY.current = e.touches[0].clientY;
     setIsDragging(true);
@@ -641,6 +642,7 @@ export const BottomSheetContainer: React.FC<{
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
+    e.stopPropagation();
     currentY.current = e.touches[0].clientY;
     const diff = currentY.current - startY.current;
     if (diff > 0) {
@@ -648,10 +650,13 @@ export const BottomSheetContainer: React.FC<{
     }
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
     setIsDragging(false);
     if (dragY > 100 && onClose) {
-      // Blur any focused element to prevent focus lingering on items underneath
+      // Prevent the touch event from propagating to elements underneath
+      e.preventDefault();
+      e.stopPropagation();
+      // Blur any focused element
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
