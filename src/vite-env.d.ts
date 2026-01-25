@@ -2,7 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_BREEZ_API_KEY: string;
-  // Add more env variables here as needed
+  readonly VITE_STAGING_PASSWORD?: string;
 }
 
 interface ImportMeta {

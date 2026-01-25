@@ -5,6 +5,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
 import NotificationPrompt from './components/NotificationPrompt';
 import InstallPrompt from './components/InstallPrompt';
+import StagingGate from './components/StagingGate';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 
 // Import our page components
@@ -468,18 +469,20 @@ const AppContent: React.FC = () => {
   );
 };
 
-// Wrap the App with ToastProvider
+// Wrap the App with ToastProvider and StagingGate
 function App() {
   return (
-    <ToastProvider>
-      <WalletProvider>
-        <div className="h-full flex main-wrapper">
-          <div id="content-root" className="h-full w-full max-w-4xl mx-auto relative">
-            <AppContent />
+    <StagingGate>
+      <ToastProvider>
+        <WalletProvider>
+          <div className="h-full flex main-wrapper">
+            <div id="content-root" className="h-full w-full max-w-4xl mx-auto relative">
+              <AppContent />
+            </div>
           </div>
-        </div>
-      </WalletProvider>
-    </ToastProvider>
+        </WalletProvider>
+      </ToastProvider>
+    </StagingGate>
   );
 }
 
