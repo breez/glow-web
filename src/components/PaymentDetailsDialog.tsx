@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Payment } from '@breeztech/breez-sdk-spark';
 import {
   DialogHeader, PaymentInfoCard, PaymentInfoRow,
@@ -18,22 +18,31 @@ interface PaymentDetailsDialogProps {
 // Threshold for when to use collapsible chevron
 const LONG_TEXT_THRESHOLD = 35;
 
+const getDefaultVisibleFields = () => ({
+  invoice: false,
+  preimage: false,
+  destinationPubkey: false,
+  txId: false,
+  swapId: false,
+  assetId: false,
+  destination: false,
+  description: false,
+  comment: false,
+  message: false,
+  url: false,
+  lnAddress: false,
+  lnurlDomain: false
+});
+
 const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPayment, onClose }) => {
-  const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({
-    invoice: false,
-    preimage: false,
-    destinationPubkey: false,
-    txId: false,
-    swapId: false,
-    assetId: false,
-    destination: false,
-    description: false,
-    comment: false,
-    message: false,
-    url: false,
-    lnAddress: false,
-    lnurlDomain: false
-  });
+  const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>(getDefaultVisibleFields());
+
+  // Reset all expanded fields when a new payment is opened
+  useEffect(() => {
+    if (optionalPayment) {
+      setVisibleFields(getDefaultVisibleFields());
+    }
+  }, [optionalPayment]);
 
   // Format date and time
   const formatDateTime = (timestamp: number): string => {
