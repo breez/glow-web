@@ -6,6 +6,7 @@ import PaymentReceivedCelebration from './components/PaymentReceivedCelebration'
 import NotificationPrompt from './components/NotificationPrompt';
 import InstallPrompt from './components/InstallPrompt';
 import { ToastProvider, useToast } from './contexts/ToastContext';
+import AppShell from './components/layout/AppShell';
 
 // Import our page components
 import HomePage from './pages/HomePage';
@@ -475,7 +476,9 @@ function App() {
       <WalletProvider>
         <div className="h-full flex main-wrapper">
           <div id="content-root" className="h-full w-full max-w-4xl mx-auto relative">
-            <AppContent />
+            <AppShell>
+              <AppContent />
+            </AppShell>
           </div>
         </div>
       </WalletProvider>

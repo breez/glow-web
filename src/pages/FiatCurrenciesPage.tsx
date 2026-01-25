@@ -141,7 +141,7 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
           leaveTo="translate-x-full"
           className="absolute inset-0"
         >
-          <div className="flex flex-col h-full bg-spark-surface safe-area-top">
+          <div className="flex flex-col h-full bg-spark-surface">
             {/* Header */}
             <div className="relative px-4 py-4 border-b border-spark-border">
               <button

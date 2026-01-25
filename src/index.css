@@ -699,13 +699,29 @@ select {
 /*
  * Safe Area System
  * ----------------
- * Use these classes consistently across the app to handle device notches,
- * home indicators, and other safe area insets on iOS/Android.
+ * The AppShell component applies safe area insets globally via the .app-shell class.
+ * This ensures all pages automatically respect device notches, home indicators, etc.
  *
- * Basic classes: safe-area-{top|bottom|left|right}
- * Combined: safe-area-inset (all sides), safe-area-x (left+right), safe-area-y (top+bottom)
- * With padding: safe-area-top-1, safe-area-bottom-4, etc. (adds rem-based padding)
+ * For most pages, you don't need to add any safe area classes - AppShell handles it.
+ *
+ * Additional utility classes are available for special cases:
+ * - Basic: safe-area-{top|bottom|left|right}
+ * - Combined: safe-area-inset (all sides), safe-area-x (left+right), safe-area-y (top+bottom)
+ * - With padding: safe-area-top-1, safe-area-bottom-4, etc. (adds rem-based padding)
  */
+
+/* AppShell - Global safe area wrapper */
+.app-shell {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
 
 /* Basic safe area padding */
 .safe-area-top {

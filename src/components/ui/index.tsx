@@ -627,7 +627,7 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, DialogCardProps>(
     return (
       <div
         ref={ref}
-        className={`bg-spark-surface border-t border-spark-border rounded-t-3xl shadow-glass-lg overflow-hidden w-full safe-area-top ${className}`}
+        className={`bg-spark-surface border-t border-spark-border rounded-t-3xl shadow-glass-lg overflow-hidden w-full ${className}`}
       >
         {/* Drag handle indicator */}
         <div className="bottom-sheet-handle" />

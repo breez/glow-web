@@ -218,7 +218,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
           className="absolute inset-0 flex flex-col bg-spark-surface will-change-transform"
         >
             {/* Header */}
-            <div className="border-b border-spark-border safe-area-top">
+            <div className="border-b border-spark-border">
               <div className="relative px-4 py-4 flex items-center justify-center">
                 <h1 className="text-center font-display text-lg font-semibold text-spark-text-primary">Settings</h1>
                 <button
@@ -479,7 +479,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
 
             {/* Footer - Dev Mode only */}
             {isDevMode && (
-              <div className="flex-shrink-0 border-t border-spark-border bg-spark-surface safe-area-bottom">
+              <div className="flex-shrink-0 border-t border-spark-border bg-spark-surface">
                 <div className="p-4">
                   <div className="max-w-xl mx-auto">
                     <PrimaryButton className="w-full" onClick={handleSave}>
