@@ -9,7 +9,7 @@ export interface UseQrScannerOptions {
 }
 
 export interface UseQrScannerReturn {
-  videoRef: React.RefObject<HTMLVideoElement | null>;
+  videoRef: React.RefObject<HTMLVideoElement>;
   error: string | null;
   isScanning: boolean;
   isInitializing: boolean;
@@ -26,7 +26,7 @@ export interface UseQrScannerReturn {
  * Encapsulates all scanner state and logic for reusability
  */
 export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrScannerReturn => {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null!);
   const qrScannerRef = useRef<QrScanner | null>(null);
 
   const [error, setError] = useState<string | null>(null);
