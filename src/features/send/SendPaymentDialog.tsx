@@ -9,11 +9,12 @@ import Bolt11Workflow from './workflows/Bolt11Workflow';
 import BitcoinWorkflow from './workflows/BitcoinWorkflow';
 import SparkWorkflow from './workflows/SparkWorkflow';
 import LnurlWorkflow from './workflows/LnurlWorkflow';
+import LnurlAuthWorkflow from './workflows/LnurlAuthWorkflow';
 import AmountStep from './steps/AmountStep';
 import ProcessingStep from './steps/ProcessingStep';
 import ResultStep from './steps/ResultStep';
 import { SendInput } from '@/types/domain';
-import { LnurlPayRequestDetails, PrepareLnurlPayRequest } from '@breeztech/breez-sdk-spark';
+import { LnurlPayRequestDetails, LnurlAuthRequestDetails, PrepareLnurlPayRequest } from '@breeztech/breez-sdk-spark';
 
 // Props interfaces
 interface SendPaymentDialogProps {
@@ -92,6 +93,9 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
         setCurrentStep('workflow');
       } else if (parseResult.type === 'lightningAddress') {
         setCurrentStep('workflow');
+      } else if (parseResult.type === 'lnurlAuth') {
+        // Route to LNURL Auth workflow
+        setCurrentStep('workflow');
       } else {
         setError('Invalid payment destination');
         setCurrentStep('input');
@@ -148,6 +152,8 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
         return 'LNURL Pay';
       case 'lightningAddress':
         return 'Lightning Address';
+      case 'lnurlAuth':
+        return 'LNURL Auth';
       default:
         return 'Payment';
     }
@@ -204,6 +210,13 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     }
     if (paymentInput && paymentInput.parsedInput.type === 'lightningAddress') {
       return paymentInput.parsedInput.payRequest;
+    }
+    return null;
+  };
+
+  const getLnurlAuthRequestDetails = (): LnurlAuthRequestDetails | null => {
+    if (paymentInput && paymentInput.parsedInput.type === 'lnurlAuth') {
+      return paymentInput.parsedInput;
     }
     return null;
   };
@@ -281,6 +294,16 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 }}
                 onPay={async (prepareResponse) => {
                   await wallet.lnurlPay({ prepareResponse });
+                }}
+              />
+            )}
+            {getLnurlAuthRequestDetails() && (
+              <LnurlAuthWorkflow
+                parsed={getLnurlAuthRequestDetails()!}
+                onBack={() => setCurrentStep('input')}
+                onRun={handleRun}
+                onAuth={async (requestData) => {
+                  return await wallet.lnurlAuth(requestData);
                 }}
               />
             )}
