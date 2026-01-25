@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@breeztech/breez-sdk-spark": "^0.7.0-dev1",
+    "@breeztech/breez-sdk-spark": "github:breez/spark-sdk#main",
     "@headlessui/react": "^1.7.17",
     "@zxing/browser": "^0.1.5",
     "@zxing/library": "^0.21.3",
