@@ -581,13 +581,13 @@ export const BottomSheetContainer: React.FC<{
   children: ReactNode;
   className?: string;
   onClose?: () => void;
-  /** Maximum width of the sheet (default: 'md') */
+  /** Maximum width of the sheet (default: 'full' - uses parent container width) */
   maxWidth?: BottomSheetMaxWidth;
   /** Maximum height as viewport percentage (default: 90) */
   maxHeightVh?: number;
   /** Whether sheet takes full height (for QR scanner, etc.) */
   fullHeight?: boolean;
-}> = ({ isOpen, children, className = "", onClose, maxWidth = 'md', maxHeightVh = 90, fullHeight = false }) => {
+}> = ({ isOpen, children, className = "", onClose, maxWidth = 'full', maxHeightVh = 90, fullHeight = false }) => {
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startY = useRef(0);
