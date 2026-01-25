@@ -20,10 +20,11 @@ interface SendPaymentDialogProps {
   isOpen: boolean;
   onClose: () => void;
   initialPaymentInput?: SendInput | null;
+  onScanQr?: () => void;
 }
 
 // Main component
-const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, initialPaymentInput }) => {
+const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, initialPaymentInput, onScanQr }) => {
   const wallet = useWallet();
   // Container state: input parsing + routing to workflow per input type
   const [currentStep, setCurrentStep] = useState<'input' | 'amount' | 'workflow' | 'processing' | 'result'>('input');
@@ -221,6 +222,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
               isLoading={isLoading}
               error={error}
               onContinue={(paymentInput) => processPaymentInput(paymentInput)}
+              onScanQr={onScanQr}
             />
           </StepPanel>
 

@@ -113,6 +113,12 @@ const WalletPage: React.FC<WalletPageProps> = ({
     setIsQrScannerOpen(false);
   };
 
+  const handleScanFromSendDialog = useCallback(() => {
+    setIsSendDialogOpen(false);
+    setPaymentInput(null);
+    setIsQrScannerOpen(true);
+  }, []);
+
   const handleQrScan = async (data: string | null) => {
     if (!data) return;
 
@@ -172,6 +178,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
         isOpen={isSendDialogOpen}
         onClose={handleSendDialogClose}
         initialPaymentInput={paymentInput}
+        onScanQr={handleScanFromSendDialog}
       />
 
       {/* Receive Payment Dialog */}
