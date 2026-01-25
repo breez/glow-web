@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../../../contexts/WalletContext';
+import { generateRandomName } from '../../../utils/randomName';
 
 export interface UseLightningAddress {
   address: LightningAddressInfo | null;
@@ -28,24 +29,6 @@ export const useLightningAddress = (): UseLightningAddress => {
   const extractUsername = (value: string): string => {
     if (!value) return '';
     return value.includes('@') ? value.split('@')[0] : value;
-  };
-
-  const generateRandomName = (): string => {
-    // Extracted from Misty Breez
-    const colors = [
-      "Salmon", "Blue", "Turquoise", "Orchid", "Purple", "Tomato", "Cyan", "Crimson",
-      "Orange", "Lime", "Pink", "Green", "Red", "Yellow", "Azure", "Silver", "Magenta",
-      "Olive", "Violet", "Rose", "Wine", "Mint", "Indigo", "Jade", "Coral"
-    ];
-    const animals = [
-      "Bat", "Bear", "Boar", "Cat", "Chick", "Cow", "Deer", "Dog", "Eagle", "Elephant",
-      "Fox", "Frog", "Hippo", "Hummingbird", "Koala", "Lion", "Monkey", "Mouse", "Owl",
-      "Ox", "Panda", "Pig", "Rabbit", "Seagull", "Sheep", "Snake"
-    ];
-
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    const animal = animals[Math.floor(Math.random() * animals.length)];
-    return `${color}${animal}`; // No space for Lightning Address username
   };
 
   const load = useCallback(async () => {
