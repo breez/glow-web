@@ -587,7 +587,9 @@ export const BottomSheetContainer: React.FC<{
   maxHeightVh?: number;
   /** Whether sheet takes full height (for QR scanner, etc.) */
   fullHeight?: boolean;
-}> = ({ isOpen, children, className = "", onClose, maxWidth = 'full', maxHeightVh = 90, fullHeight = false }) => {
+  /** Whether to show a backdrop overlay (useful for nested sheets) */
+  showBackdrop?: boolean;
+}> = ({ isOpen, children, className = "", onClose, maxWidth = 'full', maxHeightVh = 90, fullHeight = false, showBackdrop = false }) => {
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startY = useRef(0);
@@ -621,6 +623,20 @@ export const BottomSheetContainer: React.FC<{
 
   return (
     <Transition show={isOpen} as="div" className="absolute inset-0 z-50 overflow-hidden flex flex-col justify-end pointer-events-none">
+      {/* Optional backdrop for nested sheets */}
+      {showBackdrop && (
+        <Transition.Child
+          as="div"
+          enter="transition-opacity ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="transition-opacity ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+          className="absolute inset-0 bg-black/60 pointer-events-auto z-0"
+          onClick={onClose}
+        />
+      )}
       <Transition.Child
         as="div"
         enter="transform transition ease-out duration-300"
@@ -629,7 +645,7 @@ export const BottomSheetContainer: React.FC<{
         leave="transform transition ease-in duration-200"
         leaveFrom="translate-y-0"
         leaveTo="translate-y-full"
-        className={`mx-auto w-full ${maxWidthClass} ${heightClass} pointer-events-auto ${className}`}
+        className={`mx-auto w-full ${maxWidthClass} ${heightClass} pointer-events-auto z-10 ${className}`}
         style={{ transform: dragY > 0 ? `translateY(${dragY}px)` : undefined }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -733,9 +749,8 @@ export const TabPanel: React.FC<{
   className?: string;
 }> = ({ children, isActive, className = "" }) => (
   <div
-    className={`col-start-1 row-start-1 pt-6 transition-opacity duration-200 ${
-      isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-    } ${className}`}
+    className={`col-start-1 row-start-1 pt-6 transition-opacity duration-200 ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+      } ${className}`}
     aria-hidden={!isActive}
   >
     {children}
