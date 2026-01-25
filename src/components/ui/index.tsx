@@ -651,6 +651,10 @@ export const BottomSheetContainer: React.FC<{
   const handleTouchEnd = () => {
     setIsDragging(false);
     if (dragY > 100 && onClose) {
+      // Blur any focused element to prevent focus lingering on items underneath
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       onClose();
     }
     setDragY(0);
