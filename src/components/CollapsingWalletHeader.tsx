@@ -137,7 +137,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
       </div>
 
       {/* Header content */}
-      <div className="relative z-10 px-4 pb-2" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
+      <div className="relative z-10 px-4 pb-2 safe-area-top-4">
         {/* Top bar with menu and network */}
         <div className="flex items-center justify-between mb-4">
           {/* Menu button */}

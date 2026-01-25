@@ -1,4 +1,5 @@
 import React from 'react';
+import { SafeAreaSpacer } from '../components/ui';
 
 interface HomePageProps {
   onRestoreWallet: () => void;
@@ -30,7 +31,7 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
       </div>
 
       {/* Safe area spacer top */}
-      <div className="safe-area-top" />
+      <SafeAreaSpacer edge="top" />
 
       {/* Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
@@ -111,7 +112,7 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
       </div>
 
       {/* Safe area spacer bottom */}
-      <div className="safe-area-bottom" />
+      <SafeAreaSpacer edge="bottom" />
 
       {/* Bottom fade */}
       <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-spark-dark to-transparent pointer-events-none" />
