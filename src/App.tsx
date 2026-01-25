@@ -41,12 +41,13 @@ const AppContent: React.FC = () => {
   const [config, setConfig] = useState<Config | null>(null);
   const [hasUnclaimedDeposits, setHasUnclaimedDeposits] = useState<boolean>(false);
   const [celebrationAmount, setCelebrationAmount] = useState<number | null>(null);
+  const [refundAnimationDirection, setRefundAnimationDirection] = useState<'horizontal' | 'vertical'>('horizontal');
 
   const { showToast } = useToast();
 
   // Add a ref to store the event listener ID
   const eventListenerIdRef = useRef<string | null>(null);
-  
+
   // Track recently shown payment celebrations to avoid duplicates
   const shownPaymentIdsRef = useRef<Set<string>>(new Set());
 
@@ -385,13 +386,14 @@ const AppContent: React.FC = () => {
         return (
           <GetRefundPage
             onBack={() => setCurrentScreen('wallet')}
+            animationDirection={refundAnimationDirection}
           />
         );
 
       case 'settings':
         return (
-          <SettingsPage 
-            onBack={() => setCurrentScreen('wallet')} 
+          <SettingsPage
+            onBack={() => setCurrentScreen('wallet')}
             config={config}
             onOpenFiatCurrencies={() => setCurrentScreen('fiatCurrencies')}
           />
@@ -440,7 +442,10 @@ const AppContent: React.FC = () => {
             onClearError={clearError}
             onLogout={handleLogout}
             hasUnclaimedDeposits={hasUnclaimedDeposits}
-            onOpenGetRefund={() => setCurrentScreen('getRefund')}
+            onOpenGetRefund={(source?: 'menu' | 'icon') => {
+              setRefundAnimationDirection(source === 'icon' ? 'vertical' : 'horizontal');
+              setCurrentScreen('getRefund');
+            }}
             onOpenSettings={() => setCurrentScreen('settings')}
             onOpenBackup={() => setCurrentScreen('backup')}
             onDepositChanged={fetchUnclaimedDeposits}

@@ -12,11 +12,12 @@ const formatWithSpaces = (num: number): string => {
 
 interface GetRefundPageProps {
   onBack: () => void;
+  animationDirection?: 'horizontal' | 'vertical';
 }
 
 type RefundStep = 'address' | 'fee' | 'confirm' | 'processing' | 'result';
 
-const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack }) => {
+const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirection = 'horizontal' }) => {
   const wallet = useWallet();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -197,123 +198,121 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack }) => {
         <Transition.Child
           as="div"
           enter="transform transition ease-out duration-300"
-          enterFrom="translate-y-full"
-          enterTo="translate-y-0"
+          enterFrom={animationDirection === 'vertical' ? 'translate-y-full' : 'translate-x-[-100%]'}
+          enterTo={animationDirection === 'vertical' ? 'translate-y-0' : 'translate-x-0'}
           leave="transform transition ease-in duration-200"
-          leaveFrom="translate-y-0"
-          leaveTo="translate-y-full"
-          className="absolute inset-0"
+          leaveFrom={animationDirection === 'vertical' ? 'translate-y-0' : 'translate-x-0'}
+          leaveTo={animationDirection === 'vertical' ? 'translate-y-full' : 'translate-x-[-100%]'}
+          className="absolute inset-0 flex flex-col bg-spark-surface will-change-transform"
         >
-          <div className="flex flex-col h-full bg-spark-surface">
-            {/* Header */}
-            <div className="relative px-4 py-4 border-b border-spark-border">
-              <h1 className="text-center font-display text-lg font-semibold text-spark-text-primary">Get Refund</h1>
-              <button
-                onClick={handleClose}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
-                aria-label="Close"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+          {/* Header */}
+          <div className="relative px-4 py-4 border-b border-spark-border">
+            <h1 className="text-center font-display text-lg font-semibold text-spark-text-primary">Get Refund</h1>
+            <button
+              onClick={handleClose}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
+              aria-label="Close"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="w-full px-6 py-4 space-y-4">
-                {isLoading && (
-                  <div className="py-16 flex justify-center">
-                    <LoadingSpinner text="Loading rejected deposits..." />
-                  </div>
-                )}
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="w-full px-6 py-4 space-y-4">
+              {isLoading && (
+                <div className="py-16 flex justify-center">
+                  <LoadingSpinner text="Loading rejected deposits..." />
+                </div>
+              )}
 
-                {error && (
-                  <div className="flex items-center gap-2 p-3 bg-spark-error/10 border border-spark-error/30 rounded-xl text-spark-error text-sm">
-                    <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              {error && (
+                <div className="flex items-center gap-2 p-3 bg-spark-error/10 border border-spark-error/30 rounded-xl text-spark-error text-sm">
+                  <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {!isLoading && deposits.length === 0 && (
+                <div className="py-16 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-spark-success/20 flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-spark-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>{error}</span>
                   </div>
-                )}
+                  <h3 className="font-display font-semibold text-spark-text-primary mb-2">All Clear!</h3>
+                  <p className="text-spark-text-muted text-sm">No rejected deposits pending refund.</p>
+                </div>
+              )}
 
-                {!isLoading && deposits.length === 0 && (
-                  <div className="py-16 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-spark-success/20 flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-spark-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <h3 className="font-display font-semibold text-spark-text-primary mb-2">All Clear!</h3>
-                    <p className="text-spark-text-muted text-sm">No rejected deposits pending refund.</p>
-                  </div>
-                )}
+              {!isLoading && deposits.length > 0 && (
+                <div className="space-y-4">
+                  {deposits.map((dep, idx) => {
+                    const amount = dep.amountSats;
+                    const isRefunded = hasRefundTx(dep);
+                    const refundedTxId = getRefundTxId(dep);
+                    const txKey = `deposit-tx-${idx}`;
+                    const refundKey = `deposit-refund-${idx}`;
+                    const borderClass = isRefunded ? 'border-spark-success/30' : 'border-spark-border';
 
-                {!isLoading && deposits.length > 0 && (
-                  <div className="space-y-4">
-                    {deposits.map((dep, idx) => {
-                      const amount = dep.amountSats;
-                      const isRefunded = hasRefundTx(dep);
-                      const refundedTxId = getRefundTxId(dep);
-                      const txKey = `deposit-tx-${idx}`;
-                      const refundKey = `deposit-refund-${idx}`;
-                      const borderClass = isRefunded ? 'border-spark-success/30' : 'border-spark-border';
-
-                      return (
-                        <div
-                          key={idx}
-                          className={`bg-spark-dark/50 border ${borderClass} rounded-2xl p-5 space-y-4`}
-                        >
-                          {/* Amount */}
-                          <div className="flex items-center justify-between py-2">
-                            <span className="text-spark-text-secondary text-sm">Amount</span>
-                            <span className="font-mono text-sm font-medium text-spark-text-primary">
-                              {formatWithSpaces(amount)} sats
-                            </span>
-                          </div>
-
-                          {/* Transaction IDs */}
-                          <div className="space-y-2">
-                            <CollapsibleCodeField
-                              label="Transaction ID"
-                              value={dep.txid}
-                              isVisible={expandedTxIds[txKey] || false}
-                              onToggle={() => setExpandedTxIds(prev => ({ ...prev, [txKey]: !prev[txKey] }))}
-                              href={getMempoolUrl(dep.txid)}
-                            />
-
-                            {isRefunded && refundedTxId && (
-                              <CollapsibleCodeField
-                                label="Refund Transaction ID"
-                                value={refundedTxId}
-                                isVisible={expandedTxIds[refundKey] || false}
-                                onToggle={() => setExpandedTxIds(prev => ({ ...prev, [refundKey]: !prev[refundKey] }))}
-                                href={getMempoolUrl(refundedTxId)}
-                              />
-                            )}
-                          </div>
-
-                          {/* Continue button - disabled if refund is being processed */}
-                          <div>
-                            {isRefunded ? (
-                              <button disabled className="w-full px-4 py-3 bg-spark-electric/15 text-spark-electric rounded-xl font-medium cursor-not-allowed">
-                                <span className="animate-pulse-slow">BROADCASTING</span>
-                              </button>
-                            ) : (
-                              <PrimaryButton
-                                onClick={() => openRefundFlow(dep)}
-                                className="w-full"
-                              >
-                                CONTINUE
-                              </PrimaryButton>
-                            )}
-                          </div>
+                    return (
+                      <div
+                        key={idx}
+                        className={`bg-spark-dark/50 border ${borderClass} rounded-2xl p-5 space-y-4`}
+                      >
+                        {/* Amount */}
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-spark-text-secondary text-sm">Amount</span>
+                          <span className="font-mono text-sm font-medium text-spark-text-primary">
+                            {formatWithSpaces(amount)} sats
+                          </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+
+                        {/* Transaction IDs */}
+                        <div className="space-y-2">
+                          <CollapsibleCodeField
+                            label="Transaction ID"
+                            value={dep.txid}
+                            isVisible={expandedTxIds[txKey] || false}
+                            onToggle={() => setExpandedTxIds(prev => ({ ...prev, [txKey]: !prev[txKey] }))}
+                            href={getMempoolUrl(dep.txid)}
+                          />
+
+                          {isRefunded && refundedTxId && (
+                            <CollapsibleCodeField
+                              label="Refund Transaction ID"
+                              value={refundedTxId}
+                              isVisible={expandedTxIds[refundKey] || false}
+                              onToggle={() => setExpandedTxIds(prev => ({ ...prev, [refundKey]: !prev[refundKey] }))}
+                              href={getMempoolUrl(refundedTxId)}
+                            />
+                          )}
+                        </div>
+
+                        {/* Continue button - disabled if refund is being processed */}
+                        <div>
+                          {isRefunded ? (
+                            <button disabled className="w-full px-4 py-3 bg-spark-electric/15 text-spark-electric rounded-xl font-medium cursor-not-allowed">
+                              <span className="animate-pulse-slow">BROADCASTING</span>
+                            </button>
+                          ) : (
+                            <PrimaryButton
+                              onClick={() => openRefundFlow(dep)}
+                              className="w-full"
+                            >
+                              CONTINUE
+                            </PrimaryButton>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </Transition.Child>
@@ -556,7 +555,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack }) => {
           </div>
         </BottomSheetCard>
       </BottomSheetContainer>
-    </div>
+    </div >
   );
 };
 
