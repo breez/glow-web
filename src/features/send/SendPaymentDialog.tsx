@@ -316,7 +316,12 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
 
           {/* Result Step (generic) */}
           <StepPanel isActive={currentStep === 'result'}>
-            <ResultStep result={paymentResult === 'success' ? 'success' : 'failure'} error={error} onClose={onClose} />
+            <ResultStep
+              result={paymentResult === 'success' ? 'success' : 'failure'}
+              error={error}
+              onClose={onClose}
+              operationType={paymentInput?.parsedInput.type === 'lnurlAuth' ? 'auth' : 'payment'}
+            />
           </StepPanel>
         </StepPanelGroup>
       </BottomSheetCard>

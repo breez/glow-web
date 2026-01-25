@@ -1,14 +1,37 @@
 import React from 'react';
-import { PrimaryButton } from '../../../components/ui';
+import { PrimaryButton, Alert } from '../../../components/ui';
 
 export interface ResultStepProps {
   result: 'success' | 'failure';
   error: string | null;
   onClose: () => void;
+  /** Operation type to customize messaging (default: 'payment') */
+  operationType?: 'payment' | 'auth';
 }
 
-const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose }) => {
+const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operationType = 'payment' }) => {
   const isSuccess = result === 'success';
+
+  const getTitle = () => {
+    if (operationType === 'auth') {
+      return isSuccess ? 'Authenticated!' : 'Authentication Failed';
+    }
+    return isSuccess ? 'Payment Sent!' : 'Payment Failed';
+  };
+
+  const getSuccessDescription = () => {
+    if (operationType === 'auth') {
+      return 'You have successfully authenticated with the service.';
+    }
+    return 'Your payment has been successfully sent to the recipient.';
+  };
+
+  const getDefaultErrorMessage = () => {
+    if (operationType === 'auth') {
+      return 'There was an error during authentication. Please try again.';
+    }
+    return 'There was an error processing your payment. Please try again.';
+  };
 
   return (
     <div className="flex flex-col items-center justify-center" data-testid={isSuccess ? 'payment-success' : 'payment-failure'}>
@@ -45,16 +68,21 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose }) => {
       <h3 className={`font-display text-2xl font-bold mb-2 ${
         isSuccess ? 'text-spark-success' : 'text-spark-error'
       }`}>
-        {isSuccess ? 'Payment Sent!' : 'Payment Failed'}
+        {getTitle()}
       </h3>
 
       {/* Description */}
-      <p className="text-spark-text-secondary text-center max-w-xs mb-8">
-        {isSuccess 
-          ? 'Your payment has been successfully sent to the recipient.'
-          : error || 'There was an error processing your payment. Please try again.'
-        }
-      </p>
+      {isSuccess ? (
+        <p className="text-spark-text-secondary text-center max-w-xs mb-8">
+          {getSuccessDescription()}
+        </p>
+      ) : (
+        <div className="w-full max-w-xs mb-8">
+          <Alert type="error">
+            {error || getDefaultErrorMessage()}
+          </Alert>
+        </div>
+      )}
 
       {/* Action button */}
       <PrimaryButton onClick={onClose} className="min-w-[200px]">
