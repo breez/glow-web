@@ -7,9 +7,14 @@ interface HomePageProps {
 
 const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet }) => {
   return (
-    <div className="h-[100dvh] flex flex-col relative overflow-hidden bg-spark-dark">
-      {/* Animated background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+    <div className="h-full flex flex-col relative overflow-hidden bg-spark-dark">
+      {/* Animated background - extends behind safe areas via negative margins */}
+      <div className="absolute -inset-[env(safe-area-inset-top)] pointer-events-none overflow-hidden" style={{
+        top: 'calc(-1 * env(safe-area-inset-top, 0px))',
+        bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
+        left: 'calc(-1 * env(safe-area-inset-left, 0px))',
+        right: 'calc(-1 * env(safe-area-inset-right, 0px))'
+      }}>
         {/* Central glow */}
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px]">
           <div className="absolute inset-0 bg-gradient-radial from-spark-primary/25 via-spark-primary/8 to-transparent blur-3xl animate-glow-pulse" />
@@ -29,10 +34,7 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
         />
       </div>
 
-      {/* Safe area spacer top */}
-      <div className="safe-area-top" />
-
-      {/* Content */}
+      {/* Content - safe areas handled by AppShell */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
         
         {/* Logo */}
@@ -110,11 +112,12 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
         </div>
       </div>
 
-      {/* Safe area spacer bottom */}
-      <div className="safe-area-bottom" />
-
-      {/* Bottom fade */}
-      <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-spark-dark to-transparent pointer-events-none" />
+      {/* Bottom fade - extends behind safe area */}
+      <div className="absolute inset-x-0 h-24 bg-gradient-to-t from-spark-dark to-transparent pointer-events-none" style={{
+        bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
+        left: 'calc(-1 * env(safe-area-inset-left, 0px))',
+        right: 'calc(-1 * env(safe-area-inset-right, 0px))'
+      }} />
     </div>
   );
 };

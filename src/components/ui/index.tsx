@@ -662,7 +662,7 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, DialogCardProps>(
     return (
       <div
         ref={ref}
-        className={`bg-spark-surface border-t border-spark-border rounded-t-3xl shadow-glass-lg overflow-hidden w-full safe-area-top ${className}`}
+        className={`bg-spark-surface border-t border-spark-border rounded-t-3xl shadow-glass-lg overflow-hidden w-full ${className}`}
       >
         {/* Drag handle indicator */}
         <div className="bottom-sheet-handle" />
@@ -783,6 +783,50 @@ export const LoadingSpinner: React.FC<{
     </div>
   );
 };
+
+// ============================================
+// SAFE AREA COMPONENTS
+// ============================================
+
+export type SafeAreaEdge = 'top' | 'bottom' | 'left' | 'right';
+export type SafeAreaPadding = 0 | 1 | 2 | 3 | 4 | 6;
+
+/**
+ * SafeArea component for consistent safe area handling
+ * Use this for elements that need safe area insets with optional additional padding
+ */
+export const SafeArea: React.FC<{
+  children: ReactNode;
+  edges?: SafeAreaEdge[];
+  /** Additional padding in rem units (0-6) added to safe area inset */
+  padding?: SafeAreaPadding;
+  className?: string;
+  as?: keyof JSX.IntrinsicElements;
+}> = ({ children, edges = ['top', 'bottom'], padding = 0, className = "", as: Component = 'div' }) => {
+  const safeAreaClasses = edges.map(edge => {
+    if (padding === 0) {
+      return `safe-area-${edge}`;
+    }
+    return `safe-area-${edge}-${padding}`;
+  }).join(' ');
+
+  return (
+    <Component className={`${safeAreaClasses} ${className}`}>
+      {children}
+    </Component>
+  );
+};
+
+/**
+ * SafeAreaSpacer - Empty div that takes up safe area space
+ * Useful for adding invisible spacing at top/bottom of scrollable content
+ */
+export const SafeAreaSpacer: React.FC<{
+  edge: 'top' | 'bottom';
+  className?: string;
+}> = ({ edge, className = "" }) => (
+  <div className={`safe-area-${edge} ${className}`} aria-hidden="true" />
+);
 
 // ============================================
 // CONFIRM DIALOG
