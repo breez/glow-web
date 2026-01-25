@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import type { GetInfoResponse, Rate, FiatCurrency } from '@breeztech/breez-sdk-spark';
-import { Transition } from '@headlessui/react';
 import { getFiatSettings } from '../services/settings';
 
 interface CollapsingWalletHeaderProps {
@@ -155,15 +154,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           {/* Action buttons */}
           <div className="flex items-center gap-3">
             {/* Rejected deposits warning */}
-            <Transition
-              show={hasUnclaimedDeposits}
-              enter="transform transition ease-out duration-300"
-              enterFrom="translate-y-full opacity-0"
-              enterTo="translate-y-0 opacity-100"
-              leave="transform transition ease-in duration-200"
-              leaveFrom="translate-y-0 opacity-100"
-              leaveTo="translate-y-full opacity-0"
-            >
+            {hasUnclaimedDeposits && (
               <button
                 type="button"
                 className="flex items-center justify-center w-9 h-9 rounded-xl bg-spark-warning/15 text-spark-warning border border-spark-warning/30 hover:bg-spark-warning/25 transition-colors"
@@ -175,7 +166,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l6.518 11.6c.75 1.336-.213 3.001-1.742 3.001H3.48c-1.53 0-2.492-1.665-1.742-3.001l6.52-11.6zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 01-1-1V7a1 1 0 112 0v3a1 1 0 01-1 1z" clipRule="evenodd" />
                 </svg>
               </button>
-            </Transition>
+            )}
           </div>
         </div>
 

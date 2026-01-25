@@ -12,11 +12,12 @@ const formatWithSpaces = (num: number): string => {
 
 interface GetRefundPageProps {
   onBack: () => void;
+  animationDirection?: 'horizontal' | 'vertical';
 }
 
 type RefundStep = 'address' | 'fee' | 'confirm' | 'processing' | 'result';
 
-const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack }) => {
+const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirection = 'horizontal' }) => {
   const wallet = useWallet();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -197,11 +198,11 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack }) => {
         <Transition.Child
           as="div"
           enter="transform transition ease-out duration-300"
-          enterFrom="translate-x-[-100%]"
-          enterTo="translate-x-0"
+          enterFrom={animationDirection === 'vertical' ? 'translate-y-full' : 'translate-x-[-100%]'}
+          enterTo={animationDirection === 'vertical' ? 'translate-y-0' : 'translate-x-0'}
           leave="transform transition ease-in duration-200"
-          leaveFrom="translate-x-0"
-          leaveTo="translate-x-[-100%]"
+          leaveFrom={animationDirection === 'vertical' ? 'translate-y-0' : 'translate-x-0'}
+          leaveTo={animationDirection === 'vertical' ? 'translate-y-full' : 'translate-x-[-100%]'}
           className="absolute inset-0 flex flex-col bg-spark-surface will-change-transform"
         >
           {/* Header */}
