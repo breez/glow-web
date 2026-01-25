@@ -579,24 +579,26 @@ export const StepPanelGroup: React.FC<{
 );
 
 /**
- * StepPanel - Container for step content with dynamic height
+ * StepPanel - Container for step content
  *
- * Must be used inside StepPanelGroup for consistent height behavior.
- * All panels stack in the same grid cell, with only the active one visible.
+ * Only renders content when active. Each step takes only the space it needs,
+ * so the container height adjusts per step.
  */
 export const StepPanel: React.FC<{
   children: ReactNode;
   isActive: boolean;
   className?: string;
-}> = ({ children, isActive, className = "" }) => (
-  <div
-    className={`col-start-1 row-start-1 transition-opacity duration-200 ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-      } ${className}`}
-    aria-hidden={!isActive}
-  >
-    {children}
-  </div>
-);
+}> = ({ children, isActive, className = "" }) => {
+  if (!isActive) {
+    return null;
+  }
+
+  return (
+    <div className={className}>
+      {children}
+    </div>
+  );
+};
 
 // ============================================
 // BOTTOM SHEET COMPONENTS
