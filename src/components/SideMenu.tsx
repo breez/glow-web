@@ -1,6 +1,18 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Transition } from '@headlessui/react';
+
+// Star positions around the logo (relative to center, in pixels)
+const STARS = [
+  { x: -28, y: -20, size: 3 },
+  { x: 30, y: -15, size: 2 },
+  { x: -22, y: 22, size: 2.5 },
+  { x: 26, y: 25, size: 2 },
+  { x: -8, y: -30, size: 2 },
+  { x: 12, y: 28, size: 3 },
+  { x: -32, y: 5, size: 2 },
+  { x: 34, y: -2, size: 2.5 },
+];
 
 interface SideMenuProps {
   isOpen: boolean;
@@ -15,6 +27,20 @@ interface SideMenuProps {
 const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSettings, onOpenBackup, onOpenRefund, hasRejectedDeposits = false }) => {
   const [leftOffset, setLeftOffset] = useState<number | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [starsAnimating, setStarsAnimating] = useState(false);
+  const prevIsOpenRef = useRef(false);
+
+  // Trigger star animation when sidebar opens
+  useEffect(() => {
+    if (isOpen && !prevIsOpenRef.current) {
+      // Sidebar just opened - start star animation after slide-in completes
+      const timer = setTimeout(() => setStarsAnimating(true), 300);
+      return () => clearTimeout(timer);
+    } else if (!isOpen) {
+      setStarsAnimating(false);
+    }
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen]);
 
   useEffect(() => {
     const calc = () => {
@@ -123,12 +149,26 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             {/* Header */}
             <div className="flex items-center justify-between mb-8 pt-6">
               <div className="flex items-center gap-3">
-                <div className="w-16 h-16 flex items-center justify-center">
+                <div className="w-16 h-16 flex items-center justify-center relative">
                   <img 
                     src="/assets/Glow_Logo.png" 
                     alt="Glow" 
                     className="w-full h-full object-contain"
                   />
+                  {/* Twinkling stars */}
+                  {STARS.map((star, i) => (
+                    <span
+                      key={i}
+                      className={`sidebar-star ${starsAnimating ? 'animate' : ''}`}
+                      style={{
+                        width: star.size,
+                        height: star.size,
+                        left: `calc(50% + ${star.x}px)`,
+                        top: `calc(50% + ${star.y}px)`,
+                        boxShadow: starsAnimating ? `0 0 ${star.size * 2}px var(--spark-primary)` : 'none',
+                      }}
+                    />
+                  ))}
                 </div>
                 <h2 className="font-display text-xl font-bold text-spark-text-primary">Glow</h2>
               </div>
