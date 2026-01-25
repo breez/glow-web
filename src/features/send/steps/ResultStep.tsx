@@ -53,78 +53,67 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
     return 'There was an error processing your payment. Please try again.';
   };
 
+  if (!isSuccess) {
+    // Failure: just show error box and close button
+    return (
+      <div className="space-y-5">
+        <ErrorMessageBox
+          title={getTitle()}
+          error={error || getDefaultErrorMessage()}
+        />
+        <PrimaryButton onClick={onClose} className="w-full">
+          Close
+        </PrimaryButton>
+      </div>
+    );
+  }
+
+  // Success: show icon, title, description, and done button
   return (
     <div className="flex flex-col items-center justify-center py-4" data-testid={isSuccess ? 'payment-success' : 'payment-failure'}>
       {/* Result icon */}
       <div className="relative mb-6">
-        {isSuccess ? (
-          <>
-            {/* Glow effect */}
-            <div className="absolute -inset-3 rounded-full bg-spark-primary/20 blur-xl" />
-            
-            {/* Logo with sparkles */}
-            <div className="relative w-20 h-20 flex items-center justify-center">
-              <img
-                src="/assets/Glow_Logo.png"
-                alt="Glow"
-                className="w-16 h-16 object-contain drop-shadow-[0_0_20px_rgba(212,165,116,0.5)]"
-              />
-              
-              {/* Sparkle stars */}
-              {STARS.map((star, i) => (
-                <span
-                  key={i}
-                  className={`sidebar-star ${starsAnimating ? 'animate' : ''}`}
-                  style={{
-                    width: star.size,
-                    height: star.size,
-                    left: `calc(50% + ${star.x}px)`,
-                    top: `calc(50% + ${star.y}px)`,
-                    boxShadow: starsAnimating ? `0 0 ${star.size * 2}px var(--spark-primary)` : 'none',
-                  }}
-                />
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Error glow */}
-            <div className="absolute inset-0 w-20 h-20 rounded-full blur-xl bg-spark-error/30" />
-            
-            {/* Error icon */}
-            <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-spark-error/20 border-2 border-spark-error">
-              <svg className="w-10 h-10 text-spark-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </div>
-          </>
-        )}
+        {/* Glow effect */}
+        <div className="absolute -inset-3 rounded-full bg-spark-primary/20 blur-xl" />
+
+        {/* Logo with sparkles */}
+        <div className="relative w-20 h-20 flex items-center justify-center">
+          <img
+            src="/assets/Glow_Logo.png"
+            alt="Glow"
+            className="w-16 h-16 object-contain drop-shadow-[0_0_20px_rgba(212,165,116,0.5)]"
+          />
+
+          {/* Sparkle stars */}
+          {STARS.map((star, i) => (
+            <span
+              key={i}
+              className={`sidebar-star ${starsAnimating ? 'animate' : ''}`}
+              style={{
+                width: star.size,
+                height: star.size,
+                left: `calc(50% + ${star.x}px)`,
+                top: `calc(50% + ${star.y}px)`,
+                boxShadow: starsAnimating ? `0 0 ${star.size * 2}px var(--spark-primary)` : 'none',
+              }}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Title */}
-      <h3 className={`font-display text-2xl font-bold mb-2 ${
-        isSuccess ? 'text-spark-primary' : 'text-spark-error'
-      }`}>
+      <h3 className="font-display text-2xl font-bold mb-2 text-spark-primary">
         {getTitle()}
       </h3>
 
       {/* Description */}
-      {isSuccess ? (
-        <p className="text-spark-text-secondary text-center max-w-xs mb-8">
-          {getSuccessDescription()}
-        </p>
-      ) : (
-        <div className="w-full mb-8">
-          <ErrorMessageBox
-            title={getTitle()}
-            error={error || getDefaultErrorMessage()}
-          />
-        </div>
-      )}
+      <p className="text-spark-text-secondary text-center max-w-xs mb-8">
+        {getSuccessDescription()}
+      </p>
 
       {/* Action button */}
       <PrimaryButton onClick={onClose} className="min-w-[200px]">
-        {isSuccess ? 'Done' : 'Close'}
+        Done
       </PrimaryButton>
     </div>
   );
