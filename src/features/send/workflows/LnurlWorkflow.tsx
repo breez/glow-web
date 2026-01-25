@@ -68,7 +68,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, onBack, onRun, on
     setIsLoading(true);
     setError(null);
     try {
-      const resp = await onPrepare({ amountSats: sats, comment: comment ? comment : undefined, payRequest: parsed });
+      const resp = await onPrepare({ payAmount: { type: 'bitcoin', amountSats: sats }, comment: comment ? comment : undefined, payRequest: parsed });
       setPrepareResponse(resp);
       setStep('confirm');
     } catch (err) {
