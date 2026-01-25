@@ -34,6 +34,8 @@ import type {
   UpdateUserSettingsRequest,
   FiatCurrency,
   Rate,
+  BuyBitcoinRequest,
+  BuyBitcoinResponse,
 } from '@breeztech/breez-sdk-spark';
 
 export interface WalletAPI {
@@ -105,4 +107,7 @@ export interface WalletAPI {
   initLogSession: () => Promise<void>;
   /** End current log session */
   endLogSession: () => Promise<void>;
+
+  // Buy Bitcoin
+  buyBitcoin: (request: BuyBitcoinRequest) => Promise<BuyBitcoinResponse>;
 }

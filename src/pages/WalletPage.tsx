@@ -31,6 +31,7 @@ interface WalletPageProps {
   onOpenGetRefund: (source?: 'menu' | 'icon') => void;
   onOpenSettings: () => void;
   onOpenBackup: () => void;
+  onOpenBuyBitcoin: () => void;
   onDepositChanged?: () => void;
 }
 
@@ -47,6 +48,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   onOpenGetRefund,
   onOpenSettings,
   onOpenBackup,
+  onOpenBuyBitcoin,
   onDepositChanged
 }) => {
   const wallet = useWallet();
@@ -289,6 +291,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
         onOpenSettings={onOpenSettings}
         onOpenBackup={onOpenBackup}
         onOpenRefund={() => onOpenGetRefund('menu')}
+        onOpenBuyBitcoin={onOpenBuyBitcoin}
         hasRejectedDeposits={hasUnclaimedDeposits}
       />
     </div>
