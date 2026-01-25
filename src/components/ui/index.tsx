@@ -687,11 +687,11 @@ export const BottomSheetContainer: React.FC<{
       <Transition.Child
         as="div"
         enter="transform transition ease-out duration-300"
-        enterFrom="translate-y-full"
-        enterTo="translate-y-0"
-        leave="transform transition ease-in duration-200"
-        leaveFrom="translate-y-0"
-        leaveTo="translate-y-full"
+        enterFrom="translate-y-full opacity-0"
+        enterTo="translate-y-0 opacity-100"
+        leave="transform transition ease-out duration-300"
+        leaveFrom="translate-y-0 opacity-100"
+        leaveTo="translate-y-1/2 opacity-0"
         className={`mx-auto w-full ${maxWidthClass} ${heightClass} pointer-events-auto z-10 ${className}`}
         style={{ transform: dragY > 0 ? `translateY(${dragY}px)` : undefined }}
         onTouchStart={handleTouchStart}
