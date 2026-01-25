@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import QrScanner from 'qr-scanner';
+import React, { useEffect, useCallback } from 'react';
 import { BottomSheetContainer } from './ui';
+import { useQrScanner } from '../hooks/useQrScanner';
 
 interface QrScannerDialogProps {
   isOpen: boolean;
@@ -9,13 +9,23 @@ interface QrScannerDialogProps {
 }
 
 const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onScan }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const qrScannerRef = useRef<QrScanner | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(false);
-  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
-  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
+  const handleScan = useCallback((data: string) => {
+    onScan(data);
+    onClose();
+  }, [onScan, onClose]);
+
+  const {
+    videoRef,
+    error,
+    isScanning,
+    isInitializing,
+    hasMultipleCameras,
+    startScanning,
+    stopScanning,
+    toggleCamera,
+    clearError,
+    facingMode,
+  } = useQrScanner({ onScan: handleScan });
 
   useEffect(() => {
     if (isOpen) {
@@ -26,7 +36,6 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
           startScanning();
         } else {
           console.error('Video element still null after transition');
-          setError('Video element not available');
         }
       }, 400); // 300ms transition + 100ms buffer
 
@@ -37,109 +46,11 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
     } else {
       stopScanning();
     }
-  }, [isOpen, facingMode]);
-
-  const handleToggleCamera = () => {
-    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
-  };
-
-  const startScanning = async () => {
-    try {
-      setError(null);
-      setIsInitializing(true);
-      setIsScanning(false);
-
-      if (!videoRef.current) {
-        setError('Video element not available');
-        setIsInitializing(false);
-        return;
-      }
-
-      // Check if camera is available
-      const hasCamera = await QrScanner.hasCamera();
-      if (!hasCamera) {
-        setError('No camera found on this device');
-        setIsInitializing(false);
-        return;
-      }
-
-      // Try to get available cameras
-      try {
-        const cameras = await QrScanner.listCameras(true);
-        console.log('Available cameras:', cameras);
-        setHasMultipleCameras(cameras.length > 1);
-      } catch (e) {
-        console.warn('Failed to list cameras:', e);
-        setHasMultipleCameras(false);
-      }
-
-      qrScannerRef.current = new QrScanner(
-        videoRef.current,
-        (result) => {
-          console.log('QR Code detected:', result.data);
-          onScan(result.data);
-          stopScanning();
-          onClose();
-        },
-        {
-          onDecodeError: (error) => {
-            // Ignore decode errors - they happen frequently while scanning
-            console.debug('QR decode error:', error);
-          },
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          preferredCamera: facingMode,
-          maxScansPerSecond: 5, // Limit scan frequency
-        }
-      );
-
-      // Add event listener for video loading
-      videoRef.current.addEventListener('loadedmetadata', () => {
-        console.log('Video metadata loaded');
-      });
-
-      videoRef.current.addEventListener('canplay', () => {
-        console.log('Video can play');
-      });
-
-      await qrScannerRef.current.start();
-      console.log('QR Scanner started successfully');
-      setIsInitializing(false);
-      setIsScanning(true);
-    } catch (err) {
-      console.error('Failed to start QR scanner:', err);
-      let errorMessage = 'Camera access denied or not available';
-
-      if (err instanceof Error) {
-        if (err.name === 'NotAllowedError') {
-          errorMessage = 'Camera access denied. Please allow camera access and try again.';
-        } else if (err.name === 'NotFoundError') {
-          errorMessage = 'No camera found on this device';
-        } else if (err.name === 'NotReadableError') {
-          errorMessage = 'Camera is already in use by another application';
-        } else if (err.name === 'OverconstrainedError') {
-          errorMessage = 'Camera constraints not supported';
-        }
-      }
-
-      setError(errorMessage);
-      setIsInitializing(false);
-      setIsScanning(false);
-    }
-  };
-
-  const stopScanning = () => {
-    if (qrScannerRef.current) {
-      qrScannerRef.current.stop();
-      qrScannerRef.current.destroy();
-      qrScannerRef.current = null;
-    }
-    setIsScanning(false);
-  };
+  }, [isOpen, facingMode, startScanning, stopScanning, videoRef]);
 
   const handleClose = () => {
     stopScanning();
-    setError(null);
+    clearError();
     onClose();
   };
 
@@ -173,7 +84,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
           {/* Camera toggle button */}
           {hasMultipleCameras && (
             <button
-              onClick={handleToggleCamera}
+              onClick={toggleCamera}
               className="absolute top-4 right-4 p-3 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-colors z-20 border border-white/10"
               aria-label="Switch camera"
             >
