@@ -17,6 +17,7 @@ import GetRefundPage from './pages/GetRefundPage';
 import BackupPage from './pages/BackupPage';
 import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
+import BuyBitcoinPage from './pages/BuyBitcoinPage';
 import { getSettings } from './services/settings';
 import { isDepositRejected } from './services/depositState';
 import {
@@ -27,7 +28,7 @@ import {
 // Main App without toast functionality
 const AppContent: React.FC = () => {
   // Screen navigation state
-  const [currentScreen, setCurrentScreen] = useState<'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies'>('home');
+  const [currentScreen, setCurrentScreen] = useState<'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyBitcoin'>('home');
 
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -407,6 +408,11 @@ const AppContent: React.FC = () => {
           <BackupPage onBack={() => setCurrentScreen('wallet')} />
         );
 
+      case 'buyBitcoin':
+        return (
+          <BuyBitcoinPage onBack={() => setCurrentScreen('wallet')} />
+        );
+
       case 'restore':
         return (
           <RestorePage
@@ -443,6 +449,7 @@ const AppContent: React.FC = () => {
             onOpenGetRefund={() => setCurrentScreen('getRefund')}
             onOpenSettings={() => setCurrentScreen('settings')}
             onOpenBackup={() => setCurrentScreen('backup')}
+            onOpenBuyBitcoin={() => setCurrentScreen('buyBitcoin')}
             onDepositChanged={fetchUnclaimedDeposits}
           />
         );
