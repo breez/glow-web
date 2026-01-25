@@ -1,4 +1,16 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+
+// Star positions around the logo (relative to center, in pixels) - larger radius for bigger logo
+const STARS = [
+  { x: -55, y: -40, size: 3.5 },
+  { x: 58, y: -30, size: 2.5 },
+  { x: -45, y: 45, size: 3 },
+  { x: 52, y: 50, size: 2.5 },
+  { x: -15, y: -60, size: 2.5 },
+  { x: 20, y: 55, size: 3.5 },
+  { x: -62, y: 10, size: 2.5 },
+  { x: 65, y: -5, size: 3 },
+];
 
 interface HomePageProps {
   onRestoreWallet: () => void;
@@ -6,6 +18,14 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet }) => {
+  const [starsAnimating, setStarsAnimating] = useState(false);
+
+  // Trigger star animation on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setStarsAnimating(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="h-full flex flex-col relative overflow-hidden bg-spark-dark">
       {/* Animated background - extends behind safe areas via negative margins */}
@@ -49,6 +69,20 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
               alt="Glow" 
               className="w-full h-full object-contain"
             />
+            {/* Twinkling stars */}
+            {STARS.map((star, i) => (
+              <span
+                key={i}
+                className={`sidebar-star ${starsAnimating ? 'animate' : ''}`}
+                style={{
+                  width: star.size,
+                  height: star.size,
+                  left: `calc(50% + ${star.x}px)`,
+                  top: `calc(50% + ${star.y}px)`,
+                  boxShadow: starsAnimating ? `0 0 ${star.size * 2}px var(--spark-primary)` : 'none',
+                }}
+              />
+            ))}
           </div>
         </div>
 
