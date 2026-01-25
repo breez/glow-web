@@ -6,8 +6,10 @@ Glow is a Bitcoin/Lightning wallet web app built with React + TypeScript + Vite,
 
 ## Key Paths (Hardcoded)
 
+Assume these repos are checked out locally:
+
 ```
-App:     ~/Documents/GitHub/breez-sdk-spark-example
+App:     ~/Documents/GitHub/glow-web
 SDK:     ~/Documents/GitHub/spark-sdk
 WASM:    ~/Documents/GitHub/spark-sdk/packages/wasm
 Types:   ~/Documents/GitHub/spark-sdk/packages/wasm/bundler/breez_sdk_spark_wasm.d.ts
@@ -28,7 +30,7 @@ When testing unreleased SDK changes (PRs, feature branches):
 ### Quick Setup (One Command)
 ```bash
 # Build SDK and link to app
-cd ~/Documents/GitHub/spark-sdk && git checkout <branch-name> && git pull origin <branch-name> && cd packages/wasm && make build && cd ~/Documents/GitHub/breez-sdk-spark-example && npm link @breeztech/breez-sdk-spark
+cd ~/Documents/GitHub/spark-sdk && git checkout <branch-name> && git pull origin <branch-name> && cd packages/wasm && make build && cd ~/Documents/GitHub/glow-web && npm link @breeztech/breez-sdk-spark
 ```
 
 ### Verify Link
