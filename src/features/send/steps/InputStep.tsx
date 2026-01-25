@@ -19,8 +19,10 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, isLoading, error, o
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
-      if (text) {
+      if (text?.trim()) {
         setLocalPaymentInput(text);
+        // Auto-process if pasted value looks valid
+        onContinue(text);
       }
     } catch (err) {
       console.error('Failed to read clipboard:', err);
@@ -29,6 +31,16 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, isLoading, error, o
 
   return (
     <div className="space-y-5 py-2">
+      {/* Input */}
+      <textarea
+        value={localPaymentInput}
+        onChange={(e) => setLocalPaymentInput(e.target.value)}
+        placeholder="lnbc... / bc1... / sp1... / user@domain.com"
+        className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 resize-none font-mono text-sm transition-all"
+        rows={3}
+        disabled={isLoading}
+      />
+
       {/* Quick action buttons */}
       <div className="flex gap-3">
         <button
@@ -53,28 +65,6 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, isLoading, error, o
         </button>
       </div>
 
-      {/* Input */}
-      <textarea
-        value={localPaymentInput}
-        onChange={(e) => setLocalPaymentInput(e.target.value)}
-        placeholder="lnbc... / bc1... / sp1... / user@domain.com"
-        className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 resize-none font-mono text-sm transition-all"
-        rows={3}
-        disabled={isLoading}
-      />
-
-      {/* Supported formats */}
-      <div className="flex flex-wrap gap-2 justify-center">
-        {['Lightning', 'Bitcoin', 'Spark', 'LNURL'].map((type) => (
-          <span 
-            key={type}
-            className="px-3 py-1.5 text-xs bg-spark-surface border border-spark-border rounded-lg text-spark-text-muted"
-          >
-            {type}
-          </span>
-        ))}
-      </div>
-
       {/* Error */}
       {error && (
         <div className="flex items-center gap-2 p-3 bg-spark-error/10 border border-spark-error/30 rounded-xl text-spark-error text-sm">
@@ -89,7 +79,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, isLoading, error, o
       <PrimaryButton
         onClick={() => onContinue(localPaymentInput)}
         disabled={isLoading || !localPaymentInput.trim()}
-        className="w-full mt-2"
+        className="w-full"
       >
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">

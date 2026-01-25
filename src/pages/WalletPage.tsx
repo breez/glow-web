@@ -53,6 +53,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
   const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [scannerOpenedFromSend, setScannerOpenedFromSend] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [selectedDeposit, setSelectedDeposit] = useState<DepositInfo | null>(null);
   const [paymentInput, setPaymentInput] = useState<SendInput | null>(null);
@@ -109,13 +110,19 @@ const WalletPage: React.FC<WalletPageProps> = ({
     refreshWalletData(false);
   }, [refreshWalletData]);
 
-  const handleQrScannerClose = () => {
+  const handleQrScannerClose = useCallback(() => {
     setIsQrScannerOpen(false);
-  };
+    // If scanner was opened from Send dialog, reopen it
+    if (scannerOpenedFromSend) {
+      setScannerOpenedFromSend(false);
+      setIsSendDialogOpen(true);
+    }
+  }, [scannerOpenedFromSend]);
 
   const handleScanFromSendDialog = useCallback(() => {
     setIsSendDialogOpen(false);
     setPaymentInput(null);
+    setScannerOpenedFromSend(true);
     setIsQrScannerOpen(true);
   }, []);
 
@@ -126,6 +133,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
       const parseResult = await wallet.parseInput(data);
       console.log('Parsed QR result:', parseResult);
       setIsQrScannerOpen(false);
+      setScannerOpenedFromSend(false);
       setPaymentInput({ rawInput: data, parsedInput: parseResult });
       setIsSendDialogOpen(true);
     } catch (error) {
