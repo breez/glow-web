@@ -70,6 +70,10 @@ const WalletPage: React.FC<WalletPageProps> = ({
   }, [collapseThreshold]);
 
   const handlePaymentSelected = useCallback((payment: Payment | ExtendedPayment) => {
+    // Close send/receive dialogs when opening payment details
+    setIsSendDialogOpen(false);
+    setIsReceiveDialogOpen(false);
+
     // Check if this is an unclaimed deposit
     if (isUnclaimedDepositPayment(payment) && payment.depositInfo) {
       // Open deposit details dialog
