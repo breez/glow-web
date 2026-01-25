@@ -658,19 +658,26 @@ export const ConfirmDialog: React.FC<{
     </DialogContainer>
   );
 };
+
+// ============================================
+// SWITCH COMPONENT (Material 3 Style)
+// ============================================
+
 export const Switch: React.FC<{
   checked: boolean;
   onChange: () => void;
+  disabled?: boolean;
   className?: string;
-}> = ({ checked, onChange, className = "" }) => (
+}> = ({ checked, onChange, disabled = false, className = "" }) => (
   <button
     type="button"
     role="switch"
     aria-checked={checked}
+    disabled={disabled}
     onClick={onChange}
     className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-spark-primary focus-visible:ring-offset-2 focus-visible:ring-offset-spark-dark ${
       checked ? 'bg-spark-primary' : 'bg-spark-border'
-    } ${className}`}
+    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
   >
     <span
       className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
