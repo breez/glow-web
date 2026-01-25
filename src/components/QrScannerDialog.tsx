@@ -142,7 +142,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
   };
 
   return (
-    <BottomSheetContainer isOpen={isOpen} onClose={handleClose}>
+    <BottomSheetContainer isOpen={isOpen} onClose={handleClose} fullHeight maxWidth="full">
       <div className="h-full w-full bg-black flex flex-col">
         {/* Full screen video */}
         <div className="flex-1 relative">

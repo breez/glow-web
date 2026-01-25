@@ -566,12 +566,28 @@ export const StepContent: React.FC<{
 // BOTTOM SHEET COMPONENTS
 // ============================================
 
+export type BottomSheetMaxWidth = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+
+const bottomSheetMaxWidthMap: Record<BottomSheetMaxWidth, string> = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+  full: 'max-w-full',
+};
+
 export const BottomSheetContainer: React.FC<{
   isOpen: boolean;
   children: ReactNode;
   className?: string;
   onClose?: () => void;
-}> = ({ isOpen, children, className = "", onClose }) => {
+  /** Maximum width of the sheet (default: 'md') */
+  maxWidth?: BottomSheetMaxWidth;
+  /** Maximum height as viewport percentage (default: 90) */
+  maxHeightVh?: number;
+  /** Whether sheet takes full height (for QR scanner, etc.) */
+  fullHeight?: boolean;
+}> = ({ isOpen, children, className = "", onClose, maxWidth = 'md', maxHeightVh = 90, fullHeight = false }) => {
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startY = useRef(0);
@@ -600,6 +616,9 @@ export const BottomSheetContainer: React.FC<{
     setDragY(0);
   };
 
+  const maxWidthClass = bottomSheetMaxWidthMap[maxWidth];
+  const heightClass = fullHeight ? 'h-full' : `max-h-[${maxHeightVh}vh]`;
+
   return (
     <Transition show={isOpen} as="div" className="absolute inset-0 z-50 overflow-hidden flex flex-col justify-end pointer-events-none">
       <Transition.Child
@@ -610,7 +629,7 @@ export const BottomSheetContainer: React.FC<{
         leave="transform transition ease-in duration-200"
         leaveFrom="translate-y-0"
         leaveTo="translate-y-full"
-        className={`mx-auto w-full max-w-md max-h-[90vh] pointer-events-auto ${className}`}
+        className={`mx-auto w-full ${maxWidthClass} ${heightClass} pointer-events-auto ${className}`}
         style={{ transform: dragY > 0 ? `translateY(${dragY}px)` : undefined }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
