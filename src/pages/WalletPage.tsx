@@ -71,10 +71,12 @@ const WalletPage: React.FC<WalletPageProps> = ({
   }, [collapseThreshold]);
 
   const handlePaymentSelected = useCallback((payment: Payment | ExtendedPayment) => {
-    // If send/receive dialogs are open, just close them without opening payment details
-    if (isSendDialogOpen || isReceiveDialogOpen) {
+    // If any dialog is open, just close it without opening payment details
+    if (isSendDialogOpen || isReceiveDialogOpen || selectedPayment || selectedDeposit) {
       setIsSendDialogOpen(false);
       setIsReceiveDialogOpen(false);
+      setSelectedPayment(null);
+      setSelectedDeposit(null);
       return;
     }
 
@@ -86,7 +88,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
       // Open regular payment details
       setSelectedPayment(payment);
     }
-  }, [isSendDialogOpen, isReceiveDialogOpen]);
+  }, [isSendDialogOpen, isReceiveDialogOpen, selectedPayment, selectedDeposit]);
 
   const handlePaymentDetailsClose = useCallback(() => {
     setSelectedPayment(null);
