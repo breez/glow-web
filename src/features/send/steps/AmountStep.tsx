@@ -52,6 +52,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
           className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           disabled={isLoading}
           min={1}
+          data-testid="amount-input"
         />
         
         {/* Quick amount buttons */}

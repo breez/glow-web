@@ -103,6 +103,7 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
           {/* Primary CTA */}
           <button
             onClick={onCreateNewWallet}
+            data-testid="create-wallet-button"
             className="button w-full py-4 text-base tracking-wider"
           >
             Get Started
@@ -111,6 +112,7 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
           {/* Secondary CTA */}
           <button
             onClick={onRestoreWallet}
+            data-testid="restore-wallet-button"
             className="button-secondary w-full py-4 rounded-xl font-display font-semibold text-sm tracking-wide"
           >
             Restore from Backup

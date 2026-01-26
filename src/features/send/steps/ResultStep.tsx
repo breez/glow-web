@@ -11,7 +11,7 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose }) => {
   const isSuccess = result === 'success';
 
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center" data-testid={isSuccess ? 'payment-success' : 'payment-failure'}>
       {/* Result icon */}
       <div className="relative mb-6">
         {/* Glow effect */}
