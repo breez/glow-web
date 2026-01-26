@@ -7,6 +7,7 @@ import {
   waitForBalanceChange,
   waitForWalletReady,
   generateLightningInvoice,
+  ensureWalletFunded,
   TIMEOUTS,
 } from '../fixtures/dual-wallet';
 
@@ -40,6 +41,8 @@ test.describe('Wallet-to-Wallet Transfers', () => {
     await test.step('Restore Wallet A (sender)', async () => {
       await walletA.page.goto('/');
       await restoreWallet(walletA.page, walletA.mnemonic);
+      // Auto-fund if balance is low
+      await ensureWalletFunded(walletA.page);
     });
 
     await test.step('Restore Wallet B (receiver)', async () => {
@@ -118,6 +121,7 @@ test.describe('Wallet-to-Wallet Transfers', () => {
     // Restore wallets
     await walletA.page.goto('/');
     await restoreWallet(walletA.page, walletA.mnemonic);
+    await ensureWalletFunded(walletA.page);
 
     await walletB.page.goto('/');
     await restoreWallet(walletB.page, walletB.mnemonic);
