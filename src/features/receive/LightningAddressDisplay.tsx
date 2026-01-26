@@ -121,7 +121,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
 
   return (
     <div className="flex flex-col items-center gap-6 py-2">
-      <QRCodeContainer value={address?.lnurl || ''} />
+      <QRCodeContainer value={address?.lnurl.bech32.toUpperCase() || ''} />
 
       <div className="w-full flex flex-col items-center gap-4">
         <CopyableText
@@ -133,7 +133,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
           onShareError={() => showToast('error', 'Failed to share')}
           additionalActions={<EditButton onClick={onEdit} />}
           textToCopy={address?.lightningAddress || ''}
-          textToShare={address?.lnurl || ''}
+          textToShare={address?.lnurl.bech32 || ''}
           shareLabel="LNURL-Pay"
         />
 
