@@ -1,6 +1,36 @@
-import React, { ReactNode, forwardRef, useState, useRef } from 'react';
-import QRCode from 'react-qr-code';
-import { Transition } from '@headlessui/react';
+import React, { ReactNode, forwardRef } from 'react';
+
+// ============================================
+// RE-EXPORTS FROM MODULAR FILES
+// These enable tree-shaking and cleaner imports
+// ============================================
+
+// QR Code (lazy-loadable, contains react-qr-code dependency)
+export { QRCodeContainer } from './QRCodeContainer';
+
+// Buttons
+export { PrimaryButton, SecondaryButton, TextButton } from './buttons';
+export type { ButtonProps } from './buttons';
+
+// Forms
+export {
+  FormGroup,
+  FormLabel,
+  FormDescription,
+  FormInput,
+  FormTextarea,
+  FormError,
+  FormHint,
+} from './forms';
+export type { FormInputProps, FormTextareaProps } from './forms';
+
+// Bottom Sheets
+export { BottomSheetContainer, BottomSheetCard } from './sheets/BottomSheet';
+export type { BottomSheetMaxWidth, BottomSheetContainerProps, BottomSheetCardProps } from './sheets/BottomSheet';
+
+// Loading
+export { LoadingSpinner } from './loading/LoadingSpinner';
+export type { LoadingSpinnerProps, SpinnerSize } from './loading/LoadingSpinner';
 
 // ============================================
 // DIALOG COMPONENTS
@@ -69,146 +99,6 @@ export const DialogHeader: React.FC<{
   </div>
 );
 
-// ============================================
-// FORM COMPONENTS
-// ============================================
-
-export const FormGroup: React.FC<{
-  children: ReactNode;
-  className?: string;
-}> = ({ children, className = "" }) => (
-  <div className={`space-y-4 ${className}`}>
-    {children}
-  </div>
-);
-
-export const FormLabel: React.FC<{
-  htmlFor: string;
-  children: ReactNode;
-}> = ({ htmlFor, children }) => (
-  <label htmlFor={htmlFor} className="block text-sm font-medium text-spark-text-secondary mb-1">
-    {children}
-  </label>
-);
-
-export const FormDescription: React.FC<{
-  children: ReactNode;
-}> = ({ children }) => (
-  <p className="text-sm text-spark-text-muted">
-    {children}
-  </p>
-);
-
-export const FormInput: React.FC<{
-  id: string;
-  type?: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  min?: number;
-  max?: number;
-  disabled?: boolean;
-  className?: string;
-}> = ({ id, type = "text", value, onChange, placeholder, min, max, disabled = false, className = "" }) => (
-  <input
-    id={id}
-    type={type}
-    value={value}
-    onChange={onChange}
-    className={`w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
-    placeholder={placeholder}
-    min={min}
-    max={max}
-    disabled={disabled}
-  />
-);
-
-export const FormTextarea: React.FC<{
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  placeholder?: string;
-  disabled?: boolean;
-  className?: string;
-  rows?: number;
-}> = ({ value, onChange, placeholder, disabled = false, className = "", rows = 3 }) => (
-  <textarea
-    value={value}
-    onChange={onChange}
-    className={`w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all resize-none ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
-    placeholder={placeholder}
-    disabled={disabled}
-    rows={rows}
-  />
-);
-
-export const FormError: React.FC<{
-  error: string | null;
-}> = ({ error }) => {
-  if (!error) return null;
-  return (
-    <div className="flex items-center gap-2 text-spark-error text-sm mt-2">
-      <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-      </svg>
-      <span>{error}</span>
-    </div>
-  );
-};
-
-export const FormHint: React.FC<{
-  children: ReactNode;
-}> = ({ children }) => (
-  <p className="text-xs mt-1.5 text-spark-text-muted">
-    {children}
-  </p>
-);
-
-// ============================================
-// BUTTON COMPONENTS
-// ============================================
-
-export const PrimaryButton: React.FC<{
-  onClick: () => void;
-  disabled?: boolean;
-  children: ReactNode;
-  className?: string;
-}> = ({ onClick, disabled = false, children, className = "" }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className={`button ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
-  >
-    {children}
-  </button>
-);
-
-export const SecondaryButton: React.FC<{
-  onClick: () => void;
-  disabled?: boolean;
-  children: ReactNode;
-  className?: string;
-}> = ({ onClick, disabled = false, children, className = "" }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className={`py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50 ${className}`}
-  >
-    {children}
-  </button>
-);
-
-export const TextButton: React.FC<{
-  onClick: () => void;
-  children: ReactNode;
-  className?: string;
-}> = ({ onClick, children, className = "" }) => (
-  <button
-    onClick={onClick}
-    className={`text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors ${className}`}
-  >
-    {children}
-  </button>
-);
 
 // ============================================
 // PAYMENT INFO COMPONENTS
@@ -362,27 +252,8 @@ export const ResultMessage: React.FC<{
 );
 
 // ============================================
-// QR CODE COMPONENTS
+// TEXT COMPONENTS
 // ============================================
-
-export const QRCodeContainer: React.FC<{
-  value: string;
-  size?: number;
-  className?: string;
-}> = ({ value, size = 200, className = "" }) => (
-  <div className={`relative ${className}`}>
-    {/* Decorative corners */}
-    <div className="absolute -inset-3 pointer-events-none">
-      <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-spark-primary/50 rounded-tl-lg" />
-      <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-spark-primary/50 rounded-tr-lg" />
-      <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-spark-primary/50 rounded-bl-lg" />
-      <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-spark-primary/50 rounded-br-lg" />
-    </div>
-    <div className="qr-container">
-      <QRCode value={value} size={size} />
-    </div>
-  </div>
-);
 
 export const CopyableText: React.FC<{
   text: string;
@@ -600,128 +471,6 @@ export const StepPanel: React.FC<{
   );
 };
 
-// ============================================
-// BOTTOM SHEET COMPONENTS
-// ============================================
-
-export type BottomSheetMaxWidth = 'sm' | 'md' | 'lg' | 'xl' | 'full';
-
-const bottomSheetMaxWidthMap: Record<BottomSheetMaxWidth, string> = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
-  full: 'max-w-full',
-};
-
-export const BottomSheetContainer: React.FC<{
-  isOpen: boolean;
-  children: ReactNode;
-  className?: string;
-  onClose?: () => void;
-  /** Maximum width of the sheet (default: 'full' - uses parent container width) */
-  maxWidth?: BottomSheetMaxWidth;
-  /** Maximum height as viewport percentage (default: 90) */
-  maxHeightVh?: number;
-  /** Whether sheet takes full height (for QR scanner, etc.) */
-  fullHeight?: boolean;
-  /** Whether to show a backdrop overlay (useful for nested sheets) */
-  showBackdrop?: boolean;
-}> = ({ isOpen, children, className = "", onClose, maxWidth = 'full', maxHeightVh = 90, fullHeight = false, showBackdrop = false }) => {
-  const [dragY, setDragY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const startY = useRef(0);
-  const currentY = useRef(0);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    e.stopPropagation();
-    startY.current = e.touches[0].clientY;
-    currentY.current = e.touches[0].clientY;
-    setIsDragging(true);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    e.stopPropagation();
-    currentY.current = e.touches[0].clientY;
-    const diff = currentY.current - startY.current;
-    if (diff > 0) {
-      setDragY(diff);
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    setIsDragging(false);
-    if (dragY > 100 && onClose) {
-      // Prevent the touch event from propagating to elements underneath
-      e.preventDefault();
-      e.stopPropagation();
-      // Blur any focused element
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
-      onClose();
-    }
-    setDragY(0);
-  };
-
-  const maxWidthClass = bottomSheetMaxWidthMap[maxWidth];
-  const heightClass = fullHeight ? 'h-full' : `max-h-[${maxHeightVh}vh]`;
-
-  return (
-    <Transition show={isOpen} as="div" className="absolute inset-0 z-50 overflow-hidden flex flex-col justify-end pointer-events-none">
-      {/* Optional backdrop for nested sheets */}
-      {showBackdrop && (
-        <Transition.Child
-          as="div"
-          enter="transition-opacity ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="transition-opacity ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-          className="absolute inset-0 bg-black/60 pointer-events-auto z-0"
-          onClick={onClose}
-        />
-      )}
-      <Transition.Child
-        as="div"
-        enter="transform transition ease-out duration-300"
-        enterFrom="translate-y-full opacity-0"
-        enterTo="translate-y-0 opacity-100"
-        leave="transform transition ease-out duration-300"
-        leaveFrom="translate-y-0 opacity-100"
-        leaveTo="translate-y-1/2 opacity-0"
-        className={`mx-auto w-full ${maxWidthClass} ${heightClass} pointer-events-auto z-10 ${className}`}
-        style={{ transform: dragY > 0 ? `translateY(${dragY}px)` : undefined }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        {children}
-      </Transition.Child>
-    </Transition>
-  );
-};
-
-export const BottomSheetCard = forwardRef<HTMLDivElement, DialogCardProps>(
-  ({ children, className = "" }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={`bg-spark-surface border-t border-spark-border rounded-t-3xl shadow-glass-lg overflow-hidden w-full ${className}`}
-      >
-        {/* Drag handle indicator */}
-        <div className="bottom-sheet-handle" />
-        <div className="px-6 pb-6 pt-3 safe-area-bottom">
-          {children}
-        </div>
-      </div>
-    );
-  }
-);
-
-BottomSheetCard.displayName = 'BottomSheetCard';
 
 // ============================================
 // TAB COMPONENTS
@@ -804,32 +553,6 @@ export const TabPanel: React.FC<{
   </div>
 );
 
-// ============================================
-// LOADING SPINNER
-// ============================================
-
-export const LoadingSpinner: React.FC<{
-  text?: string;
-  size?: 'small' | 'medium' | 'large';
-  className?: string;
-}> = ({ text, size = 'medium', className = "" }) => {
-  const sizeClasses = {
-    small: 'w-5 h-5',
-    medium: 'w-8 h-8',
-    large: 'w-12 h-12'
-  };
-
-  return (
-    <div className={`flex flex-col items-center justify-center ${className}`}>
-      <div className="relative">
-        <div className={`${sizeClasses[size]} border-2 border-spark-border border-t-spark-primary rounded-full animate-spin`} />
-      </div>
-      {text && (
-        <p className="mt-3 text-sm text-spark-text-secondary">{text}</p>
-      )}
-    </div>
-  );
-};
 
 // ============================================
 // SAFE AREA COMPONENTS
