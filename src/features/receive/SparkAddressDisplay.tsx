@@ -30,6 +30,7 @@ const SparkAddressDisplay: React.FC<Props> = ({ address, isLoading }) => {
         textColor="text-spark-primary"
         onCopied={() => showToast('success', 'Copied!')}
         onShareError={() => showToast('error', 'Failed to share')}
+        data-testid="spark-address-text"
       />
     </div>
   );

@@ -39,6 +39,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, isLoading, error, o
         className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 resize-none font-mono text-sm transition-all"
         rows={3}
         disabled={isLoading}
+        data-testid="payment-input"
       />
 
       {/* Error */}
@@ -80,6 +81,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, isLoading, error, o
         onClick={() => onContinue(localPaymentInput)}
         disabled={isLoading || !localPaymentInput.trim()}
         className="w-full"
+        data-testid="continue-button"
       >
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">

@@ -287,13 +287,13 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
 
         <TabContainer>
           <TabList>
-            <Tab isActive={activeTab === 'lightning'} onClick={() => handleTabChange('lightning')}>
+            <Tab isActive={activeTab === 'lightning'} onClick={() => handleTabChange('lightning')} data-testid="lightning-tab">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
               </svg>
               Lightning
             </Tab>
-            <Tab isActive={activeTab === 'bitcoin'} onClick={() => handleTabChange('bitcoin')}>
+            <Tab isActive={activeTab === 'bitcoin'} onClick={() => handleTabChange('bitcoin')} data-testid="bitcoin-tab">
               <span className="font-bold text-sm">₿</span>
               Bitcoin
             </Tab>

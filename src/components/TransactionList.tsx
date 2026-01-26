@@ -91,7 +91,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
 
   if (!transactions.length) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-6">
+      <div className="flex flex-col items-center justify-center py-20 px-6" data-testid="empty-state">
         <div className="w-20 h-20 rounded-2xl bg-spark-surface border border-spark-border flex items-center justify-center mb-6">
           {EmptyStateIcon}
         </div>
@@ -114,6 +114,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
         className="transaction-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer animate-list-item"
         style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
         onClick={() => onPaymentSelected(tx)}
+        data-testid="transaction-item"
       >
         {/* Transaction type icon */}
         <div className={`
@@ -152,12 +153,15 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
         </div>
 
         {/* Amount - right aligned */}
-        <span className={`
-          font-mono font-semibold text-[15px] flex-shrink-0
-          ${isFailed ? 'text-spark-text-muted line-through' : ''}
-          ${!isFailed && isReceive ? 'text-spark-success' : ''}
-          ${!isFailed && !isReceive ? 'text-spark-electric' : ''}
-        `}>
+        <span
+          className={`
+            font-mono font-semibold text-[15px] flex-shrink-0
+            ${isFailed ? 'text-spark-text-muted line-through' : ''}
+            ${!isFailed && isReceive ? 'text-spark-success' : ''}
+            ${!isFailed && !isReceive ? 'text-spark-electric' : ''}
+          `}
+          data-testid="transaction-amount"
+        >
           {isReceive ? '+' : '-'}{formatWithSpaces(Number(tx.amount))}
         </span>
       </li>

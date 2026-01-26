@@ -267,7 +267,8 @@ export const CopyableText: React.FC<{
   textToCopy?: string;
   textToShare?: string;
   shareLabel?: string;
-}> = ({ text, truncate = false, showShare = false, onCopied, onShareError, label = 'Address', additionalActions, textColor = 'text-spark-text-muted', textToCopy, textToShare, shareLabel }) => {
+  'data-testid'?: string;
+}> = ({ text, truncate = false, showShare = false, onCopied, onShareError, label = 'Address', additionalActions, textColor = 'text-spark-text-muted', textToCopy, textToShare, shareLabel, 'data-testid': testId }) => {
   const [copied, setCopied] = React.useState(false);
   const [canShare, setCanShare] = React.useState(false);
 
@@ -307,7 +308,7 @@ export const CopyableText: React.FC<{
     : text;
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full">
+    <div className="flex flex-col items-center gap-4 w-full" data-testid={testId}>
       {/* Clickable text display */}
       <button
         onClick={handleCopy}

@@ -120,6 +120,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             onClick={onOpenMenu}
             className="p-2 -ml-2 text-spark-text-secondary hover:text-spark-text-primary transition-colors rounded-xl hover:bg-white/5"
             aria-label="Open menu"
+            data-testid="menu-button"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -153,7 +154,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           </div>
 
           {/* Main balance */}
-          <div className="flex items-baseline justify-center gap-2">
+          <div className="flex items-baseline justify-center gap-2" data-testid="wallet-balance">
             <span className="balance-display">
               {formatWithThinSpaces(animatedBalance)}
             </span>
