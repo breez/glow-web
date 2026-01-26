@@ -845,6 +845,12 @@ main {
   padding-top: 1.5rem;
 }
 
+/* Transaction item content-visibility optimization for long lists */
+.transaction-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 64px;
+}
+
 /* Network badge styling */
 .network-badge {
   background: var(--glow-primary);

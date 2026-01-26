@@ -2,13 +2,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import type { DepositInfo, Fee, SdkEvent } from '@breeztech/breez-sdk-spark';
 import { LoadingSpinner, PrimaryButton, SecondaryButton, FormInput, BottomSheetContainer, BottomSheetCard, DialogHeader, CollapsibleCodeField, PaymentInfoCard } from '../components/ui';
+import { SimpleAlert } from '../components/AlertCard';
 import { Transition } from '@headlessui/react';
+import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
+import { CloseIcon, CheckIcon, WarningIcon } from '../components/Icons';
 import { isDepositRejected, removeRejectedDeposit } from '../services/depositState';
-
-// Format number with space as thousand separator
-const formatWithSpaces = (num: number): string => {
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-};
+import { formatWithSpaces } from '../utils/formatNumber';
 
 interface GetRefundPageProps {
   onBack: () => void;
@@ -213,9 +212,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
               className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
               aria-label="Close"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <CloseIcon size="md" />
             </button>
           </div>
 
@@ -229,20 +226,13 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
               )}
 
               {error && (
-                <div className="flex items-center gap-2 p-3 bg-spark-error/10 border border-spark-error/30 rounded-xl text-spark-error text-sm">
-                  <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
-                  <span>{error}</span>
-                </div>
+                <SimpleAlert variant="error">{error}</SimpleAlert>
               )}
 
               {!isLoading && deposits.length === 0 && (
                 <div className="py-16 text-center">
                   <div className="w-16 h-16 rounded-2xl bg-spark-success/20 flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-spark-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+                    <CheckIcon size="xl" className="text-spark-success" />
                   </div>
                   <h3 className="font-display font-semibold text-spark-text-primary mb-2">All Clear!</h3>
                   <p className="text-spark-text-muted text-sm">No rejected deposits pending refund.</p>
@@ -436,40 +426,19 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
             {refundStep === 'confirm' && selectedDeposit && (
               <>
                 {/* Breakdown */}
-                <div className="bg-spark-dark/50 border border-spark-border rounded-2xl p-4 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-spark-text-secondary text-sm">Amount</span>
-                    <span className="font-mono text-sm text-spark-text-primary">
-                      {formatWithSpaces(selectedDeposit.amountSats)} sats
-                    </span>
-                  </div>
-
-                  <div className="border-t border-spark-border/50" />
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-spark-text-secondary text-sm">Network fee</span>
-                    <span className="font-mono text-sm text-spark-text-primary">
-                      {formatWithSpaces(getSelectedFee())} sats
-                    </span>
-                  </div>
-
-                  <div className="border-t border-spark-border/50" />
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-spark-text-primary font-semibold">You receive</span>
-                    <span className="font-mono font-bold text-spark-primary">
-                      {formatWithSpaces(getRefundAmount())} sats
-                    </span>
-                  </div>
-                </div>
+                <FeeBreakdownCard
+                  items={[
+                    { label: 'Amount', value: selectedDeposit.amountSats },
+                    { label: 'Network fee', value: getSelectedFee() },
+                    { label: 'You receive', value: getRefundAmount(), highlight: true },
+                  ]}
+                />
 
                 {refundError && (
                   <div className="bg-spark-warning/10 border border-spark-warning/30 rounded-2xl p-4">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded-xl bg-spark-warning/20 flex items-center justify-center flex-shrink-0">
-                        <svg className="w-5 h-5 text-spark-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
+                        <WarningIcon size="md" className="text-spark-warning" />
                       </div>
                       <h3 className="font-display font-bold text-spark-warning">Refund Failed</h3>
                     </div>
@@ -508,9 +477,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                   {refundSuccess ? (
                     <>
                       <div className="w-16 h-16 rounded-full bg-spark-success/20 flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-8 h-8 text-spark-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
+                        <CheckIcon size="xl" className="text-spark-success" />
                       </div>
                       <h3 className="font-display font-semibold text-spark-text-primary text-lg mb-2">
                         Refund Broadcast
@@ -522,9 +489,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                   ) : (
                     <>
                       <div className="w-16 h-16 rounded-full bg-spark-error/20 flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-8 h-8 text-spark-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <CloseIcon size="xl" className="text-spark-error" />
                       </div>
                       <h3 className="font-display font-semibold text-spark-text-primary text-lg mb-2">
                         Refund Failed
@@ -542,7 +507,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                       label="Transaction ID"
                       value={refundTxId}
                       isVisible={isTxIdVisible}
-                      onToggle={() => setIsTxIdVisible(!isTxIdVisible)}
+                      onToggle={() => setIsTxIdVisible(prev => !prev)}
                     />
                   </PaymentInfoCard>
                 )}

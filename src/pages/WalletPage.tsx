@@ -1,19 +1,22 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, lazy, Suspense } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import {
   LoadingSpinner
 } from '../components/ui';
-import SendPaymentDialog from '../features/send/SendPaymentDialog';
-import ReceivePaymentDialog from '../features/receive/ReceivePaymentDialog';
-import QrScannerDialog from '../components/QrScannerDialog';
-import PaymentDetailsDialog from '../components/PaymentDetailsDialog';
-import UnclaimedDepositDetailsPage from './UnclaimedDepositDetailsPage';
 import CollapsingWalletHeader from '../components/CollapsingWalletHeader';
 import SideMenu from '../components/SideMenu';
 import TransactionList from '../components/TransactionList';
 import { GetInfoResponse, Payment, Rate, FiatCurrency, DepositInfo } from '@breeztech/breez-sdk-spark';
 import { SendInput } from '@/types/domain';
 import { mergeDepositsWithTransactions, ExtendedPayment, isUnclaimedDepositPayment } from '@/utils/depositHelpers';
+
+// Lazy-loaded dialog components (bundle-dynamic-imports optimization)
+// These are only loaded when the user interacts with send/receive/scan buttons
+const SendPaymentDialog = lazy(() => import('../features/send/SendPaymentDialog'));
+const ReceivePaymentDialog = lazy(() => import('../features/receive/ReceivePaymentDialog'));
+const QrScannerDialog = lazy(() => import('../components/QrScannerDialog'));
+const PaymentDetailsDialog = lazy(() => import('../components/PaymentDetailsDialog'));
+const UnclaimedDepositDetailsPage = lazy(() => import('./UnclaimedDepositDetailsPage'));
 
 interface WalletPageProps {
   walletInfo: GetInfoResponse | null;
@@ -60,6 +63,10 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const transactionsContainerRef = useRef<HTMLDivElement>(null);
+
+  // Refs for dialog states to use in stable callbacks (advanced-event-handler-refs optimization)
+  const dialogStateRef = useRef({ isSendDialogOpen, isReceiveDialogOpen, selectedPayment, selectedDeposit });
+  dialogStateRef.current = { isSendDialogOpen, isReceiveDialogOpen, selectedPayment, selectedDeposit };
   const collapseThreshold = 100;
 
   const handleScroll = useCallback(() => {
@@ -71,6 +78,9 @@ const WalletPage: React.FC<WalletPageProps> = ({
   }, [collapseThreshold]);
 
   const handlePaymentSelected = useCallback((payment: Payment | ExtendedPayment) => {
+    // Use ref to check dialog states without adding to dependencies
+    const { isSendDialogOpen, isReceiveDialogOpen, selectedPayment, selectedDeposit } = dialogStateRef.current;
+
     // If any dialog is open, just close it without opening payment details
     if (isSendDialogOpen || isReceiveDialogOpen || selectedPayment || selectedDeposit) {
       setIsSendDialogOpen(false);
@@ -88,7 +98,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
       // Open regular payment details
       setSelectedPayment(payment);
     }
-  }, [isSendDialogOpen, isReceiveDialogOpen, selectedPayment, selectedDeposit]);
+  }, []);
 
   const handlePaymentDetailsClose = useCallback(() => {
     setSelectedPayment(null);
@@ -186,39 +196,59 @@ const WalletPage: React.FC<WalletPageProps> = ({
         />
       </div>
 
-      {/* Send Payment Dialog */}
-      <SendPaymentDialog
-        isOpen={isSendDialogOpen}
-        onClose={handleSendDialogClose}
-        initialPaymentInput={paymentInput}
-        onScanQr={handleScanFromSendDialog}
-      />
+      {/* Send Payment Dialog - lazy loaded on first open */}
+      {isSendDialogOpen && (
+        <Suspense fallback={null}>
+          <SendPaymentDialog
+            isOpen={isSendDialogOpen}
+            onClose={handleSendDialogClose}
+            initialPaymentInput={paymentInput}
+            onScanQr={handleScanFromSendDialog}
+          />
+        </Suspense>
+      )}
 
-      {/* Receive Payment Dialog */}
-      <ReceivePaymentDialog
-        isOpen={isReceiveDialogOpen}
-        onClose={handleReceiveDialogClose}
-      />
+      {/* Receive Payment Dialog - lazy loaded on first open */}
+      {isReceiveDialogOpen && (
+        <Suspense fallback={null}>
+          <ReceivePaymentDialog
+            isOpen={isReceiveDialogOpen}
+            onClose={handleReceiveDialogClose}
+          />
+        </Suspense>
+      )}
 
-      {/* QR Scanner Dialog */}
-      <QrScannerDialog
-        isOpen={isQrScannerOpen}
-        onClose={handleQrScannerClose}
-        onScan={handleQrScan}
-      />
+      {/* QR Scanner Dialog - lazy loaded on first open */}
+      {isQrScannerOpen && (
+        <Suspense fallback={null}>
+          <QrScannerDialog
+            isOpen={isQrScannerOpen}
+            onClose={handleQrScannerClose}
+            onScan={handleQrScan}
+          />
+        </Suspense>
+      )}
 
-      {/* Payment Details Dialog */}
-      <PaymentDetailsDialog
-        optionalPayment={selectedPayment}
-        onClose={handlePaymentDetailsClose}
-      />
+      {/* Payment Details Dialog - lazy loaded on first open */}
+      {selectedPayment && (
+        <Suspense fallback={null}>
+          <PaymentDetailsDialog
+            optionalPayment={selectedPayment}
+            onClose={handlePaymentDetailsClose}
+          />
+        </Suspense>
+      )}
 
-      {/* Unclaimed Deposit Details */}
-      <UnclaimedDepositDetailsPage
-        deposit={selectedDeposit}
-        onBack={handleDepositDetailsClose}
-        onChanged={handleDepositChanged}
-      />
+      {/* Unclaimed Deposit Details - lazy loaded on first open */}
+      {selectedDeposit && (
+        <Suspense fallback={null}>
+          <UnclaimedDepositDetailsPage
+            deposit={selectedDeposit}
+            onBack={handleDepositDetailsClose}
+            onChanged={handleDepositChanged}
+          />
+        </Suspense>
+      )}
 
       {/* Bottom action bar */}
       <div className="bottom-bar flex items-center justify-center gap-4 z-30">
