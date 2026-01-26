@@ -23,9 +23,24 @@ const defaultFiatSettings: FiatSettings = {
   selectedCurrencies: ['USD'],
 };
 
+// In-memory cache for localStorage reads (js-cache-storage optimization)
+const storageCache = new Map<string, string | null>();
+
+function getCachedItem(key: string): string | null {
+  if (!storageCache.has(key)) {
+    storageCache.set(key, localStorage.getItem(key));
+  }
+  return storageCache.get(key) ?? null;
+}
+
+function setCachedItem(key: string, value: string): void {
+  localStorage.setItem(key, value);
+  storageCache.set(key, value);
+}
+
 export function getSettings(): UserSettings {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
+    const raw = getCachedItem(SETTINGS_KEY);
     if (!raw) return defaultSettings;
     const parsed = JSON.parse(raw) as Partial<UserSettings>;
     // Merge with defaults defensively
@@ -54,12 +69,12 @@ export function getSettings(): UserSettings {
 }
 
 export function saveSettings(settings: UserSettings): void {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  setCachedItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
 export function getFiatSettings(): FiatSettings {
   try {
-    const raw = localStorage.getItem(FIAT_SETTINGS_KEY);
+    const raw = getCachedItem(FIAT_SETTINGS_KEY);
     if (!raw) return defaultFiatSettings;
     const parsed = JSON.parse(raw) as Partial<FiatSettings>;
     return {
@@ -73,5 +88,5 @@ export function getFiatSettings(): FiatSettings {
 }
 
 export function saveFiatSettings(settings: FiatSettings): void {
-  localStorage.setItem(FIAT_SETTINGS_KEY, JSON.stringify(settings));
+  setCachedItem(FIAT_SETTINGS_KEY, JSON.stringify(settings));
 }

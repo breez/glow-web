@@ -9,17 +9,28 @@ export interface RejectedDeposit {
   rejectedAt: number; // timestamp
 }
 
+// In-memory cache for rejected deposits (js-cache-storage optimization)
+let cachedDeposits: RejectedDeposit[] | null = null;
+
 /**
  * Get the list of all rejected deposits
  */
 export function getRejectedDeposits(): RejectedDeposit[] {
+  if (cachedDeposits !== null) {
+    return cachedDeposits;
+  }
   try {
     const raw = localStorage.getItem(REJECTED_DEPOSITS_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      cachedDeposits = [];
+      return cachedDeposits;
+    }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    cachedDeposits = Array.isArray(parsed) ? parsed : [];
+    return cachedDeposits;
   } catch {
-    return [];
+    cachedDeposits = [];
+    return cachedDeposits;
   }
 }
 
@@ -49,6 +60,7 @@ export function rejectDeposit(txid: string, vout: number): void {
   });
 
   localStorage.setItem(REJECTED_DEPOSITS_KEY, JSON.stringify(rejected));
+  cachedDeposits = rejected; // Update cache
 }
 
 /**
@@ -58,6 +70,7 @@ export function removeRejectedDeposit(txid: string, vout: number): void {
   const rejected = getRejectedDeposits();
   const filtered = rejected.filter(d => !(d.txid === txid && d.vout === vout));
   localStorage.setItem(REJECTED_DEPOSITS_KEY, JSON.stringify(filtered));
+  cachedDeposits = filtered; // Update cache
 }
 
 /**
@@ -65,4 +78,5 @@ export function removeRejectedDeposit(txid: string, vout: number): void {
  */
 export function clearAllRejectedDeposits(): void {
   localStorage.removeItem(REJECTED_DEPOSITS_KEY);
+  cachedDeposits = null; // Clear cache
 }
