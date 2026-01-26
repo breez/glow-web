@@ -30,7 +30,7 @@ describe('depositHelpers', () => {
         {
           txid: 'abc123',
           vout: 0,
-          amountSats: 1000n,
+          amountSats: 1000,
         } as DepositInfo,
       ];
 
@@ -51,8 +51,8 @@ describe('depositHelpers', () => {
 
     it('converts multiple deposits to payment format', () => {
       const deposits: DepositInfo[] = [
-        { txid: 'tx1', vout: 0, amountSats: 1000n } as DepositInfo,
-        { txid: 'tx2', vout: 1, amountSats: 2000n } as DepositInfo,
+        { txid: 'tx1', vout: 0, amountSats: 1000 } as DepositInfo,
+        { txid: 'tx2', vout: 1, amountSats: 2000 } as DepositInfo,
       ];
 
       const result = convertDepositsToPayments(deposits);
@@ -64,12 +64,12 @@ describe('depositHelpers', () => {
 
     it('filters out rejected deposits', () => {
       const deposits: DepositInfo[] = [
-        { txid: 'accepted', vout: 0, amountSats: 1000n } as DepositInfo,
-        { txid: 'rejected', vout: 0, amountSats: 2000n } as DepositInfo,
+        { txid: 'accepted', vout: 0, amountSats: 1000 } as DepositInfo,
+        { txid: 'rejected', vout: 0, amountSats: 2000 } as DepositInfo,
       ];
 
       // Mock isDepositRejected to return true for the second deposit
-      vi.mocked(isDepositRejected).mockImplementation((txid) => txid === 'rejected');
+      vi.mocked(isDepositRejected).mockImplementation((txid: string) => txid === 'rejected');
 
       const result = convertDepositsToPayments(deposits);
 
@@ -79,7 +79,7 @@ describe('depositHelpers', () => {
 
     it('includes transaction details with txId', () => {
       const deposits: DepositInfo[] = [
-        { txid: 'mytxid', vout: 0, amountSats: 1000n } as DepositInfo,
+        { txid: 'mytxid', vout: 0, amountSats: 1000 } as DepositInfo,
       ];
 
       const result = convertDepositsToPayments(deposits);
@@ -118,7 +118,7 @@ describe('depositHelpers', () => {
 
     it('returns only deposits when no transactions', () => {
       const deposits: DepositInfo[] = [
-        { txid: 'tx1', vout: 0, amountSats: 1000n } as DepositInfo,
+        { txid: 'tx1', vout: 0, amountSats: 1000 } as DepositInfo,
       ];
 
       const result = mergeDepositsWithTransactions([], deposits);
@@ -132,7 +132,7 @@ describe('depositHelpers', () => {
         { id: 'payment-1', paymentType: 'send', timestamp: 2000 } as Payment,
       ];
       const deposits: DepositInfo[] = [
-        { txid: 'tx1', vout: 0, amountSats: 1000n } as DepositInfo,
+        { txid: 'tx1', vout: 0, amountSats: 1000 } as DepositInfo,
       ];
 
       const result = mergeDepositsWithTransactions(transactions, deposits);
