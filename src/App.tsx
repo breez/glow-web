@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react';
 import { Config, GetInfoResponse, Network, Payment, SdkEvent, defaultConfig, Rate, FiatCurrency, DepositInfo } from '@breeztech/breez-sdk-spark';
 import { WalletProvider, useWallet } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -9,15 +9,18 @@ import StagingGate from './components/StagingGate';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
 
-// Import our page components
+// Eager-loaded pages (critical path)
 import HomePage from './pages/HomePage';
-import RestorePage from './pages/RestorePage';
-import GeneratePage from './pages/GeneratePage';
 import WalletPage from './pages/WalletPage';
-import GetRefundPage from './pages/GetRefundPage';
-import BackupPage from './pages/BackupPage';
-import SettingsPage from './pages/SettingsPage';
-import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
+
+// Lazy-loaded pages (bundle-dynamic-imports optimization)
+const RestorePage = lazy(() => import('./pages/RestorePage'));
+const GeneratePage = lazy(() => import('./pages/GeneratePage'));
+const GetRefundPage = lazy(() => import('./pages/GetRefundPage'));
+const BackupPage = lazy(() => import('./pages/BackupPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const FiatCurrenciesPage = lazy(() => import('./pages/FiatCurrenciesPage'));
+
 import { getSettings } from './services/settings';
 import { isDepositRejected } from './services/depositState';
 import {
@@ -52,6 +55,10 @@ const AppContent: React.FC = () => {
   // Track recently shown payment celebrations to avoid duplicates
   const shownPaymentIdsRef = useRef<Set<string>>(new Set());
 
+  // Ref to access currentScreen in callbacks without causing re-renders (advanced-event-handler-refs optimization)
+  const currentScreenRef = useRef(currentScreen);
+  currentScreenRef.current = currentScreen;
+
   // Function to refresh wallet data (usable via a callback)
   const wallet = useWallet();
 
@@ -63,8 +70,11 @@ const AppContent: React.FC = () => {
         setIsLoading(true);
       }
 
-      const info = await wallet.getWalletInfo();
-      const txns = await wallet.getTransactions();
+      // Fetch wallet info and transactions in parallel (async-parallel optimization)
+      const [info, txns] = await Promise.all([
+        wallet.getWalletInfo(),
+        wallet.getTransactions(),
+      ]);
 
       setWalletInfo(info);
       setTransactions(txns);
@@ -140,7 +150,8 @@ const AppContent: React.FC = () => {
       refreshWalletData(false);
     } else if (event.type === 'claimedDeposits') {
       console.log('Claim deposits succeeded event received');
-      if (currentScreen !== 'getRefund') {
+      // Use ref to check screen without adding to dependencies
+      if (currentScreenRef.current !== 'getRefund') {
         showToast(
           'success',
           'Deposits Claimed Successfully',
@@ -153,7 +164,8 @@ const AppContent: React.FC = () => {
       fetchUnclaimedDeposits();
     } else if (event.type === 'unclaimedDeposits') {
       console.log('Claim deposits failed event received');
-      if (currentScreen !== 'getRefund') {
+      // Use ref to check screen without adding to dependencies
+      if (currentScreenRef.current !== 'getRefund') {
         showToast(
           'error',
           'Failed to Claim Deposits',
@@ -163,7 +175,7 @@ const AppContent: React.FC = () => {
       // Refresh the list as some may remain unclaimed
       fetchUnclaimedDeposits();
     }
-  }, [refreshWalletData, showToast, isRestoring, fetchUnclaimedDeposits, currentScreen]);
+  }, [refreshWalletData, showToast, isRestoring, fetchUnclaimedDeposits]);
 
   // Fetch fiat rates from SDK
   const fetchFiatData = useCallback(async () => {
@@ -305,9 +317,11 @@ const AppContent: React.FC = () => {
       // Save mnemonic for future use
       wallet.saveMnemonic(mnemonic);
 
-      // Get wallet info and transactions
-      const info = await wallet.getWalletInfo();
-      const txns = await wallet.getTransactions();
+      // Get wallet info and transactions in parallel (async-parallel optimization)
+      const [info, txns] = await Promise.all([
+        wallet.getWalletInfo(),
+        wallet.getTransactions(),
+      ]);
 
       setWalletInfo(info);
       setTransactions(txns);
@@ -385,48 +399,60 @@ const AppContent: React.FC = () => {
 
       case 'getRefund':
         return (
-          <GetRefundPage
-            onBack={() => setCurrentScreen('wallet')}
-            animationDirection={refundAnimationDirection}
-          />
+          <Suspense fallback={<div className="absolute inset-0 bg-spark-void/95 flex items-center justify-center"><LoadingSpinner /></div>}>
+            <GetRefundPage
+              onBack={() => setCurrentScreen('wallet')}
+              animationDirection={refundAnimationDirection}
+            />
+          </Suspense>
         );
 
       case 'settings':
         return (
-          <SettingsPage
-            onBack={() => setCurrentScreen('wallet')}
-            config={config}
-            onOpenFiatCurrencies={() => setCurrentScreen('fiatCurrencies')}
-          />
+          <Suspense fallback={<div className="absolute inset-0 bg-spark-void/95 flex items-center justify-center"><LoadingSpinner /></div>}>
+            <SettingsPage
+              onBack={() => setCurrentScreen('wallet')}
+              config={config}
+              onOpenFiatCurrencies={() => setCurrentScreen('fiatCurrencies')}
+            />
+          </Suspense>
         );
 
       case 'fiatCurrencies':
         return (
-          <FiatCurrenciesPage onBack={() => setCurrentScreen('settings')} />
+          <Suspense fallback={<div className="absolute inset-0 bg-spark-void/95 flex items-center justify-center"><LoadingSpinner /></div>}>
+            <FiatCurrenciesPage onBack={() => setCurrentScreen('settings')} />
+          </Suspense>
         );
 
       case 'backup':
         return (
-          <BackupPage onBack={() => setCurrentScreen('wallet')} />
+          <Suspense fallback={<div className="absolute inset-0 bg-spark-void/95 flex items-center justify-center"><LoadingSpinner /></div>}>
+            <BackupPage onBack={() => setCurrentScreen('wallet')} />
+          </Suspense>
         );
 
       case 'restore':
         return (
-          <RestorePage
-            onConnect={(mnemonic) => connectWallet(mnemonic, true)}
-            onBack={navigateToHome}
-            onClearError={clearError}
-          />
+          <Suspense fallback={<div className="absolute inset-0 bg-spark-void/95 flex items-center justify-center"><LoadingSpinner /></div>}>
+            <RestorePage
+              onConnect={(mnemonic) => connectWallet(mnemonic, true)}
+              onBack={navigateToHome}
+              onClearError={clearError}
+            />
+          </Suspense>
         );
 
       case 'generate':
         return (
-          <GeneratePage
-            onMnemonicConfirmed={(mnemonic) => connectWallet(mnemonic, false)}
-            onBack={navigateToHome}
-            error={error}
-            onClearError={clearError}
-          />
+          <Suspense fallback={<div className="absolute inset-0 bg-spark-void/95 flex items-center justify-center"><LoadingSpinner /></div>}>
+            <GeneratePage
+              onMnemonicConfirmed={(mnemonic) => connectWallet(mnemonic, false)}
+              onBack={navigateToHome}
+              error={error}
+              onClearError={clearError}
+            />
+          </Suspense>
         );
 
       case 'wallet':
