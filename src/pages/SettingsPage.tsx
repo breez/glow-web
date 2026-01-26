@@ -12,6 +12,7 @@ import {
   saveNotificationSettings,
   NotificationSettings,
 } from '../services/notificationService';
+import { CloseIcon, NotificationIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon } from '../components/Icons';
 
 const DEV_MODE_TAP_COUNT = 5;
 const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
@@ -137,16 +138,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
   };
 
   const handleVersionTap = () => {
-    const newCount = devTapCount + 1;
-    setDevTapCount(newCount);
-    
-    if (newCount >= DEV_MODE_TAP_COUNT) {
-      const newDevMode = !isDevMode;
-      setIsDevMode(newDevMode);
-      localStorage.setItem(DEV_MODE_STORAGE_KEY, String(newDevMode));
-      setDevTapCount(0);
-    }
-    
+    setDevTapCount(prev => {
+      const newCount = prev + 1;
+
+      if (newCount >= DEV_MODE_TAP_COUNT) {
+        setIsDevMode(current => {
+          const newDevMode = !current;
+          localStorage.setItem(DEV_MODE_STORAGE_KEY, String(newDevMode));
+          return newDevMode;
+        });
+        return 0;
+      }
+
+      return newCount;
+    });
+
     // Reset tap count after 2 seconds of inactivity
     setTimeout(() => setDevTapCount(0), 2000);
   };
@@ -226,9 +232,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
                   className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
                   aria-label="Close"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <CloseIcon size="md" />
                 </button>
               </div>
             </div>
@@ -307,9 +311,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
                         disabled={isRequestingPermission}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-spark-primary text-white rounded-xl hover:bg-spark-primary-light transition-colors disabled:opacity-50"
                       >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
+                        <NotificationIcon size="md" />
                         {isRequestingPermission ? 'Enabling...' : 'Enable Notifications'}
                       </button>
                     ) : (
@@ -359,14 +361,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
                     onClick={onOpenFiatCurrencies}
                   >
                     <div className="flex items-center gap-3">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                      <CurrencyIcon size="md" />
                       <span>Fiat Currencies</span>
                     </div>
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
+                    <ChevronRightIcon size="md" />
                   </button>
                 </div>
 
@@ -378,9 +376,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
                     type="button"
                     onClick={handleDownloadLogs}
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
+                    <DownloadIcon size="md" />
                     Download Logs
                   </button>
                 </div>

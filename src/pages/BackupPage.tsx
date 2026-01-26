@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Transition } from '@headlessui/react';
 import { useWallet } from '@/contexts/WalletContext';
+import { CloseIcon, WarningIcon } from '../components/Icons';
 
 interface BackupPageProps {
   onBack: () => void;
@@ -57,9 +58,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
                   className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
                   aria-label="Close"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <CloseIcon size="md" />
                 </button>
               </div>
             </div>
@@ -133,9 +132,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
                 {!mnemonic && (
                   <div className="bg-spark-dark border border-spark-border rounded-2xl p-8 text-center">
                     <div className="w-16 h-16 rounded-2xl bg-spark-error/20 flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-spark-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
+                      <WarningIcon size="xl" className="text-spark-error" />
                     </div>
                     <h3 className="font-display font-semibold text-spark-text-primary mb-2">No Backup Found</h3>
                     <p className="text-spark-text-muted text-sm">

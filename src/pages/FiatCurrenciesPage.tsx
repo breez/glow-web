@@ -4,6 +4,7 @@ import { LoadingSpinner } from '../components/ui';
 import { useWallet } from '@/contexts/WalletContext';
 import { getFiatSettings, saveFiatSettings } from '../services/settings';
 import type { FiatCurrency } from '@breeztech/breez-sdk-spark';
+import { BackIcon, CheckIcon } from '../components/Icons';
 
 interface FiatCurrenciesPageProps {
   onBack: () => void;
@@ -149,9 +150,7 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                 className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
                 aria-label="Back"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
+                <BackIcon size="md" />
               </button>
               <h1 className="text-center font-display text-lg font-semibold text-spark-text-primary">
                 Fiat Currencies
@@ -182,9 +181,7 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                         onClick={() => handleToggleCurrency(currency.id)}
                         className="w-6 h-6 rounded border-2 border-spark-primary bg-spark-primary/20 flex items-center justify-center flex-shrink-0"
                       >
-                        <svg className="w-4 h-4 text-spark-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
+                        <CheckIcon size="sm" className="text-spark-primary" />
                       </button>
 
                       {/* Currency info */}
