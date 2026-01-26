@@ -4,3 +4,9 @@ node_modules/
 dist/
 .vercel
 .env*.local
+
+# Test outputs
+test-results/
+playwright-report/
+playwright/.cache/
+coverage/

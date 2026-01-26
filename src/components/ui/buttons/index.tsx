@@ -4,7 +4,7 @@ import React, { ReactNode } from 'react';
  * Button components for consistent action styling across the app.
  */
 
-export interface ButtonProps {
+export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
   onClick: () => void;
   disabled?: boolean;
   children: ReactNode;
@@ -16,11 +16,13 @@ export const PrimaryButton: React.FC<ButtonProps> = ({
   disabled = false,
   children,
   className = "",
+  ...props
 }) => (
   <button
     onClick={onClick}
     disabled={disabled}
     className={`button ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+    {...props}
   >
     {children}
   </button>
@@ -31,11 +33,13 @@ export const SecondaryButton: React.FC<ButtonProps> = ({
   disabled = false,
   children,
   className = "",
+  ...props
 }) => (
   <button
     onClick={onClick}
     disabled={disabled}
     className={`py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50 ${className}`}
+    {...props}
   >
     {children}
   </button>
@@ -45,10 +49,12 @@ export const TextButton: React.FC<Omit<ButtonProps, 'disabled'>> = ({
   onClick,
   children,
   className = "",
+  ...props
 }) => (
   <button
     onClick={onClick}
     className={`text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors ${className}`}
+    {...props}
   >
     {children}
   </button>
