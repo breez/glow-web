@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Transition } from '@headlessui/react';
-import { LoadingSpinner } from '../components/ui';
+import { LoadingSpinner, Checkbox } from '../components/ui';
 import { useWallet } from '@/contexts/WalletContext';
 import { getFiatSettings, saveFiatSettings } from '../services/settings';
 import type { FiatCurrency } from '@breeztech/breez-sdk-spark';
-import { BackIcon, CheckIcon } from '../components/Icons';
+import { BackIcon } from '../components/Icons';
 
 interface FiatCurrenciesPageProps {
   onBack: () => void;
@@ -177,12 +177,10 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                         }`}
                     >
                       {/* Checkbox */}
-                      <button
-                        onClick={() => handleToggleCurrency(currency.id)}
-                        className="w-6 h-6 rounded border-2 border-spark-primary bg-spark-primary/20 flex items-center justify-center flex-shrink-0"
-                      >
-                        <CheckIcon size="sm" className="text-spark-primary" />
-                      </button>
+                      <Checkbox
+                        checked={selectedCurrencies.includes(currency.id)}
+                        onChange={() => handleToggleCurrency(currency.id)}
+                      />
 
                       {/* Currency info */}
                       <div className="flex-1 min-w-0">
@@ -240,13 +238,11 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                       key={currency.id}
                       className="flex items-center gap-3 p-3 bg-spark-dark/50 border border-spark-border/50 rounded-xl"
                     >
-                      {/* Checkbox (empty) */}
-                      <button
-                        onClick={() => handleToggleCurrency(currency.id)}
-                        className="w-6 h-6 rounded border-2 border-spark-border bg-transparent flex items-center justify-center flex-shrink-0 hover:border-spark-primary/50 transition-colors"
-                      >
-                        {/* Empty checkbox */}
-                      </button>
+                      {/* Checkbox */}
+                      <Checkbox
+                        checked={false}
+                        onChange={() => handleToggleCurrency(currency.id)}
+                      />
 
                       {/* Currency info */}
                       <div className="flex-1 min-w-0">
