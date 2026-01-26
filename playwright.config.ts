@@ -1,8 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
 
-// Load test environment variables
+// Load test environment variables (in order of priority)
+// 1. .env.test.local - test-specific secrets (highest priority)
+// 2. .env.local - local development secrets
+// 3. .env - default config
 dotenv.config({ path: '.env.test.local' });
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
 export default defineConfig({
   testDir: './e2e/tests',

@@ -1,4 +1,10 @@
 import { test as base, BrowserContext, Page, expect } from '@playwright/test';
+import {
+  fundWallet,
+  isFaucetConfigured,
+  MIN_TEST_BALANCE_SATS,
+  FAUCET_TOPUP_AMOUNT_SATS,
+} from '../utils/faucet';
 
 /**
  * Dual Wallet Test Fixture
@@ -17,6 +23,9 @@ export interface WalletFixture {
   mnemonic: string;
 }
 
+// Track if we've already attempted to fund wallets in this test run
+let walletAFundingAttempted = false;
+
 interface DualWalletFixtures {
   walletA: WalletFixture;
   walletB: WalletFixture;
@@ -31,14 +40,19 @@ function getTestMnemonic(walletName: 'A' | 'B'): string {
   const mnemonic = process.env[envKey];
 
   if (!mnemonic) {
+    // Debug: show available env vars starting with TEST_
+    const testEnvVars = Object.keys(process.env).filter(k => k.startsWith('TEST_'));
     console.warn(
-      `Warning: ${envKey} not set. Using placeholder mnemonic. ` +
-        'E2E tests requiring funded wallets will fail.'
+      `Warning: ${envKey} not set. ` +
+      `Available TEST_* vars: ${testEnvVars.length > 0 ? testEnvVars.join(', ') : 'none'}. ` +
+      'Using placeholder mnemonic - E2E tests requiring funded wallets will fail.'
     );
     // Return a valid BIP39 mnemonic structure (not funded)
     return 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
   }
 
+  // Show that mnemonic was found (but don't log the actual words!)
+  console.log(`${envKey} loaded (${mnemonic.split(' ').length} words)`);
   return mnemonic;
 }
 
@@ -83,6 +97,7 @@ export const TIMEOUTS = {
   ADDRESS_GEN: 30000,    // 30 seconds - address generation
   UI_ACTION: 10000,      // 10 seconds - UI interactions
   BALANCE_SYNC: 45000,   // 45 seconds - balance synchronization
+  FAUCET_WAIT: 120000,   // 2 minutes - wait for faucet funds to arrive
 };
 
 /**
@@ -115,6 +130,74 @@ export async function waitForWalletReady(page: Page): Promise<void> {
     const balanceText = await page.getByTestId('wallet-balance').textContent();
     expect(balanceText).toMatch(/\d/); // Contains at least one digit
   }).toPass({ timeout: TIMEOUTS.BALANCE_SYNC });
+}
+
+/**
+ * Helper: Ensure wallet has minimum balance, request faucet funds if needed.
+ *
+ * This is useful for sender wallets that need funds to complete transfer tests.
+ * Only attempts funding if:
+ * 1. Faucet credentials are configured
+ * 2. Current balance is below MIN_TEST_BALANCE_SATS
+ * 3. Haven't already attempted funding in this test run
+ *
+ * @param page - Playwright page with wallet loaded
+ * @param minBalance - Minimum balance required (defaults to MIN_TEST_BALANCE_SATS)
+ */
+export async function ensureWalletFunded(
+  page: Page,
+  minBalance: number = MIN_TEST_BALANCE_SATS
+): Promise<void> {
+  // Check current balance
+  const currentBalance = await getBalance(page);
+  console.log(`Current wallet balance: ${currentBalance} sats, minimum required: ${minBalance} sats`);
+
+  if (currentBalance >= minBalance) {
+    console.log('Wallet has sufficient balance');
+    return;
+  }
+
+  // Check if faucet is configured
+  if (!isFaucetConfigured()) {
+    console.warn(
+      'Wallet balance is low but faucet credentials not configured. ' +
+      'Set FAUCET_USERNAME and FAUCET_PASSWORD environment variables to enable auto-funding.'
+    );
+    return;
+  }
+
+  // Only attempt funding once per wallet per test run
+  if (walletAFundingAttempted) {
+    console.log('Already attempted funding in this test run, skipping');
+    return;
+  }
+  walletAFundingAttempted = true;
+
+  console.log(`Requesting ${FAUCET_TOPUP_AMOUNT_SATS} sats from faucet...`);
+
+  // Get Bitcoin address for faucet deposit
+  const btcAddress = await getBitcoinAddress(page);
+  console.log(`Funding Bitcoin address: ${btcAddress}`);
+
+  try {
+    const txHash = await fundWallet(btcAddress, FAUCET_TOPUP_AMOUNT_SATS);
+    console.log(`Faucet transaction submitted: ${txHash}`);
+
+    // Wait for funds to arrive
+    console.log('Waiting for funds to arrive...');
+    await expect(async () => {
+      await page.reload();
+      await waitForWalletReady(page);
+      const newBalance = await getBalance(page);
+      console.log(`Balance after reload: ${newBalance} sats`);
+      expect(newBalance).toBeGreaterThanOrEqual(minBalance);
+    }).toPass({ timeout: TIMEOUTS.FAUCET_WAIT });
+
+    console.log('Wallet funded successfully!');
+  } catch (error) {
+    console.error('Failed to fund wallet via faucet:', error);
+    // Don't throw - let the test fail naturally if funds are actually needed
+  }
 }
 
 /**

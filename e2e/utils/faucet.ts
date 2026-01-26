@@ -103,3 +103,20 @@ export async function waitForBalance(
     `Timeout waiting for balance >= ${expectedMinBalance} sats after ${timeoutMs}ms`
   );
 }
+
+/**
+ * Check if faucet credentials are configured.
+ */
+export function isFaucetConfigured(): boolean {
+  return !!(process.env.FAUCET_USERNAME && process.env.FAUCET_PASSWORD);
+}
+
+/**
+ * Minimum balance threshold - if below this, attempt to fund.
+ */
+export const MIN_TEST_BALANCE_SATS = 10000; // 10k sats
+
+/**
+ * Amount to request from faucet when topping up.
+ */
+export const FAUCET_TOPUP_AMOUNT_SATS = 100000; // 100k sats
