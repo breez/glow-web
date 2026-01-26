@@ -4,11 +4,7 @@ import {
   DialogHeader, PaymentInfoCard, PaymentInfoRow,
   CollapsibleCodeField, BottomSheetContainer, BottomSheetCard
 } from './ui';
-
-// Format number with space as thousand separator
-const formatWithSpaces = (num: number | bigint): string => {
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-};
+import { formatWithSpaces } from '../utils/formatNumber';
 
 interface PaymentDetailsDialogProps {
   optionalPayment: Payment | null;
