@@ -60,52 +60,93 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
     connected: vi.fn().mockReturnValue(true),
 
     // Payments - parseInput
+    // Note: We use `as unknown as InputType` because the full SDK types require many fields
+    // that aren't needed for unit testing. This gives us flexibility in mocks while maintaining type safety.
     parseInput: vi.fn().mockImplementation(async (input: string): Promise<InputType> => {
       // Spark address
       if (input.startsWith('sp1')) {
         return {
           type: 'sparkAddress',
           address: input,
-        } as InputType;
+          identityPublicKey: 'test-pubkey',
+          network: 'regtest',
+          source: {},
+        } as unknown as InputType;
       }
       // Lightning invoice (mainnet or testnet)
       if (input.startsWith('lnbc') || input.startsWith('lntb') || input.startsWith('lnbcrt')) {
         return {
           type: 'bolt11Invoice',
-          invoice: input,
-          amountMsat: 100000n,
+          invoice: { bolt11: input },
+          amountMsat: 100000,
           description: 'Test invoice',
-        } as InputType;
+          expiry: 3600,
+          minFinalCltvExpiryDelta: 144,
+          network: 'regtest',
+          payeePubkey: 'test-pubkey',
+          paymentHash: 'test-hash',
+          paymentSecret: 'test-secret',
+          routingHints: [],
+          timestamp: Math.floor(Date.now() / 1000),
+        } as unknown as InputType;
       }
       // Bitcoin address
       if (input.startsWith('bc1') || input.startsWith('tb1') || input.startsWith('bcrt1')) {
         return {
           type: 'bitcoinAddress',
           address: input,
-        } as InputType;
+          network: 'regtest',
+        } as unknown as InputType;
       }
       // Lightning address
       if (input.includes('@')) {
         return {
           type: 'lightningAddress',
           address: input,
-        } as InputType;
+        } as unknown as InputType;
       }
       // LNURL
       if (input.toLowerCase().startsWith('lnurl')) {
         return {
           type: 'lnurlPay',
-          data: { callback: 'https://example.com/lnurl', minSendable: 1000n, maxSendable: 1000000n },
-        } as InputType;
+          callback: 'https://example.com/lnurl',
+          minSendable: 1000,
+          maxSendable: 1000000,
+          metadataStr: '[]',
+          commentAllowed: 0,
+          domain: 'example.com',
+          url: 'https://example.com/lnurl',
+        } as unknown as InputType;
       }
       throw new Error(`Unknown input type: ${input}`);
     }),
 
     // LNURL
     prepareLnurlPay: vi.fn().mockResolvedValue({
-      amountMsat: 100000n,
+      payAmount: { amountSats: 100 },
       comment: '',
-    } as PrepareLnurlPayResponse),
+      payRequest: {
+        callback: 'https://example.com',
+        minSendable: 1000,
+        maxSendable: 1000000,
+        metadataStr: '[]',
+        commentAllowed: 0,
+        domain: 'example.com',
+        url: 'https://example.com',
+      },
+      feeSats: 1,
+      invoiceDetails: {
+        expiry: 3600,
+        invoice: { bolt11: 'lntb1000n1test' },
+        minFinalCltvExpiryDelta: 144,
+        network: 'regtest',
+        payeePubkey: 'test-pubkey',
+        paymentHash: 'test-hash',
+        paymentSecret: 'test-secret',
+        routingHints: [],
+        timestamp: Math.floor(Date.now() / 1000),
+      },
+    } as unknown as PrepareLnurlPayResponse),
 
     lnurlPay: vi.fn().mockResolvedValue({
       payment: createMockPayment('send'),
@@ -113,9 +154,9 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
 
     // Send payment
     prepareSendPayment: vi.fn().mockResolvedValue({
-      amount: 1000n,
-      fees: 1n,
-    } as PrepareSendPaymentResponse),
+      paymentMethod: { type: 'spark', address: 'sp1test' },
+      payAmount: { amountSats: 1000 },
+    } as unknown as PrepareSendPaymentResponse),
 
     sendPayment: vi.fn().mockResolvedValue({
       payment: createMockPayment('send'),
@@ -146,11 +187,10 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
 
     // Data
     getWalletInfo: vi.fn().mockResolvedValue({
-      balanceSat: 10000n,
-      pendingBalanceSat: 0n,
-      sparkAddress: 'sp1testaddress123',
-      bitcoinAddress: 'tb1qtest123',
-    } as GetInfoResponse),
+      identityPubkey: 'test-identity-pubkey',
+      balanceSats: 10000,
+      tokenBalances: new Map(),
+    } as unknown as GetInfoResponse),
 
     getTransactions: vi.fn().mockResolvedValue([] as Payment[]),
 
@@ -186,13 +226,13 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
 
     // Fiat currencies
     listFiatCurrencies: vi.fn().mockResolvedValue([
-      { id: 'USD', name: 'US Dollar', symbol: '$' },
-      { id: 'EUR', name: 'Euro', symbol: '\u20ac' },
-    ] as FiatCurrency[]),
+      { id: 'USD', info: { name: 'US Dollar', fractionSize: 2, symbol: { grapheme: '$' } } },
+      { id: 'EUR', info: { name: 'Euro', fractionSize: 2, symbol: { grapheme: '\u20ac' } } },
+    ] as unknown as FiatCurrency[]),
 
     listFiatRates: vi.fn().mockResolvedValue([
-      { fiatId: 'USD', rate: 100000 },
-      { fiatId: 'EUR', rate: 92000 },
+      { coin: 'USD', value: 100000 },
+      { coin: 'EUR', value: 92000 },
     ] as Rate[]),
 
     // Logs
