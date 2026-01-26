@@ -1,6 +1,8 @@
-import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import type { GetInfoResponse, Rate, FiatCurrency } from '@breeztech/breez-sdk-spark';
 import { getFiatSettings } from '../services/settings';
+import { formatWithThinSpaces } from '../utils/formatNumber';
+import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 
 interface CollapsingWalletHeaderProps {
   walletInfo: GetInfoResponse | null;
@@ -11,57 +13,6 @@ interface CollapsingWalletHeaderProps {
   hasUnclaimedDeposits: boolean;
   onOpenGetRefund: () => void;
 }
-
-// Format number with thin space as thousand separator (for monospace fonts)
-const formatWithThinSpaces = (num: number): string => {
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u2009');
-};
-
-// Animated number hook - smoothly transitions between values
-const useAnimatedNumber = (targetValue: number, duration: number = 400): number => {
-  const [displayValue, setDisplayValue] = useState(targetValue);
-  const animationRef = useRef<number | null>(null);
-  const startValueRef = useRef(targetValue);
-  const startTimeRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    // Skip animation if it's the initial render or value is 0
-    if (startValueRef.current === targetValue) return;
-
-    const startValue = displayValue;
-    startValueRef.current = targetValue;
-    startTimeRef.current = null;
-
-    const animate = (currentTime: number) => {
-      if (startTimeRef.current === null) {
-        startTimeRef.current = currentTime;
-      }
-
-      const elapsed = currentTime - startTimeRef.current;
-      const progress = Math.min(elapsed / duration, 1);
-
-      // Ease-out cubic for smooth deceleration
-      const easeOut = 1 - Math.pow(1 - progress, 3);
-
-      const currentValue = Math.round(startValue + (targetValue - startValue) * easeOut);
-      setDisplayValue(currentValue);
-
-      if (progress < 1) {
-        animationRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    animationRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [targetValue, duration]);
-
-  return displayValue;
-};
 
 const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   walletInfo,
@@ -74,7 +25,24 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
 }) => {
   const [activeFiatIndex, setActiveFiatIndex] = useState(0);
 
-  // Calculate fiat values for selected currencies
+  // Build lookup maps for O(1) access (js-index-maps optimization)
+  const ratesMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const rate of fiatRates) {
+      map.set(rate.coin, rate.value);
+    }
+    return map;
+  }, [fiatRates]);
+
+  const currenciesMap = useMemo(() => {
+    const map = new Map<string, FiatCurrency>();
+    for (const currency of fiatCurrencies) {
+      map.set(currency.id, currency);
+    }
+    return map;
+  }, [fiatCurrencies]);
+
+  // Calculate fiat values for selected currencies (js-combine-iterations optimization)
   const fiatValues = useMemo(() => {
     if (!walletInfo) return [];
 
@@ -83,27 +51,34 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
 
     const balanceBtc = balanceSat / 100000000;
     const settings = getFiatSettings();
+    const result: Array<{
+      currencyId: string;
+      symbol: string;
+      value: string;
+      symbolPosition: 'before' | 'after';
+    }> = [];
 
-    return settings.selectedCurrencies
-      .map(currencyId => {
-        const rate = fiatRates.find(r => r.coin === currencyId);
-        const currency = fiatCurrencies.find(c => c.id === currencyId);
+    // Single iteration instead of map().filter()
+    for (const currencyId of settings.selectedCurrencies) {
+      const rateValue = ratesMap.get(currencyId);
+      const currency = currenciesMap.get(currencyId);
 
-        if (!rate || !currency) return null;
+      if (rateValue === undefined || !currency) continue;
 
-        const value = balanceBtc * rate.value;
-        const symbol = currency.info.symbol?.grapheme || currencyId;
-        const fractionSize = currency.info.fractionSize || 2;
+      const value = balanceBtc * rateValue;
+      const symbol = currency.info.symbol?.grapheme || currencyId;
+      const fractionSize = currency.info.fractionSize || 2;
 
-        return {
-          currencyId,
-          symbol,
-          value: value.toFixed(fractionSize),
-          symbolPosition: currency.info.symbol?.rtl ? 'after' : 'before',
-        };
-      })
-      .filter((v): v is NonNullable<typeof v> => v !== null);
-  }, [walletInfo, fiatRates, fiatCurrencies]);
+      result.push({
+        currencyId,
+        symbol,
+        value: value.toFixed(fractionSize),
+        symbolPosition: currency.info.symbol?.rtl ? 'after' : 'before',
+      });
+    }
+
+    return result;
+  }, [walletInfo, ratesMap, currenciesMap]);
 
   // Cycle through fiat currencies on tap
   const handleFiatTap = useCallback(() => {
