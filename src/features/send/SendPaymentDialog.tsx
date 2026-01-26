@@ -38,28 +38,35 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
 
   // Reset state when dialog opens, or process initial data
   useEffect(() => {
-    resetState();
     if (isOpen) {
+      // Reset state first
+      setCurrentStep('input');
+      setAmount('');
+      setPrepareResponse(null);
+      setError(null);
+      setIsLoading(false);
 
       // If we have initial parsed data from QR scan, process it immediately
       if (initialPaymentInput) {
         setPaymentInput(initialPaymentInput);
-        processPaymentInput(initialPaymentInput.rawInput);
+        // Use a microtask to avoid calling async function in effect body
+        void (async () => {
+          try {
+            await processPaymentInputAsync(initialPaymentInput.rawInput);
+          } catch (err) {
+            console.error('Failed to process initial payment input:', err);
+          }
+        })();
+      } else {
+        setPaymentInput(null);
       }
     }
+    // Note: processPaymentInputAsync is intentionally not in deps to avoid loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, initialPaymentInput]);
 
-  const resetState = () => {
-    setCurrentStep('input');
-    setPaymentInput(null);
-    setAmount('');
-    setPrepareResponse(null);
-    setError(null);
-    setIsLoading(false);
-  };
-
-  // Unified payment processing function
-  const processPaymentInput = async (input: string | null = null) => {
+  // Unified payment processing function (renamed for clarity)
+  const processPaymentInputAsync = async (input: string | null = null) => {
     const currentInput = (input || paymentInput?.rawInput)?.trim();
     if (!currentInput) {
       setError('Please enter a payment destination');
@@ -221,7 +228,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
               paymentInput={paymentInput?.rawInput || ''}
               isLoading={isLoading}
               error={error}
-              onContinue={(paymentInput) => processPaymentInput(paymentInput)}
+              onContinue={(paymentInput) => processPaymentInputAsync(paymentInput)}
               onScanQr={onScanQr}
             />
           </StepPanel>

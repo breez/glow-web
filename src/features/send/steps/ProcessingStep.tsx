@@ -11,24 +11,26 @@ const ProcessingStep: React.FC = () => {
         {/* Main circle */}
         <div className="relative w-24 h-24 rounded-full bg-spark-surface border-2 border-spark-electric flex items-center justify-center">
           {/* Spinning ring */}
-          <svg className="absolute inset-0 w-full h-full animate-spin" style={{ animationDuration: '2s' }} viewBox="0 0 100 100">
-            <circle
-              cx="50"
-              cy="50"
-              r="46"
-              fill="none"
-              stroke="url(#processing-gradient)"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeDasharray="100 200"
-            />
-            <defs>
-              <linearGradient id="processing-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#00d4ff" />
-                <stop offset="100%" stopColor="#00d4ff" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-          </svg>
+          <span className="absolute inset-0 w-full h-full animate-spin" style={{ animationDuration: '2s' }}>
+            <svg className="w-full h-full" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r="46"
+                fill="none"
+                stroke="url(#processing-gradient)"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeDasharray="100 200"
+              />
+              <defs>
+                <linearGradient id="processing-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#00d4ff" />
+                  <stop offset="100%" stopColor="#00d4ff" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </span>
           
           {/* Lightning bolt */}
           <svg 
