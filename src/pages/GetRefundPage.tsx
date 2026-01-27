@@ -310,7 +310,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
 
       {/* Refund Flow Bottom Sheet */}
       <BottomSheetContainer isOpen={isRefundFlowOpen} onClose={closeRefundFlow}>
-        <BottomSheetCard className="bottom-sheet-card">
+        <BottomSheetCard>
           <DialogHeader
             title={refundStep === 'result' ? (refundSuccess ? 'Refund Sent' : 'Refund Failed') : 'Refund to Bitcoin'}
             onClose={closeRefundFlow}

@@ -104,11 +104,9 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
             />
           </div>
 
-          <FormError error={error} />
-        </div>
+          <FormError error={error} data-testid="invoice-error-message" />
 
-        {/* Generate Button */}
-        <div className="mt-6">
+          {/* Generate Button */}
           <PrimaryButton
             onClick={onCreateInvoice}
             disabled={isLoading || !amount}

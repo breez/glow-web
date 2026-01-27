@@ -84,7 +84,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   if (!deposit) {
     return (
       <BottomSheetContainer isOpen={false} onClose={handleClose}>
-        <BottomSheetCard className="bottom-sheet-card">
+        <BottomSheetCard>
           <div></div>
         </BottomSheetCard>
       </BottomSheetContainer>
@@ -96,7 +96,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
 
   return (
     <BottomSheetContainer isOpen={deposit != null} onClose={handleClose}>
-      <BottomSheetCard className="bottom-sheet-card">
+      <BottomSheetCard>
         <DialogHeader title="BTC Transfer" onClose={handleClose} />
         <div className="space-y-4 overflow-y-auto">
           {/* Transaction ID */}
