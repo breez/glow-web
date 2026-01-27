@@ -6,7 +6,7 @@ interface SparkWorkflowProps {
   method: Extract<SendPaymentMethod, { type: 'sparkAddress' }>;
   amountSats: bigint;
   onBack: () => void;
-  onSend: (options?: any) => Promise<void>;
+  onSend: (options?: Record<string, unknown>) => Promise<void>;
 }
 
 const SparkWorkflow: React.FC<SparkWorkflowProps> = ({ method, amountSats, onSend }) => {

@@ -28,6 +28,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   useEffect(() => {
     if (!deposit) return;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK deposit type doesn't expose claimError
     const depositAny = deposit as any;
     const claimErrorData = depositAny.claimError;
 

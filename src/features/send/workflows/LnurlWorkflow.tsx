@@ -33,7 +33,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, onBack, onRun, on
   const commentMaxLen = parsed.commentAllowed ?? 0;
   const commentAllowed = commentMaxLen > 0;
   const description = useMemo(() => {
-    let metadataArr = JSON.parse(parsed.metadataStr);
+    const metadataArr = JSON.parse(parsed.metadataStr);
     for (let i = 0; i < metadataArr.length; i++) {
       if (metadataArr[i][0] === "text/plain") {
         return metadataArr[i][1];

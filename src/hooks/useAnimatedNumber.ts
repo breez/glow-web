@@ -52,6 +52,7 @@ export function useAnimatedNumber(targetValue: number, duration: number = 400): 
         cancelAnimationFrame(animationRef.current);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- displayValue intentionally omitted to avoid re-triggering animation
   }, [targetValue, duration]);
 
   return displayValue;

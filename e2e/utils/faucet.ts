@@ -16,8 +16,6 @@
 
 import {
   DEFAULT_FAUCET_URL,
-  MIN_TEST_BALANCE_SATS,
-  MAX_INITIAL_FUNDING,
 } from '../../src/constants/faucet';
 
 // Re-export constants for convenience

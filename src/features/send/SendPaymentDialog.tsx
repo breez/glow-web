@@ -162,7 +162,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
   };
 
   // Generic send handler: transitions to processing/result with error handling
-  const handleSend = async (options?: any) => {
+  const handleSend = async (options?: Record<string, unknown>) => {
     if (!prepareResponse) return;
     setCurrentStep('processing');
     setIsLoading(true);

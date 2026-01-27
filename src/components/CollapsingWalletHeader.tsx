@@ -92,10 +92,10 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
     ? fiatValues[activeFiatIndex % fiatValues.length]
     : null;
 
-  if (!walletInfo) return null;
-
-  const balanceSat = walletInfo.balanceSats || 0;
+  const balanceSat = walletInfo?.balanceSats || 0;
   const animatedBalance = useAnimatedNumber(balanceSat);
+
+  if (!walletInfo) return null;
 
   return (
     <div className="relative overflow-hidden transition-all duration-200">
