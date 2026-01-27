@@ -53,5 +53,6 @@ The build output will be in the `dist` directory.
 
 ## Security Notes
 
-- The app stores your mnemonic in localStorage, which is not suitable for production use
-- For a production app, use secure storage and encryption for sensitive data
+- The wallet mnemonic is encrypted at rest using AES-256-GCM with a non-exportable device-bound key (Web Crypto API + IndexedDB)
+- The encryption key cannot be extracted via JavaScript and is tied to the browser/device
+- Clearing IndexedDB will make the encrypted mnemonic unrecoverable — users must back up their mnemonic phrase
