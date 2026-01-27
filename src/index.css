@@ -590,7 +590,7 @@ select {
   border-radius: 0.125em;
   background: var(--spark-border-light);
   justify-self: center;
-  margin-bottom: 0.75em;
+  margin: 0.75em auto;
 }
 
 .show-amount-panel-button {
