@@ -130,8 +130,14 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
   }, [facingMode, onScan, onError, stopScanning]);
 
   const toggleCamera = useCallback(() => {
-    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
-  }, []);
+    const newMode = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(newMode);
+    if (qrScannerRef.current) {
+      qrScannerRef.current.setCamera(newMode).catch((err) => {
+        console.warn('Failed to switch camera:', err);
+      });
+    }
+  }, [facingMode]);
 
   return {
     videoRef,

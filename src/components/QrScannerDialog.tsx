@@ -44,7 +44,6 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
     stopScanning,
     toggleCamera,
     clearError,
-    facingMode,
   } = useQrScanner({ onScan: handleScan });
 
   useEffect(() => {
@@ -66,7 +65,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
     } else {
       stopScanning();
     }
-  }, [isOpen, facingMode, startScanning, stopScanning, videoRef]);
+  }, [isOpen, startScanning, stopScanning, videoRef]);
 
   const handleClose = () => {
     stopScanning();
