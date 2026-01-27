@@ -49,7 +49,7 @@ export default defineConfig({
 
   // Run local dev server before tests
   webServer: {
-    command: 'npm run dev',
+    command: 'VITE_STAGING_PASSWORD= npm run dev',
     url: 'http://localhost:5173/?network=regtest',
     reuseExistingServer: !process.env.CI,
     timeout: 120000, // 2 minutes to start server (WASM takes time)
