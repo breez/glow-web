@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import QrScanner from 'qr-scanner';
-import { BottomSheetContainer } from './ui';
+import { BottomSheetContainer, FloatingIconButton } from './ui';
+import { useQrScanner } from '../hooks/useQrScanner';
 
 interface QrScannerDialogProps {
   isOpen: boolean;
@@ -9,11 +10,42 @@ interface QrScannerDialogProps {
 }
 
 const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onScan }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const qrScannerRef = useRef<QrScanner | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [galleryError, setGalleryError] = useState<string | null>(null);
+
+  const handleScan = useCallback((data: string) => {
+    onScan(data);
+    onClose();
+  }, [onScan, onClose]);
+
+  const handleGalleryPick = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setGalleryError(null);
+    try {
+      const result = await QrScanner.scanImage(file);
+      onScan(result);
+      onClose();
+    } catch {
+      setGalleryError('No QR code found in image');
+      setTimeout(() => setGalleryError(null), 3000);
+    }
+    // Reset so the same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [onScan, onClose]);
+
+  const {
+    videoRef,
+    error,
+    isScanning,
+    isInitializing,
+    hasMultipleCameras,
+    startScanning,
+    stopScanning,
+    toggleCamera,
+    clearError,
+    facingMode,
+  } = useQrScanner({ onScan: handleScan });
 
   useEffect(() => {
     if (isOpen) {
@@ -24,7 +56,6 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
           startScanning();
         } else {
           console.error('Video element still null after transition');
-          setError('Video element not available');
         }
       }, 400); // 300ms transition + 100ms buffer
 
@@ -35,109 +66,11 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
     } else {
       stopScanning();
     }
-  }, [isOpen]);
-
-  const startScanning = async () => {
-    try {
-      setError(null);
-      setIsInitializing(true);
-      setIsScanning(false);
-
-      if (!videoRef.current) {
-        setError('Video element not available');
-        setIsInitializing(false);
-        return;
-      }
-
-      // Check if camera is available
-      const hasCamera = await QrScanner.hasCamera();
-      if (!hasCamera) {
-        setError('No camera found on this device');
-        setIsInitializing(false);
-        return;
-      }
-
-      // Try to get available cameras
-      const cameras = await QrScanner.listCameras(true);
-      console.log('Available cameras:', cameras);
-      
-      // Select camera - prefer back camera on mobile, any camera on desktop
-      let selectedCamera = 'environment';
-      if (cameras.length > 0) {
-        const backCamera = cameras.find(camera => 
-          camera.label.toLowerCase().includes('back') || 
-          camera.label.toLowerCase().includes('rear')
-        );
-        selectedCamera = backCamera ? backCamera.id : cameras[0].id;
-      }
-
-      qrScannerRef.current = new QrScanner(
-        videoRef.current,
-        (result) => {
-          console.log('QR Code detected:', result.data);
-          onScan(result.data);
-          stopScanning();
-          onClose();
-        },
-        {
-          onDecodeError: (error) => {
-            // Ignore decode errors - they happen frequently while scanning
-            console.debug('QR decode error:', error);
-          },
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          preferredCamera: selectedCamera,
-          maxScansPerSecond: 5, // Limit scan frequency
-        }
-      );
-
-      // Add event listener for video loading
-      videoRef.current.addEventListener('loadedmetadata', () => {
-        console.log('Video metadata loaded');
-      });
-
-      videoRef.current.addEventListener('canplay', () => {
-        console.log('Video can play');
-      });
-
-      await qrScannerRef.current.start();
-      console.log('QR Scanner started successfully');
-      setIsInitializing(false);
-      setIsScanning(true);
-    } catch (err) {
-      console.error('Failed to start QR scanner:', err);
-      let errorMessage = 'Camera access denied or not available';
-      
-      if (err instanceof Error) {
-        if (err.name === 'NotAllowedError') {
-          errorMessage = 'Camera access denied. Please allow camera access and try again.';
-        } else if (err.name === 'NotFoundError') {
-          errorMessage = 'No camera found on this device';
-        } else if (err.name === 'NotReadableError') {
-          errorMessage = 'Camera is already in use by another application';
-        } else if (err.name === 'OverconstrainedError') {
-          errorMessage = 'Camera constraints not supported';
-        }
-      }
-      
-      setError(errorMessage);
-      setIsInitializing(false);
-      setIsScanning(false);
-    }
-  };
-
-  const stopScanning = () => {
-    if (qrScannerRef.current) {
-      qrScannerRef.current.stop();
-      qrScannerRef.current.destroy();
-      qrScannerRef.current = null;
-    }
-    setIsScanning(false);
-  };
+  }, [isOpen, facingMode, startScanning, stopScanning, videoRef]);
 
   const handleClose = () => {
     stopScanning();
-    setError(null);
+    clearError();
     onClose();
   };
 
@@ -152,7 +85,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
             playsInline
             muted
           />
-          
+
           {/* Scan overlay */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-64 h-64 relative">
@@ -167,7 +100,33 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
               )}
             </div>
           </div>
-          
+
+          {/* Gallery picker button (top right) */}
+          <FloatingIconButton
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute top-4 right-4 z-20"
+            aria-label="Pick image from gallery"
+            icon={
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            }
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleGalleryPick}
+          />
+
+          {/* Gallery error toast */}
+          {galleryError && (
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-spark-error/90 text-white text-sm px-4 py-2 rounded-lg backdrop-blur-sm z-30">
+              {galleryError}
+            </div>
+          )}
+
           {isInitializing && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/70">
               <div className="text-center text-white p-4">
@@ -194,7 +153,20 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
 
         {/* Bottom controls */}
         <div className="bg-black/90 backdrop-blur-sm safe-area-bottom">
-          <div className="p-6">
+          <div className="p-6 relative">
+            {/* Camera toggle (bottom right) */}
+            {hasMultipleCameras && (
+              <FloatingIconButton
+                onClick={toggleCamera}
+                className="absolute -top-14 right-6"
+                aria-label="Switch camera"
+                icon={
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                }
+              />
+            )}
             <p className="text-spark-text-secondary text-sm text-center mb-4">
               Point camera at QR code
             </p>

@@ -9,7 +9,7 @@ import React, { ReactNode, forwardRef } from 'react';
 export { QRCodeContainer } from './QRCodeContainer';
 
 // Buttons
-export { PrimaryButton, SecondaryButton, TextButton } from './buttons';
+export { PrimaryButton, SecondaryButton, TextButton, FloatingIconButton } from './buttons';
 export type { ButtonProps } from './buttons';
 
 // Forms
