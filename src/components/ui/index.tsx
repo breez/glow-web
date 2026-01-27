@@ -492,7 +492,7 @@ export const TabList: React.FC<{
   children: ReactNode;
   className?: string;
 }> = ({ children, className = "" }) => (
-  <div className={`flex bg-spark-dark/50 rounded-xl p-1 ${className}`}>
+  <div className={`flex bg-spark-dark/50 rounded-xl ${className}`}>
     {children}
   </div>
 );

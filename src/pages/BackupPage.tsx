@@ -64,8 +64,8 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="max-w-xl mx-auto w-full p-4 space-y-6">
+            <div className="flex-1 overflow-y-auto min-h-0 p-4">
+              <div className="max-w-xl mx-auto w-full space-y-6">
                 {/* Reveal toggle */}
                 {!isRevealed && mnemonic && (
                   <button

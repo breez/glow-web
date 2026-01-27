@@ -239,8 +239,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto min-h-0">
-              <div className="max-w-xl mx-auto w-full p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto min-h-0 p-4">
+              <div className="max-w-xl mx-auto w-full space-y-4">
                 {/* Dev Mode Network Selector */}
                 {isDevMode && (
                   <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">

@@ -31,7 +31,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, isLoading, error, o
   };
 
   return (
-    <div className="flex flex-col gap-4 py-2">
+    <div className="flex flex-col gap-4">
       {/* Input */}
       <textarea
         value={localPaymentInput}
