@@ -99,12 +99,14 @@ export interface SimpleAlertProps {
   variant: AlertVariant;
   children: ReactNode;
   className?: string;
+  dataTestId?: string;
 }
 
 export const SimpleAlert: React.FC<SimpleAlertProps> = ({
   variant,
   children,
   className = '',
+  dataTestId,
 }) => {
   const iconColors: Record<AlertVariant, string> = {
     info: 'text-spark-electric',
@@ -132,7 +134,10 @@ export const SimpleAlert: React.FC<SimpleAlertProps> = ({
   };
 
   return (
-    <div className={`flex items-start gap-3 p-4 rounded-xl border ${bgStyles[variant]} ${className}`}>
+    <div
+      className={`flex items-start gap-3 p-4 rounded-xl border ${bgStyles[variant]} ${className}`}
+      data-testid={dataTestId}
+    >
       {icons[variant]}
       <div className="text-sm">{children}</div>
     </div>
