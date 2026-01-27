@@ -74,13 +74,14 @@ jobs:
       - name: Run unit tests
         run: npm run test
 
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        if: always()
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/coverage-final.json
-          fail_ci_if_error: false
+      # TODO: Enable after adding CODECOV_TOKEN secret
+      # - name: Upload coverage reports
+      #   uses: codecov/codecov-action@v4
+      #   if: always()
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     files: ./coverage/coverage-final.json
+      #     fail_ci_if_error: false
 
   e2e-tests:
     name: E2E Tests
@@ -92,7 +93,8 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.pull_request.labels.*.name, 'run-e2e')
     env:
-      RUN_FULL_E2E: ${{ ((github.event_name == 'release' && github.event.release.prerelease) || (github.event_name == 'workflow_dispatch' && inputs.run_full_e2e) || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')) || contains(github.event.pull_request.labels.*.name, 'run-full-e2e')) ? '1' : '' }}
+      RUN_FULL_E2E: "${{ ((github.event_name == 'release' && github.event.release.prerelease) || (github.event_name == 'workflow_dispatch' && inputs.run_full_e2e) || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')) || contains(github.event.pull_request.labels.*.name, 'run-full-e2e')) && '1' || '' }}"
+      HAS_TEST_SECRETS: "${{ secrets.TEST_WALLET_A_MNEMONIC != '' && '1' || '' }}"
     steps:
       - uses: actions/checkout@v4
 
@@ -115,7 +117,7 @@ jobs:
 
       # Wallet transfer tests require secrets - only run when available
       - name: Run wallet transfer tests
-        if: ${{ secrets.TEST_WALLET_A_MNEMONIC != '' }}
+        if: ${{ env.HAS_TEST_SECRETS == '1' }}
         run: npm run test:e2e -- --grep "Wallet-to-Wallet"
         env:
           CI: true
@@ -126,7 +128,7 @@ jobs:
           FAUCET_PASSWORD: ${{ secrets.FAUCET_PASSWORD }}
 
       - name: Run payment scenario tests (release only)
-        if: ${{ secrets.TEST_WALLET_A_MNEMONIC != '' && env.RUN_FULL_E2E == '1' }}
+        if: ${{ env.HAS_TEST_SECRETS == '1' && env.RUN_FULL_E2E == '1' }}
         run: npm run test:e2e -- e2e/tests/payment-scenario.spec.ts
         env:
           CI: true
