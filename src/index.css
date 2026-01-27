@@ -598,6 +598,11 @@ select {
   cursor: pointer;
 }
 
+.step-panel-group, .tab-panel-group {
+  display: grid;
+  grid-template-columns: 1fr auto;
+}
+
 /* ============================================
    SLIDE ANIMATIONS
    ============================================ */

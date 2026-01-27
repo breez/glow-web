@@ -447,7 +447,7 @@ export const StepPanelGroup: React.FC<{
   children: ReactNode;
   className?: string;
 }> = ({ children, className = "" }) => (
-  <div className={`grid ${className}`}>
+  <div className={`step-panel-group ${className}`}>
     {children}
   </div>
 );
@@ -533,7 +533,7 @@ export const TabPanelGroup: React.FC<{
   children: ReactNode;
   className?: string;
 }> = ({ children, className = "" }) => (
-  <div className={`grid ${className}`}>
+  <div className={`tab-panel-group ${className}`}>
     {children}
   </div>
 );

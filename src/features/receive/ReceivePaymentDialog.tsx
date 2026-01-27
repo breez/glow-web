@@ -330,7 +330,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
             )}
 
             {currentStep === 'input' && (
-              <TabPanelGroup>
+              <TabPanelGroup className="justify-center">
                 <TabPanel isActive={activeTab === 'lightning'}>
                   <LightningAddressDisplay
                     address={lightningAddress}
