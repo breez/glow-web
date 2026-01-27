@@ -69,6 +69,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
       setFeeValue(String(s.depositMaxFee.leewaySatPerVbyte));
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK config type doesn't expose all fields
     const cfg: any = config ?? {};
     setSyncIntervalSecs(
       typeof s.syncIntervalSecs === 'number'

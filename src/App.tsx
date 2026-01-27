@@ -256,6 +256,7 @@ const AppContent: React.FC = () => {
     checkForExistingWallet();
 
     // No cleanup here; logout handles disconnect explicitly
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only initialization
   }, []);
 
   // Set up event listener when connected
@@ -395,6 +396,7 @@ const AppContent: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- wallet excluded to avoid re-creating on every render
   }, [isConnected, showToast]);
 
   // Navigation handlers
