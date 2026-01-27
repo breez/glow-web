@@ -151,7 +151,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
         </div>
 
         {/* Bottom controls */}
-        <div className="bg-black/90 backdrop-blur-sm safe-area-bottom">
+        <div className="bg-black/90 backdrop-blur-sm">
           <div className="p-6 relative">
             {/* Camera toggle (bottom right) */}
             {hasMultipleCameras && (
