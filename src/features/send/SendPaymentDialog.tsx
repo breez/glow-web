@@ -13,7 +13,7 @@ import AmountStep from './steps/AmountStep';
 import ProcessingStep from './steps/ProcessingStep';
 import ResultStep from './steps/ResultStep';
 import { SendInput } from '@/types/domain';
-import { LnurlPayRequestDetails, PrepareLnurlPayRequest } from '@breeztech/breez-sdk-spark';
+import { LnurlPayRequestDetails, PrepareLnurlPayRequest, SendPaymentOptions } from '@breeztech/breez-sdk-spark';
 
 // Props interfaces
 interface SendPaymentDialogProps {
@@ -162,7 +162,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
   };
 
   // Generic send handler: transitions to processing/result with error handling
-  const handleSend = async (options?: any) => {
+  const handleSend = async (options?: SendPaymentOptions) => {
     if (!prepareResponse) return;
     setCurrentStep('processing');
     setIsLoading(true);

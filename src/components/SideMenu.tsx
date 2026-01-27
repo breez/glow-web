@@ -189,7 +189,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                 <button
                   key={index}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    (item as any).highlight
+                    ('highlight' in item && item.highlight)
                       ? 'text-spark-warning hover:text-spark-warning hover:bg-spark-warning/10'
                       : 'text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5'
                   }`}
