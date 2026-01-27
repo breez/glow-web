@@ -1,4 +1,5 @@
 import React, { ReactNode, createContext, useContext } from 'react';
+import { usePlatform } from '../../hooks/usePlatform';
 
 interface AppShellContextValue {
   /** Whether safe areas are handled by AppShell */
@@ -34,9 +35,16 @@ interface AppShellProps {
  * interactive content within the safe area.
  */
 const AppShell: React.FC<AppShellProps> = ({ children }) => {
+  const { isStandalone, isIOS, isAndroid } = usePlatform();
+
   return (
     <AppShellContext.Provider value={{ safeAreasApplied: true }}>
-      <div className="app-shell">
+      <div
+        className="app-shell"
+        data-pwa={isStandalone}
+        data-ios={isIOS}
+        data-android={isAndroid}
+      >
         {children}
       </div>
     </AppShellContext.Provider>
