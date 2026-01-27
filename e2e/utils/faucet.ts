@@ -1,11 +1,34 @@
 /**
- * Spark Regtest Faucet Utility
+ * Spark Regtest Faucet Utility (Node.js/E2E)
  *
  * Uses the Spark Regtest faucet API to fund test wallets.
  * Based on: https://github.com/breez/spark-sdk/blob/0.7.10/crates/breez-sdk/breez-itest/src/faucet.rs
+ *
+ * Note: This utility runs in Node.js (Playwright tests) and uses non-prefixed env vars.
+ * This is separate from the browser faucet service (src/services/faucetService.ts)
+ * which uses VITE_ prefixed env vars.
+ *
+ * Environment variables:
+ * - FAUCET_URL: Custom faucet URL (default: Spark API)
+ * - FAUCET_USERNAME: Faucet auth username
+ * - FAUCET_PASSWORD: Faucet auth password
  */
 
-const DEFAULT_FAUCET_URL = 'https://api.lightspark.com/graphql/spark/rc';
+import {
+  DEFAULT_FAUCET_URL,
+  MIN_TEST_BALANCE_SATS,
+  MAX_INITIAL_FUNDING,
+} from '../../src/constants/faucet';
+
+// Re-export constants for convenience
+export {
+  MIN_TEST_BALANCE_SATS,
+  MAX_INITIAL_FUNDING,
+  DEFAULT_MIN_AMOUNT,
+  DEFAULT_MAX_AMOUNT,
+  DEFAULT_MIN_DELAY_MS,
+  DEFAULT_MAX_DELAY_MS,
+} from '../../src/constants/faucet';
 
 interface FaucetResponse {
   data?: {
@@ -110,13 +133,3 @@ export async function waitForBalance(
 export function isFaucetConfigured(): boolean {
   return !!(process.env.FAUCET_USERNAME && process.env.FAUCET_PASSWORD);
 }
-
-/**
- * Minimum balance threshold - if below this, attempt to fund.
- */
-export const MIN_TEST_BALANCE_SATS = 10000; // 10k sats
-
-/**
- * Amount to request from faucet when topping up.
- */
-export const FAUCET_TOPUP_AMOUNT_SATS = 100000; // 100k sats
