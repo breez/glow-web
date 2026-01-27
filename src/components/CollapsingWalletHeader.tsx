@@ -154,7 +154,10 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           </div>
 
           {/* Main balance */}
-          <div className="flex items-baseline justify-center gap-2" data-testid="wallet-balance">
+          <div 
+            className="flex items-baseline justify-center gap-2" 
+            data-testid="wallet-balance"
+          >
             <span className="balance-display">
               {formatWithThinSpaces(animatedBalance)}
             </span>

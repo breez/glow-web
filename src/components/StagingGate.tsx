@@ -97,7 +97,7 @@ const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
             </div>
 
             <PrimaryButton
-              onClick={() => {}}
+              type="submit"
               disabled={!password}
               className="w-full"
             >
