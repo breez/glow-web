@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DialogContainer, DialogCard, FormInput, PrimaryButton, FormError } from './ui';
+import { hideSplash } from '../main';
 
 const STAGING_AUTH_KEY = 'staging_authenticated';
 
@@ -26,11 +27,15 @@ const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(true);
 
-  // Check sessionStorage on mount
+  // Check sessionStorage on mount and hide splash since StagingGate blocks App content
   useEffect(() => {
     const authenticated = sessionStorage.getItem(STAGING_AUTH_KEY) === 'true';
     setIsAuthenticated(authenticated);
     setIsChecking(false);
+    // Hide the splash screen so the password prompt (or app) is visible
+    if (!authenticated) {
+      hideSplash();
+    }
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
