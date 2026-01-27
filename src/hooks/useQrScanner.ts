@@ -74,9 +74,10 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
 
       // Try to get available cameras
       try {
-        const cameras = await QrScanner.listCameras(true);
+        const cameras = await QrScanner.listCameras(false);
         console.log('Available cameras:', cameras);
-        setHasMultipleCameras(cameras.length > 1);
+        const uniqueIds = new Set(cameras.map(c => c.id));
+        setHasMultipleCameras(uniqueIds.size > 1);
       } catch (e) {
         console.warn('Failed to list cameras:', e);
         setHasMultipleCameras(false);
