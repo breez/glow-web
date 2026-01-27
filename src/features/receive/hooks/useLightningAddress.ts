@@ -9,6 +9,8 @@ export interface UseLightningAddress {
   isEditing: boolean;
   editValue: string;
   error: string | null;
+  isSupported: boolean;
+  supportMessage: string | null;
   load: () => Promise<void>;
   beginEdit: (currentAddress?: LightningAddressInfo | null) => void;
   cancelEdit: () => void;
@@ -16,6 +18,8 @@ export interface UseLightningAddress {
   save: () => Promise<void>;
   reset: () => void;
 }
+
+const UNSUPPORTED_MESSAGE = 'Lightning addresses are not available in this environment.';
 
 export const useLightningAddress = (): UseLightningAddress => {
   const wallet = useWallet();
@@ -25,6 +29,16 @@ export const useLightningAddress = (): UseLightningAddress => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editValue, setEditValue] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [isSupported, setIsSupported] = useState<boolean>(true);
+  const [supportMessage, setSupportMessage] = useState<string | null>(null);
+
+  const markUnsupported = useCallback(() => {
+    setIsSupported(false);
+    setSupportMessage(UNSUPPORTED_MESSAGE);
+    setIsEditing(false);
+    setEditValue('');
+    setError(null);
+  }, []);
 
   const extractUsername = (value: string): string => {
     if (!value) return '';
@@ -32,6 +46,13 @@ export const useLightningAddress = (): UseLightningAddress => {
   };
 
   const load = useCallback(async () => {
+    if (!isSupported) {
+      if (!supportMessage) {
+        setSupportMessage(UNSUPPORTED_MESSAGE);
+      }
+      return;
+    }
+
     setIsLoading(true);
     try {
       let addr = await wallet.getLightningAddress();
@@ -52,19 +73,26 @@ export const useLightningAddress = (): UseLightningAddress => {
       setAddress(addr);
     } catch (err) {
       console.error('Failed to load Lightning address:', err);
-      setError(`Failed to load Lightning address: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      if (err instanceof Error && /lnurl server is not configured/i.test(err.message)) {
+        markUnsupported();
+      } else {
+        setError(`Failed to load Lightning address: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [wallet]);
+  }, [wallet, isSupported, markUnsupported, supportMessage]);
 
   const beginEdit = useCallback((currentAddress?: LightningAddressInfo | null) => {
+    if (!isSupported) {
+      return;
+    }
     const addrStr = currentAddress?.lightningAddress ?? address?.lightningAddress ?? '';
     const initial = extractUsername(addrStr);
     setEditValue(initial);
     setIsEditing(true);
     setError(null);
-  }, [address]);
+  }, [address, isSupported]);
 
   const cancelEdit = useCallback(() => {
     setIsEditing(false);
@@ -73,6 +101,10 @@ export const useLightningAddress = (): UseLightningAddress => {
   }, []);
 
   const save = useCallback(async () => {
+    if (!isSupported) {
+      markUnsupported();
+      return;
+    }
     const username = extractUsername(editValue.trim());
     if (!username) {
       setError('Please enter a username');
@@ -97,11 +129,15 @@ export const useLightningAddress = (): UseLightningAddress => {
       setEditValue('');
     } catch (err) {
       console.error('Failed to save Lightning address:', err);
-      setError(`Failed to save Lightning address: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      if (err instanceof Error && /lnurl server is not configured/i.test(err.message)) {
+        markUnsupported();
+      } else {
+        setError(`Failed to save Lightning address: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [editValue, wallet]);
+  }, [editValue, wallet, isSupported, markUnsupported]);
 
   const reset = useCallback(() => {
     setIsEditing(false);
@@ -115,6 +151,8 @@ export const useLightningAddress = (): UseLightningAddress => {
     isEditing,
     editValue,
     error,
+    isSupported,
+    supportMessage,
     load,
     beginEdit,
     cancelEdit,
