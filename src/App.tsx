@@ -53,6 +53,14 @@ const AppContent: React.FC = () => {
 
   const { showToast } = useToast();
 
+  useEffect(() => {
+    const lnurlEnabled = config?.lnurlDomain ? 'true' : 'false';
+    document.body.setAttribute('data-lnurl-enabled', lnurlEnabled);
+    return () => {
+      document.body.setAttribute('data-lnurl-enabled', 'false');
+    };
+  }, [config?.lnurlDomain]);
+
   // Add a ref to store the event listener ID
   const eventListenerIdRef = useRef<string | null>(null);
 
@@ -118,8 +126,12 @@ const AppContent: React.FC = () => {
 
       // If this is the first sync event after connecting, mark restoration as complete
       if (isRestoring) {
+        console.log('Restoration sync complete. Hiding overlay.');
         setIsRestoring(false);
       }
+
+      // Set sync indicator for e2e tests
+      document.body.setAttribute('data-wallet-synced', 'true');
 
       // Don't show loading indicator for automatic refresh
       refreshWalletData(false);
@@ -281,6 +293,7 @@ const AppContent: React.FC = () => {
       }
       console.log('Connecting wallet...');
       setIsLoading(true);
+      console.log(`Starting wallet connection (restore: ${restore})...`);
       setIsRestoring(restore); // Mark that we're restoring data      
       setError(null);
 
@@ -348,6 +361,7 @@ const AppContent: React.FC = () => {
       setError('Failed to connect wallet. Please check your mnemonic and try again.');
       setIsRestoring(false);
       setIsLoading(false);
+      setConfig(null);
     }
   };
 
@@ -368,6 +382,7 @@ const AppContent: React.FC = () => {
       setIsConnected(false);
       setWalletInfo(null);
       setTransactions([]);
+      setConfig(null);
 
       // Navigate back to home screen
       setCurrentScreen('home');
