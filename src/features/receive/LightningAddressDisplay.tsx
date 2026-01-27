@@ -1,6 +1,7 @@
 import React from 'react';
 import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { SimpleAlert } from '../../components/AlertCard';
 import { QRCodeContainer, PrimaryButton, SecondaryButton, FormError, CopyableText, TextButton } from '../../components/ui';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -10,6 +11,8 @@ export interface LightningAddressDisplayProps {
   isEditing: boolean;
   editValue: string;
   error: string | null;
+  isSupported: boolean;
+  supportMessage: string | null;
   onEdit: () => void;
   onSave: () => void;
   onCancel: () => void;
@@ -36,6 +39,8 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   isEditing,
   editValue,
   error,
+  isSupported,
+  supportMessage,
   onEdit,
   onSave,
   onCancel,
@@ -43,6 +48,33 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   onCustomizeAmount,
 }) => {
   const { showToast } = useToast();
+
+  if (!isSupported) {
+    return (
+      <div className="pt-4 space-y-6 flex flex-col items-center text-center">
+        <SimpleAlert
+          variant="info"
+          className="w-full text-left"
+          dataTestId="lightning-address-unsupported"
+        >
+          <h3 className="font-display text-lg font-semibold text-spark-text-primary mb-2">Lightning Address</h3>
+          <p className="text-spark-text-secondary text-sm">
+            {supportMessage ?? 'Lightning addresses are not available in this environment.'}
+          </p>
+        </SimpleAlert>
+
+        <div className="w-full flex justify-center">
+          <TextButton
+            onClick={onCustomizeAmount}
+            className="text-sm"
+            data-testid="show-amount-panel-button"
+          >
+            Create invoice with specific amount →
+          </TextButton>
+        </div>
+      </div>
+    );
+  }
   if (isLoading) {
     return (
       <div className="text-center py-8">
@@ -60,6 +92,16 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
             Create a Lightning Address to receive payments easily
           </p>
           <PrimaryButton onClick={onEdit}>Create Lightning Address</PrimaryButton>
+        </div>
+
+        <div className="w-full flex justify-center">
+          <TextButton
+            onClick={onCustomizeAmount}
+            className="text-sm"
+            data-testid="show-amount-panel-button"
+          >
+            Create invoice with specific amount →
+          </TextButton>
         </div>
       </div>
     );
@@ -127,6 +169,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
       <div className="w-full flex flex-col items-center gap-4">
         <CopyableText
           text={address?.lightningAddress || ''}
+          truncate
           showShare
           label="Lightning Address"
           textColor="text-spark-primary"
