@@ -5,6 +5,9 @@ dist/
 .vercel
 .env*.local
 
+# Lint output
+lint_output.txt
+
 # Test outputs
 test-results/
 playwright-report/

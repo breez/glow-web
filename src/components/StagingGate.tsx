@@ -17,18 +17,14 @@ interface StagingGateProps {
 const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
   const stagingPassword = import.meta.env.VITE_STAGING_PASSWORD;
 
-  // If no password configured, render children immediately (production mode)
-  if (!stagingPassword) {
-    return <>{children}</>;
-  }
-
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [isChecking, setIsChecking] = useState(true);
+  const [isChecking, setIsChecking] = useState(!!stagingPassword);
 
   // Check sessionStorage on mount and hide splash since StagingGate blocks App content
   useEffect(() => {
+    if (!stagingPassword) return;
     const authenticated = sessionStorage.getItem(STAGING_AUTH_KEY) === 'true';
     setIsAuthenticated(authenticated);
     setIsChecking(false);
@@ -36,7 +32,12 @@ const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
     if (!authenticated) {
       hideSplash();
     }
-  }, []);
+  }, [stagingPassword]);
+
+  // If no password configured, render children immediately (production mode)
+  if (!stagingPassword) {
+    return <>{children}</>;
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -423,7 +423,7 @@ export const StepContent: React.FC<{
   isLeft: boolean;
   children: ReactNode;
 }> = ({ isActive, isLeft, children }) => {
-  let transformClass = isActive
+  const transformClass = isActive
     ? 'translate-x-0 opacity-100'
     : isLeft
       ? '-translate-x-full opacity-0'

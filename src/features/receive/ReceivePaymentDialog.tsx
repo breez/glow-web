@@ -119,6 +119,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
       setActiveTab('lightning');
       loadLightningAddress();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset when dialog opens/closes
   }, [isOpen]);
 
   const resetState = () => {

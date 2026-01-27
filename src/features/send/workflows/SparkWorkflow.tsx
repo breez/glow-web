@@ -1,12 +1,12 @@
 import React from 'react';
-import type { SendPaymentMethod } from '@breeztech/breez-sdk-spark';
+import type { SendPaymentMethod, SendPaymentOptions } from '@breeztech/breez-sdk-spark';
 import ConfirmStep from '../steps/ConfirmStep';
 
 interface SparkWorkflowProps {
   method: Extract<SendPaymentMethod, { type: 'sparkAddress' }>;
   amountSats: bigint;
   onBack: () => void;
-  onSend: (options?: any) => Promise<void>;
+  onSend: (options?: SendPaymentOptions) => Promise<void>;
 }
 
 const SparkWorkflow: React.FC<SparkWorkflowProps> = ({ method, amountSats, onSend }) => {

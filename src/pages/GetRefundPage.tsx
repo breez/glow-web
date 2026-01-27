@@ -140,6 +140,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
       removeRejectedDeposit(selectedDeposit.txid, selectedDeposit.vout);
 
       setRefundSuccess(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK result type doesn't expose txId fields
       setRefundTxId((result as any)?.txId || (result as any)?.txid || null);
       setRefundStep('result');
 
@@ -165,11 +166,13 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
 
   // Check if deposit has been refunded
   const hasRefundTx = (deposit: DepositInfo) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK DepositInfo doesn't expose refund fields
     const d = deposit as any;
     return Boolean(d.refund_tx_id || d.refundTxId || d.refund_txid || d.refundTxid);
   };
 
   const getRefundTxId = (deposit: DepositInfo) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK DepositInfo doesn't expose refund fields
     const d = deposit as any;
     return d.refund_tx_id || d.refundTxId || d.refund_txid || d.refundTxid || null;
   };
