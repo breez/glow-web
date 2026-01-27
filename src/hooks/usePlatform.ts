@@ -27,7 +27,7 @@ export const usePlatform = (): PlatformInfo => {
         // window.navigator.standalone is iOS-specific
         const isStandalone =
             window.matchMedia('(display-mode: standalone)').matches ||
-            (window.navigator as any).standalone === true;
+            (window.navigator as unknown as { standalone?: boolean }).standalone === true;
 
         setPlatform({
             isPWA: isStandalone,
