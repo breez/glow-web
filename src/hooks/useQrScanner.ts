@@ -72,17 +72,6 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
         return;
       }
 
-      // Try to get available cameras
-      try {
-        const cameras = await QrScanner.listCameras(false);
-        console.log('Available cameras:', cameras);
-        const uniqueIds = new Set(cameras.map(c => c.id));
-        setHasMultipleCameras(uniqueIds.size > 1);
-      } catch (e) {
-        console.warn('Failed to list cameras:', e);
-        setHasMultipleCameras(false);
-      }
-
       qrScannerRef.current = new QrScanner(
         videoRef.current,
         (result) => {
@@ -106,6 +95,17 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
       console.log('QR Scanner started successfully');
       setIsInitializing(false);
       setIsScanning(true);
+
+      // Re-check cameras after permission is granted, since the initial
+      // check may have returned stale results before the user allowed access
+      try {
+        const cameras = await QrScanner.listCameras(false);
+        console.log('Cameras after permission:', cameras);
+        const uniqueIds = new Set(cameras.map(c => c.id));
+        setHasMultipleCameras(uniqueIds.size > 1);
+      } catch (e) {
+        console.warn('Failed to re-list cameras:', e);
+      }
     } catch (err) {
       console.error('Failed to start QR scanner:', err);
       let errorMessage = 'Camera access denied or not available';
