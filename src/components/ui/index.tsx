@@ -314,6 +314,7 @@ export const CopyableText: React.FC<{
         onClick={handleCopy}
         className={`text-center font-mono text-xs sm:text-sm break-all hover:opacity-80 transition-opacity ${textColor}`}
         title="Tap to copy"
+        data-testid="copyable-text-content"
       >
         {displayText}
       </button>
@@ -330,6 +331,7 @@ export const CopyableText: React.FC<{
             }
           `}
           title={`Copy ${label}`}
+          data-testid="copy-button"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path d="M8 2a2 2 0 00-2 2v1H5a2 2 0 00-2 2v7a2 2 0 002 2h6a2 2 0 002-2v-1h1a2 2 0 002-2V6l-4-4H8zm6 6h-2a2 2 0 01-2-2V4H8v1h3a1 1 0 011 1v2h2v2z" />
@@ -500,9 +502,11 @@ export const Tab: React.FC<{
   isActive: boolean;
   onClick: () => void;
   className?: string;
-}> = ({ children, isActive, onClick, className = "" }) => (
+  'data-testid'?: string;
+}> = ({ children, isActive, onClick, className = "", 'data-testid': testId }) => (
   <button
     onClick={onClick}
+    data-testid={testId}
     className={`
       flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-display font-semibold transition-all duration-200
       ${isActive
@@ -622,43 +626,45 @@ export const ConfirmDialog: React.FC<{
   onConfirm,
   onCancel,
 }) => {
-  if (!isOpen) return null;
+    if (!isOpen) return null;
 
-  const confirmButtonStyles = {
-    danger: 'bg-spark-error hover:bg-spark-error/80 text-white',
-    warning: 'bg-spark-warning hover:bg-spark-warning/80 text-spark-dark',
-    default: 'bg-spark-primary hover:bg-spark-primary-light text-white',
-  };
+    const confirmButtonStyles = {
+      danger: 'bg-spark-error hover:bg-spark-error/80 text-white',
+      warning: 'bg-spark-warning hover:bg-spark-warning/80 text-spark-dark',
+      default: 'bg-spark-primary hover:bg-spark-primary-light text-white',
+    };
 
-  return (
-    <DialogContainer>
-      <DialogCard maxWidth="sm">
-        <div className="text-center">
-          <h3 className="font-display text-lg font-bold text-spark-text-primary mb-3">
-            {title}
-          </h3>
-          <p className="text-sm text-spark-text-secondary whitespace-pre-line mb-6">
-            {message}
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={onCancel}
-              className="flex-1 py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
-            >
-              {cancelLabel}
-            </button>
-            <button
-              onClick={onConfirm}
-              className={`flex-1 py-3 font-display font-semibold rounded-xl transition-colors ${confirmButtonStyles[variant]}`}
-            >
-              {confirmLabel}
-            </button>
+    return (
+      <DialogContainer>
+        <DialogCard maxWidth="sm">
+          <div className="text-center">
+            <h3 className="font-display text-lg font-bold text-spark-text-primary mb-3">
+              {title}
+            </h3>
+            <p className="text-sm text-spark-text-secondary whitespace-pre-line mb-6">
+              {message}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={onCancel}
+                className="flex-1 py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
+                data-testid="confirm-dialog-cancel"
+              >
+                {cancelLabel}
+              </button>
+              <button
+                onClick={onConfirm}
+                className={`flex-1 py-3 font-display font-semibold rounded-xl transition-colors ${confirmButtonStyles[variant]}`}
+                data-testid="confirm-dialog-confirm"
+              >
+                {confirmLabel}
+              </button>
+            </div>
           </div>
-        </div>
-      </DialogCard>
-    </DialogContainer>
-  );
-};
+        </DialogCard>
+      </DialogContainer>
+    );
+  };
 
 // ============================================
 // CHECKBOX COMPONENT
@@ -703,14 +709,12 @@ export const Switch: React.FC<{
     aria-checked={checked}
     disabled={disabled}
     onClick={onChange}
-    className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-spark-primary focus-visible:ring-offset-2 focus-visible:ring-offset-spark-dark ${
-      checked ? 'bg-spark-primary' : 'bg-spark-border'
-    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+    className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-spark-primary focus-visible:ring-offset-2 focus-visible:ring-offset-spark-dark ${checked ? 'bg-spark-primary' : 'bg-spark-border'
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
   >
     <span
-      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-        checked ? 'translate-x-6' : 'translate-x-1'
-      } mt-1`}
+      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-6' : 'translate-x-1'
+        } mt-1`}
     />
   </button>
 );
