@@ -210,7 +210,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
 
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={onClose}>
-      <BottomSheetCard className="bottom-sheet-card">
+      <BottomSheetCard>
         <DialogHeader 
           title={getDialogTitle()} 
           onClose={onClose}

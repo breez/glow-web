@@ -60,7 +60,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
 
   if (!optionalPayment) return (
     <BottomSheetContainer isOpen={optionalPayment != null} onClose={onClose}>
-      <BottomSheetCard className="bottom-sheet-card">{
+      <BottomSheetCard>{
         <div></div>}</BottomSheetCard>
     </BottomSheetContainer>
 
@@ -68,7 +68,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   const payment = optionalPayment!;
   return (
     <BottomSheetContainer isOpen={optionalPayment != null} onClose={onClose}>
-      <BottomSheetCard className="bottom-sheet-card">
+      <BottomSheetCard>
         <DialogHeader title="Payment Details" onClose={onClose} />
         <div className="space-y-4 overflow-y-auto">
           {/* General Payment Information */}

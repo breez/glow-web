@@ -5,7 +5,7 @@ import React, { ReactNode } from 'react';
  */
 
 export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
-  onClick: () => void;
+  onClick?: () => void;
   disabled?: boolean;
   children: ReactNode;
   className?: string;
@@ -19,6 +19,7 @@ export const PrimaryButton: React.FC<ButtonProps> = ({
   ...props
 }) => (
   <button
+    type="button"
     onClick={onClick}
     disabled={disabled}
     className={`button ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
@@ -36,6 +37,7 @@ export const SecondaryButton: React.FC<ButtonProps> = ({
   ...props
 }) => (
   <button
+    type="button"
     onClick={onClick}
     disabled={disabled}
     className={`py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50 ${className}`}

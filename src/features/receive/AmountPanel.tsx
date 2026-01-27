@@ -66,6 +66,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                 placeholder="0"
                 disabled={isLoading}
                 className="flex-1 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none"
+                data-testid="invoice-amount-input"
               />
               <span className="px-4 py-3 text-spark-text-muted font-medium text-sm">sats</span>
             </div>
@@ -76,6 +77,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
             {QUICK_AMOUNTS.map((quickAmount) => (
               <button
                 key={quickAmount}
+                type="button"
                 onClick={() => setAmount(quickAmount.toString())}
                 disabled={isLoading}
                 className={`
@@ -104,15 +106,15 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
             />
           </div>
 
-          <FormError error={error} />
-        </div>
+          <FormError error={error} data-testid="invoice-error-message" />
 
-        {/* Generate Button */}
-        <div className="mt-6">
+          {/* Generate Button */}
           <PrimaryButton
             onClick={onCreateInvoice}
+            type="submit"
             disabled={isLoading || !amount}
             className="w-full"
+            data-testid="generate-invoice-button"
           >
             {isLoading ? <LoadingSpinner size="small" /> : 'Generate Invoice'}
           </PrimaryButton>

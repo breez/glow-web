@@ -13,7 +13,7 @@ import {
   TabList,
   Tab,
   TabPanel,
-ConfirmDialog,
+  ConfirmDialog,
   TabPanelGroup,
 } from '../../components/ui';
 
@@ -52,7 +52,10 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, tit
       <QRCodeContainer value={paymentData} />
 
       <div className="w-full">
-        <CopyableText text={paymentData} />
+        <CopyableText
+          text={paymentData}
+          data-testid="lightning-invoice-text"
+        />
 
         {feeSats > 0 && (
           <Alert type="warning" className="mt-8">
@@ -274,7 +277,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
 
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={onClose}>
-      <BottomSheetCard className="bottom-sheet-card">
+      <BottomSheetCard>
         <DialogHeader
           title="Receive"
           onClose={onClose}
@@ -334,7 +337,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
             )}
 
             {currentStep === 'loading' && (
-              <div className="flex flex-col items-center justify-center h-40">
+              <div className="flex flex-col items-center justify-center h-40" data-testid="invoice-generation-loading">
                 <LoadingSpinner text={`Generating ${getQRTitle().toLowerCase()}...`} />
               </div>
             )}

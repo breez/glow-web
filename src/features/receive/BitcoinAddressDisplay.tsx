@@ -30,6 +30,7 @@ const BitcoinAddressDisplay: React.FC<Props> = ({ address, isLoading }) => {
         label="Bitcoin Address"
         onCopied={() => showToast('success', 'Copied!')}
         onShareError={() => showToast('error', 'Failed to share')}
+        data-testid="bitcoin-address-text"
       />
     </div>
   );

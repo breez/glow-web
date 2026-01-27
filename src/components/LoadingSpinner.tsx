@@ -22,7 +22,10 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   const config = sizeConfig[size];
 
   return (
-    <div className={`flex flex-col items-center justify-center ${className}`}>
+    <div
+      className={`flex flex-col items-center justify-center ${className}`}
+      data-testid="loading-indicator"
+    >
       {/* Spinner container */}
       <div className={`relative ${config.container}`}>
         {/* Outer ring */}
@@ -50,10 +53,10 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
             }}
           />
         </svg>
-        
+
         {/* Inner ring (counter-rotating) */}
-        <svg 
-          className="absolute inset-0 w-full h-full" 
+        <svg
+          className="absolute inset-0 w-full h-full"
           viewBox="0 0 40 40"
           style={{ padding: '15%' }}
         >
@@ -85,7 +88,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
           {subtext}
         </p>
       )}
-      
+
       {/* Keyframes for spin animation */}
       <style>{`
         @keyframes spin {

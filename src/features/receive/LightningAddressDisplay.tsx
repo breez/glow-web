@@ -98,7 +98,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
               @breez.tips
             </span>
           </div>
-          
+
           <FormError error={error} />
         </div>
 
@@ -107,10 +107,11 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
           <SecondaryButton onClick={onCancel} className="flex-1">
             Cancel
           </SecondaryButton>
-          <PrimaryButton 
-            onClick={onSave} 
+          <PrimaryButton
+            onClick={onSave}
             disabled={isLoading || !editValue.trim()}
             className="flex-1"
+            data-testid="save-address-button"
           >
             {isLoading ? <LoadingSpinner size="small" /> : 'Save'}
           </PrimaryButton>
@@ -135,9 +136,14 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
           textToCopy={address?.lightningAddress || ''}
           textToShare={address?.lnurl || ''}
           shareLabel="LNURL-Pay"
+          data-testid="lightning-address-text"
         />
 
-        <TextButton onClick={onCustomizeAmount} className="mt-2">
+        <TextButton
+          onClick={onCustomizeAmount}
+          className="mt-2"
+          data-testid="show-amount-panel-button"
+        >
           Create invoice with specific amount →
         </TextButton>
       </div>
