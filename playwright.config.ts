@@ -16,11 +16,11 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1, // Serial execution for wallet E2E tests
   reporter: process.env.CI ? 'github' : 'html',
-  timeout: 60000, // 60s per test (wallet operations can be slow)
+  timeout: 90000, // 90s per test (wallet operations can be slow)
 
   use: {
     // Use regtest for E2E tests
-    baseURL: process.env.TEST_BASE_URL || 'http://localhost:5173?network=regtest',
+    baseURL: process.env.TEST_BASE_URL || 'http://localhost:5173/?network=regtest',
     trace: 'on-first-retry',
     video: 'on-first-retry',
     screenshot: 'only-on-failure',
@@ -50,7 +50,7 @@ export default defineConfig({
   // Run local dev server before tests
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5173',
+    url: 'http://localhost:5173/?network=regtest',
     reuseExistingServer: !process.env.CI,
     timeout: 120000, // 2 minutes to start server (WASM takes time)
   },

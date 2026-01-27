@@ -5,6 +5,15 @@ on:
     branches: [main, staging]
   pull_request:
     branches: [main, staging]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      run_full_e2e:
+        description: 'Run full E2E tests (including payment scenarios)'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -76,8 +85,14 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
-    # Only run E2E tests on main/staging or if explicitly requested
-    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'run-e2e')
+    # Only run E2E tests on main/staging, releases, manual dispatch, or if explicitly requested
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'release' ||
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'run-e2e')
+    env:
+      RUN_FULL_E2E: ${{ ((github.event_name == 'release' && github.event.release.prerelease) || (github.event_name == 'workflow_dispatch' && inputs.run_full_e2e) || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')) || contains(github.event.pull_request.labels.*.name, 'run-full-e2e')) ? '1' : '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -104,6 +119,18 @@ jobs:
         run: npm run test:e2e -- --grep "Wallet-to-Wallet"
         env:
           CI: true
+          TEST_WALLET_A_MNEMONIC: ${{ secrets.TEST_WALLET_A_MNEMONIC }}
+          TEST_WALLET_B_MNEMONIC: ${{ secrets.TEST_WALLET_B_MNEMONIC }}
+          FAUCET_URL: ${{ secrets.FAUCET_URL }}
+          FAUCET_USERNAME: ${{ secrets.FAUCET_USERNAME }}
+          FAUCET_PASSWORD: ${{ secrets.FAUCET_PASSWORD }}
+
+      - name: Run payment scenario tests (release only)
+        if: ${{ secrets.TEST_WALLET_A_MNEMONIC != '' && env.RUN_FULL_E2E == '1' }}
+        run: npm run test:e2e -- e2e/tests/payment-scenario.spec.ts
+        env:
+          CI: true
+          RUN_FULL_E2E: ${{ env.RUN_FULL_E2E }}
           TEST_WALLET_A_MNEMONIC: ${{ secrets.TEST_WALLET_A_MNEMONIC }}
           TEST_WALLET_B_MNEMONIC: ${{ secrets.TEST_WALLET_B_MNEMONIC }}
           FAUCET_URL: ${{ secrets.FAUCET_URL }}
