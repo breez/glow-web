@@ -3,8 +3,8 @@ import App from './App';
 import './index.css';
 import { initWasm } from './services/wasmLoader';
 
-// Hide the initial splash screen
-function hideSplash() {
+// Hide the initial splash screen - exported so App can call it when truly ready
+export function hideSplash() {
   const splash = document.getElementById('splash');
   if (splash) {
     splash.classList.add('hidden');
@@ -17,13 +17,12 @@ async function init() {
     // Initialize WASM module
     await initWasm();
 
-    // Render the app
+    // Render the app - splash stays visible until App signals it's ready
     ReactDOM.createRoot(document.getElementById('root')!).render(
       <App />
     );
     
-    // Hide splash after React mounts
-    hideSplash();
+    // Note: splash is now hidden by App.tsx when initial loading completes
   } catch (error) {
     console.error('Failed to initialize app:', error);
     hideSplash();

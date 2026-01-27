@@ -8,6 +8,7 @@ import InstallPrompt from './components/InstallPrompt';
 import StagingGate from './components/StagingGate';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
+import { hideSplash } from './main';
 
 // Eager-loaded pages (critical path)
 import HomePage from './pages/HomePage';
@@ -36,6 +37,9 @@ const AppContent: React.FC = () => {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRestoring, setIsRestoring] = useState<boolean>(false);
+  
+  // Track if this is the initial app load (splash screen handles this)
+  const isInitialLoadRef = useRef<boolean>(true);
   const [walletInfo, setWalletInfo] = useState<GetInfoResponse | null>(null);
   const [transactions, setTransactions] = useState<Payment[]>([]);
   const [unclaimedDeposits, setUnclaimedDeposits] = useState<DepositInfo[]>([]);
@@ -229,6 +233,12 @@ const AppContent: React.FC = () => {
         setCurrentScreen('home'); // Show home screen if no saved mnemonic
         setIsLoading(false);
       }
+      
+      // Initial load complete - hide splash and mark as done
+      if (isInitialLoadRef.current) {
+        isInitialLoadRef.current = false;
+        hideSplash();
+      }
     };
 
     checkForExistingWallet();
@@ -380,6 +390,12 @@ const AppContent: React.FC = () => {
 
   // Determine which screen to render
   const renderCurrentScreen = () => {
+    // During initial load, splash screen handles the loading state
+    // Don't show React LoadingSpinner to avoid double-spinner
+    if (isLoading && isInitialLoadRef.current) {
+      return null;
+    }
+    
     if (isLoading) {
       return (
         <div className="absolute inset-0 bg-spark-void/95 backdrop-blur-sm z-50 flex items-center justify-center">
