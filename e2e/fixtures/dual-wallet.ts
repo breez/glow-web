@@ -3,8 +3,13 @@ import {
   fundWallet,
   isFaucetConfigured,
   MIN_TEST_BALANCE_SATS,
-  FAUCET_TOPUP_AMOUNT_SATS,
+  MAX_INITIAL_FUNDING,
+  DEFAULT_MIN_AMOUNT,
+  DEFAULT_MAX_AMOUNT,
+  DEFAULT_MIN_DELAY_MS,
+  DEFAULT_MAX_DELAY_MS,
 } from '../utils/faucet';
+import { loggedStep } from '../utils/logger';
 
 /**
  * Dual Wallet Test Fixture
@@ -21,10 +26,11 @@ export interface WalletFixture {
   context: BrowserContext;
   page: Page;
   mnemonic: string;
+  name: string;
 }
 
 // Track if we've already attempted to fund wallets in this test run
-let walletAFundingAttempted = false;
+let fundingAttempted = false;
 
 interface DualWalletFixtures {
   walletA: WalletFixture;
@@ -40,18 +46,15 @@ function getTestMnemonic(walletName: 'A' | 'B'): string {
   const mnemonic = process.env[envKey];
 
   if (!mnemonic) {
-    // Debug: show available env vars starting with TEST_
     const testEnvVars = Object.keys(process.env).filter(k => k.startsWith('TEST_'));
     console.warn(
       `Warning: ${envKey} not set. ` +
       `Available TEST_* vars: ${testEnvVars.length > 0 ? testEnvVars.join(', ') : 'none'}. ` +
       'Using placeholder mnemonic - E2E tests requiring funded wallets will fail.'
     );
-    // Return a valid BIP39 mnemonic structure (not funded)
     return 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
   }
 
-  // Show that mnemonic was found (but don't log the actual words!)
   console.log(`${envKey} loaded (${mnemonic.split(' ').length} words)`);
   return mnemonic;
 }
@@ -61,327 +64,274 @@ function getTestMnemonic(walletName: 'A' | 'B'): string {
  */
 export const test = base.extend<DualWalletFixtures>({
   walletA: async ({ browser }, use) => {
-    // Create isolated browser context for Wallet A
-    const context = await browser.newContext({
-      storageState: undefined, // Fresh state, no persistence
-    });
-
+    const context = await browser.newContext({ storageState: undefined });
     const page = await context.newPage();
     const mnemonic = getTestMnemonic('A');
-
-    await use({ context, page, mnemonic });
-
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await use({ context, page, mnemonic, name: 'Wallet A' });
     await context.close();
   },
 
   walletB: async ({ browser }, use) => {
-    // Create isolated browser context for Wallet B
-    const context = await browser.newContext({
-      storageState: undefined, // Fresh state, no persistence
-    });
-
+    const context = await browser.newContext({ storageState: undefined });
     const page = await context.newPage();
     const mnemonic = getTestMnemonic('B');
-
-    await use({ context, page, mnemonic });
-
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await use({ context, page, mnemonic, name: 'Wallet B' });
     await context.close();
   },
 });
 
-// Timeout constants for wallet operations
-export const TIMEOUTS = {
-  SDK_INIT: 120000,      // 2 minutes - WASM SDK initialization
-  WALLET_LOAD: 90000,    // 1.5 minutes - wallet restore/create
-  PAYMENT: 60000,        // 1 minute - payment processing
-  ADDRESS_GEN: 30000,    // 30 seconds - address generation
-  UI_ACTION: 10000,      // 10 seconds - UI interactions
-  BALANCE_SYNC: 45000,   // 45 seconds - balance synchronization
-  FAUCET_WAIT: 120000,   // 2 minutes - wait for faucet funds to arrive
-};
+import { TIMEOUTS } from '../constants/timeouts';
+import { TEST_URLS } from '../constants/urls';
 
 /**
- * Helper: Wait for wallet to be fully loaded and synced
+ * Helper: Wait for wallet UI to load and for at least one sync to complete.
+ * Note: After initial connection, the SDK syncs periodically — the wallet
+ * is usable between syncs, it just may not reflect the latest state yet.
  */
-export async function waitForWalletReady(page: Page): Promise<void> {
-  // Wait for balance element to appear
-  await page.getByTestId('wallet-balance').waitFor({
-    state: 'visible',
-    timeout: TIMEOUTS.WALLET_LOAD,
-  });
+export async function waitForWalletReady(walletOrPage: WalletFixture | Page): Promise<void> {
+  const page = 'page' in walletOrPage ? walletOrPage.page : walletOrPage;
+  const name = 'name' in walletOrPage ? walletOrPage.name : 'Wallet';
 
-  // Wait for any loading indicators to disappear
-  const loadingIndicator = page.getByTestId('loading-indicator').or(
-    page.locator('[class*="loading"]').or(
-      page.locator('[class*="spinner"]')
-    )
-  );
+  await loggedStep(`[${name}] Wait for wallet to load and sync`, async () => {
+    await page.getByTestId('wallet-balance').waitFor({
+      state: 'visible',
+      timeout: TIMEOUTS.WALLET_LOAD,
+    });
 
-  // Give UI a moment to stabilize after balance appears
-  await page.waitForTimeout(1000);
+    // Give UI a moment to show the restoration overlay
+    await page.waitForTimeout(1000);
 
-  // If there's a loading indicator, wait for it to disappear
-  if (await loadingIndicator.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await loadingIndicator.waitFor({ state: 'hidden', timeout: TIMEOUTS.SDK_INIT });
-  }
+    // If loading indicator is visible, wait for the current sync to finish
+    const loadingIndicator = page.getByTestId('loading-indicator');
+    if (await loadingIndicator.isVisible().catch(() => false)) {
+      console.log(`  [${name}] Waiting for current sync to finish...`);
+      await loadingIndicator.waitFor({ state: 'hidden', timeout: TIMEOUTS.SDK_INIT });
+    }
 
-  // Ensure balance has a numeric value (not just placeholder)
-  await expect(async () => {
-    const balanceText = await page.getByTestId('wallet-balance').textContent();
-    expect(balanceText).toMatch(/\d/); // Contains at least one digit
-  }).toPass({ timeout: TIMEOUTS.BALANCE_SYNC });
+    // Wait for at least one sync to complete
+    await expect(async () => {
+      const synced = await page.locator('body').getAttribute('data-wallet-synced');
+      expect(synced).toBe('true');
+    }).toPass({ timeout: TIMEOUTS.BALANCE_SYNC });
+
+    // Ensure balance has a numeric value
+    await expect(async () => {
+      const el = page.getByTestId('wallet-balance');
+      const text = await el.textContent();
+      expect(text).toMatch(/\d/);
+    }).toPass({ timeout: TIMEOUTS.BALANCE_SYNC });
+
+    const balance = await getBalance(page);
+    console.log(`  [${name}] Balance: ${balance} sats`);
+  }, TIMEOUTS.WALLET_LOAD);
 }
 
 /**
  * Helper: Ensure wallet has minimum balance, request faucet funds if needed.
- *
- * This is useful for sender wallets that need funds to complete transfer tests.
- * Only attempts funding if:
- * 1. Faucet credentials are configured
- * 2. Current balance is below MIN_TEST_BALANCE_SATS
- * 3. Haven't already attempted funding in this test run
- *
- * @param page - Playwright page with wallet loaded
- * @param minBalance - Minimum balance required (defaults to MIN_TEST_BALANCE_SATS)
  */
 export async function ensureWalletFunded(
-  page: Page,
-  minBalance: number = MIN_TEST_BALANCE_SATS
+  walletOrPage: WalletFixture | Page,
+  minBalance: number = MIN_TEST_BALANCE_SATS,
 ): Promise<void> {
-  // Check current balance
+  const page = 'page' in walletOrPage ? walletOrPage.page : walletOrPage;
+  const name = 'name' in walletOrPage ? walletOrPage.name : 'Wallet';
+
   const currentBalance = await getBalance(page);
-  console.log(`Current wallet balance: ${currentBalance} sats, minimum required: ${minBalance} sats`);
+  console.log(`[${name}] Balance: ${currentBalance} sats, minimum: ${minBalance} sats`);
 
-  if (currentBalance >= minBalance) {
-    console.log('Wallet has sufficient balance');
-    return;
-  }
+  if (currentBalance >= minBalance) return;
 
-  // Check if faucet is configured
   if (!isFaucetConfigured()) {
-    console.warn(
-      'Wallet balance is low but faucet credentials not configured. ' +
-      'Set FAUCET_USERNAME and FAUCET_PASSWORD environment variables to enable auto-funding.'
-    );
+    console.warn(`[${name}] Balance low but faucet not configured. Set FAUCET_USERNAME and FAUCET_PASSWORD.`);
     return;
   }
 
-  // Only attempt funding once per wallet per test run
-  if (walletAFundingAttempted) {
-    console.log('Already attempted funding in this test run, skipping');
+  if (fundingAttempted) {
+    console.log(`[${name}] Funding already attempted this run, skipping`);
     return;
   }
-  walletAFundingAttempted = true;
+  fundingAttempted = true;
 
-  console.log(`Requesting ${FAUCET_TOPUP_AMOUNT_SATS} sats from faucet...`);
+  await loggedStep(`[${name}] Fund wallet via faucet`, async () => {
+    const btcAddress = await getBitcoinAddress(page);
+    console.log(`  [${name}] Funding address: ${btcAddress}`);
 
-  // Get Bitcoin address for faucet deposit
-  const btcAddress = await getBitcoinAddress(page);
-  console.log(`Funding Bitcoin address: ${btcAddress}`);
+    const txHash = await fundWallet(btcAddress, MAX_INITIAL_FUNDING);
+    console.log(`  [${name}] Faucet tx: ${txHash}`);
 
-  try {
-    const txHash = await fundWallet(btcAddress, FAUCET_TOPUP_AMOUNT_SATS);
-    console.log(`Faucet transaction submitted: ${txHash}`);
-
-    // Wait for funds to arrive
-    console.log('Waiting for funds to arrive...');
     await expect(async () => {
       await page.reload();
-      await waitForWalletReady(page);
+      await waitForWalletReady(walletOrPage);
       const newBalance = await getBalance(page);
-      console.log(`Balance after reload: ${newBalance} sats`);
+      console.log(`  [${name}] Balance after reload: ${newBalance} sats`);
       expect(newBalance).toBeGreaterThanOrEqual(minBalance);
     }).toPass({ timeout: TIMEOUTS.FAUCET_WAIT });
-
-    console.log('Wallet funded successfully!');
-  } catch (error) {
-    console.error('Failed to fund wallet via faucet:', error);
-    // Don't throw - let the test fail naturally if funds are actually needed
-  }
+  }, TIMEOUTS.FAUCET_WAIT);
 }
 
 /**
  * Helper: Restore a wallet from mnemonic
  */
-export async function restoreWallet(page: Page, mnemonic: string): Promise<void> {
-  // Navigate to app if not already there
-  if (!page.url().includes('localhost')) {
-    await page.goto('/');
-  }
+export async function restoreWallet(walletOrPage: WalletFixture | Page, mnemonic: string): Promise<void> {
+  const page = 'page' in walletOrPage ? walletOrPage.page : walletOrPage;
+  const name = 'name' in walletOrPage ? walletOrPage.name : 'Wallet';
 
-  // Wait for home page to be fully loaded
-  await page.getByTestId('restore-wallet-button').waitFor({
-    state: 'visible',
-    timeout: TIMEOUTS.UI_ACTION,
-  });
+  await loggedStep(`[${name}] Restore wallet`, async () => {
+    await page.goto(TEST_URLS.HOME);
 
-  // Click restore button on home page
-  await page.getByTestId('restore-wallet-button').click();
+    await page.getByTestId('restore-wallet-button').waitFor({
+      state: 'visible',
+      timeout: TIMEOUTS.UI_ACTION,
+    });
+    await page.getByTestId('restore-wallet-button').click();
 
-  // Wait for mnemonic input to be ready
-  await page.getByTestId('mnemonic-input').waitFor({
-    state: 'visible',
-    timeout: TIMEOUTS.UI_ACTION,
-  });
+    await page.getByTestId('mnemonic-input').waitFor({
+      state: 'visible',
+      timeout: TIMEOUTS.UI_ACTION,
+    });
+    await page.getByTestId('mnemonic-input').fill(mnemonic);
+    await page.getByTestId('restore-confirm-button').click();
 
-  // Enter mnemonic
-  await page.getByTestId('mnemonic-input').fill(mnemonic);
-
-  // Confirm restore
-  await page.getByTestId('restore-confirm-button').click();
-
-  // Wait for wallet to be fully loaded and synced
-  await waitForWalletReady(page);
+    await waitForWalletReady(walletOrPage);
+  }, TIMEOUTS.WALLET_LOAD);
 }
 
 /**
  * Helper: Create a new wallet
  */
 export async function createWallet(page: Page): Promise<string> {
-  // Navigate to app if not already there
-  if (!page.url().includes('localhost')) {
-    await page.goto('/');
-  }
+  return loggedStep('Create wallet', async () => {
+    await page.goto(TEST_URLS.HOME);
 
-  // Wait for home page to be ready
-  await page.getByTestId('create-wallet-button').waitFor({
-    state: 'visible',
-    timeout: TIMEOUTS.UI_ACTION,
-  });
+    await page.getByTestId('create-wallet-button').waitFor({
+      state: 'visible',
+      timeout: TIMEOUTS.UI_ACTION,
+    });
+    await page.getByTestId('create-wallet-button').click();
 
-  // Click create button on home page
-  await page.getByTestId('create-wallet-button').click();
+    await page.waitForURL(/.*generate.*/, { timeout: TIMEOUTS.UI_ACTION });
 
-  // Wait for mnemonic display (the generate page)
-  // Note: This assumes there's a mnemonic display - adjust based on actual UI
-  await page.waitForURL(/.*generate.*/, { timeout: TIMEOUTS.UI_ACTION });
+    const mnemonicElement = page.locator('[data-testid="mnemonic-display"]');
+    await mnemonicElement.waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
+    const mnemonic = await mnemonicElement.textContent();
 
-  // Get the mnemonic text - this selector may need adjustment
-  const mnemonicElement = await page.locator('[data-testid="mnemonic-display"]');
-  await mnemonicElement.waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
-  const mnemonic = await mnemonicElement.textContent();
+    if (!mnemonic) {
+      throw new Error('Could not retrieve generated mnemonic');
+    }
 
-  if (!mnemonic) {
-    throw new Error('Could not retrieve generated mnemonic');
-  }
+    const continueButton = page.getByTestId('continue-button');
+    if (await continueButton.isVisible({ timeout: TIMEOUTS.UI_ACTION })) {
+      await continueButton.click();
+    }
 
-  // Continue/confirm the wallet creation
-  const continueButton = page.getByTestId('continue-button');
-  if (await continueButton.isVisible({ timeout: TIMEOUTS.UI_ACTION })) {
-    await continueButton.click();
-  }
-
-  // Wait for wallet to be fully loaded
-  await waitForWalletReady(page);
-
-  return mnemonic.trim();
+    await waitForWalletReady(page);
+    return mnemonic.trim();
+  }, TIMEOUTS.WALLET_LOAD);
 }
 
 /**
  * Helper: Generate Lightning invoice from receive dialog
  */
-export async function generateLightningInvoice(page: Page, amountSats: number): Promise<string> {
-  // Ensure wallet is ready before opening receive dialog
-  await page.getByTestId('receive-button').waitFor({
-    state: 'visible',
-    timeout: TIMEOUTS.UI_ACTION,
-  });
+export async function generateLightningInvoice(
+  page: Page,
+  amountSats: number,
+  closeDialog: boolean = true,
+): Promise<string> {
+  return loggedStep(`Generate Lightning invoice (${amountSats} sats)`, async () => {
+    // Open receive dialog
+    await page.getByTestId('receive-button').waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
+    await page.getByTestId('receive-button').click();
+    await page.waitForTimeout(500);
 
-  // Open receive dialog
-  await page.getByTestId('receive-button').click();
+    // Click Lightning tab
+    await page.getByTestId('lightning-tab').click();
 
-  // Wait for dialog to open
-  await page.waitForTimeout(500);
+    // Show amount panel if needed
+    const showAmountButton = page.getByTestId('show-amount-panel-button');
+    if (await showAmountButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await showAmountButton.click();
+    }
 
-  // Click Lightning tab if exists
-  const lightningTab = page.getByTestId('lightning-tab');
-  if (await lightningTab.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await lightningTab.click();
-  }
+    // Enter amount and submit
+    const amountInput = page.getByTestId('invoice-amount-input');
+    await amountInput.waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
+    await amountInput.fill(amountSats.toString());
 
-  // Enter amount
-  const amountInput = page.getByTestId('invoice-amount-input').or(
-    page.getByTestId('amount-input')
-  );
-  await amountInput.waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
-  await amountInput.fill(amountSats.toString());
-  await page.waitForTimeout(300);
+    await page.getByTestId('generate-invoice-button').click();
 
-  // Generate invoice (might auto-generate or need button click)
-  const generateButton = page.getByRole('button', { name: /generate|create|confirm/i });
-  if (await generateButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await generateButton.click();
-  }
+    // Wait for invoice to appear
+    const invoiceWrapper = page.locator('[data-testid="lightning-invoice-text"]').first();
+    await invoiceWrapper.waitFor({ state: 'visible', timeout: TIMEOUTS.ADDRESS_GEN });
 
-  // Wait for invoice to be generated and displayed
-  const invoiceText = page.getByTestId('lightning-invoice-text').or(
-    page.getByTestId('invoice-text')
-  );
-  await invoiceText.waitFor({ state: 'visible', timeout: TIMEOUTS.ADDRESS_GEN });
+    const invoiceTextButton = page.locator('[data-testid="copyable-text-content"]').first();
+    await expect(async () => {
+      const text = await invoiceTextButton.textContent();
+      expect(text).toMatch(/^ln(bc|tb|bcrt)/i);
+    }).toPass({ timeout: TIMEOUTS.ADDRESS_GEN });
 
-  // Poll until we get a valid invoice (not empty or loading placeholder)
-  let invoice: string | null = null;
-  await expect(async () => {
-    invoice = await invoiceText.textContent();
-    expect(invoice).toBeTruthy();
-    expect(invoice).toMatch(/^ln(bc|tb|bcrt)/); // Valid Lightning invoice prefix
-  }).toPass({ timeout: TIMEOUTS.ADDRESS_GEN });
+    // Copy via clipboard
+    await page.evaluate(() => {
+      const btn = document.querySelector('[data-testid="copy-button"]') as HTMLElement;
+      if (btn) btn.click();
+    });
+    await page.waitForTimeout(100);
+    const invoice = await page.evaluate(() => navigator.clipboard.readText());
 
-  if (!invoice) {
-    throw new Error('Could not retrieve Lightning invoice');
-  }
+    if (!invoice?.trim().match(/^ln(bc|tb|bcrt)/i)) {
+      throw new Error('Failed to retrieve valid invoice from clipboard');
+    }
 
-  // Close the dialog by clicking outside or pressing Escape
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(300); // Allow dialog close animation
+    if (closeDialog) {
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(500);
+    }
 
-  return invoice.trim();
+    return invoice.trim();
+  }, TIMEOUTS.ADDRESS_GEN);
 }
 
 /**
  * Helper: Get Bitcoin address from receive dialog
  */
 export async function getBitcoinAddress(page: Page): Promise<string> {
-  // Ensure wallet is ready
-  await page.getByTestId('receive-button').waitFor({
-    state: 'visible',
-    timeout: TIMEOUTS.UI_ACTION,
-  });
+  return loggedStep('Get Bitcoin address', async () => {
+    await page.getByTestId('receive-button').waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
+    await page.getByTestId('receive-button').click();
+    await page.waitForTimeout(500);
 
-  // Open receive dialog
-  await page.getByTestId('receive-button').click();
-  await page.waitForTimeout(500);
+    await page.getByTestId('bitcoin-tab').click();
 
-  // Click Bitcoin tab
-  await page.getByTestId('bitcoin-tab').waitFor({
-    state: 'visible',
-    timeout: TIMEOUTS.UI_ACTION,
-  });
-  await page.getByTestId('bitcoin-tab').click();
+    await page.locator('[data-testid="bitcoin-address-text"]').waitFor({
+      state: 'visible',
+      timeout: TIMEOUTS.ADDRESS_GEN,
+    });
 
-  // Wait for Bitcoin address to be generated
-  await page.locator('[data-testid="bitcoin-address-text"]').waitFor({
-    state: 'visible',
-    timeout: TIMEOUTS.ADDRESS_GEN,
-  });
+    // Wait for the copyable text button to have a valid address
+    const addressButton = page.locator('[data-testid="bitcoin-address-text"] [data-testid="copyable-text-content"]');
+    await expect(async () => {
+      const text = await addressButton.textContent();
+      expect(text).toMatch(/^(bc1|bcrt1)/);
+    }).toPass({ timeout: TIMEOUTS.ADDRESS_GEN });
 
-  // Poll until we get a valid address
-  let addressText: string | null = null;
-  await expect(async () => {
-    addressText = await page.locator('[data-testid="bitcoin-address-text"]').textContent();
-    expect(addressText).toBeTruthy();
-    expect(addressText).toMatch(/^(bc1|tb1|bcrt1)/); // Valid Bitcoin address format
-  }).toPass({ timeout: TIMEOUTS.ADDRESS_GEN });
+    // Copy via clipboard to get the full (non-truncated) address
+    await page.evaluate(() => {
+      const btn = document.querySelector('[data-testid="bitcoin-address-text"] [data-testid="copy-button"]') as HTMLElement;
+      if (btn) btn.click();
+    });
+    await page.waitForTimeout(100);
+    const address = await page.evaluate(() => navigator.clipboard.readText());
 
-  if (!addressText) {
-    throw new Error('Could not retrieve Bitcoin address');
-  }
+    if (!address?.trim().match(/^(bc1|bcrt1)/)) {
+      throw new Error(`Failed to retrieve valid Bitcoin address from clipboard: ${address}`);
+    }
 
-  // Close dialog
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(300);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
 
-  return addressText.trim();
+    return address.trim();
+  }, TIMEOUTS.ADDRESS_GEN);
 }
 
 /**
@@ -390,61 +340,44 @@ export async function getBitcoinAddress(page: Page): Promise<string> {
 export async function sendPayment(
   page: Page,
   destination: string,
-  amountSats?: number
+  amountSats?: number,
 ): Promise<void> {
-  // Ensure send button is ready
-  await page.getByTestId('send-button').waitFor({
-    state: 'visible',
-    timeout: TIMEOUTS.UI_ACTION,
-  });
+  await loggedStep('Send payment', async () => {
+    await page.getByTestId('send-button').waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
+    await page.getByTestId('send-button').click();
+    await page.waitForTimeout(500);
 
-  // Open send dialog
-  await page.getByTestId('send-button').click();
-  await page.waitForTimeout(500);
+    await page.getByTestId('payment-input').waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
+    await page.getByTestId('payment-input').fill(destination);
+    await page.waitForTimeout(500);
 
-  // Wait for payment input to be ready
-  await page.getByTestId('payment-input').waitFor({
-    state: 'visible',
-    timeout: TIMEOUTS.UI_ACTION,
-  });
+    await page.getByTestId('continue-button').click();
+    await page.waitForTimeout(1000);
 
-  // Enter destination
-  await page.getByTestId('payment-input').fill(destination);
-
-  // Wait a moment for input parsing
-  await page.waitForTimeout(500);
-
-  // Click continue
-  await page.getByTestId('continue-button').click();
-
-  // Wait for next step to load (may involve SDK parsing the input)
-  await page.waitForTimeout(1000);
-
-  // If amount is needed (address without amount), enter it
-  if (amountSats) {
-    const amountInput = page.getByTestId('amount-input');
-    if (await amountInput.isVisible({ timeout: TIMEOUTS.UI_ACTION }).catch(() => false)) {
-      await amountInput.fill(amountSats.toString());
-      await page.waitForTimeout(300);
-      await page.getByTestId('continue-button').click();
+    // If amount is needed (address without amount), enter it
+    if (amountSats) {
+      const amountInput = page.getByTestId('amount-input');
+      if (await amountInput.isVisible({ timeout: TIMEOUTS.UI_ACTION }).catch(() => false)) {
+        await amountInput.fill(amountSats.toString());
+        await page.waitForTimeout(300);
+        await page.getByTestId('continue-button').click();
+      }
     }
-  }
 
-  // Wait for confirmation screen and confirm send
-  // The send confirm button might be in a workflow step
-  const sendConfirmButton = page.getByRole('button', { name: /send|confirm|pay/i });
-  await sendConfirmButton.waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
-  await sendConfirmButton.click();
+    // Confirm send
+    const sendConfirmButton = page.getByRole('button', { name: /confirm.*send|send.*confirm/i });
+    await sendConfirmButton.waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
+    await sendConfirmButton.click();
 
-  // Wait for result - success or failure
-  // Payment can take time as it involves network communication
-  const successElement = page.getByTestId('payment-success');
-  const failureElement = page.getByTestId('payment-failure');
+    // Wait for result
+    const successElement = page.getByTestId('payment-success');
+    const failureElement = page.getByTestId('payment-failure');
 
-  await Promise.race([
-    successElement.waitFor({ state: 'visible', timeout: TIMEOUTS.PAYMENT }),
-    failureElement.waitFor({ state: 'visible', timeout: TIMEOUTS.PAYMENT }),
-  ]);
+    await Promise.race([
+      successElement.waitFor({ state: 'visible', timeout: TIMEOUTS.PAYMENT }),
+      failureElement.waitFor({ state: 'visible', timeout: TIMEOUTS.PAYMENT }),
+    ]);
+  }, TIMEOUTS.PAYMENT);
 }
 
 /**
@@ -454,18 +387,14 @@ export async function getBalance(page: Page): Promise<number> {
   const balanceElement = page.getByTestId('wallet-balance');
   await balanceElement.waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
 
-  // Wait for balance to have actual content (not just placeholder)
   await expect(async () => {
     const text = await balanceElement.textContent();
     expect(text).toMatch(/\d/);
   }).toPass({ timeout: TIMEOUTS.BALANCE_SYNC });
 
   const balanceText = await balanceElement.textContent();
-  if (!balanceText) {
-    return 0;
-  }
+  if (!balanceText) return 0;
 
-  // Extract number from text like "1,234 sats" or "1 234 sats"
   const cleanedText = balanceText.replace(/[^0-9]/g, '');
   return parseInt(cleanedText, 10) || 0;
 }
@@ -477,26 +406,135 @@ export async function waitForBalanceChange(
   page: Page,
   previousBalance: number,
   direction: 'increase' | 'decrease',
-  timeoutMs: number = TIMEOUTS.BALANCE_SYNC
+  timeoutMs: number = TIMEOUTS.BALANCE_SYNC,
+  options?: {
+    expectedDelta?: number;
+  },
 ): Promise<number> {
   let newBalance = previousBalance;
+  const expectedDelta = options?.expectedDelta;
 
-  await expect(async () => {
-    // Refresh to get latest balance
-    await page.reload();
-    await waitForWalletReady(page);
+  const formatAmount = (value: number): string => {
+    return Math.abs(Math.round(value))
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  };
 
-    newBalance = await getBalance(page);
+  const normalizeAmountText = (raw: string): string =>
+    raw.replace(/[\u202F\u00A0]/g, ' ').replace(/\s+/g, ' ').trim();
 
-    if (direction === 'increase') {
-      expect(newBalance).toBeGreaterThan(previousBalance);
-    } else {
-      expect(newBalance).toBeLessThan(previousBalance);
-    }
-  }).toPass({ timeout: timeoutMs });
+  await loggedStep(`Wait for balance ${direction}`, async () => {
+    await expect(async () => {
+      await page.reload();
+      await waitForWalletReady(page);
+      newBalance = await getBalance(page);
+
+      if (direction === 'increase') {
+        if (newBalance > previousBalance) {
+          expect(newBalance).toBeGreaterThan(previousBalance);
+          return;
+        }
+
+        if (expectedDelta != null) {
+          const expectedAmountText = `+${formatAmount(expectedDelta)}`;
+          const amountTexts = await page.getByTestId('transaction-amount').allTextContents();
+          const hasExpectedTransaction = amountTexts
+            .map(normalizeAmountText)
+            .some(text => text === expectedAmountText);
+
+          if (hasExpectedTransaction) {
+            newBalance = Math.max(newBalance, previousBalance + expectedDelta);
+            return;
+          }
+        }
+
+        expect(newBalance).toBeGreaterThan(previousBalance);
+      } else {
+        if (newBalance < previousBalance) {
+          expect(newBalance).toBeLessThan(previousBalance);
+          return;
+        }
+
+        if (expectedDelta != null) {
+          const expectedAmountText = `-${formatAmount(expectedDelta)}`;
+          const amountTexts = await page.getByTestId('transaction-amount').allTextContents();
+          const hasExpectedTransaction = amountTexts
+            .map(normalizeAmountText)
+            .some(text => text === expectedAmountText);
+
+          if (hasExpectedTransaction) {
+            newBalance = Math.min(newBalance, previousBalance - expectedDelta);
+            return;
+          }
+        }
+
+        expect(newBalance).toBeLessThan(previousBalance);
+      }
+    }).toPass({ timeout: timeoutMs });
+  }, timeoutMs);
 
   return newBalance;
 }
 
-// Re-export expect for convenience
-export { expect };
+/**
+ * Helper: Assert Bitcoin address is regtest format
+ */
+export function assertRegtestBitcoinAddress(address: string): void {
+  // Spark SDK returns bc1p (Taproot) or bcrt1 addresses on regtest
+  if (!address.startsWith('bcrt1') && !address.startsWith('bc1p')) {
+    throw new Error(
+      `Bitcoin address does not have expected prefix ('bcrt1' or 'bc1p'). Got: ${address.substring(0, 10)}... ` +
+      'This could indicate tests are running against mainnet!'
+    );
+  }
+}
+
+/**
+ * Helper: Assert Lightning invoice is regtest format
+ */
+export function assertRegtestLightningInvoice(invoice: string): void {
+  if (!invoice.toLowerCase().startsWith('lnbcrt')) {
+    throw new Error(
+      `Lightning invoice does not have regtest prefix 'lnbcrt'. Got: ${invoice.substring(0, 10)}... ` +
+      'This could indicate tests are running against mainnet!'
+    );
+  }
+}
+
+/**
+ * Helper: Click the Fund Wallet button (only available on regtest).
+ */
+export async function clickFundWalletButton(
+  page: Page,
+  waitForFunds: boolean = true,
+): Promise<void> {
+  await loggedStep('Click Fund Wallet button', async () => {
+    const fundButton = page.getByTestId('fund-wallet-button');
+    await fundButton.waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
+
+    const initialBalance = await getBalance(page);
+    console.log(`  Initial balance: ${initialBalance} sats`);
+
+    await fundButton.click();
+
+    if (waitForFunds) {
+      await expect(async () => {
+        await page.reload();
+        await waitForWalletReady(page);
+        const newBalance = await getBalance(page);
+        console.log(`  Balance after reload: ${newBalance} sats`);
+        expect(newBalance).toBeGreaterThan(initialBalance);
+      }).toPass({ timeout: TIMEOUTS.FAUCET_WAIT });
+    }
+  }, TIMEOUTS.FAUCET_WAIT);
+}
+
+// Re-export expect and constants for convenience
+export {
+  expect,
+  TIMEOUTS,
+  DEFAULT_MIN_AMOUNT,
+  DEFAULT_MAX_AMOUNT,
+  DEFAULT_MIN_DELAY_MS,
+  DEFAULT_MAX_DELAY_MS,
+};
