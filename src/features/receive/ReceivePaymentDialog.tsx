@@ -24,6 +24,7 @@ import SparkAddressDisplay from './SparkAddressDisplay';
 import BitcoinAddressDisplay from './BitcoinAddressDisplay';
 import LightningAddressDisplay from './LightningAddressDisplay';
 import AmountPanel from './AmountPanel';
+import { useToast } from '../../contexts/ToastContext';
 
 // Props interfaces
 interface ReceivePaymentDialogProps {
@@ -40,6 +41,7 @@ interface QRCodeDisplayProps {
 
 // Component to display QR code with payment data
 const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, title, description }) => {
+  const { showToast } = useToast();
   return (
     <div className="pt-8 space-y-6 flex flex-col items-center">
       <div className="text-center">
@@ -54,6 +56,11 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, tit
       <div className="w-full">
         <CopyableText
           text={paymentData}
+          truncate
+          showShare
+          label="Lightning Invoice"
+          onCopied={() => showToast('success', 'Copied!')}
+          onShareError={() => showToast('error', 'Failed to share')}
           data-testid="lightning-invoice-text"
         />
 
@@ -93,6 +100,8 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     isEditing: isEditingLightningAddress,
     editValue: lightningAddressEditValue,
     error: lightningAddressError,
+    isSupported: isLightningAddressSupported,
+    supportMessage: lightningAddressSupportMessage,
     load: loadLightningAddress,
     beginEdit: beginEditLightningAddress,
     cancelEdit: cancelEditLightningAddress,
@@ -132,17 +141,24 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
 
   // Generate Bolt11 invoice
   const generateBolt11Invoice = async () => {
+    console.log('[ReceivePaymentDialog] Starting invoice generation for amount:', amount);
     setError(null);
     setIsLoading(true);
     setCurrentStep('loading');
 
     // Close the amount panel immediately when starting to generate
     if (showAmountPanel) {
+      console.log('[ReceivePaymentDialog] Closing AmountPanel');
       setShowAmountPanel(false);
     }
 
     try {
       const amountSats = parseInt(amount);
+      if (isNaN(amountSats)) {
+        throw new Error('Invalid amount');
+      }
+
+      console.log('[ReceivePaymentDialog] Calling wallet.receivePayment...');
       const receiveResponse = await wallet.receivePayment({
         paymentMethod: {
           type: 'bolt11Invoice',
@@ -150,15 +166,18 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
           amountSats,
         },
       });
+      console.log('[ReceivePaymentDialog] Invoice received successfully');
       setPaymentData(receiveResponse.paymentRequest);
       setFeeSats(Number(receiveResponse.fee) || 0);
       setCurrentStep('qr');
     } catch (err) {
-      console.error('Failed to generate invoice:', err);
+      console.error('[ReceivePaymentDialog] Failed to generate invoice:', err);
       setError(`Failed to generate invoice: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setCurrentStep('input');
+      setShowAmountPanel(true);
     } finally {
       setIsLoading(false);
+      console.log('[ReceivePaymentDialog] Generation process finished');
     }
   };
 
@@ -318,6 +337,8 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
                     isEditing={isEditingLightningAddress}
                     editValue={lightningAddressEditValue}
                     error={lightningAddressError}
+                    isSupported={isLightningAddressSupported}
+                    supportMessage={lightningAddressSupportMessage}
                     onEdit={handleEditLightningAddress}
                     onSave={handleSaveLightningAddress}
                     onCancel={handleCancelEditLightningAddress}
