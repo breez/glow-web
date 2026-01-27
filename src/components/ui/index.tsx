@@ -405,6 +405,75 @@ export const Alert: React.FC<{
   );
 };
 
+/**
+ * ErrorMessageBox - Displays error messages with optional stack trace support
+ *
+ * Parses error messages to separate the main message from stack traces,
+ * showing the stack trace in a scrollable code block.
+ */
+export const ErrorMessageBox: React.FC<{
+  title?: string;
+  error: string;
+  className?: string;
+}> = ({ title = 'Error', error, className = "" }) => {
+  // Try to separate main message from stack trace
+  // Stack traces often contain patterns like "at function" or "wasm-function"
+  const stackTracePatterns = [
+    /\s+at\s+[\w.$]+\s*\(/,  // " at functionName("
+    /wasm-function\[\d+\]/,   // "wasm-function[123]"
+    /:\d+:\d+\)?$/m,          // ":123:45)" at end of line
+  ];
+
+  let mainMessage = error;
+  let stackTrace: string | null = null;
+
+  // Check if error contains stack trace patterns
+  for (const pattern of stackTracePatterns) {
+    const match = error.match(pattern);
+    if (match && match.index !== undefined) {
+      // Find the start of the stack trace (look for "at " or similar)
+      const atIndex = error.lastIndexOf(' at ', match.index);
+      const splitIndex = atIndex > 0 ? atIndex : match.index;
+
+      // Only split if stack trace is substantial
+      if (error.length - splitIndex > 50) {
+        mainMessage = error.substring(0, splitIndex).trim();
+        stackTrace = error.substring(splitIndex).trim();
+        break;
+      }
+    }
+  }
+
+  // Clean up the main message (remove trailing colons, etc.)
+  mainMessage = mainMessage.replace(/:\s*$/, '').trim();
+  if (!mainMessage) {
+    mainMessage = 'An error occurred';
+  }
+
+  return (
+    <div className={`bg-spark-error/10 border border-spark-error/30 rounded-2xl p-4 ${className}`}>
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-10 h-10 rounded-xl bg-spark-error/20 flex items-center justify-center flex-shrink-0">
+          <svg className="w-5 h-5 text-spark-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 className="font-display font-bold text-spark-error">{title}</h3>
+      </div>
+      <div className="pl-[52px]">
+        <p className="text-spark-text-secondary text-sm">{mainMessage}</p>
+        {stackTrace && (
+          <div className="mt-3 bg-spark-dark/50 border border-spark-border rounded-xl p-3 max-h-32 overflow-auto">
+            <code className="text-xs text-spark-text-muted font-mono whitespace-pre-wrap break-all">
+              {stackTrace}
+            </code>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ============================================
 // STEP-BASED FLOW COMPONENTS
 // ============================================

@@ -15,6 +15,8 @@ import type {
   PrepareLnurlPayResponse,
   LnurlPayRequest,
   LnurlPayResponse,
+  LnurlAuthRequestDetails,
+  LnurlCallbackStatus,
   DepositInfo,
   Fee,
   UserSettings,
@@ -33,6 +35,7 @@ export interface WalletAPI {
   parseInput: (input: string) => Promise<InputType>;
   prepareLnurlPay: (params: PrepareLnurlPayRequest) => Promise<PrepareLnurlPayResponse>;
   lnurlPay: (params: LnurlPayRequest) => Promise<LnurlPayResponse>;
+  lnurlAuth: (requestData: LnurlAuthRequestDetails) => Promise<LnurlCallbackStatus>;
   prepareSendPayment: (params: PrepareSendPaymentRequest) => Promise<PrepareSendPaymentResponse>;
   sendPayment: (params: SendPaymentRequest) => Promise<SendPaymentResponse>;
   receivePayment: (params: ReceivePaymentRequest) => Promise<ReceivePaymentResponse>;

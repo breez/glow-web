@@ -22,6 +22,8 @@ import {
   PrepareLnurlPayRequest,
   LnurlPayRequest,
   LnurlPayResponse,
+  LnurlAuthRequestDetails,
+  LnurlCallbackStatus,
   DepositInfo,
   Fee,
   UserSettings,
@@ -94,6 +96,13 @@ export const lnurlPay = async (
 ): Promise<LnurlPayResponse> => {
   if (!sdk) throw new Error('SDK not initialized');
   return await sdk.lnurlPay(params);
+};
+
+export const lnurlAuth = async (
+  requestData: LnurlAuthRequestDetails
+): Promise<LnurlCallbackStatus> => {
+  if (!sdk) throw new Error('SDK not initialized');
+  return await sdk.lnurlAuth(requestData);
 };
 
 export const prepareSendPayment = async (
@@ -318,6 +327,7 @@ export const walletApi: WalletAPI = {
   parseInput,
   prepareLnurlPay,
   lnurlPay,
+  lnurlAuth,
   prepareSendPayment,
   sendPayment,
   receivePayment,
