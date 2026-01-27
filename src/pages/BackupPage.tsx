@@ -15,7 +15,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
   const [isRevealed, setIsRevealed] = useState(false);
 
   useEffect(() => {
-    setMnemonic(wallet.getSavedMnemonic());
+    wallet.getSavedMnemonic().then(setMnemonic).catch(() => setMnemonic(null));
   }, [wallet]);
 
   const handleClose = () => {

@@ -49,9 +49,10 @@ export interface WalletAPI {
   removeEventListener: (listenerId: string) => Promise<void>;
 
   // Storage helpers
-  saveMnemonic: (mnemonic: string) => void;
-  getSavedMnemonic: () => string | null;
+  saveMnemonic: (mnemonic: string) => Promise<void>;
+  getSavedMnemonic: () => Promise<string | null>;
   clearMnemonic: () => void;
+  resetEncryptionKey: () => Promise<void>;
 
   // Lightning Address
   getLightningAddress: () => Promise<LightningAddressInfo | null>;

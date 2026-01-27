@@ -206,13 +206,14 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
     }),
 
     // Storage helpers
-    saveMnemonic: vi.fn().mockImplementation((mnemonic: string) => {
+    saveMnemonic: vi.fn().mockImplementation(async (mnemonic: string) => {
       storedMnemonic = mnemonic;
     }),
-    getSavedMnemonic: vi.fn().mockImplementation(() => storedMnemonic),
+    getSavedMnemonic: vi.fn().mockImplementation(async () => storedMnemonic),
     clearMnemonic: vi.fn().mockImplementation(() => {
       storedMnemonic = null;
     }),
+    resetEncryptionKey: vi.fn().mockResolvedValue(undefined),
 
     // Lightning Address
     getLightningAddress: vi.fn().mockResolvedValue(null as LightningAddressInfo | null),

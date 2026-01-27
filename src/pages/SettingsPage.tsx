@@ -12,7 +12,7 @@ import {
   saveNotificationSettings,
   NotificationSettings,
 } from '../services/notificationService';
-import { CloseIcon, NotificationIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon } from '../components/Icons';
+import { CloseIcon, NotificationIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon, WarningIcon } from '../components/Icons';
 
 const DEV_MODE_TAP_COUNT = 5;
 const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
@@ -391,6 +391,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
                           disabled={isLoadingUserSettings}
                         />
                       </div>
+                    </div>
+
+                    {/* Encryption Reset - Dev Mode only */}
+                    <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+                      <h3 className="font-display font-semibold text-spark-text-primary mb-3">Encryption</h3>
+                      <button
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-spark-error/30 rounded-xl text-spark-error hover:bg-spark-error/10 transition-colors"
+                        type="button"
+                        onClick={async () => {
+                          await wallet.resetEncryptionKey();
+                          window.location.reload();
+                        }}
+                      >
+                        <WarningIcon size="md" />
+                        Reset Encryption Key
+                      </button>
+                      <p className="text-xs text-spark-text-muted mt-2">
+                        Clears the device encryption key and encrypted mnemonic. You will need to restore your wallet.
+                      </p>
                     </div>
 
                     {/* Notifications - Dev Mode only */}

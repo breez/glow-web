@@ -249,19 +249,24 @@ export const connected = (): boolean => {
   return sdk !== null;
 };
 
-// Helper to save mnemonic to localStorage
-export const saveMnemonic = (mnemonic: string): void => {
-  localStorage.setItem('walletMnemonic', mnemonic);
+// Encrypted mnemonic storage
+import { saveEncryptedMnemonic, getDecryptedMnemonic, clearEncryptedMnemonic, resetDeviceKey } from './cryptoStorage';
+
+export const saveMnemonic = async (mnemonic: string): Promise<void> => {
+  await saveEncryptedMnemonic(mnemonic);
 };
 
-// Helper to retrieve mnemonic from localStorage
-export const getSavedMnemonic = (): string | null => {
-  return localStorage.getItem('walletMnemonic');
+export const getSavedMnemonic = async (): Promise<string | null> => {
+  return await getDecryptedMnemonic();
 };
 
-// Helper to clear mnemonic from localStorage
 export const clearMnemonic = (): void => {
-  localStorage.removeItem('walletMnemonic');
+  clearEncryptedMnemonic();
+};
+
+export const resetEncryptionKey = async (): Promise<void> => {
+  clearEncryptedMnemonic();
+  await resetDeviceKey();
 };
 
 // Lightning Address Operations
@@ -337,6 +342,7 @@ export const walletApi: WalletAPI = {
   saveMnemonic,
   getSavedMnemonic,
   clearMnemonic,
+  resetEncryptionKey,
 
   // Lightning Address
   getLightningAddress,

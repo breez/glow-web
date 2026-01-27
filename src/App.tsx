@@ -226,8 +226,8 @@ const AppContent: React.FC = () => {
     console.log('useEffect checkForExistingWallet...');
     const checkForExistingWallet = async () => {
       console.log('checkForExistingWallet...');
-      const savedMnemonic = wallet.getSavedMnemonic();
-      console.log('Saved mnemonic:', savedMnemonic);
+      const savedMnemonic = await wallet.getSavedMnemonic();
+      console.log('Saved mnemonic found:', !!savedMnemonic);
       if (savedMnemonic) {
         try {
           setIsLoading(true);
@@ -338,7 +338,7 @@ const AppContent: React.FC = () => {
 
       console.log('Wallet connected successfully');
       // Save mnemonic for future use
-      wallet.saveMnemonic(mnemonic);
+      await wallet.saveMnemonic(mnemonic);
 
       // Get wallet info and transactions in parallel (async-parallel optimization)
       const [info, txns] = await Promise.all([
