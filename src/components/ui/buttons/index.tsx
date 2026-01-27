@@ -47,6 +47,28 @@ export const SecondaryButton: React.FC<ButtonProps> = ({
   </button>
 );
 
+export interface FloatingIconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
+  onClick?: () => void;
+  icon: ReactNode;
+  className?: string;
+}
+
+export const FloatingIconButton: React.FC<FloatingIconButtonProps> = ({
+  onClick,
+  icon,
+  className = "",
+  ...props
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`p-3 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-colors border border-white/10 ${className}`}
+    {...props}
+  >
+    {icon}
+  </button>
+);
+
 export const TextButton: React.FC<Omit<ButtonProps, 'disabled'>> = ({
   onClick,
   children,
