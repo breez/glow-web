@@ -14,13 +14,12 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const { isStandalone, isIOS, isAndroid } = usePlatform();
 
   return (
-    <div
-      className="app-shell"
-      data-pwa={isStandalone}
-      data-ios={isIOS}
-      data-android={isAndroid}
-    >
-      {children}
+    <div className='main-wrapper'>
+      <div id="content-root" className='max-w-4xl mx-auto'>
+        <div className="app-shell" data-pwa={isStandalone} data-ios={isIOS} data-android={isAndroid}>
+          <div className='page-layout'>{children}</div>
+        </div>
+      </div>
     </div>
   );
 };

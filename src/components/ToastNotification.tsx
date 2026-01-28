@@ -93,7 +93,7 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({
   return (
     <div
       className={`
-        fixed top-4 left-4 right-4 z-50 flex justify-center pointer-events-none
+        toast-notification
       `}
     >
       <div

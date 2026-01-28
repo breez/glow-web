@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import ToastNotification, { ToastType } from '../components/ToastNotification';
 
 interface Toast {
@@ -35,17 +36,20 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="toast-container">
-        {toasts.map(toast => (
-          <ToastNotification
-            key={toast.id}
-            type={toast.type}
-            message={toast.message}
-            detail={toast.detail}
-            onClose={() => removeToast(toast.id)}
-          />
-        ))}
-      </div>
+      {createPortal(
+        <div className="toast-container">
+          {toasts.map(toast => (
+            <ToastNotification
+              key={toast.id}
+              type={toast.type}
+              message={toast.message}
+              detail={toast.detail}
+              onClose={() => removeToast(toast.id)}
+            />
+          ))}
+        </div>,
+        document.body
+      )}
     </ToastContext.Provider>
   );
 };
