@@ -75,6 +75,8 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
       </div>
     );
   }
+
+  /* TODO: Bug: Currently shows loading state switching between BTC and Lightning Address tabs when lightning address is set.
   if (isLoading) {
     return (
       <div className="text-center py-8">
@@ -82,6 +84,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
       </div>
     );
   }
+    */
 
   if (!address && !isEditing) {
     return (
