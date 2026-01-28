@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Transition } from '@headlessui/react';
-import { FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
+import { FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch, ConfirmDialog } from '../components/ui';
 import { getSettings, saveSettings, UserSettings } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
@@ -12,7 +12,7 @@ import {
   saveNotificationSettings,
   NotificationSettings,
 } from '../services/notificationService';
-import { CloseIcon, NotificationIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon } from '../components/Icons';
+import { CloseIcon, NotificationIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon, WarningIcon } from '../components/Icons';
 
 const DEV_MODE_TAP_COUNT = 5;
 const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
@@ -45,6 +45,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     paymentReceived: true,
   });
   const [isRequestingPermission, setIsRequestingPermission] = useState<boolean>(false);
+  const [showResetConfirm, setShowResetConfirm] = useState<boolean>(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -393,6 +394,35 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
                         />
                       </div>
                     </div>
+
+                    {/* Encryption Reset - Dev Mode only */}
+                    <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+                      <h3 className="font-display font-semibold text-spark-text-primary mb-3">Encryption</h3>
+                      <button
+                        className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-medium border border-spark-error/30 rounded-xl text-spark-error hover:bg-spark-error/10 transition-colors"
+                        type="button"
+                        onClick={() => setShowResetConfirm(true)}
+                      >
+                        <WarningIcon size="md" />
+                        Reset Encryption Key
+                      </button>
+                      <p className="text-xs text-spark-text-muted mt-2 text-center">
+                        Clears the device encryption key and encrypted mnemonic. You will need to restore your wallet.
+                      </p>
+                    </div>
+                    <ConfirmDialog
+                      isOpen={showResetConfirm}
+                      title="Reset Encryption Key?"
+                      message="This will delete the device encryption key and encrypted mnemonic. Your wallet will be inaccessible until you restore it with your backup phrase."
+                      confirmLabel="Reset"
+                      variant="danger"
+                      onConfirm={async () => {
+                        setShowResetConfirm(false);
+                        await wallet.resetEncryptionKey();
+                        window.location.reload();
+                      }}
+                      onCancel={() => setShowResetConfirm(false)}
+                    />
 
                     {/* Notifications - Dev Mode only */}
                     {notificationsSupported && (
