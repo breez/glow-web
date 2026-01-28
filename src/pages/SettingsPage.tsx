@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Transition } from '@headlessui/react';
 import { FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
 import { getSettings, saveSettings, UserSettings } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
@@ -12,7 +11,8 @@ import {
   saveNotificationSettings,
   NotificationSettings,
 } from '../services/notificationService';
-import { CloseIcon, NotificationIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon } from '../components/Icons';
+import { NotificationIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon } from '../components/Icons';
+import SlideInPage from '../components/layout/SlideInPage';
 
 const DEV_MODE_TAP_COUNT = 5;
 const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
@@ -25,7 +25,6 @@ interface SettingsPageProps {
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatCurrencies }) => {
   const wallet = useWallet();
-  const [isOpen, setIsOpen] = useState(true);
   const [isDevMode, setIsDevMode] = useState<boolean>(false);
   const [devTapCount, setDevTapCount] = useState(0);
   const [selectedNetwork, setSelectedNetwork] = useState<Network>('mainnet');
@@ -52,7 +51,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     const urlDevMode = params.get('dev') === 'true';
     const storedDevMode = localStorage.getItem(DEV_MODE_STORAGE_KEY) === 'true';
     setIsDevMode(urlDevMode || storedDevMode);
-    
+
     // Get current network from URL
     const network = (params.get('network') || 'mainnet') as Network;
     setSelectedNetwork(network);
@@ -133,11 +132,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     saveNotificationSettings(newSettings);
   };
 
-  const handleClose = () => {
-    setIsOpen(false);
-    setTimeout(onBack, 220);
-  };
-
   const handleVersionTap = () => {
     setDevTapCount(prev => {
       const newCount = prev + 1;
@@ -211,275 +205,239 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     }
   };
 
+  const footer = isDevMode ? (
+    <PrimaryButton className="w-full" onClick={handleSave}>
+      Save Changes
+    </PrimaryButton>
+  ) : undefined;
+
   return (
-    <div className="absolute inset-0 z-50 overflow-hidden">
-      <Transition show={isOpen} appear as="div" className="absolute inset-0">
-        <Transition.Child
-          as="div"
-          enter="transform transition ease-out duration-300"
-          enterFrom="translate-x-[-100%]"
-          enterTo="translate-x-0"
-          leave="transform transition ease-in duration-200"
-          leaveFrom="translate-x-0"
-          leaveTo="translate-x-[-100%]"
-          className="absolute inset-0 flex flex-col bg-spark-surface will-change-transform"
-        >
-            {/* Header */}
-            <div className="border-b border-spark-border">
-              <div className="relative px-4 py-4 flex items-center justify-center">
-                <h1 className="text-center font-display text-lg font-semibold text-spark-text-primary">Settings</h1>
-                <button
-                  onClick={handleClose}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
-                  aria-label="Close"
-                >
-                  <CloseIcon size="md" />
-                </button>
+    <SlideInPage title="Settings" onClose={onBack} slideFrom="left" footer={footer}>
+      <div className="p-4">
+        <div className="max-w-xl mx-auto w-full space-y-4">
+          {/* Dev Mode Network Selector */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Network</h3>
+              <div className="flex gap-2">
+                {(['mainnet', 'regtest'] as Network[]).map((network) => (
+                  <button
+                    key={network}
+                    onClick={() => handleNetworkChange(network)}
+                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${selectedNetwork === network
+                        ? 'bg-spark-primary text-white'
+                        : 'bg-spark-surface border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+                      }`}
+                  >
+                    {network === 'mainnet' ? 'Mainnet' : 'Regtest'}
+                  </button>
+                ))}
               </div>
+              <p className="text-xs text-spark-text-muted mt-2">
+                Changing network will reload the app and reconnect.
+              </p>
             </div>
+          )}
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto min-h-0 p-4">
-              <div className="max-w-xl mx-auto w-full space-y-4">
-                {/* Dev Mode Network Selector */}
-                {isDevMode && (
-                  <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                    <h3 className="font-display font-semibold text-spark-text-primary mb-3">Network</h3>
-                    <div className="flex gap-2">
-                      {(['mainnet', 'regtest'] as Network[]).map((network) => (
-                        <button
-                          key={network}
-                          onClick={() => handleNetworkChange(network)}
-                          className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
-                            selectedNetwork === network
-                              ? 'bg-spark-primary text-white'
-                              : 'bg-spark-surface border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
-                          }`}
-                        >
-                          {network === 'mainnet' ? 'Mainnet' : 'Regtest'}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-spark-text-muted mt-2">
-                      Changing network will reload the app and reconnect.
+          {/* Dev Mode Fee Settings */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Deposit Claim Fee</h3>
+              <FormGroup>
+                <div className="flex gap-2 items-center">
+                  <select
+                    value={feeType}
+                    onChange={(e) => setFeeType(e.currentTarget.value as 'fixed' | 'rate' | 'networkRecommended')}
+                    className="min-w-[160px] bg-spark-surface border border-spark-border rounded-xl px-3 py-3 text-spark-text-primary text-sm focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20"
+                    aria-label="Max fee type"
+                  >
+                    <option className="bg-spark-surface" value="fixed">Fixed (sats)</option>
+                    <option className="bg-spark-surface" value="rate">Rate (sat/vB)</option>
+                    <option className="bg-spark-surface" value="networkRecommended">Network + leeway</option>
+                  </select>
+                  <div className="flex-1">
+                    <FormInput
+                      id="deposit-fee-default"
+                      type="number"
+                      min={0}
+                      value={feeValue}
+                      onChange={(e) => setFeeValue(e.target.value)}
+                      placeholder={feeType === 'fixed' ? 'sats' : 'sat/vB'}
+                    />
+                  </div>
+                </div>
+              </FormGroup>
+            </div>
+          )}
+
+          {/* Fiat Currencies */}
+          <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+            <h3 className="font-display font-semibold text-spark-text-primary mb-3">Display</h3>
+            <button
+              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
+              type="button"
+              onClick={onOpenFiatCurrencies}
+            >
+              <div className="flex items-center gap-3">
+                <CurrencyIcon size="md" />
+                <span>Fiat Currencies</span>
+              </div>
+              <ChevronRightIcon size="md" />
+            </button>
+          </div>
+
+          {/* SDK Logs */}
+          <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+            <h3 className="font-display font-semibold text-spark-text-primary mb-3">Diagnostics</h3>
+            <button
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
+              type="button"
+              onClick={handleDownloadLogs}
+            >
+              <DownloadIcon size="md" />
+              Download Logs
+            </button>
+          </div>
+
+          {/* Dev Mode Advanced Settings */}
+          {isDevMode && (
+            <>
+              <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+                <h3 className="font-display font-semibold text-spark-text-primary mb-3">Sync Settings</h3>
+                <FormGroup>
+                  <label htmlFor="sync-interval" className="block text-sm text-spark-text-secondary mb-1">
+                    Sync interval (seconds)
+                  </label>
+                  <FormInput
+                    id="sync-interval"
+                    type="number"
+                    min={0}
+                    value={syncIntervalSecs}
+                    onChange={(e) => setSyncIntervalSecs(e.target.value)}
+                    placeholder="e.g. 30"
+                  />
+                </FormGroup>
+              </div>
+
+              <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+                <h3 className="font-display font-semibold text-spark-text-primary mb-3">LNURL</h3>
+                <FormGroup>
+                  <label htmlFor="lnurl-domain" className="block text-sm text-spark-text-secondary mb-1">
+                    Custom domain
+                  </label>
+                  <FormInput
+                    id="lnurl-domain"
+                    type="text"
+                    value={lnurlDomain}
+                    onChange={(e) => setLnurlDomain(e.target.value)}
+                    placeholder="example.com"
+                  />
+                </FormGroup>
+              </div>
+
+              <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <span className="font-display font-medium text-spark-text-primary block">Prefer Spark</span>
+                    <span className="text-sm text-spark-text-muted">Use Spark address over Lightning invoice when available</span>
+                  </div>
+                  <Switch
+                    checked={preferSparkOverLightning}
+                    onChange={() => setPreferSparkOverLightning(!preferSparkOverLightning)}
+                  />
+                </div>
+              </div>
+
+              {/* Privacy Settings - Dev Mode only */}
+              <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="font-display font-semibold text-spark-text-primary">Privacy</h3>
+                  {isLoadingUserSettings && <LoadingSpinner size="small" />}
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <span className="font-display font-medium text-spark-text-primary block">Private Mode</span>
+                    <span className="text-sm text-spark-text-muted">Hide your address from public explorers (not suitable for zaps)</span>
+                  </div>
+                  <Switch
+                    checked={sparkPrivateModeEnabled}
+                    onChange={() => setSparkPrivateModeEnabled(!sparkPrivateModeEnabled)}
+                    disabled={isLoadingUserSettings}
+                  />
+                </div>
+              </div>
+
+              {/* Notifications - Dev Mode only */}
+              {notificationsSupported && (
+                <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+                  <h3 className="font-display font-semibold text-spark-text-primary mb-3">Notifications</h3>
+
+                  {notificationPermission === 'denied' ? (
+                    <p className="text-sm text-spark-text-muted">
+                      Notifications are blocked. Please enable them in your browser settings.
                     </p>
-                  </div>
-                )}
-
-                {/* Dev Mode Fee Settings */}
-                {isDevMode && (
-                  <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                    <h3 className="font-display font-semibold text-spark-text-primary mb-3">Deposit Claim Fee</h3>
-                    <FormGroup>
-                      <div className="flex gap-2 items-center">
-                        <select
-                          value={feeType}
-                          onChange={(e) => setFeeType(e.currentTarget.value as 'fixed' | 'rate' | 'networkRecommended')}
-                          className="min-w-[160px] bg-spark-surface border border-spark-border rounded-xl px-3 py-3 text-spark-text-primary text-sm focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20"
-                          aria-label="Max fee type"
-                        >
-                          <option className="bg-spark-surface" value="fixed">Fixed (sats)</option>
-                          <option className="bg-spark-surface" value="rate">Rate (sat/vB)</option>
-                          <option className="bg-spark-surface" value="networkRecommended">Network + leeway</option>
-                        </select>
-                        <div className="flex-1">
-                          <FormInput
-                            id="deposit-fee-default"
-                            type="number"
-                            min={0}
-                            value={feeValue}
-                            onChange={(e) => setFeeValue(e.target.value)}
-                            placeholder={feeType === 'fixed' ? 'sats' : 'sat/vB'}
-                          />
-                        </div>
-                      </div>
-                    </FormGroup>
-                  </div>
-                )}
-
-                {/* Fiat Currencies */}
-                <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                  <h3 className="font-display font-semibold text-spark-text-primary mb-3">Display</h3>
-                  <button
-                    className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
-                    type="button"
-                    onClick={onOpenFiatCurrencies}
-                  >
-                    <div className="flex items-center gap-3">
-                      <CurrencyIcon size="md" />
-                      <span>Fiat Currencies</span>
-                    </div>
-                    <ChevronRightIcon size="md" />
-                  </button>
-                </div>
-
-                {/* SDK Logs */}
-                <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                  <h3 className="font-display font-semibold text-spark-text-primary mb-3">Diagnostics</h3>
-                  <button
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
-                    type="button"
-                    onClick={handleDownloadLogs}
-                  >
-                    <DownloadIcon size="md" />
-                    Download Logs
-                  </button>
-                </div>
-
-                {/* Dev Mode Advanced Settings */}
-                {isDevMode && (
-                  <>
-                    <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                      <h3 className="font-display font-semibold text-spark-text-primary mb-3">Sync Settings</h3>
-                      <FormGroup>
-                        <label htmlFor="sync-interval" className="block text-sm text-spark-text-secondary mb-1">
-                          Sync interval (seconds)
-                        </label>
-                        <FormInput
-                          id="sync-interval"
-                          type="number"
-                          min={0}
-                          value={syncIntervalSecs}
-                          onChange={(e) => setSyncIntervalSecs(e.target.value)}
-                          placeholder="e.g. 30"
-                        />
-                      </FormGroup>
-                    </div>
-
-                    <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                      <h3 className="font-display font-semibold text-spark-text-primary mb-3">LNURL</h3>
-                      <FormGroup>
-                        <label htmlFor="lnurl-domain" className="block text-sm text-spark-text-secondary mb-1">
-                          Custom domain
-                        </label>
-                        <FormInput
-                          id="lnurl-domain"
-                          type="text"
-                          value={lnurlDomain}
-                          onChange={(e) => setLnurlDomain(e.target.value)}
-                          placeholder="example.com"
-                        />
-                      </FormGroup>
-                    </div>
-
-                    <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <span className="font-display font-medium text-spark-text-primary block">Prefer Spark</span>
-                          <span className="text-sm text-spark-text-muted">Use Spark address over Lightning invoice when available</span>
-                        </div>
+                  ) : notificationPermission !== 'granted' ? (
+                    <button
+                      onClick={handleEnableNotifications}
+                      disabled={isRequestingPermission}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-spark-primary text-white rounded-xl hover:bg-spark-primary-light transition-colors disabled:opacity-50"
+                    >
+                      <NotificationIcon size="md" />
+                      {isRequestingPermission ? 'Enabling...' : 'Enable Notifications'}
+                    </button>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* Master toggle */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-spark-text-secondary">Enable notifications</span>
                         <Switch
-                          checked={preferSparkOverLightning}
-                          onChange={() => setPreferSparkOverLightning(!preferSparkOverLightning)}
+                          checked={notificationSettings.enabled}
+                          onChange={() => handleToggleNotifications(!notificationSettings.enabled)}
                         />
                       </div>
-                    </div>
 
-                    {/* Privacy Settings - Dev Mode only */}
-                    <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <h3 className="font-display font-semibold text-spark-text-primary">Privacy</h3>
-                        {isLoadingUserSettings && <LoadingSpinner size="small" />}
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <span className="font-display font-medium text-spark-text-primary block">Private Mode</span>
-                          <span className="text-sm text-spark-text-muted">Hide your address from public explorers (not suitable for zaps)</span>
-                        </div>
-                        <Switch
-                          checked={sparkPrivateModeEnabled}
-                          onChange={() => setSparkPrivateModeEnabled(!sparkPrivateModeEnabled)}
-                          disabled={isLoadingUserSettings}
-                        />
-                      </div>
-                    </div>
+                      {notificationSettings.enabled && (
+                        <>
+                          <div className="border-t border-spark-border/50 my-2" />
 
-                    {/* Notifications - Dev Mode only */}
-                    {notificationsSupported && (
-                      <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                        <h3 className="font-display font-semibold text-spark-text-primary mb-3">Notifications</h3>
-
-                        {notificationPermission === 'denied' ? (
-                          <p className="text-sm text-spark-text-muted">
-                            Notifications are blocked. Please enable them in your browser settings.
-                          </p>
-                        ) : notificationPermission !== 'granted' ? (
-                          <button
-                            onClick={handleEnableNotifications}
-                            disabled={isRequestingPermission}
-                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-spark-primary text-white rounded-xl hover:bg-spark-primary-light transition-colors disabled:opacity-50"
-                          >
-                            <NotificationIcon size="md" />
-                            {isRequestingPermission ? 'Enabling...' : 'Enable Notifications'}
-                          </button>
-                        ) : (
-                          <div className="space-y-3">
-                            {/* Master toggle */}
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-spark-text-secondary">Enable notifications</span>
-                              <Switch
-                                checked={notificationSettings.enabled}
-                                onChange={() => handleToggleNotifications(!notificationSettings.enabled)}
-                              />
+                          {/* Payment received toggle */}
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-sm text-spark-text-secondary block">Payment received</span>
+                              <span className="text-xs text-spark-text-muted">Get notified when you receive sats</span>
                             </div>
-
-                            {notificationSettings.enabled && (
-                              <>
-                                <div className="border-t border-spark-border/50 my-2" />
-
-                                {/* Payment received toggle */}
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <span className="text-sm text-spark-text-secondary block">Payment received</span>
-                                    <span className="text-xs text-spark-text-muted">Get notified when you receive sats</span>
-                                  </div>
-                                  <Switch
-                                    checked={notificationSettings.paymentReceived}
-                                    onChange={() => handleTogglePaymentReceived(!notificationSettings.paymentReceived)}
-                                  />
-                                </div>
-                              </>
-                            )}
+                            <Switch
+                              checked={notificationSettings.paymentReceived}
+                              onChange={() => handleTogglePaymentReceived(!notificationSettings.paymentReceived)}
+                            />
                           </div>
-                        )}
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Version / Dev Mode Toggle */}
-                <div className="text-center pt-4">
-                  <button
-                    onClick={handleVersionTap}
-                    className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors select-none"
-                  >
-                    Glow v1.0.0
-                    {isDevMode && <span className="ml-1 text-spark-primary">(dev)</span>}
-                  </button>
-                  {devTapCount > 0 && devTapCount < DEV_MODE_TAP_COUNT && (
-                    <p className="text-xs text-spark-text-muted mt-1">
-                      {DEV_MODE_TAP_COUNT - devTapCount} more taps to {isDevMode ? 'disable' : 'enable'} dev mode
-                    </p>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
-              </div>
-            </div>
+              )}
+            </>
+          )}
 
-            {/* Footer - Dev Mode only */}
-            {isDevMode && (
-              <div className="flex-shrink-0 border-t border-spark-border bg-spark-surface">
-                <div className="p-4">
-                  <div className="max-w-xl mx-auto">
-                    <PrimaryButton className="w-full" onClick={handleSave}>
-                      Save Changes
-                    </PrimaryButton>
-                  </div>
-                </div>
-              </div>
+          {/* Version / Dev Mode Toggle */}
+          <div className="text-center pt-4">
+            <button
+              onClick={handleVersionTap}
+              className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors select-none"
+            >
+              Glow v1.0.0
+              {isDevMode && <span className="ml-1 text-spark-primary">(dev)</span>}
+            </button>
+            {devTapCount > 0 && devTapCount < DEV_MODE_TAP_COUNT && (
+              <p className="text-xs text-spark-text-muted mt-1">
+                {DEV_MODE_TAP_COUNT - devTapCount} more taps to {isDevMode ? 'disable' : 'enable'} dev mode
+              </p>
             )}
-        </Transition.Child>
-      </Transition>
-    </div>
+          </div>
+        </div>
+      </div>
+    </SlideInPage>
   );
 };
 
