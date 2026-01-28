@@ -3,26 +3,25 @@ import { useWallet } from '../contexts/WalletContext';
 import type { DepositInfo, Fee, SdkEvent } from '@breeztech/breez-sdk-spark';
 import { LoadingSpinner, PrimaryButton, SecondaryButton, FormInput, BottomSheetContainer, BottomSheetCard, DialogHeader, CollapsibleCodeField, PaymentInfoCard } from '../components/ui';
 import { SimpleAlert } from '../components/AlertCard';
-import { Transition } from '@headlessui/react';
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
 import { CloseIcon, CheckIcon, WarningIcon } from '../components/Icons';
 import { isDepositRejected, removeRejectedDeposit } from '../services/depositState';
 import { formatWithSpaces } from '../utils/formatNumber';
+import SlideInPage from '@/components/layout/SlideInPage';
 
 interface GetRefundPageProps {
   onBack: () => void;
-  animationDirection?: 'horizontal' | 'vertical';
+  animationDirection?: 'left' | 'up';
 }
 
 type RefundStep = 'address' | 'fee' | 'confirm' | 'processing' | 'result';
 
-const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirection = 'horizontal' }) => {
+const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirection = 'left' }) => {
   const wallet = useWallet();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [deposits, setDeposits] = useState<DepositInfo[]>([]);
-  const [isOpen, setIsOpen] = useState<boolean>(true);
 
   // Refund flow state
   const [selectedDeposit, setSelectedDeposit] = useState<DepositInfo | null>(null);
@@ -97,11 +96,6 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
       }
     };
   }, [wallet, load]);
-
-  const handleClose = () => {
-    setIsOpen(false);
-    setTimeout(() => onBack(), 220);
-  };
 
 
   const openRefundFlow = (deposit: DepositInfo) => {
@@ -190,127 +184,98 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   };
 
   return (
-    <div className="absolute inset-0 z-50 overflow-hidden">
-      <Transition
-        show={isOpen}
-        appear
-        as="div"
-        className="absolute inset-0"
-      >
-        <Transition.Child
-          as="div"
-          enter="transform transition ease-out duration-300"
-          enterFrom={animationDirection === 'vertical' ? 'translate-y-full' : 'translate-x-[-100%]'}
-          enterTo={animationDirection === 'vertical' ? 'translate-y-0' : 'translate-x-0'}
-          leave="transform transition ease-in duration-200"
-          leaveFrom={animationDirection === 'vertical' ? 'translate-y-0' : 'translate-x-0'}
-          leaveTo={animationDirection === 'vertical' ? 'translate-y-full' : 'translate-x-[-100%]'}
-          className="absolute inset-0 flex flex-col bg-spark-surface will-change-transform"
-        >
-          {/* Header */}
-          <div className="relative px-4 py-4 border-b border-spark-border" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}>
-            <h1 className="text-center font-display text-lg font-semibold text-spark-text-primary">Get Refund</h1>
-            <button
-              onClick={handleClose}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
-              aria-label="Close"
-            >
-              <CloseIcon size="md" />
-            </button>
-          </div>
-
+    <SlideInPage title="Get Refund" onClose={onBack} slideFrom={animationDirection}>
+      <div className="p-4">
+        <div className="max-w-xl mx-auto w-full space-y-6">
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
-            <div className="w-full px-6 py-4 space-y-4">
-              {isLoading && (
-                <div className="py-16 flex justify-center">
-                  <LoadingSpinner text="Loading rejected deposits..." />
+            {isLoading && (
+              <div className="py-16 flex justify-center">
+                <LoadingSpinner text="Loading rejected deposits..." />
+              </div>
+            )}
+
+            {error && (
+              <SimpleAlert variant="error">{error}</SimpleAlert>
+            )}
+
+            {!isLoading && deposits.length === 0 && (
+              <div className="py-16 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-spark-success/20 flex items-center justify-center mx-auto mb-4">
+                  <CheckIcon size="xl" className="text-spark-success" />
                 </div>
-              )}
+                <h3 className="font-display font-semibold text-spark-text-primary mb-2">All Clear!</h3>
+                <p className="text-spark-text-muted text-sm">No rejected deposits pending refund.</p>
+              </div>
+            )}
 
-              {error && (
-                <SimpleAlert variant="error">{error}</SimpleAlert>
-              )}
+            {!isLoading && deposits.length > 0 && (
+              <div className="space-y-4">
+                {deposits.map((dep, idx) => {
+                  const amount = dep.amountSats;
+                  const isRefunded = hasRefundTx(dep);
+                  const refundedTxId = getRefundTxId(dep);
+                  const txKey = `deposit-tx-${idx}`;
+                  const refundKey = `deposit-refund-${idx}`;
+                  const borderClass = isRefunded ? 'border-spark-success/30' : 'border-spark-border';
 
-              {!isLoading && deposits.length === 0 && (
-                <div className="py-16 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-spark-success/20 flex items-center justify-center mx-auto mb-4">
-                    <CheckIcon size="xl" className="text-spark-success" />
-                  </div>
-                  <h3 className="font-display font-semibold text-spark-text-primary mb-2">All Clear!</h3>
-                  <p className="text-spark-text-muted text-sm">No rejected deposits pending refund.</p>
-                </div>
-              )}
-
-              {!isLoading && deposits.length > 0 && (
-                <div className="space-y-4">
-                  {deposits.map((dep, idx) => {
-                    const amount = dep.amountSats;
-                    const isRefunded = hasRefundTx(dep);
-                    const refundedTxId = getRefundTxId(dep);
-                    const txKey = `deposit-tx-${idx}`;
-                    const refundKey = `deposit-refund-${idx}`;
-                    const borderClass = isRefunded ? 'border-spark-success/30' : 'border-spark-border';
-
-                    return (
-                      <div
-                        key={idx}
-                        className={`bg-spark-dark/50 border ${borderClass} rounded-2xl p-5 space-y-4`}
-                      >
-                        {/* Amount */}
-                        <div className="flex items-center justify-between py-2">
-                          <span className="text-spark-text-secondary text-sm">Amount</span>
-                          <span className="font-mono text-sm font-medium text-spark-text-primary">
-                            {formatWithSpaces(amount)} sats
-                          </span>
-                        </div>
-
-                        {/* Transaction IDs */}
-                        <div className="space-y-2">
-                          <CollapsibleCodeField
-                            label="Transaction ID"
-                            value={dep.txid}
-                            isVisible={expandedTxIds[txKey] || false}
-                            onToggle={() => setExpandedTxIds(prev => ({ ...prev, [txKey]: !prev[txKey] }))}
-                            href={getMempoolUrl(dep.txid)}
-                          />
-
-                          {isRefunded && refundedTxId && (
-                            <CollapsibleCodeField
-                              label="Refund Transaction ID"
-                              value={refundedTxId}
-                              isVisible={expandedTxIds[refundKey] || false}
-                              onToggle={() => setExpandedTxIds(prev => ({ ...prev, [refundKey]: !prev[refundKey] }))}
-                              href={getMempoolUrl(refundedTxId)}
-                            />
-                          )}
-                        </div>
-
-                        {/* Continue button - disabled if refund is being processed */}
-                        <div>
-                          {isRefunded ? (
-                            <button disabled className="w-full px-4 py-3 bg-spark-electric/15 text-spark-electric rounded-xl font-medium cursor-not-allowed">
-                              <span className="animate-pulse-slow">BROADCASTING</span>
-                            </button>
-                          ) : (
-                            <PrimaryButton
-                              onClick={() => openRefundFlow(dep)}
-                              className="w-full"
-                            >
-                              CONTINUE
-                            </PrimaryButton>
-                          )}
-                        </div>
+                  return (
+                    <div
+                      key={idx}
+                      className={`bg-spark-dark/50 border ${borderClass} rounded-2xl p-5 space-y-4`}
+                    >
+                      {/* Amount */}
+                      <div className="flex items-center justify-between py-2">
+                        <span className="text-spark-text-secondary text-sm">Amount</span>
+                        <span className="font-mono text-sm font-medium text-spark-text-primary">
+                          {formatWithSpaces(amount)} sats
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </Transition.Child>
-      </Transition>
 
+                      {/* Transaction IDs */}
+                      <div className="space-y-2">
+                        <CollapsibleCodeField
+                          label="Transaction ID"
+                          value={dep.txid}
+                          isVisible={expandedTxIds[txKey] || false}
+                          onToggle={() => setExpandedTxIds(prev => ({ ...prev, [txKey]: !prev[txKey] }))}
+                          href={getMempoolUrl(dep.txid)}
+                        />
+
+                        {isRefunded && refundedTxId && (
+                          <CollapsibleCodeField
+                            label="Refund Transaction ID"
+                            value={refundedTxId}
+                            isVisible={expandedTxIds[refundKey] || false}
+                            onToggle={() => setExpandedTxIds(prev => ({ ...prev, [refundKey]: !prev[refundKey] }))}
+                            href={getMempoolUrl(refundedTxId)}
+                          />
+                        )}
+                      </div>
+
+                      {/* Continue button - disabled if refund is being processed */}
+                      <div>
+                        {isRefunded ? (
+                          <button disabled className="w-full px-4 py-3 bg-spark-electric/15 text-spark-electric rounded-xl font-medium cursor-not-allowed">
+                            <span className="animate-pulse-slow">BROADCASTING</span>
+                          </button>
+                        ) : (
+                          <PrimaryButton
+                            onClick={() => openRefundFlow(dep)}
+                            className="w-full"
+                          >
+                            CONTINUE
+                          </PrimaryButton>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
       {/* Refund Flow Bottom Sheet */}
       <BottomSheetContainer isOpen={isRefundFlowOpen} onClose={closeRefundFlow}>
         <BottomSheetCard>
@@ -523,7 +488,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
           </div>
         </BottomSheetCard>
       </BottomSheetContainer>
-    </div >
+    </SlideInPage>
   );
 };
 

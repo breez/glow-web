@@ -49,7 +49,7 @@ const AppContent: React.FC = () => {
   const [config, setConfig] = useState<Config | null>(null);
   const [hasUnclaimedDeposits, setHasUnclaimedDeposits] = useState<boolean>(false);
   const [celebrationAmount, setCelebrationAmount] = useState<number | null>(null);
-  const [refundAnimationDirection, setRefundAnimationDirection] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
 
   const { showToast } = useToast();
 
@@ -503,7 +503,7 @@ const AppContent: React.FC = () => {
             onLogout={handleLogout}
             hasUnclaimedDeposits={hasUnclaimedDeposits}
             onOpenGetRefund={(source?: 'menu' | 'icon') => {
-              setRefundAnimationDirection(source === 'icon' ? 'vertical' : 'horizontal');
+              setRefundAnimationDirection(source === 'icon' ? 'up' : 'left');
               setCurrentScreen('getRefund');
             }}
             onOpenSettings={() => setCurrentScreen('settings')}

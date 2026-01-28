@@ -49,7 +49,7 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
   const { from, to } = slideTransforms[slideFrom];
 
   return (
-    <div className="absolute inset-0 z-50 overflow-hidden">
+    <div className="h-full w-full flex flex-col bg-spark-surface relative overflow-hidden">
       <Transition show={isOpen} appear as="div" className="absolute inset-0">
         <Transition.Child
           as="div"
