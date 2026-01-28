@@ -257,14 +257,14 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                       <div>
                         {isRefunded ? (
                           <button disabled className="w-full px-4 py-3 bg-spark-electric/15 text-spark-electric rounded-xl font-medium cursor-not-allowed">
-                            <span className="animate-pulse-slow">BROADCASTING</span>
+                            <span className="animate-pulse-slow">Broadcasting</span>
                           </button>
                         ) : (
                           <PrimaryButton
                             onClick={() => openRefundFlow(dep)}
                             className="w-full"
                           >
-                            CONTINUE
+                            Continue
                           </PrimaryButton>
                         )}
                       </div>
