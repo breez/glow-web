@@ -388,6 +388,7 @@ select {
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--spark-border);
   padding: 1em 2em;
+  padding-bottom: max(1em, env(safe-area-inset-bottom, 0px));
 }
 
 /* ============================================
@@ -719,28 +720,24 @@ select {
    ============================================ */
 
 /*
- * Safe Area System
- * ----------------
- * The AppShell component is the single source of truth for safe area insets.
- * It applies padding on all sides via the .app-shell class.
- * Individual components should NOT add their own safe area padding.
+ * Safe Area System (CSS env() variables)
+ * -------------------------------------------------
+ * Safe area insets are applied via CSS env(safe-area-inset-*).
+ * Requires viewport-fit=cover in index.html <meta viewport>.
+ * - AppShell: top, left, right
+ * - .bottom-bar: bottom
+ * - SideMenu panel: top, bottom
  */
 
-/* AppShell - Global safe area wrapper (single source of truth for all safe area insets) */
 .app-shell {
   position: relative;
   height: 100%;
   width: 100%;
   display: flex;
   flex-direction: column;
-  padding-top: constant(safe-area-inset-top);
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: constant(safe-area-inset-bottom);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: constant(safe-area-inset-left);
-  padding-left: env(safe-area-inset-left);
-  padding-right: constant(safe-area-inset-right);
-  padding-right: env(safe-area-inset-right);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 /* ============================================

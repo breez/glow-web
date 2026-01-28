@@ -1,7 +1,6 @@
 import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Transition } from '@headlessui/react';
-
 // Star positions around the logo (relative to center, in pixels)
 const STARS = [
   { x: -28, y: -20, size: 3 },
@@ -144,7 +143,8 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             leave="transition transform ease-in duration-200"
             leaveFrom="translate-x-0"
             leaveTo="-translate-x-full"
-            className="w-72 h-full bg-spark-surface border-r border-spark-border shadow-glass-lg px-6 flex flex-col safe-area-top safe-area-bottom"
+            className="w-72 h-full bg-spark-surface border-r border-spark-border shadow-glass-lg px-6 flex flex-col"
+            style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-8 pt-6">

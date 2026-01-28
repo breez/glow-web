@@ -49,7 +49,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
           {children}
         </div>
         <div className="flex-shrink-0 w-full border-t border-spark-border bg-spark-surface/80 backdrop-blur-sm">
-          <div className="p-4">
+          <div className="p-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}>
             {footer}
           </div>
         </div>
