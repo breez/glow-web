@@ -37,7 +37,7 @@ const AppContent: React.FC = () => {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRestoring, setIsRestoring] = useState<boolean>(false);
-  
+
   // Track if this is the initial app load (splash screen handles this)
   const isInitialLoadRef = useRef<boolean>(true);
   const [walletInfo, setWalletInfo] = useState<GetInfoResponse | null>(null);
@@ -49,7 +49,7 @@ const AppContent: React.FC = () => {
   const [config, setConfig] = useState<Config | null>(null);
   const [hasUnclaimedDeposits, setHasUnclaimedDeposits] = useState<boolean>(false);
   const [celebrationAmount, setCelebrationAmount] = useState<number | null>(null);
-  const [refundAnimationDirection, setRefundAnimationDirection] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
 
   const { showToast } = useToast();
 
@@ -245,7 +245,7 @@ const AppContent: React.FC = () => {
         setCurrentScreen('home'); // Show home screen if no saved mnemonic
         setIsLoading(false);
       }
-      
+
       // Initial load complete - hide splash and mark as done
       if (isInitialLoadRef.current) {
         isInitialLoadRef.current = false;
@@ -256,7 +256,7 @@ const AppContent: React.FC = () => {
     checkForExistingWallet();
 
     // No cleanup here; logout handles disconnect explicitly
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only initialization
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only initialization
   }, []);
 
   // Set up event listener when connected
@@ -396,7 +396,7 @@ const AppContent: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- wallet excluded to avoid re-creating on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- wallet excluded to avoid re-creating on every render
   }, [isConnected, showToast]);
 
   // Navigation handlers
@@ -412,7 +412,7 @@ const AppContent: React.FC = () => {
     if (isLoading && isInitialLoadRef.current) {
       return null;
     }
-    
+
     if (isLoading) {
       return (
         <div className="absolute inset-0 bg-spark-void/95 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -503,7 +503,7 @@ const AppContent: React.FC = () => {
             onLogout={handleLogout}
             hasUnclaimedDeposits={hasUnclaimedDeposits}
             onOpenGetRefund={(source?: 'menu' | 'icon') => {
-              setRefundAnimationDirection(source === 'icon' ? 'vertical' : 'horizontal');
+              setRefundAnimationDirection(source === 'icon' ? 'up' : 'left');
               setCurrentScreen('getRefund');
             }}
             onOpenSettings={() => setCurrentScreen('settings')}
@@ -538,17 +538,13 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <StagingGate>
-      <ToastProvider>
-        <WalletProvider>
-          <div className="h-full flex main-wrapper">
-            <div id="content-root" className="h-full w-full max-w-4xl mx-auto relative">
-              <AppShell>
-                <AppContent />
-              </AppShell>
-            </div>
-          </div>
-        </WalletProvider>
-      </ToastProvider>
+      <WalletProvider>
+        <AppShell>
+          <ToastProvider>
+            <AppContent />
+          </ToastProvider>
+        </AppShell>
+      </WalletProvider>
     </StagingGate>
   );
 }

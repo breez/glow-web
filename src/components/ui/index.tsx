@@ -436,45 +436,6 @@ export const StepContent: React.FC<{
   );
 };
 
-/**
- * StepPanelGroup - Wrapper for StepPanels that ensures dynamic height
- *
- * Uses CSS grid to stack all panels in the same cell. This makes the container
- * height dynamically match the active panel's height, preventing layout
- * issues when switching between steps of different sizes.
- */
-export const StepPanelGroup: React.FC<{
-  children: ReactNode;
-  className?: string;
-}> = ({ children, className = "" }) => (
-  <div className={`grid ${className}`}>
-    {children}
-  </div>
-);
-
-/**
- * StepPanel - Container for step content
- *
- * Only renders content when active. Each step takes only the space it needs,
- * so the container height adjusts per step.
- */
-export const StepPanel: React.FC<{
-  children: ReactNode;
-  isActive: boolean;
-  className?: string;
-}> = ({ children, isActive, className = "" }) => {
-  if (!isActive) {
-    return null;
-  }
-
-  return (
-    <div className={className}>
-      {children}
-    </div>
-  );
-};
-
-
 // ============================================
 // TAB COMPONENTS
 // ============================================
@@ -492,7 +453,7 @@ export const TabList: React.FC<{
   children: ReactNode;
   className?: string;
 }> = ({ children, className = "" }) => (
-  <div className={`flex bg-spark-dark/50 rounded-xl p-1 ${className}`}>
+  <div className={`flex bg-spark-dark/50 rounded-xl ${className}`}>
     {children}
   </div>
 );
@@ -518,44 +479,6 @@ export const Tab: React.FC<{
   >
     {children}
   </button>
-);
-
-/**
- * TabPanelGroup - Wrapper for TabPanels that ensures consistent height
- *
- * Uses CSS grid to stack all panels in the same cell. This makes the container
- * height dynamically match the tallest panel at any time, preventing layout
- * shifts when switching tabs. All panels remain in the DOM and contribute to
- * the height calculation, so if any panel's content grows, the container
- * grows to accommodate it.
- */
-export const TabPanelGroup: React.FC<{
-  children: ReactNode;
-  className?: string;
-}> = ({ children, className = "" }) => (
-  <div className={`grid ${className}`}>
-    {children}
-  </div>
-);
-
-/**
- * TabPanel - Container for tab content
- *
- * Must be used inside TabPanelGroup for consistent height behavior.
- * All panels stack in the same grid cell, with only the active one visible.
- */
-export const TabPanel: React.FC<{
-  children: ReactNode;
-  isActive: boolean;
-  className?: string;
-}> = ({ children, isActive, className = "" }) => (
-  <div
-    className={`col-start-1 row-start-1 pt-6 transition-opacity duration-200 ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-      } ${className}`}
-    aria-hidden={!isActive}
-  >
-    {children}
-  </div>
 );
 
 

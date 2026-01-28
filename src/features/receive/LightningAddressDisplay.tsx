@@ -23,7 +23,7 @@ export interface LightningAddressDisplayProps {
 const EditButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   <button
     onClick={onClick}
-    className="flex items-center gap-2 px-4 py-2 border border-spark-border text-spark-text-secondary rounded-xl font-medium text-sm hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
+    className="flex items-center gap-2 px-4 border border-spark-border text-spark-text-secondary rounded-xl font-medium text-sm hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
     title="Edit Lightning Address"
   >
     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -66,7 +66,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
         <div className="w-full flex justify-center">
           <TextButton
             onClick={onCustomizeAmount}
-            className="text-sm"
+            className="text-sm show-amount-panel-button"
             data-testid="show-amount-panel-button"
           >
             Create invoice with specific amount →
@@ -75,6 +75,8 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
       </div>
     );
   }
+
+  /* TODO: Bug: Currently shows loading state switching between BTC and Lightning Address tabs when lightning address is set.
   if (isLoading) {
     return (
       <div className="text-center py-8">
@@ -82,6 +84,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
       </div>
     );
   }
+    */
 
   if (!address && !isEditing) {
     return (
@@ -97,7 +100,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
         <div className="w-full flex justify-center">
           <TextButton
             onClick={onCustomizeAmount}
-            className="text-sm"
+            className="text-sm show-amount-panel-button"
             data-testid="show-amount-panel-button"
           >
             Create invoice with specific amount →
@@ -163,7 +166,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   }
 
   return (
-    <div className="flex flex-col items-center gap-6 py-2">
+    <div className="flex flex-col items-center gap-6">
       <QRCodeContainer value={address?.lnurl || ''} />
 
       <div className="w-full flex flex-col items-center gap-4">
@@ -184,7 +187,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
 
         <TextButton
           onClick={onCustomizeAmount}
-          className="mt-2"
+          className="mt-2 show-amount-panel-button"
           data-testid="show-amount-panel-button"
         >
           Create invoice with specific amount →

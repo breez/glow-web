@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DialogHeader, StepPanelGroup, StepPanel, BottomSheetContainer, BottomSheetCard } from '../../components/ui';
+import { DialogHeader, BottomSheetContainer, BottomSheetCard } from '../../components/ui';
 import { useWallet } from '../../contexts/WalletContext';
 // No fee UI in generic amount step; BTC fee selection is handled inside Bitcoin workflow
 
@@ -221,32 +221,32 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
           }
         />
 
-        <StepPanelGroup>
-          {/* Input Step */}
-          <StepPanel isActive={currentStep === 'input'}>
-            <InputStep
-              paymentInput={paymentInput?.rawInput || ''}
-              isLoading={isLoading}
-              error={error}
-              onContinue={(paymentInput) => processPaymentInputAsync(paymentInput)}
-              onScanQr={onScanQr}
-            />
-          </StepPanel>
+        {/* Input Step */}
+        {currentStep === 'input' && (
+          <InputStep
+            paymentInput={paymentInput?.rawInput || ''}
+            isLoading={isLoading}
+            error={error}
+            onContinue={(paymentInput) => processPaymentInputAsync(paymentInput)}
+            onScanQr={onScanQr}
+          />
+        )}
 
-          {/* Amount Step (common) */}
-          <StepPanel isActive={currentStep === 'amount'}>
-            <AmountStep
-              paymentInput={paymentInput?.rawInput || ''}
-              amount={amount}
-              isLoading={isLoading}
-              error={error}
-              onBack={() => setCurrentStep('input')}
-              onNext={onAmountNext}
-            />
-          </StepPanel>
+        {/* Amount Step (common) */}
+        {currentStep === 'amount' && (
+          <AmountStep
+            paymentInput={paymentInput?.rawInput || ''}
+            amount={amount}
+            isLoading={isLoading}
+            error={error}
+            onBack={() => setCurrentStep('input')}
+            onNext={onAmountNext}
+          />
+        )}
 
-          {/* Workflow Step: delegates to a specific workflow component */}
-          <StepPanel isActive={currentStep === 'workflow'}>
+        {/* Workflow Step: delegates to a specific workflow component */}
+        {currentStep === 'workflow' && (
+          <>
             {prepareResponse && prepareResponse.paymentMethod.type === 'bolt11Invoice' && (
               <Bolt11Workflow
                 method={prepareResponse.paymentMethod}
@@ -284,18 +284,16 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 }}
               />
             )}
-          </StepPanel>
+          </>
+        )}
 
-          {/* Processing Step (generic) */}
-          <StepPanel isActive={currentStep === 'processing'}>
-            <ProcessingStep />
-          </StepPanel>
+        {/* Processing Step (generic) */}
+        {currentStep === 'processing' && <ProcessingStep />}
 
-          {/* Result Step (generic) */}
-          <StepPanel isActive={currentStep === 'result'}>
-            <ResultStep result={paymentResult === 'success' ? 'success' : 'failure'} error={error} onClose={onClose} />
-          </StepPanel>
-        </StepPanelGroup>
+        {/* Result Step (generic) */}
+        {currentStep === 'result' && (
+          <ResultStep result={paymentResult === 'success' ? 'success' : 'failure'} error={error} onClose={onClose} />
+        )}
       </BottomSheetCard>
     </BottomSheetContainer>
   );

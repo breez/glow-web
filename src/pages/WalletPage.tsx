@@ -250,8 +250,8 @@ const WalletPage: React.FC<WalletPageProps> = ({
         </Suspense>
       )}
 
-      {/* Bottom action bar */}
-      <div className="bottom-bar flex items-center justify-center gap-4 z-30">
+      {/* Bottom action bar - bottom inset from CSS env(safe-area-inset-bottom) */}
+      <div className="bottom-bar flex justify-center gap-4 z-30">
         {/* Send button */}
         <button
           onClick={() => setIsSendDialogOpen(true)}

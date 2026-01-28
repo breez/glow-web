@@ -61,7 +61,7 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
   }
 
   const footer = (
-    <div className="w-full p-4">
+    <div className="max-w-xl mx-auto">
       <PrimaryButton className="w-full" onClick={handleConfirmMnemonic}>
         I've Saved My Phrase
       </PrimaryButton>
@@ -72,7 +72,7 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
 
   return (
     <PageLayout onBack={onBack} footer={footer} title="Get Started" onClearError={onClearError}>
-      <div className="flex flex-grow h-full flex-col max-w-2xl mx-auto px-4">
+      <div className="max-w-xl mx-auto w-full space-y-4">
         {/* Icon */}
         <div className="flex justify-center mb-4">
           <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">

@@ -163,7 +163,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, onBack, onRun, on
       <FormError error={error} />
 
       {/* Action buttons */}
-      <div className="flex gap-3 pt-2">
+      <div className="flex gap-3">
         <SecondaryButton onClick={onBack} disabled={isLoading} className="flex-1">
           Back
         </SecondaryButton>
