@@ -537,13 +537,15 @@ const AppContent: React.FC = () => {
 // Wrap the App with ToastProvider and StagingGate
 function App() {
   return (
-    <WalletProvider>
-      <AppShell>
-        <ToastProvider>
-          <AppContent />
-        </ToastProvider>
-      </AppShell>
-    </WalletProvider>
+    <StagingGate>
+      <WalletProvider>
+        <AppShell>
+          <ToastProvider>
+            <AppContent />
+          </ToastProvider>
+        </AppShell>
+      </WalletProvider>
+    </StagingGate>
   );
 }
 
