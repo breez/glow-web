@@ -12,9 +12,7 @@ import {
   TabContainer,
   TabList,
   Tab,
-  TabPanel,
   ConfirmDialog,
-  TabPanelGroup,
 } from '../../components/ui';
 
 // Types
@@ -330,8 +328,8 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
             )}
 
             {currentStep === 'input' && (
-              <TabPanelGroup className="justify-center">
-                <TabPanel isActive={activeTab === 'lightning'}>
+              <div className="pt-6">
+                {activeTab === 'lightning' && (
                   <LightningAddressDisplay
                     address={lightningAddress}
                     isLoading={lightningAddressLoading}
@@ -346,16 +344,16 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
                     onEditValueChange={setLightningAddressEditValue}
                     onCustomizeAmount={handleCustomizeAmount}
                   />
-                </TabPanel>
+                )}
 
-                <TabPanel isActive={activeTab === 'spark'}>
+                {activeTab === 'spark' && (
                   <SparkAddressDisplay address={sparkAddress} isLoading={sparkLoading} />
-                </TabPanel>
+                )}
 
-                <TabPanel isActive={activeTab === 'bitcoin'}>
+                {activeTab === 'bitcoin' && (
                   <BitcoinAddressDisplay address={bitcoinAddress} isLoading={bitcoinLoading} />
-                </TabPanel>
-              </TabPanelGroup>
+                )}
+              </div>
             )}
 
             {currentStep === 'loading' && (
