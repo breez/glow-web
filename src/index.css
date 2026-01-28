@@ -577,11 +577,26 @@ select {
 
 .bottom-sheet-card {
   background: var(--spark-surface);
-  border-top: 1px solid var(--spark-border);
-  border-radius: 24px 24px 0 0;
   box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
   width: 100%;
   padding: 0.75em 1.5em 1em 1.5em;
+}
+
+.bottom-sheet-card-bordered {
+  border-top: 1px solid var(--spark-border);
+  border-radius: 1.5rem 1.5rem 0 0;
+} 
+
+.bottom-sheet-handle-zone {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 0;
+  cursor: grab;
+}
+
+.bottom-sheet-handle-zone:active {
+  cursor: grabbing;
 }
 
 .bottom-sheet-handle {
@@ -589,8 +604,6 @@ select {
   height: 0.25em;
   border-radius: 0.125em;
   background: var(--spark-border-light);
-  justify-self: center;
-  margin: 0.75em auto;
 }
 
 .show-amount-panel-button {
@@ -694,7 +707,11 @@ select {
 .overflow-y-auto {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+  display: none;
 }
 
 /* ============================================
