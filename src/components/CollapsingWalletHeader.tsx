@@ -99,20 +99,31 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
 
   return (
     <div className="relative overflow-hidden transition-all duration-200">
-      {/* Glassmorphism background */}
-      <div className="absolute inset-0 bg-spark-surface/80 backdrop-blur-xl border-b border-spark-border" />
+      {/* Glassmorphism background - extends into safe area */}
+      <div
+        className="absolute inset-0 bg-spark-surface/80 backdrop-blur-xl border-b border-spark-border"
+        style={{
+          top: 'calc(-1 * env(safe-area-inset-top, 0px))',
+        }}
+      />
 
-      {/* Strong glow effect behind balance */}
+      {/* Strong glow effect behind balance - extends into safe area */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[200px] pointer-events-none transition-opacity duration-300"
-        style={{ opacity: 1 - scrollProgress * 0.7 }}
+        style={{
+          opacity: 1 - scrollProgress * 0.7,
+          marginTop: 'calc(-0.5 * env(safe-area-inset-top, 0px))',
+        }}
       >
         <div className="absolute inset-0 bg-gradient-radial from-spark-primary/30 via-spark-primary/15 to-transparent blur-3xl" />
         <div className="absolute inset-4 bg-gradient-radial from-amber-400/20 to-transparent blur-2xl" />
       </div>
 
-      {/* Header content */}
-      <div className="relative z-10 px-4 pb-2 pt-4">
+      {/* Header content - padded below safe area */}
+      <div
+        className="relative z-10 px-4 pb-2"
+        style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+      >
         {/* Top bar with menu and network */}
         <div className="flex items-center justify-between mb-4">
           {/* Menu button */}

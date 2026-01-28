@@ -27,9 +27,19 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
   }, []);
 
   return (
-    <div className="h-full flex flex-col relative overflow-hidden bg-spark-dark">
-      {/* Animated background - extends behind safe areas via negative margins */}
-      <div className="absolute -inset-[env(safe-area-inset-top)] pointer-events-none overflow-hidden" style={{
+    <div className="h-full w-full flex flex-col bg-spark-surface relative overflow-hidden">
+      {/* Background layer - extends behind all safe areas */}
+      <div
+        className="absolute inset-0 bg-spark-dark pointer-events-none"
+        style={{
+          top: 'calc(-1 * env(safe-area-inset-top, 0px))',
+          bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
+          left: 'calc(-1 * env(safe-area-inset-left, 0px))',
+          right: 'calc(-1 * env(safe-area-inset-right, 0px))'
+        }}
+      />
+      {/* Animated background effects - extends behind safe areas */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{
         top: 'calc(-1 * env(safe-area-inset-top, 0px))',
         bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
         left: 'calc(-1 * env(safe-area-inset-left, 0px))',
@@ -54,19 +64,25 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
         />
       </div>
 
-      {/* Content - safe areas handled by AppShell */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
-        
+      {/* Content - with safe area padding */}
+      <div
+        className="flex-1 flex flex-col items-center justify-center px-6 relative z-10"
+        style={{
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
+      >
+
         {/* Logo */}
         <div className="mb-10 relative">
           {/* Outer glow ring */}
           <div className="absolute -inset-10 bg-gradient-radial from-spark-primary/25 via-spark-primary/5 to-transparent blur-2xl animate-glow-pulse" />
-          
+
           {/* Icon container */}
           <div className="relative w-36 h-36 flex items-center justify-center">
-            <img 
-              src="/assets/Glow_Logo.png" 
-              alt="Glow" 
+            <img
+              src="/assets/Glow_Logo.png"
+              alt="Glow"
               className="w-full h-full object-contain"
             />
             {/* Twinkling stars */}
@@ -118,15 +134,7 @@ const HomePage: React.FC<HomePageProps> = ({ onRestoreWallet, onCreateNewWallet 
             Restore from Backup
           </button>
         </div>
-
       </div>
-
-      {/* Bottom fade - extends behind safe area */}
-      <div className="absolute inset-x-0 h-24 bg-gradient-to-t from-spark-dark to-transparent pointer-events-none" style={{
-        bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
-        left: 'calc(-1 * env(safe-area-inset-left, 0px))',
-        right: 'calc(-1 * env(safe-area-inset-right, 0px))'
-      }} />
     </div>
   );
 };

@@ -208,7 +208,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
           className="absolute inset-0 flex flex-col bg-spark-surface will-change-transform"
         >
           {/* Header */}
-          <div className="relative px-4 py-4 border-b border-spark-border">
+          <div className="relative px-4 py-4 border-b border-spark-border" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}>
             <h1 className="text-center font-display text-lg font-semibold text-spark-text-primary">Get Refund</h1>
             <button
               onClick={handleClose}
