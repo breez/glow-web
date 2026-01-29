@@ -12,6 +12,7 @@ interface QrScannerDialogProps {
 const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onScan }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [galleryError, setGalleryError] = useState<string | null>(null);
+  const hasStartedRef = useRef(false);
 
   const handleScan = useCallback((data: string) => {
     onScan(data);
@@ -48,6 +49,10 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
 
   useEffect(() => {
     if (isOpen) {
+      // Prevent multiple initializations per open session
+      if (hasStartedRef.current) return;
+      hasStartedRef.current = true;
+
       // Wait for the transition to complete (300ms) plus a buffer
       const timer = setTimeout(() => {
         console.log('Checking video element after transition:', videoRef.current);
@@ -61,9 +66,11 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
       return () => {
         clearTimeout(timer);
         stopScanning();
+        hasStartedRef.current = false;
       };
     } else {
       stopScanning();
+      hasStartedRef.current = false;
     }
   }, [isOpen, startScanning, stopScanning, videoRef]);
 
