@@ -213,7 +213,9 @@ export const getAllLogsAsZip = async (): Promise<Blob> => {
       }
     } catch (e) {
       // If we can't get historical sessions, just include current
-      console.warn('Failed to retrieve historical sessions:', e);
+      logger.warn(LogCategory.SDK, 'Failed to retrieve historical log sessions', {
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
   }
 

@@ -1,4 +1,5 @@
 import initBreezSDK from '@breeztech/breez-sdk-spark';
+import { logger, LogCategory } from '@/services/logger';
 
 // Flag to ensure we only initialize once
 let initialized = false;
@@ -11,12 +12,14 @@ export const initWasm = async (): Promise<void> => {
 
   try {
     // Initialize the WASM module
-    console.log('Initializing WASM module...');
+    logger.info(LogCategory.SDK, 'Initializing WASM module');
     await initBreezSDK();
-    console.log('WASM module initialized successfully');
+    logger.info(LogCategory.SDK, 'WASM module initialized successfully');
     initialized = true;
   } catch (error) {
-    console.error('Failed to initialize WASM module:', error);
+    logger.error(LogCategory.SDK, 'Failed to initialize WASM module', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     throw error;
   }
 };

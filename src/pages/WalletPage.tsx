@@ -3,6 +3,7 @@ import { useWallet } from '../contexts/WalletContext';
 import {
   LoadingSpinner
 } from '../components/ui';
+import { logger, LogCategory } from '@/services/logger';
 import CollapsingWalletHeader from '../components/CollapsingWalletHeader';
 import SideMenu from '../components/SideMenu';
 import TransactionList from '../components/TransactionList';
@@ -143,13 +144,17 @@ const WalletPage: React.FC<WalletPageProps> = ({
 
     try {
       const parseResult = await wallet.parseInput(data);
-      console.log('Parsed QR result:', parseResult);
+      logger.debug(LogCategory.UI, 'Parsed QR result', {
+        resultType: parseResult.type,
+      });
       setIsQrScannerOpen(false);
       setScannerOpenedFromSend(false);
       setPaymentInput({ rawInput: data, parsedInput: parseResult });
       setIsSendDialogOpen(true);
     } catch (error) {
-      console.error('Failed to parse QR code:', error);
+      logger.error(LogCategory.UI, 'Failed to parse QR code', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 

@@ -8,6 +8,7 @@ import { CloseIcon, CheckIcon, WarningIcon } from '../components/Icons';
 import { isDepositRejected, removeRejectedDeposit } from '../services/depositState';
 import { formatWithSpaces } from '../utils/formatNumber';
 import SlideInPage from '@/components/layout/SlideInPage';
+import { logger, LogCategory } from '@/services/logger';
 
 interface GetRefundPageProps {
   onBack: () => void;
@@ -65,7 +66,9 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
 
       setDeposits(sortedDeposits);
     } catch (e) {
-      console.error('Failed to load rejected deposits:', e);
+      logger.error(LogCategory.PAYMENT, 'Failed to load rejected deposits', {
+        error: e instanceof Error ? e.message : String(e),
+      });
       setError('Failed to load rejected deposits');
     } finally {
       setIsLoading(false);
@@ -86,7 +89,9 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
           }
         });
       } catch (e) {
-        console.warn('Failed to attach refund page event listener:', e);
+        logger.warn(LogCategory.SDK, 'Failed to attach refund page event listener', {
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     })();
 
@@ -140,7 +145,9 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
 
       await load();
     } catch (e) {
-      console.error('Failed to refund deposit:', e);
+      logger.error(LogCategory.PAYMENT, 'Failed to refund deposit', {
+        error: e instanceof Error ? e.message : String(e),
+      });
       setRefundError(e instanceof Error ? e.message : 'Failed to refund deposit');
       setRefundStep('confirm');
     } finally {

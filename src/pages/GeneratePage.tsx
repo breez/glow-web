@@ -5,6 +5,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import PageLayout from '../components/layout/PageLayout';
 import { AlertCard } from '../components/AlertCard';
 import { CheckIcon, CopyIcon } from '../components/Icons';
+import { logger, LogCategory } from '@/services/logger';
 
 interface GeneratePageProps {
   onMnemonicConfirmed: (mnemonic: string) => void;
@@ -28,7 +29,9 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
         const newMnemonic = bip39.generateMnemonic(128);
         setMnemonic(newMnemonic);
       } catch (error) {
-        console.error('Failed to generate mnemonic:', error);
+        logger.error(LogCategory.AUTH, 'Failed to generate mnemonic', {
+          error: error instanceof Error ? error.message : String(error),
+        });
       } finally {
         setIsLoading(false);
       }
@@ -43,7 +46,11 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 2000);
       })
-      .catch(err => console.error('Failed to copy mnemonic:', err));
+      .catch(err => {
+        logger.warn(LogCategory.UI, 'Failed to copy mnemonic', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
   };
 
   const handleConfirmMnemonic = () => {

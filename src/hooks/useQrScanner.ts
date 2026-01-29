@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import QrScanner from 'qr-scanner';
+import { logger, LogCategory } from '@/services/logger';
 
 export type FacingMode = 'environment' | 'user';
 
@@ -20,6 +21,8 @@ export interface UseQrScannerReturn {
   toggleCamera: () => void;
   clearError: () => void;
 }
+
+const formatError = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 
 /**
  * Hook to manage QR code scanning with camera controls
@@ -75,14 +78,18 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
       qrScannerRef.current = new QrScanner(
         videoRef.current,
         (result) => {
-          console.log('QR Code detected:', result.data);
+          logger.debug(LogCategory.UI, 'QR code detected', {
+            length: result.data.length,
+          });
           onScan(result.data);
           stopScanning();
         },
         {
           onDecodeError: (decodeError) => {
             // Ignore decode errors - they happen frequently while scanning
-            console.debug('QR decode error:', decodeError);
+            logger.debug(LogCategory.UI, 'QR decode error', {
+              error: formatError(decodeError),
+            });
           },
           highlightScanRegion: true,
           highlightCodeOutline: true,
@@ -92,7 +99,7 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
       );
 
       await qrScannerRef.current.start();
-      console.log('QR Scanner started successfully');
+      logger.info(LogCategory.UI, 'QR scanner started successfully');
       setIsInitializing(false);
       setIsScanning(true);
 
@@ -100,14 +107,20 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
       // check may have returned stale results before the user allowed access
       try {
         const cameras = await QrScanner.listCameras(false);
-        console.log('Cameras after permission:', cameras);
+        logger.debug(LogCategory.UI, 'Cameras after permission', {
+          count: cameras.length,
+        });
         const uniqueIds = new Set(cameras.map(c => c.id));
         setHasMultipleCameras(uniqueIds.size > 1);
       } catch (e) {
-        console.warn('Failed to re-list cameras:', e);
+        logger.warn(LogCategory.UI, 'Failed to re-list cameras', {
+          error: formatError(e),
+        });
       }
     } catch (err) {
-      console.error('Failed to start QR scanner:', err);
+      logger.error(LogCategory.UI, 'Failed to start QR scanner', {
+        error: formatError(err),
+      });
       let errorMessage = 'Camera access denied or not available';
 
       if (err instanceof Error) {
@@ -134,7 +147,9 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
     setFacingMode(newMode);
     if (qrScannerRef.current) {
       qrScannerRef.current.setCamera(newMode).catch((err) => {
-        console.warn('Failed to switch camera:', err);
+        logger.warn(LogCategory.UI, 'Failed to switch camera', {
+          error: formatError(err),
+        });
       });
     }
   }, [facingMode]);

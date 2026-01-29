@@ -3,6 +3,7 @@ import type { LnurlPayRequestDetails, PrepareLnurlPayRequest, PrepareLnurlPayRes
 import type { PaymentStep } from '../../../types/domain';
 import { FormError, PrimaryButton, SecondaryButton } from '../../../components/ui';
 import ConfirmStep from '../steps/ConfirmStep';
+import { logger, LogCategory } from '@/services/logger';
 
 interface LnurlWorkflowProps {
   parsed: LnurlPayRequestDetails;
@@ -72,7 +73,9 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, onBack, onRun, on
       setPrepareResponse(resp);
       setStep('confirm');
     } catch (err) {
-      console.error('Failed to prepare LNURL Pay:', err);
+      logger.error(LogCategory.PAYMENT, 'Failed to prepare LNURL Pay', {
+        error: err instanceof Error ? err.message : String(err),
+      });
       setError(`Failed to prepare LNURL Pay: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);

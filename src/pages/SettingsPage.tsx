@@ -13,6 +13,7 @@ import {
 } from '../services/notificationService';
 import { NotificationIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
+import { logger, LogCategory } from '@/services/logger';
 
 const DEV_MODE_TAP_COUNT = 5;
 const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
@@ -98,7 +99,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
         const us = await wallet.getUserSettings();
         setSparkPrivateModeEnabled(us.sparkPrivateModeEnabled !== false);
       } catch (e) {
-        console.warn('Failed to load user settings from SDK:', e);
+        logger.warn(LogCategory.SDK, 'Failed to load user settings from SDK', {
+          error: e instanceof Error ? e.message : String(e),
+        });
       } finally {
         setIsLoadingUserSettings(false);
       }
@@ -183,7 +186,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     try {
       await wallet.setUserSettings({ sparkPrivateModeEnabled });
     } catch (e) {
-      console.warn('Failed to update SDK user settings:', e);
+      logger.warn(LogCategory.SDK, 'Failed to update SDK user settings', {
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
     window.location.reload();
   };
@@ -193,7 +198,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     try {
       await wallet.shareOrDownloadLogs();
     } catch (e) {
-      console.warn('Failed to share/download logs:', e);
+      logger.warn(LogCategory.SDK, 'Failed to share or download logs', {
+        error: e instanceof Error ? e.message : String(e),
+      });
     } finally {
       setIsDownloadingLogs(false);
     }
