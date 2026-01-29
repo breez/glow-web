@@ -58,22 +58,14 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
             <label className="block text-spark-text-secondary text-sm font-medium mb-2">Amount</label>
             <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary focus-within:ring-2 focus-within:ring-spark-primary/20 transition-all">
               <input
-                type="text"
-                inputMode="decimal"
-                pattern="[0-9]*"
+                type="number"
                 min={limits.min}
                 max={limits.max}
                 value={amount}
-                onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
                 disabled={isLoading}
                 className="flex-1 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck={false}
-                data-form-type="other"
-                data-lpignore="true"
-                data-1p-ignore="true"
                 data-testid="invoice-amount-input"
               />
               <span className="px-4 py-3 text-spark-text-muted font-medium text-sm">sats</span>
@@ -104,20 +96,14 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
           {/* Description */}
           <div>
             <label className="block text-spark-text-secondary text-sm font-medium mb-2">Description (optional)</label>
-            <input
-              type="text"
-              inputMode="text"
+            <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => setDescription(e.target.value.replace(/\n/g, ''))}
+              onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
               placeholder="What's this for?"
               disabled={isLoading}
-              className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 focus:outline-none transition-all"
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              data-form-type="other"
-              data-lpignore="true"
-              data-1p-ignore="true"
+              rows={1}
+              className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 focus:outline-none transition-all resize-none"
             />
           </div>
 

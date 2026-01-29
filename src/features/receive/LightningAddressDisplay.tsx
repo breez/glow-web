@@ -54,7 +54,7 @@ const EditingForm: React.FC<EditingFormProps> = ({
   onSave,
 }) => {
   const buttonsRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Scroll buttons into view when keyboard opens
   useEffect(() => {
@@ -87,24 +87,15 @@ const EditingForm: React.FC<EditingFormProps> = ({
       {/* Input with suffix */}
       <div className="space-y-4">
         <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary focus-within:ring-2 focus-within:ring-spark-primary/20 transition-all">
-          <input
+          <textarea
             ref={inputRef}
-            id="ln-addr-input"
-            name="ln-addr-input"
-            type="text"
-            inputMode="text"
             value={editValue}
-            onChange={(e) => onEditValueChange(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+            onChange={(e) => onEditValueChange(e.target.value.toLowerCase().replace(/[^a-z0-9\n]/g, '').replace(/\n/g, ''))}
+            onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
             placeholder="satoshi"
             disabled={isLoading}
-            className="flex-1 min-w-0 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck={false}
-            data-form-type="other"
-            data-lpignore="true"
-            data-1p-ignore="true"
+            rows={1}
+            className="flex-1 min-w-0 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none resize-none"
           />
           <span className="flex-shrink-0 px-4 py-3 text-spark-text-muted font-medium text-sm">
             @breez.tips
