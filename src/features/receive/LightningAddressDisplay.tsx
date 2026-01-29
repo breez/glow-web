@@ -89,15 +89,22 @@ const EditingForm: React.FC<EditingFormProps> = ({
         <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary focus-within:ring-2 focus-within:ring-spark-primary/20 transition-all">
           <input
             ref={inputRef}
-            id="lightning-address"
+            id="ln-addr-input"
+            name="ln-addr-input"
             type="text"
+            inputMode="text"
             value={editValue}
             onChange={(e) => onEditValueChange(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
             placeholder="satoshi"
             disabled={isLoading}
             className="flex-1 min-w-0 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none"
             autoComplete="off"
+            autoCorrect="off"
             autoCapitalize="off"
+            spellCheck={false}
+            data-form-type="other"
+            data-lpignore="true"
+            data-1p-ignore="true"
           />
           <span className="flex-shrink-0 px-4 py-3 text-spark-text-muted font-medium text-sm">
             @breez.tips
