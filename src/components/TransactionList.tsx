@@ -103,7 +103,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
     );
   }
 
-  const renderTransactionItem = (tx: Payment, index: number) => {
+  const renderTransactionItem = (tx: Payment, index: number, isLast: boolean) => {
     const isReceive = tx.paymentType === 'receive';
     const isPending = tx.status === 'pending';
     const isFailed = tx.status === 'failed';
@@ -111,7 +111,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
     return (
       <li
         key={tx.id || `${tx.timestamp}-${tx.amount}-${index}`}
-        className="transaction-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer animate-list-item"
+        className={`transaction-item flex items-center gap-3 px-3 py-3.5 cursor-pointer animate-list-item ${!isLast ? 'border-b border-white/[0.04]' : ''}`}
         style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
         onClick={() => onPaymentSelected(tx)}
         data-testid="transaction-item"
@@ -179,8 +179,8 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
             </h2>
             <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
           </div>
-          <ul className="space-y-1 mb-6">
-            {pendingApproval.map((tx, index) => renderTransactionItem(tx, index))}
+          <ul className="mb-6">
+            {pendingApproval.map((tx, index) => renderTransactionItem(tx, index, index === pendingApproval.length - 1))}
           </ul>
         </>
       )}
@@ -194,8 +194,8 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
             </h2>
             <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
           </div>
-          <ul className="space-y-1">
-            {regularPayments.map((tx, index) => renderTransactionItem(tx, index))}
+          <ul>
+            {regularPayments.map((tx, index) => renderTransactionItem(tx, index, index === regularPayments.length - 1))}
           </ul>
         </>
       )}
