@@ -14,6 +14,23 @@ interface PaymentDetailsDialogProps {
 // Threshold for when to use collapsible chevron
 const LONG_TEXT_THRESHOLD = 35;
 
+// Get the payment title (same logic as TransactionList)
+const getPaymentTitle = (payment: Payment): string => {
+  if (payment.method === 'lightning') {
+    if (payment.details?.type === 'lightning') {
+      if (payment.details.lnurlPayInfo?.lnAddress) {
+        return payment.details.lnurlPayInfo.lnAddress;
+      }
+      return payment.details?.description || 'Lightning Payment';
+    }
+    return 'Lightning Payment';
+  }
+  if (payment.method === 'spark') return 'Spark Transfer';
+  if (payment.method === 'deposit') return 'BTC Transfer';
+  if (payment.method === 'withdraw') return 'BTC Transfer';
+  return 'Payment';
+};
+
 const getDefaultVisibleFields = () => ({
   invoice: false,
   preimage: false,
@@ -69,7 +86,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   return (
     <BottomSheetContainer isOpen={optionalPayment != null} onClose={onClose}>
       <BottomSheetCard>
-        <DialogHeader title="Payment Details" onClose={onClose} />
+        <DialogHeader title={getPaymentTitle(payment)} onClose={onClose} />
         <div className="space-y-4 overflow-y-auto">
           {/* General Payment Information */}
           <PaymentInfoCard>
