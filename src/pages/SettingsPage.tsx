@@ -301,11 +301,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
               ) : (
                 <DownloadIcon size="md" />
               )}
-              {isDownloadingLogs ? 'Preparing...' : 'Export Logs'}
+              {isDownloadingLogs ? 'Preparing...' : 'Download Logs'}
             </button>
-            <p className="text-xs text-spark-text-muted mt-2">
-              Export logs from up to 10 recent sessions.
-            </p>
           </div>
 
           {/* Dev Mode Advanced Settings */}
