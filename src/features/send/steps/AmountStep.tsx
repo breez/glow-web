@@ -8,6 +8,7 @@ export interface AmountStepProps {
   error: string | null;
   onBack: () => void;
   onNext: (amountSats: number) => void;
+  onDrain?: () => void;
 }
 
 const AmountStep: React.FC<AmountStepProps> = ({
@@ -17,6 +18,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
   error,
   onBack,
   onNext,
+  onDrain,
 }) => {
   const [localAmount, setLocalAmount] = useState<string>(amount || '');
 
@@ -71,6 +73,18 @@ const AmountStep: React.FC<AmountStepProps> = ({
             </button>
           ))}
         </div>
+
+        {/* Send All button (drain) */}
+        {onDrain && (
+          <button
+            onClick={onDrain}
+            disabled={isLoading}
+            className="w-full mt-3 py-2 rounded-lg text-sm font-medium transition-all bg-transparent border border-spark-warning text-spark-warning hover:bg-spark-warning/10 disabled:opacity-50"
+            data-testid="send-all-button"
+          >
+            Send All (Drain Wallet)
+          </button>
+        )}
       </div>
 
       <FormError error={error} />
