@@ -246,6 +246,11 @@ h6 {
   flex-shrink: 0;
 }
 
+.action-button-send,
+.action-button-receive {
+  min-width: 7em; /* Equal width for Send/Receive buttons (#70) */
+}
+
 .action-button-send {
   background: linear-gradient(135deg, var(--spark-electric) 0%, #0099cc 100%);
   color: #000;

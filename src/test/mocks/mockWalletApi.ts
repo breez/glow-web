@@ -237,6 +237,7 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
 
     // Logs
     getSdkLogs: vi.fn().mockReturnValue(''),
+    getAppLogs: vi.fn().mockReturnValue(''),
   };
 
   return { ...defaultMock, ...overrides };

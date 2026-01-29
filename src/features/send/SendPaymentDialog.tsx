@@ -14,6 +14,7 @@ import ProcessingStep from './steps/ProcessingStep';
 import ResultStep from './steps/ResultStep';
 import { SendInput } from '@/types/domain';
 import { LnurlPayRequestDetails, PrepareLnurlPayRequest, SendPaymentOptions } from '@breeztech/breez-sdk-spark';
+import { logger, LogCategory } from '../../services/logger';
 
 // Props interfaces
 interface SendPaymentDialogProps {
@@ -105,21 +106,29 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
   };
 
   // Common prepare for all input types
-  const prepareSendPayment = async (paymentRequest: string, amountSats: number) => {
-    if (amountSats <= 0) {
-      setError('Please enter a valid amount');
-      return;
-    }
+  // Note: drain support ({ type: 'drain' }) requires SDK update with PayAmount type
+  const prepareSendPayment = async (paymentRequest: string, amountSats: number | 'drain') => {
     setIsLoading(true);
     setError(null);
     try {
+      const isDrain = amountSats === 'drain';
+      logger.paymentInitiated(isDrain ? 'drain' : 'send');
+
+      // TODO: When SDK supports PayAmount with drain, update to:
+      // const payAmount = isDrain ? { type: 'drain' } : { type: 'bitcoin', amountSats };
+      // For now, drain requires SDK update - show error
+      if (isDrain) {
+        throw new Error('Drain feature requires SDK update. Please enter a specific amount.');
+      }
+
       const response = await wallet.prepareSendPayment({ paymentRequest, amount: BigInt(amountSats) });
       setPrepareResponse(response);
       // Always go to workflow; BTC fee selection happens inside the Bitcoin workflow
       setCurrentStep('workflow');
     } catch (err) {
-      console.error('Failed to prepare payment:', err);
-      setError(`Failed to prepare payment ${err instanceof Error ? err.message : 'Unknown error'}`);
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+      logger.paymentFailed('prepare', errorMsg);
+      setError(`Failed to prepare payment: ${errorMsg}`);
       setCurrentStep('amount');
     } finally {
       setIsLoading(false);
@@ -133,6 +142,17 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     }
     setAmount(String(amountNum));
     await prepareSendPayment(paymentInput?.rawInput || '', amountNum);
+  };
+
+  // Handle "Send All" / drain mode
+  // Note: Full drain support requires SDK update with PayAmount type
+  const onDrain = async () => {
+    if (!paymentInput?.rawInput) {
+      setError('No payment destination');
+      return;
+    }
+    logger.info(LogCategory.PAYMENT, 'Drain mode selected');
+    await prepareSendPayment(paymentInput.rawInput, 'drain');
   };
   // Get payment method display name
   const getPaymentMethodName = (): string => {
@@ -241,6 +261,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
             error={error}
             onBack={() => setCurrentStep('input')}
             onNext={onAmountNext}
+            onDrain={onDrain}
           />
         )}
 

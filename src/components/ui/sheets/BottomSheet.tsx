@@ -1,5 +1,6 @@
-import React, { ReactNode, forwardRef, useState, useRef, useCallback, useEffect } from 'react';
+import React, { ReactNode, forwardRef, useState, useRef, useCallback, useEffect, createContext, useContext } from 'react';
 import { Transition } from '@headlessui/react';
+import { useKeyboardHeight } from '../../../hooks/useKeyboardHeight';
 
 /**
  * Bottom sheet inspired by @gorhom/react-native-bottom-sheet.
@@ -67,6 +68,17 @@ function applyResistance(overAmount: number): number {
   return overAmount / OVER_DRAG_RESISTANCE;
 }
 
+/** Context for nested bottom sheets to detect parent state */
+interface BottomSheetContextValue {
+  isParentFullScreen: boolean;
+  nestingLevel: number;
+}
+
+const BottomSheetContext = createContext<BottomSheetContextValue>({
+  isParentFullScreen: false,
+  nestingLevel: 0,
+});
+
 export interface BottomSheetContainerProps {
   isOpen: boolean;
   children: ReactNode;
@@ -106,9 +118,18 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const contentHeight = useRef(0);
 
+  // Keyboard height for adjusting sheet position (#71)
+  const keyboardHeight = useKeyboardHeight();
+
+  // Nested sheet context (#69)
+  const parentContext = useContext(BottomSheetContext);
+  const isNested = parentContext.nestingLevel > 0;
+
   const maxPx = useCallback(() => {
-    return window.innerHeight * (maxHeightVh / 100);
-  }, [maxHeightVh]);
+    // Subtract keyboard height when visible to keep content above keyboard
+    const availableHeight = window.innerHeight - keyboardHeight;
+    return availableHeight * (maxHeightVh / 100);
+  }, [maxHeightVh, keyboardHeight]);
 
   const getSnapPoints = useCallback((): number[] => {
     const content = contentHeight.current;
@@ -233,6 +254,9 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   // Full screen when snapped to top or dragged near max height
   const isFullScreen = fullHeight || snapIndex > 0 || (dragHeight !== null && dragHeight > maxPx() * 0.85);
 
+  // For nested sheets in full-screen parent, force backdrop and proper styling (#69)
+  const shouldForceBackdrop = isNested && parentContext.isParentFullScreen;
+
   const wrapperStyle: React.CSSProperties = {
     maxHeight: fullHeight ? undefined : `${maxHeightVh}vh`,
   };
@@ -254,56 +278,73 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     wrapperStyle.transition = 'height 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
   }
 
+  // Context value for nested sheets (#69)
+  const contextValue: BottomSheetContextValue = {
+    isParentFullScreen: isFullScreen,
+    nestingLevel: parentContext.nestingLevel + 1,
+  };
+
+  // Show backdrop if explicitly requested or if nested in full-screen parent (#69)
+  const effectiveShowBackdrop = showBackdrop || shouldForceBackdrop;
+
+  // Nested sheets in full-screen parent need higher z-index (#69)
+  const zIndexClass = isNested ? 'z-[60]' : 'z-50';
+
   return (
-    <Transition
-      show={isOpen}
-      as="div"
-      className="absolute inset-0 z-50 overflow-hidden flex flex-col justify-end pointer-events-none"
-    >
-      {showBackdrop && (
+    <BottomSheetContext.Provider value={contextValue}>
+      <Transition
+        show={isOpen}
+        as="div"
+        className={`absolute inset-0 ${zIndexClass} overflow-hidden flex flex-col justify-end pointer-events-none`}
+      >
+        {effectiveShowBackdrop && (
+          <Transition.Child
+            as="div"
+            enter="transition-opacity ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="transition-opacity ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+            className="absolute inset-0 bg-black/60 pointer-events-auto z-0"
+            onClick={onClose}
+          />
+        )}
         <Transition.Child
           as="div"
-          enter="transition-opacity ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="transition-opacity ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-          className="absolute inset-0 bg-black/60 pointer-events-auto z-0"
-          onClick={onClose}
-        />
-      )}
-      <Transition.Child
-        as="div"
-        enter="transform transition ease-out duration-300"
-        enterFrom="translate-y-full opacity-0"
-        enterTo="translate-y-0 opacity-100"
-        leave="transform transition ease-out duration-300"
-        leaveFrom="translate-y-0 opacity-100"
-        leaveTo="translate-y-1/2 opacity-0"
-        className={`mx-auto w-full ${maxWidthClass} pointer-events-auto z-10 ${className}`}
-        style={wrapperStyle}
-        ref={wrapperRef}
-        onPointerDown={(e) => {
-          if ((e.target as HTMLElement).closest('.bottom-sheet-handle-zone')) return;
-          onDown(e, 'body');
-        }}
-        onPointerMove={onMove}
-        onPointerUp={onUp}
-        onPointerCancel={onCancel}
-      >
-        {React.Children.map(children, child => {
-          if (React.isValidElement(child) && child.type === BottomSheetCard) {
-            return React.cloneElement(child as React.ReactElement<BottomSheetCardInternalProps>, {
-              _expanded: isExpanded,
-              _isFullScreen: isFullScreen,
-              _onHandlePointerDown: (e: React.PointerEvent) => onDown(e, 'handle'),
-            });
-          }
-          return child;
-        })}
-      </Transition.Child>
-    </Transition>
+          enter="transform transition ease-out duration-300"
+          enterFrom="translate-y-full opacity-0"
+          enterTo="translate-y-0 opacity-100"
+          leave="transform transition ease-out duration-300"
+          leaveFrom="translate-y-0 opacity-100"
+          leaveTo="translate-y-1/2 opacity-0"
+          className={`mx-auto w-full ${maxWidthClass} pointer-events-auto z-10 ${className}`}
+          style={wrapperStyle}
+          ref={wrapperRef}
+          onPointerDown={(e) => {
+            if ((e.target as HTMLElement).closest('.bottom-sheet-handle-zone')) return;
+            // In full-screen mode, allow content scrolling instead of body drag (#68)
+            if (isFullScreen) return;
+            onDown(e, 'body');
+          }}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={onCancel}
+        >
+          {React.Children.map(children, child => {
+            if (React.isValidElement(child) && child.type === BottomSheetCard) {
+              return React.cloneElement(child as React.ReactElement<BottomSheetCardInternalProps>, {
+                _expanded: isExpanded,
+                _isFullScreen: isFullScreen,
+                _isNested: isNested,
+                _onHandlePointerDown: (e: React.PointerEvent) => onDown(e, 'handle'),
+              });
+            }
+            return child;
+          })}
+        </Transition.Child>
+      </Transition>
+    </BottomSheetContext.Provider>
   );
 };
 
@@ -315,18 +356,22 @@ export interface BottomSheetCardProps {
 interface BottomSheetCardInternalProps extends BottomSheetCardProps {
   _expanded?: boolean;
   _isFullScreen?: boolean;
+  _isNested?: boolean;
   _onHandlePointerDown?: (e: React.PointerEvent) => void;
 }
 
 export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
   (props, ref) => {
     const { children, className = "", ...rest } = props as BottomSheetCardInternalProps;
-    const { _expanded, _isFullScreen, _onHandlePointerDown } = rest;
+    const { _expanded, _isFullScreen, _isNested, _onHandlePointerDown } = rest;
+
+    // Nested sheets always keep rounded corners for proper styling (#69)
+    const shouldRoundCorners = _isNested || !_isFullScreen;
 
     return (
       <div
         ref={ref}
-        className={`bottom-sheet-card bg-spark-surface border-spark-border shadow-glass-lg overflow-hidden w-full ${_expanded ? 'h-full flex flex-col' : ''} ${_isFullScreen ? 'rounded-none' : 'bottom-sheet-card-bordered'} ${className}`}
+        className={`bottom-sheet-card bg-spark-surface border-spark-border shadow-glass-lg overflow-hidden w-full ${_expanded ? 'h-full flex flex-col' : ''} ${shouldRoundCorners ? 'bottom-sheet-card-bordered' : 'rounded-none'} ${className}`}
       >
         {/* Handle hit area: large touch target, small visual indicator */}
         <div
