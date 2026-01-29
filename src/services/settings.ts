@@ -5,8 +5,6 @@ export interface UserSettings {
   syncIntervalSecs?: number;
   lnurlDomain?: string;
   preferSparkOverLightning?: boolean;
-  /** Whether to output logs to browser console. Defaults to true in dev, false in production. */
-  consoleLoggingEnabled?: boolean;
 }
 
 export interface FiatSettings {
@@ -65,7 +63,6 @@ export function getSettings(): UserSettings {
       syncIntervalSecs: typeof parsed.syncIntervalSecs === 'number' ? parsed.syncIntervalSecs : undefined,
       lnurlDomain: typeof parsed.lnurlDomain === 'string' ? parsed.lnurlDomain : undefined,
       preferSparkOverLightning: typeof parsed.preferSparkOverLightning === 'boolean' ? parsed.preferSparkOverLightning : undefined,
-      consoleLoggingEnabled: typeof parsed.consoleLoggingEnabled === 'boolean' ? parsed.consoleLoggingEnabled : undefined,
     };
     return out;
   } catch {
@@ -98,13 +95,17 @@ export function saveFiatSettings(settings: FiatSettings): void {
 
 /**
  * Check if console logging is enabled.
- * Defaults to true in development, false in production.
+ * Controlled via VITE_CONSOLE_LOGGING env var when present; defaults to dev mode.
  */
 export function isConsoleLoggingEnabled(): boolean {
-  const settings = getSettings();
-  if (typeof settings.consoleLoggingEnabled === 'boolean') {
-    return settings.consoleLoggingEnabled;
+  const envValue = import.meta.env.VITE_CONSOLE_LOGGING;
+
+  if (typeof envValue === 'string') {
+    const normalized = envValue.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
   }
+
   // Default: enabled in dev, disabled in production
   return import.meta.env.DEV;
 }
