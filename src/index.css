@@ -966,6 +966,60 @@ main {
   animation: celebration-glow 2s ease-in-out infinite;
 }
 
+/* Celebration sparkle stars */
+@keyframes celebration-sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.5) rotate(180deg);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1) rotate(360deg);
+  }
+  60% {
+    opacity: 0.8;
+    transform: scale(1.2) rotate(540deg);
+  }
+  80% {
+    opacity: 0.6;
+    transform: scale(0.8) rotate(720deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(900deg);
+  }
+}
+
+.celebration-star {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--spark-primary);
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 0 8px var(--spark-primary), 0 0 16px var(--spark-primary);
+}
+
+.celebration-star.animate {
+  animation: celebration-sparkle 2s ease-out forwards;
+}
+
+.celebration-star:nth-child(1) { animation-delay: 0s; }
+.celebration-star:nth-child(2) { animation-delay: 0.08s; }
+.celebration-star:nth-child(3) { animation-delay: 0.16s; }
+.celebration-star:nth-child(4) { animation-delay: 0.24s; }
+.celebration-star:nth-child(5) { animation-delay: 0.1s; }
+.celebration-star:nth-child(6) { animation-delay: 0.18s; }
+.celebration-star:nth-child(7) { animation-delay: 0.05s; }
+.celebration-star:nth-child(8) { animation-delay: 0.12s; }
+.celebration-star:nth-child(9) { animation-delay: 0.2s; }
+.celebration-star:nth-child(10) { animation-delay: 0.28s; }
+.celebration-star:nth-child(11) { animation-delay: 0.15s; }
+.celebration-star:nth-child(12) { animation-delay: 0.22s; }
+
 /* ============================================
    SIDEBAR TWINKLING STARS
    ============================================ */

@@ -1,6 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+// Sparkle stars around the success icon (like sidebar/homepage logo)
+const CELEBRATION_STARS = [
+  { x: -50, y: -40, size: 4 },
+  { x: 55, y: -35, size: 3 },
+  { x: -45, y: 45, size: 3.5 },
+  { x: 50, y: 50, size: 3 },
+  { x: -15, y: -60, size: 3 },
+  { x: 20, y: 60, size: 4 },
+  { x: -65, y: 10, size: 3 },
+  { x: 65, y: -5, size: 3.5 },
+  { x: -35, y: -55, size: 2.5 },
+  { x: 40, y: -50, size: 2.5 },
+  { x: -55, y: 30, size: 2.5 },
+  { x: 60, y: 25, size: 2.5 },
+];
+
 interface PaymentReceivedCelebrationProps {
   amount: number;
   onClose: () => void;
@@ -8,11 +24,12 @@ interface PaymentReceivedCelebrationProps {
 
 const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({ amount, onClose }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [starsAnimating, setStarsAnimating] = useState(false);
   const [particles, setParticles] = useState<Array<{ id: number; x: number; delay: number; color: string }>>([]);
 
   useEffect(() => {
     // Generate confetti particles
-    const newParticles = Array.from({ length: 50 }, (_, i) => ({
+    const newParticles = Array.from({ length: 30 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       delay: Math.random() * 0.5,
@@ -23,13 +40,19 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
     // Trigger entrance animation
     requestAnimationFrame(() => setIsVisible(true));
 
+    // Start sparkle stars after icon appears
+    const starTimer = setTimeout(() => setStarsAnimating(true), 400);
+
     // Auto close after animation
-    const timer = setTimeout(() => {
+    const closeTimer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(onClose, 500);
     }, 4000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(starTimer);
+      clearTimeout(closeTimer);
+    };
   }, [onClose]);
 
   const formatAmount = (sats: number) => {
@@ -85,7 +108,7 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
           isVisible ? 'scale-100 translate-y-0' : 'scale-50 translate-y-20'
         }`}
       >
-        {/* Glowing circle behind icon */}
+        {/* Glowing circle behind icon with sparkle stars */}
         <div className="relative mb-6">
           <div className="absolute inset-0 w-32 h-32 rounded-full bg-spark-success/20 animate-pulse-glow blur-xl" />
           <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-spark-success to-spark-primary-blue flex items-center justify-center shadow-2xl">
@@ -93,6 +116,19 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
+          {/* Sparkle stars */}
+          {CELEBRATION_STARS.map((star, i) => (
+            <span
+              key={i}
+              className={`celebration-star ${starsAnimating ? 'animate' : ''}`}
+              style={{
+                width: star.size,
+                height: star.size,
+                left: `calc(50% + ${star.x}px)`,
+                top: `calc(50% + ${star.y}px)`,
+              }}
+            />
+          ))}
         </div>
 
         {/* Title */}
