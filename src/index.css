@@ -1034,6 +1034,10 @@ main {
 @media (hover: none) and (pointer: coarse) {
   .action-button {
     min-height: 3em;
+  }
+
+  /* Send/Receive inherit width from grid, scan button needs explicit size */
+  .action-button-scan {
     min-width: 3em;
   }
 
