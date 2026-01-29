@@ -87,9 +87,8 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
-    # Only run E2E tests on main/staging, releases, manual dispatch, or if explicitly requested
+    # Only run E2E tests on releases, manual dispatch, or if explicitly requested via run-e2e label
     if: >-
-      github.event_name == 'push' ||
       github.event_name == 'release' ||
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.pull_request.labels.*.name, 'run-e2e')
