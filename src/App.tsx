@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Config, GetInfoResponse, Network, Payment, SdkEvent, defaultConfig, Rate, FiatCurrency, DepositInfo } from '@breeztech/breez-sdk-spark';
 import { WalletProvider, useWallet } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -10,17 +10,14 @@ import { ToastProvider, useToast } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
 import { hideSplash } from './main';
 
-// Eager-loaded pages (critical path)
 import HomePage from './pages/HomePage';
 import WalletPage from './pages/WalletPage';
-
-// Lazy-loaded pages (bundle-dynamic-imports optimization)
-const RestorePage = lazy(() => import('./pages/RestorePage'));
-const GeneratePage = lazy(() => import('./pages/GeneratePage'));
-const GetRefundPage = lazy(() => import('./pages/GetRefundPage'));
-const BackupPage = lazy(() => import('./pages/BackupPage'));
-const SettingsPage = lazy(() => import('./pages/SettingsPage'));
-const FiatCurrenciesPage = lazy(() => import('./pages/FiatCurrenciesPage'));
+import RestorePage from './pages/RestorePage';
+import GeneratePage from './pages/GeneratePage';
+import GetRefundPage from './pages/GetRefundPage';
+import BackupPage from './pages/BackupPage';
+import SettingsPage from './pages/SettingsPage';
+import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 
 import { getSettings } from './services/settings';
 import { isDepositRejected } from './services/depositState';
@@ -436,60 +433,48 @@ const AppContent: React.FC = () => {
 
       case 'getRefund':
         return (
-          <Suspense fallback={<div className="absolute inset-0 bg-spark-void/95 flex items-center justify-center"><LoadingSpinner /></div>}>
-            <GetRefundPage
-              onBack={() => setCurrentScreen('wallet')}
-              animationDirection={refundAnimationDirection}
-            />
-          </Suspense>
+          <GetRefundPage
+            onBack={() => setCurrentScreen('wallet')}
+            animationDirection={refundAnimationDirection}
+          />
         );
 
       case 'settings':
         return (
-          <Suspense fallback={<div className="absolute inset-0 bg-spark-void/95 flex items-center justify-center"><LoadingSpinner /></div>}>
-            <SettingsPage
-              onBack={() => setCurrentScreen('wallet')}
-              config={config}
-              onOpenFiatCurrencies={() => setCurrentScreen('fiatCurrencies')}
-            />
-          </Suspense>
+          <SettingsPage
+            onBack={() => setCurrentScreen('wallet')}
+            config={config}
+            onOpenFiatCurrencies={() => setCurrentScreen('fiatCurrencies')}
+          />
         );
 
       case 'fiatCurrencies':
         return (
-          <Suspense fallback={<div className="absolute inset-0 bg-spark-void/95 flex items-center justify-center"><LoadingSpinner /></div>}>
-            <FiatCurrenciesPage onBack={() => setCurrentScreen('settings')} />
-          </Suspense>
+          <FiatCurrenciesPage onBack={() => setCurrentScreen('settings')} />
         );
 
       case 'backup':
         return (
-          <Suspense fallback={<div className="absolute inset-0 bg-spark-void/95 flex items-center justify-center"><LoadingSpinner /></div>}>
-            <BackupPage onBack={() => setCurrentScreen('wallet')} />
-          </Suspense>
+          <BackupPage onBack={() => setCurrentScreen('wallet')} />
         );
 
       case 'restore':
         return (
-          <Suspense fallback={<div className="absolute inset-0 bg-spark-void/95 flex items-center justify-center"><LoadingSpinner /></div>}>
-            <RestorePage
-              onConnect={(mnemonic) => connectWallet(mnemonic, true)}
-              onBack={navigateToHome}
-              onClearError={clearError}
-            />
-          </Suspense>
+          <RestorePage
+            onConnect={(mnemonic) => connectWallet(mnemonic, true)}
+            onBack={navigateToHome}
+            onClearError={clearError}
+          />
         );
 
       case 'generate':
         return (
-          <Suspense fallback={<div className="absolute inset-0 bg-spark-void/95 flex items-center justify-center"><LoadingSpinner /></div>}>
-            <GeneratePage
-              onMnemonicConfirmed={(mnemonic) => connectWallet(mnemonic, false)}
-              onBack={navigateToHome}
-              error={error}
-              onClearError={clearError}
-            />
-          </Suspense>
+          <GeneratePage
+            onMnemonicConfirmed={(mnemonic) => connectWallet(mnemonic, false)}
+            onBack={navigateToHome}
+            error={error}
+            onClearError={clearError}
+          />
         );
 
       case 'wallet':

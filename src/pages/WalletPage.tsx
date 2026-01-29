@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import {
   LoadingSpinner
@@ -9,14 +9,11 @@ import TransactionList from '../components/TransactionList';
 import { GetInfoResponse, Payment, Rate, FiatCurrency, DepositInfo } from '@breeztech/breez-sdk-spark';
 import { SendInput } from '@/types/domain';
 import { mergeDepositsWithTransactions, ExtendedPayment, isUnclaimedDepositPayment } from '@/utils/depositHelpers';
-
-// Lazy-loaded dialog components (bundle-dynamic-imports optimization)
-// These are only loaded when the user interacts with send/receive/scan buttons
-const SendPaymentDialog = lazy(() => import('../features/send/SendPaymentDialog'));
-const ReceivePaymentDialog = lazy(() => import('../features/receive/ReceivePaymentDialog'));
-const QrScannerDialog = lazy(() => import('../components/QrScannerDialog'));
-const PaymentDetailsDialog = lazy(() => import('../components/PaymentDetailsDialog'));
-const UnclaimedDepositDetailsPage = lazy(() => import('./UnclaimedDepositDetailsPage'));
+import SendPaymentDialog from '../features/send/SendPaymentDialog';
+import ReceivePaymentDialog from '../features/receive/ReceivePaymentDialog';
+import QrScannerDialog from '../components/QrScannerDialog';
+import PaymentDetailsDialog from '../components/PaymentDetailsDialog';
+import UnclaimedDepositDetailsPage from './UnclaimedDepositDetailsPage';
 
 interface WalletPageProps {
   walletInfo: GetInfoResponse | null;
@@ -196,58 +193,48 @@ const WalletPage: React.FC<WalletPageProps> = ({
         />
       </div>
 
-      {/* Send Payment Dialog - lazy loaded on first open */}
+      {/* Send Payment Dialog */}
       {isSendDialogOpen && (
-        <Suspense fallback={null}>
-          <SendPaymentDialog
-            isOpen={isSendDialogOpen}
-            onClose={handleSendDialogClose}
-            initialPaymentInput={paymentInput}
-            onScanQr={handleScanFromSendDialog}
-          />
-        </Suspense>
+        <SendPaymentDialog
+          isOpen={isSendDialogOpen}
+          onClose={handleSendDialogClose}
+          initialPaymentInput={paymentInput}
+          onScanQr={handleScanFromSendDialog}
+        />
       )}
 
-      {/* Receive Payment Dialog - lazy loaded on first open */}
+      {/* Receive Payment Dialog */}
       {isReceiveDialogOpen && (
-        <Suspense fallback={null}>
-          <ReceivePaymentDialog
-            isOpen={isReceiveDialogOpen}
-            onClose={handleReceiveDialogClose}
-          />
-        </Suspense>
+        <ReceivePaymentDialog
+          isOpen={isReceiveDialogOpen}
+          onClose={handleReceiveDialogClose}
+        />
       )}
 
-      {/* QR Scanner Dialog - lazy loaded on first open */}
+      {/* QR Scanner Dialog */}
       {isQrScannerOpen && (
-        <Suspense fallback={null}>
-          <QrScannerDialog
-            isOpen={isQrScannerOpen}
-            onClose={handleQrScannerClose}
-            onScan={handleQrScan}
-          />
-        </Suspense>
+        <QrScannerDialog
+          isOpen={isQrScannerOpen}
+          onClose={handleQrScannerClose}
+          onScan={handleQrScan}
+        />
       )}
 
-      {/* Payment Details Dialog - lazy loaded on first open */}
+      {/* Payment Details Dialog */}
       {selectedPayment && (
-        <Suspense fallback={null}>
-          <PaymentDetailsDialog
-            optionalPayment={selectedPayment}
-            onClose={handlePaymentDetailsClose}
-          />
-        </Suspense>
+        <PaymentDetailsDialog
+          optionalPayment={selectedPayment}
+          onClose={handlePaymentDetailsClose}
+        />
       )}
 
-      {/* Unclaimed Deposit Details - lazy loaded on first open */}
+      {/* Unclaimed Deposit Details */}
       {selectedDeposit && (
-        <Suspense fallback={null}>
-          <UnclaimedDepositDetailsPage
-            deposit={selectedDeposit}
-            onBack={handleDepositDetailsClose}
-            onChanged={handleDepositChanged}
-          />
-        </Suspense>
+        <UnclaimedDepositDetailsPage
+          deposit={selectedDeposit}
+          onBack={handleDepositDetailsClose}
+          onChanged={handleDepositChanged}
+        />
       )}
 
       {/* Bottom action bar - full width layout */}
