@@ -5,6 +5,8 @@ export interface UserSettings {
   syncIntervalSecs?: number;
   lnurlDomain?: string;
   preferSparkOverLightning?: boolean;
+  /** Whether to output logs to browser console. Defaults to true in dev, false in production. */
+  consoleLoggingEnabled?: boolean;
 }
 
 export interface FiatSettings {
@@ -63,6 +65,7 @@ export function getSettings(): UserSettings {
       syncIntervalSecs: typeof parsed.syncIntervalSecs === 'number' ? parsed.syncIntervalSecs : undefined,
       lnurlDomain: typeof parsed.lnurlDomain === 'string' ? parsed.lnurlDomain : undefined,
       preferSparkOverLightning: typeof parsed.preferSparkOverLightning === 'boolean' ? parsed.preferSparkOverLightning : undefined,
+      consoleLoggingEnabled: typeof parsed.consoleLoggingEnabled === 'boolean' ? parsed.consoleLoggingEnabled : undefined,
     };
     return out;
   } catch {
@@ -91,4 +94,17 @@ export function getFiatSettings(): FiatSettings {
 
 export function saveFiatSettings(settings: FiatSettings): void {
   setCachedItem(FIAT_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+/**
+ * Check if console logging is enabled.
+ * Defaults to true in development, false in production.
+ */
+export function isConsoleLoggingEnabled(): boolean {
+  const settings = getSettings();
+  if (typeof settings.consoleLoggingEnabled === 'boolean') {
+    return settings.consoleLoggingEnabled;
+  }
+  // Default: enabled in dev, disabled in production
+  return import.meta.env.DEV;
 }

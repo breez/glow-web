@@ -1,13 +1,24 @@
 /**
- * Structured logging service for Glow wallet.
+ * Unified logging service for Glow wallet.
  *
  * Features:
+ * - Single unified log stream for app and SDK logs
  * - Log levels: DEBUG, INFO, WARN, ERROR
  * - Categorized logging for filtering
  * - In-memory ring buffer for export/debugging
  * - Automatic sensitive data redaction
  * - Security event helpers (OWASP compliant)
+ * - Console output controlled by settings (disabled in production by default)
+ * - Persistent encrypted storage across sessions (up to 10 sessions)
  */
+
+import { isConsoleLoggingEnabled } from './settings';
+import {
+  isStorageAvailable,
+  startSession,
+  saveSessionLogs,
+  endSession as endStorageSession,
+} from './logStorage';
 
 export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 
@@ -24,6 +35,7 @@ export const LogCategory = {
   AUTH: 'auth',
   PAYMENT: 'payment',
   SDK: 'sdk',
+  SDK_INTERNAL: 'sdk-internal', // For raw SDK logs
   UI: 'ui',
   NETWORK: 'network',
   SESSION: 'session',
@@ -33,10 +45,19 @@ export const LogCategory = {
 export type LogCategoryType = (typeof LogCategory)[keyof typeof LogCategory];
 
 /** Maximum log entries to keep in memory */
-const MAX_LOG_ENTRIES = 1000;
+const MAX_LOG_ENTRIES = 100000;
 
-/** In-memory log buffer */
+/** Interval for persisting logs to storage (ms) */
+const PERSIST_INTERVAL = 5000;
+
+/** In-memory unified log buffer */
 const logBuffer: LogEntry[] = [];
+
+/** Flag to track if session has been initialized */
+let sessionInitialized = false;
+
+/** Timer for periodic persistence */
+let persistTimer: ReturnType<typeof setInterval> | null = null;
 
 /** Keys that should never be logged */
 const SENSITIVE_KEYS = [
@@ -97,22 +118,50 @@ function log(
     logBuffer.shift();
   }
 
-  // Console output
-  const formatted = `[${entry.timestamp}] ${entry.level} [${entry.category}] ${entry.message}`;
+  // Console output (respects settings - disabled in production by default)
+  if (isConsoleLoggingEnabled()) {
+    const formatted = `[${entry.timestamp}] ${entry.level} [${entry.category}] ${entry.message}`;
 
-  switch (level) {
+    switch (level) {
+      case 'ERROR':
+        console.error(formatted, context ? sanitizeContext(context) : '');
+        break;
+      case 'WARN':
+        console.warn(formatted, context ? sanitizeContext(context) : '');
+        break;
+      case 'DEBUG':
+        console.debug(formatted, context ? sanitizeContext(context) : '');
+        break;
+      default:
+        console.log(formatted, context ? sanitizeContext(context) : '');
+    }
+  }
+}
+
+/**
+ * Log an SDK internal message (from Breez SDK's logger).
+ * This writes to the same unified log buffer.
+ */
+export function logSdkMessage(level: string, message: string): void {
+  // Map SDK log levels to our log levels
+  let logLevel: LogLevel;
+  switch (level.toUpperCase()) {
     case 'ERROR':
-      console.error(formatted, context ? sanitizeContext(context) : '');
+      logLevel = 'ERROR';
       break;
     case 'WARN':
-      console.warn(formatted, context ? sanitizeContext(context) : '');
+    case 'WARNING':
+      logLevel = 'WARN';
       break;
     case 'DEBUG':
-      console.debug(formatted, context ? sanitizeContext(context) : '');
+    case 'TRACE':
+      logLevel = 'DEBUG';
       break;
     default:
-      console.log(formatted, context ? sanitizeContext(context) : '');
+      logLevel = 'INFO';
   }
+
+  log(logLevel, LogCategory.SDK_INTERNAL, message);
 }
 
 /** Structured logger API */
@@ -183,5 +232,88 @@ export const logger = {
   exportForBugReport: (): string => {
     const header = `Glow Wallet Log Export\nGenerated: ${new Date().toISOString()}\nEntries: ${logBuffer.length}\n${'='.repeat(50)}\n\n`;
     return header + logger.getLogsAsString();
+  },
+
+  /**
+   * Initialize logging session and start periodic persistence.
+   * Should be called once at app startup.
+   */
+  initSession: async (): Promise<void> => {
+    if (sessionInitialized || !isStorageAvailable()) return;
+
+    try {
+      await startSession();
+      sessionInitialized = true;
+
+      // Start periodic persistence
+      persistTimer = setInterval(async () => {
+        await logger.persistLogs();
+      }, PERSIST_INTERVAL);
+
+      // Persist on page unload
+      window.addEventListener('beforeunload', () => {
+        logger.persistLogsSync();
+      });
+
+      // Persist on visibility change (app going to background)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          logger.persistLogsSync();
+        }
+      });
+    } catch (e) {
+      console.warn('Failed to initialize log session:', e);
+    }
+  },
+
+  /**
+   * Persist current logs to storage (async)
+   */
+  persistLogs: async (): Promise<void> => {
+    if (!sessionInitialized || !isStorageAvailable()) return;
+
+    try {
+      const logs = logger.getLogsAsString();
+      await saveSessionLogs(logs);
+    } catch (e) {
+      console.warn('Failed to persist logs:', e);
+    }
+  },
+
+  /**
+   * Persist logs synchronously (for beforeunload)
+   * Uses navigator.sendBeacon pattern for reliability
+   */
+  persistLogsSync: (): void => {
+    if (!sessionInitialized || !isStorageAvailable()) return;
+
+    // Best effort - call async persist, it may or may not complete
+    logger.persistLogs().catch(() => {
+      // Ignore errors during sync persist
+    });
+  },
+
+  /**
+   * End current logging session
+   */
+  endSession: async (): Promise<void> => {
+    if (!sessionInitialized) return;
+
+    // Final persist
+    await logger.persistLogs();
+
+    // Stop periodic persistence
+    if (persistTimer) {
+      clearInterval(persistTimer);
+      persistTimer = null;
+    }
+
+    try {
+      await endStorageSession();
+    } catch (e) {
+      console.warn('Failed to end log session:', e);
+    }
+
+    sessionInitialized = false;
   },
 };

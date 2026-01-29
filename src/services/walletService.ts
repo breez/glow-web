@@ -30,29 +30,24 @@ import {
   Rate,
 } from '@breeztech/breez-sdk-spark';
 import type { WalletAPI } from './WalletAPI';
-import { logger, LogCategory } from './logger';
+import { logger, LogCategory, logSdkMessage } from './logger';
+import { getAllSessions, isStorageAvailable } from './logStorage';
+import JSZip from 'jszip';
 
+/**
+ * WebLogger that writes SDK logs to the unified logger.
+ * This ensures all logs (app + SDK) are in a single stream.
+ */
 class WebLogger {
   log = (logEntry: LogEntry) => {
-    const ts = new Date().toISOString();
-    const formatted = `${ts} [${logEntry.level}]: ${logEntry.line}`;
-    console.log(formatted);
-    appendLog(formatted);
-  }
+    // Write to unified logger (which handles console output and persistence)
+    logSdkMessage(logEntry.level, logEntry.line);
+  };
 }
+
 // Private SDK instance - not exposed outside this module
 let sdk: BreezSdk | null = null;
 let sdkLogger: WebLogger | null = null;
-// In-memory log buffer (ring buffer)
-const MAX_LOG_LINES = 100000;
-const sdkLogs: string[] = [];
-
-function appendLog(line: string) {
-  sdkLogs.push(line);
-  if (sdkLogs.length > MAX_LOG_LINES) {
-    sdkLogs.splice(0, sdkLogs.length - MAX_LOG_LINES);
-  }
-}
 
 export const initWallet = async (mnemonic: string, config: Config): Promise<void> => {
   // If already connected, do nothing
@@ -160,9 +155,118 @@ export const listFiatRates = async (): Promise<Rate[]> => {
   return response.rates;
 };
 
-// Logs accessors
+// Logs accessors (unified log stream - app and SDK logs are combined)
 export const getSdkLogs = (): string => {
-  return sdkLogs.join('\n');
+  // SDK logs are now in the unified buffer, filter by category
+  return logger.getLogsByCategory(LogCategory.SDK_INTERNAL)
+    .map((e) => `[${e.timestamp}] ${e.level} ${e.message}`)
+    .join('\n');
+};
+
+/** Get unified logs for current session as string */
+export const getAllLogs = (): string => {
+  return logger.getLogsAsString();
+};
+
+/**
+ * Get all logs from all sessions as a zip file.
+ * Returns a Blob containing the zip file.
+ * Files are named with Unix timestamp prefix for chronological ordering.
+ */
+export const getAllLogsAsZip = async (): Promise<Blob> => {
+  const zip = new JSZip();
+  const now = new Date();
+  const nowTimestamp = Math.floor(now.getTime() / 1000);
+
+  // Add current session logs (unified stream)
+  const currentSessionHeader = [
+    `Glow Wallet Log Export`,
+    `Session: Current`,
+    `Generated: ${now.toISOString()}`,
+    '='.repeat(60),
+    '',
+  ].join('\n');
+  zip.file(`${nowTimestamp}_glow_current.txt`, currentSessionHeader + '\n' + getAllLogs());
+
+  // Add historical sessions if storage is available
+  if (isStorageAvailable()) {
+    try {
+      const sessions = await getAllSessions();
+
+      for (const session of sessions) {
+        // Use Unix timestamp for chronological sorting
+        const sessionTimestamp = Math.floor(new Date(session.startedAt).getTime() / 1000);
+        const filename = `${sessionTimestamp}_glow_session.txt`;
+
+        // Create session info header
+        const sessionHeader = [
+          `Glow Wallet Log Export`,
+          `Session ID: ${session.id}`,
+          `Started: ${session.startedAt}`,
+          session.endedAt ? `Ended: ${session.endedAt}` : 'Status: Active',
+          '='.repeat(60),
+          '',
+        ].join('\n');
+
+        // Add unified logs for this session
+        zip.file(filename, sessionHeader + '\n' + (session.logs || '(no logs)'));
+      }
+    } catch (e) {
+      // If we can't get historical sessions, just include current
+      console.warn('Failed to retrieve historical sessions:', e);
+    }
+  }
+
+  return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+};
+
+/**
+ * Check if Web Share API is available and supports file sharing
+ */
+export const canShareFiles = (): boolean => {
+  return typeof navigator !== 'undefined' &&
+    typeof navigator.share === 'function' &&
+    typeof navigator.canShare === 'function';
+};
+
+/**
+ * Share or download logs using the best available method.
+ * Uses Web Share API on mobile, falls back to download on desktop.
+ */
+export const shareOrDownloadLogs = async (): Promise<void> => {
+  const blob = await getAllLogsAsZip();
+  const timestamp = Math.floor(Date.now() / 1000);
+  const filename = `${timestamp}_glow_logs.zip`;
+
+  // Try Web Share API first (better mobile experience)
+  if (canShareFiles()) {
+    const file = new File([blob], filename, { type: 'application/zip' });
+
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Glow Wallet Logs',
+        });
+        return;
+      } catch (e) {
+        // User cancelled or share failed, fall through to download
+        if ((e as Error).name === 'AbortError') {
+          return; // User cancelled, don't fall back to download
+        }
+      }
+    }
+  }
+
+  // Fall back to download
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 };
 // Event handling
 export const addEventListener = async (
@@ -355,7 +459,15 @@ export const walletApi: WalletAPI = {
   // Fiat currencies
   listFiatCurrencies,
   listFiatRates,
-  // Logs
+  // Logs (unified log stream)
   getSdkLogs,
   getAppLogs: () => logger.getLogsAsString(),
+  getAllLogs,
+  getAllLogsAsZip,
+  canShareFiles,
+  shareOrDownloadLogs,
+
+  // Session management
+  initLogSession: () => logger.initSession(),
+  endLogSession: () => logger.endSession(),
 };

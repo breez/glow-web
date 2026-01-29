@@ -44,6 +44,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     paymentReceived: true,
   });
   const [isRequestingPermission, setIsRequestingPermission] = useState<boolean>(false);
+  const [isDownloadingLogs, setIsDownloadingLogs] = useState<boolean>(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -187,21 +188,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     window.location.reload();
   };
 
-  const handleDownloadLogs = () => {
+  const handleShareLogs = async () => {
+    setIsDownloadingLogs(true);
     try {
-      const content = wallet.getSdkLogs();
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const ts = new Date().toISOString().replace(/[:]/g, '-');
-      a.href = url;
-      a.download = `sdk-logs-${ts}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      await wallet.shareOrDownloadLogs();
     } catch (e) {
-      console.warn('Failed to download logs:', e);
+      console.warn('Failed to share/download logs:', e);
+    } finally {
+      setIsDownloadingLogs(false);
     }
   };
 
@@ -290,13 +284,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
           <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
             <h3 className="font-display font-semibold text-spark-text-primary mb-3">Diagnostics</h3>
             <button
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors disabled:opacity-50"
               type="button"
-              onClick={handleDownloadLogs}
+              onClick={handleShareLogs}
+              disabled={isDownloadingLogs}
             >
-              <DownloadIcon size="md" />
-              Download Logs
+              {isDownloadingLogs ? (
+                <LoadingSpinner size="small" />
+              ) : (
+                <DownloadIcon size="md" />
+              )}
+              {isDownloadingLogs ? 'Preparing...' : 'Export Logs'}
             </button>
+            <p className="text-xs text-spark-text-muted mt-2">
+              Export logs from up to 10 recent sessions.
+            </p>
           </div>
 
           {/* Dev Mode Advanced Settings */}

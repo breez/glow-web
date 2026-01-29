@@ -224,6 +224,11 @@ const AppContent: React.FC = () => {
 
   // Try to connect with saved mnemonic on app startup (run once)
   useEffect(() => {
+    // Initialize log session for persistent logging
+    wallet.initLogSession().catch((e) => {
+      console.warn('Failed to initialize log session:', e);
+    });
+
     console.log('useEffect checkForExistingWallet...');
     const checkForExistingWallet = async () => {
       console.log('checkForExistingWallet...');
@@ -376,6 +381,9 @@ const AppContent: React.FC = () => {
       if (isConnected) {
         await wallet.disconnect();
       }
+
+      // End log session before clearing data
+      await wallet.endLogSession();
 
       // Clear the stored mnemonic
       wallet.clearMnemonic();
