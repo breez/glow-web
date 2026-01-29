@@ -113,7 +113,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     setIsLoading(true);
     setError(null);
     try {
-      const response = await wallet.prepareSendPayment({ paymentRequest, amount: BigInt(amountSats) });
+      const response = await wallet.prepareSendPayment({ paymentRequest, payAmount: { type: 'bitcoin', amountSats } });
       setPrepareResponse(response);
       // Always go to workflow; BTC fee selection happens inside the Bitcoin workflow
       setCurrentStep('workflow');
@@ -250,7 +250,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
             {prepareResponse && prepareResponse.paymentMethod.type === 'bolt11Invoice' && (
               <Bolt11Workflow
                 method={prepareResponse.paymentMethod}
-                amountSats={prepareResponse.amount}
+                amountSats={BigInt(prepareResponse.payAmount.type === 'bitcoin' ? prepareResponse.payAmount.amountSats : 0)}
                 onBack={() => setCurrentStep('input')}
                 onSend={handleSend}
               />
@@ -258,7 +258,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
             {prepareResponse && prepareResponse.paymentMethod.type === 'bitcoinAddress' && (
               <BitcoinWorkflow
                 method={prepareResponse.paymentMethod}
-                amountSats={prepareResponse.amount}
+                amountSats={BigInt(prepareResponse.payAmount.type === 'bitcoin' ? prepareResponse.payAmount.amountSats : 0)}
                 onBack={() => setCurrentStep('amount')}
                 onSend={handleSend}
               />
@@ -266,7 +266,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
             {prepareResponse && prepareResponse.paymentMethod.type === 'sparkAddress' && (
               <SparkWorkflow
                 method={prepareResponse.paymentMethod}
-                amountSats={prepareResponse.amount}
+                amountSats={BigInt(prepareResponse.payAmount.type === 'bitcoin' ? prepareResponse.payAmount.amountSats : 0)}
                 onBack={() => setCurrentStep('input')}
                 onSend={handleSend}
               />
