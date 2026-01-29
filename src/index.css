@@ -917,6 +917,16 @@ main {
   animation: list-item-in 0.3s ease-out forwards;
 }
 
+/* Bounce animation for loading dots */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
 @keyframes scale-in {
   0% {
     opacity: 0;
