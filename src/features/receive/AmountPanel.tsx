@@ -57,15 +57,15 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
           <div>
             <label className="block text-spark-text-secondary text-sm font-medium mb-2">Amount</label>
             <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary focus-within:ring-2 focus-within:ring-spark-primary/20 transition-all">
-              <input
-                type="number"
-                min={limits.min}
-                max={limits.max}
+              <textarea
+                inputMode="numeric"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                 placeholder="0"
                 disabled={isLoading}
-                className="flex-1 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                rows={1}
+                className="flex-1 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none resize-none"
                 data-testid="invoice-amount-input"
               />
               <span className="px-4 py-3 text-spark-text-muted font-medium text-sm">sats</span>
