@@ -86,7 +86,7 @@ const EditingForm: React.FC<EditingFormProps> = ({
 
       {/* Input with suffix */}
       <div className="space-y-4">
-        <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary focus-within:ring-2 focus-within:ring-spark-primary/20 transition-all">
+        <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary transition-all">
           <textarea
             ref={inputRef}
             value={editValue}

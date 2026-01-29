@@ -471,7 +471,7 @@ export const Tab: React.FC<{
     className={`
       flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-display font-semibold transition-all duration-200
       ${isActive
-        ? 'bg-spark-primary text-white shadow-glow-primary'
+        ? 'bg-spark-primary text-black'
         : 'text-spark-text-muted hover:text-spark-text-primary hover:bg-white/5'
       }
       ${className}

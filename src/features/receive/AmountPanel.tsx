@@ -56,7 +56,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
         <div className="space-y-4">
           <div>
             <label className="block text-spark-text-secondary text-sm font-medium mb-2">Amount</label>
-            <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary focus-within:ring-2 focus-within:ring-spark-primary/20 transition-all">
+            <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary transition-all">
               <textarea
                 inputMode="numeric"
                 value={amount}
@@ -103,7 +103,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
               placeholder="What's this for?"
               disabled={isLoading}
               rows={1}
-              className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 focus:outline-none transition-all resize-none"
+              className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:outline-none transition-all resize-none"
             />
           </div>
 
