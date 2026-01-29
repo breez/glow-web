@@ -1,20 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-// Sparkle stars around the success icon (like sidebar/homepage logo)
-const CELEBRATION_STARS = [
-  { x: -50, y: -40, size: 4 },
-  { x: 55, y: -35, size: 3 },
-  { x: -45, y: 45, size: 3.5 },
-  { x: 50, y: 50, size: 3 },
-  { x: -15, y: -60, size: 3 },
-  { x: 20, y: 60, size: 4 },
-  { x: -65, y: 10, size: 3 },
-  { x: 65, y: -5, size: 3.5 },
-  { x: -35, y: -55, size: 2.5 },
-  { x: 40, y: -50, size: 2.5 },
-  { x: -55, y: 30, size: 2.5 },
-  { x: 60, y: 25, size: 2.5 },
+// Star positions around the logo (same as sidebar)
+const STARS = [
+  { x: -45, y: -35, size: 4 },
+  { x: 50, y: -30, size: 3 },
+  { x: -40, y: 40, size: 3.5 },
+  { x: 45, y: 45, size: 3 },
+  { x: -12, y: -55, size: 3 },
+  { x: 18, y: 55, size: 4 },
+  { x: -55, y: 8, size: 3 },
+  { x: 58, y: -5, size: 3.5 },
 ];
 
 interface PaymentReceivedCelebrationProps {
@@ -25,23 +21,13 @@ interface PaymentReceivedCelebrationProps {
 const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({ amount, onClose }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [starsAnimating, setStarsAnimating] = useState(false);
-  const [particles, setParticles] = useState<Array<{ id: number; x: number; delay: number; color: string }>>([]);
 
   useEffect(() => {
-    // Generate confetti particles
-    const newParticles = Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      delay: Math.random() * 0.5,
-      color: ['#d4a574', '#00d4ff', '#e8c9a8', '#22c55e', '#ffffff'][Math.floor(Math.random() * 5)],
-    }));
-    setParticles(newParticles);
-
     // Trigger entrance animation
     requestAnimationFrame(() => setIsVisible(true));
 
-    // Start sparkle stars after icon appears
-    const starTimer = setTimeout(() => setStarsAnimating(true), 400);
+    // Start star animation after logo appears
+    const starTimer = setTimeout(() => setStarsAnimating(true), 500);
 
     // Auto close after animation
     const closeTimer = setTimeout(() => {
@@ -70,36 +56,13 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
       }}
     >
       {/* Backdrop with blur */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-spark-void/90 backdrop-blur-md" />
 
-      {/* Confetti particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {particles.map((particle) => (
-          <div
-            key={particle.id}
-            className="absolute w-3 h-3 rounded-full animate-confetti"
-            style={{
-              left: `${particle.x}%`,
-              top: '-20px',
-              backgroundColor: particle.color,
-              animationDelay: `${particle.delay}s`,
-              boxShadow: `0 0 10px ${particle.color}`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Lightning bolts background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <svg className="absolute top-1/4 left-1/4 w-16 h-16 text-spark-primary/30 animate-ping" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M11 19v-5.111L7.5 15.5 13 5v5.111L16.5 8.5 11 19z" />
-        </svg>
-        <svg className="absolute top-1/3 right-1/4 w-12 h-12 text-spark-primary-blue/30 animate-ping" style={{ animationDelay: '0.2s' }} fill="currentColor" viewBox="0 0 24 24">
-          <path d="M11 19v-5.111L7.5 15.5 13 5v5.111L16.5 8.5 11 19z" />
-        </svg>
-        <svg className="absolute bottom-1/3 left-1/3 w-10 h-10 text-spark-primary/30 animate-ping" style={{ animationDelay: '0.4s' }} fill="currentColor" viewBox="0 0 24 24">
-          <path d="M11 19v-5.111L7.5 15.5 13 5v5.111L16.5 8.5 11 19z" />
-        </svg>
+      {/* Radiating glow rings */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="absolute w-64 h-64 rounded-full bg-spark-primary/10 animate-ping" style={{ animationDuration: '2s' }} />
+        <div className="absolute w-48 h-48 rounded-full bg-spark-primary/15 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.3s' }} />
+        <div className="absolute w-32 h-32 rounded-full bg-spark-primary/20 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.6s' }} />
       </div>
 
       {/* Main content */}
@@ -108,54 +71,54 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
           isVisible ? 'scale-100 translate-y-0' : 'scale-50 translate-y-20'
         }`}
       >
-        {/* Glowing circle behind icon with sparkle stars */}
-        <div className="relative mb-6">
-          <div className="absolute inset-0 w-32 h-32 rounded-full bg-spark-success/20 animate-pulse-glow blur-xl" />
-          <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-spark-success to-spark-primary-blue flex items-center justify-center shadow-2xl">
-            <svg className="w-16 h-16 text-white animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          {/* Sparkle stars */}
-          {CELEBRATION_STARS.map((star, i) => (
-            <span
-              key={i}
-              className={`celebration-star ${starsAnimating ? 'animate' : ''}`}
-              style={{
-                width: star.size,
-                height: star.size,
-                left: `calc(50% + ${star.x}px)`,
-                top: `calc(50% + ${star.y}px)`,
-              }}
+        {/* Glow Logo with sparkle stars */}
+        <div className="relative mb-8">
+          {/* Outer glow */}
+          <div className="absolute -inset-4 rounded-full bg-spark-primary/30 blur-2xl" />
+          
+          {/* Logo container */}
+          <div className="relative w-28 h-28 flex items-center justify-center">
+            <img
+              src="/assets/Glow_Logo.png"
+              alt="Glow"
+              className="w-24 h-24 object-contain drop-shadow-[0_0_30px_rgba(212,165,116,0.6)]"
             />
-          ))}
+            
+            {/* Sparkle stars */}
+            {STARS.map((star, i) => (
+              <span
+                key={i}
+                className={`sidebar-star ${starsAnimating ? 'animate' : ''}`}
+                style={{
+                  width: star.size,
+                  height: star.size,
+                  left: `calc(50% + ${star.x}px)`,
+                  top: `calc(50% + ${star.y}px)`,
+                  boxShadow: starsAnimating ? `0 0 ${star.size * 3}px var(--spark-primary)` : 'none',
+                }}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Title */}
-        <h2 className="text-3xl font-display font-bold text-white mb-2 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-          Payment Received!
+        <h2 className="text-2xl font-display font-bold text-spark-text-primary mb-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          Payment Received
         </h2>
 
-        {/* Amount with glow effect */}
+        {/* Amount with brand glow */}
         <div className="relative animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-          <div className="absolute inset-0 blur-lg bg-spark-success/50 rounded-2xl" />
-          <div className="relative px-8 py-4 rounded-2xl bg-gradient-to-r from-spark-success/20 to-spark-primary/20 border border-spark-success/50">
-            <span className="text-5xl font-display font-bold text-spark-success">
+          <div className="absolute inset-0 blur-xl bg-spark-primary/40 rounded-2xl" />
+          <div className="relative px-10 py-5 rounded-2xl bg-spark-surface/80 border border-spark-primary/30">
+            <span className="text-5xl font-display font-bold text-spark-primary">
               +{formatAmount(amount)}
             </span>
-            <span className="text-2xl font-display text-spark-text-secondary ml-2">sats</span>
+            <span className="text-xl font-display text-spark-text-muted ml-3">sats</span>
           </div>
         </div>
 
-        {/* Lightning icon */}
-        <div className="mt-6 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-          <svg className="w-12 h-12 text-spark-primary animate-pulse" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M11 19v-5.111L7.5 15.5 13 5v5.111L16.5 8.5 11 19z" />
-          </svg>
-        </div>
-
         {/* Tap to dismiss hint */}
-        <p className="mt-8 text-spark-text-muted text-sm animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
+        <p className="mt-10 text-spark-text-muted text-sm animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
           Tap anywhere to dismiss
         </p>
       </div>
