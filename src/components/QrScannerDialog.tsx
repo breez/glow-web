@@ -12,7 +12,6 @@ interface QrScannerDialogProps {
 const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onScan }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [galleryError, setGalleryError] = useState<string | null>(null);
-  const hasStartedRef = useRef(false);
 
   const handleScan = useCallback((data: string) => {
     onScan(data);
@@ -47,17 +46,18 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
     clearError,
   } = useQrScanner({ onScan: handleScan });
 
+  // Use refs to avoid effect re-running when callbacks change
+  const startScanningRef = useRef(startScanning);
+  const stopScanningRef = useRef(stopScanning);
+  startScanningRef.current = startScanning;
+  stopScanningRef.current = stopScanning;
+
   useEffect(() => {
     if (isOpen) {
-      // Prevent multiple initializations per open session
-      if (hasStartedRef.current) return;
-      hasStartedRef.current = true;
-
       // Wait for the transition to complete (300ms) plus a buffer
       const timer = setTimeout(() => {
-        console.log('Checking video element after transition:', videoRef.current);
         if (videoRef.current) {
-          startScanning();
+          startScanningRef.current();
         } else {
           console.error('Video element still null after transition');
         }
@@ -65,14 +65,12 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
 
       return () => {
         clearTimeout(timer);
-        stopScanning();
-        hasStartedRef.current = false;
+        stopScanningRef.current();
       };
     } else {
-      stopScanning();
-      hasStartedRef.current = false;
+      stopScanningRef.current();
     }
-  }, [isOpen, startScanning, stopScanning, videoRef]);
+  }, [isOpen, videoRef]);
 
   const handleClose = () => {
     stopScanning();
@@ -106,6 +104,20 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
               )}
             </div>
           </div>
+
+          {/* Camera toggle (top left) */}
+          {hasMultipleCameras && (
+            <FloatingIconButton
+              onClick={toggleCamera}
+              className="absolute top-4 left-4 z-20"
+              aria-label="Switch camera"
+              icon={
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              }
+            />
+          )}
 
           {/* Gallery picker button (top right) */}
           <FloatingIconButton
@@ -159,20 +171,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
 
         {/* Bottom controls */}
         <div className="bg-black/90 backdrop-blur-sm">
-          <div className="p-6 relative">
-            {/* Camera toggle (bottom right) */}
-            {hasMultipleCameras && (
-              <FloatingIconButton
-                onClick={toggleCamera}
-                className="absolute -top-14 right-6"
-                aria-label="Switch camera"
-                icon={
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                }
-              />
-            )}
+          <div className="p-6">
             <p className="text-spark-text-secondary text-sm text-center mb-4">
               Point camera at QR code
             </p>
