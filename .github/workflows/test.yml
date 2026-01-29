@@ -94,7 +94,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.pull_request.labels.*.name, 'run-e2e')
     env:
-      RUN_FULL_E2E: "${{ ((github.event_name == 'release' && github.event.release.prerelease) || (github.event_name == 'workflow_dispatch' && inputs.run_full_e2e) || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')) || contains(github.event.pull_request.labels.*.name, 'run-full-e2e')) && '1' || '' }}"
+      RUN_FULL_E2E: "${{ ((github.event_name == 'release') || (github.event_name == 'workflow_dispatch' && inputs.run_full_e2e) || contains(github.event.pull_request.labels.*.name, 'run-full-e2e')) && '1' || '' }}"
       HAS_TEST_SECRETS: "${{ secrets.TEST_WALLET_A_MNEMONIC != '' && '1' || '' }}"
     steps:
       - uses: actions/checkout@v4
@@ -128,7 +128,7 @@ jobs:
           FAUCET_USERNAME: ${{ secrets.FAUCET_USERNAME }}
           FAUCET_PASSWORD: ${{ secrets.FAUCET_PASSWORD }}
 
-      - name: Run payment scenario tests (release only)
+      - name: Run payment scenario tests (release or manual opt-in)
         if: ${{ env.HAS_TEST_SECRETS == '1' && env.RUN_FULL_E2E == '1' }}
         run: npm run test:e2e -- e2e/tests/payment-scenario.spec.ts
         env:
