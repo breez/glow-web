@@ -28,6 +28,7 @@ import {
   showPaymentReceivedNotification,
   showDepositClaimedNotification,
 } from './services/notificationService';
+import { useIOSViewportFix } from './hooks/useIOSViewportFix';
 
 // Main App without toast functionality
 const AppContent: React.FC = () => {
@@ -52,6 +53,9 @@ const AppContent: React.FC = () => {
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
 
   const { showToast } = useToast();
+
+  // Fix iOS Safari viewport bug where gap appears after keyboard dismisses
+  useIOSViewportFix();
 
   useEffect(() => {
     const lnurlEnabled = config?.lnurlDomain ? 'true' : 'false';
