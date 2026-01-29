@@ -250,8 +250,8 @@ const WalletPage: React.FC<WalletPageProps> = ({
         </Suspense>
       )}
 
-      {/* Bottom action bar - bottom inset from CSS env(safe-area-inset-bottom) */}
-      <div className="bottom-bar flex justify-center gap-4 z-30">
+      {/* Bottom action bar - full width layout */}
+      <div className="bottom-bar flex items-center z-30">
         {/* Send button */}
         <button
           onClick={() => setIsSendDialogOpen(true)}
@@ -264,14 +264,18 @@ const WalletPage: React.FC<WalletPageProps> = ({
           <span>Send</span>
         </button>
 
-        {/* QR Scanner button */}
+        {/* QR Scanner button - viewfinder style */}
         <button
           onClick={() => setIsQrScannerOpen(true)}
-          className="action-button action-button-scan"
+          className="qr-scanner-button"
           aria-label="Scan QR Code"
           data-testid="scan-button"
         >
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <span className="qr-corner qr-corner--tl" />
+          <span className="qr-corner qr-corner--tr" />
+          <span className="qr-corner qr-corner--bl" />
+          <span className="qr-corner qr-corner--br" />
+          <svg fill="currentColor" viewBox="0 0 24 24">
             <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM19 13h2v2h-2zM13 13h2v2h-2zM15 15h2v2h-2zM13 17h2v2h-2zM15 19h2v2h-2zM17 17h2v2h-2zM17 13h2v2h-2zM19 15h2v2h-2zM19 19h2v2h-2z" />
           </svg>
         </button>

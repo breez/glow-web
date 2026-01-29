@@ -159,21 +159,18 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
 
         {/* Balance display */}
         <div className="text-center">
-          {/* Sats label */}
+          {/* Label */}
           <div className="text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase mb-1">
-            Balance
+            Balance<span className="text-spark-text-muted/50 mx-1.5">·</span><span className="text-spark-text-muted/50">sats</span>
           </div>
 
           {/* Main balance */}
           <div 
-            className="flex items-baseline justify-center gap-2" 
+            className="inline-flex items-baseline justify-center" 
             data-testid="wallet-balance"
           >
             <span className="balance-display">
               {formatWithThinSpaces(animatedBalance)}
-            </span>
-            <span className="text-spark-text-secondary text-base font-display font-medium">
-              sats
             </span>
           </div>
 
