@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { SimpleAlert } from '../../components/AlertCard';
@@ -32,6 +32,98 @@ const EditButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
     Edit
   </button>
 );
+
+// Separate component to handle keyboard visibility
+interface EditingFormProps {
+  address: LightningAddressInfo | null;
+  editValue: string;
+  error: string | null;
+  isLoading: boolean;
+  onEditValueChange: (value: string) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}
+
+const EditingForm: React.FC<EditingFormProps> = ({
+  address,
+  editValue,
+  error,
+  isLoading,
+  onEditValueChange,
+  onCancel,
+  onSave,
+}) => {
+  const buttonsRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Scroll buttons into view when keyboard opens
+  useEffect(() => {
+    const handleFocus = () => {
+      // Small delay to let keyboard animate
+      setTimeout(() => {
+        buttonsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 300);
+    };
+
+    const input = inputRef.current;
+    input?.addEventListener('focus', handleFocus);
+    return () => input?.removeEventListener('focus', handleFocus);
+  }, []);
+
+  return (
+    <div className="pt-2 space-y-5">
+      {/* Header with icon */}
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-14 h-14 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
+          <svg className="w-7 h-7 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
+          </svg>
+        </div>
+        <h3 className="font-display text-lg font-semibold text-spark-text-primary">
+          {address ? 'Edit Address' : 'Create Address'}
+        </h3>
+      </div>
+
+      {/* Input with suffix */}
+      <div className="space-y-4">
+        <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary focus-within:ring-2 focus-within:ring-spark-primary/20 transition-all">
+          <input
+            ref={inputRef}
+            id="lightning-address"
+            type="text"
+            value={editValue}
+            onChange={(e) => onEditValueChange(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+            placeholder="satoshi"
+            disabled={isLoading}
+            className="flex-1 min-w-0 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none"
+            autoComplete="off"
+            autoCapitalize="off"
+          />
+          <span className="flex-shrink-0 px-4 py-3 text-spark-text-muted font-medium text-sm">
+            @breez.tips
+          </span>
+        </div>
+
+        <FormError error={error} />
+      </div>
+
+      {/* Action buttons */}
+      <div ref={buttonsRef} className="flex gap-3 justify-center pt-2 pb-4">
+        <SecondaryButton onClick={onCancel} className="flex-1">
+          Cancel
+        </SecondaryButton>
+        <PrimaryButton
+          onClick={onSave}
+          disabled={isLoading || !editValue.trim()}
+          className="flex-1"
+          data-testid="save-address-button"
+        >
+          {isLoading ? <LoadingSpinner size="small" /> : 'Save'}
+        </PrimaryButton>
+      </div>
+    </div>
+  );
+};
 
 const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   address,
@@ -112,56 +204,15 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
 
   if (isEditing) {
     return (
-      <div className="pt-2 space-y-5">
-        {/* Header with icon */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-14 h-14 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
-            <svg className="w-7 h-7 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
-            </svg>
-          </div>
-          <h3 className="font-display text-lg font-semibold text-spark-text-primary">
-            {address ? 'Edit Address' : 'Create Address'}
-          </h3>
-        </div>
-
-        {/* Input with suffix */}
-        <div className="space-y-4">
-          <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary focus-within:ring-2 focus-within:ring-spark-primary/20 transition-all">
-            <input
-              id="lightning-address"
-              type="text"
-              value={editValue}
-              onChange={(e) => onEditValueChange(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
-              placeholder="satoshi"
-              disabled={isLoading}
-              className="flex-1 min-w-0 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none"
-              autoComplete="off"
-              autoCapitalize="off"
-            />
-            <span className="flex-shrink-0 px-4 py-3 text-spark-text-muted font-medium text-sm">
-              @breez.tips
-            </span>
-          </div>
-
-          <FormError error={error} />
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex gap-3 justify-center pt-2">
-          <SecondaryButton onClick={onCancel} className="flex-1">
-            Cancel
-          </SecondaryButton>
-          <PrimaryButton
-            onClick={onSave}
-            disabled={isLoading || !editValue.trim()}
-            className="flex-1"
-            data-testid="save-address-button"
-          >
-            {isLoading ? <LoadingSpinner size="small" /> : 'Save'}
-          </PrimaryButton>
-        </div>
-      </div>
+      <EditingForm
+        address={address}
+        editValue={editValue}
+        error={error}
+        isLoading={isLoading}
+        onEditValueChange={onEditValueChange}
+        onCancel={onCancel}
+        onSave={onSave}
+      />
     );
   }
 

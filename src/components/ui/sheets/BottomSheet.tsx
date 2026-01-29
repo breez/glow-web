@@ -326,17 +326,17 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
     return (
       <div
         ref={ref}
-        className={`bottom-sheet-card bg-spark-surface border-spark-border shadow-glass-lg overflow-hidden w-full ${_expanded ? 'h-full flex flex-col' : ''} ${_isFullScreen ? 'rounded-none' : 'bottom-sheet-card-bordered'} ${className}`}
+        className={`bottom-sheet-card bg-spark-surface border-spark-border shadow-glass-lg overflow-hidden w-full ${_expanded ? 'h-full flex flex-col' : 'max-h-[85dvh] flex flex-col'} ${_isFullScreen ? 'rounded-none' : 'bottom-sheet-card-bordered'} ${className}`}
       >
         {/* Handle hit area: large touch target, small visual indicator */}
         <div
-          className="bottom-sheet-handle-zone"
+          className="bottom-sheet-handle-zone flex-shrink-0"
           onPointerDown={_onHandlePointerDown}
           style={{ touchAction: 'none' }}
         >
           <div className="bottom-sheet-handle" />
         </div>
-        <div className={`pt-3 ${_expanded ? 'flex-1 overflow-y-auto min-h-0 scrollbar-hidden' : ''}`}>
+        <div className={`pt-3 flex-1 overflow-y-auto min-h-0 scrollbar-hidden`}>
           {children}
         </div>
       </div>
