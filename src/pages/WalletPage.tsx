@@ -193,23 +193,19 @@ const WalletPage: React.FC<WalletPageProps> = ({
         />
       </div>
 
-      {/* Send Payment Dialog */}
-      {isSendDialogOpen && (
-        <SendPaymentDialog
-          isOpen={isSendDialogOpen}
-          onClose={handleSendDialogClose}
-          initialPaymentInput={paymentInput}
-          onScanQr={handleScanFromSendDialog}
-        />
-      )}
+      {/* Send Payment Dialog - always mounted for instant response */}
+      <SendPaymentDialog
+        isOpen={isSendDialogOpen}
+        onClose={handleSendDialogClose}
+        initialPaymentInput={paymentInput}
+        onScanQr={handleScanFromSendDialog}
+      />
 
-      {/* Receive Payment Dialog */}
-      {isReceiveDialogOpen && (
-        <ReceivePaymentDialog
-          isOpen={isReceiveDialogOpen}
-          onClose={handleReceiveDialogClose}
-        />
-      )}
+      {/* Receive Payment Dialog - always mounted for instant response */}
+      <ReceivePaymentDialog
+        isOpen={isReceiveDialogOpen}
+        onClose={handleReceiveDialogClose}
+      />
 
       {/* QR Scanner Dialog */}
       {isQrScannerOpen && (
