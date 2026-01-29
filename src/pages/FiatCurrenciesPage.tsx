@@ -4,6 +4,7 @@ import { useWallet } from '@/contexts/WalletContext';
 import { getFiatSettings, saveFiatSettings } from '../services/settings';
 import type { FiatCurrency } from '@breeztech/breez-sdk-spark';
 import SlideInPage from '../components/layout/SlideInPage';
+import { logger, LogCategory } from '@/services/logger';
 
 interface FiatCurrenciesPageProps {
   onBack: () => void;
@@ -29,7 +30,9 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
         const fiatCurrencies = await wallet.listFiatCurrencies();
         setCurrencies(fiatCurrencies);
       } catch (error) {
-        console.error('Failed to load fiat currencies:', error);
+        logger.error(LogCategory.SDK, 'Failed to load fiat currencies', {
+          error: error instanceof Error ? error.message : String(error),
+        });
       } finally {
         setIsLoading(false);
       }

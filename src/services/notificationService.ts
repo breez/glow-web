@@ -5,6 +5,8 @@
  * particularly useful for "offline payments" via Lightning Address.
  */
 
+import { logger, LogCategory } from '@/services/logger';
+
 // Extended notification options that include non-standard but widely supported properties
 interface ExtendedNotificationOptions extends NotificationOptions {
   renotify?: boolean;
@@ -23,6 +25,8 @@ const defaultSettings: NotificationSettings = {
   enabled: false,
   paymentReceived: true,
 };
+
+const formatError = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 
 /**
  * Check if the browser supports notifications
@@ -50,7 +54,7 @@ export function getNotificationPermission(): NotificationPermission {
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
   if (!isNotificationSupported()) {
-    console.warn('Notifications not supported in this browser');
+    logger.warn(LogCategory.UI, 'Notifications not supported in this browser');
     return 'denied';
   }
 
@@ -66,7 +70,9 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 
     return permission;
   } catch (error) {
-    console.error('Failed to request notification permission:', error);
+    logger.error(LogCategory.UI, 'Failed to request notification permission', {
+      error: formatError(error),
+    });
     return 'denied';
   }
 }
@@ -158,7 +164,9 @@ export async function showPaymentReceivedNotification(
 
     await registration.showNotification('Payment Received', options);
   } catch (error) {
-    console.error('Failed to show payment notification:', error);
+    logger.error(LogCategory.UI, 'Failed to show payment notification', {
+      error: formatError(error),
+    });
   }
 }
 
@@ -197,7 +205,9 @@ export async function showDepositClaimedNotification(
 
     await registration.showNotification('Deposits Claimed', options);
   } catch (error) {
-    console.error('Failed to show deposit notification:', error);
+    logger.error(LogCategory.UI, 'Failed to show deposit notification', {
+      error: formatError(error),
+    });
   }
 }
 

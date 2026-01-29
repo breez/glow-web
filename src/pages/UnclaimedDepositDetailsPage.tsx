@@ -5,6 +5,7 @@ import { BottomSheetContainer, BottomSheetCard, DialogHeader, PrimaryButton, Sec
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
 import { SpinnerIcon, WarningIcon } from '../components/Icons';
 import { rejectDeposit, removeRejectedDeposit } from '../services/depositState';
+import { logger, LogCategory } from '@/services/logger';
 
 interface UnclaimedDepositDetailsPageProps {
   deposit: DepositInfo | null;
@@ -62,7 +63,9 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
       onChanged?.();
       handleClose();
     } catch (e) {
-      console.error('Failed to claim transfer:', e);
+      logger.error(LogCategory.PAYMENT, 'Failed to claim transfer', {
+        error: e instanceof Error ? e.message : String(e),
+      });
       const errorMessage = e instanceof Error ? e.message : 'Failed to claim transfer';
       setClaimError(errorMessage);
     } finally {

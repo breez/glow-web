@@ -9,6 +9,7 @@ import StagingGate from './components/StagingGate';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
 import { hideSplash } from './main';
+import { logger, LogCategory } from './services/logger';
 
 import HomePage from './pages/HomePage';
 import WalletPage from './pages/WalletPage';
@@ -29,6 +30,7 @@ import { useIOSViewportFix } from './hooks/useIOSViewportFix';
 
 // Main App without toast functionality
 const AppContent: React.FC = () => {
+  const formatError = (err: unknown): string => (err instanceof Error ? err.message : String(err));
   // Screen navigation state
   const [currentScreen, setCurrentScreen] = useState<'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies'>('home');
 
@@ -92,7 +94,9 @@ const AppContent: React.FC = () => {
       setWalletInfo(info);
       setTransactions(txns);
     } catch (error) {
-      console.error('Error refreshing wallet data:', error);
+      logger.error(LogCategory.SDK, 'Error refreshing wallet data', {
+        error: formatError(error),
+      });
       setError('Failed to refresh wallet data.');
     } finally {
       if (showLoading) {
@@ -111,7 +115,9 @@ const AppContent: React.FC = () => {
       const hasRejected = deposits.some(d => isDepositRejected(d.txid, d.vout));
       setHasUnclaimedDeposits(hasRejected);
     } catch (e) {
-      console.warn('Failed to fetch unclaimed deposits:', e);
+      logger.warn(LogCategory.SDK, 'Failed to fetch unclaimed deposits', {
+        error: formatError(e),
+      });
       setUnclaimedDeposits([]);
       setHasUnclaimedDeposits(false);
     }
@@ -120,14 +126,16 @@ const AppContent: React.FC = () => {
 
   // SDK event handler with toast notifications and auto-close of receive dialog
   const handleSdkEvent = useCallback((event: SdkEvent) => {
-    console.log('SDK event received:', event);
+    logger.debug(LogCategory.SDK, 'SDK event received', {
+      eventType: event.type,
+    });
 
     if (event.type === 'synced') {
-      console.log('Synced event received, refreshing data...');
+      logger.debug(LogCategory.SDK, 'Synced event received; refreshing data');
 
       // If this is the first sync event after connecting, mark restoration as complete
       if (isRestoring) {
-        console.log('Restoration sync complete. Hiding overlay.');
+        logger.info(LogCategory.SESSION, 'Restoration sync complete; hiding overlay');
         setIsRestoring(false);
       }
 
@@ -138,7 +146,9 @@ const AppContent: React.FC = () => {
       refreshWalletData(false);
       fetchUnclaimedDeposits();
     } else if (event.type === 'paymentSucceeded') {
-      console.log('Payment succeeded event received');
+      logger.info(LogCategory.PAYMENT, 'Payment succeeded event received', {
+        paymentId: event.payment.id,
+      });
       const paymentId = event.payment.id;
 
       // Deduplicate: only show notification if we haven't shown it for this payment
@@ -166,7 +176,9 @@ const AppContent: React.FC = () => {
       }
       refreshWalletData(false);
     } else if (event.type === 'claimedDeposits') {
-      console.log('Claim deposits succeeded event received');
+      logger.info(LogCategory.PAYMENT, 'Claim deposits succeeded event received', {
+        count: event.claimedDeposits.length,
+      });
       // Use ref to check screen without adding to dependencies
       if (currentScreenRef.current !== 'getRefund') {
         showToast(
@@ -180,7 +192,9 @@ const AppContent: React.FC = () => {
       refreshWalletData(false);
       fetchUnclaimedDeposits();
     } else if (event.type === 'unclaimedDeposits') {
-      console.log('Claim deposits failed event received');
+      logger.warn(LogCategory.PAYMENT, 'Claim deposits failed event received', {
+        remaining: event.unclaimedDeposits.length,
+      });
       // Use ref to check screen without adding to dependencies
       if (currentScreenRef.current !== 'getRefund') {
         showToast(
@@ -204,7 +218,9 @@ const AppContent: React.FC = () => {
       setFiatRates(rates);
       setFiatCurrencies(currencies);
     } catch (error) {
-      console.warn('Failed to fetch fiat data:', error);
+      logger.warn(LogCategory.SDK, 'Failed to fetch fiat data', {
+        error: formatError(error),
+      });
     }
   }, [wallet]);
 
@@ -224,19 +240,30 @@ const AppContent: React.FC = () => {
 
   // Try to connect with saved mnemonic on app startup (run once)
   useEffect(() => {
-    console.log('useEffect checkForExistingWallet...');
+    // Initialize log session for persistent logging
+    wallet.initLogSession().catch((e) => {
+      logger.warn(LogCategory.SESSION, 'Failed to initialize log session', {
+        error: formatError(e),
+      });
+    });
+
+    logger.debug(LogCategory.SESSION, 'Checking for existing wallet on mount');
     const checkForExistingWallet = async () => {
-      console.log('checkForExistingWallet...');
+      logger.debug(LogCategory.SESSION, 'Resolving existing wallet state');
       const savedMnemonic = wallet.getSavedMnemonic();
-      console.log('Saved mnemonic:', savedMnemonic);
+      logger.debug(LogCategory.AUTH, 'Saved mnemonic present', {
+        hasMnemonic: Boolean(savedMnemonic),
+      });
       if (savedMnemonic) {
         try {
           setIsLoading(true);
           await connectWallet(savedMnemonic, false);
-          console.log('Connected to wallet');
+          logger.info(LogCategory.SDK, 'Connected to wallet with saved mnemonic');
           setCurrentScreen('wallet'); // Navigate to wallet screen
         } catch (error) {
-          console.error('Failed to connect with saved mnemonic:', error);
+          logger.error(LogCategory.SDK, 'Failed to connect with saved mnemonic', {
+            error: formatError(error),
+          });
           setError('Failed to connect with saved mnemonic. Please try again.');
           wallet.clearMnemonic();
           setCurrentScreen('home'); // Go back to home screen on failure
@@ -263,14 +290,18 @@ const AppContent: React.FC = () => {
   // Set up event listener when connected
   useEffect(() => {
     if (isConnected) {
-      console.log('Setting up event listener...');
+      logger.debug(LogCategory.SDK, 'Setting up wallet event listener');
       wallet.addEventListener(handleSdkEvent)
         .then(listenerId => {
           eventListenerIdRef.current = listenerId;
-          console.log('Registered event listener with ID:', listenerId);
+          logger.debug(LogCategory.SDK, 'Registered wallet event listener', {
+            listenerId,
+          });
         })
         .catch(error => {
-          console.error('Failed to add event listener:', error);
+          logger.error(LogCategory.SDK, 'Failed to add wallet event listener', {
+            error: formatError(error),
+          });
           setError('Failed to set up event listeners.');
         });
 
@@ -278,7 +309,11 @@ const AppContent: React.FC = () => {
         // Clean up by removing the specific listener
         if (eventListenerIdRef.current) {
           wallet.removeEventListener(eventListenerIdRef.current)
-            .catch(error => console.error('Error removing event listener:', error));
+            .catch(error => {
+              logger.error(LogCategory.SDK, 'Error removing wallet event listener', {
+                error: formatError(error),
+              });
+            });
           eventListenerIdRef.current = null;
         }
       };
@@ -287,15 +322,19 @@ const AppContent: React.FC = () => {
 
   const connectWallet = async (mnemonic: string, restore: boolean, overrideNetwork?: Network) => {
     try {
-      console.log('Connecting wallet...');
+      logger.info(LogCategory.SDK, 'Initiating wallet connection', {
+        restore,
+        hasOverrideNetwork: Boolean(overrideNetwork),
+      });
       // Guard against double-connect
       if (wallet.connected()) {
-        console.log('Already connected; skipping connectWallet');
+        logger.debug(LogCategory.SDK, 'Wallet already connected; skipping connect');
         return;
       }
-      console.log('Connecting wallet...');
       setIsLoading(true);
-      console.log(`Starting wallet connection (restore: ${restore})...`);
+      logger.debug(LogCategory.SDK, 'Starting wallet connection workflow', {
+        restore,
+      });
       setIsRestoring(restore); // Mark that we're restoring data      
       setError(null);
 
@@ -332,13 +371,15 @@ const AppContent: React.FC = () => {
           config.preferSparkOverLightning = s.preferSparkOverLightning;
         }
       } catch (e) {
-        console.warn('Failed to apply user settings to config:', e);
+        logger.warn(LogCategory.SDK, 'Failed to apply user settings to config', {
+          error: formatError(e),
+        });
       }
 
       setConfig(config);
       await wallet.initWallet(mnemonic, config);
 
-      console.log('Wallet connected successfully');
+      logger.info(LogCategory.SDK, 'Wallet connected successfully');
       // Save mnemonic for future use
       wallet.saveMnemonic(mnemonic);
 
@@ -359,7 +400,9 @@ const AppContent: React.FC = () => {
       setIsLoading(false);
 
     } catch (error) {
-      console.error('Error connecting wallet:', error);
+      logger.error(LogCategory.SDK, 'Error connecting wallet', {
+        error: formatError(error),
+      });
       setError('Failed to connect wallet. Please check your mnemonic and try again.');
       setIsRestoring(false);
       setIsLoading(false);
@@ -377,6 +420,9 @@ const AppContent: React.FC = () => {
         await wallet.disconnect();
       }
 
+      // End log session before clearing data
+      await wallet.endLogSession();
+
       // Clear the stored mnemonic
       wallet.clearMnemonic();
 
@@ -392,7 +438,9 @@ const AppContent: React.FC = () => {
       // Show logout success toast
       showToast('success', 'Successfully logged out');
     } catch (error) {
-      console.error('Logout failed:', error);
+      logger.error(LogCategory.SESSION, 'Logout failed', {
+        error: formatError(error),
+      });
       setError('Failed to log out properly. Please try again.');
     } finally {
       setIsLoading(false);

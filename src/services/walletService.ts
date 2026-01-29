@@ -30,45 +30,44 @@ import {
   Rate,
 } from '@breeztech/breez-sdk-spark';
 import type { WalletAPI } from './WalletAPI';
+import { logger, LogCategory, logSdkMessage } from './logger';
+import { getAllSessions, isStorageAvailable } from './logStorage';
+import JSZip from 'jszip';
 
+/**
+ * WebLogger that writes SDK logs to the unified logger.
+ * This ensures all logs (app + SDK) are in a single stream.
+ */
 class WebLogger {
   log = (logEntry: LogEntry) => {
-    const ts = new Date().toISOString();
-    const formatted = `${ts} [${logEntry.level}]: ${logEntry.line}`;
-    console.log(formatted);
-    appendLog(formatted);
-  }
+    // Write to unified logger (which handles console output and persistence)
+    logSdkMessage(logEntry.level, logEntry.line);
+  };
 }
+
 // Private SDK instance - not exposed outside this module
 let sdk: BreezSdk | null = null;
-let logger: WebLogger | null = null;
-// In-memory log buffer (ring buffer)
-const MAX_LOG_LINES = 100000;
-const sdkLogs: string[] = [];
-
-function appendLog(line: string) {
-  sdkLogs.push(line);
-  if (sdkLogs.length > MAX_LOG_LINES) {
-    sdkLogs.splice(0, sdkLogs.length - MAX_LOG_LINES);
-  }
-}
+let sdkLogger: WebLogger | null = null;
 
 export const initWallet = async (mnemonic: string, config: Config): Promise<void> => {
   // If already connected, do nothing
   if (sdk) {
-    console.warn('initWallet called but SDK is already initialized; skipping');
+    logger.warn(LogCategory.SDK, 'initWallet called but SDK is already initialized; skipping');
     return;
   }
 
   try {
-    if (!logger) {
-      logger = new WebLogger();
-      initLogging(logger);
+    if (!sdkLogger) {
+      sdkLogger = new WebLogger();
+      initLogging(sdkLogger);
     }
     sdk = await connect({ config, seed: { type: "mnemonic", mnemonic }, storageDir: "spark-wallet-example" });
-    console.log('Wallet initialized successfully');
+    logger.sdkInitialized();
+    logger.authSuccess('mnemonic');
   } catch (error) {
-    console.error('Failed to initialize wallet:', error);
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.sdkError('initWallet', errorMsg);
+    logger.authFailure('mnemonic', errorMsg);
     throw error;
   }
 };
@@ -156,9 +155,120 @@ export const listFiatRates = async (): Promise<Rate[]> => {
   return response.rates;
 };
 
-// Logs accessors
+// Logs accessors (unified log stream - app and SDK logs are combined)
 export const getSdkLogs = (): string => {
-  return sdkLogs.join('\n');
+  // SDK logs are now in the unified buffer, filter by category
+  return logger.getLogsByCategory(LogCategory.SDK_INTERNAL)
+    .map((e) => `[${e.timestamp}] ${e.level} ${e.message}`)
+    .join('\n');
+};
+
+/** Get unified logs for current session as string */
+export const getAllLogs = (): string => {
+  return logger.getLogsAsString();
+};
+
+/**
+ * Get all logs from all sessions as a zip file.
+ * Returns a Blob containing the zip file.
+ * Files are named with Unix timestamp prefix for chronological ordering.
+ */
+export const getAllLogsAsZip = async (): Promise<Blob> => {
+  const zip = new JSZip();
+  const now = new Date();
+  const nowTimestamp = Math.floor(now.getTime() / 1000);
+
+  // Add current session logs (unified stream)
+  const currentSessionHeader = [
+    `Glow Wallet Log Export`,
+    `Session: Current`,
+    `Generated: ${now.toISOString()}`,
+    '='.repeat(60),
+    '',
+  ].join('\n');
+  zip.file(`${nowTimestamp}_glow_current.txt`, currentSessionHeader + '\n' + getAllLogs());
+
+  // Add historical sessions if storage is available
+  if (isStorageAvailable()) {
+    try {
+      const sessions = await getAllSessions();
+
+      for (const session of sessions) {
+        // Use Unix timestamp for chronological sorting
+        const sessionTimestamp = Math.floor(new Date(session.startedAt).getTime() / 1000);
+        const filename = `${sessionTimestamp}_glow_session.txt`;
+
+        // Create session info header
+        const sessionHeader = [
+          `Glow Wallet Log Export`,
+          `Session ID: ${session.id}`,
+          `Started: ${session.startedAt}`,
+          session.endedAt ? `Ended: ${session.endedAt}` : 'Status: Active',
+          '='.repeat(60),
+          '',
+        ].join('\n');
+
+        // Add unified logs for this session
+        zip.file(filename, sessionHeader + '\n' + (session.logs || '(no logs)'));
+      }
+    } catch (e) {
+      // If we can't get historical sessions, just include current
+      logger.warn(LogCategory.SDK, 'Failed to retrieve historical log sessions', {
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+
+  return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+};
+
+/**
+ * Check if Web Share API is available and supports file sharing
+ */
+export const canShareFiles = (): boolean => {
+  return typeof navigator !== 'undefined' &&
+    typeof navigator.share === 'function' &&
+    typeof navigator.canShare === 'function';
+};
+
+/**
+ * Share or download logs using the best available method.
+ * Uses Web Share API on mobile, falls back to download on desktop.
+ */
+export const shareOrDownloadLogs = async (): Promise<void> => {
+  const blob = await getAllLogsAsZip();
+  const timestamp = Math.floor(Date.now() / 1000);
+  const filename = `${timestamp}_glow_logs.zip`;
+
+  // Try Web Share API first (better mobile experience)
+  if (canShareFiles()) {
+    const file = new File([blob], filename, { type: 'application/zip' });
+
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Glow Wallet Logs',
+        });
+        return;
+      } catch (e) {
+        // User cancelled or share failed, fall through to download
+        if ((e as Error).name === 'AbortError') {
+          return; // User cancelled, don't fall back to download
+        }
+      }
+    }
+  }
+
+  // Fall back to download
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 };
 // Event handling
 export const addEventListener = async (
@@ -176,10 +286,10 @@ export const addEventListener = async (
 
     // Add event listener to SDK and return its ID
     const listenerId = await sdk.addEventListener(listener);
-    console.log('Event listener added with ID:', listenerId);
+    logger.debug(LogCategory.SDK, 'Event listener added', { listenerId });
     return listenerId;
   } catch (error) {
-    console.error('Failed to add event listener:', error);
+    logger.sdkError('addEventListener', error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
 };
@@ -192,9 +302,9 @@ export const removeEventListener = async (listenerId: string): Promise<void> => 
 
   try {
     await sdk.removeEventListener(listenerId);
-    console.log('Event listener removed:', listenerId);
+    logger.debug(LogCategory.SDK, 'Event listener removed', { listenerId });
   } catch (error) {
-    console.error(`Failed to remove event listener ${listenerId}:`, error);
+    logger.sdkError('removeEventListener', error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
 };
@@ -208,7 +318,7 @@ export const getWalletInfo = async (): Promise<GetInfoResponse | null> => {
     const request: GetInfoRequest = {};
     return await sdk.getInfo(request);
   } catch (error) {
-    console.error('Failed to get wallet info:', error);
+    logger.sdkError('getWalletInfo', error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
 };
@@ -226,7 +336,7 @@ export const getTransactions = async (): Promise<Payment[]> => {
     const response: ListPaymentsResponse = await sdk.listPayments(request);
     return response.payments;
   } catch (error) {
-    console.error('Failed to get transactions:', error);
+    logger.sdkError('getTransactions', error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
 };
@@ -237,9 +347,9 @@ export const disconnect = async (): Promise<void> => {
       // Disconnect SDK (this will clean up all listeners registered with it)
       await sdk.disconnect();
       sdk = null;
-      // Remove reference to window.sdk
+      logger.sessionEnd('disconnect');
     } catch (error) {
-      console.error('Failed to disconnect wallet:', error);
+      logger.sdkError('disconnect', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -272,7 +382,7 @@ export const getLightningAddress = async (): Promise<breezSdk.LightningAddressIn
     const result = await sdk.getLightningAddress();
     return result ?? null;
   } catch (error) {
-    console.error('Failed to get lightning address:', error);
+    logger.sdkError('getLightningAddress', error instanceof Error ? error.message : 'Unknown error');
     return null;
   }
 };
@@ -282,7 +392,7 @@ export const checkLightningAddressAvailable = async (username: string): Promise<
   try {
     return await sdk.checkLightningAddressAvailable({ username });
   } catch (error) {
-    console.error('Failed to check lightning address availability:', error);
+    logger.sdkError('checkLightningAddressAvailable', error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
 };
@@ -291,8 +401,9 @@ export const registerLightningAddress = async (username: string, description: st
   if (!sdk) throw new Error('SDK not initialized');
   try {
     await sdk.registerLightningAddress({ username, description });
+    logger.info(LogCategory.SDK, 'Lightning address registered');
   } catch (error) {
-    console.error('Failed to register lightning address:', error);
+    logger.sdkError('registerLightningAddress', error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
 };
@@ -301,8 +412,9 @@ export const deleteLightningAddress = async (): Promise<void> => {
   if (!sdk) throw new Error('SDK not initialized');
   try {
     await sdk.deleteLightningAddress();
+    logger.info(LogCategory.SDK, 'Lightning address deleted');
   } catch (error) {
-    console.error('Failed to delete lightning address:', error);
+    logger.sdkError('deleteLightningAddress', error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
 };
@@ -349,6 +461,15 @@ export const walletApi: WalletAPI = {
   // Fiat currencies
   listFiatCurrencies,
   listFiatRates,
-  // Logs
+  // Logs (unified log stream)
   getSdkLogs,
+  getAppLogs: () => logger.getLogsAsString(),
+  getAllLogs,
+  getAllLogsAsZip,
+  canShareFiles,
+  shareOrDownloadLogs,
+
+  // Session management
+  initLogSession: () => logger.initSession(),
+  endLogSession: () => logger.endSession(),
 };

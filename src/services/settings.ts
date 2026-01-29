@@ -92,3 +92,20 @@ export function getFiatSettings(): FiatSettings {
 export function saveFiatSettings(settings: FiatSettings): void {
   setCachedItem(FIAT_SETTINGS_KEY, JSON.stringify(settings));
 }
+
+/**
+ * Check if console logging is enabled.
+ * Controlled via VITE_CONSOLE_LOGGING env var when present; defaults to dev mode.
+ */
+export function isConsoleLoggingEnabled(): boolean {
+  const envValue = import.meta.env.VITE_CONSOLE_LOGGING;
+
+  if (typeof envValue === 'string') {
+    const normalized = envValue.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+
+  // Default: enabled in dev, disabled in production
+  return import.meta.env.DEV;
+}

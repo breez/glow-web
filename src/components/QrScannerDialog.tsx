@@ -2,6 +2,7 @@ import React, { useEffect, useCallback, useRef, useState } from 'react';
 import QrScanner from 'qr-scanner';
 import { BottomSheetContainer, FloatingIconButton } from './ui';
 import { useQrScanner } from '../hooks/useQrScanner';
+import { logger, LogCategory } from '@/services/logger';
 
 interface QrScannerDialogProps {
   isOpen: boolean;
@@ -56,10 +57,13 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
     if (isOpen) {
       // Wait for the transition to complete (300ms) plus a buffer
       const timer = setTimeout(() => {
+        logger.debug(LogCategory.UI, 'Checking video element after transition', {
+          videoReady: Boolean(videoRef.current),
+        });
         if (videoRef.current) {
           startScanningRef.current();
         } else {
-          console.error('Video element still null after transition');
+          logger.error(LogCategory.UI, 'Video element still null after transition');
         }
       }, 400); // 300ms transition + 100ms buffer
 

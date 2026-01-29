@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useWallet } from '@/contexts/WalletContext';
 import { WarningIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
+import { logger, LogCategory } from '@/services/logger';
 
 interface BackupPageProps {
   onBack: () => void;
@@ -24,7 +25,9 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (e) {
-      console.warn('Failed to copy mnemonic:', e);
+      logger.warn(LogCategory.UI, 'Failed to copy mnemonic to clipboard', {
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
   };
 

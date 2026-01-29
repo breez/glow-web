@@ -1,4 +1,5 @@
 import React, { ReactNode, forwardRef } from 'react';
+import { logger, LogCategory } from '@/services/logger';
 
 // ============================================
 // RE-EXPORTS FROM MODULAR FILES
@@ -284,7 +285,11 @@ export const CopyableText: React.FC<{
         setTimeout(() => setCopied(false), 2000);
         onCopied?.();
       })
-      .catch(err => console.error('Failed to copy: ', err));
+      .catch(err => {
+        logger.error(LogCategory.UI, 'Failed to copy text to clipboard', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
   };
 
   const handleShare = async () => {

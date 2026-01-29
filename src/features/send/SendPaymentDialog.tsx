@@ -14,6 +14,7 @@ import ProcessingStep from './steps/ProcessingStep';
 import ResultStep from './steps/ResultStep';
 import { SendInput } from '@/types/domain';
 import { LnurlPayRequestDetails, PrepareLnurlPayRequest, SendPaymentOptions } from '@breeztech/breez-sdk-spark';
+import { logger, LogCategory } from '@/services/logger';
 
 // Props interfaces
 interface SendPaymentDialogProps {
@@ -25,6 +26,7 @@ interface SendPaymentDialogProps {
 
 // Main component
 const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, initialPaymentInput, onScanQr }) => {
+  const formatError = (err: unknown): string => (err instanceof Error ? err.message : String(err));
   const wallet = useWallet();
   // Container state: input parsing + routing to workflow per input type
   const [currentStep, setCurrentStep] = useState<'input' | 'amount' | 'workflow' | 'processing' | 'result'>('input');
@@ -54,7 +56,9 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
           try {
             await processPaymentInputAsync(initialPaymentInput.rawInput);
           } catch (err) {
-            console.error('Failed to process initial payment input:', err);
+            logger.error(LogCategory.PAYMENT, 'Failed to process initial payment input', {
+              error: formatError(err),
+            });
           }
         })();
       } else {
@@ -97,7 +101,9 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
         setCurrentStep('input');
       }
     } catch (err) {
-      console.error('Failed to parse input:', err);
+      logger.warn(LogCategory.PAYMENT, 'Failed to parse payment input', {
+        error: formatError(err),
+      });
       setError('Invalid payment destination');
     } finally {
       setIsLoading(false);
@@ -118,7 +124,9 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
       // Always go to workflow; BTC fee selection happens inside the Bitcoin workflow
       setCurrentStep('workflow');
     } catch (err) {
-      console.error('Failed to prepare payment:', err);
+      logger.error(LogCategory.PAYMENT, 'Failed to prepare payment', {
+        error: formatError(err),
+      });
       setError(`Failed to prepare payment ${err instanceof Error ? err.message : 'Unknown error'}`);
       setCurrentStep('amount');
     } finally {
@@ -171,7 +179,9 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
       await wallet.sendPayment({ prepareResponse, options });
       setPaymentResult('success');
     } catch (err) {
-      console.error('Payment failed:', err);
+      logger.error(LogCategory.PAYMENT, 'Payment failed', {
+        error: formatError(err),
+      });
       setError(`Payment failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setPaymentResult('failure');
     } finally {
@@ -189,7 +199,9 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
       await runner();
       setPaymentResult('success');
     } catch (err) {
-      console.error('Operation failed:', err);
+      logger.error(LogCategory.PAYMENT, 'Operation failed during payment flow', {
+        error: formatError(err),
+      });
       setError(`Operation failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setPaymentResult('failure');
     } finally {

@@ -69,4 +69,19 @@ export interface WalletAPI {
 
   // Logs
   getSdkLogs: () => string;
+  getAppLogs: () => string;
+  /** Get unified logs combining app and SDK logs */
+  getAllLogs: () => string;
+  /** Get all logs from all sessions as a zip file */
+  getAllLogsAsZip: () => Promise<Blob>;
+  /** Check if native file sharing is available */
+  canShareFiles: () => boolean;
+  /** Share or download logs (uses native share on mobile, download on desktop) */
+  shareOrDownloadLogs: () => Promise<void>;
+
+  // Session management
+  /** Initialize log session with persistent storage */
+  initLogSession: () => Promise<void>;
+  /** End current log session */
+  endLogSession: () => Promise<void>;
 }

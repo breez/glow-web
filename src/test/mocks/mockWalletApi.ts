@@ -237,6 +237,15 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
 
     // Logs
     getSdkLogs: vi.fn().mockReturnValue(''),
+    getAppLogs: vi.fn().mockReturnValue(''),
+    getAllLogs: vi.fn().mockReturnValue(''),
+    getAllLogsAsZip: vi.fn().mockResolvedValue(new Blob(['test'], { type: 'application/zip' })),
+    canShareFiles: vi.fn().mockReturnValue(false),
+    shareOrDownloadLogs: vi.fn().mockResolvedValue(undefined),
+
+    // Session management
+    initLogSession: vi.fn().mockResolvedValue(undefined),
+    endLogSession: vi.fn().mockResolvedValue(undefined),
   };
 
   return { ...defaultMock, ...overrides };

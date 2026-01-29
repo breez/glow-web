@@ -104,3 +104,46 @@ grep "methodName" ~/Documents/GitHub/spark-sdk/packages/wasm/bundler/breez_sdk_s
 - `npm run build` may fail with linked packages (vite polyfill resolution)
 - Production builds require npm-published SDK version
 - Type check: `npx tsc --noEmit`
+
+## Logging Practices
+
+The app uses a structured logging service (`src/services/logger.ts`) following OWASP guidelines.
+
+### Log Levels
+- `DEBUG`: Detailed diagnostic info (dev only)
+- `INFO`: Normal operations (initialization, successful payments)
+- `WARN`: Recoverable issues (validation failures, retries)
+- `ERROR`: Failures requiring attention (SDK errors, payment failures)
+
+### Categories
+- `auth`: Authentication events
+- `payment`: Payment operations
+- `sdk`: SDK lifecycle and operations
+- `ui`: User interactions
+- `session`: Session start/end
+- `validation`: Input validation
+
+### Usage
+```typescript
+import { logger, LogCategory } from '../services/logger';
+
+// Basic logging
+logger.info(LogCategory.PAYMENT, 'Payment initiated', { type: 'lightning' });
+logger.error(LogCategory.SDK, 'Operation failed', { operation: 'sendPayment', error: errorMsg });
+
+// Security event helpers
+logger.authSuccess('mnemonic');
+logger.authFailure('mnemonic', 'Invalid format');
+logger.paymentInitiated('lightning');
+logger.paymentCompleted('lightning');
+logger.paymentFailed('lightning', errorMsg);
+```
+
+### Security Rules (NEVER log)
+- Mnemonics, seeds, private keys
+- Passwords, passphrases
+- API keys, tokens
+- Payment hashes, preimages
+- Full bolt11 invoices
+
+The logger automatically redacts these if accidentally passed in context.

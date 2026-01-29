@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { SimpleAlert } from '../../../components/AlertCard';
 import { PrimaryButton } from '../../../components/ui';
+import { logger, LogCategory } from '@/services/logger';
 
 export interface InputStepProps {
   paymentInput: string;
@@ -26,7 +27,9 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, isLoading, error, o
         onContinue(text);
       }
     } catch (err) {
-      console.error('Failed to read clipboard:', err);
+      logger.error(LogCategory.UI, 'Failed to read clipboard contents', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   };
 

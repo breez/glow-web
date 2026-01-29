@@ -13,6 +13,7 @@ import {
 } from '../services/notificationService';
 import { NotificationIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
+import { logger, LogCategory } from '@/services/logger';
 
 const DEV_MODE_TAP_COUNT = 5;
 const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
@@ -44,6 +45,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     paymentReceived: true,
   });
   const [isRequestingPermission, setIsRequestingPermission] = useState<boolean>(false);
+  const [isDownloadingLogs, setIsDownloadingLogs] = useState<boolean>(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -97,7 +99,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
         const us = await wallet.getUserSettings();
         setSparkPrivateModeEnabled(us.sparkPrivateModeEnabled !== false);
       } catch (e) {
-        console.warn('Failed to load user settings from SDK:', e);
+        logger.warn(LogCategory.SDK, 'Failed to load user settings from SDK', {
+          error: e instanceof Error ? e.message : String(e),
+        });
       } finally {
         setIsLoadingUserSettings(false);
       }
@@ -182,26 +186,23 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     try {
       await wallet.setUserSettings({ sparkPrivateModeEnabled });
     } catch (e) {
-      console.warn('Failed to update SDK user settings:', e);
+      logger.warn(LogCategory.SDK, 'Failed to update SDK user settings', {
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
     window.location.reload();
   };
 
-  const handleDownloadLogs = () => {
+  const handleShareLogs = async () => {
+    setIsDownloadingLogs(true);
     try {
-      const content = wallet.getSdkLogs();
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const ts = new Date().toISOString().replace(/[:]/g, '-');
-      a.href = url;
-      a.download = `sdk-logs-${ts}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      await wallet.shareOrDownloadLogs();
     } catch (e) {
-      console.warn('Failed to download logs:', e);
+      logger.warn(LogCategory.SDK, 'Failed to share or download logs', {
+        error: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setIsDownloadingLogs(false);
     }
   };
 
@@ -290,12 +291,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
           <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
             <h3 className="font-display font-semibold text-spark-text-primary mb-3">Diagnostics</h3>
             <button
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors disabled:opacity-50"
               type="button"
-              onClick={handleDownloadLogs}
+              onClick={handleShareLogs}
+              disabled={isDownloadingLogs}
             >
-              <DownloadIcon size="md" />
-              Download Logs
+              {isDownloadingLogs ? (
+                <LoadingSpinner size="small" />
+              ) : (
+                <DownloadIcon size="md" />
+              )}
+              {isDownloadingLogs ? 'Preparing...' : 'Download Logs'}
             </button>
           </div>
 

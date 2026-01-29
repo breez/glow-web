@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger, LogCategory } from '@/services/logger';
 import { useWallet } from '../../contexts/WalletContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
@@ -75,6 +76,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, tit
 // Main component
 const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onClose }): JSX.Element => {
   const wallet = useWallet();
+  const formatError = (err: unknown): string => (err instanceof Error ? err.message : String(err));
   // State
   const [activeTab, setActiveTab] = useState<PaymentMethod>('lightning');
   const [currentStep, setCurrentStep] = useState<ReceiveStep>('loading_limits');
@@ -140,14 +142,14 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
 
   // Generate Bolt11 invoice
   const generateBolt11Invoice = async () => {
-    console.log('[ReceivePaymentDialog] Starting invoice generation for amount:', amount);
+    logger.info(LogCategory.PAYMENT, 'Starting invoice generation', { amount });
     setError(null);
     setIsLoading(true);
     setCurrentStep('loading');
 
     // Close the amount panel immediately when starting to generate
     if (showAmountPanel) {
-      console.log('[ReceivePaymentDialog] Closing AmountPanel');
+      logger.debug(LogCategory.PAYMENT, 'Closing amount panel before generating invoice');
       setShowAmountPanel(false);
     }
 
@@ -157,7 +159,9 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
         throw new Error('Invalid amount');
       }
 
-      console.log('[ReceivePaymentDialog] Calling wallet.receivePayment...');
+      logger.debug(LogCategory.PAYMENT, 'Calling wallet.receivePayment for bolt11 invoice', {
+        amountSats,
+      });
       const receiveResponse = await wallet.receivePayment({
         paymentMethod: {
           type: 'bolt11Invoice',
@@ -165,18 +169,23 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
           amountSats,
         },
       });
-      console.log('[ReceivePaymentDialog] Invoice received successfully');
+      logger.info(LogCategory.PAYMENT, 'Invoice generated successfully', {
+        paymentRequestLength: receiveResponse.paymentRequest.length,
+        fee: Number(receiveResponse.fee) || 0,
+      });
       setPaymentData(receiveResponse.paymentRequest);
       setFeeSats(Number(receiveResponse.fee) || 0);
       setCurrentStep('qr');
     } catch (err) {
-      console.error('[ReceivePaymentDialog] Failed to generate invoice:', err);
+      logger.error(LogCategory.PAYMENT, 'Failed to generate invoice', {
+        error: formatError(err),
+      });
       setError(`Failed to generate invoice: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setCurrentStep('input');
       setShowAmountPanel(true);
     } finally {
       setIsLoading(false);
-      console.log('[ReceivePaymentDialog] Generation process finished');
+      logger.debug(LogCategory.PAYMENT, 'Receive invoice generation process finished');
     }
   };
 
@@ -191,7 +200,9 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
       });
       setSparkAddress(receiveResponse.paymentRequest);
     } catch (err) {
-      console.error('Failed to generate Spark address:', err);
+      logger.error(LogCategory.PAYMENT, 'Failed to generate Spark address', {
+        error: formatError(err),
+      });
       setError(`Failed to generate Spark address: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setSparkLoading(false);
@@ -209,7 +220,9 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
       });
       setBitcoinAddress(receiveResponse.paymentRequest);
     } catch (err) {
-      console.error('Failed to generate Bitcoin address:', err);
+      logger.error(LogCategory.PAYMENT, 'Failed to generate Bitcoin address', {
+        error: formatError(err),
+      });
       setError(`Failed to generate Bitcoin address: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setBitcoinLoading(false);

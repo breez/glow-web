@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../../../contexts/WalletContext';
 import { generateRandomName } from '../../../utils/randomName';
+import { logger, LogCategory } from '@/services/logger';
 
 export interface UseLightningAddress {
   address: LightningAddressInfo | null;
@@ -20,6 +21,7 @@ export interface UseLightningAddress {
 }
 
 const UNSUPPORTED_MESSAGE = 'Lightning addresses are not available in this environment.';
+const formatError = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 
 export const useLightningAddress = (): UseLightningAddress => {
   const wallet = useWallet();
@@ -72,7 +74,9 @@ export const useLightningAddress = (): UseLightningAddress => {
       }
       setAddress(addr);
     } catch (err) {
-      console.error('Failed to load Lightning address:', err);
+      logger.error(LogCategory.PAYMENT, 'Failed to load Lightning address', {
+        error: formatError(err),
+      });
       if (err instanceof Error && /lnurl server is not configured/i.test(err.message)) {
         markUnsupported();
       } else {
@@ -128,7 +132,9 @@ export const useLightningAddress = (): UseLightningAddress => {
       setIsEditing(false);
       setEditValue('');
     } catch (err) {
-      console.error('Failed to save Lightning address:', err);
+      logger.error(LogCategory.PAYMENT, 'Failed to save Lightning address', {
+        error: formatError(err),
+      });
       if (err instanceof Error && /lnurl server is not configured/i.test(err.message)) {
         markUnsupported();
       } else {
