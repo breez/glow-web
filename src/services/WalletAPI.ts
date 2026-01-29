@@ -69,4 +69,5 @@ export interface WalletAPI {
 
   // Logs
   getSdkLogs: () => string;
+  getAppLogs: () => string;
 }
