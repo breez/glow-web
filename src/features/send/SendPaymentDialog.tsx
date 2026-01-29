@@ -134,6 +134,30 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     setAmount(String(amountNum));
     await prepareSendPayment(paymentInput?.rawInput || '', amountNum);
   };
+
+  // Drain handler: send entire wallet balance
+  const onDrain = async () => {
+    if (!paymentInput?.rawInput) {
+      setError('Please enter a payment destination first');
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await wallet.prepareSendPayment({
+        paymentRequest: paymentInput.rawInput,
+        payAmount: { type: 'drain' }
+      });
+      setPrepareResponse(response);
+      setCurrentStep('workflow');
+    } catch (err) {
+      console.error('Failed to prepare drain payment:', err);
+      setError(`Failed to prepare drain: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Get payment method display name
   const getPaymentMethodName = (): string => {
     if (!paymentInput) return '';
@@ -241,6 +265,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
             error={error}
             onBack={() => setCurrentStep('input')}
             onNext={onAmountNext}
+            onDrain={onDrain}
           />
         )}
 
