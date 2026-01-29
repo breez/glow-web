@@ -82,11 +82,11 @@ export const DialogHeader: React.FC<{
   onClose: () => void;
   icon?: ReactNode;
 }> = ({ title, onClose, icon }) => (
-  <div className="flex justify-center items-center mb-5 relative">
-    <div className="flex items-center gap-2">
-      {icon && <span className="text-spark-primary">{icon}</span>}
-      <h2 className="font-display text-lg font-bold text-spark-text-primary">{title}</h2>
-      {icon && <span className="w-5 h-5" aria-hidden="true" />}
+  <div className="flex justify-center items-center mb-5 relative px-8">
+    <div className="flex items-center gap-2 min-w-0 max-w-full">
+      {icon && <span className="text-spark-primary flex-shrink-0">{icon}</span>}
+      <h2 className="font-display text-lg font-bold text-spark-text-primary truncate">{title}</h2>
+      {icon && <span className="w-5 h-5 flex-shrink-0" aria-hidden="true" />}
     </div>
     <button
       onClick={onClose}
