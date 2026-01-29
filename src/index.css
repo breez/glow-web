@@ -246,11 +246,6 @@ h6 {
   flex-shrink: 0;
 }
 
-.action-button-send,
-.action-button-receive {
-  min-width: 7em; /* Equal width for Send/Receive buttons (#70) */
-}
-
 .action-button-send {
   background: linear-gradient(135deg, var(--spark-electric) 0%, #0099cc 100%);
   color: #000;
@@ -389,13 +384,26 @@ select {
    ============================================ */
 
 .bottom-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
   background: rgba(15, 15, 24, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--spark-border);
-  gap: 0.5em;
+  gap: 1rem;
   padding: 1em 2em;
   padding-bottom: calc(1em + env(safe-area-inset-bottom, 0px));
+}
+
+/* Send button: right-aligned in left column */
+.bottom-bar .action-button-send {
+  justify-self: end;
+}
+
+/* Receive button: left-aligned in right column */
+.bottom-bar .action-button-receive {
+  justify-self: start;
 }
 
 /* ============================================
