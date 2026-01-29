@@ -33,7 +33,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   setAmount,
   description,
   setDescription,
-  limits,
+  limits: _limits,
   isLoading,
   error,
   onCreateInvoice,
