@@ -179,7 +179,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
             </h2>
             <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
           </div>
-          <ul className="space-y-1 mb-6">
+          <ul className="space-y-2 mb-6">
             {pendingApproval.map((tx, index) => renderTransactionItem(tx, index))}
           </ul>
         </>
@@ -194,7 +194,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
             </h2>
             <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
           </div>
-          <ul className="space-y-1">
+          <ul className="space-y-2">
             {regularPayments.map((tx, index) => renderTransactionItem(tx, index))}
           </ul>
         </>

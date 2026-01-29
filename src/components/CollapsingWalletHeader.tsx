@@ -174,38 +174,27 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             </span>
           </div>
 
-          {/* Decoration with fading lines - shows fiat value or lightning bolt */}
-          <div
-            className="flex items-center justify-center gap-3 mt-3"
-            onClick={currentFiat && fiatValues.length > 1 ? handleFiatTap : undefined}
-            role={currentFiat && fiatValues.length > 1 ? "button" : undefined}
-            tabIndex={currentFiat && fiatValues.length > 1 ? 0 : undefined}
-          >
-            {/* Left line - fades left */}
-            <div className="w-8 h-0.5 bg-spark-primary" style={{
-              maskImage: 'linear-gradient(to right, transparent, black)',
-              WebkitMaskImage: 'linear-gradient(to right, transparent, black)'
-            }} />
-
-            {/* Center: Fiat value or Lightning bolt */}
-            {currentFiat ? (
+          {/* Fiat value with accent marks */}
+          {currentFiat && (
+            <div
+              className="mt-2 flex items-center justify-center gap-3 cursor-pointer"
+              onClick={fiatValues.length > 1 ? handleFiatTap : undefined}
+            >
+              <span className="w-6 h-0.5 bg-spark-primary" style={{
+                maskImage: 'linear-gradient(to right, transparent, black)',
+                WebkitMaskImage: 'linear-gradient(to right, transparent, black)'
+              }} />
               <span className="text-spark-text-secondary text-sm font-mono">
                 {currentFiat.symbolPosition === 'before' ? currentFiat.symbol : ''}
                 {currentFiat.value}
                 {currentFiat.symbolPosition === 'after' ? ` ${currentFiat.symbol}` : ''}
               </span>
-            ) : (
-              <svg className="w-4 h-4 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
-              </svg>
-            )}
-
-            {/* Right line - fades right */}
-            <div className="w-8 h-0.5 bg-spark-primary" style={{
-              maskImage: 'linear-gradient(to left, transparent, black)',
-              WebkitMaskImage: 'linear-gradient(to left, transparent, black)'
-            }} />
-          </div>
+              <span className="w-6 h-0.5 bg-spark-primary" style={{
+                maskImage: 'linear-gradient(to left, transparent, black)',
+                WebkitMaskImage: 'linear-gradient(to left, transparent, black)'
+              }} />
+            </div>
+          )}
         </div>
 
         {/* Bottom spacing */}
