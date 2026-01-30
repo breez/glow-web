@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import type { GetInfoResponse, Rate, FiatCurrency } from '@breeztech/breez-sdk-spark';
 import { getFiatSettings } from '../services/settings';
 import { formatWithThinSpaces } from '../utils/formatNumber';
@@ -42,58 +42,92 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
     return map;
   }, [fiatCurrencies]);
 
-  // Calculate fiat values for selected currencies (js-combine-iterations optimization)
-  const fiatValues = useMemo(() => {
-    if (!walletInfo) return [];
-
-    const balanceSat = walletInfo.balanceSats || 0;
-    if (balanceSat === 0) return []; // Don't show fiat for zero balance
-
-    const balanceBtc = balanceSat / 100000000;
+  // Get selected currency metadata (without values - those are computed from animatedBalance)
+  const fiatCurrencyInfo = useMemo(() => {
     const settings = getFiatSettings();
     const result: Array<{
       currencyId: string;
       symbol: string;
-      value: string;
+      rate: number;
+      fractionSize: number;
       symbolPosition: 'before' | 'after';
     }> = [];
 
-    // Single iteration instead of map().filter()
     for (const currencyId of settings.selectedCurrencies) {
       const rateValue = ratesMap.get(currencyId);
       const currency = currenciesMap.get(currencyId);
 
       if (rateValue === undefined || !currency) continue;
 
-      const value = balanceBtc * rateValue;
-      const symbol = currency.info.symbol?.grapheme || currencyId;
-      const fractionSize = currency.info.fractionSize || 2;
-
       result.push({
         currencyId,
-        symbol,
-        value: value.toFixed(fractionSize),
+        symbol: currency.info.symbol?.grapheme || currencyId,
+        rate: rateValue,
+        fractionSize: currency.info.fractionSize || 2,
         symbolPosition: currency.info.symbol?.rtl ? 'after' : 'before',
       });
     }
 
     return result;
-  }, [walletInfo, ratesMap, currenciesMap]);
+  }, [ratesMap, currenciesMap]);
 
   // Cycle through fiat currencies on tap
   const handleFiatTap = useCallback(() => {
-    if (fiatValues.length > 1) {
-      setActiveFiatIndex(prev => (prev + 1) % fiatValues.length);
+    if (fiatCurrencyInfo.length > 1) {
+      setActiveFiatIndex(prev => (prev + 1) % fiatCurrencyInfo.length);
     }
-  }, [fiatValues.length]);
-
-  // Get current fiat to display
-  const currentFiat = fiatValues.length > 0
-    ? fiatValues[activeFiatIndex % fiatValues.length]
-    : null;
+  }, [fiatCurrencyInfo.length]);
 
   const balanceSat = walletInfo?.balanceSats || 0;
-  const animatedBalance = useAnimatedNumber(balanceSat, { initialStartPercent: 0.8 });
+  
+  // Track when both balance and fiat are ready to trigger synced animation
+  const hasFiatData = fiatCurrencyInfo.length > 0;
+  const [animationReady, setAnimationReady] = useState(false);
+  const hasTriggeredAnimation = useRef(false);
+  
+  useEffect(() => {
+    // Start animation only when BOTH balance and fiat are available
+    if (balanceSat > 0 && hasFiatData && !hasTriggeredAnimation.current) {
+      hasTriggeredAnimation.current = true;
+      setAnimationReady(true);
+    }
+  }, [balanceSat, hasFiatData]);
+  
+  // Timeout fallback: if fiat doesn't load within 2s, animate balance anyway
+  useEffect(() => {
+    if (balanceSat > 0 && !hasTriggeredAnimation.current) {
+      const timeout = setTimeout(() => {
+        if (!hasTriggeredAnimation.current) {
+          hasTriggeredAnimation.current = true;
+          setAnimationReady(true);
+        }
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [balanceSat]);
+  
+  // Only animate from 80% when both are ready; otherwise show full value
+  const animatedBalance = useAnimatedNumber(
+    animationReady ? balanceSat : 0,
+    { initialStartPercent: 0.8 }
+  );
+  
+  // Display: if animation started, use animated value; otherwise use actual balance
+  const displayBalance = animationReady ? animatedBalance : balanceSat;
+
+  // Calculate current fiat value from display balance (so both animate together)
+  const currentFiat = useMemo(() => {
+    if (!hasFiatData || balanceSat === 0) return null;
+    
+    const info = fiatCurrencyInfo[activeFiatIndex % fiatCurrencyInfo.length];
+    const btcValue = displayBalance / 100000000;
+    const fiatValue = btcValue * info.rate;
+    
+    return {
+      ...info,
+      value: fiatValue.toFixed(info.fractionSize),
+    };
+  }, [fiatCurrencyInfo, activeFiatIndex, displayBalance, balanceSat, hasFiatData]);
 
   if (!walletInfo) return null;
 
@@ -170,31 +204,38 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             data-testid="wallet-balance"
           >
             <span className="balance-display">
-              {formatWithThinSpaces(animatedBalance)}
+              {formatWithThinSpaces(displayBalance)}
             </span>
           </div>
 
-          {/* Fiat value with accent marks */}
-          {currentFiat && (
-            <div
-              className="mt-2 flex items-center justify-center gap-3 cursor-pointer"
-              onClick={fiatValues.length > 1 ? handleFiatTap : undefined}
-            >
-              <span className="w-6 h-0.5 bg-spark-primary" style={{
-                maskImage: 'linear-gradient(to right, transparent, black)',
-                WebkitMaskImage: 'linear-gradient(to right, transparent, black)'
-              }} />
-              <span className="text-spark-text-secondary text-sm font-mono">
-                {currentFiat.symbolPosition === 'before' ? currentFiat.symbol : ''}
-                {currentFiat.value}
-                {currentFiat.symbolPosition === 'after' ? ` ${currentFiat.symbol}` : ''}
-              </span>
-              <span className="w-6 h-0.5 bg-spark-primary" style={{
-                maskImage: 'linear-gradient(to left, transparent, black)',
-                WebkitMaskImage: 'linear-gradient(to left, transparent, black)'
-              }} />
-            </div>
-          )}
+          {/* Fiat value with accent marks - always reserve space to prevent layout shift */}
+          <div
+            className={`mt-2 flex items-center justify-center gap-3 transition-opacity duration-200 ${
+              currentFiat ? 'opacity-100' : 'opacity-0'
+            } ${fiatCurrencyInfo.length > 1 ? 'cursor-pointer' : ''}`}
+            onClick={fiatCurrencyInfo.length > 1 ? handleFiatTap : undefined}
+          >
+            <span className="w-6 h-0.5 bg-spark-primary" style={{
+              maskImage: 'linear-gradient(to right, transparent, black)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent, black)'
+            }} />
+            <span className="text-spark-text-secondary text-sm font-mono">
+              {currentFiat ? (
+                <>
+                  {currentFiat.symbolPosition === 'before' ? currentFiat.symbol : ''}
+                  {currentFiat.value}
+                  {currentFiat.symbolPosition === 'after' ? ` ${currentFiat.symbol}` : ''}
+                </>
+              ) : (
+                /* Invisible placeholder to reserve space */
+                <span className="invisible">$0.00</span>
+              )}
+            </span>
+            <span className="w-6 h-0.5 bg-spark-primary" style={{
+              maskImage: 'linear-gradient(to left, transparent, black)',
+              WebkitMaskImage: 'linear-gradient(to left, transparent, black)'
+            }} />
+          </div>
         </div>
 
         {/* Bottom spacing */}
