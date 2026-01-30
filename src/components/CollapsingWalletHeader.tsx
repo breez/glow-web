@@ -93,7 +93,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
     : null;
 
   const balanceSat = walletInfo?.balanceSats || 0;
-  const animatedBalance = useAnimatedNumber(balanceSat);
+  const animatedBalance = useAnimatedNumber(balanceSat, { initialStartPercent: 0.8 });
 
   if (!walletInfo) return null;
 
