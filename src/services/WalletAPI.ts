@@ -40,6 +40,9 @@ export interface WalletAPI {
   claimDeposit: (txid: string, vout: number, maxFee: Fee) => Promise<void>;
   refundDeposit: (txid: string, vout: number, destinationAddress: string, fee: Fee) => Promise<void>;
 
+  // Sync
+  syncWallet: () => Promise<void>;
+
   // Data
   getWalletInfo: () => Promise<GetInfoResponse | null>;
   getTransactions: () => Promise<Payment[]>;

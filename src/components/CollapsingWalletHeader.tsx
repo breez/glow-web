@@ -12,6 +12,8 @@ interface CollapsingWalletHeaderProps {
   onOpenMenu: () => void;
   hasUnclaimedDeposits: boolean;
   onOpenGetRefund: () => void;
+  isSyncing?: boolean;
+  onManualRefresh?: () => Promise<void>;
 }
 
 const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
@@ -21,9 +23,22 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   fiatCurrencies,
   onOpenMenu,
   hasUnclaimedDeposits,
-  onOpenGetRefund
+  onOpenGetRefund,
+  isSyncing = false,
+  onManualRefresh,
 }) => {
   const [activeFiatIndex, setActiveFiatIndex] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    if (!onManualRefresh || isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await onManualRefresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [onManualRefresh, isRefreshing]);
 
   // Build lookup maps for O(1) access (js-index-maps optimization)
   const ratesMap = useMemo(() => {
@@ -174,6 +189,20 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
 
           {/* Action buttons */}
           <div className="flex items-center gap-3">
+            {/* Manual refresh button (hidden while syncing) */}
+            {onManualRefresh && !isSyncing && (
+              <button
+                type="button"
+                className="flex items-center justify-center w-9 h-9 rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
+                title="Refresh wallet data"
+                aria-label="Refresh wallet data"
+                onClick={handleRefresh}
+              >
+                <svg className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            )}
             {/* Rejected deposits warning */}
             {hasUnclaimedDeposits && (
               <button
@@ -195,7 +224,14 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
         <div className="text-center">
           {/* Label */}
           <div className="text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase mb-1">
-            Balance<span className="text-spark-text-muted/50 mx-1.5">·</span><span className="text-spark-text-muted/50">sats</span>
+            {isSyncing ? (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-spark-primary animate-pulse" />
+                Syncing
+              </span>
+            ) : (
+              <>Balance<span className="text-spark-text-muted/50 mx-1.5">·</span><span className="text-spark-text-muted/50">sats</span></>
+            )}
           </div>
 
           {/* Main balance */}

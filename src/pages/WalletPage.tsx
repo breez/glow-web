@@ -1,8 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useWallet } from '../contexts/WalletContext';
-import {
-  LoadingSpinner
-} from '../components/ui';
 import { logger, LogCategory } from '@/services/logger';
 import CollapsingWalletHeader from '../components/CollapsingWalletHeader';
 import SideMenu from '../components/SideMenu';
@@ -23,7 +20,8 @@ interface WalletPageProps {
   fiatRates: Rate[];
   fiatCurrencies: FiatCurrency[];
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
-  isRestoring: boolean;
+  isSyncing: boolean;
+  onManualRefresh?: () => Promise<void>;
   error: string | null;
   onClearError: () => void;
   onLogout: () => void;
@@ -41,7 +39,8 @@ const WalletPage: React.FC<WalletPageProps> = ({
   fiatRates,
   fiatCurrencies,
   refreshWalletData,
-  isRestoring,
+  isSyncing,
+  onManualRefresh,
   onLogout,
   hasUnclaimedDeposits,
   onOpenGetRefund,
@@ -166,13 +165,6 @@ const WalletPage: React.FC<WalletPageProps> = ({
         <div className="absolute bottom-1/4 right-0 w-[300px] h-[300px] bg-gradient-radial from-spark-primary/10 to-transparent blur-3xl" />
       </div>
 
-      {/* Restoration overlay */}
-      {isRestoring && (
-        <div className="absolute inset-0 bg-spark-void/90 backdrop-blur-sm z-50 flex items-center justify-center">
-          <LoadingSpinner text="Loading..." />
-        </div>
-      )}
-
       {/* Fixed header */}
       <div className="sticky top-0 z-10">
         <CollapsingWalletHeader
@@ -183,6 +175,8 @@ const WalletPage: React.FC<WalletPageProps> = ({
           onOpenMenu={() => setIsMenuOpen(true)}
           hasUnclaimedDeposits={hasUnclaimedDeposits}
           onOpenGetRefund={() => onOpenGetRefund('icon')}
+          isSyncing={isSyncing}
+          onManualRefresh={onManualRefresh}
         />
       </div>
 

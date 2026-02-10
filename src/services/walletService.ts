@@ -309,6 +309,17 @@ export const removeEventListener = async (listenerId: string): Promise<void> => 
   }
 };
 
+export const syncWallet = async (): Promise<void> => {
+  if (!sdk) throw new Error('SDK not initialized');
+  try {
+    await sdk.syncWallet({});
+    logger.debug(LogCategory.SDK, 'Manual sync completed');
+  } catch (error) {
+    logger.sdkError('syncWallet', error instanceof Error ? error.message : 'Unknown error');
+    throw error;
+  }
+};
+
 export const getWalletInfo = async (): Promise<GetInfoResponse | null> => {
   if (!sdk) {
     return null;
@@ -436,6 +447,9 @@ export const walletApi: WalletAPI = {
   unclaimedDeposits,
   claimDeposit,
   refundDeposit,
+
+  // Sync
+  syncWallet,
 
   // Data
   getWalletInfo,

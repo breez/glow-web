@@ -180,6 +180,9 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
       } as ReceivePaymentResponse;
     }),
 
+    // Sync
+    syncWallet: vi.fn().mockResolvedValue(undefined),
+
     // Unclaimed deposits
     unclaimedDeposits: vi.fn().mockResolvedValue([] as DepositInfo[]),
     claimDeposit: vi.fn().mockResolvedValue(undefined),

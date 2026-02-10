@@ -36,7 +36,7 @@ const AppContent: React.FC = () => {
 
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRestoring, setIsRestoring] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   // Track if this is the initial app load (splash screen handles this)
   const isInitialLoadRef = useRef<boolean>(true);
@@ -124,6 +124,18 @@ const AppContent: React.FC = () => {
   }, [wallet]);
 
 
+  // Manual refresh: user-triggered sync + data reload
+  const handleManualRefresh = useCallback(async () => {
+    if (!isConnected) return;
+    try {
+      await wallet.syncWallet();
+      await refreshWalletData(false);
+      await fetchUnclaimedDeposits();
+    } catch (err) {
+      logger.warn(LogCategory.SDK, 'Manual refresh failed', { error: formatError(err) });
+    }
+  }, [isConnected, wallet, refreshWalletData, fetchUnclaimedDeposits]);
+
   // SDK event handler with toast notifications and auto-close of receive dialog
   const handleSdkEvent = useCallback((event: SdkEvent) => {
     logger.debug(LogCategory.SDK, 'SDK event received', {
@@ -133,10 +145,10 @@ const AppContent: React.FC = () => {
     if (event.type === 'synced') {
       logger.debug(LogCategory.SDK, 'Synced event received; refreshing data');
 
-      // If this is the first sync event after connecting, mark restoration as complete
-      if (isRestoring) {
-        logger.info(LogCategory.SESSION, 'Restoration sync complete; hiding overlay');
-        setIsRestoring(false);
+      // If this is the first sync event after connecting, mark syncing as complete
+      if (isSyncing) {
+        logger.info(LogCategory.SESSION, 'Initial sync complete');
+        setIsSyncing(false);
       }
 
       // Set sync indicator for e2e tests
@@ -206,7 +218,7 @@ const AppContent: React.FC = () => {
       // Refresh the list as some may remain unclaimed
       fetchUnclaimedDeposits();
     }
-  }, [refreshWalletData, showToast, isRestoring, fetchUnclaimedDeposits]);
+  }, [refreshWalletData, showToast, isSyncing, fetchUnclaimedDeposits]);
 
   // Fetch fiat rates from SDK
   const fetchFiatData = useCallback(async () => {
@@ -259,7 +271,6 @@ const AppContent: React.FC = () => {
           setIsLoading(true);
           await connectWallet(savedMnemonic, false);
           logger.info(LogCategory.SDK, 'Connected to wallet with saved mnemonic');
-          setCurrentScreen('wallet'); // Navigate to wallet screen
         } catch (error) {
           logger.error(LogCategory.SDK, 'Failed to connect with saved mnemonic', {
             error: formatError(error),
@@ -335,7 +346,7 @@ const AppContent: React.FC = () => {
       logger.debug(LogCategory.SDK, 'Starting wallet connection workflow', {
         restore,
       });
-      setIsRestoring(restore); // Mark that we're restoring data      
+      setIsSyncing(true); // Mark that we're syncing data
       setError(null);
 
       // Initialize wallet with mnemonic
@@ -383,28 +394,29 @@ const AppContent: React.FC = () => {
       // Save mnemonic for future use
       wallet.saveMnemonic(mnemonic);
 
-      // Get wallet info and transactions in parallel (async-parallel optimization)
-      const [info, txns] = await Promise.all([
-        wallet.getWalletInfo(),
-        wallet.getTransactions(),
-      ]);
-
+      // Quick local-state read (fast, reads cached data)
+      const info = await wallet.getWalletInfo();
       setWalletInfo(info);
-      setTransactions(txns);
 
+      // Navigate to wallet immediately — don't block on transactions/deposits
       setIsConnected(true);
-      // Fetch unclaimed deposits indicator after connect
-      await fetchUnclaimedDeposits();
-      setCurrentScreen('wallet'); // Navigate to wallet screen
-      // We'll keep isLoading true until first sync for new wallets
+      setCurrentScreen('wallet');
       setIsLoading(false);
+
+      // Background: fetch transactions and deposits (don't block UI)
+      wallet.getTransactions()
+        .then(txns => setTransactions(txns))
+        .catch(err => logger.warn(LogCategory.SDK, 'Background transaction fetch failed', { error: formatError(err) }));
+
+      fetchUnclaimedDeposits()
+        .catch(err => logger.warn(LogCategory.SDK, 'Background deposit fetch failed', { error: formatError(err) }));
 
     } catch (error) {
       logger.error(LogCategory.SDK, 'Error connecting wallet', {
         error: formatError(error),
       });
       setError('Failed to connect wallet. Please check your mnemonic and try again.');
-      setIsRestoring(false);
+      setIsSyncing(false);
       setIsLoading(false);
       setConfig(null);
     }
@@ -534,7 +546,8 @@ const AppContent: React.FC = () => {
             fiatRates={fiatRates}
             fiatCurrencies={fiatCurrencies}
             refreshWalletData={refreshWalletData}
-            isRestoring={isRestoring}
+            isSyncing={isSyncing}
+            onManualRefresh={handleManualRefresh}
             error={error}
             onClearError={clearError}
             onLogout={handleLogout}
