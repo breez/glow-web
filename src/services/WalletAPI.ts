@@ -15,8 +15,19 @@ import type {
   PrepareLnurlPayResponse,
   LnurlPayRequest,
   LnurlPayResponse,
+  LnurlAuthRequestDetails,
+  LnurlCallbackStatus,
   DepositInfo,
   Fee,
+  GetPaymentRequest,
+  GetPaymentResponse,
+  SyncWalletRequest,
+  SyncWalletResponse,
+  RecommendedFees,
+  SignMessageRequest,
+  SignMessageResponse,
+  CheckMessageRequest,
+  CheckMessageResponse,
   UserSettings,
   UpdateUserSettingsRequest,
   FiatCurrency,
@@ -33,6 +44,7 @@ export interface WalletAPI {
   parseInput: (input: string) => Promise<InputType>;
   prepareLnurlPay: (params: PrepareLnurlPayRequest) => Promise<PrepareLnurlPayResponse>;
   lnurlPay: (params: LnurlPayRequest) => Promise<LnurlPayResponse>;
+  lnurlAuth: (requestData: LnurlAuthRequestDetails) => Promise<LnurlCallbackStatus>;
   prepareSendPayment: (params: PrepareSendPaymentRequest) => Promise<PrepareSendPaymentResponse>;
   sendPayment: (params: SendPaymentRequest) => Promise<SendPaymentResponse>;
   receivePayment: (params: ReceivePaymentRequest) => Promise<ReceivePaymentResponse>;
@@ -43,6 +55,13 @@ export interface WalletAPI {
   // Data
   getWalletInfo: () => Promise<GetInfoResponse | null>;
   getTransactions: () => Promise<Payment[]>;
+  getPayment: (request: GetPaymentRequest) => Promise<GetPaymentResponse>;
+
+  // Wallet operations
+  syncWallet: (request?: SyncWalletRequest) => Promise<SyncWalletResponse>;
+  recommendedFees: () => Promise<RecommendedFees>;
+  signMessage: (request: SignMessageRequest) => Promise<SignMessageResponse>;
+  checkMessage: (request: CheckMessageRequest) => Promise<CheckMessageResponse>;
 
   // Events
   addEventListener: (callback: (event: SdkEvent) => void) => Promise<string>;

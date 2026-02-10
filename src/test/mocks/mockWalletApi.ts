@@ -11,7 +11,12 @@ import type {
   LightningAddressInfo,
   PrepareLnurlPayResponse,
   LnurlPayResponse,
+  LnurlCallbackStatus,
   DepositInfo,
+  GetPaymentResponse,
+  RecommendedFees,
+  SignMessageResponse,
+  CheckMessageResponse,
   UserSettings,
   FiatCurrency,
   Rate,
@@ -152,6 +157,8 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
       payment: createMockPayment('send'),
     } as LnurlPayResponse),
 
+    lnurlAuth: vi.fn().mockResolvedValue({ type: 'ok' } as LnurlCallbackStatus),
+
     // Send payment
     prepareSendPayment: vi.fn().mockResolvedValue({
       paymentMethod: { type: 'spark', address: 'sp1test' },
@@ -193,6 +200,27 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
     } as unknown as GetInfoResponse),
 
     getTransactions: vi.fn().mockResolvedValue([] as Payment[]),
+
+    getPayment: vi.fn().mockResolvedValue({
+      payment: createMockPayment('receive'),
+    } as GetPaymentResponse),
+
+    // Wallet operations
+    syncWallet: vi.fn().mockResolvedValue({}),
+    recommendedFees: vi.fn().mockResolvedValue({
+      fastestFee: 25,
+      halfHourFee: 15,
+      hourFee: 10,
+      economyFee: 5,
+      minimumFee: 1,
+    } as RecommendedFees),
+    signMessage: vi.fn().mockResolvedValue({
+      pubkey: 'test-pubkey',
+      signature: 'test-signature',
+    } as SignMessageResponse),
+    checkMessage: vi.fn().mockResolvedValue({
+      isValid: true,
+    } as CheckMessageResponse),
 
     // Events
     addEventListener: vi.fn().mockImplementation(async (callback: (event: SdkEvent) => void) => {
