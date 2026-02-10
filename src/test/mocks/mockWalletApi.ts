@@ -182,7 +182,7 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
 
     // Unclaimed deposits
     unclaimedDeposits: vi.fn().mockResolvedValue([] as DepositInfo[]),
-    claimDeposit: vi.fn().mockResolvedValue(undefined),
+    claimDeposit: vi.fn().mockResolvedValue({ payment: createMockPayment('receive') }),
     refundDeposit: vi.fn().mockResolvedValue(undefined),
 
     // Data
