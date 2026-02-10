@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '../contexts/WalletContext';
-import type { DepositInfo, Fee } from '@breeztech/breez-sdk-spark';
+import type { DepositInfo, MaxFee } from '@breeztech/breez-sdk-spark';
 import { BottomSheetContainer, BottomSheetCard, DialogHeader, PrimaryButton, SecondaryButton, PaymentInfoCard, CollapsibleCodeField } from '../components/ui';
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
 import { SpinnerIcon, WarningIcon } from '../components/Icons';
@@ -29,19 +29,19 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   useEffect(() => {
     if (!deposit) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK deposit type doesn't expose claimError
-    const depositAny = deposit as any;
-    const claimErrorData = depositAny.claimError;
+    const claimErrorData = deposit.claimError;
 
     if (claimErrorData) {
       if (claimErrorData.type === 'maxDepositClaimFeeExceeded') {
         // Fee exceeded - show required fee for user approval
         setRequiredFeeSats(claimErrorData.requiredFeeSats || 0);
         setClaimError(null);
+      } else if (claimErrorData.type === 'generic') {
+        setClaimError(claimErrorData.message || 'Automatic claim failed');
+        setRequiredFeeSats(null);
       } else {
-        // Other error - can only reject
-        const errorMsg = claimErrorData.message || claimErrorData.error || 'Automatic claim failed';
-        setClaimError(errorMsg);
+        // missingUtxo or other error - can only reject
+        setClaimError('Automatic claim failed');
         setRequiredFeeSats(null);
       }
     } else {
@@ -56,8 +56,8 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
     setClaimError(null);
     setIsProcessing(true);
     try {
-      const fee: Fee = { type: 'fixed', amount: requiredFeeSats };
-      await wallet.claimDeposit(deposit.txid, deposit.vout, fee);
+      const maxFee: MaxFee = { type: 'fixed', amount: requiredFeeSats };
+      await wallet.claimDeposit(deposit.txid, deposit.vout, maxFee);
       // Remove from rejected list if it was there
       removeRejectedDeposit(deposit.txid, deposit.vout);
       onChanged?.();

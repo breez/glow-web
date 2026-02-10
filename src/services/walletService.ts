@@ -35,6 +35,8 @@ import {
   SignMessageResponse,
   CheckMessageRequest,
   CheckMessageResponse,
+  MaxFee,
+  ClaimDepositResponse,
   UserSettings,
   UpdateUserSettingsRequest,
   FiatCurrency,
@@ -139,9 +141,9 @@ export const unclaimedDeposits = async (): Promise<DepositInfo[]> => {
   return (await sdk.listUnclaimedDeposits({})).deposits;
 };
 
-export const claimDeposit = async (txid: string, vout: number, maxFee: Fee): Promise<void> => {
+export const claimDeposit = async (txid: string, vout: number, maxFee?: MaxFee): Promise<ClaimDepositResponse> => {
   if (!sdk) throw new Error('SDK not initialized');
-  await sdk.claimDeposit({ txid, vout, maxFee });
+  return await sdk.claimDeposit({ txid, vout, maxFee });
 };
 
 export const refundDeposit = async (txid: string, vout: number, destinationAddress: string, fee: Fee): Promise<void> => {

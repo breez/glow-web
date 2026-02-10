@@ -28,6 +28,8 @@ import type {
   SignMessageResponse,
   CheckMessageRequest,
   CheckMessageResponse,
+  MaxFee,
+  ClaimDepositResponse,
   UserSettings,
   UpdateUserSettingsRequest,
   FiatCurrency,
@@ -49,7 +51,7 @@ export interface WalletAPI {
   sendPayment: (params: SendPaymentRequest) => Promise<SendPaymentResponse>;
   receivePayment: (params: ReceivePaymentRequest) => Promise<ReceivePaymentResponse>;
   unclaimedDeposits: () => Promise<DepositInfo[]>;
-  claimDeposit: (txid: string, vout: number, maxFee: Fee) => Promise<void>;
+  claimDeposit: (txid: string, vout: number, maxFee?: MaxFee) => Promise<ClaimDepositResponse>;
   refundDeposit: (txid: string, vout: number, destinationAddress: string, fee: Fee) => Promise<void>;
 
   // Data
