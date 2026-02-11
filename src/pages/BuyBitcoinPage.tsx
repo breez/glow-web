@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useWallet } from '@/contexts/WalletContext';
-import { LoadingSpinner, ErrorMessageBox } from '@/components/ui';
+import { LoadingSpinner, ErrorMessageBox, PrimaryButton } from '@/components/ui';
 import SlideInPage from '@/components/layout/SlideInPage';
 
 interface BuyBitcoinPageProps {
@@ -82,10 +82,10 @@ const BuyBitcoinPage: React.FC<BuyBitcoinPageProps> = ({ onBack }) => {
           </div>
 
           {/* Buy Button */}
-          <button
+          <PrimaryButton
             onClick={handleBuyBitcoin}
             disabled={isLoading}
-            className="w-full bg-spark-primary hover:bg-spark-primary-light disabled:bg-spark-primary/50 disabled:cursor-not-allowed text-white font-display font-semibold py-4 px-6 rounded-2xl transition-colors flex items-center justify-center gap-2"
+            className="w-full flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <LoadingSpinner />
@@ -97,7 +97,7 @@ const BuyBitcoinPage: React.FC<BuyBitcoinPageProps> = ({ onBack }) => {
                 <span>Buy Bitcoin with MoonPay</span>
               </>
             )}
-          </button>
+          </PrimaryButton>
 
           {/* Disclaimer */}
           <p className="text-spark-text-muted text-xs text-center">
