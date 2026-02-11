@@ -7,11 +7,12 @@ import ConfirmStep from '../steps/ConfirmStep';
 interface BitcoinWorkflowProps {
   method: Extract<SendPaymentMethod, { type: 'bitcoinAddress' }>;
   amountSats: bigint;
+  feesIncluded?: boolean;
   onBack: () => void;
   onSend: (options: { type: 'bitcoinAddress'; confirmationSpeed: 'fast' | 'medium' | 'slow' }) => Promise<void>;
 }
 
-const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, onBack, onSend }) => {
+const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, feesIncluded, onBack, onSend }) => {
   const [step, setStep] = useState<PaymentStep>('fee');
   // Fee selection happens here; processing/result are handled by parent
   const [selectedFeeRate, setSelectedFeeRate] = useState<'fast' | 'medium' | 'slow' | null>(null);
@@ -101,7 +102,7 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, o
 
       {/* Confirm */}
       {step === 'confirm' && (
-        <ConfirmStep amountSats={amountSats} feesSat={feesSat} error={null} isLoading={false} onConfirm={handleSend} />
+        <ConfirmStep amountSats={amountSats} feesSat={feesSat} feesIncluded={feesIncluded} error={null} isLoading={false} onConfirm={handleSend} />
       )}
     </>
   );
