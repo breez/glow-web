@@ -7,16 +7,19 @@ import { logger, LogCategory } from '@/services/logger';
 
 interface LnurlWorkflowProps {
   parsed: LnurlPayRequestDetails;
+  balanceSats?: number;
   onBack: () => void;
   onRun: (runner: () => Promise<void>) => Promise<void>;
   onPrepare: (args: PrepareLnurlPayRequest) => Promise<PrepareLnurlPayResponse>;
   onPay: (prepareResponse: PrepareLnurlPayResponse) => Promise<void>;
 }
 
-const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, onBack, onRun, onPrepare, onPay }) => {
+const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, balanceSats, onBack, onRun, onPrepare, onPay }) => {
 
   const [step, setStep] = useState<PaymentStep>('amount');
   const [amount, setAmount] = useState<string>('');
+  const [feesIncluded, setFeesIncluded] = useState(false);
+  const [feesManuallySet, setFeesManuallySet] = useState(false);
   const [comment, setComment] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -33,6 +36,10 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, onBack, onRun, on
   }, [parsed]);
   const commentMaxLen = parsed.commentAllowed ?? 0;
   const commentAllowed = commentMaxLen > 0;
+  const sendAllAmount = useMemo(() => {
+    if (balanceSats !== undefined && balanceSats > 0) return Math.min(balanceSats, maxSats);
+    return null;
+  }, [balanceSats, maxSats]);
   const description = useMemo(() => {
     const metadataArr = JSON.parse(parsed.metadataStr);
     for (let i = 0; i < metadataArr.length; i++) {
@@ -69,7 +76,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, onBack, onRun, on
     setIsLoading(true);
     setError(null);
     try {
-      const resp = await onPrepare({ amountSats: sats, comment: comment ? comment : undefined, payRequest: parsed });
+      const resp = await onPrepare({ amountSats: sats, comment: comment ? comment : undefined, payRequest: parsed, feePolicy: feesIncluded ? 'feesIncluded' : undefined });
       setPrepareResponse(resp);
       setStep('confirm');
     } catch (err) {
@@ -93,11 +100,12 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, onBack, onRun, on
 
   if (step === 'confirm' && prepareResponse) {
     return (
-      <ConfirmStep amountSats={BigInt(parseInt(amount, 10))} feesSat={feesSat} error={error} isLoading={isLoading} onConfirm={onConfirm} />
+      <ConfirmStep amountSats={BigInt(parseInt(amount, 10))} feesSat={feesSat} feesIncluded={feesIncluded} error={error} isLoading={isLoading} onConfirm={onConfirm} />
     );
   }
 
   const amountNum = parseInt(amount) || 0;
+  const isSendAll = sendAllAmount !== null && amountNum === sendAllAmount && feesIncluded;
 
   // amount + optional comment form
   return (
@@ -118,7 +126,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, onBack, onRun, on
         <input
           type="number"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => { setAmount(e.target.value); if (!feesManuallySet) setFeesIncluded(false); }}
           placeholder={`Between ${minSats.toLocaleString('en-US').replace(/,/g, ' ')} and ${maxSats.toLocaleString('en-US').replace(/,/g, ' ')} sats`}
           className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           disabled={isLoading}
@@ -128,19 +136,57 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, onBack, onRun, on
         
         {/* Quick amount buttons */}
         <div className="flex gap-2 mt-3">
-          {[100, 1000, 10000, 100000].filter(v => v >= minSats && v <= maxSats).slice(0, 4).map((quickAmount) => (
+          {[1000, 10000, 100000].filter(v => v >= minSats && v <= maxSats).map((quickAmount) => (
             <button
               key={quickAmount}
-              onClick={() => setAmount(String(quickAmount))}
+              onClick={() => { setAmount(String(quickAmount)); if (!feesManuallySet) setFeesIncluded(false); }}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                amountNum === quickAmount
+                amountNum === quickAmount && !isSendAll
                   ? 'bg-spark-primary text-white'
                   : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
               }`}
             >
-              {quickAmount.toLocaleString('en-US').replace(/,/g, ' ')}
+              {quickAmount.toLocaleString('en-US').replace(/,/g, '\u2009')}
             </button>
           ))}
+          {sendAllAmount !== null && sendAllAmount >= minSats && (
+            <button
+              onClick={() => { setAmount(String(sendAllAmount)); setFeesIncluded(true); }}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                isSendAll
+                  ? 'bg-spark-primary text-white'
+                  : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+              }`}
+            >
+              Send All
+            </button>
+          )}
+        </div>
+        {/* Include fees toggle */}
+        <div
+          className="flex items-center justify-between mt-3 p-3 rounded-xl select-none"
+        >
+          <div>
+            <span className="text-sm font-medium text-spark-text-primary">Include fees</span>
+            <p className="text-xs text-spark-text-secondary mt-0.5">
+              Fees are deducted from the amount you enter
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={feesIncluded}
+            onClick={() => { setFeesIncluded(!feesIncluded); setFeesManuallySet(!feesIncluded); }}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors ${
+              feesIncluded ? 'bg-spark-warning' : 'bg-spark-border'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform mt-0.5 ${
+                feesIncluded ? 'translate-x-[22px]' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
         </div>
       </div>
 
