@@ -23,7 +23,13 @@ const BuyBitcoinPage: React.FC<BuyBitcoinPageProps> = ({ onBack }) => {
       window.open(response.url, '_blank', 'noopener,noreferrer');
     } catch (e) {
       console.error('Failed to initiate buy bitcoin:', e);
-      setError(e instanceof Error ? e.message : 'Failed to initiate buy bitcoin');
+      const raw = e instanceof Error ? e.message : String(e);
+      // Detect network-level failures and provide a friendly message
+      if (/Failed to fetch|NetworkError|network/i.test(raw)) {
+        setError('Please check your internet connection and try again.');
+      } else {
+        setError(raw);
+      }
     } finally {
       setIsLoading(false);
     }
