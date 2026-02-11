@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Transition } from '@headlessui/react';
 import { useWallet } from '@/contexts/WalletContext';
 import { LoadingSpinner } from '@/components/ui';
@@ -12,23 +12,6 @@ const BuyBitcoinPage: React.FC<BuyBitcoinPageProps> = ({ onBack }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [depositAddress, setDepositAddress] = useState<string | null>(null);
-
-  // Fetch a deposit address when component mounts
-  useEffect(() => {
-    const fetchDepositAddress = async () => {
-      try {
-        const response = await wallet.receivePayment({
-          paymentMethod: { type: 'bitcoinAddress' },
-        });
-        setDepositAddress(response.paymentRequest);
-      } catch (e) {
-        console.error('Failed to get deposit address:', e);
-        setError('Failed to get deposit address');
-      }
-    };
-    fetchDepositAddress();
-  }, [wallet]);
 
   const handleClose = () => {
     setIsOpen(false);
@@ -36,18 +19,11 @@ const BuyBitcoinPage: React.FC<BuyBitcoinPageProps> = ({ onBack }) => {
   };
 
   const handleBuyBitcoin = useCallback(async () => {
-    if (!depositAddress) {
-      setError('No deposit address available');
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await wallet.buyBitcoin({
-        address: depositAddress,
-      });
+      const response = await wallet.buyBitcoin({});
 
       // Open the provider URL in a new tab
       window.open(response.url, '_blank', 'noopener,noreferrer');
@@ -57,7 +33,7 @@ const BuyBitcoinPage: React.FC<BuyBitcoinPageProps> = ({ onBack }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [wallet, depositAddress]);
+  }, [wallet]);
 
   return (
     <div className="absolute inset-0 z-50 overflow-hidden">
@@ -146,16 +122,11 @@ const BuyBitcoinPage: React.FC<BuyBitcoinPageProps> = ({ onBack }) => {
               {/* Buy Button */}
               <button
                 onClick={handleBuyBitcoin}
-                disabled={isLoading || !depositAddress}
+                disabled={isLoading}
                 className="w-full bg-spark-primary hover:bg-spark-primary-light disabled:bg-spark-primary/50 disabled:cursor-not-allowed text-white font-display font-semibold py-4 px-6 rounded-2xl transition-colors flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <LoadingSpinner />
-                ) : !depositAddress ? (
-                  <>
-                    <LoadingSpinner />
-                    <span>Preparing...</span>
-                  </>
                 ) : (
                   <>
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

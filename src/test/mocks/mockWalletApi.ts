@@ -274,6 +274,9 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
     // Session management
     initLogSession: vi.fn().mockResolvedValue(undefined),
     endLogSession: vi.fn().mockResolvedValue(undefined),
+
+    // Buy Bitcoin
+    buyBitcoin: vi.fn().mockResolvedValue({ url: 'https://buy.moonpay.com/test' }),
   };
 
   return { ...defaultMock, ...overrides };
