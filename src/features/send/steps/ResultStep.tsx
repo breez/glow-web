@@ -54,14 +54,45 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
   };
 
   if (!isSuccess) {
-    // Failure: just show error box and close button
+    // Auth failure: use ErrorMessageBox card style
+    if (operationType === 'auth') {
+      return (
+        <div className="space-y-5">
+          <ErrorMessageBox
+            title={getTitle()}
+            error={error || getDefaultErrorMessage()}
+          />
+          <PrimaryButton onClick={onClose} className="w-full">
+            Close
+          </PrimaryButton>
+        </div>
+      );
+    }
+
+    // Payment failure: circular error icon with glow
     return (
-      <div className="space-y-5">
-        <ErrorMessageBox
-          title={getTitle()}
-          error={error || getDefaultErrorMessage()}
-        />
-        <PrimaryButton onClick={onClose} className="w-full">
+      <div className="flex flex-col items-center justify-center py-4" data-testid="payment-failure">
+        <div className="relative mb-6">
+          {/* Error glow */}
+          <div className="absolute inset-0 w-20 h-20 rounded-full blur-xl bg-spark-error/30" />
+
+          {/* Error icon */}
+          <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-spark-error/20 border-2 border-spark-error">
+            <svg className="w-10 h-10 text-spark-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        </div>
+
+        <h3 className="font-display text-2xl font-bold mb-2 text-spark-error">
+          {getTitle()}
+        </h3>
+
+        <p className="text-spark-text-secondary text-center max-w-xs mb-8">
+          {error || getDefaultErrorMessage()}
+        </p>
+
+        <PrimaryButton onClick={onClose} className="min-w-[200px]">
           Close
         </PrimaryButton>
       </div>
