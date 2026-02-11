@@ -7,16 +7,17 @@ import { formatWithSpaces } from '../../../utils/formatNumber';
 export interface ConfirmStepProps {
   amountSats: bigint | null;
   feesSat: number | null;
+  feesIncluded?: boolean;
   error: string | null;
   isLoading: boolean;
   onBack?: () => void;
   onConfirm: () => void;
 }
 
-const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, error, isLoading, onBack, onConfirm }) => {
+const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncluded, error, isLoading, onBack, onConfirm }) => {
   const amount = Number(amountSats || 0n);
   const fee = Number(feesSat || 0);
-  const total = amount + fee;
+  const total = feesIncluded ? amount : amount + fee;
 
   return (
     <div className="space-y-6">
@@ -32,7 +33,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, error, i
       </div>
 
       {/* Breakdown */}
-      <SimpleFeeBreakdown amount={amount} fee={fee} />
+      <SimpleFeeBreakdown amount={feesIncluded ? amount - fee : amount} fee={fee} amountLabel={feesIncluded ? 'Recipient gets' : 'Amount'} />
 
       <FormError error={error} />
 
