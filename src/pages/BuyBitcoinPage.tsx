@@ -102,7 +102,7 @@ const BuyBitcoinPage: React.FC<BuyBitcoinPageProps> = ({ onBack }) => {
           {/* Error display - below disclaimer */}
           {error && (
             <ErrorMessageBox
-              title="Connection Error"
+              title="Could not open MoonPay"
               error={error}
             />
           )}
