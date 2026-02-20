@@ -180,10 +180,10 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               />
             )}
 
-            {payment.details?.type === 'lightning' && payment.details.preimage && (
+            {payment.details?.type === 'lightning' && payment.details.htlcDetails?.preimage && (
               <CollapsibleCodeField
                 label="Payment Preimage"
-                value={payment.details.preimage}
+                value={payment.details.htlcDetails.preimage}
                 isVisible={visibleFields.preimage}
                 onToggle={() => toggleField('preimage')}
               />
