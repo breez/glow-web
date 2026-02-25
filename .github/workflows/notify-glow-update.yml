@@ -1,4 +1,4 @@
-name: Update SDK dependency
+name: SDK release notifier
 
 on:
   repository_dispatch:
@@ -6,86 +6,36 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'SDK version to update to'
+        description: 'SDK version to check'
         required: true
         type: string
 
 jobs:
-  check-and-notify:
+  notify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Determine version
-        id: version
-        run: |
-          # repository_dispatch provides version in client_payload,
-          # workflow_dispatch provides it as input
-          VERSION="${{ github.event.client_payload.version || inputs.version }}"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Validate version
-        id: check
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-
-          # Must be a clean MAJOR.MINOR.PATCH (no suffix like rc1, dev, etc.)
-          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "Not a stable version ($VERSION) — skipping."
-            echo "should_notify=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Get current version from package.json
-          CURRENT=$(jq -r '.dependencies["@breeztech/breez-sdk-spark"] // .devDependencies["@breeztech/breez-sdk-spark"] // "0.0.0"' package.json)
-          CURRENT=$(echo "$CURRENT" | sed 's/^[\^~>=<]*//')
-          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
-
-          # Skip if new version is not newer than current
-          if printf '%s\n%s\n' "$VERSION" "$CURRENT" | sort -V | tail -1 | grep -qx "$CURRENT"; then
-            echo "Version $VERSION is not newer than current $CURRENT — skipping."
-            echo "should_notify=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "should_notify=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Check for existing open issue
-        if: steps.check.outputs.should_notify == 'true'
-        id: existing
+      - name: Check and create issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ github.event.client_payload.version || inputs.version }}
         run: |
-          LATEST="${{ steps.version.outputs.version }}"
-          COUNT=$(gh issue list --search "Update @breeztech/breez-sdk-spark to $LATEST" --state open --json number --jq 'length')
-          if [ "$COUNT" -gt 0 ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
+          # Only stable versions (clean X.Y.Z)
+          echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "Pre-release — skipping."; exit 0; }
 
-      - name: Create update reminder issue
-        if: steps.check.outputs.should_notify == 'true' && steps.existing.outputs.exists == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          CURRENT="${{ steps.check.outputs.current }}"
-          LATEST="${{ steps.version.outputs.version }}"
+          # Must be newer than current
+          CURRENT=$(jq -r '.dependencies["@breeztech/breez-sdk-spark"] // "0.0.0"' package.json | sed 's/^[\^~>=<]*//')
+          printf '%s\n' "$VERSION" "$CURRENT" | sort -V | tail -1 | grep -qx "$CURRENT" && { echo "$VERSION not newer than $CURRENT — skipping."; exit 0; }
+
+          # Don't duplicate
+          gh issue list --search "Update @breeztech/breez-sdk-spark to $VERSION" --state open --json number --jq 'length' | grep -qx '0' || { echo "Issue already exists."; exit 0; }
+
           gh issue create \
-            --title "Update @breeztech/breez-sdk-spark to $LATEST" \
-            --body "$(cat <<EOF
-          A new stable release of \`@breeztech/breez-sdk-spark\` is available.
-
-          - **Current version:** \`$CURRENT\`
-          - **Latest stable version:** \`$LATEST\`
-
-          Please update the dependency and verify glow-web works correctly with the new version.
+            --title "Update @breeztech/breez-sdk-spark to $VERSION" \
+            --label "awaiting-sdk-release" \
+            --body "New stable release \`$VERSION\` available (current: \`$CURRENT\`).
 
           \`\`\`bash
-          npm install @breeztech/breez-sdk-spark@$LATEST
-          \`\`\`
-
-          ---
-          *This issue was automatically created by the SDK release notifier.*
-          EOF
-          )" \
-            --label "awaiting-sdk-release"
+          npm install @breeztech/breez-sdk-spark@$VERSION
+          \`\`\`"
