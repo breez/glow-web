@@ -351,6 +351,7 @@ const AppContent: React.FC = () => {
       const config: Config = defaultConfig(network);
       config.apiKey = breezApiKey;
       config.privateEnabledDefault = false;
+      config.supportLnurlVerify = true;
 
       // Apply persisted user settings to config
       try {
