@@ -1,0 +1,102 @@
+name: Update SDK dependency
+
+on:
+  repository_dispatch:
+    types: [sdk-release]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'SDK version to update to'
+        required: true
+        type: string
+
+jobs:
+  check-and-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          # repository_dispatch provides version in client_payload,
+          # workflow_dispatch provides it as input
+          VERSION="${{ github.event.client_payload.version || inputs.version }}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Skip pre-release versions
+        id: filter
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if echo "$VERSION" | grep -qiE '(rc|dev|alpha|beta|canary|nightly|pre|snapshot)'; then
+            echo "Pre-release version $VERSION — skipping."
+            echo "is_stable=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Stable version $VERSION — proceeding."
+            echo "is_stable=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get current SDK version from package.json
+        if: steps.filter.outputs.is_stable == 'true'
+        id: current
+        run: |
+          CURRENT=$(jq -r '.dependencies["@breeztech/breez-sdk-spark"] // .devDependencies["@breeztech/breez-sdk-spark"] // "0.0.0"' package.json)
+          # Strip any semver prefix (^, ~, etc.)
+          CURRENT=$(echo "$CURRENT" | sed 's/^[\^~>=<]*//')
+          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+
+      - name: Check if update is needed
+        if: steps.filter.outputs.is_stable == 'true'
+        id: check
+        run: |
+          CURRENT="${{ steps.current.outputs.version }}"
+          LATEST="${{ steps.version.outputs.version }}"
+          echo "Current: $CURRENT"
+          echo "New release: $LATEST"
+          if [ "$CURRENT" = "$LATEST" ]; then
+            echo "Already up to date."
+            echo "needs_update=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs_update=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check for existing open issue
+        if: steps.filter.outputs.is_stable == 'true' && steps.check.outputs.needs_update == 'true'
+        id: existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST="${{ steps.version.outputs.version }}"
+          COUNT=$(gh issue list --search "Update @breeztech/breez-sdk-spark to $LATEST" --state open --json number --jq 'length')
+          if [ "$COUNT" -gt 0 ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create update reminder issue
+        if: steps.filter.outputs.is_stable == 'true' && steps.check.outputs.needs_update == 'true' && steps.existing.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CURRENT="${{ steps.current.outputs.version }}"
+          LATEST="${{ steps.version.outputs.version }}"
+          gh issue create \
+            --title "Update @breeztech/breez-sdk-spark to $LATEST" \
+            --body "$(cat <<EOF
+          A new stable release of \`@breeztech/breez-sdk-spark\` is available.
+
+          - **Current version:** \`$CURRENT\`
+          - **Latest stable version:** \`$LATEST\`
+
+          Please update the dependency and verify glow-web works correctly with the new version.
+
+          \`\`\`bash
+          npm install @breeztech/breez-sdk-spark@$LATEST
+          \`\`\`
+
+          ---
+          *This issue was automatically created by the SDK release notifier.*
+          EOF
+          )" \
+            --label "awaiting-sdk-release"
