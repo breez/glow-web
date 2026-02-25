@@ -24,44 +24,33 @@ jobs:
           VERSION="${{ github.event.client_payload.version || inputs.version }}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Skip pre-release versions
-        id: filter
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          if echo "$VERSION" | grep -qiE '(rc|dev|alpha|beta|canary|nightly|pre|snapshot)'; then
-            echo "Pre-release version $VERSION — skipping."
-            echo "is_stable=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Stable version $VERSION — proceeding."
-            echo "is_stable=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Get current SDK version from package.json
-        if: steps.filter.outputs.is_stable == 'true'
-        id: current
-        run: |
-          CURRENT=$(jq -r '.dependencies["@breeztech/breez-sdk-spark"] // .devDependencies["@breeztech/breez-sdk-spark"] // "0.0.0"' package.json)
-          # Strip any semver prefix (^, ~, etc.)
-          CURRENT=$(echo "$CURRENT" | sed 's/^[\^~>=<]*//')
-          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
-
-      - name: Check if update is needed
-        if: steps.filter.outputs.is_stable == 'true'
+      - name: Validate version
         id: check
         run: |
-          CURRENT="${{ steps.current.outputs.version }}"
-          LATEST="${{ steps.version.outputs.version }}"
-          echo "Current: $CURRENT"
-          echo "New release: $LATEST"
-          if [ "$CURRENT" = "$LATEST" ]; then
-            echo "Already up to date."
-            echo "needs_update=false" >> "$GITHUB_OUTPUT"
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Must be a clean MAJOR.MINOR.PATCH (no suffix like rc1, dev, etc.)
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Not a stable version ($VERSION) — skipping."
+            echo "should_notify=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Get current version from package.json
+          CURRENT=$(jq -r '.dependencies["@breeztech/breez-sdk-spark"] // .devDependencies["@breeztech/breez-sdk-spark"] // "0.0.0"' package.json)
+          CURRENT=$(echo "$CURRENT" | sed 's/^[\^~>=<]*//')
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+
+          # Skip if new version is not newer than current
+          if printf '%s\n%s\n' "$VERSION" "$CURRENT" | sort -V | tail -1 | grep -qx "$CURRENT"; then
+            echo "Version $VERSION is not newer than current $CURRENT — skipping."
+            echo "should_notify=false" >> "$GITHUB_OUTPUT"
           else
-            echo "needs_update=true" >> "$GITHUB_OUTPUT"
+            echo "should_notify=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check for existing open issue
-        if: steps.filter.outputs.is_stable == 'true' && steps.check.outputs.needs_update == 'true'
+        if: steps.check.outputs.should_notify == 'true'
         id: existing
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -75,11 +64,11 @@ jobs:
           fi
 
       - name: Create update reminder issue
-        if: steps.filter.outputs.is_stable == 'true' && steps.check.outputs.needs_update == 'true' && steps.existing.outputs.exists == 'false'
+        if: steps.check.outputs.should_notify == 'true' && steps.existing.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          CURRENT="${{ steps.current.outputs.version }}"
+          CURRENT="${{ steps.check.outputs.current }}"
           LATEST="${{ steps.version.outputs.version }}"
           gh issue create \
             --title "Update @breeztech/breez-sdk-spark to $LATEST" \
