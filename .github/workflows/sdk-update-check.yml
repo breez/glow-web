@@ -1,0 +1,44 @@
+name: SDK Update Check
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for update and create issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          CURRENT=$(node -p "require('./package.json').dependencies['@breeztech/breez-sdk-spark']")
+
+          LATEST=$(npm view @breeztech/breez-sdk-spark versions --json | node -e "
+            const v = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+            console.log(v.filter(x => /^\d+\.\d+\.\d+$/.test(x)).pop());
+          ")
+
+          echo "Current: $CURRENT, Latest: $LATEST"
+          npx semver "$LATEST" -r ">$CURRENT" > /dev/null 2>&1 || { echo "Up to date."; exit 0; }
+
+          COUNT=$(gh issue list --label sdk-upgrade --state open --json number --jq 'length')
+          [ "$COUNT" -gt 0 ] && echo "Open issue already exists." && exit 0
+
+          BODY="New stable release: \`$CURRENT\` → \`$LATEST\`
+
+          Update \`@breeztech/breez-sdk-spark\` in \`package.json\` to \`$LATEST\`, run \`npm install\`, then fix any type errors (\`npx tsc --noEmit\`) and test failures (\`npm test\`)."
+
+          gh issue create \
+            --title "chore: upgrade @breeztech/breez-sdk-spark to $LATEST" \
+            --label "sdk-upgrade" \
+            --body "$BODY"

@@ -1,0 +1,21 @@
+name: Claude Code
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  sdk-upgrade:
+    if: github.event.label.name == 'sdk-upgrade'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_tools: "Bash,Edit,Read,Write,Glob,Grep"
