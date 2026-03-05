@@ -202,7 +202,8 @@ async function runWizard() {
   // Colors
   console.log('\n  Colors:');
   const primary = await askColor('Primary accent', DEFAULTS.primary);
-  const primaryLight = await askColor('Primary light', lightenHex(primary));
+  const primaryLight = await askColor('Primary light',
+    primary === DEFAULTS.primary ? DEFAULTS.primaryLight : lightenHex(primary));
   const background = await askColor('Background', DEFAULTS.background);
 
   // Advanced colors (press Enter to keep defaults)
@@ -213,7 +214,8 @@ async function runWizard() {
   const border = await askColor('Border', DEFAULTS.border);
   const borderLight = await askColor('Border light', DEFAULTS.borderLight);
   const accent = await askColor('Secondary accent', DEFAULTS.accent);
-  const accentLight = await askColor('Secondary light', lightenHex(accent));
+  const accentLight = await askColor('Secondary light',
+    accent === DEFAULTS.accent ? DEFAULTS.accentLight : lightenHex(accent));
   const success = await askColor('Success', DEFAULTS.success);
   const error = await askColor('Error', DEFAULTS.error);
 
