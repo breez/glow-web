@@ -1,4 +1,5 @@
 import React from 'react';
+import { brand } from '../../../config/brand';
 
 export interface ProcessingStepProps {
   /** Operation type to customize messaging (default: 'payment') */
@@ -76,7 +77,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'paymen
           {/* Icon */}
           {isAuth ? renderIcon() : (
             <img
-              src="/assets/Glow_Logo.png"
+              src={brand.logo}
               alt="Processing"
               className="w-14 h-14 object-contain animate-pulse drop-shadow-[0_0_15px_rgba(212,165,116,0.4)]"
               style={{ animationDuration: '2s' }}

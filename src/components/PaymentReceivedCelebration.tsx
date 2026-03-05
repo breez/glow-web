@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { brand } from '../config/brand';
 
 // Star positions around the logo (same as sidebar)
 const STARS = [
@@ -79,8 +80,8 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
           {/* Logo container */}
           <div className="relative w-28 h-28 flex items-center justify-center">
             <img
-              src="/assets/Glow_Logo.png"
-              alt="Glow"
+              src={brand.logo}
+              alt={brand.name}
               className="w-24 h-24 object-contain drop-shadow-[0_0_30px_rgba(212,165,116,0.6)]"
             />
             

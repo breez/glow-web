@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
 import { BackIcon } from '../Icons';
+import { brand } from '../../config/brand';
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -26,7 +27,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
         >
           <div className="relative px-4 py-4 flex items-center justify-center">
             <h1 className="text-center font-display text-xl font-bold text-spark-text-primary">
-              {title || "Glow"}
+              {title || brand.name}
             </h1>
             {onBack && (
               <button

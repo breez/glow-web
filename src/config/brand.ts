@@ -1,0 +1,18 @@
+export const brand = {
+  name: 'Glow',
+  version: '1.0.0',
+  tagline: 'Powered by Breez SDK',
+  logo: '/assets/Glow_Logo.png',
+  favicon: '/icons/Glow_favicon.png',
+  icon192: '/icons/Glow-icon-192.png',
+  icon512: '/icons/Glow-icon-512.png',
+  iconMaskable192: '/icons/Glow-icon-maskable-192.png',
+  iconMaskable512: '/icons/Glow-icon-maskable-512.png',
+  lnAddressDomain: 'breez.tips',
+  logPrefix: 'glow',
+  logDbName: 'glow-logs',
+  logExportTitle: 'Glow Wallet Log Export',
+  logShareTitle: 'Glow Wallet Logs',
+  notificationActionLabel: 'Open Glow',
+  cacheName: 'glow-v14',
+} as const;

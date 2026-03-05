@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Transition } from '@headlessui/react';
 import { isPasskeyMode } from '@/services/passkeyService';
 import { RefundIcon, BackupIcon, SettingsIcon, LogoutIcon, CloseIcon, AlertTriangleIcon } from './Icons';
+import { brand } from '../config/brand';
 // Star positions around the logo (relative to center, in pixels)
 const STARS = [
   { x: -28, y: -20, size: 3 },
@@ -137,9 +138,9 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             <div className="flex items-center justify-between mb-8 pt-6">
               <div className="flex items-center gap-3">
                 <div className="w-16 h-16 flex items-center justify-center relative">
-                  <img 
-                    src="/assets/Glow_Logo.png" 
-                    alt="Glow" 
+                  <img
+                    src={brand.logo}
+                    alt={brand.name}
                     className="w-full h-full object-contain"
                   />
                   {/* Twinkling stars */}
@@ -157,7 +158,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                     />
                   ))}
                 </div>
-                <h2 className="font-display text-xl font-bold text-spark-text-primary">Glow</h2>
+                <h2 className="font-display text-xl font-bold text-spark-text-primary">{brand.name}</h2>
               </div>
               <button 
                 onClick={onClose} 
@@ -189,7 +190,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             {/* Footer */}
             <div className="pt-6 pb-6 border-t border-spark-border">
               <p className="text-xs text-spark-text-muted text-center">
-                Powered by Breez SDK
+                {brand.tagline}
               </p>
             </div>
 

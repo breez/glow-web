@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as bip39 from 'bip39';
+import { brand } from '../config/brand';
 import { PrimaryButton } from '../components/ui';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PageLayout from '../components/layout/PageLayout';
@@ -61,7 +62,7 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
     return (
       <PageLayout onBack={onBack} footer={<div />} title="Get Started" onClearError={onClearError}>
         <div className="flex items-center justify-center h-full">
-          <LoadingSpinner text="Setting up Glow..." />
+          <LoadingSpinner text={`Setting up ${brand.name}...`} />
         </div>
       </PageLayout>
     );
