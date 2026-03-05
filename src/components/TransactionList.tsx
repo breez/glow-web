@@ -107,13 +107,13 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
   if (!transactions.length) {
     if (isSyncing) {
       return (
-        <div className="px-4 py-3">
+        <div className="px-4 py-3 flex-1 overflow-hidden" style={{ maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)' }}>
           <div className="flex items-center gap-2 mb-3">
             <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">Payments</h2>
             <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
           </div>
           <ul className="space-y-2">
-            {Array.from({ length: 5 }, (_, i) => (
+            {Array.from({ length: 20 }, (_, i) => (
               <SkeletonTransactionRow key={i} index={i} />
             ))}
           </ul>
