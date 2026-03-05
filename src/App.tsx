@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Config, GetInfoResponse, Network, Payment, SdkEvent, defaultConfig, Rate, FiatCurrency, DepositInfo } from '@breeztech/breez-sdk-spark';
-import { WalletProvider, useWallet } from './contexts/WalletContext';
+import React, { useState, useEffect } from 'react';
+import { WalletProvider } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
 import NotificationPrompt from './components/NotificationPrompt';
@@ -8,9 +7,7 @@ import InstallPrompt from './components/InstallPrompt';
 import StagingGate from './components/StagingGate';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
-import { hideSplash } from './main';
-import { logger, LogCategory } from './services/logger';
-import { formatError } from './utils/formatError';
+import { useBreezClient } from './hooks/useBreezClient';
 
 import HomePage from './pages/HomePage';
 import WalletPage from './pages/WalletPage';
@@ -20,463 +17,40 @@ import GetRefundPage from './pages/GetRefundPage';
 import BackupPage from './pages/BackupPage';
 import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
-import { getSettings } from './services/settings';
-import { isDepositRejected } from './services/depositState';
-import {
-  showPaymentReceivedNotification,
-  showDepositClaimedNotification,
-} from './services/notificationService';
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
 
-// Main App without toast functionality
+type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies';
+
 const AppContent: React.FC = () => {
-  // Screen navigation state
-  const [currentScreen, setCurrentScreen] = useState<'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies'>('home');
-
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRestoring, setIsRestoring] = useState<boolean>(false);
-
-  // Track if this is the initial app load (splash screen handles this)
-  const isInitialLoadRef = useRef<boolean>(true);
-  const [walletInfo, setWalletInfo] = useState<GetInfoResponse | null>(null);
-  const [transactions, setTransactions] = useState<Payment[]>([]);
-  const [unclaimedDeposits, setUnclaimedDeposits] = useState<DepositInfo[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [fiatRates, setFiatRates] = useState<Rate[]>([]);
-  const [fiatCurrencies, setFiatCurrencies] = useState<FiatCurrency[]>([]);
-  const [config, setConfig] = useState<Config | null>(null);
-  const [hasUnclaimedDeposits, setHasUnclaimedDeposits] = useState<boolean>(false);
-  const [celebrationAmount, setCelebrationAmount] = useState<number | null>(null);
+  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
-
   const { showToast } = useToast();
 
-  // Fix iOS Safari viewport bug where gap appears after keyboard dismisses
   useIOSViewportFix();
 
+  const client = useBreezClient(showToast);
+
+  // Auto-navigate to wallet when SDK reconnects from saved mnemonic
   useEffect(() => {
-    const lnurlEnabled = config?.lnurlDomain ? 'true' : 'false';
-    document.body.setAttribute('data-lnurl-enabled', lnurlEnabled);
-    return () => {
-      document.body.setAttribute('data-lnurl-enabled', 'false');
-    };
-  }, [config?.lnurlDomain]);
-
-  // Add a ref to store the event listener ID
-  const eventListenerIdRef = useRef<string | null>(null);
-
-  // Track recently shown payment celebrations to avoid duplicates
-  const shownPaymentIdsRef = useRef<Set<string>>(new Set());
-
-  // Ref to access currentScreen in callbacks without causing re-renders (advanced-event-handler-refs optimization)
-  const currentScreenRef = useRef(currentScreen);
-  currentScreenRef.current = currentScreen;
-
-  // Function to refresh wallet data (usable via a callback)
-  const wallet = useWallet();
-
-  const refreshWalletData = useCallback(async (showLoading: boolean = true) => {
-    if (!isConnected) return;
-
-    try {
-      if (showLoading) {
-        setIsLoading(true);
-      }
-
-      // Fetch wallet info and transactions in parallel (async-parallel optimization)
-      const [info, txns] = await Promise.all([
-        wallet.getWalletInfo(),
-        wallet.getTransactions(),
-      ]);
-
-      setWalletInfo(info);
-      setTransactions(txns);
-    } catch (error) {
-      logger.error(LogCategory.SDK, 'Error refreshing wallet data', {
-        error: formatError(error),
-      });
-      setError('Failed to refresh wallet data.');
-    } finally {
-      if (showLoading) {
-        setIsLoading(false);
-      }
+    if (client.isConnected && currentScreen === 'home') {
+      setCurrentScreen('wallet');
     }
-  }, [isConnected, wallet]);
+  }, [client.isConnected, currentScreen]);
 
-  // Fetch unclaimed deposits list and update indicator
-  // Warning icon should only show for REJECTED deposits
-  const fetchUnclaimedDeposits = useCallback(async () => {
-    try {
-      const deposits = await wallet.unclaimedDeposits();
-      setUnclaimedDeposits(deposits);
-      // Check if any of the unclaimed deposits have been rejected
-      const hasRejected = deposits.some(d => isDepositRejected(d.txid, d.vout));
-      setHasUnclaimedDeposits(hasRejected);
-    } catch (e) {
-      logger.warn(LogCategory.SDK, 'Failed to fetch unclaimed deposits', {
-        error: formatError(e),
-      });
-      setUnclaimedDeposits([]);
-      setHasUnclaimedDeposits(false);
-    }
-  }, [wallet]);
-
-
-  // SDK event handler with toast notifications and auto-close of receive dialog
-  const handleSdkEvent = useCallback((event: SdkEvent) => {
-    logger.debug(LogCategory.SDK, 'SDK event received', {
-      eventType: event.type,
-    });
-
-    if (event.type === 'synced') {
-      logger.debug(LogCategory.SDK, 'Synced event received; refreshing data');
-
-      // If this is the first sync event after connecting, mark restoration as complete
-      if (isRestoring) {
-        logger.info(LogCategory.SESSION, 'Restoration sync complete; hiding overlay');
-        setIsRestoring(false);
-      }
-
-      // Set sync indicator for e2e tests
-      document.body.setAttribute('data-wallet-synced', 'true');
-
-      // Don't show loading indicator for automatic refresh
-      refreshWalletData(false);
-      fetchUnclaimedDeposits();
-    } else if (event.type === 'paymentSucceeded') {
-      logger.info(LogCategory.PAYMENT, 'Payment succeeded event received', {
-        paymentId: event.payment.id,
-      });
-      const paymentId = event.payment.id;
-
-      // Deduplicate: only show notification if we haven't shown it for this payment
-      if (!shownPaymentIdsRef.current.has(paymentId)) {
-        shownPaymentIdsRef.current.add(paymentId);
-        // Clean up old IDs after 30 seconds to prevent memory growth
-        setTimeout(() => shownPaymentIdsRef.current.delete(paymentId), 30000);
-
-        const isReceived = event.payment.paymentType === 'receive';
-        const amountSats = Number(event.payment.amount);
-
-        if (isReceived) {
-          // Show celebration animation for received payments
-          setCelebrationAmount(amountSats);
-          // Also show push notification (will only show if app is in background)
-          showPaymentReceivedNotification(amountSats);
-        } else {
-          // Show toast for sent payments
-          showToast(
-            'success',
-            'Payment Sent',
-            `${event.payment.amount} sats sent successfully`
-          );
-        }
-      }
-      refreshWalletData(false);
-    } else if (event.type === 'claimedDeposits') {
-      logger.info(LogCategory.PAYMENT, 'Claim deposits succeeded event received', {
-        count: event.claimedDeposits.length,
-      });
-      // Use ref to check screen without adding to dependencies
-      if (currentScreenRef.current !== 'getRefund') {
-        showToast(
-          'success',
-          'Deposits Claimed Successfully',
-          `${event.claimedDeposits.length} deposits were claimed`
-        );
-      }
-      // Show push notification for claimed deposits
-      showDepositClaimedNotification(event.claimedDeposits.length);
-      refreshWalletData(false);
-      fetchUnclaimedDeposits();
-    } else if (event.type === 'unclaimedDeposits') {
-      logger.warn(LogCategory.PAYMENT, 'Claim deposits failed event received', {
-        remaining: event.unclaimedDeposits.length,
-      });
-      // Use ref to check screen without adding to dependencies
-      if (currentScreenRef.current !== 'getRefund') {
-        showToast(
-          'error',
-          'Failed to Claim Deposits',
-          `${event.unclaimedDeposits.length} deposits could not be claimed`
-        );
-      }
-      // Refresh the list as some may remain unclaimed
-      fetchUnclaimedDeposits();
-    }
-  }, [refreshWalletData, showToast, isRestoring, fetchUnclaimedDeposits]);
-
-  // Fetch fiat rates from SDK
-  const fetchFiatData = useCallback(async () => {
-    try {
-      const [rates, currencies] = await Promise.all([
-        wallet.listFiatRates(),
-        wallet.listFiatCurrencies(),
-      ]);
-      setFiatRates(rates);
-      setFiatCurrencies(currencies);
-    } catch (error) {
-      logger.warn(LogCategory.SDK, 'Failed to fetch fiat data', {
-        error: formatError(error),
-      });
-    }
-  }, [wallet]);
-
-  // Set up periodic fiat rate fetching
-  useEffect(() => {
-    if (isConnected) {
-      // Fetch immediately upon connection
-      fetchFiatData();
-
-      // Then set up interval for every 60 seconds
-      const interval = setInterval(fetchFiatData, 60000);
-
-      // Clean up interval on disconnect
-      return () => clearInterval(interval);
-    }
-  }, [isConnected, fetchFiatData]);
-
-  // Try to connect with saved mnemonic on app startup (run once)
-  useEffect(() => {
-    // Initialize log session for persistent logging
-    wallet.initLogSession().catch((e) => {
-      logger.warn(LogCategory.SESSION, 'Failed to initialize log session', {
-        error: formatError(e),
-      });
-    });
-
-    logger.debug(LogCategory.SESSION, 'Checking for existing wallet on mount');
-    const checkForExistingWallet = async () => {
-      logger.debug(LogCategory.SESSION, 'Resolving existing wallet state');
-      const savedMnemonic = wallet.getSavedMnemonic();
-      logger.debug(LogCategory.AUTH, 'Saved mnemonic present', {
-        hasMnemonic: Boolean(savedMnemonic),
-      });
-      if (savedMnemonic) {
-        try {
-          setIsLoading(true);
-          await connectWallet(savedMnemonic, false);
-          logger.info(LogCategory.SDK, 'Connected to wallet with saved mnemonic');
-          setCurrentScreen('wallet'); // Navigate to wallet screen
-        } catch (error) {
-          logger.error(LogCategory.SDK, 'Failed to connect with saved mnemonic', {
-            error: formatError(error),
-          });
-          setError('Failed to connect with saved mnemonic. Please try again.');
-          wallet.clearMnemonic();
-          setCurrentScreen('home'); // Go back to home screen on failure
-          setIsLoading(false);
-        }
-      } else {
-        setCurrentScreen('home'); // Show home screen if no saved mnemonic
-        setIsLoading(false);
-      }
-
-      // Initial load complete - hide splash and mark as done
-      if (isInitialLoadRef.current) {
-        isInitialLoadRef.current = false;
-        hideSplash();
-      }
-    };
-
-    checkForExistingWallet();
-
-    // No cleanup here; logout handles disconnect explicitly
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only initialization
-  }, []);
-
-  // Set up event listener when connected
-  useEffect(() => {
-    if (isConnected) {
-      logger.debug(LogCategory.SDK, 'Setting up wallet event listener');
-      wallet.addEventListener(handleSdkEvent)
-        .then(listenerId => {
-          eventListenerIdRef.current = listenerId;
-          logger.debug(LogCategory.SDK, 'Registered wallet event listener', {
-            listenerId,
-          });
-        })
-        .catch(error => {
-          logger.error(LogCategory.SDK, 'Failed to add wallet event listener', {
-            error: formatError(error),
-          });
-          setError('Failed to set up event listeners.');
-        });
-
-      return () => {
-        // Clean up by removing the specific listener
-        if (eventListenerIdRef.current) {
-          wallet.removeEventListener(eventListenerIdRef.current)
-            .catch(error => {
-              logger.error(LogCategory.SDK, 'Error removing wallet event listener', {
-                error: formatError(error),
-              });
-            });
-          eventListenerIdRef.current = null;
-        }
-      };
-    }
-  }, [isConnected, handleSdkEvent, wallet]);
-
-  const connectWallet = async (mnemonic: string, restore: boolean, overrideNetwork?: Network) => {
-    try {
-      logger.info(LogCategory.SDK, 'Initiating wallet connection', {
-        restore,
-        hasOverrideNetwork: Boolean(overrideNetwork),
-      });
-      // Guard against double-connect
-      if (wallet.connected()) {
-        logger.debug(LogCategory.SDK, 'Wallet already connected; skipping connect');
-        return;
-      }
-      setIsLoading(true);
-      logger.debug(LogCategory.SDK, 'Starting wallet connection workflow', {
-        restore,
-      });
-      setIsRestoring(restore); // Mark that we're restoring data      
-      setError(null);
-
-      // Initialize wallet with mnemonic
-
-      const breezApiKey = import.meta.env.VITE_BREEZ_API_KEY;
-
-      if (!breezApiKey) {
-        showToast('error', 'Missing API Key', 'Please add VITE_BREEZ_API_KEY to your .env file');
-        throw new Error('Breez API key not found. Create a .env file with VITE_BREEZ_API_KEY=your_key');
-      }
-
-      const urlParams = new URLSearchParams(window.location.search);
-      const network = (overrideNetwork ?? (urlParams.get('network') ?? 'mainnet')) as Network;
-      const config: Config = defaultConfig(network);
-      config.apiKey = breezApiKey;
-      config.privateEnabledDefault = false;
-      config.supportLnurlVerify = true;
-
-      // Apply persisted user settings to config
-      try {
-        const s = getSettings();
-        // Max fee for deposit claim
-        if (s.depositMaxFee) {
-          config.maxDepositClaimFee = s.depositMaxFee;
-        }
-        // Optional settings
-        if (s.syncIntervalSecs != null) {
-          config.syncIntervalSecs = s.syncIntervalSecs;
-        }
-        if (s.lnurlDomain != null) {
-          config.lnurlDomain = s.lnurlDomain;
-        }
-        if (s.preferSparkOverLightning != null) {
-          config.preferSparkOverLightning = s.preferSparkOverLightning;
-        }
-      } catch (e) {
-        logger.warn(LogCategory.SDK, 'Failed to apply user settings to config', {
-          error: formatError(e),
-        });
-      }
-
-      setConfig(config);
-      await wallet.initWallet(mnemonic, config);
-
-      logger.info(LogCategory.SDK, 'Wallet connected successfully');
-      // Save mnemonic for future use
-      wallet.saveMnemonic(mnemonic);
-
-      // Get wallet info and transactions in parallel (async-parallel optimization)
-      const [info, txns] = await Promise.all([
-        wallet.getWalletInfo(),
-        wallet.getTransactions(),
-      ]);
-
-      setWalletInfo(info);
-      setTransactions(txns);
-
-      setIsConnected(true);
-      // Fetch unclaimed deposits indicator after connect
-      await fetchUnclaimedDeposits();
-      setCurrentScreen('wallet'); // Navigate to wallet screen
-      // We'll keep isLoading true until first sync for new wallets
-      setIsLoading(false);
-
-    } catch (error) {
-      logger.error(LogCategory.SDK, 'Error connecting wallet', {
-        error: formatError(error),
-      });
-      setError('Failed to connect wallet. Please check your mnemonic and try again.');
-      setIsRestoring(false);
-      setIsLoading(false);
-      setConfig(null);
-      throw error;
-    }
+  // Navigate to wallet after successful connect
+  const handleConnect = async (mnemonic: string, restore: boolean) => {
+    await client.connectWallet(mnemonic, restore);
+    setCurrentScreen('wallet');
   };
 
-  // Handle logout
-  const handleLogout = useCallback(async () => {
-    try {
-      setIsLoading(true);
+  const handleLogout = async () => {
+    await client.handleLogout();
+    setCurrentScreen('home');
+  };
 
-      // Disconnect from Breez SDK
-      if (isConnected) {
-        await wallet.disconnect();
-      }
-
-      // End log session before clearing data
-      await wallet.endLogSession();
-
-      // Clear the stored mnemonic
-      wallet.clearMnemonic();
-
-      // Reset state
-      setIsConnected(false);
-      setWalletInfo(null);
-      setTransactions([]);
-      setConfig(null);
-
-      // Navigate back to home screen
-      setCurrentScreen('home');
-
-      // Show logout success toast
-      showToast('success', 'Successfully logged out');
-    } catch (error) {
-      logger.error(LogCategory.SESSION, 'Logout failed', {
-        error: formatError(error),
-      });
-      setError('Failed to log out properly. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- wallet excluded to avoid re-creating on every render
-  }, [isConnected, showToast]);
-
-  // Buy Bitcoin - call SDK and open MoonPay directly
-  const handleBuyBitcoin = useCallback(async () => {
-    try {
-      const response = await wallet.buyBitcoin({});
-      window.open(response.url, '_blank', 'noopener,noreferrer');
-    } catch (e) {
-      logger.error(LogCategory.SDK, 'Failed to open Buy Bitcoin', {
-        error: formatError(e),
-      });
-      showToast('error', 'Buy Bitcoin', 'Failed to open MoonPay. Please try again.');
-    }
-  }, [wallet, showToast]);
-
-  // Navigation handlers
-  const navigateToRestore = () => setCurrentScreen('restore');
-  const navigateToGenerate = () => setCurrentScreen('generate');
-  const navigateToHome = () => setCurrentScreen('home');
-  const clearError = () => setError(null);
-
-  // Determine which screen to render
+  // Render screens
   const renderCurrentScreen = () => {
-    // During initial load, splash screen handles the loading state
-    // Don't show React LoadingSpinner to avoid double-spinner
-    if (isLoading && isInitialLoadRef.current) {
-      return null;
-    }
-
-    if (isLoading && currentScreen !== 'restore') {
+    if (client.isLoading && currentScreen !== 'restore') {
       return (
         <div className="absolute inset-0 bg-spark-void/95 backdrop-blur-sm z-50 flex items-center justify-center">
           <LoadingSpinner />
@@ -488,8 +62,8 @@ const AppContent: React.FC = () => {
       case 'home':
         return (
           <HomePage
-            onRestoreWallet={navigateToRestore}
-            onCreateNewWallet={navigateToGenerate}
+            onRestoreWallet={() => setCurrentScreen('restore')}
+            onCreateNewWallet={() => setCurrentScreen('generate')}
           />
         );
 
@@ -505,7 +79,7 @@ const AppContent: React.FC = () => {
         return (
           <SettingsPage
             onBack={() => setCurrentScreen('wallet')}
-            config={config}
+            config={client.config}
             onOpenFiatCurrencies={() => setCurrentScreen('fiatCurrencies')}
           />
         );
@@ -523,45 +97,45 @@ const AppContent: React.FC = () => {
       case 'restore':
         return (
           <RestorePage
-            onConnect={(mnemonic) => connectWallet(mnemonic, true)}
-            onBack={navigateToHome}
-            onClearError={clearError}
-            isLoading={isLoading}
+            onConnect={(mnemonic) => handleConnect(mnemonic, true)}
+            onBack={() => setCurrentScreen('home')}
+            onClearError={client.clearError}
+            isLoading={client.isLoading}
           />
         );
 
       case 'generate':
         return (
           <GeneratePage
-            onMnemonicConfirmed={(mnemonic) => connectWallet(mnemonic, false)}
-            onBack={navigateToHome}
-            error={error}
-            onClearError={clearError}
+            onMnemonicConfirmed={(mnemonic) => handleConnect(mnemonic, false)}
+            onBack={() => setCurrentScreen('home')}
+            error={client.error}
+            onClearError={client.clearError}
           />
         );
 
       case 'wallet':
         return (
           <WalletPage
-            walletInfo={walletInfo}
-            transactions={transactions}
-            unclaimedDeposits={unclaimedDeposits}
-            fiatRates={fiatRates}
-            fiatCurrencies={fiatCurrencies}
-            refreshWalletData={refreshWalletData}
-            isRestoring={isRestoring}
-            error={error}
-            onClearError={clearError}
+            walletInfo={client.walletInfo}
+            transactions={client.transactions}
+            unclaimedDeposits={client.unclaimedDeposits}
+            fiatRates={client.fiatRates}
+            fiatCurrencies={client.fiatCurrencies}
+            refreshWalletData={client.refreshWalletData}
+            isRestoring={client.isSyncing}
+            error={client.error}
+            onClearError={client.clearError}
             onLogout={handleLogout}
-            hasUnclaimedDeposits={hasUnclaimedDeposits}
+            hasUnclaimedDeposits={client.hasRejectedDeposits}
             onOpenGetRefund={(source?: 'menu' | 'icon') => {
               setRefundAnimationDirection(source === 'icon' ? 'up' : 'left');
               setCurrentScreen('getRefund');
             }}
             onOpenSettings={() => setCurrentScreen('settings')}
             onOpenBackup={() => setCurrentScreen('backup')}
-            onOpenBuyBitcoin={handleBuyBitcoin}
-            onDepositChanged={fetchUnclaimedDeposits}
+            onOpenBuyBitcoin={client.handleBuyBitcoin}
+            onDepositChanged={client.fetchUnclaimedDeposits}
           />
         );
 
@@ -573,21 +147,18 @@ const AppContent: React.FC = () => {
   return (
     <>
       {renderCurrentScreen()}
-      {celebrationAmount !== null && (
+      {client.celebrationAmount !== null && (
         <PaymentReceivedCelebration
-          amount={celebrationAmount}
-          onClose={() => setCelebrationAmount(null)}
+          amount={client.celebrationAmount}
+          onClose={client.dismissCelebration}
         />
       )}
-      {/* Show notification prompt after wallet is connected */}
-      {isConnected && <NotificationPrompt />}
-      {/* Show install prompt for PWA installation */}
+      {client.isConnected && <NotificationPrompt />}
       <InstallPrompt />
     </>
   );
 };
 
-// Wrap the App with ToastProvider and StagingGate
 function App() {
   return (
     <StagingGate>
