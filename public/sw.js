@@ -1,5 +1,5 @@
 // Glow Service Worker
-const CACHE_NAME = 'glow-v14';
+const CACHE_NAME = 'glow-v15';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -9,6 +9,8 @@ const STATIC_ASSETS = [
   '/icons/Glow-icon-512.png',
   '/icons/Glow-icon-maskable-192.png',
   '/icons/Glow-icon-maskable-512.png',
+  '/assets/Glow_Logo.png',
+  '/assets/logo-breez-header.svg',
 ];
 
 // Install event - cache static assets
