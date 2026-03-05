@@ -1,7 +1,7 @@
 /**
  * Brand Setup CLI
  *
- * Interactive wizard that configures your white-label wallet.
+ * Interactive wizard that configures your app's branding.
  * Generates brand.ts, PWA icons, and manifest.json.
  *
  * Usage:
@@ -193,7 +193,7 @@ async function runWizard() {
 
   console.log('\n  🎨 Brand Setup Wizard');
   console.log('  ─────────────────────');
-  console.log('  Set up your white-label wallet in a few steps.');
+  console.log('  Customize your app\'s branding in a few steps.');
   console.log('  Values in [brackets] are defaults — just press Enter to use them.\n');
 
   const logoPath = join(rootDir, 'public/assets/logo.png');
