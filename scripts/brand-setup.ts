@@ -194,7 +194,18 @@ async function runWizard() {
   console.log('\n  🎨 Brand Setup Wizard');
   console.log('  ─────────────────────');
   console.log('  Configure your white-label wallet. Press Enter to keep defaults.\n');
-  console.log('  💡 Place your logo at public/assets/logo.png before running.\n');
+
+  const logoPath = join(rootDir, 'public/assets/logo.png');
+  if (!existsSync(logoPath)) {
+    console.log('  ⚠  No logo found at public/assets/logo.png');
+    const cont = await ask('  Continue without logo? (y/N)', 'N');
+    if (cont.toLowerCase() !== 'y') {
+      console.log('\n  Place your logo at public/assets/logo.png and re-run.\n');
+      rl.close();
+      return;
+    }
+    console.log();
+  }
 
   // Identity
   const name = await ask('Brand name', DEFAULTS.name);
@@ -241,7 +252,6 @@ async function runWizard() {
   generateBrandTs(config);
   generateManifest(config);
 
-  const logoPath = join(rootDir, 'public/assets/logo.png');
   await generateIcons(logoPath);
 
   console.log(`\n  ✅ Done! Run npm run dev to preview.\n`);
