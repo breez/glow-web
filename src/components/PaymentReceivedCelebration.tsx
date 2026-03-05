@@ -82,7 +82,7 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
             <img
               src={brand.logo}
               alt={brand.name}
-              className="w-24 h-24 object-contain drop-shadow-[0_0_30px_rgba(212,165,116,0.6)]"
+              className="w-24 h-24 object-contain drop-shadow-brand-lg"
             />
             
             {/* Sparkle stars */}

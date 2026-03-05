@@ -155,7 +155,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
         }}
       >
         <div className="absolute inset-0 bg-gradient-radial from-spark-primary/30 via-spark-primary/15 to-transparent blur-3xl" />
-        <div className="absolute inset-4 bg-gradient-radial from-amber-400/20 to-transparent blur-2xl" />
+        <div className="absolute inset-4 bg-gradient-radial from-spark-primary/20 to-transparent blur-2xl" />
       </div>
 
       {/* Header content - padded below safe area */}

@@ -67,8 +67,8 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'paymen
               />
               <defs>
                 <linearGradient id="processing-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#d4a574" />
-                  <stop offset="100%" stopColor="#d4a574" stopOpacity="0" />
+                  <stop offset="0%" stopColor="var(--spark-primary)" />
+                  <stop offset="100%" stopColor="var(--spark-primary)" stopOpacity="0" />
                 </linearGradient>
               </defs>
             </svg>
@@ -79,7 +79,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'paymen
             <img
               src={brand.logo}
               alt="Processing"
-              className="w-14 h-14 object-contain animate-pulse drop-shadow-[0_0_15px_rgba(212,165,116,0.4)]"
+              className="w-14 h-14 object-contain animate-pulse drop-shadow-brand"
               style={{ animationDuration: '2s' }}
             />
           )}

@@ -1,4 +1,4 @@
-import { brand } from '../config/brand';
+import { derived } from '../config/brand';
 import { logger, LogCategory } from './logger';
 import { getAllSessions, isStorageAvailable } from './logStorage';
 import JSZip from 'jszip';
@@ -13,22 +13,22 @@ export const getAllLogsAsZip = async (): Promise<Blob> => {
   const nowTimestamp = Math.floor(now.getTime() / 1000);
 
   const currentSessionHeader = [
-    brand.logExportTitle,
+    derived.logExportTitle,
     `Session: Current`,
     `Generated: ${now.toISOString()}`,
     '='.repeat(60),
     '',
   ].join('\n');
-  zip.file(`${nowTimestamp}_${brand.logPrefix}_current.txt`, currentSessionHeader + '\n' + getAllLogs());
+  zip.file(`${nowTimestamp}_${derived.logPrefix}_current.txt`, currentSessionHeader + '\n' + getAllLogs());
 
   if (isStorageAvailable()) {
     try {
       const sessions = await getAllSessions();
       for (const session of sessions) {
         const sessionTimestamp = Math.floor(new Date(session.startedAt).getTime() / 1000);
-        const filename = `${sessionTimestamp}_${brand.logPrefix}_session.txt`;
+        const filename = `${sessionTimestamp}_${derived.logPrefix}_session.txt`;
         const sessionHeader = [
-          brand.logExportTitle,
+          derived.logExportTitle,
           `Session ID: ${session.id}`,
           `Started: ${session.startedAt}`,
           session.endedAt ? `Ended: ${session.endedAt}` : 'Status: Active',
@@ -56,13 +56,13 @@ export const canShareFiles = (): boolean => {
 export const shareOrDownloadLogs = async (): Promise<void> => {
   const blob = await getAllLogsAsZip();
   const timestamp = Math.floor(Date.now() / 1000);
-  const filename = `${timestamp}_${brand.logPrefix}_logs.zip`;
+  const filename = `${timestamp}_${derived.logPrefix}_logs.zip`;
 
   if (canShareFiles()) {
     const file = new File([blob], filename, { type: 'application/zip' });
     if (navigator.canShare({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: brand.logShareTitle });
+        await navigator.share({ files: [file], title: derived.logShareTitle });
         return;
       } catch (e) {
         if ((e as Error).name === 'AbortError') return;

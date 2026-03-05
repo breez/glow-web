@@ -4,51 +4,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  
+
   <!-- PWA Meta Tags -->
-  <meta name="application-name" content="Glow" />
+  <meta name="application-name" content="%BRAND_NAME%" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Glow" />
+  <meta name="apple-mobile-web-app-title" content="%BRAND_NAME%" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#0a0a0f" />
-  <meta name="msapplication-TileColor" content="#0a0a0f" />
+  <meta name="theme-color" content="%BRAND_BG%" />
+  <meta name="msapplication-TileColor" content="%BRAND_BG%" />
   <meta name="msapplication-tap-highlight" content="no" />
-  
+
   <!-- Description -->
-  <meta name="description" content="Lightning fast Bitcoin payments powered by Breez SDK" />
-  
+  <meta name="description" content="%BRAND_DESCRIPTION%" />
+
   <!-- Icons -->
-  <link rel="icon" type="image/png" href="/icons/Glow_favicon.png" />
-  <link rel="apple-touch-icon" href="/icons/Glow-icon-maskable-192.png" />
-  <link rel="mask-icon" href="/icons/Glow-icon-maskable-192.png" color="#0a0a0f" />
-  
+  <link rel="icon" type="image/png" href="/icons/favicon.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-maskable-192.png" />
+  <link rel="mask-icon" href="/icons/icon-maskable-192.png" color="%BRAND_BG%" />
+
   <!-- Manifest -->
   <link rel="manifest" href="/manifest.json" />
-  
-  <!-- Preload logo for instant sidebar rendering -->
-  <link rel="preload" href="/assets/Glow_Logo.png" as="image" />
-  
-  <title>Glow</title>
 
-  <!-- Fonts - Plus Jakarta Sans for premium UI, JetBrains Mono for numbers -->
+  <!-- Preload logo for instant sidebar rendering -->
+  <link rel="preload" href="/assets/logo.png" as="image" />
+
+  <title>%BRAND_NAME%</title>
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  
+  <link href="%BRAND_FONTS_URL%" rel="stylesheet" />
+
   <!-- Initial loading styles -->
   <style>
     /* Prevent pull-to-refresh on iOS */
     html, body {
       overscroll-behavior-y: none;
-      background: #0a0a0f;
+      background: %BRAND_BG%;
     }
-    
+
     /* Initial splash screen - simple and clean */
     #splash {
       position: fixed;
       inset: 0;
-      background: #0a0a0f;
+      background: %BRAND_BG%;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -60,35 +60,35 @@
       opacity: 0;
       pointer-events: none;
     }
-    
+
     /* Elegant spinner */
     .splash-loader {
       width: 32px;
       height: 32px;
       position: relative;
     }
-    
+
     .splash-loader::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: 50%;
       border: 2px solid transparent;
-      border-top-color: #d4a574;
-      border-right-color: rgba(212, 165, 116, 0.3);
+      border-top-color: %BRAND_PRIMARY%;
+      border-right-color: %BRAND_PRIMARY_30%;
       animation: spin 1s cubic-bezier(0.5, 0.2, 0.5, 0.8) infinite;
     }
-    
+
     .splash-loader::after {
       content: '';
       position: absolute;
       inset: 6px;
       border-radius: 50%;
       border: 1.5px solid transparent;
-      border-top-color: rgba(212, 165, 116, 0.6);
+      border-top-color: %BRAND_PRIMARY_60%;
       animation: spin 0.6s cubic-bezier(0.5, 0.2, 0.5, 0.8) infinite reverse;
     }
-    
+
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -100,10 +100,10 @@
   <div id="splash">
     <div class="splash-loader"></div>
   </div>
-  
+
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
-  
+
   <!-- Service Worker Registration -->
   <script>
     if ('serviceWorker' in navigator) {

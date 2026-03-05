@@ -8,9 +8,9 @@
  * - Automatic cleanup of oldest sessions when limit reached
  */
 
-import { brand } from '../config/brand';
+import { derived } from '../config/brand';
 
-const DB_NAME = brand.logDbName;
+const DB_NAME = derived.logDbName;
 const DB_VERSION = 2; // Bumped version for schema change
 const STORE_NAME = 'sessions';
 const KEY_STORE_NAME = 'encryption';

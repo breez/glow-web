@@ -112,7 +112,7 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
           <img
             src={brand.logo}
             alt={brand.name}
-            className="w-16 h-16 object-contain drop-shadow-[0_0_20px_rgba(212,165,116,0.5)]"
+            className="w-16 h-16 object-contain drop-shadow-brand-lg"
           />
 
           {/* Sparkle stars */}

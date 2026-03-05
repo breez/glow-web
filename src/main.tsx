@@ -2,6 +2,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { logger, LogCategory } from '@/services/logger';
+import { injectTheme } from '@/config/theme';
+import { brand } from '@/config/brand';
 import initBreezSDK from '@breeztech/breez-sdk-spark';
 
 // Hide the initial splash screen - exported so App can call it when truly ready
@@ -14,6 +16,9 @@ export function hideSplash() {
 }
 
 async function init() {
+  // Inject brand theme CSS variables before any rendering
+  injectTheme();
+
   try {
     logger.info(LogCategory.UI, 'Initializing application');
     // Initialize WASM module
@@ -34,9 +39,9 @@ async function init() {
     });
     hideSplash();
     document.getElementById('root')!.innerHTML = `
-      <div style="color: #ef4444; padding: 20px; text-align: center; background: #0a0a0f; min-height: 100vh; display: flex; flex-direction: column; justify-content: center;">
+      <div style="color: ${brand.theme.colors.error}; padding: 20px; text-align: center; background: ${brand.theme.colors.background}; min-height: 100vh; display: flex; flex-direction: column; justify-content: center;">
         <h2>Failed to load application</h2>
-        <p>There was an error starting Glow. Please refresh and try again.</p>
+        <p>There was an error initializing. Please refresh and try again.</p>
       </div>
     `;
   }

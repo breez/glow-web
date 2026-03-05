@@ -9,39 +9,64 @@
 
 :root {
   /* ========================================
-     PRIMARY ACCENT - Change this one line!
+     CSS variable fallbacks (before injectTheme runs).
+     Actual values are set by src/config/theme.ts
+     from src/config/brand.ts at startup.
      ======================================== */
+
+  /* Primary accent */
   --spark-primary: #d4a574;
-  /* Soft Gold - warm, elegant, premium */
+  --spark-primary-rgb: 212 165 116;
   --spark-primary-light: #e8c9a8;
+  --spark-primary-light-rgb: 232 201 168;
   --glow-primary: rgba(212, 165, 116, 0.35);
 
-  /* Core colors */
+  /* Core backgrounds */
   --spark-void: #0a0a0f;
+  --spark-void-rgb: 10 10 15;
   --spark-dark: #0f0f18;
+  --spark-dark-rgb: 15 15 24;
   --spark-surface: #151520;
+  --spark-surface-rgb: 21 21 32;
   --spark-elevated: #1a1a28;
+  --spark-elevated-rgb: 26 26 40;
+
+  /* Borders */
   --spark-border: #252535;
+  --spark-border-rgb: 37 37 53;
   --spark-border-light: #35354a;
+  --spark-border-light-rgb: 53 53 74;
 
-  /* Secondary accents (for send/receive) */
+  /* Secondary accent */
   --spark-electric: #00d4ff;
+  --spark-electric-rgb: 0 212 255;
   --spark-electric-light: #7df3ff;
+  --spark-electric-light-rgb: 125 243 255;
 
-  /* Semantic colors */
+  /* Semantic */
   --spark-success: #10b981;
+  --spark-success-rgb: 16 185 129;
   --spark-error: #ef4444;
+  --spark-error-rgb: 239 68 68;
   --spark-warning: #d4a574;
+  --spark-warning-rgb: 212 165 116;
 
   /* Text */
   --spark-text-primary: #ffffff;
+  --spark-text-primary-rgb: 255 255 255;
   --spark-text-secondary: rgba(255, 255, 255, 0.7);
+  --spark-text-secondary-rgb: 255 255 255;
   --spark-text-muted: rgba(255, 255, 255, 0.4);
+  --spark-text-muted-rgb: 255 255 255;
 
   /* Glows */
   --glow-electric: rgba(0, 212, 255, 0.3);
   --glow-success: rgba(16, 185, 129, 0.4);
   --glow-error: rgba(239, 68, 68, 0.4);
+
+  /* Fonts */
+  --brand-font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --brand-font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 /* ============================================
@@ -66,7 +91,7 @@ body,
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: var(--brand-font-display);
   background: var(--spark-void);
   color: var(--spark-text-primary);
   -webkit-font-smoothing: antialiased;
@@ -134,18 +159,18 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: var(--brand-font-display);
   font-weight: 700;
   letter-spacing: -0.025em;
 }
 
 .font-display {
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: var(--brand-font-display);
 }
 
 /* Balance display - large clean numbers with background glow */
 .balance-display {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--brand-font-mono);
   font-weight: 600;
   font-size: 2.75rem;
   letter-spacing: -0.02em;
@@ -158,7 +183,7 @@ h6 {
    ============================================ */
 
 .button {
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: var(--brand-font-display);
   font-weight: 600;
   padding: 0.75em 2em;
   border-radius: 0.75rem;
@@ -221,7 +246,7 @@ h6 {
   gap: 0.5rem;
   padding: 0.875rem 1rem;
   border-radius: 0.75rem;
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: var(--brand-font-display);
   font-weight: 600;
   font-size: 0.9375rem;
   letter-spacing: 0.01em;
@@ -357,7 +382,7 @@ h6 {
 textarea,
 input,
 select {
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: var(--brand-font-display);
   background: var(--spark-dark);
   color: var(--spark-text-primary);
   border: 1px solid var(--spark-border);

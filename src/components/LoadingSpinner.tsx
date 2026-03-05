@@ -27,7 +27,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       data-testid="loading-indicator"
     >
       {/* Spinner container */}
-      <div className={`relative ${config.container}`}>
+      <div className={`relative ${config.container} text-spark-primary`}>
         {/* Outer ring */}
         <svg className="w-full h-full" viewBox="0 0 40 40">
           <circle
@@ -35,7 +35,8 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
             cy="20"
             r="17"
             fill="none"
-            stroke="rgba(212, 165, 116, 0.15)"
+            stroke="currentColor"
+            opacity={0.15}
             strokeWidth={config.outer}
           />
           <circle
@@ -43,7 +44,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
             cy="20"
             r="17"
             fill="none"
-            stroke="#d4a574"
+            stroke="currentColor"
             strokeWidth={config.outer}
             strokeLinecap="round"
             strokeDasharray="80 27"
@@ -65,7 +66,8 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
             cy="20"
             r="17"
             fill="none"
-            stroke="rgba(212, 165, 116, 0.4)"
+            stroke="currentColor"
+            opacity={0.4}
             strokeWidth={config.inner}
             strokeLinecap="round"
             strokeDasharray="40 67"
