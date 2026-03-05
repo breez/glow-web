@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, RenderOptions, RenderResult } from '@testing-library/react';
-import { ClientProvider } from '@/contexts/WalletContext';
+import { WalletProvider } from '@/contexts/WalletContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import type { BreezSdk } from '@breeztech/breez-sdk-spark';
 import { createMockClient } from '../mocks/mockWalletApi';
@@ -47,7 +47,7 @@ export function renderWithProviders(
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <ToastProvider>
-        <ClientProvider client={mockClient}>{children}</ClientProvider>
+        <WalletProvider client={mockClient}>{children}</WalletProvider>
       </ToastProvider>
     );
   }
@@ -69,7 +69,7 @@ export function createTestWrapper(client?: BreezSdk) {
 
   const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <ToastProvider>
-      <ClientProvider client={mockClient}>{children}</ClientProvider>
+      <WalletProvider client={mockClient}>{children}</WalletProvider>
     </ToastProvider>
   );
 

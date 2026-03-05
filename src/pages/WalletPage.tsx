@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { useClient } from '../contexts/WalletContext';
+import { useWallet } from '../contexts/WalletContext';
 import { logger, LogCategory } from '@/services/logger';
 import CollapsingWalletHeader from '../components/CollapsingWalletHeader';
 import SideMenu from '../components/SideMenu';
@@ -48,7 +48,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   onOpenBuyBitcoin,
   onDepositChanged
 }) => {
-  const client = useClient();
+  const wallet = useWallet();
   const [scrollProgress, setScrollProgress] = useState<number>(0);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
   const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false);
@@ -142,7 +142,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
     if (!data) return;
 
     try {
-      const parseResult = await client.parse(data);
+      const parseResult = await wallet.parse(data);
       logger.debug(LogCategory.UI, 'Parsed QR result', {
         resultType: parseResult.type,
       });

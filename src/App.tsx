@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClientProvider } from './contexts/WalletContext';
+import { WalletProvider } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
 import NotificationPrompt from './components/NotificationPrompt';
@@ -7,7 +7,7 @@ import InstallPrompt from './components/InstallPrompt';
 import StagingGate from './components/StagingGate';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
-import { useBreezClient } from './hooks/useBreezClient';
+import { useBreezSdk } from './hooks/useBreezSdk';
 
 import HomePage from './pages/HomePage';
 import WalletPage from './pages/WalletPage';
@@ -28,29 +28,29 @@ const AppContent: React.FC = () => {
 
   useIOSViewportFix();
 
-  const client = useBreezClient(showToast);
+  const sdk = useBreezSdk(showToast);
 
   // Auto-navigate to wallet when SDK reconnects from saved mnemonic
   useEffect(() => {
-    if (client.isConnected && currentScreen === 'home') {
+    if (sdk.isConnected && currentScreen === 'home') {
       setCurrentScreen('wallet');
     }
-  }, [client.isConnected, currentScreen]);
+  }, [sdk.isConnected, currentScreen]);
 
   // Navigate to wallet after successful connect
   const handleConnect = async (mnemonic: string, restore: boolean) => {
-    await client.connectWallet(mnemonic, restore);
+    await sdk.connectWallet(mnemonic, restore);
     setCurrentScreen('wallet');
   };
 
   const handleLogout = async () => {
-    await client.handleLogout();
+    await sdk.handleLogout();
     setCurrentScreen('home');
   };
 
   // Render screens
   const renderCurrentScreen = () => {
-    if (client.isLoading && currentScreen !== 'restore') {
+    if (sdk.isLoading && currentScreen !== 'restore') {
       return (
         <div className="absolute inset-0 bg-spark-void/95 backdrop-blur-sm z-50 flex items-center justify-center">
           <LoadingSpinner />
@@ -79,7 +79,7 @@ const AppContent: React.FC = () => {
         return (
           <SettingsPage
             onBack={() => setCurrentScreen('wallet')}
-            config={client.config}
+            config={sdk.config}
             onOpenFiatCurrencies={() => setCurrentScreen('fiatCurrencies')}
           />
         );
@@ -99,8 +99,8 @@ const AppContent: React.FC = () => {
           <RestorePage
             onConnect={(mnemonic) => handleConnect(mnemonic, true)}
             onBack={() => setCurrentScreen('home')}
-            onClearError={client.clearError}
-            isLoading={client.isLoading}
+            onClearError={sdk.clearError}
+            isLoading={sdk.isLoading}
           />
         );
 
@@ -109,33 +109,33 @@ const AppContent: React.FC = () => {
           <GeneratePage
             onMnemonicConfirmed={(mnemonic) => handleConnect(mnemonic, false)}
             onBack={() => setCurrentScreen('home')}
-            error={client.error}
-            onClearError={client.clearError}
+            error={sdk.error}
+            onClearError={sdk.clearError}
           />
         );
 
       case 'wallet':
         return (
           <WalletPage
-            walletInfo={client.walletInfo}
-            transactions={client.transactions}
-            unclaimedDeposits={client.unclaimedDeposits}
-            fiatRates={client.fiatRates}
-            fiatCurrencies={client.fiatCurrencies}
-            refreshWalletData={client.refreshWalletData}
-            isSyncing={client.isSyncing}
-            error={client.error}
-            onClearError={client.clearError}
+            walletInfo={sdk.walletInfo}
+            transactions={sdk.transactions}
+            unclaimedDeposits={sdk.unclaimedDeposits}
+            fiatRates={sdk.fiatRates}
+            fiatCurrencies={sdk.fiatCurrencies}
+            refreshWalletData={sdk.refreshWalletData}
+            isSyncing={sdk.isSyncing}
+            error={sdk.error}
+            onClearError={sdk.clearError}
             onLogout={handleLogout}
-            hasRejectedDeposits={client.hasRejectedDeposits}
+            hasRejectedDeposits={sdk.hasRejectedDeposits}
             onOpenGetRefund={(source?: 'menu' | 'icon') => {
               setRefundAnimationDirection(source === 'icon' ? 'up' : 'left');
               setCurrentScreen('getRefund');
             }}
             onOpenSettings={() => setCurrentScreen('settings')}
             onOpenBackup={() => setCurrentScreen('backup')}
-            onOpenBuyBitcoin={client.handleBuyBitcoin}
-            onDepositChanged={client.fetchUnclaimedDeposits}
+            onOpenBuyBitcoin={sdk.handleBuyBitcoin}
+            onDepositChanged={sdk.fetchUnclaimedDeposits}
           />
         );
 
@@ -145,17 +145,17 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <ClientProvider client={client.sdk}>
+    <WalletProvider client={sdk.sdk}>
       {renderCurrentScreen()}
-      {client.celebrationAmount !== null && (
+      {sdk.celebrationAmount !== null && (
         <PaymentReceivedCelebration
-          amount={client.celebrationAmount}
-          onClose={client.dismissCelebration}
+          amount={sdk.celebrationAmount}
+          onClose={sdk.dismissCelebration}
         />
       )}
-      {client.isConnected && <NotificationPrompt />}
+      {sdk.isConnected && <NotificationPrompt />}
       <InstallPrompt />
-    </ClientProvider>
+    </WalletProvider>
   );
 };
 

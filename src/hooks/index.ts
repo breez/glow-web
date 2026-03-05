@@ -4,5 +4,5 @@ export { useAnimatedNumber } from './useAnimatedNumber';
 
 export { useLatest } from './useLatest';
 
-export { useBreezClient } from './useBreezClient';
-export type { BreezClientState, BreezClientActions } from './useBreezClient';
+export { useBreezSdk } from './useBreezSdk';
+export type { BreezSdkState, BreezSdkActions } from './useBreezSdk';

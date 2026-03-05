@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useClient } from '../../../contexts/WalletContext';
+import { useWallet } from '../../../contexts/WalletContext';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import type { PaymentMethod, ReceiveStep } from '../../../types/domain';
@@ -29,7 +29,7 @@ export interface UseReceivePaymentReturn {
 }
 
 export function useReceivePayment(): UseReceivePaymentReturn {
-  const client = useClient();
+  const wallet = useWallet();
 
   const [activeTab, setActiveTab] = useState<PaymentMethod>('lightning');
   const [currentStep, setCurrentStep] = useState<ReceiveStep>('loading_limits');
@@ -65,7 +65,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     if (sparkAddress || sparkLoading) return;
     setSparkLoading(true);
     try {
-      const receiveResponse = await client.receivePayment({
+      const receiveResponse = await wallet.receivePayment({
         paymentMethod: { type: 'sparkAddress' },
       });
       setSparkAddress(receiveResponse.paymentRequest);
@@ -75,13 +75,13 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     } finally {
       setSparkLoading(false);
     }
-  }, [client, sparkAddress, sparkLoading]);
+  }, [wallet, sparkAddress, sparkLoading]);
 
   const generateBitcoinAddress = useCallback(async () => {
     if (bitcoinAddress || bitcoinLoading) return;
     setBitcoinLoading(true);
     try {
-      const receiveResponse = await client.receivePayment({
+      const receiveResponse = await wallet.receivePayment({
         paymentMethod: { type: 'bitcoinAddress' },
       });
       setBitcoinAddress(receiveResponse.paymentRequest);
@@ -91,7 +91,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     } finally {
       setBitcoinLoading(false);
     }
-  }, [client, bitcoinAddress, bitcoinLoading]);
+  }, [wallet, bitcoinAddress, bitcoinLoading]);
 
   const generateBolt11Invoice = useCallback(async () => {
     logger.info(LogCategory.PAYMENT, 'Starting invoice generation', { amount });
@@ -111,7 +111,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       }
 
       logger.debug(LogCategory.PAYMENT, 'Calling wallet.receivePayment for bolt11 invoice', { amountSats });
-      const receiveResponse = await client.receivePayment({
+      const receiveResponse = await wallet.receivePayment({
         paymentMethod: {
           type: 'bolt11Invoice',
           description,
@@ -134,7 +134,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       setIsLoading(false);
       logger.debug(LogCategory.PAYMENT, 'Receive invoice generation process finished');
     }
-  }, [client, amount, description, showAmountPanel]);
+  }, [wallet, amount, description, showAmountPanel]);
 
   const handleTabChange = useCallback((tab: PaymentMethod, loadLightningAddress: () => void) => {
     setActiveTab(tab);

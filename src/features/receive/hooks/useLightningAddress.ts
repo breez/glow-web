@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
-import { useClient } from '../../../contexts/WalletContext';
+import { useWallet } from '../../../contexts/WalletContext';
 import { generateRandomName } from '../../../utils/randomName';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
@@ -24,7 +24,7 @@ export interface UseLightningAddress {
 const UNSUPPORTED_MESSAGE = 'Lightning addresses are not available in this environment.';
 
 export const useLightningAddress = (): UseLightningAddress => {
-  const client = useClient();
+  const wallet = useWallet();
 
   const [address, setAddress] = useState<LightningAddressInfo | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -57,17 +57,17 @@ export const useLightningAddress = (): UseLightningAddress => {
 
     setIsLoading(true);
     try {
-      let addr = await client.getLightningAddress();
+      let addr = await wallet.getLightningAddress();
       if (!addr) {
         // Generate a base username, then try with random 4-digit suffixes on collision
         const baseName = generateRandomName();
         for (let attempt = 0; attempt < 3; attempt++) {
           const suffix = attempt === 0 ? '' : String(Math.floor(1000 + Math.random() * 9000));
           const username = baseName + suffix;
-          const isAvailable = await client.checkLightningAddressAvailable({ username });
+          const isAvailable = await wallet.checkLightningAddressAvailable({ username });
           if (isAvailable) {
-            await client.registerLightningAddress({ username, description: `Pay to ${username}@breez.tips` });
-            addr = await client.getLightningAddress();
+            await wallet.registerLightningAddress({ username, description: `Pay to ${username}@breez.tips` });
+            addr = await wallet.getLightningAddress();
             break;
           }
         }
@@ -85,7 +85,7 @@ export const useLightningAddress = (): UseLightningAddress => {
     } finally {
       setIsLoading(false);
     }
-  }, [client, isSupported, markUnsupported, supportMessage]);
+  }, [wallet, isSupported, markUnsupported, supportMessage]);
 
   const beginEdit = useCallback((currentAddress?: LightningAddressInfo | null) => {
     if (!isSupported) {
@@ -119,15 +119,15 @@ export const useLightningAddress = (): UseLightningAddress => {
     setError(null);
 
     try {
-      const isAvailable = await client.checkLightningAddressAvailable({ username });
+      const isAvailable = await wallet.checkLightningAddressAvailable({ username });
       if (!isAvailable) {
         setError('This username is not available');
         setIsLoading(false);
         return;
       }
 
-      await client.registerLightningAddress({ username, description: `Pay to ${username}@breez.tips` });
-      const actualInfo = await client.getLightningAddress();
+      await wallet.registerLightningAddress({ username, description: `Pay to ${username}@breez.tips` });
+      const actualInfo = await wallet.getLightningAddress();
       setAddress(actualInfo ?? null);
       setIsEditing(false);
       setEditValue('');
@@ -143,7 +143,7 @@ export const useLightningAddress = (): UseLightningAddress => {
     } finally {
       setIsLoading(false);
     }
-  }, [editValue, client, isSupported, markUnsupported]);
+  }, [editValue, wallet, isSupported, markUnsupported]);
 
   const reset = useCallback(() => {
     setIsEditing(false);

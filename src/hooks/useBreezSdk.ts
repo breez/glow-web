@@ -48,7 +48,7 @@ const clearMnemonic = () => localStorage.removeItem(MNEMONIC_KEY);
 // Types
 // ============================================
 
-export interface BreezClientState {
+export interface BreezSdkState {
   sdk: BreezSdk | null;
   isConnected: boolean;
   isLoading: boolean;
@@ -64,7 +64,7 @@ export interface BreezClientState {
   celebrationAmount: number | null;
 }
 
-export interface BreezClientActions {
+export interface BreezSdkActions {
   connectWallet: (mnemonic: string, restore: boolean, overrideNetwork?: Network) => Promise<void>;
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
   fetchUnclaimedDeposits: () => Promise<void>;
@@ -78,9 +78,9 @@ export interface BreezClientActions {
 // Hook
 // ============================================
 
-export function useBreezClient(
+export function useBreezSdk(
   showToast: (type: 'success' | 'error' | 'info', title: string, message?: string) => void,
-): BreezClientState & BreezClientActions {
+): BreezSdkState & BreezSdkActions {
   // Core state
   const [sdk, setSdk] = useState<BreezSdk | null>(null);
   const [isConnected, setIsConnected] = useState(false);

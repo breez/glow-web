@@ -20,27 +20,27 @@ Types:   ~/Documents/GitHub/spark-sdk/packages/wasm/bundler/breez_sdk_spark_wasm
 The app uses `@breeztech/breez-sdk-spark` for all wallet functionality. The SDK is a WASM module loaded at startup in `src/main.tsx`.
 
 **Architecture — direct SDK pattern (no wrappers):**
-- `src/hooks/useBreezClient.ts` — owns the full SDK lifecycle: connect, disconnect, event listeners, mnemonic storage, data fetching
-- `src/contexts/WalletContext.tsx` — provides `ClientProvider` (React context) and `useClient()` hook
-- `src/App.tsx` — wraps the app in `<ClientProvider client={client.sdk}>`
-- Components call `useClient()` to get the `BreezSdk` instance and call SDK methods directly
+- `src/hooks/useBreezSdk.ts` — owns the full SDK lifecycle: connect, disconnect, event listeners, mnemonic storage, data fetching
+- `src/contexts/WalletContext.tsx` — provides `WalletProvider` (React context) and `useWallet()` hook
+- `src/App.tsx` — wraps the app in `<WalletProvider client={sdk.sdk}>`
+- Components call `useWallet()` to get the `BreezSdk` instance and call SDK methods directly
 
 **How it works:**
 ```tsx
 // In any component rendered after wallet connection:
-import { useClient } from '@/contexts/WalletContext';
+import { useWallet } from '@/contexts/WalletContext';
 
-const client = useClient(); // Returns BreezSdk — guaranteed non-null
+const wallet = useWallet(); // Returns BreezSdk — guaranteed non-null
 
 // Call SDK methods directly — no wrappers
-const info = await client.getInfo({});
-const parsed = await client.parse(input);
-await client.sendPayment(preparedPayment);
+const info = await wallet.getInfo({});
+const parsed = await wallet.parse(input);
+await wallet.sendPayment(preparedPayment);
 ```
 
 **Key files:**
-- `src/hooks/useBreezClient.ts` — SDK lifecycle, state, event handling
-- `src/contexts/WalletContext.tsx` — ClientProvider + useClient()
+- `src/hooks/useBreezSdk.ts` — SDK lifecycle, state, event handling
+- `src/contexts/WalletContext.tsx` — WalletProvider + useWallet()
 - `src/main.tsx` — WASM init + app bootstrap
 
 ## Local SDK Development
@@ -110,8 +110,8 @@ grep "methodName" ~/Documents/GitHub/spark-sdk/packages/wasm/bundler/breez_sdk_s
 ### Adding New SDK Methods
 Just call them directly — no wrapper files to update:
 ```tsx
-const client = useClient();
-const result = await client.newSdkMethod({ param: value });
+const wallet = useWallet();
+const result = await wallet.newSdkMethod({ param: value });
 ```
 
 ### Adding Side Menu Items

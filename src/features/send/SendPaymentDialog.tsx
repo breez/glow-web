@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { DialogHeader, BottomSheetContainer, BottomSheetCard } from '../../components/ui';
-import { useClient } from '../../contexts/WalletContext';
+import { useWallet } from '../../contexts/WalletContext';
 
 import InputStep from './steps/InputStep';
 import Bolt11Workflow from './workflows/Bolt11Workflow';
@@ -26,7 +26,7 @@ interface SendPaymentDialogProps {
 }
 
 const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, initialPaymentInput, onScanQr }) => {
-  const client = useClient();
+  const wallet = useWallet();
   const send = useSendPayment();
 
   // Reset state when dialog opens, or process initial data
@@ -125,10 +125,10 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 onBack={() => send.setCurrentStep('input')}
                 onRun={send.handleRun}
                 onPrepare={async (prepareRequest: PrepareLnurlPayRequest) => {
-                  return await client.prepareLnurlPay(prepareRequest);
+                  return await wallet.prepareLnurlPay(prepareRequest);
                 }}
                 onPay={async (prepareResponse) => {
-                  await client.lnurlPay({ prepareResponse });
+                  await wallet.lnurlPay({ prepareResponse });
                 }}
               />
             )}
@@ -138,7 +138,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 onBack={() => send.setCurrentStep('input')}
                 onRun={send.handleRun}
                 onAuth={async (requestData) => {
-                  return await client.lnurlAuth(requestData);
+                  return await wallet.lnurlAuth(requestData);
                 }}
               />
             )}

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
 import { getSettings, saveSettings, UserSettings } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
-import { useClient } from '@/contexts/WalletContext';
+import { useWallet } from '@/contexts/WalletContext';
 import {
   isNotificationSupported,
   getNotificationPermission,
@@ -26,7 +26,7 @@ interface SettingsPageProps {
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatCurrencies }) => {
-  const client = useClient();
+  const wallet = useWallet();
   const [isDevMode, setIsDevMode] = useState<boolean>(false);
   const [devTapCount, setDevTapCount] = useState(0);
   const [selectedNetwork, setSelectedNetwork] = useState<Network>('mainnet');
@@ -97,7 +97,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     (async () => {
       try {
         setIsLoadingUserSettings(true);
-        const us = await client.getUserSettings();
+        const us = await wallet.getUserSettings();
         setSparkPrivateModeEnabled(us.sparkPrivateModeEnabled !== false);
       } catch (e) {
         logger.warn(LogCategory.SDK, 'Failed to load user settings from SDK', {
@@ -107,7 +107,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
         setIsLoadingUserSettings(false);
       }
     })();
-  }, [config, client]);
+  }, [config, wallet]);
 
   const handleEnableNotifications = async () => {
     setIsRequestingPermission(true);
@@ -185,7 +185,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
       saveSettings(updated);
     }
     try {
-      await client.updateUserSettings({ sparkPrivateModeEnabled });
+      await wallet.updateUserSettings({ sparkPrivateModeEnabled });
     } catch (e) {
       logger.warn(LogCategory.SDK, 'Failed to update SDK user settings', {
         error: e instanceof Error ? e.message : String(e),

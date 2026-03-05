@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useClient } from '../contexts/WalletContext';
+import { useWallet } from '../contexts/WalletContext';
 import type { DepositInfo, MaxFee } from '@breeztech/breez-sdk-spark';
 import { BottomSheetContainer, BottomSheetCard, DialogHeader, PrimaryButton, SecondaryButton, PaymentInfoCard, CollapsibleCodeField } from '../components/ui';
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
@@ -18,7 +18,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   onBack,
   onChanged,
 }) => {
-  const client = useClient();
+  const wallet = useWallet();
 
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [claimError, setClaimError] = useState<string | null>(null);
@@ -57,7 +57,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
     setIsProcessing(true);
     try {
       const maxFee: MaxFee = { type: 'fixed', amount: requiredFeeSats };
-      await client.claimDeposit({ txid: deposit.txid, vout: deposit.vout, maxFee });
+      await wallet.claimDeposit({ txid: deposit.txid, vout: deposit.vout, maxFee });
       // Remove from rejected list if it was there
       removeRejectedDeposit(deposit.txid, deposit.vout);
       onChanged?.();

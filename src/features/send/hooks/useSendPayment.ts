@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { PrepareSendPaymentResponse, FeePolicy, SendPaymentOptions } from '@breeztech/breez-sdk-spark';
 import type { SendInput } from '@/types/domain';
-import { useClient } from '../../../contexts/WalletContext';
+import { useWallet } from '../../../contexts/WalletContext';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 
@@ -28,7 +28,7 @@ export interface UseSendPaymentReturn {
 }
 
 export function useSendPayment(): UseSendPaymentReturn {
-  const client = useClient();
+  const wallet = useWallet();
 
   const [currentStep, setCurrentStep] = useState<SendStep>('input');
   const [paymentInput, setPaymentInput] = useState<SendInput | null>(null);
@@ -41,10 +41,10 @@ export function useSendPayment(): UseSendPaymentReturn {
   const [feesIncluded, setFeesIncluded] = useState(false);
 
   const fetchBalance = useCallback(() => {
-    client.getInfo({}).then(info => {
+    wallet.getInfo({}).then(info => {
       if (info) setBalanceSats(info.balanceSats);
     }).catch(() => { /* balance fetch is best-effort */ });
-  }, [client]);
+  }, [wallet]);
 
   const prepareSend = useCallback(async (paymentRequest: string, amountSats: number, feePolicy?: FeePolicy) => {
     if (amountSats <= 0) {
@@ -54,7 +54,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await client.prepareSendPayment({ paymentRequest, amount: BigInt(amountSats), feePolicy });
+      const response = await wallet.prepareSendPayment({ paymentRequest, amount: BigInt(amountSats), feePolicy });
       setPrepareResponse(response);
       setCurrentStep('workflow');
     } catch (err) {
@@ -64,7 +64,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [client]);
+  }, [wallet]);
 
   const processInput = useCallback(async (input: string | null = null) => {
     const currentInput = (input || paymentInput?.rawInput)?.trim();
@@ -77,7 +77,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     setError(null);
 
     try {
-      const parseResult = await client.parse(currentInput);
+      const parseResult = await wallet.parse(currentInput);
       const parsed: SendInput = { rawInput: currentInput.trim(), parsedInput: parseResult };
       setPaymentInput(parsed);
 
@@ -106,7 +106,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [client, paymentInput?.rawInput, prepareSend, fetchBalance]);
+  }, [wallet, paymentInput?.rawInput, prepareSend, fetchBalance]);
 
   const onAmountNext = useCallback(async (amountNum: number, includeFees?: boolean) => {
     if (!amountNum || amountNum <= 0) {
@@ -128,7 +128,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     setIsLoading(true);
     setError(null);
     try {
-      await client.sendPayment({ prepareResponse, options });
+      await wallet.sendPayment({ prepareResponse, options });
       setPaymentResult('success');
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Payment failed', { error: formatError(err) });
@@ -138,7 +138,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setIsLoading(false);
       setCurrentStep('result');
     }
-  }, [client, prepareResponse]);
+  }, [wallet, prepareResponse]);
 
   const handleRun = useCallback(async (runner: () => Promise<void>) => {
     setCurrentStep('processing');
