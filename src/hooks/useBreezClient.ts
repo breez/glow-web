@@ -1,9 +1,20 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Config, GetInfoResponse, Network, Payment, SdkEvent, Rate, FiatCurrency, DepositInfo } from '@breeztech/breez-sdk-spark';
-import { useWallet } from '../contexts/WalletContext';
+import type {
+  BreezSdk,
+  Config,
+  GetInfoResponse,
+  Network,
+  Payment,
+  SdkEvent,
+  Rate,
+  FiatCurrency,
+  DepositInfo,
+  LogEntry,
+} from '@breeztech/breez-sdk-spark';
+import { connect, initLogging } from '@breeztech/breez-sdk-spark';
 import { useLatest } from './useLatest';
 import { buildConnectConfig } from './buildConnectConfig';
-import { logger, LogCategory } from '../services/logger';
+import { logger, LogCategory, logSdkMessage } from '../services/logger';
 import { formatError } from '../utils/formatError';
 import { isDepositRejected } from '../services/depositState';
 import { hideSplash } from '../main';
@@ -13,10 +24,32 @@ import {
 } from '../services/notificationService';
 
 // ============================================
+// SDK logging (initialized once)
+// ============================================
+
+let sdkLoggerInitialized = false;
+
+function initSdkLogging() {
+  if (sdkLoggerInitialized) return;
+  sdkLoggerInitialized = true;
+  initLogging({ log: (entry: LogEntry) => logSdkMessage(entry.level, entry.line) });
+}
+
+// ============================================
+// Mnemonic storage (localStorage)
+// ============================================
+
+const MNEMONIC_KEY = 'walletMnemonic';
+const saveMnemonic = (m: string) => localStorage.setItem(MNEMONIC_KEY, m);
+const getSavedMnemonic = () => localStorage.getItem(MNEMONIC_KEY);
+const clearMnemonic = () => localStorage.removeItem(MNEMONIC_KEY);
+
+// ============================================
 // Types
 // ============================================
 
 export interface BreezClientState {
+  sdk: BreezSdk | null;
   isConnected: boolean;
   isLoading: boolean;
   isSyncing: boolean;
@@ -48,9 +81,8 @@ export interface BreezClientActions {
 export function useBreezClient(
   showToast: (type: 'success' | 'error' | 'info', title: string, message?: string) => void,
 ): BreezClientState & BreezClientActions {
-  const wallet = useWallet();
-
   // Core state
+  const [sdk, setSdk] = useState<BreezSdk | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -68,36 +100,41 @@ export function useBreezClient(
   const isInitialLoadRef = useRef(true);
   const eventListenerIdRef = useRef<string | null>(null);
   const shownPaymentIdsRef = useRef<Set<string>>(new Set());
+  const sdkRef = useLatest(sdk);
 
   // Stable refs for callbacks used in event handler
   const showToastRef = useLatest(showToast);
   const isSyncingRef = useLatest(isSyncing);
 
   // ----------------------------------------
-  // Data fetching
+  // Data fetching (uses sdkRef for latest SDK)
   // ----------------------------------------
 
   const refreshWalletData = useCallback(async (showLoading = true) => {
-    if (!isConnected) return;
+    const s = sdkRef.current;
+    if (!s) return;
     try {
       if (showLoading) setIsLoading(true);
       const [info, txns] = await Promise.all([
-        wallet.getWalletInfo(),
-        wallet.getTransactions(),
+        s.getInfo({}),
+        s.listPayments({ offset: 0, limit: 100 }),
       ]);
       setWalletInfo(info);
-      setTransactions(txns);
+      setTransactions(txns.payments);
     } catch (e) {
       logger.error(LogCategory.SDK, 'Error refreshing wallet data', { error: formatError(e) });
       setError('Failed to refresh wallet data.');
     } finally {
       if (showLoading) setIsLoading(false);
     }
-  }, [isConnected, wallet]);
+  }, [sdkRef]);
 
   const fetchUnclaimedDeposits = useCallback(async () => {
+    const s = sdkRef.current;
+    if (!s) return;
     try {
-      const deposits = await wallet.unclaimedDeposits();
+      const result = await s.listUnclaimedDeposits({});
+      const deposits = result.deposits;
       setUnclaimedDeposits(deposits);
       setHasRejectedDeposits(deposits.some(d => isDepositRejected(d.txid, d.vout)));
     } catch (e) {
@@ -105,20 +142,22 @@ export function useBreezClient(
       setUnclaimedDeposits([]);
       setHasRejectedDeposits(false);
     }
-  }, [wallet]);
+  }, [sdkRef]);
 
   const fetchFiatData = useCallback(async () => {
+    const s = sdkRef.current;
+    if (!s) return;
     try {
-      const [rates, currencies] = await Promise.all([
-        wallet.listFiatRates(),
-        wallet.listFiatCurrencies(),
+      const [ratesResult, currenciesResult] = await Promise.all([
+        s.listFiatRates(),
+        s.listFiatCurrencies(),
       ]);
-      setFiatRates(rates);
-      setFiatCurrencies(currencies);
+      setFiatRates(ratesResult.rates);
+      setFiatCurrencies(currenciesResult.currencies);
     } catch (e) {
       logger.warn(LogCategory.SDK, 'Failed to fetch fiat data', { error: formatError(e) });
     }
-  }, [wallet]);
+  }, [sdkRef]);
 
   // ----------------------------------------
   // SDK event handler
@@ -170,9 +209,10 @@ export function useBreezClient(
   // ----------------------------------------
 
   const connectWallet = useCallback(async (mnemonic: string, restore: boolean, overrideNetwork?: Network) => {
+    let connectedSdk: BreezSdk | undefined;
     try {
       logger.info(LogCategory.SDK, 'Initiating wallet connection', { restore });
-      if (wallet.connected()) {
+      if (sdk) {
         logger.debug(LogCategory.SDK, 'Wallet already connected; skipping');
         return;
       }
@@ -185,62 +225,106 @@ export function useBreezClient(
         showToast('error', 'Missing API Key', 'Please add VITE_BREEZ_API_KEY to your .env file');
       }
 
+      initSdkLogging();
+
       const cfg = buildConnectConfig(overrideNetwork);
       setConfig(cfg);
-      await wallet.initWallet(mnemonic, cfg);
 
+      connectedSdk = await connect({
+        config: cfg,
+        seed: { type: 'mnemonic', mnemonic },
+        storageDir: 'spark-wallet-example',
+      });
+      setSdk(connectedSdk);
+
+      logger.sdkInitialized();
+      logger.authSuccess('mnemonic');
       logger.info(LogCategory.SDK, 'Wallet connected successfully');
-      wallet.saveMnemonic(mnemonic);
+      saveMnemonic(mnemonic);
 
       const [info, txns] = await Promise.all([
-        wallet.getWalletInfo(),
-        wallet.getTransactions(),
+        connectedSdk.getInfo({}),
+        connectedSdk.listPayments({ offset: 0, limit: 100 }),
       ]);
       setWalletInfo(info);
-      setTransactions(txns);
+      setTransactions(txns.payments);
 
       setIsConnected(true);
-      await fetchUnclaimedDeposits();
+
+      // Fetch unclaimed deposits using the new SDK instance directly
+      try {
+        const result = await connectedSdk.listUnclaimedDeposits({});
+        const deposits = result.deposits;
+        setUnclaimedDeposits(deposits);
+        setHasRejectedDeposits(deposits.some(d => isDepositRejected(d.txid, d.vout)));
+      } catch (e) {
+        logger.warn(LogCategory.SDK, 'Failed to fetch unclaimed deposits', { error: formatError(e) });
+      }
+
       setIsLoading(false);
     } catch (e) {
-      logger.error(LogCategory.SDK, 'Error connecting wallet', { error: formatError(e) });
+      const errorMsg = formatError(e);
+      logger.error(LogCategory.SDK, 'Error connecting wallet', { error: errorMsg });
+      logger.authFailure('mnemonic', errorMsg);
+
+      // If SDK connected but a subsequent step failed, disconnect to avoid leaked instance
+      if (connectedSdk) {
+        try { await connectedSdk.disconnect(); } catch {}
+        setSdk(null);
+      }
+
       setError('Failed to connect wallet. Please check your mnemonic and try again.');
       setIsSyncing(false);
       setIsLoading(false);
       setConfig(null);
       throw e;
     }
-  }, [wallet, showToast, fetchUnclaimedDeposits]);
+  }, [sdk, showToast]);
 
   const handleLogout = useCallback(async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      if (isConnected) await wallet.disconnect();
-      await wallet.endLogSession();
-      wallet.clearMnemonic();
-
-      setIsConnected(false);
-      setWalletInfo(null);
-      setTransactions([]);
-      setConfig(null);
-      showToast('success', 'Successfully logged out');
+      if (sdk) {
+        await sdk.disconnect();
+      }
     } catch (e) {
-      logger.error(LogCategory.SESSION, 'Logout failed', { error: formatError(e) });
-      setError('Failed to log out properly. Please try again.');
-    } finally {
-      setIsLoading(false);
+      logger.error(LogCategory.SDK, 'SDK disconnect failed', { error: formatError(e) });
     }
-  }, [isConnected, wallet, showToast]);
+    try {
+      await logger.endSession();
+    } catch (e) {
+      logger.warn(LogCategory.SESSION, 'Failed to end log session', { error: formatError(e) });
+    }
+
+    // Always reset all state — even if disconnect threw
+    setSdk(null);
+    clearMnemonic();
+    shownPaymentIdsRef.current.clear();
+    setIsConnected(false);
+    setIsSyncing(false);
+    setWalletInfo(null);
+    setTransactions([]);
+    setUnclaimedDeposits([]);
+    setFiatRates([]);
+    setFiatCurrencies([]);
+    setConfig(null);
+    setError(null);
+    setHasRejectedDeposits(false);
+    setCelebrationAmount(null);
+    setIsLoading(false);
+    showToast('success', 'Successfully logged out');
+  }, [sdk, showToast]);
 
   const handleBuyBitcoin = useCallback(async () => {
+    if (!sdk) return;
     try {
-      const response = await wallet.buyBitcoin({});
+      const response = await sdk.buyBitcoin({});
       window.open(response.url, '_blank', 'noopener,noreferrer');
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to open Buy Bitcoin', { error: formatError(e) });
       showToast('error', 'Buy Bitcoin', 'Failed to open MoonPay. Please try again.');
     }
-  }, [wallet, showToast]);
+  }, [sdk, showToast]);
 
   // ----------------------------------------
   // Effects
@@ -255,12 +339,12 @@ export function useBreezClient(
 
   // Auto-reconnect on mount
   useEffect(() => {
-    wallet.initLogSession().catch((e) => {
+    logger.initSession().catch((e) => {
       logger.warn(LogCategory.SESSION, 'Failed to initialize log session', { error: formatError(e) });
     });
 
     const checkForExistingWallet = async () => {
-      const savedMnemonic = wallet.getSavedMnemonic();
+      const savedMnemonic = getSavedMnemonic();
       if (savedMnemonic) {
         try {
           setIsLoading(true);
@@ -268,7 +352,7 @@ export function useBreezClient(
         } catch (e) {
           logger.error(LogCategory.SDK, 'Failed to connect with saved mnemonic', { error: formatError(e) });
           setError('Failed to connect with saved mnemonic. Please try again.');
-          wallet.clearMnemonic();
+          clearMnemonic();
           setIsLoading(false);
         }
       } else {
@@ -287,8 +371,8 @@ export function useBreezClient(
 
   // Event listener lifecycle
   useEffect(() => {
-    if (isConnected) {
-      wallet.addEventListener(handleSdkEvent)
+    if (isConnected && sdk) {
+      sdk.addEventListener({ onEvent: handleSdkEvent })
         .then(id => {
           eventListenerIdRef.current = id;
           logger.debug(LogCategory.SDK, 'Registered wallet event listener', { listenerId: id });
@@ -300,14 +384,14 @@ export function useBreezClient(
 
       return () => {
         if (eventListenerIdRef.current) {
-          wallet.removeEventListener(eventListenerIdRef.current).catch(e => {
+          sdk.removeEventListener(eventListenerIdRef.current).catch(e => {
             logger.error(LogCategory.SDK, 'Error removing wallet event listener', { error: formatError(e) });
           });
           eventListenerIdRef.current = null;
         }
       };
     }
-  }, [isConnected, handleSdkEvent, wallet]);
+  }, [isConnected, sdk, handleSdkEvent]);
 
   // Periodic fiat rate fetching
   useEffect(() => {
@@ -320,6 +404,7 @@ export function useBreezClient(
 
   return {
     // State
+    sdk,
     isConnected,
     isLoading,
     isSyncing,
