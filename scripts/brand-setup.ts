@@ -193,14 +193,15 @@ async function runWizard() {
 
   console.log('\n  🎨 Brand Setup Wizard');
   console.log('  ─────────────────────');
-  console.log('  Configure your white-label wallet. Press Enter to keep defaults.\n');
+  console.log('  Set up your white-label wallet in a few steps.');
+  console.log('  Values in [brackets] are defaults — just press Enter to use them.\n');
 
   const logoPath = join(rootDir, 'public/assets/logo.png');
   if (!existsSync(logoPath)) {
     console.log('  ⚠  No logo found at public/assets/logo.png');
-    const cont = await ask('  Continue without logo? (y/N)', 'N');
+    const cont = await ask('Continue without a logo? (y/N)', 'N');
     if (cont.toLowerCase() !== 'y') {
-      console.log('\n  Place your logo at public/assets/logo.png and re-run.\n');
+      console.log('\n  Add your logo to public/assets/logo.png and run this again.\n');
       rl.close();
       return;
     }
@@ -208,35 +209,36 @@ async function runWizard() {
   }
 
   // Identity
-  const name = await ask('Brand name', DEFAULTS.name);
+  console.log('  App identity:');
+  const name = await ask('Name', DEFAULTS.name);
   const tagline = await ask('Tagline', DEFAULTS.tagline);
   const description = await ask('Description', DEFAULTS.description);
   const lnAddressDomain = await ask('Lightning address domain', DEFAULTS.lnAddressDomain);
 
   // Colors
-  console.log('\n  Colors:');
-  const primary = await askColor('Primary accent', DEFAULTS.primary);
+  console.log('\n  Theme colors (hex, e.g. #ff6600):');
+  const primary = await askColor('Primary', DEFAULTS.primary);
   const primaryLight = await askColor('Primary light',
     primary === DEFAULTS.primary ? DEFAULTS.primaryLight : lightenHex(primary));
   const background = await askColor('Background', DEFAULTS.background);
 
-  // Advanced colors (press Enter to keep defaults)
-  console.log('\n  Advanced colors (Enter to keep defaults):');
+  // Advanced colors
+  console.log('\n  Advanced colors — press Enter to keep defaults:');
   const dark = await askColor('Dark', DEFAULTS.dark);
   const surface = await askColor('Surface', DEFAULTS.surface);
   const elevated = await askColor('Elevated', DEFAULTS.elevated);
   const border = await askColor('Border', DEFAULTS.border);
   const borderLight = await askColor('Border light', DEFAULTS.borderLight);
-  const accent = await askColor('Secondary accent', DEFAULTS.accent);
-  const accentLight = await askColor('Secondary light',
+  const accent = await askColor('Accent', DEFAULTS.accent);
+  const accentLight = await askColor('Accent light',
     accent === DEFAULTS.accent ? DEFAULTS.accentLight : lightenHex(accent));
   const success = await askColor('Success', DEFAULTS.success);
   const error = await askColor('Error', DEFAULTS.error);
 
   // Fonts
-  console.log('\n  Fonts (Google Fonts names):');
+  console.log('\n  Fonts (Google Fonts family names):');
   const fontDisplay = await ask('Display font', DEFAULTS.fontDisplay);
-  const fontMono = await ask('Mono font', DEFAULTS.fontMono);
+  const fontMono = await ask('Monospace font', DEFAULTS.fontMono);
 
   rl.close();
 
