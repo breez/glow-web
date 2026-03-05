@@ -18,10 +18,6 @@ import { logger, LogCategory, logSdkMessage } from '../services/logger';
 import { formatError } from '../utils/formatError';
 import { isDepositRejected } from '../services/depositState';
 import { hideSplash } from '../main';
-import {
-  showPaymentReceivedNotification,
-  showDepositClaimedNotification,
-} from '../services/notificationService';
 
 // ============================================
 // SDK logging (initialized once)
@@ -185,7 +181,6 @@ export function useBreezSdk(
 
         if (isReceived) {
           setCelebrationAmount(amountSats);
-          showPaymentReceivedNotification(amountSats);
         } else {
           showToastRef.current('success', 'Payment Sent', `${event.payment.amount} sats sent successfully`);
         }
@@ -194,7 +189,6 @@ export function useBreezSdk(
     } else if (event.type === 'claimedDeposits') {
       logger.info(LogCategory.PAYMENT, 'Deposits claimed', { count: event.claimedDeposits.length });
       showToastRef.current('success', 'Deposits Claimed Successfully', `${event.claimedDeposits.length} deposits were claimed`);
-      showDepositClaimedNotification(event.claimedDeposits.length);
       refreshWalletData(false);
       fetchUnclaimedDeposits();
     } else if (event.type === 'unclaimedDeposits') {

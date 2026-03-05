@@ -3,15 +3,7 @@ import { FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../
 import { getSettings, saveSettings, UserSettings } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
-import {
-  isNotificationSupported,
-  getNotificationPermission,
-  requestNotificationPermission,
-  getNotificationSettings,
-  saveNotificationSettings,
-  NotificationSettings,
-} from '../services/notificationService';
-import { NotificationIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon } from '../components/Icons';
+import { CurrencyIcon, ChevronRightIcon, DownloadIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs } from '@/services/logExport';
@@ -38,14 +30,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
   const [sparkPrivateModeEnabled, setSparkPrivateModeEnabled] = useState<boolean>(true);
   const [isLoadingUserSettings, setIsLoadingUserSettings] = useState<boolean>(true);
 
-  // Notification settings state
-  const [notificationsSupported, setNotificationsSupported] = useState<boolean>(false);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
-  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
-    enabled: false,
-    paymentReceived: true,
-  });
-  const [isRequestingPermission, setIsRequestingPermission] = useState<boolean>(false);
   const [isDownloadingLogs, setIsDownloadingLogs] = useState<boolean>(false);
 
   useEffect(() => {
@@ -89,11 +73,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
         : (typeof cfg.preferSparkOverLightning === 'boolean' ? cfg.preferSparkOverLightning : false)
     );
 
-    // Load notification settings
-    setNotificationsSupported(isNotificationSupported());
-    setNotificationPermission(getNotificationPermission());
-    setNotificationSettings(getNotificationSettings());
-
     (async () => {
       try {
         setIsLoadingUserSettings(true);
@@ -108,34 +87,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
       }
     })();
   }, [config, wallet]);
-
-  const handleEnableNotifications = async () => {
-    setIsRequestingPermission(true);
-    try {
-      const permission = await requestNotificationPermission();
-      setNotificationPermission(permission);
-
-      if (permission === 'granted') {
-        const newSettings = { ...notificationSettings, enabled: true };
-        setNotificationSettings(newSettings);
-        saveNotificationSettings(newSettings);
-      }
-    } finally {
-      setIsRequestingPermission(false);
-    }
-  };
-
-  const handleToggleNotifications = (enabled: boolean) => {
-    const newSettings = { ...notificationSettings, enabled };
-    setNotificationSettings(newSettings);
-    saveNotificationSettings(newSettings);
-  };
-
-  const handleTogglePaymentReceived = (paymentReceived: boolean) => {
-    const newSettings = { ...notificationSettings, paymentReceived };
-    setNotificationSettings(newSettings);
-    saveNotificationSettings(newSettings);
-  };
 
   const handleVersionTap = () => {
     setDevTapCount(prev => {
@@ -374,56 +325,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
                 </div>
               </div>
 
-              {/* Notifications - Dev Mode only */}
-              {notificationsSupported && (
-                <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                  <h3 className="font-display font-semibold text-spark-text-primary mb-3">Notifications</h3>
-
-                  {notificationPermission === 'denied' ? (
-                    <p className="text-sm text-spark-text-muted">
-                      Notifications are blocked. Please enable them in your browser settings.
-                    </p>
-                  ) : notificationPermission !== 'granted' ? (
-                    <button
-                      onClick={handleEnableNotifications}
-                      disabled={isRequestingPermission}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-spark-primary text-white rounded-xl hover:bg-spark-primary-light transition-colors disabled:opacity-50"
-                    >
-                      <NotificationIcon size="md" />
-                      {isRequestingPermission ? 'Enabling...' : 'Enable Notifications'}
-                    </button>
-                  ) : (
-                    <div className="space-y-3">
-                      {/* Master toggle */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-spark-text-secondary">Enable notifications</span>
-                        <Switch
-                          checked={notificationSettings.enabled}
-                          onChange={() => handleToggleNotifications(!notificationSettings.enabled)}
-                        />
-                      </div>
-
-                      {notificationSettings.enabled && (
-                        <>
-                          <div className="border-t border-spark-border/50 my-2" />
-
-                          {/* Payment received toggle */}
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="text-sm text-spark-text-secondary block">Payment received</span>
-                              <span className="text-xs text-spark-text-muted">Get notified when you receive sats</span>
-                            </div>
-                            <Switch
-                              checked={notificationSettings.paymentReceived}
-                              onChange={() => handleTogglePaymentReceived(!notificationSettings.paymentReceived)}
-                            />
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
             </>
           )}
 

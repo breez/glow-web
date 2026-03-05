@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { WalletProvider } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
-import NotificationPrompt from './components/NotificationPrompt';
 import InstallPrompt from './components/InstallPrompt';
 import StagingGate from './components/StagingGate';
 import { ToastProvider, useToast } from './contexts/ToastContext';
@@ -153,7 +152,6 @@ const AppContent: React.FC = () => {
           onClose={sdk.dismissCelebration}
         />
       )}
-      {sdk.isConnected && <NotificationPrompt />}
       <InstallPrompt />
     </WalletProvider>
   );
