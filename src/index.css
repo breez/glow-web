@@ -124,20 +124,6 @@ body {
   border-radius: 1em;
 }
 
-.card {
-  background: var(--spark-surface);
-  border: 1px solid var(--spark-border);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  padding: 24px;
-}
-
-.card-no-border {
-  background: var(--spark-surface);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
-
 /* ============================================
    TYPOGRAPHY
    ============================================ */
@@ -165,15 +151,6 @@ h6 {
   letter-spacing: -0.02em;
   color: #ffffff;
   text-shadow: 0 0 40px var(--glow-primary);
-}
-
-.balance-label {
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  font-weight: 500;
-  font-size: 0.75rem;
-  color: var(--spark-text-muted);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
 /* ============================================
@@ -427,27 +404,6 @@ select {
   background: rgba(37, 37, 53, 0.8);
   border-color: var(--spark-border-light);
   transform: translateX(4px);
-}
-
-.transaction-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.transaction-icon-receive {
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--spark-success);
-}
-
-.transaction-icon-send {
-  background: rgba(0, 212, 255, 0.15);
-  color: var(--spark-electric);
 }
 
 /* ============================================
@@ -831,42 +787,12 @@ main {
   contain-intrinsic-size: 0 64px;
 }
 
-/* Network badge styling */
-.network-badge {
-  background: var(--glow-primary);
-  border: 1px solid var(--spark-primary);
-  color: var(--spark-primary-light);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-family: 'Outfit', system-ui, sans-serif;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
 /* QR Code container */
 .qr-container {
   background: #fff;
   padding: 16px;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
-
-/* Amount display in dialogs */
-.amount-display {
-  font-family: 'Outfit', system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 2.5rem;
-  color: var(--spark-text-primary);
-}
-
-.amount-unit {
-  font-family: 'Outfit', system-ui, sans-serif;
-  font-weight: 500;
-  font-size: 1rem;
-  color: var(--spark-text-secondary);
-  margin-left: 8px;
 }
 
 /* ============================================

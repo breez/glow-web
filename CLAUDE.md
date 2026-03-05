@@ -17,11 +17,31 @@ Types:   ~/Documents/GitHub/spark-sdk/packages/wasm/bundler/breez_sdk_spark_wasm
 
 ## SDK Integration
 
-The app uses `@breeztech/breez-sdk-spark` for all wallet functionality. The SDK is a WASM module loaded at startup.
+The app uses `@breeztech/breez-sdk-spark` for all wallet functionality. The SDK is a WASM module loaded at startup in `src/main.tsx`.
+
+**Architecture — direct SDK pattern (no wrappers):**
+- `src/hooks/useBreezClient.ts` — owns the full SDK lifecycle: connect, disconnect, event listeners, mnemonic storage, data fetching
+- `src/contexts/WalletContext.tsx` — provides `ClientProvider` (React context) and `useClient()` hook
+- `src/App.tsx` — wraps the app in `<ClientProvider client={client.sdk}>`
+- Components call `useClient()` to get the `BreezSdk` instance and call SDK methods directly
+
+**How it works:**
+```tsx
+// In any component rendered after wallet connection:
+import { useClient } from '@/contexts/WalletContext';
+
+const client = useClient(); // Returns BreezSdk — guaranteed non-null
+
+// Call SDK methods directly — no wrappers
+const info = await client.getInfo({});
+const parsed = await client.parse(input);
+await client.sendPayment(preparedPayment);
+```
 
 **Key files:**
-- `src/services/walletService.ts` - SDK wrapper with all wallet operations
-- `src/services/WalletAPI.ts` - TypeScript interface contract
+- `src/hooks/useBreezClient.ts` — SDK lifecycle, state, event handling
+- `src/contexts/WalletContext.tsx` — ClientProvider + useClient()
+- `src/main.tsx` — WASM init + app bootstrap
 
 ## Local SDK Development
 
@@ -88,9 +108,11 @@ grep "methodName" ~/Documents/GitHub/spark-sdk/packages/wasm/bundler/breez_sdk_s
 - PR body should link to SDK PR and note it's blocked until SDK releases
 
 ### Adding New SDK Methods
-1. Add types to `src/services/WalletAPI.ts` (import from SDK + add to interface)
-2. Implement in `src/services/walletService.ts` (function + add to walletApi object)
-3. Use via `useWallet()` hook in components
+Just call them directly — no wrapper files to update:
+```tsx
+const client = useClient();
+const result = await client.newSdkMethod({ param: value });
+```
 
 ### Adding Side Menu Items
 1. Add prop to `SideMenuProps` interface in `src/components/SideMenu.tsx`

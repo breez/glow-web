@@ -427,24 +427,6 @@ export const StepContainer: React.FC<{
   </div>
 );
 
-export const StepContent: React.FC<{
-  isActive: boolean;
-  isLeft: boolean;
-  children: ReactNode;
-}> = ({ isActive, isLeft, children }) => {
-  const transformClass = isActive
-    ? 'translate-x-0 opacity-100'
-    : isLeft
-      ? '-translate-x-full opacity-0'
-      : 'translate-x-full opacity-0';
-
-  return (
-    <div className={`absolute inset-0 transform transition-all duration-300 ease-out ${transformClass}`}>
-      {children}
-    </div>
-  );
-};
-
 // ============================================
 // TAB COMPONENTS
 // ============================================
