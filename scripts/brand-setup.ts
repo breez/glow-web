@@ -28,7 +28,6 @@ const DEFAULTS = {
   tagline: 'Powered by Breez SDK',
   description: 'Lightning fast Bitcoin payments powered by Breez SDK',
   lnAddressDomain: 'breez.tips',
-  version: '1.0.0',
   primary: '#d4a574',
   primaryLight: '#e8c9a8',
   background: '#0a0a0f',
@@ -135,7 +134,6 @@ export const brand = {
   description: '${config.description}',
   lnAddressDomain: '${config.lnAddressDomain}',
   logo: '/assets/logo.png',
-  version: '${config.version}',
 
   theme: {
     colors: {
@@ -200,7 +198,6 @@ async function runWizard() {
   const tagline = await ask('Tagline', DEFAULTS.tagline);
   const description = await ask('Description', DEFAULTS.description);
   const lnAddressDomain = await ask('Lightning address domain', DEFAULTS.lnAddressDomain);
-  const version = await ask('Version', DEFAULTS.version);
 
   // Colors
   console.log('\n  Colors:');
@@ -228,7 +225,7 @@ async function runWizard() {
   rl.close();
 
   const config = {
-    name, tagline, description, lnAddressDomain, version,
+    name, tagline, description, lnAddressDomain,
     primary, primaryLight, background, dark, surface, elevated,
     border, borderLight, accent, accentLight, success, error,
     fontDisplay, fontMono,

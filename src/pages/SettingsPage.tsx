@@ -322,7 +322,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
               onClick={devTap}
               className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors select-none"
             >
-              {`${brand.name} v${brand.version}`}
+              {`${brand.name} v${__APP_VERSION__}`}
               {isDevMode && <span className="ml-1 text-spark-primary">(dev)</span>}
             </button>
             {devTapCount > 0 && devTapCount < devTapThreshold && (

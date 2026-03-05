@@ -4,6 +4,7 @@ import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import { brand } from './src/config/brand';
+import pkg from './package.json' with { type: 'json' };
 
 /**
  * Vite plugin that injects brand values into index.html at build time.
@@ -50,6 +51,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: env.VITE_BASE_PATH || '/',
+    define: {
+      __APP_VERSION__: JSON.stringify(pkg.version),
+    },
     plugins: [
       react(),
       wasm(),
