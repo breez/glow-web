@@ -3,6 +3,7 @@ import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../../../contexts/WalletContext';
 import { generateRandomName } from '../../../utils/randomName';
 import { logger, LogCategory } from '@/services/logger';
+import { formatError } from '@/utils/formatError';
 
 export interface UseLightningAddress {
   address: LightningAddressInfo | null;
@@ -21,7 +22,6 @@ export interface UseLightningAddress {
 }
 
 const UNSUPPORTED_MESSAGE = 'Lightning addresses are not available in this environment.';
-const formatError = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 
 export const useLightningAddress = (): UseLightningAddress => {
   const wallet = useWallet();

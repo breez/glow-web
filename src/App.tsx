@@ -10,6 +10,7 @@ import { ToastProvider, useToast } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
 import { hideSplash } from './main';
 import { logger, LogCategory } from './services/logger';
+import { formatError } from './utils/formatError';
 
 import HomePage from './pages/HomePage';
 import WalletPage from './pages/WalletPage';
@@ -29,7 +30,6 @@ import { useIOSViewportFix } from './hooks/useIOSViewportFix';
 
 // Main App without toast functionality
 const AppContent: React.FC = () => {
-  const formatError = (err: unknown): string => (err instanceof Error ? err.message : String(err));
   // Screen navigation state
   const [currentScreen, setCurrentScreen] = useState<'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies'>('home');
 

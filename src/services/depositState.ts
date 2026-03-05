@@ -72,11 +72,3 @@ export function removeRejectedDeposit(txid: string, vout: number): void {
   localStorage.setItem(REJECTED_DEPOSITS_KEY, JSON.stringify(filtered));
   cachedDeposits = filtered; // Update cache
 }
-
-/**
- * Clear all rejected deposits (useful for testing or after wallet reset)
- */
-export function clearAllRejectedDeposits(): void {
-  localStorage.removeItem(REJECTED_DEPOSITS_KEY);
-  cachedDeposits = null; // Clear cache
-}

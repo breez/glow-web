@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { LnurlAuthRequestDetails, LnurlCallbackStatus } from '@breeztech/breez-sdk-spark';
 import { FormError, PrimaryButton, SecondaryButton } from '../../../components/ui';
+import { logger, LogCategory } from '../../../services/logger';
+import { formatError } from '../../../utils/formatError';
 
 interface LnurlAuthWorkflowProps {
   parsed: LnurlAuthRequestDetails;
@@ -40,8 +42,8 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
         }
       });
     } catch (err) {
-      console.error('LNURL Auth failed:', err);
-      setError(`Authentication failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      logger.error(LogCategory.SDK, 'LNURL Auth failed', { error: formatError(err) });
+      setError(`Authentication failed: ${formatError(err)}`);
       setIsLoading(false);
     }
   };

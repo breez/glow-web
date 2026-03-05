@@ -46,8 +46,8 @@ import {
 } from '@breeztech/breez-sdk-spark';
 import type { WalletAPI } from './WalletAPI';
 import { logger, LogCategory, logSdkMessage } from './logger';
-import { getAllSessions, isStorageAvailable } from './logStorage';
-import JSZip from 'jszip';
+import { mnemonicStorage } from './mnemonicStorage';
+import { getAllLogsAsZip, canShareFiles, shareOrDownloadLogs } from './logExport';
 
 /**
  * WebLogger that writes SDK logs to the unified logger.
@@ -190,108 +190,8 @@ export const getAllLogs = (): string => {
   return logger.getLogsAsString();
 };
 
-/**
- * Get all logs from all sessions as a zip file.
- * Returns a Blob containing the zip file.
- * Files are named with Unix timestamp prefix for chronological ordering.
- */
-export const getAllLogsAsZip = async (): Promise<Blob> => {
-  const zip = new JSZip();
-  const now = new Date();
-  const nowTimestamp = Math.floor(now.getTime() / 1000);
-
-  // Add current session logs (unified stream)
-  const currentSessionHeader = [
-    `Glow Wallet Log Export`,
-    `Session: Current`,
-    `Generated: ${now.toISOString()}`,
-    '='.repeat(60),
-    '',
-  ].join('\n');
-  zip.file(`${nowTimestamp}_glow_current.txt`, currentSessionHeader + '\n' + getAllLogs());
-
-  // Add historical sessions if storage is available
-  if (isStorageAvailable()) {
-    try {
-      const sessions = await getAllSessions();
-
-      for (const session of sessions) {
-        // Use Unix timestamp for chronological sorting
-        const sessionTimestamp = Math.floor(new Date(session.startedAt).getTime() / 1000);
-        const filename = `${sessionTimestamp}_glow_session.txt`;
-
-        // Create session info header
-        const sessionHeader = [
-          `Glow Wallet Log Export`,
-          `Session ID: ${session.id}`,
-          `Started: ${session.startedAt}`,
-          session.endedAt ? `Ended: ${session.endedAt}` : 'Status: Active',
-          '='.repeat(60),
-          '',
-        ].join('\n');
-
-        // Add unified logs for this session
-        zip.file(filename, sessionHeader + '\n' + (session.logs || '(no logs)'));
-      }
-    } catch (e) {
-      // If we can't get historical sessions, just include current
-      logger.warn(LogCategory.SDK, 'Failed to retrieve historical log sessions', {
-        error: e instanceof Error ? e.message : String(e),
-      });
-    }
-  }
-
-  return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-};
-
-/**
- * Check if Web Share API is available and supports file sharing
- */
-export const canShareFiles = (): boolean => {
-  return typeof navigator !== 'undefined' &&
-    typeof navigator.share === 'function' &&
-    typeof navigator.canShare === 'function';
-};
-
-/**
- * Share or download logs using the best available method.
- * Uses Web Share API on mobile, falls back to download on desktop.
- */
-export const shareOrDownloadLogs = async (): Promise<void> => {
-  const blob = await getAllLogsAsZip();
-  const timestamp = Math.floor(Date.now() / 1000);
-  const filename = `${timestamp}_glow_logs.zip`;
-
-  // Try Web Share API first (better mobile experience)
-  if (canShareFiles()) {
-    const file = new File([blob], filename, { type: 'application/zip' });
-
-    if (navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: 'Glow Wallet Logs',
-        });
-        return;
-      } catch (e) {
-        // User cancelled or share failed, fall through to download
-        if ((e as Error).name === 'AbortError') {
-          return; // User cancelled, don't fall back to download
-        }
-      }
-    }
-  }
-
-  // Fall back to download
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-};
+// Re-export log utilities from extracted module
+export { getAllLogsAsZip, canShareFiles, shareOrDownloadLogs };
 // Event handling
 export const addEventListener = async (
   callback: (event: SdkEvent) => void
@@ -406,20 +306,10 @@ export const connected = (): boolean => {
   return sdk !== null;
 };
 
-// Helper to save mnemonic to localStorage
-export const saveMnemonic = (mnemonic: string): void => {
-  localStorage.setItem('walletMnemonic', mnemonic);
-};
-
-// Helper to retrieve mnemonic from localStorage
-export const getSavedMnemonic = (): string | null => {
-  return localStorage.getItem('walletMnemonic');
-};
-
-// Helper to clear mnemonic from localStorage
-export const clearMnemonic = (): void => {
-  localStorage.removeItem('walletMnemonic');
-};
+// Re-export mnemonic helpers from extracted module
+export const saveMnemonic = mnemonicStorage.save;
+export const getSavedMnemonic = mnemonicStorage.get;
+export const clearMnemonic = mnemonicStorage.clear;
 
 // Lightning Address Operations
 export const getLightningAddress = async (): Promise<breezSdk.LightningAddressInfo | null> => {
@@ -472,7 +362,7 @@ export const buyBitcoin = async (request: BuyBitcoinRequest): Promise<BuyBitcoin
   try {
     return await sdk.buyBitcoin(request);
   } catch (error) {
-    console.error('Failed to get buy bitcoin URL:', error);
+    logger.sdkError('buyBitcoin', error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
 };

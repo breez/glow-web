@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import QrScanner from 'qr-scanner';
 import { logger, LogCategory } from '@/services/logger';
+import { formatError } from '@/utils/formatError';
 
 export type FacingMode = 'environment' | 'user';
 
@@ -21,8 +22,6 @@ export interface UseQrScannerReturn {
   toggleCamera: () => void;
   clearError: () => void;
 }
-
-const formatError = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 
 /**
  * Hook to manage QR code scanning with camera controls

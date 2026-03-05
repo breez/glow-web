@@ -30,8 +30,7 @@ export { BottomSheetContainer, BottomSheetCard } from './sheets/BottomSheet';
 export type { BottomSheetMaxWidth, BottomSheetContainerProps, BottomSheetCardProps } from './sheets/BottomSheet';
 
 // Loading
-export { LoadingSpinner } from './loading/LoadingSpinner';
-export type { LoadingSpinnerProps, SpinnerSize } from './loading/LoadingSpinner';
+export { default as LoadingSpinner } from '../LoadingSpinner';
 
 // ============================================
 // DIALOG COMPONENTS
@@ -138,20 +137,6 @@ export const PaymentInfoRow: React.FC<{
   </div>
 );
 
-export const PaymentInfoDivider: React.FC = () => (
-  <div className="border-t border-spark-border/50 my-1" />
-);
-
-export const PaymentDetailsSection: React.FC<{
-  title: string;
-  children: ReactNode;
-  className?: string;
-}> = ({ title, children, className = "" }) => (
-  <div className={`space-y-3 mt-5 ${className}`}>
-    <h3 className="font-display text-base font-semibold text-spark-text-primary">{title}</h3>
-    {children}
-  </div>
-);
 
 export const CollapsibleCodeField: React.FC<{
   label: string;
@@ -200,56 +185,6 @@ export const CollapsibleCodeField: React.FC<{
       </div>
     )}
   </div>
-);
-
-// ============================================
-// RESULT COMPONENTS
-// ============================================
-
-export const ResultIcon: React.FC<{
-  type: 'success' | 'failure';
-}> = ({ type }) => {
-  const isSuccess = type === 'success';
-
-  return (
-    <div className={`
-      relative w-20 h-20 rounded-2xl flex items-center justify-center
-      ${isSuccess ? 'bg-spark-success/20' : 'bg-spark-error/20'}
-    `}>
-      {/* Glow effect */}
-      <div className={`
-        absolute inset-0 rounded-2xl blur-xl
-        ${isSuccess ? 'bg-spark-success/30' : 'bg-spark-error/30'}
-      `} />
-
-      {/* Icon */}
-      <div className="relative z-10">
-        {isSuccess ? (
-          <svg className="w-10 h-10 text-spark-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-        ) : (
-          <svg className="w-10 h-10 text-spark-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export const ResultMessage: React.FC<{
-  title: string;
-  description?: string;
-}> = ({ title, description }) => (
-  <>
-    <p className="mt-5 font-display text-xl font-bold text-spark-text-primary">{title}</p>
-    {description && (
-      <p className="text-sm text-spark-text-muted mt-2 max-w-xs text-center">
-        {description}
-      </p>
-    )}
-  </>
 );
 
 // ============================================
@@ -555,50 +490,6 @@ export const Tab: React.FC<{
   </button>
 );
 
-
-// ============================================
-// SAFE AREA COMPONENTS
-// ============================================
-
-export type SafeAreaEdge = 'top' | 'bottom' | 'left' | 'right';
-export type SafeAreaPadding = 0 | 1 | 2 | 3 | 4 | 6;
-
-/**
- * SafeArea component for consistent safe area handling
- * Use this for elements that need safe area insets with optional additional padding
- */
-export const SafeArea: React.FC<{
-  children: ReactNode;
-  edges?: SafeAreaEdge[];
-  /** Additional padding in rem units (0-6) added to safe area inset */
-  padding?: SafeAreaPadding;
-  className?: string;
-  as?: keyof JSX.IntrinsicElements;
-}> = ({ children, edges = ['top', 'bottom'], padding = 0, className = "", as: Component = 'div' }) => {
-  const safeAreaClasses = edges.map(edge => {
-    if (padding === 0) {
-      return `safe-area-${edge}`;
-    }
-    return `safe-area-${edge}-${padding}`;
-  }).join(' ');
-
-  return (
-    <Component className={`${safeAreaClasses} ${className}`}>
-      {children}
-    </Component>
-  );
-};
-
-/**
- * SafeAreaSpacer - Empty div that takes up safe area space
- * Useful for adding invisible spacing at top/bottom of scrollable content
- */
-export const SafeAreaSpacer: React.FC<{
-  edge: 'top' | 'bottom';
-  className?: string;
-}> = ({ edge, className = "" }) => (
-  <div className={`safe-area-${edge} ${className}`} aria-hidden="true" />
-);
 
 // ============================================
 // CONFIRM DIALOG

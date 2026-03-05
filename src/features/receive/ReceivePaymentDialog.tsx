@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { logger, LogCategory } from '@/services/logger';
+import { formatError } from '@/utils/formatError';
 import { useWallet } from '../../contexts/WalletContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
@@ -76,7 +77,6 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, tit
 // Main component
 const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onClose }): JSX.Element => {
   const wallet = useWallet();
-  const formatError = (err: unknown): string => (err instanceof Error ? err.message : String(err));
   // State
   const [activeTab, setActiveTab] = useState<PaymentMethod>('lightning');
   const [currentStep, setCurrentStep] = useState<ReceiveStep>('loading_limits');

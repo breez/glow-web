@@ -23,8 +23,3 @@ export const initWasm = async (): Promise<void> => {
     throw error;
   }
 };
-
-// Check if WASM has been initialized
-export const isWasmInitialized = (): boolean => {
-  return initialized;
-};

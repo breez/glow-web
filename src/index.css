@@ -915,6 +915,23 @@ main {
   animation: list-item-in 0.3s ease-out forwards;
 }
 
+/* Skeleton loading animation for transaction placeholders */
+@keyframes skeleton-item-in {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-skeleton-item {
+  opacity: 0;
+  animation: skeleton-item-in 0.3s ease-out forwards;
+}
+
 /* Bounce animation for loading dots */
 @keyframes bounce {
   0%, 100% {

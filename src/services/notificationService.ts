@@ -6,6 +6,7 @@
  */
 
 import { logger, LogCategory } from '@/services/logger';
+import { formatError } from '@/utils/formatError';
 
 // Extended notification options that include non-standard but widely supported properties
 interface ExtendedNotificationOptions extends NotificationOptions {
@@ -25,8 +26,6 @@ const defaultSettings: NotificationSettings = {
   enabled: false,
   paymentReceived: true,
 };
-
-const formatError = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 
 /**
  * Check if the browser supports notifications

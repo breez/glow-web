@@ -16,6 +16,7 @@ import ResultStep from './steps/ResultStep';
 import { SendInput } from '@/types/domain';
 import { LnurlPayRequestDetails, LnurlAuthRequestDetails, PrepareLnurlPayRequest, SendPaymentOptions, FeePolicy } from '@breeztech/breez-sdk-spark';
 import { logger, LogCategory } from '@/services/logger';
+import { formatError } from '@/utils/formatError';
 
 // Props interfaces
 interface SendPaymentDialogProps {
@@ -27,7 +28,6 @@ interface SendPaymentDialogProps {
 
 // Main component
 const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, initialPaymentInput, onScanQr }) => {
-  const formatError = (err: unknown): string => (err instanceof Error ? err.message : String(err));
   const wallet = useWallet();
   // Container state: input parsing + routing to workflow per input type
   const [currentStep, setCurrentStep] = useState<'input' | 'amount' | 'workflow' | 'processing' | 'result'>('input');
