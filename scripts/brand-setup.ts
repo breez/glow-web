@@ -236,7 +236,7 @@ async function runWizard() {
   const error = await askColor('Error', DEFAULTS.error);
 
   // Fonts
-  console.log('\n  Fonts (Google Fonts family names):');
+  console.log('\n  Fonts (Google Fonts family names — https://fonts.google.com):');
   const fontDisplay = await ask('Display font', DEFAULTS.fontDisplay);
   const fontMono = await ask('Monospace font', DEFAULTS.fontMono);
 
