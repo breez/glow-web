@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { logger, LogCategory } from '@/services/logger';
-import { formatError } from '@/utils/formatError';
-import { useWallet } from '../../contexts/WalletContext';
+import { useToast } from '../../contexts/ToastContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
   DialogHeader,
@@ -17,16 +15,14 @@ import {
   ConfirmDialog,
 } from '../../components/ui';
 
-// Types
-import type { PaymentMethod, ReceiveStep } from '../../types/domain';
+import type { PaymentMethod } from '../../types/domain';
 import { useLightningAddress } from './hooks/useLightningAddress';
+import { useReceivePayment } from './hooks/useReceivePayment';
 import SparkAddressDisplay from './SparkAddressDisplay';
 import BitcoinAddressDisplay from './BitcoinAddressDisplay';
 import LightningAddressDisplay from './LightningAddressDisplay';
 import AmountPanel from './AmountPanel';
-import { useToast } from '../../contexts/ToastContext';
 
-// Props interfaces
 interface ReceivePaymentDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -39,7 +35,6 @@ interface QRCodeDisplayProps {
   description?: string;
 }
 
-// Component to display QR code with payment data
 const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, title, description }) => {
   const { showToast } = useToast();
   return (
@@ -74,26 +69,10 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, tit
   );
 };
 
-// Main component
 const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onClose }): JSX.Element => {
-  const wallet = useWallet();
-  // State
-  const [activeTab, setActiveTab] = useState<PaymentMethod>('lightning');
-  const [currentStep, setCurrentStep] = useState<ReceiveStep>('loading_limits');
-  const [description, setDescription] = useState<string>('');
-  const [amount, setAmount] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [paymentData, setPaymentData] = useState<string>('');
-  const [feeSats, setFeeSats] = useState<number>(0);
+  const receive = useReceivePayment();
+  const [showChangeConfirm, setShowChangeConfirm] = useState<boolean>(false);
 
-  // State for on-demand address generation
-  const [sparkAddress, setSparkAddress] = useState<string | null>(null);
-  const [bitcoinAddress, setBitcoinAddress] = useState<string | null>(null);
-  const [sparkLoading, setSparkLoading] = useState<boolean>(false);
-  const [bitcoinLoading, setBitcoinLoading] = useState<boolean>(false);
-
-  // Lightning Address lifecycle via hook
   const {
     address: lightningAddress,
     isLoading: lightningAddressLoading,
@@ -109,148 +88,28 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     save: saveLightningAddress,
     reset: resetLightningAddress,
   } = useLightningAddress();
-  const [showAmountPanel, setShowAmountPanel] = useState<boolean>(false);
-  const [showChangeConfirm, setShowChangeConfirm] = useState<boolean>(false);
 
-  // Reset state when dialog opens and set default limits
   useEffect(() => {
     if (isOpen) {
-      resetState();
-      setActiveTab('lightning');
+      receive.reset();
+      resetLightningAddress();
       loadLightningAddress();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset when dialog opens/closes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  const resetState = () => {
-    setCurrentStep('input');
-    setDescription('');
-    setAmount('');
-    setError(null);
-    setIsLoading(false);
-    setPaymentData('');
-    setFeeSats(0);
-    // Reset addresses when dialog closes
-    setSparkAddress(null);
-    setBitcoinAddress(null);
-    setSparkLoading(false);
-    setBitcoinLoading(false);
-    // Reset Lightning Address state
-    resetLightningAddress();
-    setShowAmountPanel(false);
+  const handleTabChange = (tab: PaymentMethod) => {
+    receive.handleTabChange(tab, loadLightningAddress);
   };
 
-  // Generate Bolt11 invoice
-  const generateBolt11Invoice = async () => {
-    logger.info(LogCategory.PAYMENT, 'Starting invoice generation', { amount });
-    setError(null);
-    setIsLoading(true);
-    setCurrentStep('loading');
-
-    // Close the amount panel immediately when starting to generate
-    if (showAmountPanel) {
-      logger.debug(LogCategory.PAYMENT, 'Closing amount panel before generating invoice');
-      setShowAmountPanel(false);
-    }
-
-    try {
-      const amountSats = parseInt(amount);
-      if (isNaN(amountSats)) {
-        throw new Error('Invalid amount');
-      }
-
-      logger.debug(LogCategory.PAYMENT, 'Calling wallet.receivePayment for bolt11 invoice', {
-        amountSats,
-      });
-      const receiveResponse = await wallet.receivePayment({
-        paymentMethod: {
-          type: 'bolt11Invoice',
-          description,
-          amountSats,
-        },
-      });
-      logger.info(LogCategory.PAYMENT, 'Invoice generated successfully', {
-        paymentRequestLength: receiveResponse.paymentRequest.length,
-        fee: Number(receiveResponse.fee) || 0,
-      });
-      setPaymentData(receiveResponse.paymentRequest);
-      setFeeSats(Number(receiveResponse.fee) || 0);
-      setCurrentStep('qr');
-    } catch (err) {
-      logger.error(LogCategory.PAYMENT, 'Failed to generate invoice', {
-        error: formatError(err),
-      });
-      setError(`Failed to generate invoice: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      setCurrentStep('input');
-      setShowAmountPanel(true);
-    } finally {
-      setIsLoading(false);
-      logger.debug(LogCategory.PAYMENT, 'Receive invoice generation process finished');
-    }
-  };
-
-  // Generate Spark address on-demand
-  const generateSparkAddress = async () => {
-    if (sparkAddress || sparkLoading) return; // Don't generate if already exists or loading
-
-    setSparkLoading(true);
-    try {
-      const receiveResponse = await wallet.receivePayment({
-        paymentMethod: { type: 'sparkAddress' },
-      });
-      setSparkAddress(receiveResponse.paymentRequest);
-    } catch (err) {
-      logger.error(LogCategory.PAYMENT, 'Failed to generate Spark address', {
-        error: formatError(err),
-      });
-      setError(`Failed to generate Spark address: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setSparkLoading(false);
-    }
-  };
-
-  // Generate Bitcoin address on-demand
-  const generateBitcoinAddress = async () => {
-    if (bitcoinAddress || bitcoinLoading) return; // Don't generate if already exists or loading
-
-    setBitcoinLoading(true);
-    try {
-      const receiveResponse = await wallet.receivePayment({
-        paymentMethod: { type: 'bitcoinAddress' },
-      });
-      setBitcoinAddress(receiveResponse.paymentRequest);
-    } catch (err) {
-      logger.error(LogCategory.PAYMENT, 'Failed to generate Bitcoin address', {
-        error: formatError(err),
-      });
-      setError(`Failed to generate Bitcoin address: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setBitcoinLoading(false);
-    }
-  };
-
-  // Lightning Address management via hook
-  const handleEditLightningAddress = () => beginEditLightningAddress(lightningAddress);
-  const handleCancelEditLightningAddress = () => cancelEditLightningAddress();
   const handleSaveLightningAddress = async () => {
     if (lightningAddress) {
-      // Show confirmation dialog before changing address
       setShowChangeConfirm(true);
       return;
     }
     await saveLightningAddress();
   };
 
-  const handleConfirmAddressChange = async () => {
-    setShowChangeConfirm(false);
-    await saveLightningAddress();
-  };
-
-  const handleCancelAddressChange = () => {
-    setShowChangeConfirm(false);
-  };
-
-  // Get confirmation message for Lightning Address change
   const getAddressChangeMessage = () => {
     if (!lightningAddress) return '';
     const parts = lightningAddress.lightningAddress.split('@');
@@ -259,50 +118,21 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     return `Changing your Lightning Address username will permanently release '${username}@${domain}', making it available for other users.\n\nDo you want to proceed?`;
   };
 
-  const handleCustomizeAmount = () => {
-    setShowAmountPanel(true);
-  };
-
-  // Handle tab change
-  const handleTabChange = (tab: PaymentMethod) => {
-    setActiveTab(tab);
-    setCurrentStep('input');
-    setError(null);
-    setPaymentData('');
-    setFeeSats(0);
-
-    if (tab === 'lightning') {
-      loadLightningAddress();
-    } else if (tab === 'spark') {
-      generateSparkAddress();
-    } else if (tab === 'bitcoin') {
-      generateBitcoinAddress();
-    }
-  };
-
   const getQRTitle = () => {
-    switch (activeTab) {
-      case 'lightning':
-        return 'Lightning Invoice';
-      case 'spark':
-        return 'Spark Address';
-      case 'bitcoin':
-        return 'Bitcoin Address';
-      default:
-        return 'Payment Request';
+    switch (receive.activeTab) {
+      case 'lightning': return 'Lightning Invoice';
+      case 'spark': return 'Spark Address';
+      case 'bitcoin': return 'Bitcoin Address';
+      default: return 'Payment Request';
     }
   };
 
   const getQRDescription = () => {
-    switch (activeTab) {
-      case 'lightning':
-        return 'Scan to pay this Lightning invoice';
-      case 'spark':
-        return 'Use this address to receive payments';
-      case 'bitcoin':
-        return 'Send Bitcoin to this address for automatic Lightning conversion';
-      default:
-        return '';
+    switch (receive.activeTab) {
+      case 'lightning': return 'Scan to pay this Lightning invoice';
+      case 'spark': return 'Use this address to receive payments';
+      case 'bitcoin': return 'Send Bitcoin to this address for automatic Lightning conversion';
+      default: return '';
     }
   };
 
@@ -321,28 +151,28 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
 
         <TabContainer>
           <TabList>
-            <Tab isActive={activeTab === 'lightning'} onClick={() => handleTabChange('lightning')} data-testid="lightning-tab">
+            <Tab isActive={receive.activeTab === 'lightning'} onClick={() => handleTabChange('lightning')} data-testid="lightning-tab">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
               </svg>
               Lightning
             </Tab>
-            <Tab isActive={activeTab === 'bitcoin'} onClick={() => handleTabChange('bitcoin')} data-testid="bitcoin-tab">
+            <Tab isActive={receive.activeTab === 'bitcoin'} onClick={() => handleTabChange('bitcoin')} data-testid="bitcoin-tab">
               <span className="font-bold text-sm">₿</span>
               Bitcoin
             </Tab>
           </TabList>
 
           <StepContainer>
-            {currentStep === 'loading_limits' && (
+            {receive.currentStep === 'loading_limits' && (
               <div className="flex flex-col items-center justify-center h-40">
                 <LoadingSpinner />
               </div>
             )}
 
-            {currentStep === 'input' && (
+            {receive.currentStep === 'input' && (
               <div className="pt-6">
-                {activeTab === 'lightning' && (
+                {receive.activeTab === 'lightning' && (
                   <LightningAddressDisplay
                     address={lightningAddress}
                     isLoading={lightningAddressLoading}
@@ -351,57 +181,55 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
                     error={lightningAddressError}
                     isSupported={isLightningAddressSupported}
                     supportMessage={lightningAddressSupportMessage}
-                    onEdit={handleEditLightningAddress}
+                    onEdit={() => beginEditLightningAddress(lightningAddress)}
                     onSave={handleSaveLightningAddress}
-                    onCancel={handleCancelEditLightningAddress}
+                    onCancel={() => cancelEditLightningAddress()}
                     onEditValueChange={setLightningAddressEditValue}
-                    onCustomizeAmount={handleCustomizeAmount}
+                    onCustomizeAmount={() => receive.setShowAmountPanel(true)}
                   />
                 )}
 
-                {activeTab === 'spark' && (
-                  <SparkAddressDisplay address={sparkAddress} isLoading={sparkLoading} />
+                {receive.activeTab === 'spark' && (
+                  <SparkAddressDisplay address={receive.sparkAddress} isLoading={receive.sparkLoading} />
                 )}
 
-                {activeTab === 'bitcoin' && (
-                  <BitcoinAddressDisplay address={bitcoinAddress} isLoading={bitcoinLoading} />
+                {receive.activeTab === 'bitcoin' && (
+                  <BitcoinAddressDisplay address={receive.bitcoinAddress} isLoading={receive.bitcoinLoading} />
                 )}
               </div>
             )}
 
-            {currentStep === 'loading' && (
+            {receive.currentStep === 'loading' && (
               <div className="flex flex-col items-center justify-center h-40" data-testid="invoice-generation-loading">
                 <LoadingSpinner text={`Generating ${getQRTitle().toLowerCase()}...`} />
               </div>
             )}
 
-            {currentStep === 'qr' && (
+            {receive.currentStep === 'qr' && (
               <QRCodeDisplay
-                paymentData={paymentData}
-                feeSats={feeSats}
+                paymentData={receive.paymentData}
+                feeSats={receive.feeSats}
                 title={getQRTitle()}
                 description={getQRDescription()}
               />
             )}
           </StepContainer>
 
-          {/* Sliding Bottom Panel for Amount Customization */}
           <AmountPanel
-            isOpen={activeTab === 'lightning' && showAmountPanel}
-            amount={amount}
-            setAmount={setAmount}
-            description={description}
-            setDescription={setDescription}
+            isOpen={receive.activeTab === 'lightning' && receive.showAmountPanel}
+            amount={receive.amount}
+            setAmount={receive.setAmount}
+            description={receive.description}
+            setDescription={receive.setDescription}
             limits={{ min: 1, max: 1000000 }}
-            isLoading={isLoading}
-            error={error}
-            onCreateInvoice={generateBolt11Invoice}
-            onClose={() => setShowAmountPanel(false)}
+            isLoading={receive.isLoading}
+            error={receive.error}
+            onCreateInvoice={receive.generateBolt11Invoice}
+            onClose={() => receive.setShowAmountPanel(false)}
           />
         </TabContainer>
       </BottomSheetCard>
 
-      {/* Confirmation dialog for Lightning Address change */}
       <ConfirmDialog
         isOpen={showChangeConfirm}
         title="Confirm Username Change"
@@ -409,8 +237,11 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
         confirmLabel="Change"
         cancelLabel="Cancel"
         variant="warning"
-        onConfirm={handleConfirmAddressChange}
-        onCancel={handleCancelAddressChange}
+        onConfirm={async () => {
+          setShowChangeConfirm(false);
+          await saveLightningAddress();
+        }}
+        onCancel={() => setShowChangeConfirm(false)}
       />
     </BottomSheetContainer>
   );
