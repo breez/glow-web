@@ -176,15 +176,8 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             </svg>
           </button>
 
-          {/* Status indicators + Action buttons */}
+          {/* Action buttons */}
           <div className="flex items-center gap-2">
-            {/* Syncing indicator */}
-            {isSyncing && (
-              <span className="flex items-center gap-1.5 text-xs text-spark-text-muted">
-                <span className="w-1.5 h-1.5 rounded-full bg-spark-warning animate-pulse" />
-                Syncing
-              </span>
-            )}
             {/* Rejected deposits warning */}
             {hasRejectedDeposits && onOpenGetRefund && (
               <button
@@ -218,7 +211,14 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
         <div className="text-center">
           {/* Label */}
           <div className="text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase mb-1">
-            Balance<span className="text-spark-text-muted/50 mx-1.5">·</span><span className="text-spark-text-muted/50">sats</span>
+            {isSyncing ? (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-spark-primary animate-pulse" />
+                Syncing
+              </span>
+            ) : (
+              <>Balance<span className="text-spark-text-muted/50 mx-1.5">·</span><span className="text-spark-text-muted/50">sats</span></>
+            )}
           </div>
 
           {/* Main balance */}
