@@ -11,6 +11,9 @@ interface CollapsingWalletHeaderProps {
   scrollProgress: number;
   onOpenMenu: () => void;
   onOpenBuyBitcoin?: () => void;
+  isSyncing?: boolean;
+  hasRejectedDeposits?: boolean;
+  onOpenGetRefund?: () => void;
 }
 
 const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
@@ -19,7 +22,10 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   fiatRates,
   fiatCurrencies,
   onOpenMenu,
-  onOpenBuyBitcoin
+  onOpenBuyBitcoin,
+  isSyncing,
+  hasRejectedDeposits,
+  onOpenGetRefund,
 }) => {
   const [activeFiatIndex, setActiveFiatIndex] = useState(0);
 
@@ -170,8 +176,28 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             </svg>
           </button>
 
-          {/* Action buttons */}
+          {/* Status indicators + Action buttons */}
           <div className="flex items-center gap-2">
+            {/* Syncing indicator */}
+            {isSyncing && (
+              <span className="flex items-center gap-1.5 text-xs text-spark-text-muted">
+                <span className="w-1.5 h-1.5 rounded-full bg-spark-warning animate-pulse" />
+                Syncing
+              </span>
+            )}
+            {/* Rejected deposits warning */}
+            {hasRejectedDeposits && onOpenGetRefund && (
+              <button
+                type="button"
+                onClick={onOpenGetRefund}
+                className="flex items-center gap-1 h-9 px-3 rounded-xl text-spark-warning border border-spark-warning/20 hover:border-spark-warning/40 hover:bg-spark-warning/5 transition-colors text-xs font-medium"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                Refund
+              </button>
+            )}
             {/* Buy Bitcoin */}
             {onOpenBuyBitcoin && (
               <button

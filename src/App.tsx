@@ -123,11 +123,11 @@ const AppContent: React.FC = () => {
             fiatRates={client.fiatRates}
             fiatCurrencies={client.fiatCurrencies}
             refreshWalletData={client.refreshWalletData}
-            isRestoring={client.isSyncing}
+            isSyncing={client.isSyncing}
             error={client.error}
             onClearError={client.clearError}
             onLogout={handleLogout}
-            hasUnclaimedDeposits={client.hasRejectedDeposits}
+            hasRejectedDeposits={client.hasRejectedDeposits}
             onOpenGetRefund={(source?: 'menu' | 'icon') => {
               setRefundAnimationDirection(source === 'icon' ? 'up' : 'left');
               setCurrentScreen('getRefund');

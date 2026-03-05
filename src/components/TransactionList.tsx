@@ -67,12 +67,27 @@ const getMethodIcon = (payment: Payment): React.ReactNode => {
   return payment.method === 'lightning' ? LightningIcon : null;
 };
 
+const SkeletonTransactionRow: React.FC<{ index: number }> = ({ index }) => (
+  <li
+    className="flex items-center gap-3 px-3 py-3 rounded-xl animate-skeleton-item"
+    style={{ animationDelay: `${index * 100}ms` }}
+  >
+    <div className="w-10 h-10 rounded-xl bg-spark-surface animate-pulse flex-shrink-0" />
+    <div className="flex-1 min-w-0 space-y-2">
+      <div className="h-4 w-32 rounded bg-spark-surface animate-pulse" />
+      <div className="h-3 w-20 rounded bg-spark-surface animate-pulse" />
+    </div>
+    <div className="h-4 w-16 rounded bg-spark-surface animate-pulse flex-shrink-0" />
+  </li>
+);
+
 interface TransactionListProps {
   transactions: Payment[];
   onPaymentSelected: (payment: Payment) => void;
+  isSyncing?: boolean;
 }
 
-const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPaymentSelected }) => {
+const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPaymentSelected, isSyncing }) => {
   // Split transactions in single pass (js-combine-iterations optimization)
   const { pendingApproval, regularPayments } = useMemo(() => {
     const pending: Payment[] = [];
@@ -90,6 +105,21 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
   }, [transactions]);
 
   if (!transactions.length) {
+    if (isSyncing) {
+      return (
+        <div className="px-4 py-3">
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">Payments</h2>
+            <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
+          </div>
+          <ul className="space-y-2">
+            {Array.from({ length: 5 }, (_, i) => (
+              <SkeletonTransactionRow key={i} index={i} />
+            ))}
+          </ul>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center py-20 px-6" data-testid="empty-state">
         <div className="w-20 h-20 rounded-2xl bg-spark-surface border border-spark-border flex items-center justify-center mb-6">

@@ -1,8 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useWallet } from '../contexts/WalletContext';
-import {
-  LoadingSpinner
-} from '../components/ui';
 import { logger, LogCategory } from '@/services/logger';
 import CollapsingWalletHeader from '../components/CollapsingWalletHeader';
 import SideMenu from '../components/SideMenu';
@@ -23,11 +20,11 @@ interface WalletPageProps {
   fiatRates: Rate[];
   fiatCurrencies: FiatCurrency[];
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
-  isRestoring: boolean;
+  isSyncing: boolean;
   error: string | null;
   onClearError: () => void;
   onLogout: () => void;
-  hasUnclaimedDeposits: boolean;
+  hasRejectedDeposits: boolean;
   onOpenGetRefund: (source?: 'menu' | 'icon') => void;
   onOpenSettings: () => void;
   onOpenBackup: () => void;
@@ -42,9 +39,9 @@ const WalletPage: React.FC<WalletPageProps> = ({
   fiatRates,
   fiatCurrencies,
   refreshWalletData,
-  isRestoring,
+  isSyncing,
   onLogout,
-  hasUnclaimedDeposits,
+  hasRejectedDeposits,
   onOpenGetRefund,
   onOpenSettings,
   onOpenBackup,
@@ -168,13 +165,6 @@ const WalletPage: React.FC<WalletPageProps> = ({
         <div className="absolute bottom-1/4 right-0 w-[300px] h-[300px] bg-gradient-radial from-spark-primary/10 to-transparent blur-3xl" />
       </div>
 
-      {/* Restoration overlay */}
-      {isRestoring && (
-        <div className="absolute inset-0 bg-spark-void/90 backdrop-blur-sm z-50 flex items-center justify-center">
-          <LoadingSpinner text="Loading..." />
-        </div>
-      )}
-
       {/* Fixed header */}
       <div className="sticky top-0 z-10">
         <CollapsingWalletHeader
@@ -184,6 +174,9 @@ const WalletPage: React.FC<WalletPageProps> = ({
           scrollProgress={scrollProgress}
           onOpenMenu={() => setIsMenuOpen(true)}
           onOpenBuyBitcoin={onOpenBuyBitcoin}
+          isSyncing={isSyncing}
+          hasRejectedDeposits={hasRejectedDeposits}
+          onOpenGetRefund={() => onOpenGetRefund('icon')}
         />
       </div>
 
@@ -196,6 +189,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
         <TransactionList
           transactions={mergeDepositsWithTransactions(transactions, unclaimedDeposits)}
           onPaymentSelected={handlePaymentSelected}
+          isSyncing={isSyncing}
         />
       </div>
 
@@ -290,7 +284,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
         onOpenSettings={onOpenSettings}
         onOpenBackup={onOpenBackup}
         onOpenRefund={() => onOpenGetRefund('menu')}
-        hasRejectedDeposits={hasUnclaimedDeposits}
+        hasRejectedDeposits={hasRejectedDeposits}
       />
     </div>
   );
