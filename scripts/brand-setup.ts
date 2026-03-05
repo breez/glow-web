@@ -191,7 +191,10 @@ async function runWizard() {
     }
   }
 
-  console.log('\n  🎨 Brand Setup Wizard\n');
+  console.log('\n  🎨 Brand Setup Wizard');
+  console.log('  ─────────────────────');
+  console.log('  Configure your white-label wallet. Press Enter to keep defaults.\n');
+  console.log('  💡 Place your logo at public/assets/logo.png before running.\n');
 
   // Identity
   const name = await ask('Brand name', DEFAULTS.name);
