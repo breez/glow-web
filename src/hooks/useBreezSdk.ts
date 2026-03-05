@@ -263,7 +263,7 @@ export function useBreezSdk(
 
       // If SDK connected but a subsequent step failed, disconnect to avoid leaked instance
       if (connectedSdk) {
-        try { await connectedSdk.disconnect(); } catch {}
+        try { await connectedSdk.disconnect(); } catch { /* best-effort cleanup */ }
         setSdk(null);
       }
 
