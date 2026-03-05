@@ -1,27 +1,67 @@
 /**
  * Brand Setup CLI
  *
- * Generates PWA icons from logo and manifest.json from brand config.
- * Run: npm run brand:setup
+ * Interactive wizard that configures your white-label wallet.
+ * Generates brand.ts, PWA icons, and manifest.json.
+ *
+ * Usage:
+ *   npm run brand:setup           — interactive wizard
+ *   npm run brand:setup -- --gen  — regenerate icons + manifest from existing brand.ts
  */
 
 import sharp from 'sharp';
+import * as readline from 'readline/promises';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { brand } from '../src/config/brand.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
-
-const logoPath = join(rootDir, 'public', brand.logo.replace(/^\//, ''));
+const brandPath = join(rootDir, 'src/config/brand.ts');
 const iconsDir = join(rootDir, 'public/icons');
 
-// Ensure output directory exists
-if (!existsSync(iconsDir)) {
-  mkdirSync(iconsDir, { recursive: true });
+// --- Defaults (current Glow values) ---
+
+const DEFAULTS = {
+  name: 'Glow',
+  tagline: 'Powered by Breez SDK',
+  description: 'Lightning fast Bitcoin payments powered by Breez SDK',
+  lnAddressDomain: 'breez.tips',
+  version: '1.0.0',
+  primary: '#d4a574',
+  primaryLight: '#e8c9a8',
+  background: '#0a0a0f',
+  dark: '#0f0f18',
+  surface: '#151520',
+  elevated: '#1a1a28',
+  border: '#252535',
+  borderLight: '#35354a',
+  accent: '#00d4ff',
+  accentLight: '#7df3ff',
+  success: '#10b981',
+  error: '#ef4444',
+  fontDisplay: 'Plus Jakarta Sans',
+  fontMono: 'JetBrains Mono',
+};
+
+// --- Helpers ---
+
+function isValidHex(color: string): boolean {
+  return /^#[0-9a-fA-F]{6}$/.test(color);
 }
+
+function lightenHex(hex: string, amount = 0.3): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const lr = Math.round(r + (255 - r) * amount);
+  const lg = Math.round(g + (255 - g) * amount);
+  const lb = Math.round(b + (255 - b) * amount);
+  return `#${lr.toString(16).padStart(2, '0')}${lg.toString(16).padStart(2, '0')}${lb.toString(16).padStart(2, '0')}`;
+}
+
+// --- Icon + Manifest generation ---
 
 const ICON_SIZES = [
   { name: 'icon-192.png', size: 192 },
@@ -30,51 +70,42 @@ const ICON_SIZES = [
   { name: 'icon-maskable-512.png', size: 512 },
 ] as const;
 
-async function generateIcons() {
+async function generateIcons(logoPath: string) {
   if (!existsSync(logoPath)) {
-    console.error(`\n  Logo not found: ${logoPath}`);
-    console.error(`  Place your logo at public${brand.logo}\n`);
-    process.exit(1);
+    console.log(`\n  ⚠ Logo not found at ${logoPath}`);
+    console.log('  Skipping icon generation. Place your logo and re-run.\n');
+    return;
   }
 
-  console.log(`\n  Brand: ${brand.name}`);
-  console.log(`  Logo:  public${brand.logo}\n`);
-  console.log('  Generated:');
+  if (!existsSync(iconsDir)) {
+    mkdirSync(iconsDir, { recursive: true });
+  }
 
   for (const { name, size } of ICON_SIZES) {
     await sharp(logoPath)
-      .resize(size, size, {
-        fit: 'contain',
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-      })
+      .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
       .png({ quality: 90, compressionLevel: 9 })
       .toFile(join(iconsDir, name));
-
     console.log(`    icons/${name} (${size}x${size})`);
   }
 
-  // Favicon
   await sharp(logoPath)
-    .resize(32, 32, {
-      fit: 'contain',
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    })
+    .resize(32, 32, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png({ quality: 90, compressionLevel: 9 })
     .toFile(join(iconsDir, 'favicon.png'));
-
   console.log('    icons/favicon.png (32x32)');
 }
 
-function generateManifest() {
+function generateManifest(config: typeof DEFAULTS) {
   const manifest = {
-    name: brand.name,
-    short_name: brand.name,
-    description: brand.description,
+    name: config.name,
+    short_name: config.name,
+    description: config.description,
     start_url: '/',
     id: '/',
     display: 'standalone',
-    background_color: brand.theme.colors.background,
-    theme_color: brand.theme.colors.background,
+    background_color: config.background,
+    theme_color: config.background,
     orientation: 'portrait-primary',
     categories: ['finance', 'utilities'],
     icons: [
@@ -94,15 +125,151 @@ function generateManifest() {
   console.log('    manifest.json');
 }
 
-async function main() {
-  try {
-    await generateIcons();
-    generateManifest();
-    console.log(`\n  Ready! Run npm run dev to preview.\n`);
-  } catch (error) {
-    console.error('Error:', error);
-    process.exit(1);
-  }
+function generateBrandTs(config: typeof DEFAULTS) {
+  const content = `export const brand = {
+  name: '${config.name}',
+  tagline: '${config.tagline}',
+  description: '${config.description}',
+  lnAddressDomain: '${config.lnAddressDomain}',
+  logo: '/assets/logo.png',
+  version: '${config.version}',
+
+  theme: {
+    colors: {
+      primary: '${config.primary}',
+      primaryLight: '${config.primaryLight}',
+      background: '${config.background}',
+      dark: '${config.dark}',
+      surface: '${config.surface}',
+      elevated: '${config.elevated}',
+      border: '${config.border}',
+      borderLight: '${config.borderLight}',
+      accent: '${config.accent}',
+      accentLight: '${config.accentLight}',
+      success: '${config.success}',
+      error: '${config.error}',
+    },
+    fonts: {
+      display: '${config.fontDisplay}',
+      mono: '${config.fontMono}',
+    },
+  },
+} as const;
+
+// Derived from name — integrators never touch these
+const slug = brand.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+export const derived = {
+  logPrefix: slug,
+  logDbName: \`\${slug}-logs\`,
+  logExportTitle: \`\${brand.name} Log Export\`,
+  logShareTitle: \`\${brand.name} Logs\`,
+  cacheName: \`\${slug}-cache\`,
+} as const;
+`;
+
+  writeFileSync(brandPath, content);
+  console.log('    src/config/brand.ts');
 }
 
-main();
+// --- Interactive wizard ---
+
+async function runWizard() {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+  async function ask(prompt: string, defaultVal: string): Promise<string> {
+    const answer = await rl.question(`  ${prompt} [${defaultVal}]: `);
+    return answer.trim() || defaultVal;
+  }
+
+  async function askColor(prompt: string, defaultVal: string): Promise<string> {
+    while (true) {
+      const answer = await ask(prompt, defaultVal);
+      if (isValidHex(answer)) return answer;
+      console.log('    Invalid hex color. Use format: #rrggbb');
+    }
+  }
+
+  console.log('\n  🎨 Brand Setup Wizard\n');
+
+  // Identity
+  const name = await ask('Brand name', DEFAULTS.name);
+  const tagline = await ask('Tagline', DEFAULTS.tagline);
+  const description = await ask('Description', DEFAULTS.description);
+  const lnAddressDomain = await ask('Lightning address domain', DEFAULTS.lnAddressDomain);
+  const version = await ask('Version', DEFAULTS.version);
+
+  // Colors
+  console.log('\n  Colors:');
+  const primary = await askColor('Primary accent', DEFAULTS.primary);
+  const primaryLight = await askColor('Primary light', lightenHex(primary));
+  const background = await askColor('Background', DEFAULTS.background);
+
+  // Advanced colors (press Enter to keep defaults)
+  console.log('\n  Advanced colors (Enter to keep defaults):');
+  const dark = await askColor('Dark', DEFAULTS.dark);
+  const surface = await askColor('Surface', DEFAULTS.surface);
+  const elevated = await askColor('Elevated', DEFAULTS.elevated);
+  const border = await askColor('Border', DEFAULTS.border);
+  const borderLight = await askColor('Border light', DEFAULTS.borderLight);
+  const accent = await askColor('Secondary accent', DEFAULTS.accent);
+  const accentLight = await askColor('Secondary light', lightenHex(accent));
+  const success = await askColor('Success', DEFAULTS.success);
+  const error = await askColor('Error', DEFAULTS.error);
+
+  // Fonts
+  console.log('\n  Fonts (Google Fonts names):');
+  const fontDisplay = await ask('Display font', DEFAULTS.fontDisplay);
+  const fontMono = await ask('Mono font', DEFAULTS.fontMono);
+
+  rl.close();
+
+  const config = {
+    name, tagline, description, lnAddressDomain, version,
+    primary, primaryLight, background, dark, surface, elevated,
+    border, borderLight, accent, accentLight, success, error,
+    fontDisplay, fontMono,
+  };
+
+  // Generate everything
+  console.log('\n  Generated:');
+  generateBrandTs(config);
+  generateManifest(config);
+
+  const logoPath = join(rootDir, 'public/assets/logo.png');
+  await generateIcons(logoPath);
+
+  console.log(`\n  ✅ Done! Run npm run dev to preview.\n`);
+}
+
+// --- Non-interactive: regenerate from existing brand.ts ---
+
+async function runGenerate() {
+  const { brand } = await import('../src/config/brand.js');
+
+  console.log(`\n  Brand: ${brand.name}`);
+  console.log('  Regenerating assets from brand.ts...\n');
+  console.log('  Generated:');
+
+  generateManifest({
+    ...DEFAULTS,
+    name: brand.name,
+    description: brand.description,
+    background: brand.theme.colors.background,
+  });
+
+  const logoPath = join(rootDir, 'public', brand.logo.replace(/^\//, ''));
+  await generateIcons(logoPath);
+
+  console.log(`\n  ✅ Done! Run npm run dev to preview.\n`);
+}
+
+// --- Entry ---
+
+const isGenOnly = process.argv.includes('--gen');
+
+if (isGenOnly) {
+  runGenerate().catch((e) => { console.error('Error:', e); process.exit(1); });
+} else {
+  runWizard().catch((e) => { console.error('Error:', e); process.exit(1); });
+}
