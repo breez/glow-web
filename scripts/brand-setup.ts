@@ -184,11 +184,12 @@ async function runWizard() {
   }
 
   async function askColor(prompt: string, defaultVal: string): Promise<string> {
-    while (true) {
-      const answer = await ask(prompt, defaultVal);
-      if (isValidHex(answer)) return answer;
+    let answer = await ask(prompt, defaultVal);
+    while (!isValidHex(answer)) {
       console.log('    Invalid hex color. Use format: #rrggbb');
+      answer = await ask(prompt, defaultVal);
     }
+    return answer;
   }
 
   console.log('\n  🎨 Brand Setup Wizard');
