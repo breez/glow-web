@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useWallet } from '../contexts/WalletContext';
+import { useClient } from '../contexts/WalletContext';
 import type { DepositInfo, Fee, SdkEvent } from '@breeztech/breez-sdk-spark';
 import { LoadingSpinner, PrimaryButton, SecondaryButton, FormInput, BottomSheetContainer, BottomSheetCard, DialogHeader, CollapsibleCodeField, PaymentInfoCard } from '../components/ui';
 import { SimpleAlert } from '../components/AlertCard';
@@ -18,7 +18,7 @@ interface GetRefundPageProps {
 type RefundStep = 'address' | 'fee' | 'confirm' | 'processing' | 'result';
 
 const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirection = 'left' }) => {
-  const wallet = useWallet();
+  const client = useClient();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +50,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     setIsLoading(true);
     setError(null);
     try {
-      const list = await wallet.unclaimedDeposits();
+      const list = (await client.listUnclaimedDeposits({})).deposits;
       // Only show deposits that have been rejected
       const rejectedDeposits = list.filter(d => isDepositRejected(d.txid, d.vout));
 
@@ -73,7 +73,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     } finally {
       setIsLoading(false);
     }
-  }, [wallet]);
+  }, [client]);
 
   useEffect(() => {
     void load();
@@ -83,11 +83,11 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     let listenerId: string | null = null;
     (async () => {
       try {
-        listenerId = await wallet.addEventListener((event: SdkEvent) => {
+        listenerId = await client.addEventListener({ onEvent: (event: SdkEvent) => {
           if (event.type === 'synced' || event.type === 'claimedDeposits' || event.type === 'unclaimedDeposits') {
             void load();
           }
-        });
+        } });
       } catch (e) {
         logger.warn(LogCategory.SDK, 'Failed to attach refund page event listener', {
           error: e instanceof Error ? e.message : String(e),
@@ -97,10 +97,10 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
 
     return () => {
       if (listenerId) {
-        wallet.removeEventListener(listenerId).catch(() => { });
+        client.removeEventListener(listenerId).catch(() => { });
       }
     };
-  }, [wallet, load]);
+  }, [client, load]);
 
 
   const openRefundFlow = (deposit: DepositInfo) => {
@@ -133,7 +133,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
 
     try {
       const fee: Fee = { type: 'fixed', amount: feeEstimates[selectedFeeRate] };
-      const result = await wallet.refundDeposit(selectedDeposit.txid, selectedDeposit.vout, destination.trim(), fee);
+      const result = await client.refundDeposit({ txid: selectedDeposit.txid, vout: selectedDeposit.vout, destinationAddress: destination.trim(), fee });
 
       // Remove from rejected list after successful refund
       removeRejectedDeposit(selectedDeposit.txid, selectedDeposit.vout);

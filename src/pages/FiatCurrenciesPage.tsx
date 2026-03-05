@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { LoadingSpinner, Checkbox } from '../components/ui';
-import { useWallet } from '@/contexts/WalletContext';
+import { useClient } from '@/contexts/WalletContext';
 import { getFiatSettings, saveFiatSettings } from '../services/settings';
 import type { FiatCurrency } from '@breeztech/breez-sdk-spark';
 import SlideInPage from '../components/layout/SlideInPage';
@@ -11,7 +11,7 @@ interface FiatCurrenciesPageProps {
 }
 
 const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
-  const wallet = useWallet();
+  const client = useClient();
   const [isLoading, setIsLoading] = useState(true);
   const [currencies, setCurrencies] = useState<FiatCurrency[]>([]);
   const [selectedCurrencies, setSelectedCurrencies] = useState<string[]>([]);
@@ -27,7 +27,7 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
         setSelectedCurrencies(settings.selectedCurrencies);
 
         // Load available currencies from SDK
-        const fiatCurrencies = await wallet.listFiatCurrencies();
+        const fiatCurrencies = (await client.listFiatCurrencies()).currencies;
         setCurrencies(fiatCurrencies);
       } catch (error) {
         logger.error(LogCategory.SDK, 'Failed to load fiat currencies', {
@@ -39,7 +39,7 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
     };
 
     loadData();
-  }, [wallet]);
+  }, [client]);
 
   const handleToggleCurrency = useCallback((currencyId: string) => {
     setSelectedCurrencies(prev => {

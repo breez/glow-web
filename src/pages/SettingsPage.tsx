@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
 import { getSettings, saveSettings, UserSettings } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
-import { useWallet } from '@/contexts/WalletContext';
+import { useClient } from '@/contexts/WalletContext';
 import {
   isNotificationSupported,
   getNotificationPermission,
@@ -14,6 +14,7 @@ import {
 import { NotificationIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
+import { shareOrDownloadLogs } from '@/services/logExport';
 
 const DEV_MODE_TAP_COUNT = 5;
 const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
@@ -25,7 +26,7 @@ interface SettingsPageProps {
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatCurrencies }) => {
-  const wallet = useWallet();
+  const client = useClient();
   const [isDevMode, setIsDevMode] = useState<boolean>(false);
   const [devTapCount, setDevTapCount] = useState(0);
   const [selectedNetwork, setSelectedNetwork] = useState<Network>('mainnet');
@@ -96,7 +97,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     (async () => {
       try {
         setIsLoadingUserSettings(true);
-        const us = await wallet.getUserSettings();
+        const us = await client.getUserSettings();
         setSparkPrivateModeEnabled(us.sparkPrivateModeEnabled !== false);
       } catch (e) {
         logger.warn(LogCategory.SDK, 'Failed to load user settings from SDK', {
@@ -106,7 +107,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
         setIsLoadingUserSettings(false);
       }
     })();
-  }, [config, wallet]);
+  }, [config, client]);
 
   const handleEnableNotifications = async () => {
     setIsRequestingPermission(true);
@@ -184,7 +185,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
       saveSettings(updated);
     }
     try {
-      await wallet.setUserSettings({ sparkPrivateModeEnabled });
+      await client.updateUserSettings({ sparkPrivateModeEnabled });
     } catch (e) {
       logger.warn(LogCategory.SDK, 'Failed to update SDK user settings', {
         error: e instanceof Error ? e.message : String(e),
@@ -196,7 +197,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
   const handleShareLogs = async () => {
     setIsDownloadingLogs(true);
     try {
-      await wallet.shareOrDownloadLogs();
+      await shareOrDownloadLogs();
     } catch (e) {
       logger.warn(LogCategory.SDK, 'Failed to share or download logs', {
         error: e instanceof Error ? e.message : String(e),

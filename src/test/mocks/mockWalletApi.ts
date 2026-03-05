@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
-import type { WalletAPI } from '@/services/WalletAPI';
 import type {
+  BreezSdk,
   GetInfoResponse,
   Payment,
   SdkEvent,
@@ -26,9 +26,6 @@ import type {
 const eventListeners = new Map<string, (event: SdkEvent) => void>();
 let listenerIdCounter = 0;
 
-// Storage for mnemonic
-let storedMnemonic: string | null = null;
-
 /**
  * Creates a mock Payment object for testing
  */
@@ -49,25 +46,22 @@ export function createMockPayment(
 }
 
 /**
- * Creates a mock WalletAPI for unit testing.
+ * Creates a mock BreezSdk client for unit testing.
  * All methods are vi.fn() mocks that can be spied on and have their return values customized.
  */
-export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
+export function createMockClient(overrides?: Partial<BreezSdk>): BreezSdk {
   // Reset state for fresh mock
   eventListeners.clear();
   listenerIdCounter = 0;
-  storedMnemonic = null;
 
-  const defaultMock: WalletAPI = {
+  const defaultMock = {
     // Lifecycle
-    initWallet: vi.fn().mockResolvedValue(undefined),
     disconnect: vi.fn().mockResolvedValue(undefined),
-    connected: vi.fn().mockReturnValue(true),
 
-    // Payments - parseInput
+    // Parse input
     // Note: We use `as unknown as InputType` because the full SDK types require many fields
     // that aren't needed for unit testing. This gives us flexibility in mocks while maintaining type safety.
-    parseInput: vi.fn().mockImplementation(async (input: string): Promise<InputType> => {
+    parse: vi.fn().mockImplementation(async (input: string): Promise<InputType> => {
       // Spark address
       if (input.startsWith('sp1')) {
         return {
@@ -170,7 +164,7 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
     } as SendPaymentResponse),
 
     // Receive payment
-    receivePayment: vi.fn().mockImplementation(async ({ paymentMethod }) => {
+    receivePayment: vi.fn().mockImplementation(async ({ paymentMethod }: { paymentMethod: { type: string } }) => {
       let paymentRequest = '';
 
       if (paymentMethod.type === 'sparkAddress') {
@@ -188,18 +182,18 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
     }),
 
     // Unclaimed deposits
-    unclaimedDeposits: vi.fn().mockResolvedValue([] as DepositInfo[]),
+    listUnclaimedDeposits: vi.fn().mockResolvedValue({ deposits: [] as DepositInfo[] }),
     claimDeposit: vi.fn().mockResolvedValue({ payment: createMockPayment('receive') }),
     refundDeposit: vi.fn().mockResolvedValue(undefined),
 
-    // Data
-    getWalletInfo: vi.fn().mockResolvedValue({
+    // Info & data
+    getInfo: vi.fn().mockResolvedValue({
       identityPubkey: 'test-identity-pubkey',
       balanceSats: 10000,
       tokenBalances: new Map(),
     } as unknown as GetInfoResponse),
 
-    getTransactions: vi.fn().mockResolvedValue([] as Payment[]),
+    listPayments: vi.fn().mockResolvedValue({ payments: [] as Payment[] }),
 
     getPayment: vi.fn().mockResolvedValue({
       payment: createMockPayment('receive'),
@@ -223,9 +217,9 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
     } as CheckMessageResponse),
 
     // Events
-    addEventListener: vi.fn().mockImplementation(async (callback: (event: SdkEvent) => void) => {
+    addEventListener: vi.fn().mockImplementation(async (listener: { onEvent: (event: SdkEvent) => void }) => {
       const id = `listener-${++listenerIdCounter}`;
-      eventListeners.set(id, callback);
+      eventListeners.set(id, listener.onEvent);
       return id;
     }),
 
@@ -233,53 +227,36 @@ export function createMockWalletApi(overrides?: Partial<WalletAPI>): WalletAPI {
       eventListeners.delete(id);
     }),
 
-    // Storage helpers
-    saveMnemonic: vi.fn().mockImplementation((mnemonic: string) => {
-      storedMnemonic = mnemonic;
-    }),
-    getSavedMnemonic: vi.fn().mockImplementation(() => storedMnemonic),
-    clearMnemonic: vi.fn().mockImplementation(() => {
-      storedMnemonic = null;
-    }),
-
     // Lightning Address
-    getLightningAddress: vi.fn().mockResolvedValue(null as LightningAddressInfo | null),
+    getLightningAddress: vi.fn().mockResolvedValue(undefined as LightningAddressInfo | undefined),
     checkLightningAddressAvailable: vi.fn().mockResolvedValue(true),
     registerLightningAddress: vi.fn().mockResolvedValue(undefined),
     deleteLightningAddress: vi.fn().mockResolvedValue(undefined),
 
     // User settings
     getUserSettings: vi.fn().mockResolvedValue({} as UserSettings),
-    setUserSettings: vi.fn().mockResolvedValue(undefined),
+    updateUserSettings: vi.fn().mockResolvedValue(undefined),
 
     // Fiat currencies
-    listFiatCurrencies: vi.fn().mockResolvedValue([
-      { id: 'USD', info: { name: 'US Dollar', fractionSize: 2, symbol: { grapheme: '$' } } },
-      { id: 'EUR', info: { name: 'Euro', fractionSize: 2, symbol: { grapheme: '\u20ac' } } },
-    ] as unknown as FiatCurrency[]),
+    listFiatCurrencies: vi.fn().mockResolvedValue({
+      currencies: [
+        { id: 'USD', info: { name: 'US Dollar', fractionSize: 2, symbol: { grapheme: '$' } } },
+        { id: 'EUR', info: { name: 'Euro', fractionSize: 2, symbol: { grapheme: '\u20ac' } } },
+      ] as unknown as FiatCurrency[],
+    }),
 
-    listFiatRates: vi.fn().mockResolvedValue([
-      { coin: 'USD', value: 100000 },
-      { coin: 'EUR', value: 92000 },
-    ] as Rate[]),
-
-    // Logs
-    getSdkLogs: vi.fn().mockReturnValue(''),
-    getAppLogs: vi.fn().mockReturnValue(''),
-    getAllLogs: vi.fn().mockReturnValue(''),
-    getAllLogsAsZip: vi.fn().mockResolvedValue(new Blob(['test'], { type: 'application/zip' })),
-    canShareFiles: vi.fn().mockReturnValue(false),
-    shareOrDownloadLogs: vi.fn().mockResolvedValue(undefined),
-
-    // Session management
-    initLogSession: vi.fn().mockResolvedValue(undefined),
-    endLogSession: vi.fn().mockResolvedValue(undefined),
+    listFiatRates: vi.fn().mockResolvedValue({
+      rates: [
+        { coin: 'USD', value: 100000 },
+        { coin: 'EUR', value: 92000 },
+      ] as Rate[],
+    }),
 
     // Buy Bitcoin
     buyBitcoin: vi.fn().mockResolvedValue({ url: 'https://buy.moonpay.com/test' }),
   };
 
-  return { ...defaultMock, ...overrides };
+  return { ...defaultMock, ...overrides } as unknown as BreezSdk;
 }
 
 /**

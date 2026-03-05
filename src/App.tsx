@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { WalletProvider } from './contexts/WalletContext';
+import { ClientProvider } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
 import NotificationPrompt from './components/NotificationPrompt';
@@ -145,7 +145,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <>
+    <ClientProvider client={client.sdk}>
       {renderCurrentScreen()}
       {client.celebrationAmount !== null && (
         <PaymentReceivedCelebration
@@ -155,20 +155,18 @@ const AppContent: React.FC = () => {
       )}
       {client.isConnected && <NotificationPrompt />}
       <InstallPrompt />
-    </>
+    </ClientProvider>
   );
 };
 
 function App() {
   return (
     <StagingGate>
-      <WalletProvider>
-        <AppShell>
-          <ToastProvider>
-            <AppContent />
-          </ToastProvider>
-        </AppShell>
-      </WalletProvider>
+      <AppShell>
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
+      </AppShell>
     </StagingGate>
   );
 }

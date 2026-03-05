@@ -1,27 +1,27 @@
 import React from 'react';
 import { render, RenderOptions, RenderResult } from '@testing-library/react';
-import { WalletProvider } from '@/contexts/WalletContext';
+import { ClientProvider } from '@/contexts/WalletContext';
 import { ToastProvider } from '@/contexts/ToastContext';
-import type { WalletAPI } from '@/services/WalletAPI';
-import { createMockWalletApi } from '../mocks/mockWalletApi';
+import type { BreezSdk } from '@breeztech/breez-sdk-spark';
+import { createMockClient } from '../mocks/mockWalletApi';
 
 /**
- * Extended render options that allow injecting a custom WalletAPI
+ * Extended render options that allow injecting a custom BreezSdk mock
  */
 interface ExtendedRenderOptions extends Omit<RenderOptions, 'wrapper'> {
-  walletApi?: WalletAPI;
+  client?: BreezSdk;
 }
 
 /**
- * Extended render result that includes the walletApi for assertions
+ * Extended render result that includes the mock client for assertions
  */
 interface ExtendedRenderResult extends RenderResult {
-  walletApi: WalletAPI;
+  client: BreezSdk;
 }
 
 /**
  * Renders a React component with all necessary providers for testing.
- * Automatically creates a mock WalletAPI unless one is provided.
+ * Automatically creates a mock BreezSdk client unless one is provided.
  *
  * @example
  * ```tsx
@@ -29,25 +29,25 @@ interface ExtendedRenderResult extends RenderResult {
  * const { getByTestId } = renderWithProviders(<MyComponent />);
  *
  * // With custom mock
- * const mockApi = createMockWalletApi({
- *   getWalletInfo: vi.fn().mockResolvedValue({ balanceSat: 50000n }),
+ * const mockClient = createMockClient({
+ *   getInfo: vi.fn().mockResolvedValue({ balanceSats: 50000 }),
  * });
- * const { walletApi } = renderWithProviders(<MyComponent />, { walletApi: mockApi });
+ * const { client } = renderWithProviders(<MyComponent />, { client: mockClient });
  *
  * // Assert on mock calls
- * expect(walletApi.getWalletInfo).toHaveBeenCalled();
+ * expect(client.getInfo).toHaveBeenCalled();
  * ```
  */
 export function renderWithProviders(
   ui: React.ReactElement,
-  { walletApi, ...options }: ExtendedRenderOptions = {}
+  { client, ...options }: ExtendedRenderOptions = {}
 ): ExtendedRenderResult {
-  const mockWalletApi = walletApi ?? createMockWalletApi();
+  const mockClient = client ?? createMockClient();
 
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <ToastProvider>
-        <WalletProvider api={mockWalletApi}>{children}</WalletProvider>
+        <ClientProvider client={mockClient}>{children}</ClientProvider>
       </ToastProvider>
     );
   }
@@ -56,7 +56,7 @@ export function renderWithProviders(
 
   return {
     ...renderResult,
-    walletApi: mockWalletApi,
+    client: mockClient,
   };
 }
 
@@ -64,20 +64,20 @@ export function renderWithProviders(
  * Creates a wrapper component for use with @testing-library/react-hooks
  * or custom hook testing scenarios.
  */
-export function createTestWrapper(walletApi?: WalletAPI) {
-  const mockWalletApi = walletApi ?? createMockWalletApi();
+export function createTestWrapper(client?: BreezSdk) {
+  const mockClient = client ?? createMockClient();
 
   const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <ToastProvider>
-      <WalletProvider api={mockWalletApi}>{children}</WalletProvider>
+      <ClientProvider client={mockClient}>{children}</ClientProvider>
     </ToastProvider>
   );
 
-  return { Wrapper, walletApi: mockWalletApi };
+  return { Wrapper, client: mockClient };
 }
 
 // Re-export everything from @testing-library/react for convenience
 export * from '@testing-library/react';
 
 // Also export the mock creator for direct use
-export { createMockWalletApi } from '../mocks/mockWalletApi';
+export { createMockClient } from '../mocks/mockWalletApi';

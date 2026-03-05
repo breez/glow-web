@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useWallet } from '@/contexts/WalletContext';
 import { WarningIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
@@ -9,14 +8,13 @@ interface BackupPageProps {
 }
 
 const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
-  const wallet = useWallet();
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
 
   useEffect(() => {
-    setMnemonic(wallet.getSavedMnemonic());
-  }, [wallet]);
+    setMnemonic(localStorage.getItem('walletMnemonic'));
+  }, []);
 
   const handleCopy = async () => {
     if (!mnemonic) return;
