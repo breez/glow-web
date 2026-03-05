@@ -32,6 +32,14 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: true,
+    chunkSizeWarningLimit: 1700,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          polyfills: ['buffer', 'process', 'events', 'stream-browserify'],
+        },
+      },
+    },
   },
   optimizeDeps: {
     exclude: ['@breeztech/breez-sdk-spark'],
