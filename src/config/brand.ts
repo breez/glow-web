@@ -31,7 +31,7 @@ export const brand = {
 // Derived from name — integrators never touch these
 const slug = brand.name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-export const derived = {
+export const brandIds = {
   logPrefix: slug,
   logDbName: `${slug}-logs`,
   logExportTitle: `${brand.name} Log Export`,
