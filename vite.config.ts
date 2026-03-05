@@ -1,10 +1,13 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { createRequire } from 'module';
 import react from '@vitejs/plugin-react';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import { brand } from './src/config/brand';
-import pkg from './package.json' with { type: 'json' };
+
+const require = createRequire(import.meta.url);
+const pkg = require('./package.json');
 
 /**
  * Vite plugin that injects brand values into index.html at build time.
