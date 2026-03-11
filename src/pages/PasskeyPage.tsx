@@ -4,7 +4,7 @@ import { PrimaryButton, SecondaryButton } from '../components/ui';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PageLayout from '../components/layout/PageLayout';
 import { AlertCard } from '../components/AlertCard';
-import { UploadIcon, CheckIcon } from '../components/Icons';
+import { UploadIcon, CheckIcon, FingerprintIcon } from '../components/Icons';
 import { getWallet, listWalletNames, storeWalletName } from '@/services/passkeyService';
 import { logger, LogCategory } from '@/services/logger';
 
@@ -17,6 +17,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   onWalletRestored,
   onBack,
 }) => {
+  const [hasAcknowledged, setHasAcknowledged] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
   const [walletNames, setWalletNames] = useState<string[]>([]);
@@ -25,9 +26,9 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   const [manualWalletName, setManualWalletName] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
 
-
-  // Fetch wallet names on mount
+  // Fetch wallet names after acknowledgment
   useEffect(() => {
+    if (!hasAcknowledged) return;
     const autoCreate = async () => {
       setIsConnecting(true);
       try {
@@ -74,7 +75,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     };
 
     fetchWalletNames();
-  }, [onWalletRestored]);
+  }, [hasAcknowledged, onWalletRestored]);
 
   const handleConnect = async () => {
     const manualName = manualWalletName.trim();
@@ -103,6 +104,45 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       setIsConnecting(false);
     }
   };
+
+  // Acknowledgment screen — shown before any passkey operations
+  if (!hasAcknowledged) {
+    const ackFooter = (
+      <div className="max-w-xl mx-auto space-y-3">
+        <PrimaryButton
+          className="w-full"
+          onClick={() => setHasAcknowledged(true)}
+        >
+          I understand
+        </PrimaryButton>
+        <SecondaryButton className="w-full" onClick={onBack}>
+          Go Back
+        </SecondaryButton>
+      </div>
+    );
+
+    return (
+      <PageLayout onBack={onBack} footer={ackFooter} title="Passkey">
+        <div className="max-w-xl mx-auto w-full space-y-4">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
+              <FingerprintIcon size="xl" className="text-spark-primary" />
+            </div>
+          </div>
+
+          <p className="text-spark-text-secondary text-center mb-2">
+            Your passkey is how you access your funds.
+          </p>
+
+          <AlertCard variant="warning" title="Don't Delete Your Passkey">
+            <p className="text-spark-text-secondary text-sm">
+              Deleting your passkey from your device, browser, or password manager may make your funds permanently inaccessible.
+            </p>
+          </AlertCard>
+        </div>
+      </PageLayout>
+    );
+  }
 
   if (isLoading) {
     return (
