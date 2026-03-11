@@ -26,6 +26,12 @@ import {
   releasePasskey,
   getWallet,
 } from '../services/passkeyService';
+import {
+  encryptAndSaveMnemonic,
+  decryptSavedMnemonic,
+  hasSavedMnemonic,
+  clearSavedMnemonic,
+} from '../services/mnemonicCrypto';
 
 // ============================================
 // SDK logging (initialized once)
@@ -38,15 +44,6 @@ function initSdkLogging() {
   sdkLoggerInitialized = true;
   initLogging({ log: (entry: LogEntry) => logSdkMessage(entry.level, entry.line) });
 }
-
-// ============================================
-// Mnemonic storage (localStorage)
-// ============================================
-
-const MNEMONIC_KEY = 'walletMnemonic';
-const saveMnemonic = (m: string) => localStorage.setItem(MNEMONIC_KEY, m);
-const getSavedMnemonic = () => localStorage.getItem(MNEMONIC_KEY);
-const clearMnemonic = () => localStorage.removeItem(MNEMONIC_KEY);
 
 // ============================================
 // Types
@@ -250,7 +247,9 @@ export function useBreezSdk(
       if (passkeyWalletName != null) {
         setPasskeyMode(passkeyWalletName);
       } else if (seed.type === 'mnemonic') {
-        saveMnemonic(seed.mnemonic);
+        encryptAndSaveMnemonic(seed.mnemonic).catch(e => {
+          logger.error(LogCategory.AUTH, 'Failed to encrypt mnemonic', { error: formatError(e) });
+        });
       }
 
       const [info, txns] = await Promise.all([
@@ -308,7 +307,7 @@ export function useBreezSdk(
 
     // Always reset all state — even if disconnect threw
     setSdk(null);
-    clearMnemonic();
+    clearSavedMnemonic();
     clearPasskeyMode();
     releasePasskey();
     shownPaymentIdsRef.current.clear();
@@ -361,15 +360,19 @@ export function useBreezSdk(
     });
 
     const checkForExistingWallet = async () => {
-      const savedMnemonic = getSavedMnemonic();
-      if (savedMnemonic) {
+      if (hasSavedMnemonic()) {
         try {
           setIsLoading(true);
-          await connectWallet({ type: 'mnemonic', mnemonic: savedMnemonic }, false);
+          const mnemonic = await decryptSavedMnemonic();
+          if (mnemonic) {
+            await connectWallet({ type: 'mnemonic', mnemonic }, false);
+          } else {
+            setIsLoading(false);
+          }
         } catch (e) {
           logger.error(LogCategory.SDK, 'Failed to connect with saved mnemonic', { error: formatError(e) });
-          setError('Failed to connect with saved mnemonic. Please try again.');
-          clearMnemonic();
+          setError('Failed to unlock wallet. Please try again.');
+          clearSavedMnemonic();
           setIsLoading(false);
         }
       } else if (isPasskeyMode()) {

@@ -119,6 +119,9 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       <PageLayout onBack={onBack} footer={<div />} title="Passkey">
         <div className="flex flex-col items-center justify-center h-full">
           <LoadingSpinner text="Connecting..." />
+          <p className="text-spark-text-muted text-xs mt-4">
+            You may be prompted for biometric verification
+          </p>
         </div>
       </PageLayout>
     );

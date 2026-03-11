@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { WarningIcon, SpinnerIcon, EyeIcon, FingerprintIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
 import { isPasskeyMode, getWallet } from '@/services/passkeyService';
+import { decryptSavedMnemonic, hasSavedMnemonic } from '@/services/mnemonicCrypto';
 import { logger, LogCategory } from '@/services/logger';
 
 interface BackupPageProps {
@@ -16,26 +17,31 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
   const [error, setError] = useState<string | null>(null);
 
   const isPasskey = isPasskeyMode();
+  const hasMnemonic = !isPasskey && hasSavedMnemonic();
 
-  useEffect(() => {
-    if (!isPasskey) {
-      setMnemonic(localStorage.getItem('walletMnemonic'));
-    }
-  }, [isPasskey]);
-
-  const handleRevealPasskey = async () => {
+  const handleReveal = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const w = await getWallet();
-      if (w.seed.type === 'mnemonic' && w.seed.mnemonic) {
-        setMnemonic(w.seed.mnemonic);
-        setIsRevealed(true);
+      if (isPasskey) {
+        const w = await getWallet();
+        if (w.seed.type === 'mnemonic' && w.seed.mnemonic) {
+          setMnemonic(w.seed.mnemonic);
+          setIsRevealed(true);
+        } else {
+          setError('Could not derive recovery phrase');
+        }
       } else {
-        setError('Could not derive recovery phrase');
+        const decrypted = await decryptSavedMnemonic();
+        if (decrypted) {
+          setMnemonic(decrypted);
+          setIsRevealed(true);
+        } else {
+          setError('No recovery phrase found');
+        }
       }
     } catch (e) {
-      logger.error(LogCategory.AUTH, 'Failed to derive mnemonic from passkey', {
+      logger.error(LogCategory.AUTH, 'Failed to reveal mnemonic', {
         error: e instanceof Error ? e.message : String(e),
       });
       setError(e instanceof Error ? e.message : 'Failed to authenticate');
@@ -59,9 +65,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
 
   const handleHide = () => {
     setIsRevealed(false);
-    if (isPasskey) {
-      setMnemonic(null);
-    }
+    setMnemonic(null);
   };
 
   const words = mnemonic ? mnemonic.split(' ') : [];
@@ -70,10 +74,10 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
     <SlideInPage title="Backup" onClose={onBack} slideFrom="left">
       <div className="p-4">
         <div className="max-w-xl mx-auto w-full space-y-6">
-          {/* Reveal button — passkey mode */}
-          {isPasskey && !isRevealed && !mnemonic && (
+          {/* Reveal button — both modes require passkey auth */}
+          {(isPasskey || hasMnemonic) && !isRevealed && !mnemonic && (
             <button
-              onClick={handleRevealPasskey}
+              onClick={handleReveal}
               disabled={isLoading}
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
@@ -93,21 +97,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             </button>
           )}
 
-          {/* Reveal button — mnemonic mode */}
-          {!isPasskey && !isRevealed && mnemonic && (
-            <button
-              onClick={() => setIsRevealed(true)}
-              className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors"
-            >
-              <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
-                <EyeIcon size="xl" className="text-spark-primary" />
-              </div>
-              <span className="font-display font-semibold text-spark-text-primary">Tap to reveal phrase</span>
-              <span className="text-sm text-spark-text-muted">Make sure no one is watching</span>
-            </button>
-          )}
-
-          {/* Error message (passkey only) */}
+          {/* Error message */}
           {error && (
             <div className="bg-spark-error/10 border border-spark-error/30 rounded-xl p-4 text-center">
               <p className="text-spark-error text-sm">{error}</p>
@@ -177,7 +167,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
           )}
 
           {/* No backup found (mnemonic mode only) */}
-          {!isPasskey && !mnemonic && (
+          {!isPasskey && !hasMnemonic && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-8 text-center">
               <div className="w-16 h-16 rounded-2xl bg-spark-error/20 flex items-center justify-center mx-auto mb-4">
                 <WarningIcon size="xl" className="text-spark-error" />
