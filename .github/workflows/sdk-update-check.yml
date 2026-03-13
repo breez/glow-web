@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '0 9 * * *'
   workflow_dispatch:
+    inputs:
+      include-prerelease-upgrades:
+        description: 'Also detect when a stable release replaces a pre-release (e.g. 0.11.0-dev3 → 0.11.0)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -29,7 +34,22 @@ jobs:
           ")
 
           echo "Current: $CURRENT, Latest: $LATEST"
-          npx semver "$LATEST" -r ">$CURRENT" > /dev/null 2>&1 || { echo "Up to date."; exit 0; }
+
+          # Standard range check (works for normal version bumps)
+          if npx semver "$LATEST" -r ">$CURRENT" > /dev/null 2>&1; then
+            echo "New version available."
+          elif [ "${{ inputs.include-prerelease-upgrades }}" = "true" ]; then
+            # Strip range operators (^, ~, etc.) and compare raw versions
+            # so that 0.11.0 is detected as newer than 0.11.0-dev3
+            CURRENT_VER=$(echo "$CURRENT" | sed 's/^[^0-9]*//')
+            if npx semver "$LATEST" -r ">$CURRENT_VER" > /dev/null 2>&1; then
+              echo "Stable release available for current pre-release."
+            else
+              echo "Up to date."; exit 0
+            fi
+          else
+            echo "Up to date."; exit 0
+          fi
 
           COUNT=$(gh issue list --label sdk-upgrade --state open --json number --jq 'length')
           [ "$COUNT" -gt 0 ] && echo "Open issue already exists." && exit 0
