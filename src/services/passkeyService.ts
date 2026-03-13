@@ -4,8 +4,8 @@
  * Wraps the Breez SDK's Passkey class to provide
  * passkey-based wallet creation and restoration functionality.
  *
- * Uses a singleton Passkey instance so that multiple operations
- * (list, store, getWallet) share a single PRF auth session.
+ * Creates a fresh Passkey instance per operation so that no stale
+ * PRF session or cached state can survive between wizard steps.
  */
 
 import { Passkey, Wallet, NostrRelayConfig } from '@breeztech/breez-sdk-spark';
@@ -15,30 +15,35 @@ import { logger, LogCategory } from './logger';
 // Storage key — presence signals passkey mode
 const PASSKEY_LABEL_KEY = 'passkeyLabel';
 
-// Singleton Passkey instance
-let passkeyInstance: Passkey | null = null;
-
 /**
- * Get or create the singleton Passkey instance.
+ * Create a fresh Passkey instance.
+ * No caching — each call gets a clean instance with no stale state.
  */
-function getOrCreatePasskey(): Passkey {
-  if (!passkeyInstance) {
-    const breezApiKey = import.meta.env.VITE_BREEZ_API_KEY;
-    const relayConfig: NostrRelayConfig | undefined = breezApiKey
-      ? { breezApiKey }
-      : undefined;
-    passkeyInstance = new Passkey(passkeyPrfProvider, relayConfig ?? null);
-  }
-  return passkeyInstance;
+function createPasskeyInstance(): Passkey {
+  const breezApiKey = import.meta.env.VITE_BREEZ_API_KEY;
+  const relayConfig: NostrRelayConfig | undefined = breezApiKey
+    ? { breezApiKey }
+    : undefined;
+  return new Passkey(passkeyPrfProvider, relayConfig ?? null);
 }
 
 /**
- * Release the singleton Passkey instance.
- * Nulls the reference so a fresh instance is created next time.
- * WASM memory is reclaimed via FinalizationRegistry when GC runs.
+ * No-op — kept for backward compatibility.
+ * With per-operation instances there is nothing to release.
  */
 export function releasePasskey(): void {
-  passkeyInstance = null;
+  // No singleton to release — instances are created fresh per call.
+}
+
+/**
+ * Create a new passkey with PRF support.
+ * Only registers the credential — no seed derivation.
+ * Triggers exactly 1 WebAuthn prompt.
+ */
+export async function createPasskey(): Promise<void> {
+  logger.info(LogCategory.AUTH, 'Creating new passkey');
+  await passkeyPrfProvider.createPasskey();
+  logger.info(LogCategory.AUTH, 'Passkey created successfully');
 }
 
 /**
@@ -51,20 +56,20 @@ export async function isPrfAvailable(): Promise<boolean> {
     return false;
   }
 
-  const passkey = getOrCreatePasskey();
+  const passkey = createPasskeyInstance();
   return await passkey.isAvailable();
 }
 
 /**
  * Check if the app is in passkey mode.
- * Passkey mode is signalled by a stored wallet name.
+ * Passkey mode is signalled by a stored label.
  */
 export function isPasskeyMode(): boolean {
   return localStorage.getItem(PASSKEY_LABEL_KEY) !== null;
 }
 
 /**
- * Set passkey mode by storing the wallet name.
+ * Set passkey mode by storing the label.
  */
 export function setPasskeyMode(label?: string): void {
   localStorage.setItem(PASSKEY_LABEL_KEY, label ?? 'Default');
@@ -84,7 +89,7 @@ export function clearPasskeyMode(): void {
  */
 export async function listLabels(): Promise<string[]> {
   logger.info(LogCategory.AUTH, 'Listing labels from nostr relays');
-  const passkey = getOrCreatePasskey();
+  const passkey = createPasskeyInstance();
   return await passkey.listLabels();
 }
 
@@ -93,16 +98,16 @@ export async function listLabels(): Promise<string[]> {
  */
 export async function storeLabel(label: string): Promise<void> {
   logger.info(LogCategory.AUTH, 'Storing label to nostr relays');
-  const passkey = getOrCreatePasskey();
+  const passkey = createPasskeyInstance();
   await passkey.storeLabel(label);
 }
 
 /**
  * Derive a Wallet using passkey authentication.
  *
- * Falls back to saved label from localStorage when no name arg provided.
+ * Falls back to saved label from localStorage when no label arg provided.
  *
- * @param label - Optional label. If omitted, uses saved name or SDK default.
+ * @param label - Optional label. If omitted, uses saved label or SDK default.
  * @returns The derived Wallet object containing seed and label.
  */
 export async function getWallet(label?: string): Promise<Wallet> {
@@ -110,7 +115,7 @@ export async function getWallet(label?: string): Promise<Wallet> {
 
   logger.info(LogCategory.AUTH, 'Deriving wallet via passkey');
 
-  const passkey = getOrCreatePasskey();
+  const passkey = createPasskeyInstance();
   try {
     const wallet = await passkey.getWallet(effectiveLabel);
     logger.info(LogCategory.AUTH, 'Passkey wallet derived successfully');
