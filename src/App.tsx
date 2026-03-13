@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { WalletProvider } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
@@ -25,6 +25,7 @@ type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settin
 const AppContent: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
+  const [passkeySdkConnected, setPasskeySdkConnected] = useState(false);
   const { showToast } = useToast();
 
   useIOSViewportFix();
@@ -46,9 +47,18 @@ const AppContent: React.FC = () => {
 
   // Navigate to wallet after passkey connect
   const handlePasskeyConnect = async (seed: Seed, label: string) => {
-    await sdk.connectWallet(seed, true, label);
-    setCurrentScreen('wallet');
+    try {
+      await sdk.connectWallet(seed, true, label);
+      setPasskeySdkConnected(true);
+    } catch {
+      // Stay on passkey screen — sdk.error will be set by useBreezSdk
+    }
   };
+
+  const handlePasskeyFlowComplete = useCallback(() => {
+    setPasskeySdkConnected(false);
+    setCurrentScreen('wallet');
+  }, []);
 
   const handleLogout = async () => {
     setCurrentScreen('home');
@@ -57,7 +67,7 @@ const AppContent: React.FC = () => {
 
   // Render screens
   const renderCurrentScreen = () => {
-    if (sdk.isLoading && currentScreen !== 'restore') {
+    if (sdk.isLoading && currentScreen !== 'restore' && currentScreen !== 'passkey') {
       return (
         <div className="absolute inset-0 bg-spark-void/95 backdrop-blur-sm z-50 flex items-center justify-center">
           <LoadingSpinner />
@@ -80,7 +90,12 @@ const AppContent: React.FC = () => {
         return (
           <PasskeyPage
             onWalletRestored={handlePasskeyConnect}
-            onBack={() => setCurrentScreen('home')}
+            onBack={() => {
+              setPasskeySdkConnected(false);
+              setCurrentScreen('home');
+            }}
+            sdkConnected={passkeySdkConnected}
+            onFlowComplete={handlePasskeyFlowComplete}
           />
         );
 
