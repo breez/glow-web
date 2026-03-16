@@ -51,14 +51,16 @@ const PageLayout: React.FC<PageLayoutProps> = ({
       </main>
 
       {/* Fixed footer */}
-      <footer
-        className="relative z-10 flex-shrink-0 w-full border-t border-spark-border bg-spark-surface/80 backdrop-blur-sm"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-      >
-        <div className="px-4 py-4">
-          {footer}
-        </div>
-      </footer>
+      {footer && (
+        <footer
+          className="relative z-10 flex-shrink-0 w-full border-t border-spark-border bg-spark-surface/80 backdrop-blur-sm"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
+          <div className="px-4 py-4">
+            {footer}
+          </div>
+        </footer>
+      )}
     </div>
   );
 };

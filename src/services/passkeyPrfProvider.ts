@@ -164,7 +164,7 @@ class BrowserPasskeyPrfProvider implements PasskeyPrfProvider {
    * Expects a passkey to already exist (via createPasskey or previous session).
    * Triggers exactly 1 WebAuthn prompt.
    *
-   * Called by the SDK for listLabels, storeLabel, and getWallet operations.
+   * Called by the SDK for listLabels, saveLabel, and getWallet operations.
    */
   async derivePrfSeed(salt: string): Promise<Uint8Array> {
     logger.info(LogCategory.AUTH, 'Deriving PRF seed');
