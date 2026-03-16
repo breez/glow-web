@@ -94,10 +94,10 @@ export async function listLabels(): Promise<string[]> {
 }
 
 /**
- * Store a label to nostr relays so it can be discovered later.
+ * Save a label to nostr relays so it can be discovered later.
  */
-export async function storeLabel(label: string): Promise<void> {
-  logger.info(LogCategory.AUTH, 'Storing label to nostr relays');
+export async function saveLabel(label: string): Promise<void> {
+  logger.info(LogCategory.AUTH, 'Saving label to nostr relays');
   const passkey = createPasskeyInstance();
   await passkey.storeLabel(label);
 }
