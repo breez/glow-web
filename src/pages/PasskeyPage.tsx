@@ -15,7 +15,6 @@ import {
 import { passkeyPrfProvider } from '@/services/passkeyPrfProvider';
 import { logger, LogCategory } from '@/services/logger';
 import StepperBar from '@/components/OnboardingStepper';
-import type { StepDef } from '@/components/OnboardingStepper';
 
 // ============================================
 // Types
@@ -54,28 +53,13 @@ type Phase =
   | 'connecting'      // Connect to Nostr step: getWallet() in progress (prompt)
   | 'initializing';   // Initialize step: SDK connecting
 
-const NEW_USER_STEPS: StepDef[] = [
-  { label: 'Create Passkey' },
-  { label: 'Connect to Nostr' },
-  { label: 'Initialize Glow' },
-];
-
-const RETURNING_USER_STEPS: StepDef[] = [
-  { label: 'Your Label' },
-  { label: 'Initialize Glow' },
-];
-
-function phaseToStepIndex(phase: Phase, stepCount: number): number {
-  if (stepCount === 3) {
-    // New user: Create Passkey → Connect to Nostr → Initialize Glow
-    if (phase === 'new-wallet' || phase === 'creating' || phase === 'created') return 0;
-    if (phase === 'new-storing' || phase === 'connect-ready') return 1;
-    return 2; // connecting, initializing
-  }
-  // Returning user: Your Label → Initialize Glow
-  if (phase === 'auth-pick' || phase === 'new-storing') return 0;
-  return 1; // connect-ready, connecting, initializing
+/** Step index for the new user inline stepper (3 steps). */
+function newUserStepIndex(phase: Phase): number {
+  if (phase === 'new-wallet' || phase === 'creating') return 0;
+  if (phase === 'created' || phase === 'new-storing') return 1;
+  return 2; // connect-ready, connecting, initializing
 }
+
 
 // ============================================
 // Props
@@ -99,7 +83,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   onFlowComplete,
 }) => {
   const [phase, setPhase] = useState<Phase>('detecting');
-  const [steps, setSteps] = useState<StepDef[] | null>(null);
+  const [isNewUser, setIsNewUser] = useState(false);
   const [labels, setLabels] = useState<string[]>([]);
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -146,8 +130,6 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         if (cancelled) return;
 
         // Passkey exists → returning user
-        setSteps(RETURNING_USER_STEPS);
-
         if (found.length === 0) {
           // Passkey exists but no labels on relays — show picker with default pre-filled
           setShowManualInput(true);
@@ -210,7 +192,8 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         if (cancelled) return;
         logger.info(LogCategory.AUTH, 'Label stored to relays');
         setPasskeyMode(labelToStore);
-        setPhase('connect-ready');
+        // New users see a confirmation screen; returning users go straight to connecting
+        setPhase(isNewUser ? 'connect-ready' : 'connecting');
       } catch (e) {
         if (cancelled) return;
         setError('Failed to connect to Nostr');
@@ -270,14 +253,14 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         setPhase('new-wallet');
         break;
       case 'new-storing':
-        if (steps?.length === 3) {
+        if (isNewUser) {
           setPhase('created');    // New user: back to Passkey Created
         } else {
           setPhase('auth-pick');  // Returning user: back to label picker
         }
         break;
       case 'connecting':
-        if (steps?.length === 3) {
+        if (isNewUser) {
           setPhase('connect-ready');  // New user: back to confirmation
         } else {
           setPhase('auth-pick');     // Returning user: back to label picker
@@ -452,7 +435,6 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   };
 
   const renderConnectReady = () => {
-    const isNewUser = steps?.length === 3;
     return (
       <>
         <div className="flex justify-center mb-4">
@@ -463,7 +445,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
 
         <div className="text-center mb-4">
           <h2 className="text-xl font-display font-bold text-spark-text-primary mb-2">
-            {isNewUser ? 'Connected to Nostr' : 'Label Stored'}
+            Connected to Nostr
           </h2>
           <p className="text-spark-text-secondary text-sm">
             You'll be prompted to verify your identity one more time to initialize Glow.
@@ -479,6 +461,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     </div>
   );
 
+
   // ============================================
   // Content & footer routing
   // ============================================
@@ -490,13 +473,18 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       case 'new-wallet':    return renderNewWallet();
       case 'creating':      return error ? null : renderSpinner('Creating passkey...');
       case 'created':       return renderCreated();
-      case 'new-storing':   return error ? null : renderSpinner(
-        steps?.length === 3 ? 'Connecting to Nostr...' : 'Storing label...',
-      );
+      case 'new-storing':
+        if (error) return null;
+        return isNewUser
+          ? renderSpinner('Connecting to Nostr...')
+          : renderSpinner('Storing label...');
       case 'auth-pick':     return renderAuthPick();
       case 'connect-ready': return renderConnectReady();
-      case 'connecting':    return error ? null : renderSpinner('Initializing...');
-      case 'initializing':  return renderSpinner('Initializing Glow...');
+      case 'connecting':
+        if (error) return null;
+        return renderSpinner('Initializing...');
+      case 'initializing':
+        return renderSpinner('Initializing Glow...');
     }
   })();
 
@@ -519,7 +507,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       return (
         <div className="max-w-xl mx-auto space-y-3">
           <PrimaryButton className="w-full" onClick={() => {
-            setSteps(NEW_USER_STEPS);
+            setIsNewUser(true);
             setPhase('new-wallet');
           }}>
             I understand
@@ -626,8 +614,8 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   return (
     <PageLayout onBack={onBack} footer={footer} title="Passkey">
       <div className="max-w-xl mx-auto w-full flex flex-col min-h-full">
-        {steps && (
-          <StepperBar steps={steps} activeIndex={phaseToStepIndex(phase, steps.length)} />
+        {isNewUser && (
+          <StepperBar stepCount={3} activeIndex={newUserStepIndex(phase)} />
         )}
         <div className="mt-6 space-y-4 flex flex-col flex-1">
           {content}
