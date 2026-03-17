@@ -537,7 +537,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
               }
             }}
           >
-            {showManualInput ? 'Create & Connect' : 'Connect'}
+            Continue
           </PrimaryButton>
           <SecondaryButton className="w-full" onClick={onBack}>
             Go Back
