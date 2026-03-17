@@ -27,8 +27,8 @@ const HomePage: React.FC<HomePageProps> = ({
   prfAvailable,
 }) => {
   const [starsAnimating, setStarsAnimating] = useState(false);
-  const [showMnemonicOptions, setShowMnemonicOptions] = useState(false);
-  const { handleTap: handleLogoTap, activated: showPasskeyOptions } = useSecretTap(5, 2000);
+  const [showMnemonicFlow, setShowMnemonicFlow] = useState(false);
+  const { handleTap: handleLogoTap } = useSecretTap(5, 2000, false, () => setShowMnemonicFlow(v => !v));
 
   // Trigger star animation on mount
   useEffect(() => {
@@ -126,10 +126,10 @@ const HomePage: React.FC<HomePageProps> = ({
         </p>
 
         {/* CTA Buttons */}
-        <div className="w-full max-w-xs space-y-4">
-          {prfAvailable && showPasskeyOptions && !showMnemonicOptions ? (
+        <div className="w-full max-w-xs space-y-4 min-h-[11rem]">
+          {prfAvailable && !showMnemonicFlow ? (
             <>
-              {/* Primary: Use Passkey */}
+              {/* Primary: Use Passkey (default when PRF available) */}
               <button
                 onClick={onUsePasskey}
                 data-testid="create-wallet-passkey-button"
@@ -138,9 +138,8 @@ const HomePage: React.FC<HomePageProps> = ({
                 Use Passkey
               </button>
 
-              {/* Toggle to mnemonic options */}
               <button
-                onClick={() => setShowMnemonicOptions(true)}
+                onClick={() => setShowMnemonicFlow(true)}
                 className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors w-full text-center py-2"
               >
                 Use Recovery Phrase Instead
@@ -166,9 +165,9 @@ const HomePage: React.FC<HomePageProps> = ({
               </button>
 
               {/* Toggle back to passkey if PRF available */}
-              {prfAvailable && showPasskeyOptions && (
+              {prfAvailable && (
                 <button
-                  onClick={() => setShowMnemonicOptions(false)}
+                  onClick={() => setShowMnemonicFlow(false)}
                   className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors w-full text-center py-2"
                 >
                   Use Passkey Instead
