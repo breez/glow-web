@@ -7,7 +7,8 @@ import StagingGate from './components/StagingGate';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
 import { useBreezSdk } from './hooks/useBreezSdk';
-import { createVault } from './services/vault';
+import { createVault, deleteVault, verifyMnemonicFingerprint } from './services/vault';
+import { validateMnemonic } from 'bip39';
 
 import HomePage from './pages/HomePage';
 import WalletPage from './pages/WalletPage';
@@ -20,13 +21,14 @@ import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import SetPasswordPage from './pages/SetPasswordPage';
 import UnlockPage from './pages/UnlockPage';
-import MigrationPage from './pages/MigrationPage';
+
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
 import type { Seed } from '@breeztech/breez-sdk-spark';
 import { logger, LogCategory } from './services/logger';
 import { formatError } from './utils/formatError';
 
-type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'passkey' | 'setPassword' | 'unlock' | 'migrate';
+type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'passkey' | 'setPassword' | 'unlock' | 'migrate' | 'forgotPassword';
 
 const MNEMONIC_KEY = 'walletMnemonic';
 
@@ -156,13 +158,14 @@ const AppContent: React.FC = () => {
               await sdk.connectWallet({ type: 'mnemonic', mnemonic }, false);
               setCurrentScreen('wallet');
             }}
-            onForgotPassword={() => setCurrentScreen('restore')}
+            onForgotPassword={() => setCurrentScreen('forgotPassword')}
           />
         );
 
       case 'migrate':
         return (
-          <MigrationPage
+          <SetPasswordPage
+            mode="migrate"
             onPasswordSet={async (password) => {
               setPasswordError(null);
               setPasswordLoading(true);
@@ -228,15 +231,41 @@ const AppContent: React.FC = () => {
           <BackupPage onBack={() => setCurrentScreen('wallet')} mnemonic={sdk.walletMnemonic} />
         );
 
+      case 'forgotPassword':
+        return (
+          <ForgotPasswordPage
+            onEnterRecoveryPhrase={() => setCurrentScreen('restore')}
+            onBack={() => setCurrentScreen('unlock')}
+          />
+        );
+
       case 'restore':
         return (
           <RestorePage
+            mode={sdk.startupState === 'vault-locked' ? 'reset-password' : 'restore'}
             onConnect={async (mnemonic) => {
+              // Validate BIP-39 mnemonic first
+              if (!validateMnemonic(mnemonic)) {
+                throw new Error('Invalid recovery phrase. Please check your words and try again.');
+              }
+              // In forgot-password flow, verify the mnemonic matches the existing vault
+              if (sdk.startupState === 'vault-locked') {
+                const matches = await verifyMnemonicFingerprint(mnemonic);
+                if (!matches) {
+                  const err = new Error('This recovery phrase is not associated with current password. Please verify your recovery phrase and try again.');
+                  (err as Error & { mismatch?: boolean }).mismatch = true;
+                  throw err;
+                }
+              }
               setPendingMnemonic(mnemonic);
               setPendingIsRestore(true);
               setCurrentScreen('setPassword');
             }}
-            onBack={() => setCurrentScreen('home')}
+            onBack={() => setCurrentScreen(sdk.startupState === 'vault-locked' ? 'forgotPassword' : 'home')}
+            onStartOver={sdk.startupState === 'vault-locked' ? async () => {
+              await deleteVault();
+              setCurrentScreen('home');
+            } : undefined}
             onClearError={sdk.clearError}
             isLoading={sdk.isLoading}
           />
