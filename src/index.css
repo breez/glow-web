@@ -379,6 +379,16 @@ textarea::placeholder {
   color: var(--spark-text-muted);
 }
 
+/* Autofill overrides for dark theme */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px rgba(212, 165, 116, 0.08) inset !important;
+  -webkit-text-fill-color: var(--spark-text-primary) !important;
+  caret-color: var(--spark-text-primary);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* Custom select styling */
 select {
   appearance: none;
@@ -483,6 +493,19 @@ select {
 /* ============================================
    ANIMATIONS
    ============================================ */
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-6px); }
+  30% { transform: translateX(5px); }
+  45% { transform: translateX(-4px); }
+  60% { transform: translateX(3px); }
+  75% { transform: translateX(-2px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-out;
+}
 
 @keyframes float {
 

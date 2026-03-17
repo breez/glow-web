@@ -23,7 +23,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({ onUnlocked, onForgotPassword })
       if (e instanceof VaultError && e.code === 'wrong_password') {
         setError('Wrong password. Try again.');
       } else {
-        setError('Failed to unlock wallet. Please try again.');
+        setError('Failed to unlock Glow. Please try again.');
       }
     } finally {
       setIsLoading(false);
