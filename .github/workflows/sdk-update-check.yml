@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       include-prerelease-upgrades:
-        description: 'Also detect when a stable release replaces a pre-release (e.g. 0.11.0-dev3 → 0.11.0)'
+        description: 'Also detect when a stable release replaces a pre-release (e.g. 0.11.0-dev4 → 0.11.0)'
         type: boolean
         default: false
 
@@ -35,15 +35,16 @@ jobs:
 
           echo "Current: $CURRENT, Latest: $LATEST"
 
-          # Standard range check (works for normal version bumps)
-          if npx semver "$LATEST" -r ">$CURRENT" > /dev/null 2>&1; then
-            echo "New version available."
+          # Strip range operators (^, ~, >=, etc.) and pre-release tags
+          # so ^0.11.0-dev4 becomes 0.11.0 for a clean comparison
+          CURRENT_BASE=$(echo "$CURRENT" | sed 's/^[^0-9]*//' | sed 's/-.*//')
+
+          if npx semver "$LATEST" -r ">$CURRENT_BASE" > /dev/null 2>&1; then
+            echo "New version available: $CURRENT_BASE → $LATEST"
           elif [ "${{ inputs.include-prerelease-upgrades }}" = "true" ]; then
-            # Strip range operators (^, ~, etc.) and compare raw versions
-            # so that 0.11.0 is detected as newer than 0.11.0-dev3
             CURRENT_VER=$(echo "$CURRENT" | sed 's/^[^0-9]*//')
-            if npx semver "$LATEST" -r ">$CURRENT_VER" > /dev/null 2>&1; then
-              echo "Stable release available for current pre-release."
+            if [ "$CURRENT_VER" != "$CURRENT_BASE" ] && npx semver "$LATEST" -r ">=$CURRENT_BASE" > /dev/null 2>&1; then
+              echo "Stable release available for current pre-release: $CURRENT_VER → $LATEST"
             else
               echo "Up to date."; exit 0
             fi
