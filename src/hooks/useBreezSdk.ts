@@ -27,6 +27,7 @@ import {
   getWallet,
 } from '../services/passkeyService';
 import { sealSession, clearSession } from '../services/session';
+import { hasVault, deleteVault } from '../services/vault';
 
 // ============================================
 // SDK logging (initialized once)
@@ -45,13 +46,14 @@ function initSdkLogging() {
 // ============================================
 
 const MNEMONIC_KEY = 'walletMnemonic';
-const saveMnemonic = (m: string) => localStorage.setItem(MNEMONIC_KEY, m);
 const getSavedMnemonic = () => localStorage.getItem(MNEMONIC_KEY);
 const clearMnemonic = () => localStorage.removeItem(MNEMONIC_KEY);
 
 // ============================================
 // Types
 // ============================================
+
+export type StartupState = 'loading' | 'no-wallet' | 'vault-locked' | 'needs-migration' | 'connected';
 
 export interface BreezSdkState {
   sdk: BreezSdk | null;
@@ -68,6 +70,7 @@ export interface BreezSdkState {
   hasRejectedDeposits: boolean;
   celebrationAmount: number | null;
   prfAvailable: boolean;
+  startupState: StartupState;
 }
 
 export interface BreezSdkActions {
@@ -102,6 +105,7 @@ export function useBreezSdk(
   const [hasRejectedDeposits, setHasRejectedDeposits] = useState(false);
   const [celebrationAmount, setCelebrationAmount] = useState<number | null>(null);
   const [prfAvailable, setPrfAvailable] = useState(false);
+  const [startupState, setStartupState] = useState<StartupState>('loading');
 
   // Refs
   const isInitialLoadRef = useRef(true);
@@ -253,8 +257,6 @@ export function useBreezSdk(
       }
       if (passkeyLabel != null) {
         setPasskeyMode(passkeyLabel);
-      } else if (seed.type === 'mnemonic') {
-        saveMnemonic(seed.mnemonic);
       }
 
       const [info, txns] = await Promise.all([
@@ -265,6 +267,7 @@ export function useBreezSdk(
       setTransactions(txns.payments);
 
       setIsConnected(true);
+      setStartupState('connected');
 
       try {
         const result = await connectedSdk.listUnclaimedDeposits({});
@@ -314,6 +317,7 @@ export function useBreezSdk(
     setSdk(null);
     clearSession();
     clearMnemonic();
+    await deleteVault();
     clearPasskeyMode();
     releasePasskey();
     shownPaymentIdsRef.current.clear();
@@ -366,30 +370,53 @@ export function useBreezSdk(
     });
 
     const checkForExistingWallet = async () => {
-      const savedMnemonic = getSavedMnemonic();
-      if (savedMnemonic) {
-        try {
-          setIsLoading(true);
-          await connectWallet({ type: 'mnemonic', mnemonic: savedMnemonic }, false);
-        } catch (e) {
-          logger.error(LogCategory.SDK, 'Failed to connect with saved mnemonic', { error: formatError(e) });
-          setError('Failed to connect with saved mnemonic. Please try again.');
-          clearMnemonic();
-          setIsLoading(false);
-        }
-      } else if (isPasskeyMode()) {
+      // 1. Passkey mode — auto-reconnect via device auth (unchanged)
+      if (isPasskeyMode()) {
         try {
           setIsLoading(true);
           const wallet = await getWallet();
           await connectWallet(wallet.seed, false, wallet.label);
+          setStartupState('connected');
         } catch (e) {
           logger.error(LogCategory.SDK, 'Failed to reconnect with passkey', { error: formatError(e) });
           setError('Failed to authenticate with passkey. Please try again.');
+          setStartupState('no-wallet');
           setIsLoading(false);
         }
-      } else {
-        setIsLoading(false);
+        if (isInitialLoadRef.current) {
+          isInitialLoadRef.current = false;
+          hideSplash();
+        }
+        return;
       }
+
+      // 2. Vault exists — show unlock screen
+      const vaultExists = await hasVault();
+      if (vaultExists) {
+        setStartupState('vault-locked');
+        setIsLoading(false);
+        if (isInitialLoadRef.current) {
+          isInitialLoadRef.current = false;
+          hideSplash();
+        }
+        return;
+      }
+
+      // 3. Legacy localStorage mnemonic — show migration screen
+      const savedMnemonic = getSavedMnemonic();
+      if (savedMnemonic) {
+        setStartupState('needs-migration');
+        setIsLoading(false);
+        if (isInitialLoadRef.current) {
+          isInitialLoadRef.current = false;
+          hideSplash();
+        }
+        return;
+      }
+
+      // 4. No wallet — show home
+      setStartupState('no-wallet');
+      setIsLoading(false);
 
       if (isInitialLoadRef.current) {
         isInitialLoadRef.current = false;
@@ -450,6 +477,7 @@ export function useBreezSdk(
     hasRejectedDeposits,
     celebrationAmount,
     prfAvailable,
+    startupState,
     // Actions
     connectWallet,
     refreshWalletData,
