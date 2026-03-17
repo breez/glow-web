@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import PasswordForm from '../components/PasswordForm';
-import { ConfirmDialog } from '../components/ui';
 import { unlockVault, VaultError } from '../services/vault';
 
 interface UnlockPageProps {
@@ -11,7 +10,6 @@ interface UnlockPageProps {
 const UnlockPage: React.FC<UnlockPageProps> = ({ onUnlocked, onForgotPassword }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showForgotDialog, setShowForgotDialog] = useState(false);
 
   const handleUnlock = async (password: string) => {
     setIsLoading(true);
@@ -37,12 +35,9 @@ const UnlockPage: React.FC<UnlockPageProps> = ({ onUnlocked, onForgotPassword })
           {/* Logo */}
           <div className="flex flex-col items-center gap-4">
             <img
-              src="/glow-logo.svg"
+              src="/assets/Glow_Logo.png"
               alt="Glow"
-              className="w-16 h-16"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
+              className="w-36 h-36"
             />
             <h1 className="font-display text-2xl font-bold text-spark-text-primary">
               Welcome back
@@ -59,7 +54,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({ onUnlocked, onForgotPassword })
           {/* Forgot password */}
           <div className="text-center">
             <button
-              onClick={() => setShowForgotDialog(true)}
+              onClick={onForgotPassword}
               className="text-spark-text-muted text-sm hover:text-spark-text-secondary transition-colors"
             >
               Forgot password?
@@ -67,19 +62,6 @@ const UnlockPage: React.FC<UnlockPageProps> = ({ onUnlocked, onForgotPassword })
           </div>
         </div>
       </div>
-
-      <ConfirmDialog
-        isOpen={showForgotDialog}
-        title="Forgot Password?"
-        message="To regain access, you'll need your recovery phrase. This will create a new password and replace the existing one."
-        confirmLabel="Enter Recovery Phrase"
-        cancelLabel="Go Back"
-        onConfirm={() => {
-          setShowForgotDialog(false);
-          onForgotPassword();
-        }}
-        onCancel={() => setShowForgotDialog(false)}
-      />
     </div>
   );
 };

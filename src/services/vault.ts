@@ -27,6 +27,8 @@ interface VaultRecord {
   ciphertext: ArrayBuffer;
   iv: Uint8Array;
   pbkdf2Salt: Uint8Array;
+  /** SHA-256 fingerprint of the mnemonic for identity verification (e.g. forgot-password flow). */
+  mnemonicHash?: ArrayBuffer;
 }
 
 export class VaultError extends Error {
@@ -167,6 +169,9 @@ export async function createVault(mnemonic: string, password: string): Promise<v
     const mnemonicBytes = encoder.encode(mnemonic);
     const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as Uint8Array<ArrayBuffer> }, key, mnemonicBytes);
 
+    // SHA-256 fingerprint for identity verification (forgot-password flow)
+    const mnemonicHash = await crypto.subtle.digest('SHA-256', mnemonicBytes);
+
     // Best-effort zero-out of the encoded bytes (JS strings are immutable/GC'd)
     mnemonicBytes.fill(0);
 
@@ -177,6 +182,7 @@ export async function createVault(mnemonic: string, password: string): Promise<v
       ciphertext,
       iv,
       pbkdf2Salt: salt,
+      mnemonicHash,
     };
 
     await putVaultRecord(record);
@@ -221,6 +227,28 @@ export async function unlockVault(password: string): Promise<string> {
     if (e instanceof VaultError) throw e;
     throw new VaultError('crypto_error', `Failed to unlock vault: ${e instanceof Error ? e.message : String(e)}`);
   }
+}
+
+/** Verify a mnemonic matches the stored vault fingerprint. Returns false if no vault or no fingerprint (legacy vaults). */
+export async function verifyMnemonicFingerprint(mnemonic: string): Promise<boolean> {
+  if (!isVaultStorageAvailable()) return false;
+
+  const record = await getVaultRecord();
+  if (!record?.mnemonicHash) return true; // No fingerprint stored (legacy vault) — skip check
+
+  const encoder = new TextEncoder();
+  const mnemonicBytes = encoder.encode(mnemonic);
+  const hash = await crypto.subtle.digest('SHA-256', mnemonicBytes);
+  mnemonicBytes.fill(0);
+
+  const a = new Uint8Array(record.mnemonicHash);
+  const b = new Uint8Array(hash);
+  if (a.length !== b.length) return false;
+  let equal = true;
+  for (let i = 0; i < a.length; i++) {
+    equal = equal && a[i] === b[i];
+  }
+  return equal;
 }
 
 /** Delete the vault from IndexedDB. */

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PageLayout from '../components/layout/PageLayout';
-import { PrimaryButton } from '../components/ui';
+import { PrimaryButton, SecondaryButton, ConfirmDialog } from '../components/ui';
 import { SimpleAlert } from '../components/AlertCard';
 
 interface RestorePageProps {
@@ -8,6 +8,10 @@ interface RestorePageProps {
   onBack: () => void;
   onClearError: () => void;
   isLoading?: boolean;
+  /** Changes title, description, and button text for the forgot-password flow. */
+  mode?: 'restore' | 'reset-password';
+  /** Called when the user wants to delete the vault and start over (reset-password mode only). */
+  onStartOver?: () => void;
 }
 
 const RestorePage: React.FC<RestorePageProps> = ({
@@ -15,9 +19,15 @@ const RestorePage: React.FC<RestorePageProps> = ({
   onBack,
   onClearError,
   isLoading = false,
+  mode = 'restore',
+  onStartOver,
 }) => {
   const [mnemonic, setMnemonic] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [isMismatch, setIsMismatch] = useState(false);
+  const [showStartOverConfirm, setShowStartOverConfirm] = useState(false);
+
+  const isReset = mode === 'reset-password';
 
   const handleSubmit = async () => {
     const cleaned = mnemonic.trim().replace(/\s+/g, ' ');
@@ -29,10 +39,18 @@ const RestorePage: React.FC<RestorePageProps> = ({
     }
 
     setError(null);
+    setIsMismatch(false);
     try {
       await onConnect(cleaned);
     } catch (err) {
-      setError('Invalid recovery phrase. Please check your words and try again.');
+      const message = err instanceof Error && err.message
+        ? err.message
+        : 'Invalid recovery phrase. Please check your words and try again.';
+      setError(message);
+      // Show logout option on fingerprint mismatch
+      if (err && typeof err === 'object' && 'mismatch' in err) {
+        setIsMismatch(true);
+      }
     }
   };
 
@@ -44,31 +62,57 @@ const RestorePage: React.FC<RestorePageProps> = ({
         className="w-full"
         data-testid="restore-confirm-button"
       >
-        {isLoading ? 'Restoring...' : 'Restore Wallet'}
+        {isLoading
+          ? (isReset ? 'Verifying...' : 'Restoring...')
+          : (isReset ? 'Continue' : 'Restore')
+        }
       </PrimaryButton>
+      {isMismatch && onStartOver && (
+        <SecondaryButton
+          onClick={() => setShowStartOverConfirm(true)}
+          className="w-full mt-3"
+        >
+          Logout
+        </SecondaryButton>
+      )}
     </div>
   );
 
   return (
-    <PageLayout footer={footer} onBack={onBack} title="Restore from Backup" onClearError={onClearError}>
+    <PageLayout
+      footer={footer}
+      onBack={onBack}
+      title={isReset ? 'Enter Recovery Phrase' : 'Restore from Backup'}
+      onClearError={onClearError}
+    >
        <div className="max-w-xl mx-auto w-full space-y-4">
         {/* Icon */}
         <div className="flex justify-center mb-6">
           <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
-            <svg className="w-8 h-8 text-spark-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
+            {isReset ? (
+              <svg className="w-8 h-8 text-spark-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+            ) : (
+              <svg className="w-8 h-8 text-spark-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+            )}
           </div>
         </div>
 
         <p className="text-spark-text-secondary text-center mb-6">
-          Enter your 12 or 24-word recovery phrase to restore your wallet. Words should be separated by spaces.
+          {isReset
+            ? 'Enter your recovery phrase to verify your identity and set a new password.'
+            : 'Enter your 12 or 24-word recovery phrase to restore Glow. Words should be separated by spaces.'
+          }
         </p>
 
         <div className="relative">
           <textarea
             value={mnemonic}
             onChange={(e) => setMnemonic(e.target.value)}
+            onFocus={() => { setIsMismatch(false); setError(null); }}
             className="w-full h-36 px-4 py-3 text-spark-text-primary bg-spark-dark border border-spark-border rounded-xl focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 resize-none font-mono text-sm"
             placeholder="word1 word2 word3 ..."
             data-testid="mnemonic-input"
@@ -83,6 +127,20 @@ const RestorePage: React.FC<RestorePageProps> = ({
 
         <div className="flex-1" />
       </div>
+
+      <ConfirmDialog
+        isOpen={showStartOverConfirm}
+        title="Logout Warning"
+        message="Logging out will permanently erase all data from this device. Without your recovery phrase, you will lose access to your funds forever."
+        confirmLabel="Logout"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          setShowStartOverConfirm(false);
+          onStartOver?.();
+        }}
+        onCancel={() => setShowStartOverConfirm(false)}
+      />
     </PageLayout>
   );
 };
