@@ -16,3 +16,5 @@ coverage/
 
 # Claude Code
 .claude/settings.local.json
+.claude/launch.json
+.claude/worktrees/
