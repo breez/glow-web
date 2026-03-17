@@ -72,7 +72,7 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
           <div>
             <p className="text-spark-text-primary font-medium">{getActionText()}</p>
             <p className="text-spark-text-muted text-sm">
-              Your wallet will sign a message to prove your identity without sharing any personal information.
+              Glow will sign a message to prove your identity without sharing any personal information.
             </p>
           </div>
         </div>
