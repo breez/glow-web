@@ -28,8 +28,8 @@ import StepperBar from '@/components/OnboardingStepper';
  *   Failure → no passkey    → new user flow (review)
  *
  * New user flow:
- *   detecting → review → creating (prompt 1) → created
- *             → new-storing (prompt 2) → connecting (prompt 3) → initializing
+ *   detecting → review → creating (prompt 1) → new-storing (prompt 2)
+ *             → connecting (prompt 3) → initializing
  *
  * Returning user flow (existing label):
  *   detecting (prompt 1) → auth-pick → connecting (prompt 2) → initializing
@@ -42,22 +42,19 @@ type Phase =
   // New user flow
   | 'review'          // Warning + I understand → triggers createPasskey()
   | 'creating'        // createPasskey() in progress (prompt)
-  | 'created'         // Create Passkey step: success screen
-  | 'new-storing'     // Connect to Nostr step: saveLabel() in progress (prompt)
+  | 'new-storing'     // saveLabel() in progress (prompt)
   // Returning user flow
   | 'auth-pick'       // Authenticate step: label picker
   // Shared
   | 'connecting'      // Connect to Nostr step: getWallet() in progress (prompt)
   | 'initializing';   // Initialize step: SDK connecting
 
-/** Step index for the new user inline stepper (2 steps). */
+/** Step index for the new user inline stepper (3 steps). */
 function newUserStepIndex(phase: Phase): number {
-  // Step 1: Create Passkey
   if (phase === 'creating') return 0;
-  // Step 2: Initialize Glow
-  if (phase === 'created' || phase === 'new-storing') return 1;
-  // All complete
-  return 2; // connecting, initializing — all steps show checkmarks
+  if (phase === 'new-storing') return 1;
+  if (phase === 'connecting' || phase === 'initializing') return 2;
+  return 3; // all complete
 }
 
 
@@ -168,7 +165,8 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         await createPasskey();
         if (cancelled) return;
         logger.info(LogCategory.AUTH, 'Passkey created successfully');
-        setPhase('created');
+        connectLabelRef.current = 'Default';
+        setPhase('new-storing');
       } catch (e) {
         if (cancelled) return;
         setError('Failed to create passkey');
@@ -261,7 +259,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         break;
       case 'new-storing':
         if (isNewUser) {
-          setPhase('created');    // New user: back to Passkey Created
+          onBack();              // New user: passkey created, nothing interactive to go back to
         } else {
           setPhase('auth-pick');  // Returning user: back to label picker
         }
@@ -309,25 +307,6 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     </>
   );
 
-
-  const renderCreated = () => (
-    <>
-      <div className="flex justify-center mb-4">
-        <div className="w-16 h-16 rounded-2xl bg-green-500/20 flex items-center justify-center">
-          <CheckIcon size="xl" className="text-green-400" />
-        </div>
-      </div>
-
-      <div className="text-center mb-4">
-        <h2 className="text-xl font-display font-bold text-spark-text-primary mb-2">
-          Your passkey was created successfully
-        </h2>
-        <p className="text-spark-text-secondary">
-          Next, we'll save your label to Nostr and initialize Glow.
-        </p>
-      </div>
-    </>
-  );
 
   const renderAuthPick = () => {
     const trimmedManual = manualLabel.trim();
@@ -446,17 +425,16 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     switch (phase) {
       case 'detecting': return renderSpinner(detectingText);
       case 'review': return renderReview();
-      case 'creating': return error ? renderReview() : renderSpinner('Creating passkey...');
-      case 'created': return renderCreated();
+      case 'creating': return error ? renderReview() : renderSpinner('Initializing passkey...');
       case 'new-storing':
         if (error) return null;
         return renderSpinner('Saving label...');
       case 'auth-pick': return renderAuthPick();
       case 'connecting':
         if (error) return null;
-        return renderSpinner('Connecting...');
+        return renderSpinner('Starting Glow...');
       case 'initializing':
-        return renderSpinner('');
+        return renderSpinner('Starting Glow...');
     }
   })();
 
@@ -492,23 +470,6 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       );
     }
 
-
-    if (phase === 'created') {
-      return (
-        <div className="max-w-xl mx-auto space-y-3">
-          <PrimaryButton className="w-full" onClick={() => {
-            connectLabelRef.current = 'Default';
-            setError(null);
-            setPhase('new-storing');
-          }}>
-            Create & Connect
-          </PrimaryButton>
-          <SecondaryButton className="w-full" onClick={onBack}>
-            Go Back
-          </SecondaryButton>
-        </div>
-      );
-    }
 
     if (phase === 'auth-pick') {
       const trimmedManual = manualLabel.trim();
@@ -557,7 +518,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     <PageLayout onBack={onBack} footer={footer} title="Get Started">
       <div className="max-w-xl mx-auto w-full flex flex-col min-h-full">
         {isNewUser && (
-          <StepperBar stepCount={2} activeIndex={newUserStepIndex(phase)} />
+          <StepperBar stepCount={3} activeIndex={newUserStepIndex(phase)} />
         )}
         <div className="mt-6 space-y-4 flex flex-col flex-1">
           {content}
