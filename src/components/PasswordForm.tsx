@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FormError } from './ui/forms';
 import { EyeIcon } from './Icons';
 
@@ -7,6 +7,10 @@ interface PasswordFormProps {
   onSubmit: (password: string) => void;
   isLoading?: boolean;
   error?: string | null;
+  /** Set an id on the <form> so an external button can use form="id" to submit it. */
+  formId?: string;
+  /** Hide the inline submit button (use with formId for external submit). */
+  hideSubmit?: boolean;
 }
 
 function getStrength(password: string): { level: 'weak' | 'medium' | 'strong'; label: string } {
@@ -42,11 +46,15 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
   onSubmit,
   isLoading = false,
   error = null,
+  formId,
+  hideSubmit = false,
 }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [shaking, setShaking] = useState(false);
+  const prevErrorRef = useRef<string | null>(null);
 
   const isSetup = mode === 'setup';
   const strength = isSetup && password.length > 0 ? getStrength(password) : null;
@@ -76,15 +84,25 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
 
   const displayError = validationError || error;
 
-  const inputClasses = 'w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all';
+  // Shake input on new error
+  useEffect(() => {
+    if (displayError && displayError !== prevErrorRef.current) {
+      setShaking(true);
+      const timer = setTimeout(() => setShaking(false), 400);
+      return () => clearTimeout(timer);
+    }
+    prevErrorRef.current = displayError;
+  }, [displayError]);
+
+  const inputClasses = `w-full bg-spark-dark border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all ${displayError ? 'border-spark-error' : 'border-spark-border'}`;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" id={formId}>
       {/* Hidden username field for password manager autofill */}
       <input
         type="text"
         name="username"
-        value="glow-wallet"
+        value="glow-label-username"
         autoComplete="username"
         aria-hidden="true"
         tabIndex={-1}
@@ -93,7 +111,7 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
       />
 
       {/* Password field */}
-      <div>
+      <div className={shaking ? 'animate-shake' : ''}>
         <div className="relative">
           <input
             type={showPassword ? 'text' : 'password'}
@@ -153,23 +171,27 @@ const PasswordForm: React.FC<PasswordFormProps> = ({
       {/* Error */}
       <FormError error={displayError} />
 
-      {/* Submit */}
-      <button
-        type="submit"
-        disabled={isLoading}
-        className={`button w-full ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-      >
-        {isLoading
-          ? (isSetup ? 'Encrypting...' : 'Unlocking...')
-          : (isSetup ? 'Set Password' : 'Unlock')
-        }
-      </button>
+      {/* Submit (hidden when external button handles it) */}
+      {!hideSubmit && (
+        <>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`button w-full ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {isLoading
+              ? (isSetup ? 'Encrypting...' : 'Unlocking...')
+              : (isSetup ? 'Set Password' : 'Unlock')
+            }
+          </button>
 
-      {/* Password manager tip (setup only) */}
-      {isSetup && (
-        <p className="text-xs text-spark-text-muted text-center">
-          Use your password manager to generate a strong password
-        </p>
+          {/* Password manager tip (setup only) */}
+          {isSetup && (
+            <p className="text-xs text-spark-text-muted text-center">
+              Use your password manager to generate a strong password
+            </p>
+          )}
+        </>
       )}
     </form>
   );

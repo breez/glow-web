@@ -133,7 +133,7 @@ const AppContent: React.FC = () => {
                 }
               } catch (e) {
                 logger.error(LogCategory.AUTH, 'Failed during password setup', { error: formatError(e) });
-                setPasswordError('Failed to set up wallet. Please try again.');
+                setPasswordError('Failed to set up Glow. Please try again.');
               } finally {
                 setPasswordLoading(false);
               }
@@ -169,7 +169,7 @@ const AppContent: React.FC = () => {
               try {
                 const mnemonic = localStorage.getItem(MNEMONIC_KEY);
                 if (!mnemonic) {
-                  setPasswordError('No wallet found to migrate.');
+                  setPasswordError('No setup found to migrate.');
                   return;
                 }
                 await createVault(mnemonic, password);
@@ -178,7 +178,7 @@ const AppContent: React.FC = () => {
                 setCurrentScreen('wallet');
               } catch (e) {
                 logger.error(LogCategory.AUTH, 'Failed during migration', { error: formatError(e) });
-                setPasswordError('Failed to secure wallet. Please try again.');
+                setPasswordError('Failed to migrate. Please try again.');
               } finally {
                 setPasswordLoading(false);
               }
@@ -256,7 +256,7 @@ const AppContent: React.FC = () => {
               } catch (e) {
                 logger.error(LogCategory.AUTH, 'Failed to create vault after seed confirmation', { error: formatError(e) });
                 sdk.clearError();
-                showToast('error', 'Setup Failed', 'Failed to encrypt wallet. Please try again.');
+                showToast('error', 'Setup Failed', 'Failed to secure Glow. Please try again.');
               } finally {
                 setPasswordLoading(false);
               }

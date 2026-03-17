@@ -90,7 +90,7 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
         </div>
 
         <p className="text-spark-text-secondary text-center mb-6">
-          Write down these words in order. This is your only backup to recover your funds. Your password cannot recover your wallet, only these words can.
+          Write these words down in order and store them securely. This is your only backup for recovering your funds. Your password cannot restore access, only these words can.
         </p>
 
         {/* Mnemonic grid */}
