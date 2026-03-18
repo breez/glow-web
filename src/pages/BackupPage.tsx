@@ -1,19 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { WarningIcon, EyeIcon, FingerprintIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
 import { isPasskeyMode } from '@/services/passkeyService';
+import { unsealSession } from '@/services/session';
 import { logger, LogCategory } from '@/services/logger';
 
 interface BackupPageProps {
   onBack: () => void;
-  mnemonic: string | null;
 }
 
-const BackupPage: React.FC<BackupPageProps> = ({ onBack, mnemonic }) => {
+const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
+  const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [hasSession, setHasSession] = useState(true);
 
   const isPasskey = isPasskeyMode();
+
+  const handleReveal = useCallback(async () => {
+    try {
+      const phrase = await unsealSession();
+      if (phrase) {
+        setMnemonic(phrase);
+        setIsRevealed(true);
+      } else {
+        setHasSession(false);
+      }
+    } catch (e) {
+      logger.error(LogCategory.AUTH, 'Failed to unseal session for backup', {
+        error: e instanceof Error ? e.message : String(e),
+      });
+      setHasSession(false);
+    }
+  }, []);
+
+  const handleHide = useCallback(() => {
+    setIsRevealed(false);
+    setMnemonic(null);
+  }, []);
 
   const handleCopy = async () => {
     if (!mnemonic) return;
@@ -52,9 +76,9 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, mnemonic }) => {
           )}
 
           {/* Reveal button */}
-          {mnemonic && !isRevealed && (
+          {hasSession && !isRevealed && (
             <button
-              onClick={() => setIsRevealed(true)}
+              onClick={handleReveal}
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors"
             >
               <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
@@ -66,13 +90,13 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, mnemonic }) => {
           )}
 
           {/* Mnemonic word grid */}
-          {mnemonic && isRevealed && (
+          {isRevealed && mnemonic && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-spark-text-secondary">Recovery Phrase</span>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setIsRevealed(false)}
+                    onClick={handleHide}
                     className="px-3 py-1.5 text-sm font-medium text-spark-text-muted hover:text-spark-text-primary border border-spark-border rounded-lg hover:bg-white/5 transition-colors"
                   >
                     Hide
@@ -86,7 +110,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, mnemonic }) => {
                       : 'bg-spark-primary text-white hover:bg-spark-primary-light'
                     }
                   `}
-                >
+                  >
                     {copied ? 'Copied!' : 'Copy'}
                   </button>
                 </div>
@@ -111,7 +135,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, mnemonic }) => {
           )}
 
           {/* No backup found */}
-          {!mnemonic && (
+          {!hasSession && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-8 text-center">
               <div className="w-16 h-16 rounded-2xl bg-spark-error/20 flex items-center justify-center mx-auto mb-4">
                 <WarningIcon size="xl" className="text-spark-error" />

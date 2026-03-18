@@ -123,7 +123,7 @@ const AppContent: React.FC = () => {
 
       case 'backup':
         return (
-          <BackupPage onBack={() => setCurrentScreen('wallet')} mnemonic={sdk.walletMnemonic} />
+          <BackupPage onBack={() => setCurrentScreen('wallet')} />
         );
 
       case 'restore':
