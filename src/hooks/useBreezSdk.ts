@@ -26,7 +26,7 @@ import {
   releasePasskey,
   getWallet,
 } from '../services/passkeyService';
-import { hasVault, deleteVault } from '../services/vault';
+import { hasVault, deleteVault, sealSession, clearSession } from '../services/vault';
 
 // ============================================
 // SDK logging (initialized once)
@@ -69,7 +69,6 @@ export interface BreezSdkState {
   hasRejectedDeposits: boolean;
   celebrationAmount: number | null;
   prfAvailable: boolean;
-  walletMnemonic: string | null;
   startupState: StartupState;
 }
 
@@ -105,7 +104,6 @@ export function useBreezSdk(
   const [hasRejectedDeposits, setHasRejectedDeposits] = useState(false);
   const [celebrationAmount, setCelebrationAmount] = useState<number | null>(null);
   const [prfAvailable, setPrfAvailable] = useState(false);
-  const [walletMnemonic, setWalletMnemonic] = useState<string | null>(null);
   const [startupState, setStartupState] = useState<StartupState>('loading');
 
   // Refs
@@ -254,7 +252,7 @@ export function useBreezSdk(
       logger.info(LogCategory.SDK, 'Wallet connected successfully');
 
       if (seed.type === 'mnemonic') {
-        setWalletMnemonic(seed.mnemonic);
+        await sealSession(seed.mnemonic);
       }
       if (passkeyLabel != null) {
         setPasskeyMode(passkeyLabel);
@@ -316,7 +314,7 @@ export function useBreezSdk(
 
     // Always reset all state — even if disconnect threw
     setSdk(null);
-    setWalletMnemonic(null);
+    clearSession();
     clearMnemonic();
     await deleteVault();
     clearPasskeyMode();
@@ -478,7 +476,6 @@ export function useBreezSdk(
     hasRejectedDeposits,
     celebrationAmount,
     prfAvailable,
-    walletMnemonic,
     startupState,
     // Actions
     connectWallet,
