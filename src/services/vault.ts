@@ -244,11 +244,11 @@ export async function verifyMnemonicFingerprint(mnemonic: string): Promise<boole
   const a = new Uint8Array(record.mnemonicHash);
   const b = new Uint8Array(hash);
   if (a.length !== b.length) return false;
-  let equal = true;
+  let diff = 0;
   for (let i = 0; i < a.length; i++) {
-    equal = equal && a[i] === b[i];
+    diff |= a[i] ^ b[i];
   }
-  return equal;
+  return diff === 0;
 }
 
 /** Delete the vault from IndexedDB. */
