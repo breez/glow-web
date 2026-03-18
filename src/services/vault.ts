@@ -57,6 +57,7 @@ function openDatabase(): Promise<IDBDatabase> {
 
     request.onsuccess = () => {
       db = request.result;
+      db.onclose = () => { db = null; };
       resolve(db);
     };
 
