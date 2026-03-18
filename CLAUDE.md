@@ -127,6 +127,25 @@ const result = await wallet.newSdkMethod({ param: value });
 - Production builds require npm-published SDK version
 - Type check: `npx tsc --noEmit`
 
+## Icons
+
+All SVG icons live in `src/components/Icons.tsx` as named React components. **Never add inline `<svg>` elements** — always add a new component to `Icons.tsx` and import it.
+
+```tsx
+// Adding a new icon:
+export const MyIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) => (
+  <svg className={`${sizeClasses[size]} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="..." />
+  </svg>
+);
+
+// Using an icon:
+import { MyIcon } from '../components/Icons';
+<MyIcon size="sm" className="text-spark-primary" />
+```
+
+**Sizes:** `xs`=w-3, `sm`=w-4, `md`=w-5, `lg`=w-6, `xl`=w-8. For non-standard sizes, override via `className`.
+
 ## Logging Practices
 
 The app uses a structured logging service (`src/services/logger.ts`) following OWASP guidelines.
