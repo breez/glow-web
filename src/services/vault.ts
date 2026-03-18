@@ -27,7 +27,7 @@ interface VaultRecord {
   ciphertext: ArrayBuffer;
   iv: Uint8Array;
   pbkdf2Salt: Uint8Array;
-  /** HMAC-SHA-256 fingerprint of the mnemonic (keyed with pbkdf2Salt) for identity verification. */
+  /** HMAC-SHA-256 fingerprint of the mnemonic (keyed with pbkdf2Salt) for identity verification and GCM AAD binding. */
   mnemonicHash?: ArrayBuffer;
 }
 
@@ -185,10 +185,16 @@ export async function createVault(mnemonic: string, password: string): Promise<v
 
     const encoder = new TextEncoder();
     const mnemonicBytes = encoder.encode(mnemonic);
-    const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as Uint8Array<ArrayBuffer> }, key, mnemonicBytes);
 
     // HMAC-SHA-256 fingerprint keyed with salt for identity verification (forgot-password flow)
     const mnemonicHash = await computeMnemonicHmac(mnemonicBytes, salt);
+
+    // Bind fingerprint as GCM AAD — tampering with the hash breaks unlock
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: iv as Uint8Array<ArrayBuffer>, additionalData: mnemonicHash },
+      key,
+      mnemonicBytes,
+    );
 
     // Best-effort zero-out of the encoded bytes (JS strings are immutable/GC'd)
     mnemonicBytes.fill(0);
@@ -226,8 +232,13 @@ export async function unlockVault(password: string): Promise<string> {
 
   try {
     const key = await deriveKey(password, record.pbkdf2Salt);
+    const gcmParams: AesGcmParams = { name: 'AES-GCM', iv: record.iv as Uint8Array<ArrayBuffer> };
+    // If fingerprint is stored, bind it as AAD — tampering detection
+    if (record.mnemonicHash) {
+      gcmParams.additionalData = record.mnemonicHash;
+    }
     const decrypted = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: record.iv as Uint8Array<ArrayBuffer> },
+      gcmParams,
       key,
       record.ciphertext,
     );
