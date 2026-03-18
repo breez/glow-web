@@ -146,7 +146,7 @@ import { MyIcon } from '../components/Icons';
 
 **Sizes:** `xs`=w-3, `sm`=w-4, `md`=w-5, `lg`=w-6, `xl`=w-8. For non-standard sizes, override via `className`.
 
-**Note:** Animated SVGs that are internal to a single component (e.g., `LoadingSpinner`, `ProcessingStep`) can stay in that component — the rule targets reusable icons that were duplicated across files.
+**Note:** Animated SVGs internal to a single component (e.g., `LoadingSpinner`, `ProcessingStep`) can stay in that component. The rule applies to reusable icons — always define them in `Icons.tsx`.
 
 ## Logging Practices
 
