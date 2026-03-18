@@ -15,6 +15,7 @@ import { SendInput } from '@/types/domain';
 import { PrepareLnurlPayRequest } from '@breeztech/breez-sdk-spark';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
+import { ArrowUpIcon } from '@/components/Icons';
 import { useSendPayment } from './hooks/useSendPayment';
 import { getPaymentMethodName, getLnurlPayRequestDetails, getLnurlAuthRequestDetails } from './utils';
 
@@ -61,11 +62,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
         <DialogHeader
           title={dialogTitle}
           onClose={onClose}
-          icon={
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-            </svg>
-          }
+          icon={<ArrowUpIcon />}
         />
 
         {send.currentStep === 'input' && (

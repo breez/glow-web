@@ -4,7 +4,7 @@ import type { DepositInfo, Fee, SdkEvent } from '@breeztech/breez-sdk-spark';
 import { LoadingSpinner, PrimaryButton, SecondaryButton, FormInput, BottomSheetContainer, BottomSheetCard, DialogHeader, CollapsibleCodeField, PaymentInfoCard } from '../components/ui';
 import { SimpleAlert } from '../components/AlertCard';
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
-import { CloseIcon, CheckIcon, WarningIcon } from '../components/Icons';
+import { CloseIcon, CheckIcon, WarningIcon, RadioCheckIcon } from '../components/Icons';
 import { isDepositRejected, removeRejectedDeposit } from '../services/depositState';
 import { formatWithSpaces } from '../utils/formatNumber';
 import SlideInPage from '@/components/layout/SlideInPage';
@@ -342,9 +342,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                         }`}
                     >
                       {selectedFeeRate === 'slow' && (
-                        <svg className="absolute top-2 right-2 w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l2.293 2.293 6.543-6.543a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
+                        <RadioCheckIcon className="absolute top-2 right-2" />
                       )}
                       <div>Slow</div>
                       <div className="text-xs opacity-70">{formatWithSpaces(feeEstimates.slow)} sats</div>
@@ -357,9 +355,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                         }`}
                     >
                       {selectedFeeRate === 'medium' && (
-                        <svg className="absolute top-2 right-2 w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l2.293 2.293 6.543-6.543a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
+                        <RadioCheckIcon className="absolute top-2 right-2" />
                       )}
                       <div>Medium</div>
                       <div className="text-xs opacity-70">{formatWithSpaces(feeEstimates.medium)} sats</div>
@@ -372,9 +368,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                         }`}
                     >
                       {selectedFeeRate === 'fast' && (
-                        <svg className="absolute top-2 right-2 w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l2.293 2.293 6.543-6.543a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
+                        <RadioCheckIcon className="absolute top-2 right-2" />
                       )}
                       <div>Fast</div>
                       <div className="text-xs opacity-70">{formatWithSpaces(feeEstimates.fast)} sats</div>

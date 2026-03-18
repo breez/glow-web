@@ -5,6 +5,7 @@ import CollapsingWalletHeader from '../components/CollapsingWalletHeader';
 import SideMenu from '../components/SideMenu';
 import TransactionList from '../components/TransactionList';
 import { GetInfoResponse, Payment, Rate, FiatCurrency, DepositInfo } from '@breeztech/breez-sdk-spark';
+import { ArrowUpIcon, QrCodeIcon, ArrowDownIcon } from '../components/Icons';
 import { SendInput } from '@/types/domain';
 import { mergeDepositsWithTransactions, ExtendedPayment, isUnclaimedDepositPayment } from '@/utils/depositHelpers';
 import SendPaymentDialog from '../features/send/SendPaymentDialog';
@@ -241,9 +242,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
           className="action-button action-button-send"
           data-testid="send-button"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-          </svg>
+          <ArrowUpIcon />
           <span>Send</span>
         </button>
 
@@ -258,9 +257,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
           <span className="qr-corner qr-corner--tr" />
           <span className="qr-corner qr-corner--bl" />
           <span className="qr-corner qr-corner--br" />
-          <svg fill="currentColor" viewBox="0 0 24 24">
-            <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM19 13h2v2h-2zM13 13h2v2h-2zM15 15h2v2h-2zM13 17h2v2h-2zM15 19h2v2h-2zM17 17h2v2h-2zM17 13h2v2h-2zM19 15h2v2h-2zM19 19h2v2h-2z" />
-          </svg>
+          <QrCodeIcon />
         </button>
 
         {/* Receive button */}
@@ -269,9 +266,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
           className="action-button action-button-receive"
           data-testid="receive-button"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
-          </svg>
+          <ArrowDownIcon />
           <span>Receive</span>
         </button>
       </div>

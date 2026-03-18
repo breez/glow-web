@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { CheckIcon, CloseIcon, ExclamationIcon, InfoCircleIcon } from './Icons';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -46,42 +47,26 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({
     switch (type) {
       case 'success':
         return {
-          icon: (
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          ),
+          icon: <CheckIcon />,
           bg: 'bg-spark-success',
           progressBg: 'bg-white/30'
         };
       case 'error':
         return {
-          icon: (
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ),
+          icon: <CloseIcon />,
           bg: 'bg-spark-error',
           progressBg: 'bg-white/30'
         };
       case 'warning':
         return {
-          icon: (
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01" />
-            </svg>
-          ),
+          icon: <ExclamationIcon />,
           bg: 'bg-spark-warning',
           progressBg: 'bg-black/20'
         };
       case 'info':
       default:
         return {
-          icon: (
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          ),
+          icon: <InfoCircleIcon />,
           bg: 'bg-spark-electric',
           progressBg: 'bg-white/30'
         };
@@ -126,9 +111,7 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({
             }}
             className="flex-shrink-0 p-1 opacity-70 hover:opacity-100 transition-opacity"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <CloseIcon size="sm" />
           </button>
         </div>
 

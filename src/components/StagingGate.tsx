@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DialogContainer, DialogCard, FormInput, PrimaryButton, FormError } from './ui';
 import { hideSplash } from '../main';
+import { LockIcon } from './Icons';
 
 const STAGING_AUTH_KEY = 'staging_authenticated';
 
@@ -74,9 +75,7 @@ const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-spark-warning/20 flex items-center justify-center">
-                <svg className="w-8 h-8 text-spark-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
+                <LockIcon size="xl" className="text-spark-warning" />
               </div>
               <h2 className="font-display text-xl font-bold text-spark-text-primary">
                 Staging Environment

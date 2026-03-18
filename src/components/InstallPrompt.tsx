@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Transition } from '@headlessui/react';
+import { DownloadIcon, CloseIcon } from './Icons';
 
 const INSTALL_PROMPT_DISMISSED_KEY = 'install_prompt_dismissed';
 
@@ -88,19 +89,7 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({ onClose }) => {
         <div className="flex items-start gap-3">
           {/* Download icon */}
           <div className="flex-shrink-0 w-10 h-10 bg-spark-primary/20 rounded-xl flex items-center justify-center">
-            <svg
-              className="w-5 h-5 text-spark-primary"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
+            <DownloadIcon className="text-spark-primary" />
           </div>
 
           <div className="flex-1 min-w-0">
@@ -134,9 +123,7 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({ onClose }) => {
             onClick={handleDismiss}
             className="flex-shrink-0 p-1 text-spark-text-muted hover:text-spark-text-secondary transition-colors"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <CloseIcon size="sm" />
           </button>
         </div>
       </div>

@@ -1,34 +1,19 @@
 import React, { useMemo } from 'react';
 import { Payment } from '@breeztech/breez-sdk-spark';
 import { formatWithCommas } from '../utils/formatNumber';
+import { ArrowDownIcon, ArrowUpIcon, LightningBoltIcon, WalletIcon } from './Icons';
 
 // Use centralized formatting utility
 const formatWithSpaces = formatWithCommas;
 
 // Hoisted static JSX elements (rendering-hoist-jsx optimization)
-const ReceiveIcon = (
-  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-  </svg>
-);
+const ReceiveIcon = <ArrowDownIcon size="sm" />;
 
-const SendIcon = (
-  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-  </svg>
-);
+const SendIcon = <ArrowUpIcon size="sm" />;
 
-const LightningIcon = (
-  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
-  </svg>
-);
+const LightningIcon = <LightningBoltIcon size="xs" />;
 
-const EmptyStateIcon = (
-  <svg className="w-10 h-10 text-spark-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-  </svg>
-);
+const EmptyStateIcon = <WalletIcon className="w-10 h-10 text-spark-text-muted" />;
 
 // Hoisted helper functions (rendering-hoist-jsx optimization)
 const formatTimeAgo = (timestamp: number): string => {

@@ -1,5 +1,18 @@
 import React, { ReactNode, forwardRef } from 'react';
 import { logger, LogCategory } from '@/services/logger';
+import {
+  CloseIcon,
+  ChevronDownIcon,
+  ExternalLinkIcon,
+  CopyFilledIcon,
+  ShareIcon,
+  InfoIcon,
+  WarningIcon,
+  CheckCircleIcon,
+  ErrorIcon,
+  AlertTriangleIcon,
+  CheckIcon,
+} from '../Icons';
 
 // ============================================
 // RE-EXPORTS FROM MODULAR FILES
@@ -92,9 +105,7 @@ export const DialogHeader: React.FC<{
       onClick={onClose}
       className="absolute right-0 top-1/2 -translate-y-1/2 p-2 -mr-2 text-spark-text-muted hover:text-spark-error transition-colors rounded-lg hover:bg-white/5"
     >
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-      </svg>
+      <CloseIcon />
     </button>
   </div>
 );
@@ -152,15 +163,7 @@ export const CollapsibleCodeField: React.FC<{
         onClick={onToggle}
         className="text-spark-primary hover:text-spark-primary-light focus:outline-none focus:text-spark-primary active:text-spark-primary flex items-center transition-colors p-1"
       >
-        <svg
-          className={`w-5 h-5 transition-transform ${isVisible ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
+        <ChevronDownIcon size="md" className={`transition-transform ${isVisible ? 'rotate-180' : ''}`} />
       </button>
     </div>
     {isVisible && (
@@ -173,9 +176,7 @@ export const CollapsibleCodeField: React.FC<{
             className="font-mono text-xs break-all flex items-center gap-1 group"
           >
             <span className="text-spark-text-secondary">{value}</span>
-            <svg className="w-3.5 h-3.5 flex-shrink-0 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
+            <ExternalLinkIcon className="flex-shrink-0 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" />
           </a>
         ) : (
           <code className="text-spark-text-secondary font-mono text-xs break-all">
@@ -273,9 +274,7 @@ export const CopyableText: React.FC<{
           title={`Copy ${label}`}
           data-testid="copy-button"
         >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M8 2a2 2 0 00-2 2v1H5a2 2 0 00-2 2v7a2 2 0 002 2h6a2 2 0 002-2v-1h1a2 2 0 002-2V6l-4-4H8zm6 6h-2a2 2 0 01-2-2V4H8v1h3a1 1 0 011 1v2h2v2z" />
-          </svg>
+          <CopyFilledIcon />
           {copied ? 'Copied!' : 'Copy'}
         </button>
 
@@ -285,9 +284,7 @@ export const CopyableText: React.FC<{
             className="flex items-center gap-2 px-4 py-2 border border-spark-border text-spark-text-secondary rounded-xl font-medium text-sm hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
             title={`Share ${label}`}
           >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-            </svg>
+            <ShareIcon />
             Share
           </button>
         )}
@@ -315,26 +312,10 @@ export const Alert: React.FC<{
   };
 
   const icons = {
-    info: (
-      <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-      </svg>
-    ),
-    warning: (
-      <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l6.518 11.6c.75 1.336-.213 3.001-1.742 3.001H3.48c-1.53 0-2.492-1.665-1.742-3.001l6.52-11.6zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a1 1 0 01-1-1V7a1 1 0 112 0v3a1 1 0 01-1 1z" clipRule="evenodd" />
-      </svg>
-    ),
-    success: (
-      <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-      </svg>
-    ),
-    error: (
-      <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-      </svg>
-    ),
+    info: <InfoIcon className="flex-shrink-0" />,
+    warning: <WarningIcon className="flex-shrink-0" />,
+    success: <CheckCircleIcon className="flex-shrink-0" />,
+    error: <ErrorIcon className="flex-shrink-0" size="md" />,
   };
 
   return (
@@ -394,9 +375,7 @@ export const ErrorMessageBox: React.FC<{
     <div className={`bg-spark-error/10 border border-spark-error/30 rounded-2xl p-4 ${className}`}>
       <div className="flex items-center gap-3 mb-2">
         <div className="w-10 h-10 rounded-xl bg-spark-error/20 flex items-center justify-center flex-shrink-0">
-          <svg className="w-5 h-5 text-spark-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+          <AlertTriangleIcon className="text-spark-error" />
         </div>
         <h3 className="font-display font-bold text-spark-error">{title}</h3>
       </div>
@@ -556,9 +535,7 @@ export const Checkbox: React.FC<{
     aria-checked={checked}
   >
     {checked && (
-      <svg className="w-4 h-4 text-spark-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-      </svg>
+      <CheckIcon size="sm" className="text-spark-text-primary" />
     )}
   </button>
 );

@@ -7,6 +7,7 @@ import {
   BottomSheetCard,
   DialogHeader,
 } from '../../components/ui';
+import { LightningBoltIcon } from '../../components/Icons';
 
 interface AmountPanelProps {
   isOpen: boolean;
@@ -45,11 +46,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
         <DialogHeader
           title="Create Invoice"
           onClose={onClose}
-          icon={
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
-            </svg>
-          }
+          icon={<LightningBoltIcon />}
         />
 
         {/* Amount Input */}

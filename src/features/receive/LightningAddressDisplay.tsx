@@ -4,6 +4,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import { SimpleAlert } from '../../components/AlertCard';
 import { QRCodeContainer, PrimaryButton, SecondaryButton, FormError, CopyableText, TextButton } from '../../components/ui';
 import { useToast } from '../../contexts/ToastContext';
+import { EditIcon, LightningBoltIcon } from '../../components/Icons';
 
 export interface LightningAddressDisplayProps {
   address: LightningAddressInfo | null;
@@ -26,9 +27,7 @@ const EditButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
     className="flex items-center gap-2 px-4 border border-spark-border text-spark-text-secondary rounded-xl font-medium text-sm hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
     title="Edit Lightning Address"
   >
-    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-    </svg>
+    <EditIcon />
     Edit
   </button>
 );
@@ -75,9 +74,7 @@ const EditingForm: React.FC<EditingFormProps> = ({
       {/* Header with icon */}
       <div className="flex flex-col items-center gap-3">
         <div className="w-14 h-14 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
-          <svg className="w-7 h-7 text-spark-primary" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
-          </svg>
+          <LightningBoltIcon className="w-7 h-7 text-spark-primary" />
         </div>
         <h3 className="font-display text-lg font-semibold text-spark-text-primary">
           {address ? 'Edit Address' : 'Create Address'}
