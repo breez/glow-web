@@ -27,7 +27,7 @@ interface VaultRecord {
   ciphertext: ArrayBuffer;
   iv: Uint8Array;
   pbkdf2Salt: Uint8Array;
-  /** SHA-256 fingerprint of the mnemonic for identity verification (e.g. forgot-password flow). */
+  /** HMAC-SHA-256 fingerprint of the mnemonic (keyed with pbkdf2Salt) for identity verification. */
   mnemonicHash?: ArrayBuffer;
 }
 
@@ -137,6 +137,18 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey>
   }
 }
 
+/** HMAC-SHA-256 fingerprint keyed with salt — prevents cross-vault correlation. */
+async function computeMnemonicHmac(mnemonicBytes: Uint8Array, salt: Uint8Array): Promise<ArrayBuffer> {
+  const hmacKey = await crypto.subtle.importKey(
+    'raw',
+    salt as Uint8Array<ArrayBuffer>,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  return crypto.subtle.sign('HMAC', hmacKey, mnemonicBytes as Uint8Array<ArrayBuffer>);
+}
+
 // ============================================
 // Public API
 // ============================================
@@ -175,8 +187,8 @@ export async function createVault(mnemonic: string, password: string): Promise<v
     const mnemonicBytes = encoder.encode(mnemonic);
     const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as Uint8Array<ArrayBuffer> }, key, mnemonicBytes);
 
-    // SHA-256 fingerprint for identity verification (forgot-password flow)
-    const mnemonicHash = await crypto.subtle.digest('SHA-256', mnemonicBytes);
+    // HMAC-SHA-256 fingerprint keyed with salt for identity verification (forgot-password flow)
+    const mnemonicHash = await computeMnemonicHmac(mnemonicBytes, salt);
 
     // Best-effort zero-out of the encoded bytes (JS strings are immutable/GC'd)
     mnemonicBytes.fill(0);
@@ -247,7 +259,7 @@ export async function verifyMnemonicFingerprint(mnemonic: string): Promise<boole
 
   const encoder = new TextEncoder();
   const mnemonicBytes = encoder.encode(mnemonic);
-  const hash = await crypto.subtle.digest('SHA-256', mnemonicBytes);
+  const hash = await computeMnemonicHmac(mnemonicBytes, record.pbkdf2Salt);
   mnemonicBytes.fill(0);
 
   const a = new Uint8Array(record.mnemonicHash);
