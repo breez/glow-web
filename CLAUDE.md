@@ -146,6 +146,8 @@ import { MyIcon } from '../components/Icons';
 
 **Sizes:** `xs`=w-3, `sm`=w-4, `md`=w-5, `lg`=w-6, `xl`=w-8. For non-standard sizes, override via `className`.
 
+**Note:** Animated SVGs that are internal to a single component (e.g., `LoadingSpinner`, `ProcessingStep`) can stay in that component — the rule targets reusable icons that were duplicated across files.
+
 ## Logging Practices
 
 The app uses a structured logging service (`src/services/logger.ts`) following OWASP guidelines.
