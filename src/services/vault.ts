@@ -88,9 +88,10 @@ function putVaultRecord(record: VaultRecord): Promise<void> {
       new Promise((resolve, reject) => {
         const tx = database.transaction(STORE_NAME, 'readwrite');
         const store = tx.objectStore(STORE_NAME);
-        const request = store.put(record);
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => resolve();
+        store.put(record);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error ?? new Error('Transaction aborted'));
       }),
   );
 }
