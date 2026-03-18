@@ -114,26 +114,27 @@ function clearVaultStore(): Promise<void> {
 // Crypto helpers
 // ============================================
 
-function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
   const encoder = new TextEncoder();
   const passwordBytes = encoder.encode(password);
 
-  return crypto.subtle
-    .importKey('raw', passwordBytes, 'PBKDF2', false, ['deriveKey'])
-    .then((baseKey) =>
-      crypto.subtle.deriveKey(
-        {
-          name: 'PBKDF2',
-          salt: salt as Uint8Array<ArrayBuffer>,
-          iterations: PBKDF2_ITERATIONS,
-          hash: PBKDF2_HASH,
-        },
-        baseKey,
-        { name: 'AES-GCM', length: 256 },
-        false, // non-extractable
-        ['encrypt', 'decrypt'],
-      ),
+  try {
+    const baseKey = await crypto.subtle.importKey('raw', passwordBytes, 'PBKDF2', false, ['deriveKey']);
+    return await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt as Uint8Array<ArrayBuffer>,
+        iterations: PBKDF2_ITERATIONS,
+        hash: PBKDF2_HASH,
+      },
+      baseKey,
+      { name: 'AES-GCM', length: 256 },
+      false, // non-extractable
+      ['encrypt', 'decrypt'],
     );
+  } finally {
+    passwordBytes.fill(0);
+  }
 }
 
 // ============================================
