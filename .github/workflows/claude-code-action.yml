@@ -19,4 +19,7 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          allowed_tools: "Bash,Edit,Read,Write,Glob,Grep"
+          label_trigger: "sdk-upgrade"
+          prompt: |
+            Follow the instructions in the issue body to upgrade the SDK.
+            Create a PR with the changes when done.
