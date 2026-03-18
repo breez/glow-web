@@ -22,4 +22,5 @@ jobs:
           label_trigger: "sdk-upgrade"
           prompt: |
             Follow the instructions in the issue body to upgrade the SDK.
+            Check the release notes at https://github.com/breez/spark-sdk/releases for breaking changes between the current and target versions.
             Create a PR with the changes when done.
