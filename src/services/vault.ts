@@ -162,6 +162,9 @@ export async function createVault(mnemonic: string, password: string): Promise<v
   if (!isVaultStorageAvailable()) {
     throw new VaultError('storage_unavailable', 'IndexedDB or Web Crypto is not available');
   }
+  if (!password) {
+    throw new VaultError('crypto_error', 'Password is required');
+  }
 
   try {
     const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
@@ -199,6 +202,9 @@ export async function createVault(mnemonic: string, password: string): Promise<v
 export async function unlockVault(password: string): Promise<string> {
   if (!isVaultStorageAvailable()) {
     throw new VaultError('storage_unavailable', 'IndexedDB or Web Crypto is not available');
+  }
+  if (!password) {
+    throw new VaultError('wrong_password', 'Wrong password');
   }
 
   const record = await getVaultRecord();
