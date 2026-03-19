@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSecretTap } from '@/hooks/useSecretTap';
+import { brand } from '../config/brand';
 
 // Star positions around the logo (relative to center, in pixels) - larger radius for bigger logo
 const STARS = [
@@ -91,8 +92,8 @@ const HomePage: React.FC<HomePageProps> = ({
           {/* Icon container */}
           <div className="relative w-36 h-36 flex items-center justify-center">
             <img
-              src="/assets/Glow_Logo.png"
-              alt="Glow"
+              src={brand.logo}
+              alt={brand.name}
               className="w-full h-full object-contain"
               onClick={handleLogoTap}
             />
@@ -116,13 +117,13 @@ const HomePage: React.FC<HomePageProps> = ({
         {/* Title */}
         <h1 className="font-display text-5xl md:text-6xl font-bold text-center mb-2 tracking-tight">
           <span className="text-gradient-primary">
-            Glow
+            {brand.name}
           </span>
         </h1>
 
         {/* Tagline */}
         <p className="text-spark-text-muted text-sm font-display text-center mb-12">
-          Powered by Breez SDK
+          {brand.tagline}
         </p>
 
         {/* CTA Buttons */}

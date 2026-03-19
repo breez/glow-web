@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { brand } from '../../../config/brand';
 import { PrimaryButton, ErrorMessageBox } from '../../../components/ui';
 import { CloseIcon } from '../../../components/Icons';
 
@@ -109,9 +110,9 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
         {/* Logo with sparkles */}
         <div className="relative w-20 h-20 flex items-center justify-center">
           <img
-            src="/assets/Glow_Logo.png"
-            alt="Glow"
-            className="w-16 h-16 object-contain drop-shadow-[0_0_20px_rgba(212,165,116,0.5)]"
+            src={brand.logo}
+            alt={brand.name}
+            className="w-16 h-16 object-contain drop-shadow-brand-lg"
           />
 
           {/* Sparkle stars */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { brand } from '../../config/brand';
 import { useToast } from '../../contexts/ToastContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
@@ -115,7 +116,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     if (!lightningAddress) return '';
     const parts = lightningAddress.lightningAddress.split('@');
     const username = parts[0];
-    const domain = parts[1] || 'breez.tips';
+    const domain = parts[1] || brand.lnAddressDomain;
     return `Changing your Lightning Address username will permanently release '${username}@${domain}', making it available for other users.\n\nDo you want to proceed?`;
   };
 

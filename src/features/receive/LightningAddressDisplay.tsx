@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
+import { brand } from '../../config/brand';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { SimpleAlert } from '../../components/AlertCard';
 import { QRCodeContainer, PrimaryButton, SecondaryButton, FormError, CopyableText, TextButton } from '../../components/ui';
@@ -95,7 +96,7 @@ const EditingForm: React.FC<EditingFormProps> = ({
             className="flex-1 min-w-0 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none resize-none"
           />
           <span className="flex-shrink-0 px-4 py-3 text-spark-text-muted font-medium text-sm">
-            @breez.tips
+            @{brand.lnAddressDomain}
           </span>
         </div>
 

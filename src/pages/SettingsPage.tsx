@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { brand } from '../config/brand';
 import { FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
 import { getSettings, saveSettings, UserSettings } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
@@ -321,7 +322,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
               onClick={devTap}
               className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors select-none"
             >
-              Glow v1.0.0
+              {`${brand.name} v${__APP_VERSION__}`}
               {isDevMode && <span className="ml-1 text-spark-primary">(dev)</span>}
             </button>
             {devTapCount > 0 && devTapCount < devTapThreshold && (

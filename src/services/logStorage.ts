@@ -8,7 +8,9 @@
  * - Automatic cleanup of oldest sessions when limit reached
  */
 
-const DB_NAME = 'glow-logs';
+import { brandIds } from '../config/brand';
+
+const DB_NAME = brandIds.logDbName;
 const DB_VERSION = 2; // Bumped version for schema change
 const STORE_NAME = 'sessions';
 const KEY_STORE_NAME = 'encryption';
