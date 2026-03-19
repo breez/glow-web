@@ -66,6 +66,7 @@ export interface BreezSdkState {
   hasRejectedDeposits: boolean;
   celebrationAmount: number | null;
   prfAvailable: boolean;
+  needsPasskeyUnlock: boolean;
 }
 
 export interface BreezSdkActions {
@@ -100,6 +101,7 @@ export function useBreezSdk(
   const [hasRejectedDeposits, setHasRejectedDeposits] = useState(false);
   const [celebrationAmount, setCelebrationAmount] = useState<number | null>(null);
   const [prfAvailable, setPrfAvailable] = useState(false);
+  const [needsPasskeyUnlock, setNeedsPasskeyUnlock] = useState(false);
 
   // Refs
   const isInitialLoadRef = useRef(true);
@@ -259,6 +261,7 @@ export function useBreezSdk(
       setWalletInfo(info);
       setTransactions(txns.payments);
 
+      setNeedsPasskeyUnlock(false);
       setIsConnected(true);
 
       try {
@@ -372,6 +375,7 @@ export function useBreezSdk(
         }
       } else if (isPasskeyMode()) {
         // Don't auto-prompt — let the UnlockPage handle user-initiated auth
+        setNeedsPasskeyUnlock(true);
         setIsLoading(false);
       } else {
         setIsLoading(false);
@@ -436,6 +440,7 @@ export function useBreezSdk(
     hasRejectedDeposits,
     celebrationAmount,
     prfAvailable,
+    needsPasskeyUnlock,
     // Actions
     connectWallet,
     refreshWalletData,

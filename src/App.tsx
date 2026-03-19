@@ -19,10 +19,9 @@ import UnlockPage from './pages/UnlockPage';
 import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
-import { isPasskeyMode } from './services/passkeyService';
 import type { Seed, Wallet } from '@breeztech/breez-sdk-spark';
 
-type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'passkey';
+type Screen = 'home' | 'unlock' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'passkey';
 
 const AppContent: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -34,9 +33,16 @@ const AppContent: React.FC = () => {
 
   const sdk = useBreezSdk(showToast);
 
-  // Auto-navigate to wallet when SDK reconnects from saved mnemonic
+  // Auto-navigate to unlock screen for returning passkey users
   useEffect(() => {
-    if (sdk.isConnected && currentScreen === 'home') {
+    if (sdk.needsPasskeyUnlock && currentScreen === 'home') {
+      setCurrentScreen('unlock');
+    }
+  }, [sdk.needsPasskeyUnlock, currentScreen]);
+
+  // Auto-navigate to wallet when SDK connects
+  useEffect(() => {
+    if (sdk.isConnected && (currentScreen === 'home' || currentScreen === 'unlock')) {
       setCurrentScreen('wallet');
     }
   }, [sdk.isConnected, currentScreen]);
@@ -82,10 +88,10 @@ const AppContent: React.FC = () => {
     }
 
     switch (currentScreen) {
+      case 'unlock':
+        return <UnlockPage onUnlock={handlePasskeyUnlock} onLogout={handleLogout} />;
+
       case 'home':
-        if (isPasskeyMode()) {
-          return <UnlockPage onUnlock={handlePasskeyUnlock} onLogout={handleLogout} />;
-        }
         return (
           <HomePage
             onRestoreWallet={() => setCurrentScreen('restore')}
