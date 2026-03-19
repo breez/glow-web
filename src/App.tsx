@@ -15,10 +15,12 @@ import GeneratePage from './pages/GeneratePage';
 import GetRefundPage from './pages/GetRefundPage';
 import BackupPage from './pages/BackupPage';
 import PasskeyPage from './pages/PasskeyPage';
+import UnlockPage from './pages/UnlockPage';
 import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
-import type { Seed } from '@breeztech/breez-sdk-spark';
+import { isPasskeyMode } from './services/passkeyService';
+import type { Seed, Wallet } from '@breeztech/breez-sdk-spark';
 
 type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'passkey';
 
@@ -60,6 +62,10 @@ const AppContent: React.FC = () => {
     setCurrentScreen('wallet');
   }, []);
 
+  const handlePasskeyUnlock = async (wallet: Wallet) => {
+    await sdk.connectWallet(wallet.seed, false, wallet.label);
+  };
+
   const handleLogout = async () => {
     setCurrentScreen('home');
     await sdk.handleLogout();
@@ -77,6 +83,9 @@ const AppContent: React.FC = () => {
 
     switch (currentScreen) {
       case 'home':
+        if (isPasskeyMode()) {
+          return <UnlockPage onUnlock={handlePasskeyUnlock} onLogout={handleLogout} />;
+        }
         return (
           <HomePage
             onRestoreWallet={() => setCurrentScreen('restore')}

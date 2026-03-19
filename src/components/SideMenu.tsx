@@ -89,7 +89,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
     },
     {
       icon: <LogoutIcon />,
-      label: 'Logout',
+      label: 'Log out',
       onClick: () => { setShowLogoutConfirm(true); }
     }
   ];
@@ -244,7 +244,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                       onClick={handleConfirmLogout}
                       className="flex-1 px-4 py-3 bg-spark-error text-white rounded-xl font-medium hover:bg-spark-error/90 transition-colors"
                     >
-                      Logout
+                      Log out
                     </button>
                   </div>
                 </Transition.Child>

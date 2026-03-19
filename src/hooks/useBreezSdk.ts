@@ -23,7 +23,6 @@ import {
   isPasskeyMode,
   setPasskeyMode,
   clearPasskeyMode,
-  getWallet,
 } from '../services/passkeyService';
 
 
@@ -372,27 +371,8 @@ export function useBreezSdk(
           setIsLoading(false);
         }
       } else if (isPasskeyMode()) {
-        setIsLoading(true);
-        let wallet;
-        try {
-          wallet = await getWallet();
-        } catch (e) {
-          logger.error(LogCategory.AUTH, 'Passkey authentication failed', { error: formatError(e) });
-          if (e instanceof DOMException && e.name === 'NotAllowedError') {
-            clearPasskeyMode();
-          }
-          setError('Failed to authenticate with passkey. Please try again.');
-          setIsLoading(false);
-        }
-        if (wallet) {
-          try {
-            await connectWallet(wallet.seed, false, wallet.label);
-          } catch (e) {
-            logger.error(LogCategory.SDK, 'Failed to connect after passkey auth', { error: formatError(e) });
-            setError('Failed to connect wallet. Please try again.');
-            setIsLoading(false);
-          }
-        }
+        // Don't auto-prompt — let the UnlockPage handle user-initiated auth
+        setIsLoading(false);
       } else {
         setIsLoading(false);
       }
