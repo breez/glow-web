@@ -115,6 +115,12 @@ export const EyeIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) =>
   </svg>
 );
 
+export const EyeOffIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) => (
+  <svg className={`${sizeClasses[size]} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+  </svg>
+);
+
 export const FingerprintIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) => (
   <svg className={`${sizeClasses[size]} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
@@ -345,3 +351,37 @@ export const SearchIcon: React.FC<IconProps> = ({ className = '', size = 'sm' })
     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
   </svg>
 );
+
+export const BitcoinIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) => (
+  <svg className={`${sizeClasses[size]} ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <circle cx="12" cy="12" r="9" />
+    <g fill="currentColor" stroke="none">
+      <rect x="10.5" y="5.5" width="1.2" height="2" rx="0.4" />
+      <rect x="12.8" y="5.5" width="1.2" height="2" rx="0.4" />
+      <rect x="10.5" y="16.5" width="1.2" height="2" rx="0.4" />
+      <rect x="12.8" y="16.5" width="1.2" height="2" rx="0.4" />
+      <path d="M9.5 8.5h4c1.1 0 2 .7 2 1.6s-.9 1.6-2 1.6H9.5V8.5z" />
+      <path d="M9.5 11.7h4.2c1.2 0 2.1.7 2.1 1.7 0 1-.9 1.7-2.1 1.7H9.5v-3.4z" />
+      <rect x="8.5" y="8.5" width="1.5" height="6.6" />
+    </g>
+  </svg>
+);
+
+// ============================================
+// BRAND ICONS
+// ============================================
+
+export const MoonPayIcon: React.FC<IconProps> = ({ className = '', size = 'lg' }) => (
+  <svg className={`${sizeClasses[size]} ${className}`} viewBox="0 0 58 48" fill="currentColor">
+    <circle cx="20.7696" cy="27.2305" r="20.7696" />
+    <circle cx="50.77" cy="6.46164" r="6.46164" />
+  </svg>
+);
+
+export const CashAppIcon: React.FC<IconProps> = ({ className = '', size = 'lg' }) => (
+  <svg className={`${sizeClasses[size]} ${className}`} viewBox="0 0 24 24" fill="none">
+    <rect width="24" height="24" rx="5" fill="currentColor" />
+    <path d="M12.807 10.574c2.529.542 3.685 1.59 3.685 3.36 0 2.218-1.807 3.856-4.628 4.03l-.275 1.312a.44.44 0 01-.27.22h-2.17a.31.31 0 01-.27-.341l.349-1.468a6.34 6.34 0 01-3.18-2.127.29.29 0 01.06-.374l1.517-1.18a.31.31 0 01.397.06 4.22 4.22 0 003.521 1.781c1.337 0 2.348-.65 2.348-1.59 0-.722-.505-1.047-2.203-1.409-2.926-.613-4.082-1.697-4.082-3.467 0-2.054 1.726-3.605 4.33-3.807l.284-1.355a.44.44 0 01.271-.22h2.14c.177 0 .309.163.271.336l-.329 1.519a5.87 5.87 0 012.6 1.722.29.29 0 01-.048.378l-1.384 1.135a.31.31 0 01-.394-.044 3.68 3.68 0 00-3.01-1.361c-1.336 0-2.167.578-2.167 1.409 0 .686.65 1.048 2.637 1.481z" fill="white" />
+  </svg>
+);
+
