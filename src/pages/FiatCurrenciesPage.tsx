@@ -223,6 +223,15 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                   {currency.info.name}
                 </p>
               </div>
+
+              {/* Invisible placeholders to match selected row height */}
+              <div className="flex flex-col gap-0.5 invisible">
+                <div className="p-1"><ChevronUpIcon /></div>
+                <div className="p-1"><ChevronDownIcon /></div>
+              </div>
+              <div className="p-1 invisible">
+                <DragHandleIcon />
+              </div>
             </div>
           ))}
         </div>
