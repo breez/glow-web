@@ -7,8 +7,9 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
     if (payment.details?.type === 'lightning') {
       if (payment.details.lnurlPayInfo?.lnAddress) {
         const contact = findContactByAddress?.(payment.details.lnurlPayInfo.lnAddress);
-        if (contact) return contact.name;
-        return payment.details.lnurlPayInfo.lnAddress;
+        const isSend = payment.paymentType === 'send';
+        if (contact) return isSend ? `Pay to ${contact.name}` : contact.name;
+        return isSend ? `Pay to ${payment.details.lnurlPayInfo.lnAddress}` : payment.details.lnurlPayInfo.lnAddress;
       }
       return payment.details?.description || 'Lightning Payment';
     }
