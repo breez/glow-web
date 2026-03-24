@@ -3,7 +3,7 @@ import type { GetInfoResponse, FiatCurrency } from '@breeztech/breez-sdk-spark';
 import { getFiatSettings } from '../services/settings';
 import { formatWithThinSpaces } from '../utils/formatNumber';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
-import { MenuIcon, AlertTriangleIcon, CurrencyIcon } from './Icons';
+import { MenuIcon, AlertTriangleIcon, CurrencyIcon, SpinnerIcon } from './Icons';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { getTokenBalance, formatTokenAmount } from '../utils/tokenFormatting';
@@ -18,6 +18,7 @@ interface CollapsingWalletHeaderProps {
   scrollProgress: number;
   onOpenMenu: () => void;
   onOpenBuyBitcoin?: () => void;
+  isBuyLoading?: boolean;
   isSyncing?: boolean;
   refreshWalletData?: () => Promise<void>;
   hasRejectedDeposits?: boolean;
@@ -29,6 +30,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   scrollProgress,
   onOpenMenu,
   onOpenBuyBitcoin,
+  isBuyLoading,
   isSyncing,
   refreshWalletData,
   hasRejectedDeposits,
@@ -255,10 +257,11 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             {onOpenBuyBitcoin && (
               <button
                 type="button"
-                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-spark-text-secondary hover:text-spark-text-primary border border-white/10 hover:border-white/20 hover:bg-white/5 transition-colors text-sm font-medium"
+                disabled={isBuyLoading}
+                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-spark-text-secondary hover:text-spark-text-primary border border-white/10 hover:border-white/20 hover:bg-white/5 transition-colors text-sm font-medium disabled:opacity-50"
                 onClick={onOpenBuyBitcoin}
               >
-                <CurrencyIcon size="sm" />
+                {isBuyLoading ? <SpinnerIcon size="sm" className="animate-spin" /> : <CurrencyIcon size="sm" />}
                 <span>Buy</span>
               </button>
             )}
