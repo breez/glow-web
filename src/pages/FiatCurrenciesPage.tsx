@@ -14,6 +14,7 @@ interface FiatCurrenciesPageProps {
 const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
   const wallet = useWallet();
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [currencies, setCurrencies] = useState<FiatCurrency[]>([]);
   const [selectedCurrencies, setSelectedCurrencies] = useState<string[]>([]);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
@@ -34,6 +35,7 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
         logger.error(LogCategory.SDK, 'Failed to load fiat currencies', {
           error: error instanceof Error ? error.message : String(error),
         });
+        setLoadError(true);
       } finally {
         setIsLoading(false);
       }
@@ -75,15 +77,16 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
       const newOrder = [...prev];
       newOrder.splice(draggedIndex, 1);
       newOrder.splice(targetIndex, 0, draggedItem);
-
-      // Save immediately
-      saveFiatSettings({ selectedCurrencies: newOrder });
       return newOrder;
     });
   }, [draggedItem]);
 
   const handleDragEnd = useCallback(() => {
     setDraggedItem(null);
+    setSelectedCurrencies(prev => {
+      saveFiatSettings({ selectedCurrencies: prev });
+      return prev;
+    });
   }, []);
 
   const handleMoveUp = useCallback((currencyId: string) => {
@@ -131,6 +134,10 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <LoadingSpinner />
+        </div>
+      ) : loadError ? (
+        <div className="p-4 text-center text-spark-text-muted">
+          Failed to load currencies. Please try again.
         </div>
       ) : (
         <div className="p-4 space-y-2">
@@ -222,6 +229,15 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                 <p className="text-sm text-spark-text-muted truncate">
                   {currency.info.name}
                 </p>
+              </div>
+
+              {/* Invisible placeholders to match selected row height */}
+              <div className="flex flex-col gap-0.5 invisible">
+                <div className="p-1"><ChevronUpIcon /></div>
+                <div className="p-1"><ChevronDownIcon /></div>
+              </div>
+              <div className="p-1 invisible">
+                <DragHandleIcon />
               </div>
             </div>
           ))}

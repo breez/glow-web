@@ -12,6 +12,7 @@ import {
   ErrorIcon,
   AlertTriangleIcon,
   CheckIcon,
+  ExternalLinkIcon,
 } from '../Icons';
 
 // ============================================
@@ -39,8 +40,8 @@ export {
 export type { FormInputProps, FormTextareaProps } from './forms';
 
 // Bottom Sheets
-import { useBottomSheetCardEl } from './sheets/BottomSheet';
-export { BottomSheetContainer, BottomSheetCard, useBottomSheetCardEl } from './sheets/BottomSheet';
+import { useBottomSheetCardEl } from './sheets/BottomSheetCardContext';
+export { BottomSheetContainer, BottomSheetCard } from './sheets/BottomSheet';
 export type { BottomSheetMaxWidth, BottomSheetContainerProps, BottomSheetCardProps } from './sheets/BottomSheet';
 
 // Loading
@@ -191,9 +192,7 @@ export const CollapsibleCodeField: React.FC<{
           className="font-mono text-xs break-all flex items-center gap-1 group"
         >
           <span className="text-spark-text-secondary">{value}</span>
-          <svg className="w-3.5 h-3.5 flex-shrink-0 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
+          <ExternalLinkIcon className="w-3.5 h-3.5 flex-shrink-0 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" />
         </a>
       ) : (
         <code className="text-spark-text-secondary font-mono text-xs break-all">

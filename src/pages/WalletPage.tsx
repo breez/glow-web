@@ -1,11 +1,12 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import { useToast } from '../contexts/ToastContext';
 import { logger, LogCategory } from '@/services/logger';
 import CollapsingWalletHeader from '../components/CollapsingWalletHeader';
 import SideMenu from '../components/SideMenu';
 import TransactionList from '../components/TransactionList';
-import { GetInfoResponse, Payment, DepositInfo } from '@breeztech/breez-sdk-spark';
+import { GetInfoResponse, Payment, DepositInfo, Network } from '@breeztech/breez-sdk-spark';
+import type { BuyBitcoinProvider } from '../services/settings';
 import { ArrowUpIcon, QrCodeIcon, ArrowDownIcon } from '../components/Icons';
 import { mergeDepositsWithTransactions, ExtendedPayment, isUnclaimedDepositPayment } from '@/utils/depositHelpers';
 import SendPaymentDialog from '../features/send/SendPaymentDialog';
@@ -14,6 +15,8 @@ import QrScannerDialog from '../components/QrScannerDialog';
 import PaymentDetailsDialog from '../components/PaymentDetailsDialog';
 import UnclaimedDepositDetailsPage from './UnclaimedDepositDetailsPage';
 import SaveContactDialog from '../features/send/components/SaveContactDialog';
+import BuyBitcoinDialog from '../features/buy/BuyBitcoinDialog';
+import { getBuyProviderSettings, filterProvidersByNetwork } from '../services/settings';
 
 interface WalletPageProps {
   walletInfo: GetInfoResponse | null;
@@ -28,7 +31,9 @@ interface WalletPageProps {
   onOpenGetRefund: (source?: 'menu' | 'icon') => void;
   onOpenSettings: () => void;
   onOpenBackup: () => void;
-  onOpenBuyBitcoin: () => void;
+  onOpenBuyProviders: () => void;
+  onBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
+  network?: Network;
   onDepositChanged?: () => void;
 }
 
@@ -43,7 +48,9 @@ const WalletPage: React.FC<WalletPageProps> = ({
   onOpenGetRefund,
   onOpenSettings,
   onOpenBackup,
-  onOpenBuyBitcoin,
+  onOpenBuyProviders,
+  onBuyBitcoin,
+  network,
   onDepositChanged,
 }) => {
   const wallet = useWallet();
@@ -57,6 +64,11 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const [selectedDeposit, setSelectedDeposit] = useState<DepositInfo | null>(null);
   const [paymentInput, setPaymentInput] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isBuyBitcoinOpen, setIsBuyBitcoinOpen] = useState(false);
+  const [isBuyLoading, setIsBuyLoading] = useState(false);
+  // Re-read when menu closes (user may have changed providers in BuyProvidersPage)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const enabledBuyProviders = useMemo(() => filterProvidersByNetwork(getBuyProviderSettings(), network), [isMenuOpen, network]);
   const [saveContactAddress, setSaveContactAddress] = useState<string | null>(null);
 
   const transactionsContainerRef = useRef<HTMLDivElement>(null);
@@ -182,7 +194,17 @@ const WalletPage: React.FC<WalletPageProps> = ({
           walletInfo={walletInfo}
           scrollProgress={scrollProgress}
           onOpenMenu={() => setIsMenuOpen(true)}
-          onOpenBuyBitcoin={onOpenBuyBitcoin}
+          onOpenBuyBitcoin={() => {
+            if (enabledBuyProviders.length === 0) {
+              onOpenBuyProviders();
+            } else if (enabledBuyProviders.length === 1) {
+              setIsBuyLoading(true);
+              onBuyBitcoin(enabledBuyProviders[0]).finally(() => setIsBuyLoading(false));
+            } else {
+              setIsBuyBitcoinOpen(true);
+            }
+          }}
+          isBuyLoading={isBuyLoading}
           isSyncing={isSyncing}
           refreshWalletData={() => refreshWalletData(false)}
           hasRejectedDeposits={hasRejectedDeposits}
@@ -216,6 +238,14 @@ const WalletPage: React.FC<WalletPageProps> = ({
       <ReceivePaymentDialog
         isOpen={isReceiveDialogOpen}
         onClose={handleReceiveDialogClose}
+      />
+
+      {/* Buy Bitcoin Dialog */}
+      <BuyBitcoinDialog
+        isOpen={isBuyBitcoinOpen}
+        onClose={() => setIsBuyBitcoinOpen(false)}
+        onBuyBitcoin={onBuyBitcoin}
+        network={network}
       />
 
       {/* QR Scanner Dialog */}

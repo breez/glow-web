@@ -19,11 +19,13 @@ import BackupPage from './pages/BackupPage';
 import PasskeyPage from './pages/PasskeyPage';
 import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
+import BuyProvidersPage from './pages/BuyProvidersPage';
 import { ContactsProvider } from './contexts/ContactsContext';
+
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
 import type { Seed, Payment } from '@breeztech/breez-sdk-spark';
 
-type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'passkey';
+type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey';
 
 // Bridge component that feeds StableBalance formatter back to useBreezSdk via a mutable ref
 const StableBalanceFormatterBridge: React.FC<{ formatterRef: React.MutableRefObject<((payment: Payment) => string) | undefined> }> = ({ formatterRef }) => {
@@ -37,6 +39,7 @@ const StableBalanceFormatterBridge: React.FC<{ formatterRef: React.MutableRefObj
 const AppContent: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
+  const [buyProvidersSource, setBuyProvidersSource] = useState<'wallet' | 'settings'>('wallet');
   const [passkeySdkConnected, setPasskeySdkConnected] = useState(false);
   const { showToast } = useToast();
   const formatPaymentAmountRef = useRef<((payment: Payment) => string) | undefined>(undefined);
@@ -126,12 +129,22 @@ const AppContent: React.FC = () => {
             onBack={() => setCurrentScreen('wallet')}
             config={sdk.config}
             onOpenFiatCurrencies={() => setCurrentScreen('fiatCurrencies')}
+            onOpenBuyProviders={() => { setBuyProvidersSource('settings'); setCurrentScreen('buyProviders'); }}
           />
         );
 
       case 'fiatCurrencies':
         return (
           <FiatCurrenciesPage onBack={() => setCurrentScreen('settings')} />
+        );
+
+      case 'buyProviders':
+        return (
+          <BuyProvidersPage
+            onBack={() => setCurrentScreen(buyProvidersSource === 'settings' ? 'settings' : 'wallet')}
+            slideFrom={buyProvidersSource === 'settings' ? 'right' : 'up'}
+            network={sdk.config?.network}
+          />
         );
 
       case 'backup':
@@ -187,7 +200,9 @@ const AppContent: React.FC = () => {
             }}
             onOpenSettings={() => setCurrentScreen('settings')}
             onOpenBackup={() => setCurrentScreen('backup')}
-            onOpenBuyBitcoin={sdk.handleBuyBitcoin}
+            onOpenBuyProviders={() => { setBuyProvidersSource('wallet'); setCurrentScreen('buyProviders'); }}
+            onBuyBitcoin={sdk.handleBuyBitcoin}
+            network={sdk.config?.network}
             onDepositChanged={sdk.fetchUnclaimedDeposits}
           />
         );

@@ -15,7 +15,7 @@ import { buildConnectConfig } from './buildConnectConfig';
 import { logger, LogCategory, logSdkMessage } from '../services/logger';
 import { formatError } from '../utils/formatError';
 import { isDepositRejected } from '../services/depositState';
-import { setCachedStableTicker } from '../services/settings';
+import { setCachedStableTicker, type BuyBitcoinProvider } from '../services/settings';
 import { hideSplash } from '../main';
 import {
   isPrfAvailable,
@@ -84,7 +84,7 @@ export interface BreezSdkActions {
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
   fetchUnclaimedDeposits: () => Promise<void>;
   handleLogout: () => Promise<void>;
-  handleBuyBitcoin: () => Promise<void>;
+  handleBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
   clearError: () => void;
   dismissCelebration: () => void;
 }
@@ -332,14 +332,28 @@ export function useBreezSdk(
     showToast('success', 'Successfully logged out');
   }, [sdk, showToast]);
 
-  const handleBuyBitcoin = useCallback(async () => {
+  const handleBuyBitcoin = useCallback(async (provider: BuyBitcoinProvider) => {
     if (!sdk) return;
+
+    // Pre-open a blank tab synchronously (during user gesture) to avoid popup blockers.
+    // On mobile/PWA this will likely return null — we fall back to same-tab navigation.
+    const newTab = window.open('', '_blank');
+
     try {
-      const response = await sdk.buyBitcoin({ type: 'moonpay' });
-      window.open(response.url, '_blank', 'noopener,noreferrer');
+      const request = provider === 'cashApp'
+        ? { type: 'cashApp' as const }
+        : { type: 'moonpay' as const };
+      const response = await sdk.buyBitcoin(request);
+      if (newTab) {
+        newTab.location.href = response.url;
+      } else {
+        window.location.href = response.url;
+      }
     } catch (e) {
+      // Close the blank tab if the SDK call failed
+      newTab?.close();
       logger.error(LogCategory.SDK, 'Failed to open Buy Bitcoin', { error: formatError(e) });
-      showToast('error', 'Buy Bitcoin', 'Failed to open MoonPay. Please try again.');
+      showToast('error', 'Buy Bitcoin', 'Failed to open purchase page. Please try again.');
     }
   }, [sdk, showToast]);
 

@@ -1,4 +1,13 @@
 import { MaxFee } from "@breeztech/breez-sdk-spark/web";
+import type { Network } from "@breeztech/breez-sdk-spark";
+/** Provider identifiers matching the SDK's BuyBitcoinRequest tagged union */
+export type BuyBitcoinProvider = 'moonpay' | 'cashApp';
+
+/** Filter out providers unavailable on the current network (e.g. CashApp is mainnet-only) */
+export function filterProvidersByNetwork(providers: BuyBitcoinProvider[], network?: Network): BuyBitcoinProvider[] {
+  if (network === 'mainnet') return providers;
+  return providers.filter((p) => p !== 'cashApp');
+}
 
 export interface UserSettings {
   depositMaxFee: MaxFee;
@@ -12,8 +21,13 @@ export interface FiatSettings {
   selectedCurrencies: string[];
 }
 
+/** All known buy bitcoin providers, in default display order */
+export const ALL_BUY_PROVIDERS: BuyBitcoinProvider[] = ['moonpay', 'cashApp'];
+
+export const STABLE_BALANCE_VISIBLE_KEY = 'stable-balance-toggle-visible';
 const SETTINGS_KEY = 'user_settings_v1';
 const FIAT_SETTINGS_KEY = 'fiat_settings_v1';
+const BUY_PROVIDERS_KEY = 'buy_providers_v1';
 
 const defaultSettings: UserSettings = {
   depositMaxFee: { type: 'rate', satPerVbyte: 1 },
@@ -124,6 +138,25 @@ export function setCachedStableTicker(ticker: string | null): void {
   }
 }
 
+/** Ordered list of enabled providers. Providers not in the list are disabled. */
+export function getBuyProviderSettings(): BuyBitcoinProvider[] {
+  try {
+    const raw = getCachedItem(BUY_PROVIDERS_KEY);
+    if (!raw) return [...ALL_BUY_PROVIDERS];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [...ALL_BUY_PROVIDERS];
+    // Filter to only known providers, preserving order
+    return parsed.filter((p: unknown): p is BuyBitcoinProvider =>
+      typeof p === 'string' && ALL_BUY_PROVIDERS.includes(p as BuyBitcoinProvider)
+    );
+  } catch {
+    return [...ALL_BUY_PROVIDERS];
+  }
+}
+
+export function saveBuyProviderSettings(enabledProviders: BuyBitcoinProvider[]): void {
+  setCachedItem(BUY_PROVIDERS_KEY, JSON.stringify(enabledProviders));
+}
 /**
  * Check if console logging is enabled.
  * Controlled via VITE_CONSOLE_LOGGING env var when present; defaults to dev mode.
