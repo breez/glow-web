@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import type {
   BreezSdk,
+  BuyBitcoinProvider,
   Config,
   GetInfoResponse,
   Payment,
@@ -84,7 +85,7 @@ export interface BreezSdkActions {
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
   fetchUnclaimedDeposits: () => Promise<void>;
   handleLogout: () => Promise<void>;
-  handleBuyBitcoin: () => Promise<void>;
+  handleBuyBitcoin: (provider?: BuyBitcoinProvider) => Promise<void>;
   clearError: () => void;
   dismissCelebration: () => void;
 }
@@ -332,14 +333,14 @@ export function useBreezSdk(
     showToast('success', 'Successfully logged out');
   }, [sdk, showToast]);
 
-  const handleBuyBitcoin = useCallback(async () => {
+  const handleBuyBitcoin = useCallback(async (provider?: BuyBitcoinProvider) => {
     if (!sdk) return;
     try {
-      const response = await sdk.buyBitcoin({ type: 'moonpay' });
+      const response = await sdk.buyBitcoin({ provider });
       window.open(response.url, '_blank', 'noopener,noreferrer');
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to open Buy Bitcoin', { error: formatError(e) });
-      showToast('error', 'Buy Bitcoin', 'Failed to open MoonPay. Please try again.');
+      showToast('error', 'Buy Bitcoin', 'Failed to open purchase page. Please try again.');
     }
   }, [sdk, showToast]);
 
