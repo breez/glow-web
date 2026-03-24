@@ -1,4 +1,5 @@
 import { MaxFee } from "@breeztech/breez-sdk-spark/web";
+import type { BuyBitcoinProvider } from "@breeztech/breez-sdk-spark";
 
 export interface UserSettings {
   depositMaxFee: MaxFee;
@@ -12,8 +13,12 @@ export interface FiatSettings {
   selectedCurrencies: string[];
 }
 
+/** All known buy bitcoin providers, in default display order */
+export const ALL_BUY_PROVIDERS: BuyBitcoinProvider[] = ['moonpay', 'cashApp'];
+
 const SETTINGS_KEY = 'user_settings_v1';
 const FIAT_SETTINGS_KEY = 'fiat_settings_v1';
+const BUY_PROVIDERS_KEY = 'buy_providers_v1';
 
 const defaultSettings: UserSettings = {
   depositMaxFee: { type: 'rate', satPerVbyte: 1 },
@@ -124,6 +129,25 @@ export function setCachedStableTicker(ticker: string | null): void {
   }
 }
 
+/** Ordered list of enabled providers. Providers not in the list are disabled. */
+export function getBuyProviderSettings(): BuyBitcoinProvider[] {
+  try {
+    const raw = getCachedItem(BUY_PROVIDERS_KEY);
+    if (!raw) return [...ALL_BUY_PROVIDERS];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [...ALL_BUY_PROVIDERS];
+    // Filter to only known providers, preserving order
+    return parsed.filter((p: unknown): p is BuyBitcoinProvider =>
+      typeof p === 'string' && ALL_BUY_PROVIDERS.includes(p as BuyBitcoinProvider)
+    );
+  } catch {
+    return [...ALL_BUY_PROVIDERS];
+  }
+}
+
+export function saveBuyProviderSettings(enabledProviders: BuyBitcoinProvider[]): void {
+  setCachedItem(BUY_PROVIDERS_KEY, JSON.stringify(enabledProviders));
+}
 /**
  * Check if console logging is enabled.
  * Controlled via VITE_CONSOLE_LOGGING env var when present; defaults to dev mode.
