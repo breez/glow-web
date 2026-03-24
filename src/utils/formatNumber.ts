@@ -14,7 +14,7 @@ export function formatWithSpaces(num: number | bigint): string {
  * Format number with thin space (U+2009) as thousand separator
  * Better for monospace fonts
  */
-export function formatWithThinSpaces(num: number): string {
+export function formatWithThinSpaces(num: number | bigint): string {
   return num.toString().replace(THOUSAND_SEPARATOR_REGEX, '\u2009');
 }
 
