@@ -65,7 +65,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                 className="flex-1 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none resize-none"
                 data-testid="invoice-amount-input"
               />
-              <span className="px-4 py-3 text-spark-text-muted font-medium text-sm">sats</span>
+              <span className="px-4 py-3 text-spark-text-muted font-medium text-sm">₿</span>
             </div>
           </div>
 
@@ -85,7 +85,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                   }
                 `}
               >
-                {formatWithSpaces(quickAmount)}
+                <span className="inline-flex items-center"><span className="text-[0.8em] opacity-70 mr-px">₿</span>{formatWithSpaces(quickAmount)}</span>
               </button>
             ))}
           </div>

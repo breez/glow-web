@@ -50,7 +50,7 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, f
                   <RadioCheckIcon className="absolute top-2 right-2" />
                 )}
                 <div>Slow</div>
-                <div className="text-xs opacity-70">{fq.speedSlow.l1BroadcastFeeSat + fq.speedSlow.userFeeSat} sats</div>
+                <div className="text-xs opacity-70">₿{(fq.speedSlow.l1BroadcastFeeSat + fq.speedSlow.userFeeSat).toLocaleString()}</div>
               </button>
               <button
                 onClick={() => setSelectedFeeRate('medium')}
@@ -63,7 +63,7 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, f
                   <RadioCheckIcon className="absolute top-2 right-2" />
                 )}
                 <div>Medium</div>
-                <div className="text-xs opacity-70">{fq.speedMedium.l1BroadcastFeeSat + fq.speedMedium.userFeeSat} sats</div>
+                <div className="text-xs opacity-70">₿{(fq.speedMedium.l1BroadcastFeeSat + fq.speedMedium.userFeeSat).toLocaleString()}</div>
               </button>
               <button
                 onClick={() => setSelectedFeeRate('fast')}
@@ -76,7 +76,7 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, f
                   <RadioCheckIcon className="absolute top-2 right-2" />
                 )}
                 <div>Fast</div>
-                <div className="text-xs opacity-70">{fq.speedFast.l1BroadcastFeeSat + fq.speedFast.userFeeSat} sats</div>
+                <div className="text-xs opacity-70">₿{(fq.speedFast.l1BroadcastFeeSat + fq.speedFast.userFeeSat).toLocaleString()}</div>
               </button>
             </div>
           </div>

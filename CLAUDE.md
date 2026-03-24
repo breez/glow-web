@@ -127,6 +127,38 @@ const result = await wallet.newSdkMethod({ param: value });
 - Production builds require npm-published SDK version
 - Type check: `npx tsc --noEmit`
 
+## Bitcoin Symbol (₿) in Amount Displays
+
+All sat amounts shown to the user include the ₿ symbol. Follow these conventions:
+
+**Standard pattern** — for inline amounts (buttons, labels, breakdowns):
+```tsx
+<span className="inline-flex items-center">
+  <span className="text-[0.8em] opacity-70 mr-px">₿</span>
+  {formatWithSpaces(amount)}
+</span>
+```
+
+**Balance header** — ₿ is absolutely positioned left of the centered number:
+```tsx
+<span className="absolute right-full top-1/2 -translate-y-1/2 mr-0.5 text-3xl text-spark-text-secondary opacity-70 font-mono">₿</span>
+```
+
+**Transaction list** — ₿ after the +/- sign:
+```tsx
+{isReceive ? '+' : '-'}<span className="text-[0.8em] opacity-70">₿</span>{amount}
+```
+
+**Plain text** (error messages, alerts, string props) — just prefix with `₿`:
+```tsx
+setError(`Amount must be at least ₿${minSats.toLocaleString()}`);
+```
+
+**Key rules:**
+- Use `formatWithThinSpaces` for large text (text-4xl+), `formatWithSpaces`/`formatWithCommas` for smaller text
+- Input field labels can use "sats" as a unit name (e.g., "Amount (sats)")
+- Range displays and placeholders use "sats" text, not ₿
+
 ## Icons
 
 All SVG icons live in `src/components/Icons.tsx` as named React components. **Never add inline `<svg>` elements** — always add a new component to `Icons.tsx` and import it.

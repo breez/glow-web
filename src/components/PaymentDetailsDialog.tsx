@@ -78,13 +78,13 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
           <PaymentInfoCard>
             <PaymentInfoRow
               label="Amount"
-              value={`${payment.paymentType === 'receive' ? '+' : '-'} ${formatWithSpaces(payment.amount)} sats`}
+              value={`${payment.paymentType === 'receive' ? '+' : '-'} ₿${formatWithSpaces(payment.amount)}`}
             />
 
             {payment.fees > 0 && (
               <PaymentInfoRow
                 label="Fee"
-                value={`${formatWithSpaces(payment.fees)} sats`}
+                value={`₿${formatWithSpaces(payment.fees)}`}
               />
             )}
 

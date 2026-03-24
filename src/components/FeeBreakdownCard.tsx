@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatWithSpaces } from '../utils/formatNumber';
+import { formatWithThinSpaces } from '../utils/formatNumber';
 
 /**
  * Reusable component for displaying payment fee breakdowns.
@@ -45,7 +45,7 @@ export const FeeBreakdownCard: React.FC<FeeBreakdownCardProps> = ({
               {item.label}
             </span>
             <span className={`font-mono text-sm ${item.highlight ? 'font-bold text-spark-primary' : 'text-spark-text-primary'}`}>
-              {formatWithSpaces(item.value)} {item.unit ?? 'sats'}
+              {Number(item.value) === 0 ? '0' : <span className="inline-flex items-center"><span className="text-[0.8em] opacity-70 mr-px">₿</span>{formatWithThinSpaces(item.value)}</span>}
             </span>
           </div>
         </React.Fragment>

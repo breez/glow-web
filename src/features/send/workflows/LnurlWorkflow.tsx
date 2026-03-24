@@ -61,11 +61,11 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, balanceSats, onBa
       return;
     }
     if (minSats && sats < minSats) {
-      setError(`Amount must be at least ${minSats} sats`);
+      setError(`Amount must be at least ₿${minSats.toLocaleString()}`);
       return;
     }
     if (maxSats && sats > maxSats) {
-      setError(`Amount must be at most ${maxSats} sats`);
+      setError(`Amount must be at most ₿${maxSats.toLocaleString()}`);
       return;
     }
     if (commentAllowed && commentMaxLen && comment.length > commentMaxLen) {
@@ -146,7 +146,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, balanceSats, onBa
                   : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
               }`}
             >
-              {quickAmount.toLocaleString('en-US').replace(/,/g, '\u2009')}
+              <span className="inline-flex items-center"><span className="text-[0.8em] opacity-70 mr-px">₿</span>{quickAmount.toLocaleString('en-US').replace(/,/g, '\u2009')}</span>
             </button>
           ))}
           {sendAllAmount !== null && sendAllAmount >= minSats && (

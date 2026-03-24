@@ -62,7 +62,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, tit
 
         {feeSats > 0 && (
           <Alert type="warning" className="mt-8">
-            <center>A fee of {feeSats} sats is applied to this transaction.</center>
+            <center>A fee of ₿{feeSats.toLocaleString()} is applied to this transaction.</center>
           </Alert>
         )}
       </div>

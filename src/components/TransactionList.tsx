@@ -158,14 +158,14 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
         {/* Amount - right aligned */}
         <span
           className={`
-            font-mono font-semibold text-[15px] flex-shrink-0
+            font-mono font-semibold text-[15px] flex-shrink-0 inline-flex items-center
             ${isFailed ? 'text-spark-text-muted line-through' : ''}
             ${!isFailed && isReceive ? 'text-spark-success' : ''}
             ${!isFailed && !isReceive ? 'text-spark-electric' : ''}
           `}
           data-testid="transaction-amount"
         >
-          {isReceive ? '+' : '-'}{formatWithSpaces(Number(tx.amount))}
+          {isReceive ? '+' : '-'}<span className="text-[0.8em] opacity-70">₿</span>{formatWithSpaces(Number(tx.amount))}
         </span>
       </li>
     );

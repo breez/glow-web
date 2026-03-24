@@ -232,13 +232,14 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           </div>
 
           {/* Main balance */}
-          <div 
-            className="inline-flex items-baseline justify-center" 
+          <div
+            className="relative inline-block text-center"
             data-testid="wallet-balance"
           >
             <span className="balance-display">
               {formatWithThinSpaces(displayBalance)}
             </span>
+            {displayBalance > 0 && <span className="absolute right-full top-1/2 -translate-y-1/2 mr-0.5 text-3xl text-spark-text-secondary opacity-70 font-mono">₿</span>}
           </div>
 
           {/* Fiat value with accent marks - always reserve space to prevent layout shift */}

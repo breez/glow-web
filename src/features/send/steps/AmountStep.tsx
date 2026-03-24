@@ -73,7 +73,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
                   : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
               }`}
             >
-              {quickAmount.toLocaleString('en-US').replace(/,/g, '\u2009')}
+              <span className="inline-flex items-center"><span className="text-[0.8em] opacity-70 mr-px">₿</span>{quickAmount.toLocaleString('en-US').replace(/,/g, '\u2009')}</span>
             </button>
           ))}
           {balanceSats !== undefined && balanceSats > 0 && (

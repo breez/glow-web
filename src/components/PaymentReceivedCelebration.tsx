@@ -42,7 +42,7 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
   }, [onClose]);
 
   const formatAmount = (sats: number) => {
-    return sats.toLocaleString('en-US').replace(/,/g, ' ');
+    return sats.toLocaleString('en-US').replace(/,/g, '\u2009');
   };
 
   return createPortal(
@@ -109,11 +109,11 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
         {/* Amount with brand glow */}
         <div className="relative animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
           <div className="absolute inset-0 blur-xl bg-spark-primary/40 rounded-2xl" />
-          <div className="relative px-10 py-5 rounded-2xl bg-spark-surface/80 border border-spark-primary/30">
-            <span className="text-5xl font-display font-bold text-spark-primary">
-              +{formatAmount(amount)}
+          <div className="relative pl-14 pr-10 py-5 rounded-2xl bg-spark-surface/80 border border-spark-primary/30 text-center">
+            <span className="relative text-5xl font-mono font-bold text-spark-primary">
+              <span className="absolute right-full top-1/2 -translate-y-1/2 mr-0.5 text-3xl text-spark-primary opacity-70">₿</span>
+              {formatAmount(amount)}
             </span>
-            <span className="text-xl font-display text-spark-text-muted ml-3">sats</span>
           </div>
         </div>
 

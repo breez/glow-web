@@ -2,7 +2,7 @@ import React from 'react';
 import { PrimaryButton, SecondaryButton, FormError } from '../../../components/ui';
 import { SimpleFeeBreakdown } from '../../../components/FeeBreakdownCard';
 import { SpinnerIcon } from '../../../components/Icons';
-import { formatWithSpaces } from '../../../utils/formatNumber';
+import { formatWithThinSpaces } from '../../../utils/formatNumber';
 
 export interface ConfirmStepProps {
   amountSats: bigint | null;
@@ -26,9 +26,8 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
         <p className="text-spark-text-muted text-sm mb-2">You're sending</p>
         <div className="flex items-baseline justify-center gap-2">
           <span className="text-4xl font-mono font-bold text-spark-text-primary">
-            {formatWithSpaces(total)}
+            <span className="inline-flex items-center"><span className="text-[0.8em] opacity-70 mr-px">₿</span>{formatWithThinSpaces(total)}</span>
           </span>
-          <span className="text-xl text-spark-text-secondary">sats</span>
         </div>
       </div>
 
