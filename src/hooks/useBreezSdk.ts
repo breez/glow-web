@@ -344,10 +344,21 @@ export function useBreezSdk(
 
   const handleBuyBitcoin = useCallback(async (provider?: BuyBitcoinProvider) => {
     if (!sdk) return;
+
+    // Pre-open a blank tab synchronously (during user gesture) to avoid popup blockers.
+    // On mobile/PWA this will likely return null — we fall back to same-tab navigation.
+    const newTab = window.open('', '_blank');
+
     try {
       const response = await sdk.buyBitcoin({ provider });
-      window.open(response.url, '_blank', 'noopener,noreferrer');
+      if (newTab) {
+        newTab.location.href = response.url;
+      } else {
+        window.location.href = response.url;
+      }
     } catch (e) {
+      // Close the blank tab if the SDK call failed
+      newTab?.close();
       logger.error(LogCategory.SDK, 'Failed to open Buy Bitcoin', { error: formatError(e) });
       showToast('error', 'Buy Bitcoin', 'Failed to open purchase page. Please try again.');
     }
