@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import { useToast } from '../contexts/ToastContext';
 import { logger, LogCategory } from '@/services/logger';
@@ -64,7 +64,8 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isBuyBitcoinOpen, setIsBuyBitcoinOpen] = useState(false);
   const [isBuyLoading, setIsBuyLoading] = useState(false);
-  const enabledBuyProviders = getBuyProviderSettings();
+  // Re-read on each render so changes from BuyProvidersPage are picked up
+  const enabledBuyProviders = useMemo(() => getBuyProviderSettings(), [isBuyBitcoinOpen, isBuyLoading]);
   const [saveContactAddress, setSaveContactAddress] = useState<string | null>(null);
 
   const transactionsContainerRef = useRef<HTMLDivElement>(null);

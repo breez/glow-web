@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   BottomSheetContainer,
   BottomSheetCard,
@@ -48,7 +48,9 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
   onBuyBitcoin,
 }) => {
   const [loading, setLoading] = useState<BuyBitcoinProvider | null>(null);
-  const enabledProviders = getBuyProviderSettings();
+  // Re-read provider settings each time the dialog opens
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const enabledProviders = useMemo(() => getBuyProviderSettings(), [isOpen]);
 
   const handleSelectProvider = async (provider: BuyBitcoinProvider) => {
     setLoading(provider);
