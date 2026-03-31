@@ -15,7 +15,7 @@ import { buildConnectConfig } from './buildConnectConfig';
 import { logger, LogCategory, logSdkMessage } from '../services/logger';
 import { formatError } from '../utils/formatError';
 import { isDepositRejected } from '../services/depositState';
-import { setCachedStableTicker, type BuyBitcoinProvider } from '../services/settings';
+import { setCachedStableTicker, clearNetworkOverride, type BuyBitcoinProvider } from '../services/settings';
 import { hideSplash } from '../main';
 import {
   isPrfAvailable,
@@ -329,6 +329,7 @@ export function useBreezSdk(
     setHasRejectedDeposits(false);
     setCelebrationPayment(null);
     setIsLoading(false);
+    clearNetworkOverride();
     showToast('success', 'Successfully logged out');
   }, [sdk, showToast]);
 

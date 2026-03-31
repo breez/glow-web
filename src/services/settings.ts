@@ -157,6 +157,16 @@ export function getBuyProviderSettings(): BuyBitcoinProvider[] {
 export function saveBuyProviderSettings(enabledProviders: BuyBitcoinProvider[]): void {
   setCachedItem(BUY_PROVIDERS_KEY, JSON.stringify(enabledProviders));
 }
+
+/** Clear the network URL parameter, resetting to mainnet on next load. */
+export function clearNetworkOverride(): void {
+  const url = new URL(window.location.href);
+  if (url.searchParams.has('network')) {
+    url.searchParams.delete('network');
+    window.history.replaceState({}, '', url.toString());
+  }
+}
+
 /**
  * Check if console logging is enabled.
  * Controlled via VITE_CONSOLE_LOGGING env var when present; defaults to dev mode.
