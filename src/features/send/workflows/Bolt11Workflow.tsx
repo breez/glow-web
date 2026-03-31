@@ -6,11 +6,12 @@ interface Bolt11WorkflowProps {
   method: Extract<SendPaymentMethod, { type: 'bolt11Invoice' }>;
   amountSats: bigint;
   conversionEstimate?: ConversionEstimate | null;
+  balanceSats?: number;
   onBack: () => void;
   onSend: (options: { type: 'bolt11Invoice'; preferSpark: boolean }) => Promise<void>;
 }
 
-const Bolt11Workflow: React.FC<Bolt11WorkflowProps> = ({ method, amountSats, conversionEstimate, onSend }) => {
+const Bolt11Workflow: React.FC<Bolt11WorkflowProps> = ({ method, amountSats, conversionEstimate, balanceSats, onBack, onSend }) => {
   const handleSend = () => {
     const preferSpark = method.sparkTransferFeeSats != null;
     return onSend({ type: 'bolt11Invoice', preferSpark });
@@ -24,7 +25,7 @@ const Bolt11Workflow: React.FC<Bolt11WorkflowProps> = ({ method, amountSats, con
     feesSat = method.lightningFeeSats;
   }
 
-  return <ConfirmStep amountSats={amountSats} feesSat={feesSat} conversionEstimate={conversionEstimate} error={null} isLoading={false} onConfirm={handleSend} />;
+  return <ConfirmStep amountSats={amountSats} feesSat={feesSat} conversionEstimate={conversionEstimate} balanceSats={balanceSats} error={null} isLoading={false} onBack={onBack} onConfirm={handleSend} />;
 };
 
 export default Bolt11Workflow;

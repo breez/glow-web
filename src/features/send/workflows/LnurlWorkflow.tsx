@@ -138,7 +138,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
       ? BigInt(fiatToSats(parseFloat(amount), stableBalance.btcFiatRate))
       : BigInt(parseInt(amount, 10));
     return (
-      <ConfirmStep amountSats={confirmAmountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} error={error} isLoading={isLoading} onConfirm={onConfirm} />
+      <ConfirmStep amountSats={confirmAmountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} error={error} isLoading={isLoading} onBack={() => setStep('amount')} onConfirm={onConfirm} />
     );
   }
 

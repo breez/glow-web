@@ -12,19 +12,23 @@ export interface ConfirmStepProps {
   feesSat: number | null;
   feesIncluded?: boolean;
   conversionEstimate?: ConversionEstimate | null;
+  balanceSats?: number;
   error: string | null;
   isLoading: boolean;
   onBack?: () => void;
   onConfirm: () => void;
 }
 
-const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncluded, conversionEstimate, error, isLoading, onBack, onConfirm }) => {
+const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncluded, conversionEstimate, balanceSats, error, isLoading, onBack, onConfirm }) => {
   const stableBalance = useStableBalance();
   const isTokenMode = stableBalance.isActive && !!stableBalance.displayConfig && !!conversionEstimate;
 
   const amount = Number(amountSats || 0n);
   const fee = Number(feesSat || 0);
   const total = feesIncluded ? amount : amount + fee;
+
+  const insufficientBalance = balanceSats !== undefined && total > balanceSats;
+  const balanceError = insufficientBalance ? 'Insufficient funds' : null;
 
   // Token-formatted values from conversion estimate
   const tokenAmount = isTokenMode
@@ -60,7 +64,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
         />
       )}
 
-      <FormError error={error} />
+      <FormError error={balanceError || error} />
 
       {/* Action buttons */}
       <div className="flex gap-3">
@@ -71,7 +75,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
         )}
         <PrimaryButton
           onClick={onConfirm}
-          disabled={isLoading}
+          disabled={isLoading || insufficientBalance}
           className={onBack ? 'flex-1' : 'w-full'}
         >
           {isLoading ? (

@@ -158,6 +158,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                     method={send.prepareResponse.paymentMethod}
                     amountSats={send.prepareResponse.amount}
                     conversionEstimate={send.prepareResponse.conversionEstimate}
+                    balanceSats={send.balanceSats}
                     onBack={() => send.setCurrentStep('input')}
                     onSend={send.handleSend}
                   />
@@ -168,6 +169,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                     amountSats={send.prepareResponse.amount}
                     feesIncluded={send.feesIncluded}
                     conversionEstimate={send.prepareResponse.conversionEstimate}
+                    balanceSats={send.balanceSats}
                     onBack={() => send.setCurrentStep('amount')}
                     onSend={send.handleSend}
                   />
@@ -178,6 +180,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                     amountSats={send.prepareResponse.amount}
                     feesIncluded={send.feesIncluded}
                     conversionEstimate={send.prepareResponse.conversionEstimate}
+                    balanceSats={send.balanceSats}
                     onBack={() => send.setCurrentStep('input')}
                     onSend={send.handleSend}
                   />

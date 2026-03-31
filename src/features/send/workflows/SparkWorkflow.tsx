@@ -7,15 +7,16 @@ interface SparkWorkflowProps {
   amountSats: bigint;
   feesIncluded?: boolean;
   conversionEstimate?: ConversionEstimate | null;
+  balanceSats?: number;
   onBack: () => void;
   onSend: (options?: SendPaymentOptions) => Promise<void>;
 }
 
-const SparkWorkflow: React.FC<SparkWorkflowProps> = ({ method, amountSats, feesIncluded, conversionEstimate, onSend }) => {
+const SparkWorkflow: React.FC<SparkWorkflowProps> = ({ method, amountSats, feesIncluded, conversionEstimate, balanceSats, onBack, onSend }) => {
   // Currently no fee exposed for spark address
   const feesSat: number | null = method.type === 'sparkAddress' ? null : null;
   const handleSend = () => onSend();
-  return <ConfirmStep amountSats={amountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} error={null} isLoading={false} onConfirm={handleSend} />;
+  return <ConfirmStep amountSats={amountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} error={null} isLoading={false} onBack={onBack} onConfirm={handleSend} />;
 };
 
 export default SparkWorkflow;
