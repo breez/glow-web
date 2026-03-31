@@ -32,7 +32,7 @@ interface WalletPageProps {
   onOpenSettings: () => void;
   onOpenBackup: () => void;
   onOpenBuyProviders: () => void;
-  onBuyBitcoin: (provider?: BuyBitcoinProvider, lockedAmountSat?: number) => Promise<void>;
+  onBuyBitcoin: (provider?: BuyBitcoinProvider) => Promise<void>;
   onDepositChanged?: () => void;
 }
 
