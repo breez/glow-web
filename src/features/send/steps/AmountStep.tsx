@@ -66,18 +66,38 @@ const AmountStep: React.FC<AmountStepProps> = ({
     ? localAmount !== '' && parseFloat(localAmount) > 0
     : localAmount !== '' && parseInt(localAmount) > 0;
 
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  // Check whether a quick amount (in its native unit) exceeds the balance
+  const exceedsBalance = (quickAmount: number): boolean => {
+    if (balanceSats === undefined) return false;
+    if (isTokenMode && config && stableBalance.btcFiatRate > 0) {
+      return fiatToSats(quickAmount, stableBalance.btcFiatRate) > balanceSats;
+    }
+    return quickAmount > balanceSats;
+  };
+
+
   const handleNext = () => {
     if (!validAmount) return;
+    setLocalError(null);
+
+    let sats: number;
     if (isTokenMode && config && stableBalance.btcFiatRate > 0) {
       const fiatAmount = parseFloat(localAmount);
       if (!fiatAmount || fiatAmount <= 0) return;
-      const sats = fiatToSats(fiatAmount, stableBalance.btcFiatRate);
-      onNext(sats, feesIncluded);
+      sats = fiatToSats(fiatAmount, stableBalance.btcFiatRate);
     } else {
-      const sats = parseInt(localAmount);
+      sats = parseInt(localAmount);
       if (!sats || sats <= 0) return;
-      onNext(sats, feesIncluded);
     }
+
+    if (!feesIncluded && balanceSats !== undefined && sats > balanceSats) {
+      setLocalError('Amount exceeds available balance');
+      return;
+    }
+
+    onNext(sats, feesIncluded);
   };
 
   const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : SATS_QUICK_AMOUNTS;
@@ -129,22 +149,29 @@ const AmountStep: React.FC<AmountStepProps> = ({
 
         {/* Quick amount buttons */}
         <div className="flex gap-2 mt-3">
-          {quickAmounts.map((quickAmount) => (
-            <button
-              key={quickAmount}
-              onClick={() => { setLocalAmount(String(quickAmount)); setFeesIncluded(false); }}
-              className={`flex-1 py-2 rounded-lg text-sm font-mono font-medium transition-all ${
-                amountNum === quickAmount && !isSendAll
-                  ? 'bg-spark-electric text-white'
-                  : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
-              }`}
-            >
-              {formatQuickAmount(quickAmount, config, isTokenMode)}
-            </button>
-          ))}
+          {quickAmounts.map((quickAmount) => {
+            const disabled = exceedsBalance(quickAmount);
+            const isSelected = amountNum === quickAmount && !isSendAll;
+            return (
+              <button
+                key={quickAmount}
+                onClick={() => { setLocalAmount(String(quickAmount)); setFeesIncluded(false); setLocalError(null); }}
+                disabled={disabled}
+                className={`flex-1 py-2 rounded-lg text-sm font-mono font-medium transition-all ${
+                  isSelected
+                    ? 'bg-spark-electric text-white'
+                    : disabled
+                      ? 'opacity-40 cursor-not-allowed border border-spark-border text-spark-text-secondary'
+                      : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+                }`}
+              >
+                {formatQuickAmount(quickAmount, config, isTokenMode)}
+              </button>
+            );
+          })}
           {showSendAll && (
             <button
-              onClick={() => { setLocalAmount(String(balanceSats)); setFeesIncluded(true); }}
+              onClick={() => { setLocalAmount(String(balanceSats)); setFeesIncluded(true); setLocalError(null); }}
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                 isSendAll
                   ? 'bg-spark-electric text-white'
@@ -157,7 +184,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
         </div>
       </div>
 
-      <FormError error={error} />
+      <FormError error={localError || error} />
 
       {/* Action buttons */}
       <div className="flex gap-3">

@@ -117,6 +117,10 @@ export function useSendPayment(): UseSendPaymentReturn {
       setError('Please enter a valid amount');
       return;
     }
+    if (!includeFees && balanceSats !== undefined && amountNum > balanceSats) {
+      setError('Amount exceeds available balance');
+      return;
+    }
     setAmount(String(amountNum));
     setFeesIncluded(!!includeFees);
     await prepareSend(
@@ -124,7 +128,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       amountNum,
       includeFees ? 'feesIncluded' : undefined,
     );
-  }, [paymentInput?.rawInput, prepareSend]);
+  }, [paymentInput?.rawInput, prepareSend, balanceSats]);
 
   const handleSend = useCallback(async (options?: SendPaymentOptions) => {
     if (!prepareResponse) return;
