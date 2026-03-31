@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import type { Network } from '@breeztech/breez-sdk-spark';
 import { Checkbox } from '../components/ui';
 import { ChevronUpIcon, ChevronDownIcon, DragHandleIcon, MoonPayIcon, CashAppIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
@@ -7,6 +8,7 @@ import { getBuyProviderSettings, saveBuyProviderSettings, ALL_BUY_PROVIDERS, typ
 interface BuyProvidersPageProps {
   onBack: () => void;
   slideFrom?: 'up' | 'right';
+  network?: Network;
 }
 
 const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.ReactNode }> = {
@@ -24,7 +26,8 @@ const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.React
   },
 };
 
-const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, slideFrom = 'up' }) => {
+const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, slideFrom = 'up', network }) => {
+  const isMainnet = network === 'mainnet';
   const [enabledProviders, setEnabledProviders] = useState<BuyBitcoinProvider[]>(getBuyProviderSettings);
   const [draggedItem, setDraggedItem] = useState<BuyBitcoinProvider | null>(null);
 
@@ -103,7 +106,12 @@ const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, slideFrom =
               <Checkbox checked onChange={() => handleToggle(provider)} />
               <div className="flex items-center gap-2.5 flex-1 min-w-0">
                 {meta.icon}
-                <span className="font-display font-semibold text-spark-text-primary">{meta.name}</span>
+                <div className="flex flex-col">
+                  <span className="font-display font-semibold text-spark-text-primary">{meta.name}</span>
+                  {provider === 'cashApp' && !isMainnet && (
+                    <span className="text-xs text-spark-text-muted">Mainnet only</span>
+                  )}
+                </div>
               </div>
               <div className="flex flex-col gap-0.5">
                 <button
@@ -141,7 +149,12 @@ const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, slideFrom =
               <Checkbox checked={false} onChange={() => handleToggle(provider)} />
               <div className="flex items-center gap-2.5 flex-1 min-w-0">
                 {meta.icon}
-                <span className="font-display font-medium text-spark-text-secondary">{meta.name}</span>
+                <div className="flex flex-col">
+                  <span className="font-display font-medium text-spark-text-secondary">{meta.name}</span>
+                  {provider === 'cashApp' && !isMainnet && (
+                    <span className="text-xs text-spark-text-muted">Mainnet only</span>
+                  )}
+                </div>
               </div>
               {/* Invisible placeholders to match enabled row height */}
               <div className="flex flex-col gap-0.5 invisible">
