@@ -143,6 +143,7 @@ const AppContent: React.FC = () => {
           <BuyProvidersPage
             onBack={() => setCurrentScreen(buyProvidersSource === 'settings' ? 'settings' : 'wallet')}
             slideFrom={buyProvidersSource === 'settings' ? 'right' : 'up'}
+            network={sdk.config?.network}
           />
         );
 
