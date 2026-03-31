@@ -213,7 +213,7 @@ export function useBreezSdk(
       showToastRef.current('error', 'Failed to Claim Deposits', `${event.unclaimedDeposits.length} deposits could not be claimed`);
       fetchUnclaimedDeposits();
     }
-  }, [refreshWalletData, fetchUnclaimedDeposits, isSyncingRef, showToastRef]);
+  }, [refreshWalletData, fetchUnclaimedDeposits, isSyncingRef, showToastRef, formatPaymentAmountRef]);
 
   // ----------------------------------------
   // Connection lifecycle

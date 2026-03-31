@@ -1,4 +1,4 @@
-import React, { ReactNode, createContext, forwardRef, useContext, useState, useRef, useCallback, useEffect } from 'react';
+import React, { ReactNode, forwardRef, useState, useRef, useCallback, useEffect } from 'react';
 import { Transition } from '@headlessui/react';
 
 /**
@@ -319,8 +319,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   );
 };
 
-const BottomSheetCardContext = createContext<HTMLDivElement | null>(null);
-export const useBottomSheetCardEl = () => useContext(BottomSheetCardContext);
+import { BottomSheetCardContext } from './BottomSheetCardContext';
 
 export interface BottomSheetCardProps {
   children: ReactNode;

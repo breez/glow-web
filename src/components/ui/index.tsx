@@ -39,8 +39,8 @@ export {
 export type { FormInputProps, FormTextareaProps } from './forms';
 
 // Bottom Sheets
-import { useBottomSheetCardEl } from './sheets/BottomSheet';
-export { BottomSheetContainer, BottomSheetCard, useBottomSheetCardEl } from './sheets/BottomSheet';
+import { useBottomSheetCardEl } from './sheets/BottomSheetCardContext';
+export { BottomSheetContainer, BottomSheetCard } from './sheets/BottomSheet';
 export type { BottomSheetMaxWidth, BottomSheetContainerProps, BottomSheetCardProps } from './sheets/BottomSheet';
 
 // Loading
