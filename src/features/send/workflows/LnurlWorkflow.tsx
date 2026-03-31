@@ -93,6 +93,10 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
         return;
       }
     }
+    if (!feesIncluded && balanceSats !== undefined && sats > balanceSats) {
+      setError('Amount exceeds available balance');
+      return;
+    }
     if (commentAllowed && commentMaxLen && comment.length > commentMaxLen) {
       setError(`Comment must be at most ${commentMaxLen} characters`);
       return;
@@ -143,6 +147,15 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     : amount !== '' && parseInt(amount) > 0;
   const amountNum = isTokenMode ? parseFloat(amount) || 0 : parseInt(amount) || 0;
   const isSendAll = sendAllAmount !== null && amountNum === sendAllAmount && feesIncluded;
+
+  const exceedsBalance = (quickAmount: number): boolean => {
+    if (balanceSats === undefined) return false;
+    if (isTokenMode && stableBalance.displayConfig && stableBalance.btcFiatRate > 0) {
+      return fiatToSats(quickAmount, stableBalance.btcFiatRate) > balanceSats;
+    }
+    return quickAmount > balanceSats;
+  };
+
 
   // amount + optional comment form
   return (
@@ -202,19 +215,26 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
 
         {/* Quick amount buttons */}
         <div className="flex gap-2 mt-3">
-          {(isTokenMode ? TOKEN_QUICK_AMOUNTS : [1000, 10000, 100000].filter(v => v >= minSats && v <= maxSats)).map((quickAmount) => (
-            <button
-              key={quickAmount}
-              onClick={() => { setAmount(String(quickAmount)); setFeesIncluded(false); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                amountNum === quickAmount && !isSendAll
-                  ? 'bg-spark-primary text-white'
-                  : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
-              }`}
-            >
-              {formatQuickAmount(quickAmount, stableBalance.displayConfig, isTokenMode)}
-            </button>
-          ))}
+          {(isTokenMode ? TOKEN_QUICK_AMOUNTS : [1000, 10000, 100000].filter(v => v >= minSats && v <= maxSats)).map((quickAmount) => {
+            const disabled = exceedsBalance(quickAmount);
+            const isSelected = amountNum === quickAmount && !isSendAll;
+            return (
+              <button
+                key={quickAmount}
+                onClick={() => { setAmount(String(quickAmount)); setFeesIncluded(false); }}
+                disabled={disabled}
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                  isSelected
+                    ? 'bg-spark-primary text-white'
+                    : disabled
+                      ? 'opacity-40 cursor-not-allowed border border-spark-border text-spark-text-secondary'
+                      : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+                }`}
+              >
+                {formatQuickAmount(quickAmount, stableBalance.displayConfig, isTokenMode)}
+              </button>
+            );
+          })}
           {!isTokenMode && sendAllAmount !== null && sendAllAmount >= minSats && (
             <button
               onClick={() => { setAmount(String(sendAllAmount)); setFeesIncluded(true); }}
