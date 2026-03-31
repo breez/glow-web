@@ -3,21 +3,20 @@ import type { ConversionOptions } from '@breeztech/breez-sdk-spark';
 import { FormError, PrimaryButton, SecondaryButton } from '../../../components/ui';
 import { SpinnerIcon } from '../../../components/Icons';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
-import { useWallet } from '../../../contexts/WalletContext';
 import {
-  fiatToSats,
-  getTokenBalance,
   TOKEN_QUICK_AMOUNTS,
   SATS_QUICK_AMOUNTS,
   formatQuickAmount,
   sanitizeTokenInput,
 } from '../../../utils/tokenFormatting';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
+import { useBalanceValidation } from '../hooks/useBalanceValidation';
 
 export interface AmountStepProps {
   paymentInput: string;
   amount: string;
   balanceSats?: number;
+  tokenBalance?: bigint;
   isLoading: boolean;
   error: string | null;
   onBack: () => void;
@@ -28,45 +27,35 @@ const AmountStep: React.FC<AmountStepProps> = ({
   paymentInput,
   amount,
   balanceSats,
+  tokenBalance,
   isLoading,
   error,
   onBack,
   onNext,
 }) => {
-  const wallet = useWallet();
   const stableBalance = useStableBalance();
   const hasTokenConfig = !!stableBalance.displayConfig;
   const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive && hasTokenConfig);
-  const config = stableBalance.displayConfig;
+  const balance = useBalanceValidation(isTokenMode, setIsTokenMode, balanceSats, tokenBalance);
 
   const [localAmount, setLocalAmount] = useState<string>(amount || '');
   const [feesIncluded, setFeesIncluded] = useState(false);
-  const [tokenBalanceRaw, setTokenBalanceRaw] = useState<bigint | null>(null);
-
-  // Fetch token balance for send-all in token mode
-  useEffect(() => {
-    if (!stableBalance.isActive || !stableBalance.tokenIdentifier) return;
-    wallet.getInfo({}).then(info => {
-      if (!info || !stableBalance.tokenIdentifier) return;
-      const tb = getTokenBalance(info.tokenBalances, stableBalance.tokenIdentifier);
-      setTokenBalanceRaw(tb?.balance ?? null);
-    }).catch(() => {});
-  }, [wallet, stableBalance.isActive, stableBalance.tokenIdentifier]);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     setLocalAmount(amount || '');
   }, [amount]);
 
   const handleToggleDenomination = () => {
-    setIsTokenMode(prev => !prev);
+    balance.setIsTokenMode?.(!isTokenMode);
     setLocalAmount('');
     setFeesIncluded(false);
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (isTokenMode && config) {
-      const sanitized = sanitizeTokenInput(value, config.fractionSize);
+    if (isTokenMode && balance.config) {
+      const sanitized = sanitizeTokenInput(value, balance.config.fractionSize);
       if (sanitized !== null) {
         setLocalAmount(sanitized);
         setFeesIncluded(false);
@@ -83,51 +72,51 @@ const AmountStep: React.FC<AmountStepProps> = ({
 
   const handleNext = () => {
     if (!validAmount) return;
-    if (isTokenMode && isSendAllToken && tokenBalanceRaw && stableBalance.tokenIdentifier) {
-      // Send-all in token mode: pass token balance as amount with conversion options
+    setLocalError(null);
+
+    // Token send-all bypasses validation — amount goes directly as tokenBalance to the SDK
+    if (isTokenMode && isSendAllToken && tokenBalance && stableBalance.tokenIdentifier) {
       onNext(
-        Number(tokenBalanceRaw),
+        Number(tokenBalance),
         true,
         stableBalance.tokenIdentifier,
         { conversionType: { type: 'toBitcoin', fromTokenIdentifier: stableBalance.tokenIdentifier } },
       );
-    } else if (isTokenMode && config && stableBalance.btcFiatRate > 0) {
-      const fiatAmount = parseFloat(localAmount);
-      if (!fiatAmount || fiatAmount <= 0) return;
-      const sats = fiatToSats(fiatAmount, stableBalance.btcFiatRate);
-      onNext(sats, feesIncluded);
-    } else {
-      const sats = parseInt(localAmount);
-      if (!sats || sats <= 0) return;
-      onNext(sats, feesIncluded);
+      return;
     }
+
+    const validationError = balance.validateAmount(localAmount, feesIncluded);
+    if (validationError) {
+      setLocalError(validationError);
+      return;
+    }
+
+    // Safe to parse — validateAmount already confirmed the input is valid
+    onNext(balance.parseInputToSats(localAmount)!, feesIncluded);
   };
 
   const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : SATS_QUICK_AMOUNTS;
-
   const amountNum = isTokenMode ? parseFloat(localAmount) || 0 : parseInt(localAmount) || 0;
 
   // Token send-all: format token balance as display string using BigInt math
   // (matches formatTokenAmount used by the balance header)
   const tokenBalanceDisplay = useMemo(() => {
-    if (!tokenBalanceRaw || !config) return null;
-    const { decimals, fractionSize } = config;
+    if (!tokenBalance || !balance.config) return null;
+    const { decimals, fractionSize } = balance.config;
     const divisor = BigInt(10 ** decimals);
-    const wholePart = tokenBalanceRaw / divisor;
-    const fractionalPart = tokenBalanceRaw % divisor;
+    const wholePart = tokenBalance / divisor;
+    const fractionalPart = tokenBalance % divisor;
     const fractionalStr = fractionalPart.toString().padStart(decimals, '0').slice(0, fractionSize);
     return `${wholePart}.${fractionalStr}`;
-  }, [tokenBalanceRaw, config]);
+  }, [tokenBalance, balance.config]);
 
   // Send All: when stable balance is active, always use token path (switch to token mode if needed)
   // When stable balance is not active, use sats path
-  const hasTokenBalance = tokenBalanceRaw !== null && tokenBalanceRaw > 0n;
+  const hasTokenBalance = tokenBalance !== undefined && tokenBalance > 0n;
   const showSendAll = hasTokenBalance || (!stableBalance.isActive && balanceSats !== undefined && balanceSats > 0);
   const isSendAllToken = isTokenMode && hasTokenBalance && localAmount === tokenBalanceDisplay && feesIncluded;
   const isSendAllSats = !isTokenMode && !stableBalance.isActive && balanceSats !== undefined && amountNum === balanceSats && feesIncluded;
   const isSendAll = isSendAllSats || isSendAllToken;
-
-  const amountLabel = 'Amount';
 
   return (
     <div className="space-y-5">
@@ -144,7 +133,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
       {/* Amount input */}
       <div>
         <label className="block text-sm font-medium text-spark-text-primary mb-2">
-          {amountLabel}
+          Amount
         </label>
         <div className="relative">
           <input
@@ -152,16 +141,16 @@ const AmountStep: React.FC<AmountStepProps> = ({
             inputMode={isTokenMode ? 'decimal' : 'numeric'}
             value={localAmount}
             onChange={handleAmountChange}
-            placeholder={isTokenMode && config ? `Enter amount in ${config.symbol}` : 'Enter amount in satoshis'}
+            placeholder={isTokenMode && balance.config ? `Enter amount in ${balance.config.symbol}` : 'Enter amount in satoshis'}
             className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             disabled={isLoading}
             min={isTokenMode ? undefined : 1}
             data-testid="amount-input"
           />
-          {hasTokenConfig && config && (
+          {hasTokenConfig && balance.config && (
             <CurrencySwitcher
               isTokenMode={isTokenMode}
-              tokenSymbol={config.symbol}
+              tokenSymbol={balance.config.symbol}
               onSwitch={handleToggleDenomination}
               disabled={isLoading}
             />
@@ -170,19 +159,26 @@ const AmountStep: React.FC<AmountStepProps> = ({
 
         {/* Quick amount buttons */}
         <div className="flex gap-2 mt-3">
-          {quickAmounts.map((quickAmount) => (
-            <button
-              key={quickAmount}
-              onClick={() => { setLocalAmount(String(quickAmount)); setFeesIncluded(false); }}
-              className={`flex-1 py-2 rounded-lg text-sm font-mono font-medium transition-all ${
-                amountNum === quickAmount && !isSendAll
-                  ? 'bg-spark-primary text-white'
-                  : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
-              }`}
-            >
-              {formatQuickAmount(quickAmount, config, isTokenMode)}
-            </button>
-          ))}
+          {quickAmounts.map((quickAmount) => {
+            const disabled = balance.exceedsBalance(quickAmount);
+            const isSelected = amountNum === quickAmount && !isSendAll;
+            return (
+              <button
+                key={quickAmount}
+                onClick={() => { setLocalAmount(String(quickAmount)); setFeesIncluded(false); setLocalError(null); }}
+                disabled={disabled}
+                className={`flex-1 py-2 rounded-lg text-sm font-mono font-medium transition-all ${
+                  isSelected
+                    ? 'bg-spark-electric text-white'
+                    : disabled
+                      ? 'opacity-40 cursor-not-allowed border border-spark-border text-spark-text-secondary'
+                      : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+                }`}
+              >
+                {formatQuickAmount(quickAmount, balance.config, isTokenMode)}
+              </button>
+            );
+          })}
           {showSendAll && (
             <button
               onClick={() => {
@@ -194,6 +190,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
                   setLocalAmount(String(balanceSats));
                 }
                 setFeesIncluded(true);
+                setLocalError(null);
               }}
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                 isSendAll
@@ -207,7 +204,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
         </div>
       </div>
 
-      <FormError error={error} />
+      <FormError error={localError || error} />
 
       {/* Action buttons */}
       <div className="flex gap-3">

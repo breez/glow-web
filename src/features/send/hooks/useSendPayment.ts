@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import type { PrepareSendPaymentResponse, FeePolicy, SendPaymentOptions, SdkEvent, ConversionOptions } from '@breeztech/breez-sdk-spark';
 import type { SendInput } from '@/types/domain';
 import { useWallet } from '../../../contexts/WalletContext';
+import { useStableBalance } from '../../../contexts/StableBalanceContext';
+import { getTokenBalance } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 
@@ -18,6 +20,7 @@ export interface UseSendPaymentReturn {
   prepareResponse: PrepareSendPaymentResponse | null;
   paymentResult: 'success' | 'failure' | null;
   balanceSats: number | undefined;
+  tokenBalance: bigint | undefined;
   feesIncluded: boolean;
   processingPhase: ProcessingPhase;
   // Actions
@@ -32,6 +35,7 @@ export interface UseSendPaymentReturn {
 
 export function useSendPayment(): UseSendPaymentReturn {
   const wallet = useWallet();
+  const stableBalance = useStableBalance();
 
   const [currentStep, setCurrentStep] = useState<SendStep>('input');
   const [paymentInput, setPaymentInput] = useState<SendInput | null>(null);
@@ -41,14 +45,23 @@ export function useSendPayment(): UseSendPaymentReturn {
   const [prepareResponse, setPrepareResponse] = useState<PrepareSendPaymentResponse | null>(null);
   const [paymentResult, setPaymentResult] = useState<'success' | 'failure' | null>(null);
   const [balanceSats, setBalanceSats] = useState<number | undefined>(undefined);
+  const [tokenBalance, setTokenBalance] = useState<bigint | undefined>(undefined);
   const [feesIncluded, setFeesIncluded] = useState(false);
   const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>('sending');
 
   const fetchBalance = useCallback(() => {
     wallet.getInfo({}).then(info => {
-      if (info) setBalanceSats(info.balanceSats);
+      if (info) {
+        setBalanceSats(info.balanceSats);
+        if (stableBalance.isActive && stableBalance.tokenIdentifier && info.tokenBalances) {
+          const tb = getTokenBalance(info.tokenBalances, stableBalance.tokenIdentifier);
+          setTokenBalance(tb ? tb.balance : 0n);
+        } else {
+          setTokenBalance(undefined);
+        }
+      }
     }).catch(() => { /* balance fetch is best-effort */ });
-  }, [wallet]);
+  }, [wallet, stableBalance.isActive, stableBalance.tokenIdentifier]);
 
   const prepareSend = useCallback(async (
     paymentRequest: string,
@@ -253,6 +266,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     setError(null);
     setIsLoading(false);
     setBalanceSats(undefined);
+    setTokenBalance(undefined);
     setFeesIncluded(false);
     setPaymentInput(null);
     setPaymentResult(null);
@@ -268,6 +282,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     prepareResponse,
     paymentResult,
     balanceSats,
+    tokenBalance,
     feesIncluded,
     processingPhase,
     clearError: useCallback(() => setError(null), []),

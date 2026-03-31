@@ -3,8 +3,9 @@ import { PrimaryButton, SecondaryButton, FormError } from '../../../components/u
 import { FeeBreakdownCard, SimpleFeeBreakdown } from '../../../components/FeeBreakdownCard';
 import { SpinnerIcon } from '../../../components/Icons';
 import { formatWithThinSpaces } from '../../../utils/formatNumber';
-import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
+import { useStableBalance } from '../../../contexts/StableBalanceContext';
+import { useBalanceValidation } from '../hooks/useBalanceValidation';
 import type { ConversionEstimate } from '@breeztech/breez-sdk-spark';
 
 export interface ConfirmStepProps {
@@ -12,26 +13,32 @@ export interface ConfirmStepProps {
   feesSat: number | null;
   feesIncluded?: boolean;
   conversionEstimate?: ConversionEstimate | null;
+  balanceSats?: number;
+  tokenBalance?: bigint;
   error: string | null;
   isLoading: boolean;
   onBack?: () => void;
   onConfirm: () => void;
 }
 
-const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncluded, conversionEstimate, error, isLoading, onBack, onConfirm }) => {
+const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncluded, conversionEstimate, balanceSats, tokenBalance, error, isLoading, onBack, onConfirm }) => {
   const stableBalance = useStableBalance();
   const isTokenMode = stableBalance.isActive && !!stableBalance.displayConfig && !!conversionEstimate;
+  const balance = useBalanceValidation(isTokenMode, undefined, balanceSats, tokenBalance);
 
   const amount = Number(amountSats || 0n);
   const fee = Number(feesSat || 0);
   const total = feesIncluded ? amount : amount + fee;
 
+  const insufficientBalance = balance.checkInsufficientFunds({ isTokenMode, totalSats: total, conversionEstimate });
+  const balanceError = insufficientBalance ? 'Insufficient funds' : null;
+
   // Token-formatted values from conversion estimate
-  const tokenAmount = isTokenMode
-    ? formatTokenAmount(BigInt(conversionEstimate!.amountIn), stableBalance.displayConfig!)
+  const tokenAmount = isTokenMode && balance.config
+    ? formatTokenAmount(BigInt(conversionEstimate!.amountIn), balance.config)
     : null;
-  const tokenFee = isTokenMode
-    ? formatTokenAmount(BigInt(conversionEstimate!.fee), stableBalance.displayConfig!, { fullPrecision: true })
+  const tokenFee = isTokenMode && balance.config
+    ? formatTokenAmount(BigInt(conversionEstimate!.fee), balance.config, { fullPrecision: true })
     : null;
 
   return (
@@ -60,7 +67,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
         />
       )}
 
-      <FormError error={error} />
+      <FormError error={balanceError || error} />
 
       {/* Action buttons */}
       <div className="flex gap-3">
@@ -71,7 +78,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
         )}
         <PrimaryButton
           onClick={onConfirm}
-          disabled={isLoading}
+          disabled={isLoading || insufficientBalance}
           className={onBack ? 'flex-1' : 'w-full'}
         >
           {isLoading ? (
