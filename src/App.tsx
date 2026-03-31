@@ -201,6 +201,7 @@ const AppContent: React.FC = () => {
             onOpenBackup={() => setCurrentScreen('backup')}
             onOpenBuyProviders={() => { setBuyProvidersSource('wallet'); setCurrentScreen('buyProviders'); }}
             onBuyBitcoin={sdk.handleBuyBitcoin}
+            network={sdk.config?.network}
             onDepositChanged={sdk.fetchUnclaimedDeposits}
           />
         );

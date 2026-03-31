@@ -4,6 +4,7 @@ import {
   BottomSheetCard,
   DialogHeader,
 } from '../../components/ui';
+import type { Network } from '@breeztech/breez-sdk-spark';
 import { CurrencyIcon, MoonPayIcon, CashAppIcon } from '../../components/Icons';
 import { getBuyProviderSettings, type BuyBitcoinProvider } from '../../services/settings';
 
@@ -36,21 +37,29 @@ const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.React
   },
 };
 
+/** Filter out providers unavailable on the current network (e.g. CashApp is mainnet-only) */
+export function filterProvidersByNetwork(providers: BuyBitcoinProvider[], network?: Network): BuyBitcoinProvider[] {
+  if (network === 'mainnet') return providers;
+  return providers.filter((p) => p !== 'cashApp');
+}
+
 interface BuyBitcoinDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onBuyBitcoin: (provider?: BuyBitcoinProvider) => Promise<void>;
+  network?: Network;
 }
 
 const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
   isOpen,
   onClose,
   onBuyBitcoin,
+  network,
 }) => {
   const [loading, setLoading] = useState<BuyBitcoinProvider | null>(null);
-  // Re-read provider settings each time the dialog opens
+  // Re-read provider settings each time the dialog opens, filtered by network
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const enabledProviders = useMemo(() => getBuyProviderSettings(), [isOpen]);
+  const enabledProviders = useMemo(() => filterProvidersByNetwork(getBuyProviderSettings(), network), [isOpen, network]);
 
   const handleSelectProvider = async (provider: BuyBitcoinProvider) => {
     setLoading(provider);
