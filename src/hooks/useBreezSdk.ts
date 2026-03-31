@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import type {
   BreezSdk,
-  BuyBitcoinProvider,
   Config,
   GetInfoResponse,
   Payment,
@@ -16,7 +15,7 @@ import { buildConnectConfig } from './buildConnectConfig';
 import { logger, LogCategory, logSdkMessage } from '../services/logger';
 import { formatError } from '../utils/formatError';
 import { isDepositRejected } from '../services/depositState';
-import { setCachedStableTicker } from '../services/settings';
+import { setCachedStableTicker, type BuyBitcoinProvider } from '../services/settings';
 import { hideSplash } from '../main';
 import {
   isPrfAvailable,
@@ -350,7 +349,10 @@ export function useBreezSdk(
     const newTab = window.open('', '_blank');
 
     try {
-      const response = await sdk.buyBitcoin({ provider });
+      const request = provider === 'cashApp'
+        ? { type: 'cashApp' as const }
+        : { type: 'moonpay' as const };
+      const response = await sdk.buyBitcoin(request);
       if (newTab) {
         newTab.location.href = response.url;
       } else {
