@@ -1,5 +1,6 @@
 import { MaxFee } from "@breeztech/breez-sdk-spark/web";
-import type { BuyBitcoinProvider } from "@breeztech/breez-sdk-spark";
+/** Provider identifiers matching the SDK's BuyBitcoinRequest tagged union */
+export type BuyBitcoinProvider = 'moonpay' | 'cashApp';
 
 export interface UserSettings {
   depositMaxFee: MaxFee;

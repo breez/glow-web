@@ -1,9 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import type { BuyBitcoinProvider } from '@breeztech/breez-sdk-spark';
 import { Checkbox } from '../components/ui';
 import { ChevronUpIcon, ChevronDownIcon, DragHandleIcon, MoonPayIcon, CashAppIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
-import { getBuyProviderSettings, saveBuyProviderSettings, ALL_BUY_PROVIDERS } from '../services/settings';
+import { getBuyProviderSettings, saveBuyProviderSettings, ALL_BUY_PROVIDERS, type BuyBitcoinProvider } from '../services/settings';
 
 interface BuyProvidersPageProps {
   onBack: () => void;

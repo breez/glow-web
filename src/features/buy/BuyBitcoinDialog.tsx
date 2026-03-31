@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import type { BuyBitcoinProvider } from '@breeztech/breez-sdk-spark';
 import {
   BottomSheetContainer,
   BottomSheetCard,
   DialogHeader,
 } from '../../components/ui';
 import { CurrencyIcon, MoonPayIcon, CashAppIcon } from '../../components/Icons';
-import { getBuyProviderSettings } from '../../services/settings';
+import { getBuyProviderSettings, type BuyBitcoinProvider } from '../../services/settings';
 
 const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.ReactNode; loadingIcon: React.ReactNode }> = {
   moonpay: {
