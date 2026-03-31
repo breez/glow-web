@@ -1,6 +1,13 @@
 import { MaxFee } from "@breeztech/breez-sdk-spark/web";
+import type { Network } from "@breeztech/breez-sdk-spark";
 /** Provider identifiers matching the SDK's BuyBitcoinRequest tagged union */
 export type BuyBitcoinProvider = 'moonpay' | 'cashApp';
+
+/** Filter out providers unavailable on the current network (e.g. CashApp is mainnet-only) */
+export function filterProvidersByNetwork(providers: BuyBitcoinProvider[], network?: Network): BuyBitcoinProvider[] {
+  if (network === 'mainnet') return providers;
+  return providers.filter((p) => p !== 'cashApp');
+}
 
 export interface UserSettings {
   depositMaxFee: MaxFee;

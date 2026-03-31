@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import { useToast } from '../contexts/ToastContext';
 import { logger, LogCategory } from '@/services/logger';
@@ -15,8 +15,8 @@ import QrScannerDialog from '../components/QrScannerDialog';
 import PaymentDetailsDialog from '../components/PaymentDetailsDialog';
 import UnclaimedDepositDetailsPage from './UnclaimedDepositDetailsPage';
 import SaveContactDialog from '../features/send/components/SaveContactDialog';
-import BuyBitcoinDialog, { filterProvidersByNetwork } from '../features/buy/BuyBitcoinDialog';
-import { getBuyProviderSettings } from '../services/settings';
+import BuyBitcoinDialog from '../features/buy/BuyBitcoinDialog';
+import { getBuyProviderSettings, filterProvidersByNetwork } from '../services/settings';
 
 interface WalletPageProps {
   walletInfo: GetInfoResponse | null;
@@ -67,7 +67,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const [isBuyBitcoinOpen, setIsBuyBitcoinOpen] = useState(false);
   const [isBuyLoading, setIsBuyLoading] = useState(false);
   // Re-read on each render so changes from BuyProvidersPage are picked up; filter by network
-  const enabledBuyProviders = useMemo(() => filterProvidersByNetwork(getBuyProviderSettings(), network), [isBuyBitcoinOpen, isBuyLoading, network]);
+  const enabledBuyProviders = filterProvidersByNetwork(getBuyProviderSettings(), network);
   const [saveContactAddress, setSaveContactAddress] = useState<string | null>(null);
 
   const transactionsContainerRef = useRef<HTMLDivElement>(null);

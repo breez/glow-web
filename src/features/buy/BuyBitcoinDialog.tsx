@@ -6,7 +6,7 @@ import {
 } from '../../components/ui';
 import type { Network } from '@breeztech/breez-sdk-spark';
 import { CurrencyIcon, MoonPayIcon, CashAppIcon } from '../../components/Icons';
-import { getBuyProviderSettings, type BuyBitcoinProvider } from '../../services/settings';
+import { getBuyProviderSettings, filterProvidersByNetwork, type BuyBitcoinProvider } from '../../services/settings';
 
 const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.ReactNode; loadingIcon: React.ReactNode }> = {
   moonpay: {
@@ -36,12 +36,6 @@ const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.React
     ),
   },
 };
-
-/** Filter out providers unavailable on the current network (e.g. CashApp is mainnet-only) */
-export function filterProvidersByNetwork(providers: BuyBitcoinProvider[], network?: Network): BuyBitcoinProvider[] {
-  if (network === 'mainnet') return providers;
-  return providers.filter((p) => p !== 'cashApp');
-}
 
 interface BuyBitcoinDialogProps {
   isOpen: boolean;
