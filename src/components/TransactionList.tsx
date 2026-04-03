@@ -121,8 +121,8 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
 
   const renderTransactionItem = (tx: Payment, index: number) => {
     const isReceive = tx.paymentType === 'receive';
-    const isPending = tx.status === 'pending' || tx.conversionDetails?.status === 'pending';
     const isFailed = tx.status === 'failed';
+    const isPending = !isFailed && (tx.status === 'pending' || tx.conversionDetails?.status === 'pending');
 
     return (
       <li
