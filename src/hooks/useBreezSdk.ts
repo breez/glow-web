@@ -199,10 +199,12 @@ export function useBreezSdk(
       logger.info(LogCategory.PAYMENT, 'Payment pending event received', {
         payment: JSON.parse(JSON.stringify(event.payment)),
       });
+      refreshWalletData(false);
     } else if (event.type === 'paymentFailed') {
       logger.info(LogCategory.PAYMENT, 'Payment failed event received', {
         payment: JSON.parse(JSON.stringify(event.payment)),
       });
+      refreshWalletData(false);
     } else if (event.type === 'claimedDeposits') {
       logger.info(LogCategory.PAYMENT, 'Deposits claimed', { count: event.claimedDeposits.length });
       showToastRef.current('success', 'Deposits Claimed Successfully', `${event.claimedDeposits.length} deposits were claimed`);
