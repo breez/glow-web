@@ -217,13 +217,9 @@ const AppContent: React.FC = () => {
       <FiatDataProvider>
         <StableBalanceProvider>
           <StableBalanceFormatterBridge formatterRef={formatPaymentAmountRef} />
-          {sdk.isConnected ? (
-            <ContactsProvider>
-              {renderCurrentScreen()}
-            </ContactsProvider>
-          ) : (
-            renderCurrentScreen()
-          )}
+          <ContactsProvider>
+            {renderCurrentScreen()}
+          </ContactsProvider>
           {sdk.celebrationPayment !== null && (
             <PaymentReceivedCelebration
               payment={sdk.celebrationPayment}
