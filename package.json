@@ -16,7 +16,10 @@
     "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "^10.0.0",
+    "@aparajita/capacitor-secure-storage": "^8.0.0",
     "@breeztech/breez-sdk-spark": "^0.13.1",
+    "@capacitor/core": "^8.3.0",
     "@headlessui/react": "^1.7.17",
     "@zxing/browser": "^0.1.5",
     "@zxing/library": "^0.21.3",
