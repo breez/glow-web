@@ -125,6 +125,19 @@ export interface BreezSdkState {
   celebrationPayment: Payment | null;
   prfAvailable: boolean;
   startupState: StartupState;
+  /**
+   * True while `secureStorage.storeSeed` is in flight during
+   * onboarding. UI code uses this to show a distinct loading label
+   * ("Enabling biometric unlock…") instead of the generic "Starting
+   * Glow…" spinner, so the user understands why they're being
+   * prompted for a second biometric right after the passkey ceremony.
+   *
+   * Only set by the onboarding path in `connectWallet`. The retrieve
+   * path (`checkForExistingWallet` → `retrieveSeed`) triggers its own
+   * inline biometric prompt and has its own loading copy on the
+   * welcome / unlock page, so this flag stays false there.
+   */
+  isSecuringSeed: boolean;
 }
 
 /**
@@ -180,6 +193,7 @@ export function useBreezSdk(
   const [celebrationPayment, setCelebrationPayment] = useState<Payment | null>(null);
   const [prfAvailable, setPrfAvailable] = useState(false);
   const [startupState, setStartupState] = useState<StartupState>('loading');
+  const [isSecuringSeed, setIsSecuringSeed] = useState(false);
 
   // Refs
   const isInitialLoadRef = useRef(true);
@@ -348,10 +362,21 @@ export function useBreezSdk(
           // we'll retry on the next successful connect. secureStorage
           // emits its own typed error breadcrumb on failure, so we
           // don't double-log here.
+          //
+          // F3: this call triggers a biometric prompt (the first store
+          // binds the seed to a biometric-bound key). We flip
+          // `isSecuringSeed` around the await so the UI can show a
+          // distinct "Enabling biometric unlock…" label instead of
+          // the generic "Starting Glow…" spinner — otherwise the user
+          // sees a biometric prompt appear out of nowhere on top of
+          // an unrelated loading screen, which looks like a bug.
+          setIsSecuringSeed(true);
           try {
             await secureStorage.storeSeed(seed);
           } catch {
             // Intentionally swallowed — see comment above.
+          } finally {
+            setIsSecuringSeed(false);
           }
         } else if (seed.type === 'mnemonic') {
           // Web (legacy): unchanged plaintext localStorage write.
@@ -712,6 +737,7 @@ export function useBreezSdk(
     celebrationPayment,
     prfAvailable,
     startupState,
+    isSecuringSeed,
     // Actions
     connectWallet,
     refreshWalletData,

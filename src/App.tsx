@@ -129,6 +129,7 @@ const AppContent: React.FC = () => {
               setCurrentScreen('home');
             }}
             sdkConnected={passkeySdkConnected}
+            isSecuringSeed={sdk.isSecuringSeed}
             onFlowComplete={handlePasskeyFlowComplete}
           />
         );

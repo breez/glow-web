@@ -66,6 +66,14 @@ interface PasskeyPageProps {
   onWalletRestored: (seed: Seed, label: string) => void;
   onBack: () => void;
   sdkConnected?: boolean;
+  /**
+   * True while `secureStorage.storeSeed` is in flight during the
+   * onboarding flow. When true, the `initializing` phase swaps its
+   * loading label from "Starting Glow…" to "Enabling biometric unlock…"
+   * so the second biometric prompt (F3 biometric-bound store) has
+   * visual context instead of appearing on top of an unrelated spinner.
+   */
+  isSecuringSeed?: boolean;
   onFlowComplete?: () => void;
 }
 
@@ -77,6 +85,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   onWalletRestored,
   onBack,
   sdkConnected,
+  isSecuringSeed,
   onFlowComplete,
 }) => {
   const [phase, setPhase] = useState<Phase>('detecting');
@@ -434,7 +443,13 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         if (error) return null;
         return renderSpinner('Starting Glow...');
       case 'initializing':
-        return renderSpinner('Starting Glow...');
+        // F3: while `secureStorage.storeSeed` is in flight, the user is
+        // being shown a biometric prompt to bind the seed to a
+        // biometric-gated Keychain / Keystore key. Swap the label so
+        // the prompt has visible context and doesn't look like a bug.
+        return renderSpinner(
+          isSecuringSeed ? 'Enabling biometric unlock...' : 'Starting Glow...',
+        );
     }
   })();
 
