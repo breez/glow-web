@@ -101,6 +101,33 @@ function getNativeVault(): NativeVaultPlugin {
  */
 const INSTALL_MARKER_KEY = 'glow.secureStorageInitialized';
 
+/**
+ * localStorage key that marks "this install has already run the F3
+ * migration". F3 changed the on-disk format for biometric-bound crypto:
+ *
+ *   - iOS: Keychain items are now protected by a `SecAccessControl`
+ *     with `.biometryCurrentSet`, not just a plain accessibility flag.
+ *     Reading an F2 item still works (its access policy is the old
+ *     one), but we want to force every user into the biometric-bound
+ *     flow so the security boundary is consistent.
+ *   - Android: the Keystore key is now marked
+ *     `setUserAuthenticationRequired(true)` with
+ *     `setInvalidatedByBiometricEnrollment(true)`. F2 keys don't have
+ *     those flags, so decrypting an F2 ciphertext with the F2 key
+ *     would silently succeed without any biometric prompt.
+ *
+ * On first launch with an F3 build, we detect the missing marker and
+ * call `clearSeed()` before any other operation. That wipes the F2
+ * seed from the secure store and forces the user to re-onboard — the
+ * passkey flow still works as a fallback so re-onboarding is a single
+ * extra tap, not a full recovery.
+ *
+ * Intentionally separate from `INSTALL_MARKER_KEY` so that
+ * post-migration fresh installs only run the cheap cleanup path, not
+ * an extra `clearSeed` call.
+ */
+const F3_MIGRATION_MARKER_KEY = 'glow.secureStorageF3Migrated';
+
 // ============================================
 // Stored payload — versioned for migrations
 // ============================================
@@ -476,9 +503,21 @@ class NativeSecureStorage implements SecureStorage {
    */
   private ensureInitialized(): Promise<void> {
     if (!this.initPromise) {
-      this.initPromise = this.cleanupStaleEntriesOnFreshInstall();
+      this.initPromise = this.runInitialization();
     }
     return this.initPromise;
+  }
+
+  /**
+   * Sequential init pipeline. Order matters: the F3 migration must run
+   * AFTER the fresh-install cleanup, so that on a fresh install we
+   * only wipe once (via the install-marker path) and skip the F3 wipe
+   * (it would be redundant and would fire the "Migrated to F3" log
+   * line incorrectly on a device that has never seen F2).
+   */
+  private async runInitialization(): Promise<void> {
+    await this.cleanupStaleEntriesOnFreshInstall();
+    await this.migrateToF3IfNeeded();
   }
 
   /**
@@ -495,7 +534,9 @@ class NativeSecureStorage implements SecureStorage {
    *   (2) first launch after an uninstall/reinstall cycle
    *
    * In either case we wipe any stored seed before any other operation,
-   * then write the marker so subsequent launches skip the cleanup.
+   * then write BOTH markers so subsequent launches skip the cleanup
+   * and the F3 migration. A fresh install starts in the F3 world
+   * directly — there's no F2 state to migrate from.
    */
   private async cleanupStaleEntriesOnFreshInstall(): Promise<void> {
     try {
@@ -508,7 +549,52 @@ class NativeSecureStorage implements SecureStorage {
       } catch {
         // Best-effort — never block downstream operations on the cleanup.
       }
-      localStorage.setItem(INSTALL_MARKER_KEY, new Date().toISOString());
+      const now = new Date().toISOString();
+      localStorage.setItem(INSTALL_MARKER_KEY, now);
+      // A fresh install has no F2 state to migrate from, so mark the
+      // F3 migration as already-done. This keeps the migration path
+      // strictly for "user upgraded from an F2 build" and makes the
+      // `migrateToF3IfNeeded` log line meaningful.
+      localStorage.setItem(F3_MIGRATION_MARKER_KEY, now);
+    } catch {
+      // Best-effort — swallow any localStorage / plugin errors so the
+      // wallet still attempts to start up.
+    }
+  }
+
+  /**
+   * One-shot migration from F2 (no biometric-bound crypto) to F3
+   * (biometric-bound crypto). See `F3_MIGRATION_MARKER_KEY` for the
+   * reasoning.
+   *
+   * The migration is a forced re-onboarding: we wipe the secure store
+   * entirely, which causes the next `hasStoredSeed` to return `false`,
+   * which causes the wallet startup code in `useBreezSdk` to fall
+   * through to the passkey onboarding flow. After the user completes
+   * the passkey ceremony (a single extra tap), the seed is re-persisted
+   * via `storeSeed`, which now uses the F3 access control.
+   *
+   * We considered a read-then-rewrite approach (decrypt with F2,
+   * re-encrypt with F3) but rejected it because:
+   *   - It requires a biometric prompt before the user has any visual
+   *     context, which is jarring.
+   *   - It couples the init code to platform-specific crypto details
+   *     that would be invisible everywhere else.
+   *   - Re-onboarding costs a single passkey tap and exercises the
+   *     fallback path we want to keep working anyway.
+   */
+  private async migrateToF3IfNeeded(): Promise<void> {
+    try {
+      if (typeof localStorage === 'undefined') return;
+      if (localStorage.getItem(F3_MIGRATION_MARKER_KEY)) return;
+
+      try {
+        await getNativeVault().clearSeed();
+        logger.info(LogCategory.AUTH, 'Migrated secure storage to F3 (biometric-bound crypto)');
+      } catch {
+        // Best-effort — never block downstream operations on the migration.
+      }
+      localStorage.setItem(F3_MIGRATION_MARKER_KEY, new Date().toISOString());
     } catch {
       // Best-effort — swallow any localStorage / plugin errors so the
       // wallet still attempts to start up.
