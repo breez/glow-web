@@ -97,6 +97,20 @@ async function migrateLegacyMnemonicIfNeeded(): Promise<void> {
 // Types
 // ============================================
 
+/**
+ * Coarse-grained state machine for the startup / lock screen routing.
+ *
+ * - `'loading'`: initial mount, auto-reconnect in progress. Router shows a spinner.
+ * - `'no-wallet'`: no credentials persisted anywhere. Router shows the welcome
+ *   / onboarding page.
+ * - `'native-locked'`: a seed is persisted in native secure storage but the
+ *   most recent biometric attempt was cancelled or locked out. Router shows
+ *   the dedicated unlock page — from which the user can retry biometric or
+ *   abandon the locked wallet and re-onboard.
+ * - `'connected'`: the SDK is connected to a wallet.
+ */
+export type StartupState = 'loading' | 'no-wallet' | 'native-locked' | 'connected';
+
 export interface BreezSdkState {
   sdk: BreezSdk | null;
   isConnected: boolean;
@@ -110,6 +124,7 @@ export interface BreezSdkState {
   hasRejectedDeposits: boolean;
   celebrationPayment: Payment | null;
   prfAvailable: boolean;
+  startupState: StartupState;
 }
 
 /**
@@ -136,6 +151,12 @@ export interface BreezSdkActions {
   handleBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
   clearError: () => void;
   dismissCelebration: () => void;
+  /**
+   * Called from `UnlockPage` to retry the biometric unlock after an earlier
+   * cancel or lockout. Re-runs `secureStorage.retrieveSeed` → `connectWallet`
+   * and updates `startupState` based on the outcome.
+   */
+  retryUnlock: () => Promise<void>;
 }
 
 // ============================================
@@ -158,6 +179,7 @@ export function useBreezSdk(
   const [hasRejectedDeposits, setHasRejectedDeposits] = useState(false);
   const [celebrationPayment, setCelebrationPayment] = useState<Payment | null>(null);
   const [prfAvailable, setPrfAvailable] = useState(false);
+  const [startupState, setStartupState] = useState<StartupState>('loading');
 
   // Refs
   const isInitialLoadRef = useRef(true);
@@ -345,6 +367,7 @@ export function useBreezSdk(
       setTransactions(filterOngoingConversionPayments(txns.payments));
 
       setIsConnected(true);
+      setStartupState('connected');
 
       try {
         const result = await connectedSdk.listUnclaimedDeposits({});
@@ -418,9 +441,72 @@ export function useBreezSdk(
     setHasRejectedDeposits(false);
     setCelebrationPayment(null);
     setIsLoading(false);
+    setStartupState('no-wallet');
     clearNetworkOverride();
     showToast('success', 'Successfully logged out');
   }, [sdk, showToast]);
+
+  // Re-run the biometric unlock flow after the user cancelled or was locked
+  // out on the previous attempt. Called by UnlockPage's "Unlock" button.
+  const retryUnlock = useCallback(async () => {
+    if (!secureStorage.isSupported()) {
+      // Web or unsupported host — should never reach UnlockPage here, but
+      // route back to welcome just in case.
+      setStartupState('no-wallet');
+      return;
+    }
+    setError(null);
+    setIsLoading(true);
+    try {
+      const seed = await secureStorage.retrieveSeed();
+      await connectWallet(seed, false, undefined, 'secureStorage');
+      // connectWallet sets startupState='connected' on success.
+    } catch (e) {
+      setIsLoading(false);
+      if (e instanceof SecureStorageError) {
+        switch (e.code) {
+          case 'USER_CANCELLED':
+            // Silent — stay on UnlockPage, let the user tap again.
+            setStartupState('native-locked');
+            break;
+          case 'BIOMETRIC_LOCKOUT':
+            setError(
+              'Biometric unlock is locked. Unlock your device with your passcode and try again.',
+            );
+            setStartupState('native-locked');
+            break;
+          case 'KEY_INVALIDATED':
+            // Stored entry voided (e.g. new biometric enrollment). Wipe and
+            // route the user back to welcome so they can re-onboard.
+            await secureStorage.clearSeed().catch(() => { /* best-effort */ });
+            setError('Your biometric enrollment changed. Please set up your wallet again.');
+            setStartupState('no-wallet');
+            break;
+          case 'BIOMETRIC_NOT_ENROLLED':
+          case 'BIOMETRIC_UNAVAILABLE':
+            setError('Biometric authentication is no longer available on this device.');
+            setStartupState('no-wallet');
+            break;
+          case 'NO_STORED_SEED':
+            // Nothing to retrieve — back to welcome.
+            setStartupState('no-wallet');
+            break;
+          case 'NOT_SUPPORTED':
+          case 'UNKNOWN':
+          default:
+            setError('Unable to unlock wallet. Please try again.');
+            setStartupState('native-locked');
+            break;
+        }
+      } else {
+        logger.error(LogCategory.SDK, 'Unexpected error retrying unlock', {
+          error: formatError(e),
+        });
+        setError('Unable to unlock wallet. Please try again.');
+        setStartupState('native-locked');
+      }
+    }
+  }, [connectWallet]);
 
   const handleBuyBitcoin = useCallback(async (provider: BuyBitcoinProvider) => {
     if (!sdk) return;
@@ -490,16 +576,19 @@ export function useBreezSdk(
           if (e instanceof SecureStorageError) {
             switch (e.code) {
               case 'USER_CANCELLED':
-                // User dismissed the biometric prompt. Stay logged out
-                // silently — the existing logged-out UI lets them retry.
+                // User dismissed the biometric prompt. Route to the
+                // dedicated UnlockPage so they can retry or abandon the
+                // stored wallet.
                 setIsLoading(false);
+                setStartupState('native-locked');
                 useLegacy = false;
                 break;
               case 'BIOMETRIC_LOCKOUT':
                 setError(
-                  'Biometric unlock is locked. Unlock your device with your passcode and reopen the app.',
+                  'Biometric unlock is locked. Unlock your device with your passcode and try again.',
                 );
                 setIsLoading(false);
+                setStartupState('native-locked');
                 useLegacy = false;
                 break;
               case 'KEY_INVALIDATED':
@@ -568,6 +657,12 @@ export function useBreezSdk(
         }
       }
 
+      // Default any leftover 'loading' state to 'no-wallet' so the router
+      // can show the welcome page. If a success path already transitioned
+      // to 'connected' or a locked path set 'native-locked', this functional
+      // update leaves it untouched.
+      setStartupState((current) => (current === 'loading' ? 'no-wallet' : current));
+
       if (isInitialLoadRef.current) {
         isInitialLoadRef.current = false;
         hideSplash();
@@ -616,6 +711,7 @@ export function useBreezSdk(
     hasRejectedDeposits,
     celebrationPayment,
     prfAvailable,
+    startupState,
     // Actions
     connectWallet,
     refreshWalletData,
@@ -624,5 +720,6 @@ export function useBreezSdk(
     handleBuyBitcoin,
     clearError: () => setError(null),
     dismissCelebration: () => setCelebrationPayment(null),
+    retryUnlock,
   };
 }

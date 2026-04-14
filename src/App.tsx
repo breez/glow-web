@@ -20,12 +20,13 @@ import PasskeyPage from './pages/PasskeyPage';
 import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import BuyProvidersPage from './pages/BuyProvidersPage';
+import UnlockPage from './pages/UnlockPage';
 import { ContactsProvider } from './contexts/ContactsContext';
 
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
 import type { Seed, Payment } from '@breeztech/breez-sdk-spark';
 
-type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey';
+type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock';
 
 // Bridge component that feeds StableBalance formatter back to useBreezSdk via a mutable ref
 const StableBalanceFormatterBridge: React.FC<{ formatterRef: React.MutableRefObject<((payment: Payment) => string) | undefined> }> = ({ formatterRef }) => {
@@ -48,12 +49,24 @@ const AppContent: React.FC = () => {
 
   const sdk = useBreezSdk(showToast);
 
-  // Auto-navigate to wallet when SDK reconnects from saved mnemonic
+  // Auto-navigate to wallet when SDK reconnects from saved mnemonic OR
+  // from a successful biometric unlock on the dedicated UnlockPage.
   useEffect(() => {
-    if (sdk.isConnected && currentScreen === 'home') {
+    if (
+      sdk.isConnected &&
+      (currentScreen === 'home' || currentScreen === 'unlock')
+    ) {
       setCurrentScreen('wallet');
     }
   }, [sdk.isConnected, currentScreen]);
+
+  // Auto-navigate to the UnlockPage when native secure storage reports a
+  // locked wallet (USER_CANCELLED / BIOMETRIC_LOCKOUT on initial load).
+  useEffect(() => {
+    if (sdk.startupState === 'native-locked' && currentScreen !== 'unlock') {
+      setCurrentScreen('unlock');
+    }
+  }, [sdk.startupState, currentScreen]);
 
   // Navigate to wallet after successful connect
   const handleConnect = async (mnemonic: string, restore: boolean) => {
@@ -83,7 +96,12 @@ const AppContent: React.FC = () => {
 
   // Render screens
   const renderCurrentScreen = () => {
-    if (sdk.isLoading && currentScreen !== 'restore' && currentScreen !== 'passkey') {
+    if (
+      sdk.isLoading &&
+      currentScreen !== 'restore' &&
+      currentScreen !== 'passkey' &&
+      currentScreen !== 'unlock'
+    ) {
       return (
         <div className="absolute inset-0 bg-spark-void/95 backdrop-blur-sm z-50 flex items-center justify-center">
           <LoadingSpinner />
@@ -112,6 +130,16 @@ const AppContent: React.FC = () => {
             }}
             sdkConnected={passkeySdkConnected}
             onFlowComplete={handlePasskeyFlowComplete}
+          />
+        );
+
+      case 'unlock':
+        return (
+          <UnlockPage
+            isLoading={sdk.isLoading}
+            error={sdk.error}
+            onUnlock={sdk.retryUnlock}
+            onAbandon={handleLogout}
           />
         );
 

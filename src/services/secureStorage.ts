@@ -30,7 +30,7 @@ import {
   SecureStorage as AparajitaSecureStorage,
   KeychainAccess,
 } from '@aparajita/capacitor-secure-storage';
-import { BiometricAuth } from '@aparajita/capacitor-biometric-auth';
+import { BiometricAuth, BiometryType } from '@aparajita/capacitor-biometric-auth';
 import { logger, LogCategory } from './logger';
 
 // ============================================
@@ -644,6 +644,42 @@ class NoopSecureStorage implements SecureStorage {
 // ============================================
 // Factory + singleton
 // ============================================
+
+/**
+ * Returns a user-facing label for the device's current biometry type, e.g.
+ * `"Face ID"`, `"Touch ID"`, `"fingerprint"`. Returns `null` on web or if no
+ * biometry is enrolled / available. Used by the Unlock page to set the
+ * retry-button label.
+ *
+ * Awaits the biometric-auth TLA workaround promise before calling
+ * `BiometricAuth.checkBiometry` so we don't hit the
+ * vite-plugin-top-level-await bug that breaks the plugin's class
+ * initialization on cold load.
+ */
+export async function getBiometryLabel(): Promise<string | null> {
+  if (!Capacitor.isNativePlatform()) return null;
+  try {
+    await biometricAuthReadyPromise;
+    const result = await BiometricAuth.checkBiometry();
+    if (!result.isAvailable) return null;
+    switch (result.biometryType) {
+      case BiometryType.faceId:
+        return 'Face ID';
+      case BiometryType.touchId:
+        return 'Touch ID';
+      case BiometryType.fingerprintAuthentication:
+        return 'fingerprint';
+      case BiometryType.faceAuthentication:
+        return 'face';
+      case BiometryType.irisAuthentication:
+        return 'iris scan';
+      default:
+        return null;
+    }
+  } catch {
+    return null;
+  }
+}
 
 function createSecureStorage(): SecureStorage {
   return Capacitor.isNativePlatform() ? new NativeSecureStorage() : new NoopSecureStorage();
