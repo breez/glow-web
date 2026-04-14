@@ -2,8 +2,11 @@
  * Secure seed storage abstraction.
  *
  * Persists the wallet seed in a platform-appropriate secure store:
- * - Native (iOS / Android via Capacitor): Keychain or Keystore behind a
- *   biometric gate. Seed never lives in plaintext on disk.
+ * - Native (iOS / Android via Capacitor): Keychain / Keystore behind a
+ *   biometric gate, via the in-house `capacitor-native-vault` plugin in
+ *   `glow-app/plugins/`. The plugin owns the iOS Keychain accessibility
+ *   policy (`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`) and the
+ *   Android Keystore key generation.
  * - Web: not supported — callers fall back to the existing legacy storage
  *   path (today: plaintext localStorage; future: password-encrypted vault).
  *
@@ -12,78 +15,77 @@
  * or the legacy path. No plugin internals leak past this file — every caller
  * talks only to the `SecureStorage` interface and `SecureStorageError`.
  *
- * The native implementation is backed by two @aparajita Capacitor plugins:
- *   - @aparajita/capacitor-secure-storage  (Keychain / Keystore wrapper)
- *   - @aparajita/capacitor-biometric-auth  (Face ID / Touch ID / BiometricPrompt)
+ * As of F2, this file no longer depends on `@aparajita/capacitor-secure-storage`
+ * or `@aparajita/capacitor-biometric-auth`. The native plugin is accessed
+ * through `window.Capacitor.Plugins.NativeVault` following the same global-
+ * injection pattern used by `nativePasskeyPrfProvider.ts`. glow-web does not
+ * import the plugin's TypeScript directly — only the runtime global.
  *
- * Both packages MUST be imported here (not just in glow-app) because the
- * aparajita plugins use a JS-layer proxy: the public methods like `set()`
- * and `get()` only exist on the JS side and wrap the native `internal*`
- * primitives. Without these imports, `registerPlugin()` is never called and
- * `window.Capacitor.Plugins.SecureStorage` would only expose the low-level
- * native methods, not the public interface this file uses.
+ * Bonus: removing the aparajita biometric-auth dependency also removes the
+ * `vite-plugin-top-level-await` workaround that the previous version of
+ * this file carried (see commit history of `feat/native-secure-seed-storage`).
+ * Our plugin has no transitive dependency on `@capacitor/app`, so vite never
+ * wraps anything in a `__tla` promise and class extension just works.
  */
 
 import type { Seed } from '@breeztech/breez-sdk-spark';
 import { Capacitor } from '@capacitor/core';
-import {
-  SecureStorage as AparajitaSecureStorage,
-  KeychainAccess,
-} from '@aparajita/capacitor-secure-storage';
-import { BiometricAuth, BiometryType } from '@aparajita/capacitor-biometric-auth';
 import { logger, LogCategory } from './logger';
 
 // ============================================
-// vite-plugin-top-level-await workaround
+// Capacitor plugin global (locally typed)
 // ============================================
-//
-// `@aparajita/capacitor-biometric-auth/dist/esm/base.js` imports `App` from
-// `@capacitor/app`, whose own index.js does `registerPlugin('App', { web: ()
-// => import('./web').then(...) })`. The dynamic import inside the App plugin's
-// register block triggers `vite-plugin-top-level-await` to wrap biometric-auth's
-// base.js into a TLA promise: the BiometricAuthBase class is only assigned
-// inside the `__tla.then()` callback.
-//
-// Vite-plugin-top-level-await does NOT propagate the `__tla` await across
-// dynamic-import chunk boundaries. So when Capacitor's `registerPlugin` proxy
-// lazy-loads `native.js` via `await import('./native.js')`, native.js's
-// statically-imported `B` (the BiometricAuthBase class) is still `undefined`
-// because base.js's `__tla` hasn't run its `.then()` yet. The result is a
-// TypeError at `class BiometricAuthNative extends B` — the entire BiometricAuth
-// plugin is unusable.
-//
-// Workaround: explicitly import base.js, await its `__tla` export, THEN allow
-// native.js to be loaded by Capacitor's proxy. After this prepass runs once,
-// the BiometricAuthBase class is defined and `await import('./native.js')`
-// later will see a fully-evaluated base module.
-//
-// The package's `exports` field includes `./dist/*: ./dist/*` so importing
-// from the dist subpath is supported.
-const biometricAuthReadyPromise: Promise<void> = (async () => {
-  try {
-    const baseModule = await import(
-      // Subpath import allowed by the package's `./dist/*: ./dist/*` exports.
-      '@aparajita/capacitor-biometric-auth/dist/esm/base.js'
+
+/**
+ * Minimal local mirror of `capacitor-native-vault`'s plugin surface. Only
+ * the methods this file actually calls are typed. The full TypeScript
+ * definitions live in `glow-app/plugins/capacitor-native-vault/src/definitions.ts`,
+ * but glow-web stays decoupled from the plugin's npm package — we access
+ * it only through the runtime `window.Capacitor.Plugins.NativeVault`
+ * global, matching how `nativePasskeyPrfProvider.ts` consumes
+ * `capacitor-passkey-prf`.
+ */
+interface NativeVaultPlugin {
+  checkBiometry(): Promise<{ available: boolean; biometryType: string }>;
+  hasStoredSeed(): Promise<{ stored: boolean }>;
+  storeSeed(options: { seed: string }): Promise<void>;
+  retrieveSeed(): Promise<{ seed: string }>;
+  clearSeed(): Promise<void>;
+}
+
+/**
+ * Locally-typed view of the Capacitor global. We deliberately do NOT use
+ * `declare global` here — `nativePasskeyPrfProvider.ts` already augments
+ * `window.Capacitor` with its own `Plugins.PasskeyPrf` shape, and TypeScript
+ * declaration merging on inline object literal types is brittle. A local
+ * cast keeps both files self-contained.
+ */
+interface LocalCapacitorView {
+  isNativePlatform?: () => boolean;
+  Plugins?: {
+    NativeVault?: NativeVaultPlugin;
+  };
+}
+
+function getCapacitor(): LocalCapacitorView | undefined {
+  if (typeof window === 'undefined') return undefined;
+  return (window as unknown as { Capacitor?: LocalCapacitorView }).Capacitor;
+}
+
+function getNativeVault(): NativeVaultPlugin {
+  const plugin = getCapacitor()?.Plugins?.NativeVault;
+  if (!plugin) {
+    throw new SecureStorageError(
+      'UNKNOWN',
+      'NativeVault Capacitor plugin not registered. Did you run `npx cap sync`?',
     );
-    const tla = (baseModule as { __tla?: Promise<unknown> }).__tla;
-    if (tla) {
-      await tla;
-    }
-  } catch {
-    // best-effort — if the workaround itself fails, the original TypeError
-    // will surface from the BiometricAuth.authenticate call below.
   }
-})();
+  return plugin;
+}
 
 // ============================================
 // Constants
 // ============================================
-
-/**
- * Storage key for the persisted seed blob. The aparajita plugin will prefix
- * this with its default namespace (`capacitor-storage_`) on disk.
- */
-const SEED_KEY = 'glow.wallet_seed';
 
 /**
  * localStorage key used as a fresh-install marker. Set the first time the
@@ -98,17 +100,6 @@ const SEED_KEY = 'glow.wallet_seed';
  * entries before any read.
  */
 const INSTALL_MARKER_KEY = 'glow.secureStorageInitialized';
-
-/**
- * iOS Keychain accessibility for the stored seed.
- *
- * `whenUnlockedThisDeviceOnly`: device-local, NOT synced to iCloud, NOT in
- * encrypted backups, only accessible while the device is unlocked. Apple
- * recommends this access class for high-value credentials that must not
- * migrate to a different device. No-op on Android (the Android Keystore
- * wraps the value with a hardware-backed key regardless).
- */
-const KEYCHAIN_ACCESS_FOR_SEED = KeychainAccess.whenUnlockedThisDeviceOnly;
 
 // ============================================
 // Stored payload — versioned for migrations
@@ -271,67 +262,40 @@ export interface SecureStorage {
 }
 
 // ============================================
-// Native implementation (iOS / Android via @aparajita)
+// Error mapping + utilities
 // ============================================
 
 /**
- * Map a thrown @aparajita BiometryError into our typed error code set.
- *
- * The plugin throws errors whose `.code` is one of `BiometryErrorType`:
- *   userCancel | appCancel | systemCancel | notInteractive | userFallback |
- *   biometryLockout | biometryNotEnrolled | biometryNotAvailable |
- *   passcodeNotSet | noDeviceCredential | authenticationFailed | invalidContext
+ * The new `capacitor-native-vault` plugin already returns our typed
+ * `SecureStorageErrorCode` strings via `PluginCall.reject(message, code)` —
+ * the `err.code` field is exactly what we want. So this is just a
+ * pass-through with a fallback for unexpected codes (which would indicate
+ * a bug in the plugin, not the caller).
  */
-function mapBiometryErrorCode(code: string): SecureStorageErrorCode {
-  switch (code) {
-    case 'userCancel':
-    case 'appCancel':
-    case 'systemCancel':
-    case 'notInteractive':
-      return 'USER_CANCELLED';
-    case 'biometryLockout':
-      return 'BIOMETRIC_LOCKOUT';
-    case 'biometryNotEnrolled':
-      return 'BIOMETRIC_NOT_ENROLLED';
-    case 'biometryNotAvailable':
-    case 'noDeviceCredential':
-    case 'passcodeNotSet':
-      return 'BIOMETRIC_UNAVAILABLE';
-    default:
-      // authenticationFailed / invalidContext / userFallback / unknown
-      return 'UNKNOWN';
+function mapNativeVaultErrorCode(err: unknown): SecureStorageErrorCode {
+  if (err && typeof err === 'object' && 'code' in err) {
+    const code = String((err as { code: unknown }).code);
+    switch (code) {
+      case 'NOT_SUPPORTED':
+      case 'NO_STORED_SEED':
+      case 'USER_CANCELLED':
+      case 'BIOMETRIC_LOCKOUT':
+      case 'BIOMETRIC_NOT_ENROLLED':
+      case 'BIOMETRIC_UNAVAILABLE':
+      case 'KEY_INVALIDATED':
+      case 'UNKNOWN':
+        return code;
+    }
   }
+  return 'UNKNOWN';
 }
 
-/**
- * Map a thrown @aparajita StorageError into our typed error code set.
- * `invalidData` is treated as `KEY_INVALIDATED` because corrupt data is the
- * symptom we'd see if the iOS Keychain entry was voided by a biometric
- * enrollment change and then partially overwritten by another process.
- */
-function mapStorageErrorCode(code: string): SecureStorageErrorCode {
-  switch (code) {
-    case 'invalidData':
-      return 'KEY_INVALIDATED';
-    case 'missingKey':
-    case 'osError':
-    case 'unknownError':
-    default:
-      return 'UNKNOWN';
+function getErrorMessage(err: unknown): string | undefined {
+  if (err && typeof err === 'object' && 'message' in err) {
+    const msg = (err as { message: unknown }).message;
+    if (typeof msg === 'string') return msg;
   }
-}
-
-/**
- * Type guard for a Capacitor plugin error (both StorageError and BiometryError
- * extend Error and have a string `.code`).
- */
-function hasErrorCode(err: unknown): err is { code: string; message?: string } {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    typeof (err as { code: unknown }).code === 'string'
-  );
+  return undefined;
 }
 
 // ============================================
@@ -378,10 +342,15 @@ function logSecureStorageFailure(operation: string, code: SecureStorageErrorCode
   }
 }
 
+// ============================================
+// Native implementation (iOS / Android via capacitor-native-vault)
+// ============================================
+
 /**
- * Native (Capacitor) implementation backed by iOS Keychain / Android Keystore
- * via the @aparajita plugins. Constructed only when `isNativePlatform()` is
- * true; the factory below picks `NoopSecureStorage` on web.
+ * Native (Capacitor) implementation backed by iOS Keychain / Android
+ * Keystore via the in-house `capacitor-native-vault` plugin. Constructed
+ * only when `Capacitor.isNativePlatform()` is true; the factory below
+ * picks `NoopSecureStorage` on web.
  */
 class NativeSecureStorage implements SecureStorage {
   /**
@@ -405,14 +374,13 @@ class NativeSecureStorage implements SecureStorage {
   async hasStoredSeed(): Promise<boolean> {
     await this.ensureInitialized();
     try {
-      // `get()` returns `null` when no entry exists — no biometric is needed.
-      const raw = await AparajitaSecureStorage.get(SEED_KEY);
-      return raw !== null && raw !== undefined;
+      const result = await getNativeVault().hasStoredSeed();
+      return result.stored;
     } catch (err) {
       // If even checking presence throws, treat as "no seed" so callers fall
       // through to the legacy onboarding path.
-      const error = this.toSecureStorageError(err, 'Failed to probe stored seed.');
-      logSecureStorageFailure('hasStoredSeed', error.code);
+      const code = mapNativeVaultErrorCode(err);
+      logSecureStorageFailure('hasStoredSeed', code);
       return false;
     }
   }
@@ -425,27 +393,16 @@ class NativeSecureStorage implements SecureStorage {
       createdAt: new Date().toISOString(),
     };
     try {
-      // The plugin's `DataType` is `string | number | boolean | Record<...> | unknown[] | Date`.
-      // PersistedSeedBlob structurally matches `Record<string, unknown>` but
-      // TypeScript interfaces don't auto-derive an index signature, so we
-      // cast at this single boundary.
-      await AparajitaSecureStorage.set(
-        SEED_KEY,
-        blob as unknown as Record<string, unknown>,
-        // convertDate=false: we manage our own ISO timestamps; we don't want
-        // the plugin to coerce createdAt into a Date object on read.
-        false,
-        // sync=undefined: respect the plugin's default sync flag.
-        undefined,
-        // access: force device-only Keychain accessibility on iOS.
-        // No-op on Android (where the Keystore wraps the value regardless).
-        KEYCHAIN_ACCESS_FOR_SEED,
-      );
+      // The plugin treats the seed parameter as opaque bytes, so we
+      // JSON-encode the blob on this side and JSON-decode in retrieveSeed.
+      // Storage policy (Keychain accessibility, Keystore key params) is
+      // owned by the plugin's native side.
+      await getNativeVault().storeSeed({ seed: JSON.stringify(blob) });
       logSecureStorageSuccess('storeSeed');
     } catch (err) {
-      const error = this.toSecureStorageError(err, 'Failed to persist seed.');
-      logSecureStorageFailure('storeSeed', error.code);
-      throw error;
+      const code = mapNativeVaultErrorCode(err);
+      logSecureStorageFailure('storeSeed', code);
+      throw new SecureStorageError(code, getErrorMessage(err) ?? 'Failed to persist seed.');
     }
   }
 
@@ -462,73 +419,54 @@ class NativeSecureStorage implements SecureStorage {
   }
 
   private async doRetrieve(): Promise<Seed> {
-    // Apply the vite-plugin-top-level-await workaround so the
-    // BiometricAuthBase class is defined before Capacitor's proxy lazy-loads
-    // native.js. See `biometricAuthReadyPromise` above for the full
-    // explanation.
-    await biometricAuthReadyPromise;
-
-    // 1. Prompt the user for biometric authentication.
+    // The plugin handles both the biometric prompt and the Keychain /
+    // Keystore read. On success it returns the opaque string we passed
+    // to storeSeed; on failure it rejects with one of our typed
+    // SecureStorageErrorCode strings.
+    let result: { seed: string };
     try {
-      await BiometricAuth.authenticate({
-        reason: 'Unlock your Glow wallet',
-        cancelTitle: 'Cancel',
-        androidTitle: 'Unlock Glow wallet',
-        androidSubtitle: 'Use your biometric credential to access your wallet',
-      });
+      result = await getNativeVault().retrieveSeed();
     } catch (err) {
-      const error = this.toSecureStorageError(err, 'Biometric authentication failed.');
-      logSecureStorageFailure('retrieveSeed', error.code);
-      throw error;
+      const code = mapNativeVaultErrorCode(err);
+      logSecureStorageFailure('retrieveSeed', code);
+      throw new SecureStorageError(code, getErrorMessage(err) ?? 'Failed to retrieve seed.');
     }
 
-    // 2. Read the persisted blob from secure storage.
-    let raw: unknown;
+    // Decode the JSON blob the plugin handed back.
+    let parsed: unknown;
     try {
-      raw = await AparajitaSecureStorage.get(SEED_KEY);
-    } catch (err) {
-      const error = this.toSecureStorageError(err, 'Failed to read stored seed.');
-      logSecureStorageFailure('retrieveSeed', error.code);
-      throw error;
-    }
-
-    if (raw === null || raw === undefined) {
-      const error = new SecureStorageError(
-        'NO_STORED_SEED',
-        'No seed is currently persisted in secure storage.',
+      parsed = JSON.parse(result.seed);
+    } catch {
+      logSecureStorageFailure('retrieveSeed', 'KEY_INVALIDATED');
+      throw new SecureStorageError(
+        'KEY_INVALIDATED',
+        'Stored seed blob is not valid JSON.',
       );
-      logSecureStorageFailure('retrieveSeed', error.code);
-      throw error;
     }
 
-    if (!isPersistedSeedBlob(raw)) {
-      // The blob exists but doesn't match our expected shape. Most likely
-      // an old/incompatible version or platform-side corruption. Treat as
-      // KEY_INVALIDATED so the caller wipes and re-onboards.
-      const error = new SecureStorageError(
+    if (!isPersistedSeedBlob(parsed)) {
+      // Most likely an old / incompatible version. Treat as KEY_INVALIDATED
+      // so the caller wipes and re-onboards.
+      logSecureStorageFailure('retrieveSeed', 'KEY_INVALIDATED');
+      throw new SecureStorageError(
         'KEY_INVALIDATED',
         'Stored seed blob has an unexpected shape.',
       );
-      logSecureStorageFailure('retrieveSeed', error.code);
-      throw error;
     }
 
     logSecureStorageSuccess('retrieveSeed');
-    return deserializeSeedFromStorage(raw.seed);
+    return deserializeSeedFromStorage(parsed.seed);
   }
 
   async clearSeed(): Promise<void> {
     await this.ensureInitialized();
     try {
-      await AparajitaSecureStorage.remove(SEED_KEY);
+      await getNativeVault().clearSeed();
       logSecureStorageSuccess('clearSeed');
     } catch (err) {
-      // `remove` is best-effort — if the underlying call throws, we still
-      // want logout to succeed. Re-throw a typed error so the caller can
-      // log it without leaking plugin details.
-      const error = this.toSecureStorageError(err, 'Failed to clear stored seed.');
-      logSecureStorageFailure('clearSeed', error.code);
-      throw error;
+      const code = mapNativeVaultErrorCode(err);
+      logSecureStorageFailure('clearSeed', code);
+      throw new SecureStorageError(code, getErrorMessage(err) ?? 'Failed to clear stored seed.');
     }
   }
 
@@ -545,9 +483,10 @@ class NativeSecureStorage implements SecureStorage {
 
   /**
    * iOS does NOT wipe Keychain entries when an app is reinstalled — they
-   * survive across installs of the same bundle ID. Android Keystore does
-   * wipe on uninstall, so this is mostly an iOS concern, but we run the
-   * same logic on both platforms for consistency.
+   * survive across installs of the same bundle ID. Android Keystore keys
+   * + the plugin's SharedPreferences-backed ciphertext both DO wipe on
+   * uninstall, so this is mostly an iOS concern, but we run the same
+   * logic on both platforms for consistency.
    *
    * The fresh-install signal is the absence of an `INSTALL_MARKER_KEY`
    * entry in `localStorage`. localStorage IS wiped on reinstall on both
@@ -555,7 +494,7 @@ class NativeSecureStorage implements SecureStorage {
    *   (1) first ever launch on this device, or
    *   (2) first launch after an uninstall/reinstall cycle
    *
-   * In either case we wipe the stored seed before any other operation,
+   * In either case we wipe any stored seed before any other operation,
    * then write the marker so subsequent launches skip the cleanup.
    */
   private async cleanupStaleEntriesOnFreshInstall(): Promise<void> {
@@ -564,7 +503,7 @@ class NativeSecureStorage implements SecureStorage {
       if (localStorage.getItem(INSTALL_MARKER_KEY)) return;
 
       try {
-        await AparajitaSecureStorage.remove(SEED_KEY);
+        await getNativeVault().clearSeed();
         logger.info(LogCategory.AUTH, 'Initialized secure storage on fresh install');
       } catch {
         // Best-effort — never block downstream operations on the cleanup.
@@ -574,33 +513,6 @@ class NativeSecureStorage implements SecureStorage {
       // Best-effort — swallow any localStorage / plugin errors so the
       // wallet still attempts to start up.
     }
-  }
-
-  /**
-   * Convert any caught plugin error into a `SecureStorageError` with the
-   * appropriate code. Falls back to `UNKNOWN` for anything we don't recognize.
-   */
-  private toSecureStorageError(
-    err: unknown,
-    fallbackMessage: string,
-  ): SecureStorageError {
-    if (err instanceof SecureStorageError) {
-      return err;
-    }
-    if (hasErrorCode(err)) {
-      // Biometry error codes are camelCase strings like 'userCancel'.
-      // Storage error codes are also strings: 'missingKey', 'invalidData',
-      // 'osError', 'unknownError'. We try the biometry mapping first because
-      // `authenticate()` is the only call that produces the cancellation /
-      // lockout codes; if it doesn't match, fall back to the storage map.
-      const biometryCode = mapBiometryErrorCode(err.code);
-      if (biometryCode !== 'UNKNOWN') {
-        return new SecureStorageError(biometryCode, err.message ?? fallbackMessage);
-      }
-      const storageCode = mapStorageErrorCode(err.code);
-      return new SecureStorageError(storageCode, err.message ?? fallbackMessage);
-    }
-    return new SecureStorageError('UNKNOWN', fallbackMessage);
   }
 }
 
@@ -642,36 +554,34 @@ class NoopSecureStorage implements SecureStorage {
 }
 
 // ============================================
-// Factory + singleton
+// Biometry label helper (rewritten to use NativeVault)
 // ============================================
 
 /**
  * Returns a user-facing label for the device's current biometry type, e.g.
- * `"Face ID"`, `"Touch ID"`, `"fingerprint"`. Returns `null` on web or if no
- * biometry is enrolled / available. Used by the Unlock page to set the
+ * `"Face ID"`, `"Touch ID"`, `"fingerprint"`. Returns `null` on web or if
+ * no biometry is enrolled / available. Used by the Unlock page to set the
  * retry-button label.
  *
- * Awaits the biometric-auth TLA workaround promise before calling
- * `BiometricAuth.checkBiometry` so we don't hit the
- * vite-plugin-top-level-await bug that breaks the plugin's class
- * initialization on cold load.
+ * Calls `NativeVault.checkBiometry()` directly — no more TLA workaround
+ * is needed because the in-house plugin does not transitively import
+ * `@capacitor/app`, so vite-plugin-top-level-await never wraps anything.
  */
 export async function getBiometryLabel(): Promise<string | null> {
   if (!Capacitor.isNativePlatform()) return null;
   try {
-    await biometricAuthReadyPromise;
-    const result = await BiometricAuth.checkBiometry();
-    if (!result.isAvailable) return null;
+    const result = await getNativeVault().checkBiometry();
+    if (!result.available) return null;
     switch (result.biometryType) {
-      case BiometryType.faceId:
+      case 'faceId':
         return 'Face ID';
-      case BiometryType.touchId:
+      case 'touchId':
         return 'Touch ID';
-      case BiometryType.fingerprintAuthentication:
+      case 'fingerprint':
         return 'fingerprint';
-      case BiometryType.faceAuthentication:
+      case 'face':
         return 'face';
-      case BiometryType.irisAuthentication:
+      case 'iris':
         return 'iris scan';
       default:
         return null;
@@ -680,6 +590,10 @@ export async function getBiometryLabel(): Promise<string | null> {
     return null;
   }
 }
+
+// ============================================
+// Factory + singleton
+// ============================================
 
 function createSecureStorage(): SecureStorage {
   return Capacitor.isNativePlatform() ? new NativeSecureStorage() : new NoopSecureStorage();
