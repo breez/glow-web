@@ -24,6 +24,7 @@ import {
   clearPasskeyMode,
   getWallet,
 } from '../services/passkeyService';
+import { secureStorage, SecureStorageError } from '../services/secureStorage';
 
 
 // ============================================
@@ -61,6 +62,38 @@ const getSavedMnemonic = () => localStorage.getItem(MNEMONIC_KEY);
 const clearMnemonic = () => localStorage.removeItem(MNEMONIC_KEY);
 
 // ============================================
+// Legacy mnemonic → secure storage migration
+// ============================================
+
+/**
+ * One-shot migration helper. On a native build, if the user has a plaintext
+ * mnemonic in localStorage AND nothing in secure storage yet, copy it across
+ * and wipe the plaintext copy. Runs silently on every startup until the
+ * migration completes — after that, `getSavedMnemonic()` returns null and
+ * the helper is a no-op.
+ *
+ * Failure here is non-fatal: we keep the legacy mnemonic in place and try
+ * again on the next startup. The wallet still connects via the legacy path
+ * in the meantime.
+ */
+async function migrateLegacyMnemonicIfNeeded(): Promise<void> {
+  if (!secureStorage.isSupported()) return;
+  const legacy = getSavedMnemonic();
+  if (!legacy) return;
+  try {
+    if (await secureStorage.hasStoredSeed()) return;
+    await secureStorage.storeSeed({ type: 'mnemonic', mnemonic: legacy });
+    clearMnemonic();
+    logger.info(LogCategory.AUTH, 'Migrated plaintext mnemonic into secure storage');
+  } catch {
+    // Failure is non-fatal — secureStorage already logged the typed error
+    // code via its own breadcrumbs. We keep the legacy mnemonic in place
+    // and try again on the next startup; the wallet still connects via
+    // the legacy path in the meantime.
+  }
+}
+
+// ============================================
 // Types
 // ============================================
 
@@ -79,8 +112,24 @@ export interface BreezSdkState {
   prfAvailable: boolean;
 }
 
+/**
+ * Where the seed handed to `connectWallet` came from. Controls whether the
+ * post-connect persist block writes the seed back to secure storage.
+ *
+ * - `'onboarding'` (default): the seed is fresh from the passkey ceremony or
+ *   mnemonic restore flow; secure storage doesn't have it yet, so we write.
+ * - `'secureStorage'`: the seed was just retrieved from native secure
+ *   storage; writing it back is a redundant Keystore round-trip.
+ */
+export type ConnectSeedSource = 'onboarding' | 'secureStorage';
+
 export interface BreezSdkActions {
-  connectWallet: (seed: Seed, restore: boolean, passkeyLabel?: string) => Promise<void>;
+  connectWallet: (
+    seed: Seed,
+    restore: boolean,
+    passkeyLabel?: string,
+    source?: ConnectSeedSource,
+  ) => Promise<void>;
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
   fetchUnclaimedDeposits: () => Promise<void>;
   handleLogout: () => Promise<void>;
@@ -219,7 +268,12 @@ export function useBreezSdk(
   // Connection lifecycle
   // ----------------------------------------
 
-  const connectWallet = useCallback(async (seed: Seed, restore: boolean, passkeyLabel?: string) => {
+  const connectWallet = useCallback(async (
+    seed: Seed,
+    restore: boolean,
+    passkeyLabel?: string,
+    source: ConnectSeedSource = 'onboarding',
+  ) => {
     let connectedSdk: BreezSdk | undefined;
     try {
       logger.info(LogCategory.SDK, 'Initiating wallet connection', { restore });
@@ -254,10 +308,33 @@ export function useBreezSdk(
       logger.authSuccess(seed.type);
       logger.info(LogCategory.SDK, 'Wallet connected successfully');
 
+      // Always persist the passkey label marker (non-sensitive) so the
+      // legacy fallback path can still detect passkey mode if secure storage
+      // becomes unavailable later (e.g. KEY_INVALIDATED on biometric change).
       if (passkeyLabel != null) {
         setPasskeyMode(passkeyLabel);
-      } else if (seed.type === 'mnemonic') {
-        saveMnemonic(seed.mnemonic);
+      }
+
+      // Persist the seed itself — but skip this entirely when the seed was
+      // sourced from secure storage (we'd be writing the same bytes back
+      // through a Keystore round-trip on every relaunch, which is wasteful
+      // and clutters the breadcrumb trail).
+      if (source !== 'secureStorage') {
+        if (secureStorage.isSupported()) {
+          // Native: write to Keychain / Keystore. Non-fatal on failure —
+          // the wallet is already connected from the in-memory seed;
+          // we'll retry on the next successful connect. secureStorage
+          // emits its own typed error breadcrumb on failure, so we
+          // don't double-log here.
+          try {
+            await secureStorage.storeSeed(seed);
+          } catch {
+            // Intentionally swallowed — see comment above.
+          }
+        } else if (seed.type === 'mnemonic') {
+          // Web (legacy): unchanged plaintext localStorage write.
+          saveMnemonic(seed.mnemonic);
+        }
       }
 
       const [info, txns] = await Promise.all([
@@ -311,6 +388,17 @@ export function useBreezSdk(
       await logger.endSession();
     } catch (e) {
       logger.warn(LogCategory.SESSION, 'Failed to end log session', { error: formatError(e) });
+    }
+
+    // Wipe secure storage first. Failure is non-fatal — the user is still
+    // logged out either way. secureStorage emits its own typed error
+    // breadcrumb on failure, so we don't double-log here.
+    if (secureStorage.isSupported()) {
+      try {
+        await secureStorage.clearSeed();
+      } catch {
+        // Intentionally swallowed — see comment above.
+      }
     }
 
     // Always reset all state — even if disconnect threw
@@ -382,41 +470,102 @@ export function useBreezSdk(
     });
 
     const checkForExistingWallet = async () => {
-      const savedMnemonic = getSavedMnemonic();
-      if (savedMnemonic) {
-        try {
-          setIsLoading(true);
-          await connectWallet({ type: 'mnemonic', mnemonic: savedMnemonic }, false);
-        } catch (e) {
-          logger.error(LogCategory.SDK, 'Failed to connect with saved mnemonic', { error: formatError(e) });
-          setError('Failed to connect with saved mnemonic. Please try again.');
-          clearMnemonic();
-          setIsLoading(false);
-        }
-      } else if (isPasskeyMode()) {
+      // (A) One-shot migration: on native, copy any plaintext mnemonic into
+      //     secure storage and wipe the plaintext copy. No-op on web.
+      await migrateLegacyMnemonicIfNeeded();
+
+      // (B) Native secure-storage path. Tries biometric unlock first; on any
+      //     recoverable failure, falls through to the legacy path below.
+      let useLegacy = true;
+      if (secureStorage.isSupported() && (await secureStorage.hasStoredSeed())) {
         setIsLoading(true);
-        let wallet;
         try {
-          wallet = await getWallet();
+          const seed = await secureStorage.retrieveSeed();
+          // Pass source='secureStorage' so connectWallet's post-connect
+          // persist block skips the redundant storeSeed write — we just
+          // pulled this seed from the same store.
+          await connectWallet(seed, false, undefined, 'secureStorage');
+          useLegacy = false;
         } catch (e) {
-          logger.error(LogCategory.AUTH, 'Passkey authentication failed', { error: formatError(e) });
-          if (e instanceof DOMException && e.name === 'NotAllowedError') {
-            clearPasskeyMode();
+          if (e instanceof SecureStorageError) {
+            switch (e.code) {
+              case 'USER_CANCELLED':
+                // User dismissed the biometric prompt. Stay logged out
+                // silently — the existing logged-out UI lets them retry.
+                setIsLoading(false);
+                useLegacy = false;
+                break;
+              case 'BIOMETRIC_LOCKOUT':
+                setError(
+                  'Biometric unlock is locked. Unlock your device with your passcode and reopen the app.',
+                );
+                setIsLoading(false);
+                useLegacy = false;
+                break;
+              case 'KEY_INVALIDATED':
+                // Stored entry voided (e.g. new biometric enrollment).
+                // Wipe and fall through to legacy onboarding.
+                await secureStorage.clearSeed().catch(() => {
+                  /* best-effort */
+                });
+                break;
+              case 'NO_STORED_SEED':
+              case 'BIOMETRIC_NOT_ENROLLED':
+              case 'BIOMETRIC_UNAVAILABLE':
+              case 'NOT_SUPPORTED':
+              case 'UNKNOWN':
+              default:
+                // Fall through to legacy path.
+                break;
+            }
+          } else {
+            logger.error(LogCategory.SDK, 'Unexpected error retrieving secure seed', {
+              error: formatError(e),
+            });
+            // Fall through to legacy path.
           }
-          setError('Failed to authenticate with passkey. Please try again.');
-          setIsLoading(false);
         }
-        if (wallet) {
+      }
+
+      // (C) Legacy flow. Reached on web, or on native when secure storage
+      //     was bypassed (no stored seed, biometric not enrolled, etc.).
+      if (useLegacy) {
+        const savedMnemonic = getSavedMnemonic();
+        if (savedMnemonic) {
           try {
-            await connectWallet(wallet.seed, false, wallet.label);
+            setIsLoading(true);
+            await connectWallet({ type: 'mnemonic', mnemonic: savedMnemonic }, false);
           } catch (e) {
-            logger.error(LogCategory.SDK, 'Failed to connect after passkey auth', { error: formatError(e) });
-            setError('Failed to connect wallet. Please try again.');
+            logger.error(LogCategory.SDK, 'Failed to connect with saved mnemonic', { error: formatError(e) });
+            setError('Failed to connect with saved mnemonic. Please try again.');
+            clearMnemonic();
             setIsLoading(false);
           }
+        } else if (isPasskeyMode()) {
+          setIsLoading(true);
+          let wallet;
+          try {
+            wallet = await getWallet();
+          } catch (e) {
+            logger.error(LogCategory.AUTH, 'Passkey authentication failed', { error: formatError(e) });
+            if (e instanceof DOMException && e.name === 'NotAllowedError') {
+              clearPasskeyMode();
+            }
+            setError('Failed to authenticate with passkey. Please try again.');
+            setIsLoading(false);
+          }
+          if (wallet) {
+            try {
+              await connectWallet(wallet.seed, false, wallet.label);
+            } catch (e) {
+              logger.error(LogCategory.SDK, 'Failed to connect after passkey auth', { error: formatError(e) });
+              setError('Failed to connect wallet. Please try again.');
+              setIsLoading(false);
+            }
+          }
+        } else {
+          setIsLoading(false);
         }
-      } else {
-        setIsLoading(false);
       }
 
       if (isInitialLoadRef.current) {
