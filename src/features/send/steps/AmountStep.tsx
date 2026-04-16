@@ -13,6 +13,7 @@ import {
   sanitizeTokenInput,
 } from '../../../utils/tokenFormatting';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
+import { dismissKeyboard } from '../../../utils/keyboard';
 
 export interface AmountStepProps {
   paymentInput: string;
@@ -81,8 +82,11 @@ const AmountStep: React.FC<AmountStepProps> = ({
     ? localAmount !== '' && parseFloat(localAmount) > 0
     : localAmount !== '' && parseInt(localAmount) > 0;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!validAmount) return;
+    // Dismiss the keyboard before advancing to confirm — the confirm
+    // step has no inputs and shouldn't inherit an open keyboard.
+    await dismissKeyboard();
     if (isTokenMode && isSendAllToken && tokenBalanceRaw && stableBalance.tokenIdentifier) {
       // Send-all in token mode: pass token balance as amount with conversion options
       onNext(
@@ -150,8 +154,20 @@ const AmountStep: React.FC<AmountStepProps> = ({
           <input
             type={isTokenMode ? 'text' : 'number'}
             inputMode={isTokenMode ? 'decimal' : 'numeric'}
+            enterKeyHint="done"
             value={localAmount}
             onChange={handleAmountChange}
+            onKeyDown={async (e) => {
+              // Enter on the amount field commits and advances to
+              // the confirm step. Matches the soft keyboard's Done
+              // action hint.
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (validAmount && !isLoading) {
+                  await handleNext();
+                }
+              }
+            }}
             placeholder={isTokenMode && config ? `Enter amount in ${config.symbol}` : 'Enter amount in satoshis'}
             className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             disabled={isLoading}

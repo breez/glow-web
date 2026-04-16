@@ -42,6 +42,21 @@ export interface FormInputProps {
   max?: number;
   disabled?: boolean;
   className?: string;
+  /**
+   * Label shown on the soft keyboard's action (Enter) button.
+   * Pass "next" for fields that advance focus within a form, "done"
+   * or "go" / "send" / "search" for the last field that submits.
+   */
+  enterKeyHint?: React.InputHTMLAttributes<HTMLInputElement>['enterKeyHint'];
+  /** Soft-keyboard type hint (email / numeric / decimal / search / tel / url / text). */
+  inputMode?: React.InputHTMLAttributes<HTMLInputElement>['inputMode'];
+  autoCapitalize?: string;
+  autoCorrect?: 'on' | 'off';
+  autoComplete?: string;
+  spellCheck?: boolean;
+  autoFocus?: boolean;
+  name?: string;
+  inputRef?: React.Ref<HTMLInputElement>;
 }
 
 export const FormInput: React.FC<FormInputProps> = ({
@@ -55,13 +70,31 @@ export const FormInput: React.FC<FormInputProps> = ({
   max,
   disabled = false,
   className = "",
+  enterKeyHint,
+  inputMode,
+  autoCapitalize,
+  autoCorrect,
+  autoComplete,
+  spellCheck,
+  autoFocus,
+  name,
+  inputRef,
 }) => (
   <input
     id={id}
+    name={name}
     type={type}
     value={value}
     onChange={onChange}
     onKeyDown={onKeyDown}
+    ref={inputRef}
+    enterKeyHint={enterKeyHint}
+    inputMode={inputMode}
+    autoCapitalize={autoCapitalize}
+    autoCorrect={autoCorrect}
+    autoComplete={autoComplete}
+    spellCheck={spellCheck}
+    autoFocus={autoFocus}
     className={`w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-0 transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
     placeholder={placeholder}
     min={min}

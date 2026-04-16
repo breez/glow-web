@@ -5,6 +5,7 @@ import { SimpleAlert } from '../../components/AlertCard';
 import { QRCodeContainer, PrimaryButton, SecondaryButton, FormError, CopyableText, TextButton } from '../../components/ui';
 import { useToast } from '../../contexts/ToastContext';
 import { EditIcon, LightningBoltIcon } from '../../components/Icons';
+import { dismissKeyboard } from '../../utils/keyboard';
 
 export interface LightningAddressDisplayProps {
   address: LightningAddressInfo | null;
@@ -88,7 +89,28 @@ const EditingForm: React.FC<EditingFormProps> = ({
             ref={inputRef}
             value={editValue}
             onChange={(e) => onEditValueChange(e.target.value.toLowerCase().replace(/[^a-z0-9\n]/g, '').replace(/\n/g, ''))}
-            onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+            onKeyDown={async (e) => {
+              // Last and only field in this form — Enter submits
+              // via the same path as the Save button. Soft keyboard
+              // shows "Done" via enterKeyHint.
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (!isLoading && editValue.trim()) {
+                  await dismissKeyboard();
+                  onSave();
+                } else {
+                  // Empty / invalid input: still retract the
+                  // keyboard so the user can see the Save button.
+                  await dismissKeyboard();
+                }
+              }
+            }}
+            enterKeyHint="done"
+            inputMode="text"
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
             placeholder="satoshi"
             disabled={isLoading}
             rows={1}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
   FormError,
@@ -16,6 +16,7 @@ import {
   fiatToSats,
 } from '../../utils/tokenFormatting';
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
+import { dismissKeyboard } from '../../utils/keyboard';
 
 interface AmountPanelProps {
   isOpen: boolean;
@@ -51,6 +52,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
 
   // In token mode we show the fiat value locally; the parent's `amount` always holds sats.
   const [displayAmount, setDisplayAmount] = useState('');
+  const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleToggleDenomination = () => {
     setIsTokenMode(prev => !prev);
@@ -109,9 +111,18 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
             <div className="relative">
               <textarea
                 inputMode={isTokenMode ? 'decimal' : 'numeric'}
+                enterKeyHint="next"
                 value={displayAmount}
                 onChange={(e) => handleAmountChange(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+                onKeyDown={(e) => {
+                  // Enter on the amount field advances to the
+                  // description field (the soft keyboard's Next
+                  // action). Never inserts a newline.
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    descriptionInputRef.current?.focus();
+                  }
+                }}
                 placeholder={isTokenMode ? '0.00' : '0'}
                 disabled={isLoading}
                 rows={1}
@@ -154,9 +165,22 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
           <div>
             <label className="block text-spark-text-secondary text-sm font-medium mb-2">Description (optional)</label>
             <textarea
+              ref={descriptionInputRef}
+              enterKeyHint="done"
               value={description}
               onChange={(e) => setDescription(e.target.value.replace(/\n/g, ''))}
-              onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  // Always retract the keyboard on Enter. Commit
+                  // only if the amount is valid and we're not
+                  // already generating.
+                  await dismissKeyboard();
+                  if (validAmount && !isLoading) {
+                    onCreateInvoice();
+                  }
+                }
+              }}
               placeholder="What's this for?"
               disabled={isLoading}
               rows={1}
@@ -168,7 +192,13 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
 
           {/* Generate Button */}
           <PrimaryButton
-            onClick={onCreateInvoice}
+            onClick={async () => {
+              // Dismiss the keyboard before kicking off the network
+              // roundtrip so the user sees the loading state and the
+              // resulting invoice QR unobstructed.
+              await dismissKeyboard();
+              onCreateInvoice();
+            }}
             type="submit"
             disabled={isLoading || !validAmount}
             className="w-full"
