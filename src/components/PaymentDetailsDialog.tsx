@@ -180,21 +180,24 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               )
             )}
 
-            {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo?.comment && (
-              payment.details.lnurlPayInfo.comment.length > LONG_TEXT_THRESHOLD ? (
+            {payment.details?.type === 'lightning' && (() => {
+              const comment = payment.details.lnurlPayInfo?.comment
+                ?? payment.details.lnurlReceiveMetadata?.senderComment;
+              if (!comment) return null;
+              return comment.length > LONG_TEXT_THRESHOLD ? (
                 <CollapsibleCodeField
                   label="Comment"
-                  value={payment.details.lnurlPayInfo.comment}
+                  value={comment}
                   isVisible={visibleFields.comment}
                   onToggle={() => toggleField('comment')}
                 />
               ) : (
                 <PaymentInfoRow
                   label="Comment"
-                  value={payment.details.lnurlPayInfo.comment}
+                  value={comment}
                 />
-              )
-            )}
+              );
+            })()}
 
             {payment.details?.type === 'lightning' && payment.details.invoice && (
               <CollapsibleCodeField
