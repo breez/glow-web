@@ -3,6 +3,10 @@ import { createPortal } from 'react-dom';
 import { Transition } from '@headlessui/react';
 import { isPasskeyMode } from '@/services/passkeyService';
 import { RefundIcon, BackupIcon, SettingsIcon, LogoutIcon, CloseIcon, AlertTriangleIcon } from './Icons';
+import { safeAreaTop, safeAreaBottom } from '../utils/safeAreaInsets';
+import { useStatusBarColor } from '../hooks/useStatusBarColor';
+import { STATUS_BAR_SURFACE, STATUS_BAR_DIALOG_SCRIM } from '../utils/statusBarManager';
+import { useBackButton } from '../hooks/useBackButton';
 // Star positions around the logo (relative to center, in pixels)
 const STARS = [
   { x: -28, y: -20, size: 3 },
@@ -26,8 +30,32 @@ interface SideMenuProps {
 }
 
 const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSettings, onOpenBackup, onOpenRefund, hasRejectedDeposits = false }) => {
+  // While the drawer is open, push the solid spark-surface tone over
+  // the wallet page's glass tint so the status bar matches the drawer
+  // panel's solid bg. Tied to isOpen so popping happens on close.
+  useStatusBarColor(STATUS_BAR_SURFACE, isOpen);
+
   const [leftOffset, setLeftOffset] = useState<number | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // When the logout confirmation dialog opens, dim the system bars to
+  // the same scrim tone the React backdrop applies to the content
+  // behind the dialog. Tied to showLogoutConfirm so closing the
+  // dialog restores the drawer's surface tone (which in turn restores
+  // the wallet page glass on drawer close).
+  useStatusBarColor(STATUS_BAR_DIALOG_SCRIM, showLogoutConfirm);
+
+  // Hardware back button: close the logout confirm dialog if it's
+  // up; otherwise close the drawer. Two registrations so they stack
+  // in LIFO order — the logout confirm is registered last, so it's
+  // on top of the drawer's own handler when both are showing.
+  useBackButton(() => {
+    onClose();
+  }, isOpen);
+  useBackButton(() => {
+    setShowLogoutConfirm(false);
+  }, showLogoutConfirm);
+
   const [starsAnimating, setStarsAnimating] = useState(false);
   const prevIsOpenRef = useRef(false);
 
@@ -131,7 +159,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             leaveFrom="translate-x-0"
             leaveTo="-translate-x-full"
             className="w-72 h-full bg-spark-surface border-r border-spark-border shadow-glass-lg px-6 flex flex-col"
-            style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+            style={{ paddingTop: safeAreaTop, paddingBottom: safeAreaBottom }}
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-8 pt-6">
@@ -208,7 +236,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                 leave="transition-opacity ease-in duration-100"
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
-                className="fixed inset-0 bg-black/70"
+                className="fixed inset-0 bg-black/85 backdrop-blur-md"
                 onClick={() => setShowLogoutConfirm(false)}
               />
               <div className="fixed inset-0 flex items-center justify-center p-4">

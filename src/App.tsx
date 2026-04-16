@@ -21,12 +21,31 @@ import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import BuyProvidersPage from './pages/BuyProvidersPage';
 import UnlockPage from './pages/UnlockPage';
+import UnlockingPage from './pages/UnlockingPage';
 import { ContactsProvider } from './contexts/ContactsContext';
 
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
+import { useStatusBarColor } from './hooks/useStatusBarColor';
+import { STATUS_BAR_LOADING } from './utils/statusBarManager';
+import { useBackButton } from './hooks/useBackButton';
 import type { Seed, Payment } from '@breeztech/breez-sdk-spark';
 
-type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock';
+type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking';
+
+// Full-screen dim spinner shown while sdk.isLoading is true (logout in
+// progress, SDK reconnect, etc). Wrapped as its own component so the
+// useStatusBarColor effect only fires while the overlay is mounted —
+// during logout WalletPage unmounts and the status bar stack goes
+// empty, so without this component the system bars would fall back to
+// the wallet page glass tint which visibly mismatches bg-spark-void/95.
+const GlobalLoadingOverlay: React.FC = () => {
+  useStatusBarColor(STATUS_BAR_LOADING);
+  return (
+    <div className="absolute inset-0 bg-spark-void/95 backdrop-blur-sm z-50 flex items-center justify-center">
+      <LoadingSpinner />
+    </div>
+  );
+};
 
 // Bridge component that feeds StableBalance formatter back to useBreezSdk via a mutable ref
 const StableBalanceFormatterBridge: React.FC<{ formatterRef: React.MutableRefObject<((payment: Payment) => string) | undefined> }> = ({ formatterRef }) => {
@@ -50,20 +69,26 @@ const AppContent: React.FC = () => {
   const sdk = useBreezSdk(showToast);
 
   // Auto-navigate to wallet when SDK reconnects from saved mnemonic OR
-  // from a successful biometric unlock on the dedicated UnlockPage.
+  // from a successful biometric unlock (either the auto-triggered one
+  // shown behind UnlockingPage or the interactive retry on UnlockPage).
   useEffect(() => {
     if (
       sdk.isConnected &&
-      (currentScreen === 'home' || currentScreen === 'unlock')
+      (currentScreen === 'home' ||
+        currentScreen === 'unlock' ||
+        currentScreen === 'unlocking')
     ) {
       setCurrentScreen('wallet');
     }
   }, [sdk.isConnected, currentScreen]);
 
-  // Auto-navigate to the UnlockPage when native secure storage reports a
-  // locked wallet (USER_CANCELLED / BIOMETRIC_LOCKOUT on initial load).
+  // Route 'native-unlocking' → UnlockingPage (branded placeholder behind
+  // the auto-triggered biometric) and 'native-locked' → UnlockPage
+  // (interactive retry after cancel / lockout).
   useEffect(() => {
-    if (sdk.startupState === 'native-locked' && currentScreen !== 'unlock') {
+    if (sdk.startupState === 'native-unlocking' && currentScreen !== 'unlocking') {
+      setCurrentScreen('unlocking');
+    } else if (sdk.startupState === 'native-locked' && currentScreen !== 'unlock') {
       setCurrentScreen('unlock');
     }
   }, [sdk.startupState, currentScreen]);
@@ -94,19 +119,66 @@ const AppContent: React.FC = () => {
     await sdk.handleLogout();
   };
 
+  // Android hardware back button — screen navigation fallback at the
+  // bottom of the back-button handler stack (utils/backButton.ts).
+  // Open bottom sheets, drawers and confirm dialogs push their own
+  // handlers via useBackButton when they mount, so those absorb the
+  // event first (LIFO). This handler only runs when nothing else is
+  // open and walks one step back in the screen hierarchy.
+  //
+  //   return `true`  → event handled, walk stops
+  //   return `false` → fall through to the base of the stack, which
+  //                    calls App.minimizeApp() (same as pressing Home)
+  //
+  // Nothing in the stack ever calls App.exitApp(). Destroying the
+  // activity process while a system-UI BiometricPrompt is showing
+  // orphans the dialog — SystemUI keeps it on screen with an
+  // unresponsive Cancel button and only a device reboot clears it.
+  // On `unlock` / `unlocking` we also absorb (rather than minimise)
+  // because the biometric dialog is typically visible; the user can
+  // cancel via its own Cancel button.
+  useBackButton(useCallback(() => {
+    switch (currentScreen) {
+      case 'settings':
+      case 'backup':
+      case 'getRefund':
+        setCurrentScreen('wallet');
+        return true;
+      case 'fiatCurrencies':
+        setCurrentScreen('settings');
+        return true;
+      case 'buyProviders':
+        setCurrentScreen(buyProvidersSource === 'settings' ? 'settings' : 'wallet');
+        return true;
+      case 'restore':
+      case 'generate':
+      case 'passkey':
+        setCurrentScreen('home');
+        return true;
+      case 'unlock':
+      case 'unlocking':
+        // Biometric prompt may be showing — don't minimise, just
+        // absorb. User can cancel the biometric via its own Cancel.
+        return true;
+      case 'home':
+      case 'wallet':
+      default:
+        // Root user screens: fall through to App.minimizeApp()
+        // (same as pressing Home). Matches standard Android UX.
+        return false;
+    }
+  }, [currentScreen, buyProvidersSource]), true);
+
   // Render screens
   const renderCurrentScreen = () => {
     if (
       sdk.isLoading &&
       currentScreen !== 'restore' &&
       currentScreen !== 'passkey' &&
-      currentScreen !== 'unlock'
+      currentScreen !== 'unlock' &&
+      currentScreen !== 'unlocking'
     ) {
-      return (
-        <div className="absolute inset-0 bg-spark-void/95 backdrop-blur-sm z-50 flex items-center justify-center">
-          <LoadingSpinner />
-        </div>
-      );
+      return <GlobalLoadingOverlay />;
     }
 
     switch (currentScreen) {
@@ -133,6 +205,9 @@ const AppContent: React.FC = () => {
             onFlowComplete={handlePasskeyFlowComplete}
           />
         );
+
+      case 'unlocking':
+        return <UnlockingPage />;
 
       case 'unlock':
         return (
