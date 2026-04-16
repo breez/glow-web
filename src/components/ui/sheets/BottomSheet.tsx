@@ -1,5 +1,11 @@
 import React, { ReactNode, forwardRef, useState, useRef, useCallback, useEffect } from 'react';
 import { Transition } from '@headlessui/react';
+import { Capacitor } from '@capacitor/core';
+import { Keyboard } from '@capacitor/keyboard';
+import type { PluginListenerHandle } from '@capacitor/core';
+import { useStatusBarColor } from '../../../hooks/useStatusBarColor';
+import { STATUS_BAR_SURFACE } from '../../../utils/statusBarManager';
+import { useBackButton } from '../../../hooks/useBackButton';
 
 /**
  * Bottom sheet inspired by @gorhom/react-native-bottom-sheet.
@@ -98,8 +104,19 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   // Body dismiss translateY
   const [bodyDragY, setBodyDragY] = useState(0);
   const [animating, setAnimating] = useState(false);
-  // Track visual viewport height to account for on-screen keyboard
-  const [viewportHeight, setViewportHeight] = useState(() => window.visualViewport?.height ?? window.innerHeight);
+  // Effective viewport height in CSS pixels. The canonical source is
+  // window.visualViewport.height — it reflects the currently-visible
+  // web content area, correctly accounting for whatever Android/iOS
+  // has retracted for the soft keyboard. We deliberately do NOT
+  // derive this from `initialInnerHeight − keyboardHeight` via the
+  // @capacitor/keyboard plugin: keyboardHeight is reported as
+  // imeInsets.bottom which includes the nav bar inset, while
+  // innerHeight already excludes the nav bar, so the naive
+  // subtraction double-counts the nav bar and leaves a gap between
+  // the sheet's footer and the top of the keyboard.
+  const [viewportHeight, setViewportHeight] = useState<number>(() => {
+    return window.visualViewport?.height ?? window.innerHeight;
+  });
 
   const dragging = useRef(false);
   const startY = useRef(0);
@@ -108,13 +125,56 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const contentHeight = useRef(0);
 
-  // Keep viewportHeight in sync with the visual viewport (shrinks when keyboard opens)
+  // Keep viewportHeight in sync with the visible viewport.
+  // visualViewport.resize is the primary signal. On native Capacitor
+  // we also subscribe to @capacitor/keyboard show/hide events and
+  // force a re-read inside requestAnimationFrame — a safety net for
+  // WebViews where visualViewport.resize is delayed or coalesced
+  // and fires before the WebView has finished re-laying out.
   useEffect(() => {
+    const readViewport = () => {
+      setViewportHeight(window.visualViewport?.height ?? window.innerHeight);
+    };
+
     const vv = window.visualViewport;
-    if (!vv) return;
-    const onResize = () => setViewportHeight(vv.height);
-    vv.addEventListener('resize', onResize);
-    return () => vv.removeEventListener('resize', onResize);
+    vv?.addEventListener('resize', readViewport);
+    vv?.addEventListener('scroll', readViewport);
+
+    let cancelled = false;
+    const capHandles: PluginListenerHandle[] = [];
+
+    if (Capacitor.isNativePlatform()) {
+      // Re-read viewport after the keyboard has finished showing/hiding.
+      // rAF ensures the WebView has committed its own resize before we
+      // sample innerHeight / visualViewport.height.
+      const delayedRead = () => requestAnimationFrame(readViewport);
+
+      void Keyboard.addListener('keyboardWillShow', delayedRead).then((h) => {
+        if (cancelled) h.remove();
+        else capHandles.push(h);
+      });
+      void Keyboard.addListener('keyboardDidShow', delayedRead).then((h) => {
+        if (cancelled) h.remove();
+        else capHandles.push(h);
+      });
+      void Keyboard.addListener('keyboardWillHide', delayedRead).then((h) => {
+        if (cancelled) h.remove();
+        else capHandles.push(h);
+      });
+      void Keyboard.addListener('keyboardDidHide', delayedRead).then((h) => {
+        if (cancelled) h.remove();
+        else capHandles.push(h);
+      });
+    }
+
+    return () => {
+      cancelled = true;
+      vv?.removeEventListener('resize', readViewport);
+      vv?.removeEventListener('scroll', readViewport);
+      capHandles.forEach((h) => {
+        void h.remove();
+      });
+    };
   }, []);
 
   const maxPx = useCallback(() => {
@@ -239,10 +299,36 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     }
   }, [isOpen]);
 
+  // Wire the Android hardware back button to close the sheet while
+  // it's open. Uses the shared LIFO back-button stack in
+  // utils/backButton.ts so nested sheets dismiss in the order the
+  // user opened them (topmost first). No-op on non-native platforms.
+  useBackButton(() => {
+    dismiss();
+  }, isOpen);
+
   const maxWidthClass = maxWidthMap[maxWidth];
   const isExpanded = snapIndex > 0 || dragHeight !== null;
   // Full screen when snapped to top or dragged near max height
   const isFullScreen = fullHeight || snapIndex > 0 || (dragHeight !== null && dragHeight > maxPx() * 0.85);
+
+  // System bar tinting on native:
+  //
+  //  * Nav bar   → push spark-surface (#151520) for the entire time the
+  //    sheet is open. Every bottom sheet, no matter how expanded,
+  //    reaches the bottom of the viewport and its card bg meets the
+  //    Android nav bar, so the nav bar always needs to match the
+  //    sheet's surface color while open.
+  //
+  //  * Status bar → only push spark-surface once the sheet is fully
+  //    expanded and covers the top of the screen. At the collapsed
+  //    snap index the wallet page (or whatever is underneath) is
+  //    still visible at the top and the status bar should keep its
+  //    parent tint via the default fallback in statusBarManager.
+  //
+  // The stack pops on close via the disposer returned from each push.
+  useStatusBarColor(STATUS_BAR_SURFACE, isOpen, 'nav');
+  useStatusBarColor(STATUS_BAR_SURFACE, isOpen && isFullScreen, 'status');
 
   const wrapperStyle: React.CSSProperties = {
     maxHeight: fullHeight ? undefined : `${maxHeightVh}vh`,
@@ -297,7 +383,24 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
         style={wrapperStyle}
         ref={wrapperRef}
         onPointerDown={(e) => {
-          if ((e.target as HTMLElement).closest('.bottom-sheet-handle-zone')) return;
+          const target = e.target as HTMLElement;
+          // Handle zone owns its own drag flow — skip the body drag
+          // handler so the user can freely resize the sheet from the
+          // grip above the content.
+          if (target.closest('.bottom-sheet-handle-zone')) return;
+          // Never hijack pointer events on interactive children.
+          // onDown calls setPointerCapture, which on Android Chromium
+          // blocks the native tap-to-focus flow for inputs nested in
+          // the sheet — the caret would appear to move but keystrokes
+          // would land on the captured pointer instead of the input's
+          // value.
+          if (
+            target.closest(
+              'input, textarea, select, button, [contenteditable="true"], a[href]',
+            )
+          ) {
+            return;
+          }
           onDown(e, 'body');
         }}
         onPointerMove={onMove}
