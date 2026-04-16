@@ -1,14 +1,18 @@
 /**
- * UnlockPage — shown when the app has a seed persisted in native secure
- * storage but the most recent retrieve attempt was cancelled or locked out.
+ * UnlockPage — interactive retry screen shown when the auto-triggered
+ * biometric unlock was cancelled or hit the biometric lockout error.
  *
- * Presents a single primary action ("Unlock with Face ID / Touch ID /
- * fingerprint") and a secondary escape hatch ("Use a different wallet"
- * which clears the stored seed and logs out).
+ * The cold-launch "authenticating now, please wait" surface is a
+ * separate component (`UnlockingPage`) so that this page stays purely
+ * interactive and the placeholder stays purely decorative.
+ *
+ * Presents a primary "Unlock with <biometry>" action and a secondary
+ * "Use a different wallet" escape that clears the stored seed and
+ * routes back to welcome.
  *
  * Layout mirrors `feat/password-encrypted-seed-storage`'s UnlockPage so
- * that when both native secure storage and the password vault coexist on
- * the same codebase, they share a visual language.
+ * that when both native secure storage and the password vault coexist
+ * on the same codebase, they share a visual language.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -51,7 +55,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
     <div className="min-h-dvh h-dvh w-full flex flex-col bg-spark-surface relative">
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="max-w-sm w-full space-y-8">
-          {/* Logo */}
+          {/* Logo + headline */}
           <div className="flex flex-col items-center gap-4">
             <img
               src="/assets/Glow_Logo.png"
@@ -73,7 +77,6 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
             </AlertCard>
           )}
 
-          {/* Primary unlock CTA */}
           <div className="space-y-3">
             <PrimaryButton
               onClick={onUnlock}
@@ -84,7 +87,6 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
               {unlockLabel}
             </PrimaryButton>
 
-            {/* Secondary escape hatch */}
             <SecondaryButton
               onClick={onAbandon}
               disabled={isLoading}
