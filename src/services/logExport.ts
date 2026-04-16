@@ -1,6 +1,9 @@
 import { logger, LogCategory } from './logger';
 import { getAllSessions, isStorageAvailable } from './logStorage';
 import JSZip from 'jszip';
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 
 const getAllLogs = (): string => {
   return logger.getLogsAsString();
@@ -142,10 +145,59 @@ export const canShareFiles = (): boolean => {
     typeof navigator.canShare === 'function';
 };
 
+// Convert a Blob to a base64 string (without the data URL prefix).
+// @capacitor/filesystem writeFile takes base64 for binary payloads.
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      const comma = result.indexOf(',');
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+};
+
+// Write the zip to the app cache directory and hand its URI to the
+// native system share sheet. Used on iOS + Android via Capacitor.
+const shareFileNative = async (blob: Blob, filename: string): Promise<void> => {
+  const base64 = await blobToBase64(blob);
+  const { uri } = await Filesystem.writeFile({
+    path: filename,
+    data: base64,
+    directory: Directory.Cache,
+  });
+  await Share.share({
+    title: 'Glow Wallet Logs',
+    url: uri,
+    dialogTitle: 'Share logs',
+  });
+};
+
 export const shareOrDownloadLogs = async (): Promise<void> => {
   const blob = await getAllLogsAsZip();
   const timestamp = Math.floor(Date.now() / 1000);
   const filename = `${timestamp}_glow_logs.zip`;
+
+  // Native platforms (iOS + Android): write to cache and open the system
+  // share sheet via @capacitor/share. This is the preferred path because
+  // Android WebView's navigator.share({ files }) is unreliable, and the
+  // iOS WKWebView support varies by version — one consistent code path
+  // is easier to reason about than two.
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await shareFileNative(blob, filename);
+      return;
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return;
+      logger.warn(LogCategory.UI, 'Native log share failed, falling back to browser path', {
+        error: e instanceof Error ? e.message : String(e),
+      });
+      // Fall through to the browser-style navigator.share / download path.
+    }
+  }
 
   if (canShareFiles()) {
     const file = new File([blob], filename, { type: 'application/zip' });
