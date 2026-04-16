@@ -1,5 +1,8 @@
 import React, { ReactNode } from 'react';
 import { BackIcon } from '../Icons';
+import { safeAreaTop, safeAreaBottom } from '../../utils/safeAreaInsets';
+import { useStatusBarColor } from '../../hooks/useStatusBarColor';
+import { STATUS_BAR_SURFACE } from '../../utils/statusBarManager';
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -17,14 +20,21 @@ const PageLayout: React.FC<PageLayoutProps> = ({
   onBack = null,
   showHeader = true,
 }) => {
+  // Generic PageLayout screens (get refund, etc.) use a solid
+  // spark-surface background; match the system bars to that tone.
+  useStatusBarColor(STATUS_BAR_SURFACE);
+
   return (
     <div className="min-h-dvh h-dvh w-full flex flex-col bg-spark-surface relative">
       {showHeader && (
         <header
           className="relative z-10 flex-shrink-0 border-b border-spark-border bg-spark-surface/80 backdrop-blur-sm"
-          style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+          style={{ paddingTop: safeAreaTop }}
         >
-          <div className="relative px-4 py-4 flex items-center justify-center">
+          {/* Fixed h-14 (56dp) Material toolbar height, matching the
+              wallet page CollapsingWalletHeader top row so the back button
+              lands at the same screen y coordinate when navigating. */}
+          <div className="relative px-4 h-14 flex items-center justify-center">
             <h1 className="text-center font-display text-xl font-bold text-spark-text-primary">
               {title || "Glow"}
             </h1>
@@ -53,7 +63,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
       {footer && (
         <footer
           className="relative z-10 flex-shrink-0 w-full border-t border-spark-border bg-spark-surface/80 backdrop-blur-sm"
-          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+          style={{ paddingBottom: safeAreaBottom }}
         >
           <div className="px-4 py-4">
             {footer}

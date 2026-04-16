@@ -1,6 +1,9 @@
 import React, { ReactNode, useState } from 'react';
 import { Transition } from '@headlessui/react';
 import { CloseIcon, BackIcon } from '../Icons';
+import { safeAreaTop, safeAreaBottom } from '../../utils/safeAreaInsets';
+import { useStatusBarColor } from '../../hooks/useStatusBarColor';
+import { STATUS_BAR_SURFACE } from '../../utils/statusBarManager';
 
 type SlideDirection = 'left' | 'right' | 'up' | 'down';
 
@@ -41,6 +44,12 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(true);
 
+  // Slide-in pages (Settings, Backup, Buy Providers, etc.) use a
+  // solid spark-surface background, so pin the system bars to match
+  // while the page is mounted. The push/pop through statusBarManager
+  // means when the page closes the wallet page's glass tint is restored.
+  useStatusBarColor(STATUS_BAR_SURFACE);
+
   const handleClose = () => {
     setIsOpen(false);
     setTimeout(onClose, 220);
@@ -64,9 +73,13 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
           {/* Header with safe area top padding */}
           <header
             className="flex-shrink-0 border-b border-spark-border"
-            style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+            style={{ paddingTop: safeAreaTop }}
           >
-            <div className="relative px-4 py-4 flex items-center justify-center">
+            {/* Fixed h-14 (56dp) Material toolbar height, matching the
+                wallet page CollapsingWalletHeader top row so the back /
+                close buttons land at the same screen y coordinate when
+                navigating between screens. */}
+            <div className="relative px-4 h-14 flex items-center justify-center">
               <h1 className="text-center font-display text-lg font-semibold text-spark-text-primary">
                 {title}
               </h1>
@@ -103,7 +116,7 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
           {footer && (
             <footer
               className="flex-shrink-0 border-t border-spark-border bg-spark-surface"
-              style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+              style={{ paddingBottom: safeAreaBottom }}
             >
               <div className="p-4">
                 <div className="max-w-xl mx-auto">

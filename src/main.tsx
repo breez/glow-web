@@ -1,4 +1,7 @@
 import ReactDOM from 'react-dom/client';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Keyboard } from '@capacitor/keyboard';
 import App from './App';
 import './index.css';
 import { logger, LogCategory } from '@/services/logger';
@@ -8,6 +11,106 @@ import initBreezSDK from '@breeztech/breez-sdk-spark';
 (BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
   return this.toString();
 };
+
+// Pin the system bars to the Glow "surface" tone on native builds so they
+// blend with the app bar glassmorphism. setStyle controls icon brightness;
+// setBackgroundColor is Android-only (iOS ignores it; Android 15+ no-ops due
+// to edge-to-edge). setOverlaysWebView(false) forces the WebView to start
+// below the status bar on Android so env(safe-area-inset-top) resolves to 0
+// and the CollapsingWalletHeader padding stops double-counting the status
+// bar height. The pre-JS dark theme in android/app/src/main/res/values/
+// styles.xml is the belt-and-braces fallback before this init runs.
+//
+// Color is #151520 (spark.surface from tailwind.config.js) rather than the
+// deeper #0a0a0f canvas so the system bars visibly match the header
+// glassmorphism surface rather than disappearing into near-black.
+if (Capacitor.isNativePlatform()) {
+  StatusBar.setStyle({ style: Style.Dark }).catch(() => {
+    /* unsupported platform or Android 15+ edge-to-edge — ignore */
+  });
+  // #13131d = spark-surface (#151520) composited at 80% opacity over the
+  // spark-void canvas (#0a0a0f), the exact effective color produced by
+  // the CollapsingWalletHeader's bg-spark-surface/80 glassmorphism and
+  // the .bottom-bar rgba(21,21,32,0.8). Setting the system bars to this
+  // value makes the wallet home page glass appear to extend seamlessly
+  // through the status/nav bars rather than meeting a visibly different
+  // shade at their edges. Off by ~2 rgb units from the solid spark-surface
+  // used on SlideInPage / PageLayout headers — imperceptible on dark UIs.
+  StatusBar.setBackgroundColor({ color: '#13131d' }).catch(() => {
+    /* iOS ignores setBackgroundColor; Android 15+ no-op — ignore */
+  });
+  if (Capacitor.getPlatform() === 'android') {
+    StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {
+      /* Android 15+ edge-to-edge enforcement — ignore */
+    });
+  }
+
+  // Track the soft keyboard height via @capacitor/keyboard events and
+  // publish it as a `--keyboard-height` CSS custom property on :root
+  // (plus a `keyboard-visible` class on <html>). Components that care
+  // about keyboard visibility can read the CSS var / class instead of
+  // subscribing to the Keyboard plugin directly from every callsite.
+  //
+  // The `void` on each addListener suppresses the unhandled-promise
+  // warning; we don't store the handle because main.tsx runs once at
+  // startup and the listener lifetime is the app lifetime.
+  void Keyboard.addListener('keyboardWillShow', (info) => {
+    document.documentElement.style.setProperty(
+      '--keyboard-height',
+      `${info.keyboardHeight}px`,
+    );
+    document.documentElement.classList.add('keyboard-visible');
+    logger.debug(LogCategory.UI, 'Keyboard will show', {
+      keyboardHeight: info.keyboardHeight,
+    });
+  });
+  void Keyboard.addListener('keyboardDidShow', () => {
+    // Scroll the focused input into the visible portion of its
+    // nearest intentionally-scrollable ancestor (the
+    // BottomSheetCard's overflow-y-auto content area). Done
+    // manually with getBoundingClientRect deltas rather than
+    // element.scrollIntoView() — the CSSOM scrollIntoView algorithm
+    // walks up every scrolling box, including overflow:hidden
+    // ancestors like WalletPage's root, and would drag them off
+    // screen.
+    requestAnimationFrame(() => {
+      const focused = document.activeElement as HTMLElement | null;
+      if (
+        !focused ||
+        !(
+          focused.tagName === 'INPUT' ||
+          focused.tagName === 'TEXTAREA' ||
+          focused.isContentEditable
+        )
+      ) {
+        return;
+      }
+
+      let scrollable: HTMLElement | null = focused.parentElement;
+      while (scrollable) {
+        const style = getComputedStyle(scrollable);
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll') break;
+        scrollable = scrollable.parentElement;
+      }
+      if (scrollable) {
+        const focusedRect = focused.getBoundingClientRect();
+        const scrollRect = scrollable.getBoundingClientRect();
+        const padding = 24;
+        if (focusedRect.top < scrollRect.top + padding) {
+          scrollable.scrollTop -= scrollRect.top + padding - focusedRect.top;
+        } else if (focusedRect.bottom > scrollRect.bottom - padding) {
+          scrollable.scrollTop +=
+            focusedRect.bottom - scrollRect.bottom + padding;
+        }
+      }
+    });
+  });
+  void Keyboard.addListener('keyboardWillHide', () => {
+    document.documentElement.style.setProperty('--keyboard-height', '0px');
+    document.documentElement.classList.remove('keyboard-visible');
+    logger.debug(LogCategory.UI, 'Keyboard will hide');
+  });
+}
 
 // Hide the initial splash screen - exported so App can call it when truly ready
 export function hideSplash() {

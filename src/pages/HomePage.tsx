@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSecretTap } from '@/hooks/useSecretTap';
+import { safeAreaTop, safeAreaBottom } from '@/utils/safeAreaInsets';
+import { useStatusBarColor } from '@/hooks/useStatusBarColor';
+import { STATUS_BAR_SURFACE } from '@/utils/statusBarManager';
 
 // Star positions around the logo (relative to center, in pixels) - larger radius for bigger logo
 const STARS = [
@@ -26,6 +29,10 @@ const HomePage: React.FC<HomePageProps> = ({
   onUsePasskey,
   prfAvailable,
 }) => {
+  // Landing page sits on a flat spark-surface background, so pin the
+  // system bars to the same solid tone while we're shown.
+  useStatusBarColor(STATUS_BAR_SURFACE);
+
   const [starsAnimating, setStarsAnimating] = useState(false);
   const [showMnemonicFlow, setShowMnemonicFlow] = useState(false);
   const { handleTap: handleLogoTap } = useSecretTap(5, 2000, false, () => setShowMnemonicFlow(v => !v));
@@ -38,9 +45,12 @@ const HomePage: React.FC<HomePageProps> = ({
 
   return (
     <div className="h-full w-full flex flex-col bg-spark-surface relative overflow-hidden">
-      {/* Background layer - extends behind all safe areas */}
+      {/* Background layer - extends behind all safe areas.
+          Uses spark-surface (matching the system status/navigation bars)
+          so the landing page blends seamlessly with the system chrome
+          instead of presenting a visibly different color. */}
       <div
-        className="absolute inset-0 bg-spark-dark pointer-events-none"
+        className="absolute inset-0 bg-spark-surface pointer-events-none"
         style={{
           top: 'calc(-1 * env(safe-area-inset-top, 0px))',
           bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
@@ -78,8 +88,8 @@ const HomePage: React.FC<HomePageProps> = ({
       <div
         className="flex-1 flex flex-col items-center justify-center px-6 relative z-10"
         style={{
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          paddingTop: safeAreaTop,
+          paddingBottom: safeAreaBottom,
         }}
       >
 
