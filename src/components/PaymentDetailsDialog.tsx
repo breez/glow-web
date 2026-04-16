@@ -75,6 +75,15 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   );
   const payment = optionalPayment!;
 
+  // DEBUG: log payment details to diagnose missing LNURL comment
+  console.log('[DEBUG] Payment details:', JSON.stringify({
+    id: payment.id,
+    type: payment.details?.type,
+    lnurlPayInfo: payment.details?.type === 'lightning' ? payment.details.lnurlPayInfo : undefined,
+    lnurlReceiveMetadata: payment.details?.type === 'lightning' ? payment.details.lnurlReceiveMetadata : undefined,
+    description: payment.details?.type === 'lightning' ? payment.details.description : undefined,
+  }, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2));
+
   // Format a conversion step's amount or fee in its native unit
   const formatStepValue = (step: ConversionStep, value: bigint, isFee?: boolean): string => {
     if (step.method === 'token' && step.tokenMetadata) {
