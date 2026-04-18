@@ -8,6 +8,16 @@
  * in transparently by passkeyPrfProvider.ts on native platforms.
  */
 
+/**
+ * Result of a domain-association verification check. Mirrors the Rust
+ * `DomainAssociation` enum shape from the SDK so cross-platform callers
+ * handle it uniformly.
+ */
+export type DomainAssociation =
+  | { kind: 'Associated' }
+  | { kind: 'NotAssociated'; source: string; reason: string }
+  | { kind: 'Skipped'; reason: string };
+
 declare global {
   interface Window {
     Capacitor?: {
@@ -25,6 +35,9 @@ declare global {
             rpId?: string;
             salt: string;
           }): Promise<{ seed: string }>;
+          checkDomainAssociation(options?: {
+            rpId?: string;
+          }): Promise<DomainAssociation>;
         };
       };
     };
@@ -76,5 +89,16 @@ export class NativePasskeyPrfProvider {
       bytes[i] = binary.charCodeAt(i);
     }
     return bytes;
+  }
+
+  /**
+   * Verify the app's bundle identity is listed by the platform's
+   * out-of-band domain verification source for `rpId` (Apple's AASA CDN
+   * on iOS, Google's Digital Asset Links API on Android).
+   *
+   * See `DomainAssociation` for return semantics.
+   */
+  async checkDomainAssociation(): Promise<DomainAssociation> {
+    return getPlugin().checkDomainAssociation({ rpId: this.rpId });
   }
 }
