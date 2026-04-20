@@ -5,7 +5,6 @@ import { SpinnerIcon } from '../../../components/Icons';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { useWallet } from '../../../contexts/WalletContext';
 import {
-  fiatToSats,
   getTokenBalance,
   TOKEN_QUICK_AMOUNTS,
   SATS_QUICK_AMOUNTS,
@@ -16,22 +15,23 @@ import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
 
 export interface AmountStepProps {
   paymentInput: string;
-  amount: string;
   balanceSats?: number;
   isLoading: boolean;
   error: string | null;
   onBack: () => void;
   onNext: (amountSats: number, feesIncluded?: boolean, tokenIdentifier?: string, conversionOptions?: ConversionOptions) => void;
+  /** Show amount input before destination (used for cross-chain) */
+  amountFirst?: boolean;
 }
 
 const AmountStep: React.FC<AmountStepProps> = ({
   paymentInput,
-  amount,
   balanceSats,
   isLoading,
   error,
   onBack,
   onNext,
+  amountFirst = false,
 }) => {
   const wallet = useWallet();
   const stableBalance = useStableBalance();
@@ -39,7 +39,9 @@ const AmountStep: React.FC<AmountStepProps> = ({
   const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive && hasTokenConfig);
   const config = stableBalance.displayConfig;
 
-  const [localAmount, setLocalAmount] = useState<string>(amount || '');
+  // Don't restore amount from hook state — it may be in token base units or sats
+  // depending on the mode when it was set, which doesn't match the current display mode.
+  const [localAmount, setLocalAmount] = useState<string>('');
   const [feesIncluded, setFeesIncluded] = useState(false);
   const [tokenBalanceRaw, setTokenBalanceRaw] = useState<bigint | null>(null);
 
@@ -52,10 +54,6 @@ const AmountStep: React.FC<AmountStepProps> = ({
       setTokenBalanceRaw(tb?.balance ?? null);
     }).catch(() => {});
   }, [wallet, stableBalance.isActive, stableBalance.tokenIdentifier]);
-
-  useEffect(() => {
-    setLocalAmount(amount || '');
-  }, [amount]);
 
   const handleToggleDenomination = () => {
     setIsTokenMode(prev => !prev);
@@ -91,11 +89,13 @@ const AmountStep: React.FC<AmountStepProps> = ({
         stableBalance.tokenIdentifier,
         { conversionType: { type: 'toBitcoin', fromTokenIdentifier: stableBalance.tokenIdentifier } },
       );
-    } else if (isTokenMode && config && stableBalance.btcFiatRate > 0) {
+    } else if (isTokenMode && config && stableBalance.btcFiatRate > 0 && stableBalance.tokenIdentifier) {
       const fiatAmount = parseFloat(localAmount);
       if (!fiatAmount || fiatAmount <= 0) return;
-      const sats = fiatToSats(fiatAmount, stableBalance.btcFiatRate);
-      onNext(sats, feesIncluded);
+      // Pass token base units (e.g. $1.50 → 1500000) with tokenIdentifier.
+      // Cross-chain uses this directly; non-cross-chain SDK handles conversion.
+      const tokenBaseUnits = Math.round(fiatAmount * (10 ** config.decimals));
+      onNext(tokenBaseUnits, feesIncluded, stableBalance.tokenIdentifier);
     } else {
       const sats = parseInt(localAmount);
       if (!sats || sats <= 0) return;
@@ -129,20 +129,19 @@ const AmountStep: React.FC<AmountStepProps> = ({
 
   const amountLabel = 'Amount';
 
-  return (
-    <div className="space-y-5">
-      {/* Destination */}
-      <div>
-        <label className="block text-sm font-medium text-spark-text-primary mb-2">
-          Destination
-        </label>
-        <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-secondary font-mono text-sm break-all">
-          {paymentInput}
-        </div>
+  const destinationSection = (
+    <div>
+      <label className="block text-sm font-medium text-spark-text-primary mb-2">
+        Destination
+      </label>
+      <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-secondary font-mono text-sm break-all">
+        {paymentInput}
       </div>
+    </div>
+  );
 
-      {/* Amount input */}
-      <div>
+  const amountSection = (
+    <div>
         <label className="block text-sm font-medium text-spark-text-primary mb-2">
           {amountLabel}
         </label>
@@ -206,6 +205,11 @@ const AmountStep: React.FC<AmountStepProps> = ({
           )}
         </div>
       </div>
+  );
+
+  return (
+    <div className="space-y-5">
+      {amountFirst ? <>{amountSection}{destinationSection}</> : <>{destinationSection}{amountSection}</>}
 
       <FormError error={error} />
 

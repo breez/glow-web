@@ -35,7 +35,8 @@ function filterOngoingConversionPayments(payments: Payment[]): Payment[] {
   return payments.filter(p => {
     const conversionInfo = p.details &&
       'conversionInfo' in p.details ? p.details.conversionInfo : null;
-    return conversionInfo?.purpose?.type !== 'ongoingPayment';
+    if (!conversionInfo || conversionInfo.type !== 'amm') return true;
+    return conversionInfo.purpose?.type !== 'ongoingPayment';
   });
 }
 

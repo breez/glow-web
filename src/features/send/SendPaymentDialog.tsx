@@ -9,6 +9,7 @@ import BitcoinWorkflow from './workflows/BitcoinWorkflow';
 import SparkWorkflow from './workflows/SparkWorkflow';
 import LnurlWorkflow from './workflows/LnurlWorkflow';
 import LnurlAuthWorkflow from './workflows/LnurlAuthWorkflow';
+import CrossChainWorkflow from './workflows/CrossChainWorkflow';
 import AmountStep from './steps/AmountStep';
 import ProcessingStep from './steps/ProcessingStep';
 import ResultStep from './steps/ResultStep';
@@ -142,12 +143,12 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
             {send.currentStep === 'amount' && (
               <AmountStep
                 paymentInput={send.paymentInput?.rawInput || ''}
-                amount={send.amount}
                 balanceSats={send.balanceSats}
                 isLoading={send.isLoading}
                 error={send.error}
                 onBack={() => send.setCurrentStep('input')}
                 onNext={send.onAmountNext}
+                amountFirst={send.paymentInput?.parsedInput.type === 'crossChainAddress'}
               />
             )}
 
@@ -205,6 +206,17 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                     onAuth={async (requestData) => {
                       return await wallet.lnurlAuth(requestData);
                     }}
+                  />
+                )}
+                {send.paymentInput?.parsedInput.type === 'crossChainAddress' && (
+                  <CrossChainWorkflow
+                    addressDetails={send.paymentInput.parsedInput}
+                    amountSats={parseInt(send.amount) || 0}
+                    feesIncluded={send.feesIncluded}
+                    tokenIdentifier={send.tokenIdentifier}
+                    conversionOptions={send.conversionOptions}
+                    onBack={() => send.setCurrentStep('amount')}
+                    onRun={send.handleRun}
                   />
                 )}
               </>

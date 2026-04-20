@@ -20,6 +20,8 @@ export interface UseSendPaymentReturn {
   balanceSats: number | undefined;
   feesIncluded: boolean;
   processingPhase: ProcessingPhase;
+  tokenIdentifier: string | null;
+  conversionOptions: ConversionOptions | null;
   // Actions
   clearError: () => void;
   reset: () => void;
@@ -43,6 +45,8 @@ export function useSendPayment(): UseSendPaymentReturn {
   const [balanceSats, setBalanceSats] = useState<number | undefined>(undefined);
   const [feesIncluded, setFeesIncluded] = useState(false);
   const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>('sending');
+  const [tokenIdentifier, setTokenIdentifier] = useState<string | null>(null);
+  const [conversionOptions, setConversionOptions] = useState<ConversionOptions | null>(null);
 
   const fetchBalance = useCallback(() => {
     wallet.getInfo({}).then(info => {
@@ -65,7 +69,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     setError(null);
     try {
       const response = await wallet.prepareSendPayment({
-        paymentRequest,
+        paymentRequest: { type: 'input', input: paymentRequest },
         amount: BigInt(amountSats),
         feePolicy,
         tokenIdentifier,
@@ -107,6 +111,9 @@ export function useSendPayment(): UseSendPaymentReturn {
       } else if (parseResult.type === 'bitcoinAddress' || parseResult.type === 'sparkAddress') {
         fetchBalance();
         setCurrentStep('amount');
+      } else if (parseResult.type === 'crossChainAddress') {
+        fetchBalance();
+        setCurrentStep('amount');
       } else if (parseResult.type === 'lnurlPay' || parseResult.type === 'lightningAddress') {
         fetchBalance();
         setCurrentStep('workflow');
@@ -135,6 +142,16 @@ export function useSendPayment(): UseSendPaymentReturn {
       return;
     }
     setFeesIncluded(!!includeFees);
+
+    // Cross-chain: skip prepareSend — the workflow handles route selection + prepare
+    if (paymentInput?.parsedInput.type === 'crossChainAddress') {
+      setAmount(String(amountNum));
+      setTokenIdentifier(tokenIdentifier ?? null);
+      setConversionOptions(conversionOptions ?? null);
+      setCurrentStep('workflow');
+      return;
+    }
+
     await prepareSend(
       paymentInput?.rawInput || '',
       amountNum,
@@ -257,6 +274,8 @@ export function useSendPayment(): UseSendPaymentReturn {
     setPaymentInput(null);
     setPaymentResult(null);
     setProcessingPhase('sending');
+    setTokenIdentifier(null);
+    setConversionOptions(null);
   }, []);
 
   return {
@@ -270,6 +289,8 @@ export function useSendPayment(): UseSendPaymentReturn {
     balanceSats,
     feesIncluded,
     processingPhase,
+    tokenIdentifier,
+    conversionOptions,
     clearError: useCallback(() => setError(null), []),
     reset,
     processInput,

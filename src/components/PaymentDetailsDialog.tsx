@@ -11,6 +11,7 @@ import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig }
 import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
 import { getPaymentDescription } from '../utils/paymentDescription';
+import { LogCategory, logger } from '@/services/logger';
 
 interface PaymentDetailsDialogProps {
   optionalPayment: Payment | null;
@@ -41,6 +42,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   useEffect(() => {
     if (optionalPayment) {
       setVisibleFields(getDefaultVisibleFields());
+      logger.debug(LogCategory.PAYMENT, `[PaymentDetails] opened: ${JSON.stringify(optionalPayment)}`);
     }
   }, [optionalPayment]);
 
