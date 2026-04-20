@@ -27,6 +27,8 @@ export interface UseSendPaymentReturn {
    *  bolt11's embedded amount), so the amount step was skipped. Lets the confirm
    *  step send "back" to input instead of the amount step the user never saw. */
   amountFixed: boolean;
+  tokenIdentifier: string | null;
+  conversionOptions: ConversionOptions | null;
   // Actions
   clearError: () => void;
   reset: () => void;
@@ -52,6 +54,8 @@ export function useSendPayment(): UseSendPaymentReturn {
   const [feesIncluded, setFeesIncluded] = useState(false);
   const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>('sending');
   const [amountFixed, setAmountFixed] = useState(false);
+  const [tokenIdentifier, setTokenIdentifier] = useState<string | null>(null);
+  const [conversionOptions, setConversionOptions] = useState<ConversionOptions | null>(null);
 
   // Balance is read live from the wallet info context, which is auto-refreshed
   // by useBreezSdk on `synced`/`paymentSucceeded`/`claimedDeposits` events. We
@@ -84,7 +88,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     setError(null);
     try {
       const response = await wallet.prepareSendPayment({
-        paymentRequest,
+        paymentRequest: { type: 'input', input: paymentRequest },
         amount,
         feePolicy,
         tokenIdentifier,
@@ -178,6 +182,8 @@ export function useSendPayment(): UseSendPaymentReturn {
       } else if (isPayableAmountType) {
         setAmountFixed(false);
         setCurrentStep('amount');
+      } else if (effective.type === 'crossChainAddress') {
+        setCurrentStep('amount');
       } else if (
         effective.type === 'lnurlPay' ||
         effective.type === 'lightningAddress' ||
@@ -207,6 +213,16 @@ export function useSendPayment(): UseSendPaymentReturn {
       return;
     }
     setFeesIncluded(!!includeFees);
+
+    // Cross-chain: skip prepareSend — the workflow handles route selection + prepare
+    if (paymentInput?.parsedInput.type === 'crossChainAddress') {
+      setAmount(String(amountNum));
+      setTokenIdentifier(tokenIdentifier ?? null);
+      setConversionOptions(conversionOptions ?? null);
+      setCurrentStep('workflow');
+      return;
+    }
+
     await prepareSend(
       paymentInput?.paymentRequest || '',
       amount,
@@ -329,6 +345,8 @@ export function useSendPayment(): UseSendPaymentReturn {
     setPaymentResult(null);
     setProcessingPhase('sending');
     setAmountFixed(false);
+    setTokenIdentifier(null);
+    setConversionOptions(null);
   }, []);
 
   return {
@@ -344,6 +362,8 @@ export function useSendPayment(): UseSendPaymentReturn {
     feesIncluded,
     processingPhase,
     amountFixed,
+    tokenIdentifier,
+    conversionOptions,
     clearError: useCallback(() => setError(null), []),
     reset,
     processInput,

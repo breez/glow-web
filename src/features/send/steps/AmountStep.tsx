@@ -22,6 +22,8 @@ export interface AmountStepProps {
   error: string | null;
   onBack: () => void;
   onNext: (amount: bigint, feesIncluded?: boolean, tokenIdentifier?: string, conversionOptions?: ConversionOptions) => void;
+  /** Show amount input before destination (used for cross-chain) */
+  amountFirst?: boolean;
 }
 
 const AmountStep: React.FC<AmountStepProps> = ({
@@ -33,6 +35,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
   error,
   onBack,
   onNext,
+  amountFirst = false,
 }) => {
   const input = useAmountInput({ initialAmount: amount, balanceSats, tokenBalance });
   const {
@@ -142,20 +145,19 @@ const AmountStep: React.FC<AmountStepProps> = ({
     return balance.exceedsBalance(amountNum) ? 'Amount exceeds available balance' : null;
   }, [amountNum, isSendAll, balance]);
 
-  return (
-    <div className="space-y-5">
-      {/* Destination */}
-      <div>
-        <label className="block text-sm font-medium text-spark-text-primary mb-2">
-          Destination
-        </label>
-        <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-secondary font-mono text-sm break-all">
-          {paymentInput}
-        </div>
+  const destinationSection = (
+    <div>
+      <label className="block text-sm font-medium text-spark-text-primary mb-2">
+        Destination
+      </label>
+      <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-secondary font-mono text-sm break-all">
+        {paymentInput}
       </div>
+    </div>
+  );
 
-      {/* Amount input */}
-      <div>
+  const amountSection = (
+    <div>
         <label className="block text-sm font-medium text-spark-text-primary mb-2">
           Amount
         </label>
@@ -260,7 +262,12 @@ const AmountStep: React.FC<AmountStepProps> = ({
             </button>
           )}
         </div>
-      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-5">
+      {amountFirst ? <>{amountSection}{destinationSection}</> : <>{destinationSection}{amountSection}</>}
 
       <FormError error={inlineBalanceError || localError || error} />
 
