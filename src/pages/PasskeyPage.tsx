@@ -514,7 +514,12 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
    * can't predict when a stale CDN will refresh.
    */
   const renderAasaError = () => (
-    <div className="max-w-xl mx-auto space-y-4 py-8">
+    // w-full + min-w-0 prevent the AlertCard's long diagnostic tokens
+    // (URLs, `delegate_permission/common.get_login_creds` etc.) from
+    // widening the flex/grid parent and making the whole page
+    // horizontally scrollable on mobile. max-w-xl remains the desktop
+    // cap.
+    <div className="w-full min-w-0 max-w-xl mx-auto space-y-4 py-8">
       <div className="flex justify-center mb-6">
         <div className="p-4 rounded-full bg-red-500/10">
           <PasskeyIcon size="lg" className="text-red-500" />
@@ -531,12 +536,18 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       </div>
       {aasaFailure && (
         <AlertCard variant="warning" title="Diagnostic details">
-          <div className="space-y-2 text-sm">
+          {/* break-all (word-break: break-all) is intentional here —
+              `break-words` (overflow-wrap: break-word) only splits at
+              word boundaries and doesn't help with long unbroken tokens
+              like `delegate_permission/common.get_login_creds` or URLs,
+              which were pushing the AlertCard past the viewport on
+              narrow screens and making the whole page scrollable. */}
+          <div className="space-y-2 text-sm break-all min-w-0">
             <p>
               <span className="font-semibold">Source:</span>{' '}
               {aasaFailure.source}
             </p>
-            <p className="break-words">
+            <p>
               <span className="font-semibold">Reason:</span>{' '}
               {aasaFailure.reason}
             </p>
