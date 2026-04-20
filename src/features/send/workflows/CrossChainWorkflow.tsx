@@ -6,7 +6,7 @@ import type {
   PrepareSendPaymentResponse,
 } from '@breeztech/breez-sdk-spark';
 import { PrimaryButton, SecondaryButton } from '../../../components/ui';
-import { SpinnerIcon } from '../../../components/Icons';
+import { ChevronDownIcon, CopyFilledIcon, CheckIcon, SpinnerIcon } from '../../../components/Icons';
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
 import { useWallet } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
@@ -14,6 +14,7 @@ import { formatWithSpaces, formatWithThinSpaces } from '../../../utils/formatNum
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
+import CryptoIcon from '../../../components/CryptoIcon';
 
 type WorkflowStep = 'loading' | 'asset' | 'chain' | 'provider' | 'confirm';
 
@@ -81,6 +82,9 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   const [pendingAsset, setPendingAsset] = useState<string | null>(null);
   const [pendingChain, setPendingChain] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
+  // Chain card expand/copy state
+  const [expandedChain, setExpandedChain] = useState<string | null>(null);
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
   // Stable balance detection
   const useUsdb = stableBalance.isActive && !!stableBalance.tokenIdentifier && stableBalance.btcFiatRate > 0 && !!stableBalance.displayConfig;
@@ -92,9 +96,13 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   const effectiveTokenId = tokenIdentifier ?? (useUsdb ? stableBalance.tokenIdentifier! : undefined);
 
   // Derived data
-  // Only show USD-based stablecoin assets (USDC, USDT, USDC.e, USDT0, etc.)
+  // Only show USD-based stablecoin assets, excluding bridged/wrapped variants
+  const EXCLUDED_ASSETS = ['PathUSD', 'USDC.e'];
   const uniqueAssets = useMemo(
-    () => [...new Set(routes.filter(r => r.asset.toUpperCase().includes('USD')).map(r => r.asset))].sort(),
+    () => [...new Set(routes
+      .filter(r => r.asset.toUpperCase().includes('USD') && !EXCLUDED_ASSETS.includes(r.asset))
+      .map(r => r.asset)
+    )].sort(),
     [routes]
   );
 
@@ -107,10 +115,11 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
     const byChain = new Map<string, string>();
     for (const r of allRoutes) {
       const chainLower = r.chain.toLowerCase();
-      const existingByContract = r.contractAddress ? byContract.get(r.contractAddress) : undefined;
+      const contractLower = r.contractAddress?.toLowerCase();
+      const existingByContract = contractLower ? byContract.get(contractLower) : undefined;
       const existingByChain = byChain.get(chainLower);
       const groupKey = existingByContract ?? existingByChain ?? chainLower;
-      if (r.contractAddress) byContract.set(r.contractAddress, groupKey);
+      if (contractLower) byContract.set(contractLower, groupKey);
       byChain.set(chainLower, groupKey);
     }
     return { byContract, byChain };
@@ -122,7 +131,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   const chainGroupKey = useCallback((r: CrossChainRoutePair, lookup?: { byContract: Map<string, string>; byChain: Map<string, string> }) => {
     const l = lookup ?? groupLookup;
     if (r.contractAddress) {
-      const g = l.byContract.get(r.contractAddress);
+      const g = l.byContract.get(r.contractAddress.toLowerCase());
       if (g) return g;
     }
     return l.byChain.get(r.chain.toLowerCase()) ?? r.chain.toLowerCase();
@@ -251,7 +260,10 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
         setRoutes(fetched);
 
         // Enter wizard — auto-skip steps with single option
-        const assets = [...new Set(fetched.filter(r => r.asset.toUpperCase().includes('USD')).map(r => r.asset))].sort();
+        const assets = [...new Set(fetched
+          .filter(r => r.asset.toUpperCase().includes('USD') && !EXCLUDED_ASSETS.includes(r.asset))
+          .map(r => r.asset)
+        )].sort();
         if (assets.length === 0) {
           setError('No supported stablecoin routes available for this address');
           setStep('asset');
@@ -356,7 +368,10 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                     onClick={() => setPendingAsset(asset)}
                     className={cardClass(pendingAsset === asset)}
                   >
-                    <span className="font-display font-medium text-spark-text-primary">{asset}</span>
+                    <div className="flex items-center gap-3">
+                      <CryptoIcon asset={asset} size={32} />
+                      <span className="font-display font-medium text-spark-text-primary">{asset}</span>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -390,19 +405,50 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
             <div className="space-y-2 overflow-y-auto min-h-0 pr-1">
               {chainsForAsset.map(r => {
                 const key = chainGroupKey(r);
+                const isExpanded = expandedChain === key;
+                const isCopied = copiedAddress === key;
                 return (
-                  <button
+                  <div
                     key={key}
                     onClick={() => setPendingChain(key)}
-                    className={cardClass(pendingChain === key)}
+                    className={`${cardClass(pendingChain === key)} cursor-pointer`}
                   >
-                    <span className="font-display font-medium text-spark-text-primary">
-                      {capitalizeFirst(r.chain)}
-                    </span>
-                    {r.contractAddress && (
-                      <div className="text-xs text-spark-text-secondary font-mono mt-0.5">{truncateAddress(r.contractAddress)}</div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <CryptoIcon chain={r.chain} size={32} />
+                        <span className="font-display font-medium text-spark-text-primary">
+                          {capitalizeFirst(r.chain)}
+                        </span>
+                      </div>
+                      {r.contractAddress && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setExpandedChain(isExpanded ? null : key); }}
+                          className="p-1 text-spark-primary hover:text-spark-primary-light transition-colors"
+                        >
+                          <ChevronDownIcon size="sm" className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        </button>
+                      )}
+                    </div>
+                    {isExpanded && r.contractAddress && (
+                      <div className="mt-2 bg-spark-surface border border-spark-border/50 rounded-lg p-2.5 flex items-center justify-between gap-2">
+                        <code className="text-spark-text-secondary font-mono text-xs break-all">{r.contractAddress}</code>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(r.contractAddress!);
+                            setCopiedAddress(key);
+                            setTimeout(() => setCopiedAddress(null), 2000);
+                          }}
+                          className="shrink-0 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                        >
+                          {isCopied
+                            ? <CheckIcon size="sm" className="text-spark-success" />
+                            : <CopyFilledIcon size="sm" className="text-spark-text-secondary" />
+                          }
+                        </button>
+                      </div>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
