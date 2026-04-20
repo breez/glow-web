@@ -98,48 +98,57 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   // Derived data
   // Only show USD-based stablecoin assets, excluding bridged/wrapped variants
   const EXCLUDED_ASSETS = ['PathUSD', 'USDC.e'];
+  // Group asset variants under a canonical display name (e.g. USDT0 → USDT)
+  const ASSET_DISPLAY_GROUP: Record<string, string> = { 'USDT0': 'USDT' };
+  const assetDisplayName = (asset: string) => ASSET_DISPLAY_GROUP[asset] ?? asset;
+  const assetMatchesGroup = (routeAsset: string, group: string) =>
+    assetDisplayName(routeAsset) === group;
+
   const uniqueAssets = useMemo(
     () => [...new Set(routes
       .filter(r => r.asset.toUpperCase().includes('USD') && !EXCLUDED_ASSETS.includes(r.asset))
-      .map(r => r.asset)
+      .map(r => assetDisplayName(r.asset))
     )].sort(),
     [routes]
   );
 
-  // Build canonical chain group lookup tables. Routes are in the same group
-  // if they share a contract address OR a chain name (case-insensitive).
-  // This merges e.g. "Arbitrum" + "Arbitrum one" (same contract) and
-  // "Ethereum" with/without contract address (same chain name).
+  // Normalize chain name for grouping. Strips common suffixes so e.g.
+  // "Arbitrum" and "Arbitrum one", or "Polygon" and "Polygon POS" merge.
+  const CHAIN_SUFFIXES = [' one', ' pos', ' mainnet', ' network'];
+  const normalizeChainName = useCallback((chain: string) => {
+    let name = chain.toLowerCase();
+    for (const suffix of CHAIN_SUFFIXES) {
+      if (name.endsWith(suffix)) {
+        name = name.slice(0, -suffix.length);
+        break;
+      }
+    }
+    return name;
+  }, []);
+
+  // Build chain group lookup: maps each raw chain name to its normalized form
   const buildGroupLookup = useCallback((allRoutes: CrossChainRoutePair[]) => {
-    const byContract = new Map<string, string>();
     const byChain = new Map<string, string>();
     for (const r of allRoutes) {
       const chainLower = r.chain.toLowerCase();
-      const contractLower = r.contractAddress?.toLowerCase();
-      const existingByContract = contractLower ? byContract.get(contractLower) : undefined;
-      const existingByChain = byChain.get(chainLower);
-      const groupKey = existingByContract ?? existingByChain ?? chainLower;
-      if (contractLower) byContract.set(contractLower, groupKey);
-      byChain.set(chainLower, groupKey);
+      if (!byChain.has(chainLower)) {
+        byChain.set(chainLower, normalizeChainName(r.chain));
+      }
     }
-    return { byContract, byChain };
-  }, []);
+    return { byChain };
+  }, [normalizeChainName]);
 
   const groupLookup = useMemo(() => buildGroupLookup(routes), [routes, buildGroupLookup]);
 
-  // Get chain group key for a route, using pre-built lookup or computing on the fly
-  const chainGroupKey = useCallback((r: CrossChainRoutePair, lookup?: { byContract: Map<string, string>; byChain: Map<string, string> }) => {
+  // Get chain group key for a route
+  const chainGroupKey = useCallback((r: CrossChainRoutePair, lookup?: { byChain: Map<string, string> }) => {
     const l = lookup ?? groupLookup;
-    if (r.contractAddress) {
-      const g = l.byContract.get(r.contractAddress.toLowerCase());
-      if (g) return g;
-    }
-    return l.byChain.get(r.chain.toLowerCase()) ?? r.chain.toLowerCase();
-  }, [groupLookup]);
+    return l.byChain.get(r.chain.toLowerCase()) ?? normalizeChainName(r.chain);
+  }, [groupLookup, normalizeChainName]);
 
   const chainsForAsset = useMemo(() => {
     if (!selectedAsset) return [];
-    const matching = routes.filter(r => r.asset === selectedAsset);
+    const matching = routes.filter(r => assetMatchesGroup(r.asset, selectedAsset));
     // Deduplicate by chain group, keeping shortest chain name as display label
     const groups = new Map<string, CrossChainRoutePair>();
     for (const r of matching) {
@@ -155,7 +164,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   const routesForSelection = useMemo(
     () => {
       if (!selectedAsset || !selectedChain) return [];
-      return routes.filter(r => r.asset === selectedAsset && chainGroupKey(r) === selectedChain);
+      return routes.filter(r => assetMatchesGroup(r.asset, selectedAsset) && chainGroupKey(r) === selectedChain);
     },
     [routes, selectedAsset, selectedChain, chainGroupKey]
   );
@@ -198,11 +207,11 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
     });
   }, [prepareRoute]);
 
-  // Advance from asset selection
+  // Advance from asset selection (asset is the display group name, e.g. "USDT" not "USDT0")
   const selectAsset = useCallback((asset: string, allRoutes: CrossChainRoutePair[]) => {
     setSelectedAsset(asset);
     const lookup = buildGroupLookup(allRoutes);
-    const matching = allRoutes.filter(r => r.asset === asset);
+    const matching = allRoutes.filter(r => assetMatchesGroup(r.asset, asset));
     const chainKeys = [...new Set(matching.map(r => chainGroupKey(r, lookup)))];
     if (chainKeys.length === 1) {
       selectChain(asset, chainKeys[0], allRoutes);
@@ -215,7 +224,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   const selectChain = useCallback((asset: string, chainKey: string, allRoutes: CrossChainRoutePair[]) => {
     setSelectedChain(chainKey);
     const lookup = buildGroupLookup(allRoutes);
-    const matching = allRoutes.filter(r => r.asset === asset && chainGroupKey(r, lookup) === chainKey);
+    const matching = allRoutes.filter(r => assetMatchesGroup(r.asset, asset) && chainGroupKey(r, lookup) === chainKey);
     if (matching.length === 1) {
       // Single provider — show loading, prepare, and go to confirm
       setStep('loading');
