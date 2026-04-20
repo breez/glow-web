@@ -140,7 +140,7 @@ export interface BreezSdkState {
   /**
    * True while `secureStorage.storeSeed` is in flight during
    * onboarding. UI code uses this to show a distinct loading label
-   * ("Enabling biometric unlock…") instead of the generic "Starting
+   * ("Setting up biometric unlock…") instead of the generic "Starting
    * Glow…" spinner, so the user understands why they're being
    * prompted for a second biometric right after the passkey ceremony.
    *
@@ -384,12 +384,12 @@ export function useBreezSdk(
           // Android the store triggers a visible BiometricPrompt, so
           // we flip `isSecuringSeed` around the await to swap the
           // onboarding loading copy from "Starting Glow…" to
-          // "Enabling biometric unlock…" — otherwise the prompt looks
+          // "Setting up biometric unlock…" — otherwise the prompt looks
           // like it appeared out of nowhere on top of an unrelated
           // loading screen. On iOS, the Keychain's biometric grace
           // period reuses the authentication from the preceding
           // passkey ceremony, so no visible prompt appears — flipping
-          // the label to "Enabling biometric unlock…" would be
+          // the label to "Setting up biometric unlock…" would be
           // misleading. Keep the generic "Starting Glow…" copy on iOS.
           const shouldShowSecuringLabel =
             typeof window !== 'undefined' &&

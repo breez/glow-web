@@ -90,9 +90,16 @@ interface PasskeyPageProps {
   /**
    * True while `secureStorage.storeSeed` is in flight during the
    * onboarding flow. When true, the `initializing` phase swaps its
-   * loading label from "Starting Glow…" to "Enabling biometric unlock…"
-   * so the second biometric prompt (F3 biometric-bound store) has
-   * visual context instead of appearing on top of an unrelated spinner.
+   * loading label from "Starting Glow…" to "Setting up biometric
+   * unlock…" so the second biometric prompt (F3 biometric-bound
+   * store) has visual context instead of appearing on top of an
+   * unrelated spinner.
+   *
+   * Note: on iOS the label flashes for <200ms because
+   * SecAccessControl gates RETRIEVAL only, not SecItemAdd — users
+   * effectively never see this state there. Android fingerprint-
+   * backed BiometricPrompt.CryptoObject genuinely blocks at the
+   * sensor, so Android is where the label actually communicates.
    */
   isSecuringSeed?: boolean;
   onFlowComplete?: () => void;
@@ -589,7 +596,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         // biometric-gated Keychain / Keystore key. Swap the label so
         // the prompt has visible context and doesn't look like a bug.
         return renderSpinner(
-          isSecuringSeed ? 'Enabling biometric unlock...' : 'Starting Glow...',
+          isSecuringSeed ? 'Setting up biometric unlock...' : 'Starting Glow...',
         );
     }
   })();
