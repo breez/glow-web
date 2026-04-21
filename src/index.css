@@ -799,6 +799,10 @@ video::-webkit-media-controls-panel {
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   /* Top/bottom safe area handled by individual components */
+  /* `relative` so sibling overlay SlideInPages with `absolute inset-0`
+     stack against this container (respecting the max-w-4xl column
+     and horizontal safe-area padding) rather than the viewport. */
+  position: relative;
 }
 
 /* ============================================

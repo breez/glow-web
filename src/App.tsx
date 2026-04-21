@@ -171,6 +171,33 @@ const AppContent: React.FC = () => {
 
   // Render screens
   const renderCurrentScreen = () => {
+    // Startup-state overlays take precedence over `currentScreen` and
+    // are derived directly from `sdk.startupState` so they render on
+    // the SAME commit as the state change, not the tick-later commit
+    // after the App.tsx routing effect copies it into `currentScreen`.
+    //
+    // This matters for cold-launch unlock: useBreezSdk flips
+    // startupState='native-unlocking', then waits for paint before
+    // fading the splash. If we instead routed through the
+    // currentScreen effect, the first commit would still render
+    // HomePage, the splash fade would start while HomePage is under
+    // it, and UnlockingPage would only appear on the second commit —
+    // often after the biometric prompt has already landed over a
+    // black splash. Deriving directly collapses it to one commit.
+    if (sdk.startupState === 'native-unlocking') {
+      return <UnlockingPage />;
+    }
+    if (sdk.startupState === 'native-locked') {
+      return (
+        <UnlockPage
+          isLoading={sdk.isLoading}
+          error={sdk.error}
+          onUnlock={sdk.retryUnlock}
+          onAbandon={handleLogout}
+        />
+      );
+    }
+
     if (
       sdk.isLoading &&
       currentScreen !== 'restore' &&
@@ -181,6 +208,72 @@ const AppContent: React.FC = () => {
       return <GlobalLoadingOverlay />;
     }
 
+    // Wallet-layer renderer. Used both as the `wallet` case itself and
+    // as a backdrop beneath overlay SlideInPages (Settings / Backup /
+    // GetRefund / BuyProviders / FiatCurrencies) so their enter/leave
+    // slide animations reveal the wallet underneath instead of empty
+    // space. Before this, the underlying WalletPage popped in only
+    // after the overlay's leave animation completed, which felt jumpy.
+    const renderWalletPage = () => {
+      if (!sdk.isConnected) {
+        // Safety net: overlay cases are unreachable without a live
+        // wallet connection, but fall back to HomePage anyway to
+        // preserve the pre-refactor behavior of the `wallet` case.
+        return (
+          <HomePage
+            onRestoreWallet={() => setCurrentScreen('restore')}
+            onCreateNewWallet={() => setCurrentScreen('generate')}
+            onUsePasskey={() => setCurrentScreen('passkey')}
+            prfAvailable={sdk.prfAvailable}
+          />
+        );
+      }
+      return (
+        <WalletPage
+          walletInfo={sdk.walletInfo}
+          transactions={sdk.transactions}
+          unclaimedDeposits={sdk.unclaimedDeposits}
+          refreshWalletData={sdk.refreshWalletData}
+          isSyncing={sdk.isSyncing}
+          error={sdk.error}
+          onClearError={sdk.clearError}
+          onLogout={handleLogout}
+          hasRejectedDeposits={sdk.hasRejectedDeposits}
+          onOpenGetRefund={(source?: 'menu' | 'icon') => {
+            setRefundAnimationDirection(source === 'icon' ? 'up' : 'left');
+            setCurrentScreen('getRefund');
+          }}
+          onOpenSettings={() => setCurrentScreen('settings')}
+          onOpenBackup={() => setCurrentScreen('backup')}
+          onOpenBuyProviders={() => { setBuyProvidersSource('wallet'); setCurrentScreen('buyProviders'); }}
+          onBuyBitcoin={sdk.handleBuyBitcoin}
+          network={sdk.config?.network}
+          onDepositChanged={sdk.fetchUnclaimedDeposits}
+        />
+      );
+    };
+
+    // Settings-layer renderer. Used both as the `settings` case and as
+    // a backdrop beneath nested overlays (FiatCurrencies and
+    // BuyProviders when reached from Settings) so those close
+    // animations reveal Settings rather than skipping back to the
+    // wallet directly.
+    const renderSettingsPage = () => (
+      <SettingsPage
+        onBack={() => setCurrentScreen('wallet')}
+        config={sdk.config}
+        onOpenFiatCurrencies={() => setCurrentScreen('fiatCurrencies')}
+        onOpenBuyProviders={() => { setBuyProvidersSource('settings'); setCurrentScreen('buyProviders'); }}
+      />
+    );
+
+    // Layered cases (wallet + overlay screens) all return Fragments so
+    // React reconciliation treats them as the same tree shape across
+    // transitions — WalletPage / SettingsPage instances (and their
+    // state, scroll position, open bottom sheets) are preserved when
+    // an overlay opens or closes over them, rather than unmounted +
+    // remounted. Non-wallet cases (home / restore / generate / passkey /
+    // unlock / unlocking) use their own distinct tree shapes.
     switch (currentScreen) {
       case 'home':
         return (
@@ -221,39 +314,57 @@ const AppContent: React.FC = () => {
 
       case 'getRefund':
         return (
-          <GetRefundPage
-            onBack={() => setCurrentScreen('wallet')}
-            animationDirection={refundAnimationDirection}
-          />
+          <>
+            {renderWalletPage()}
+            <GetRefundPage
+              onBack={() => setCurrentScreen('wallet')}
+              animationDirection={refundAnimationDirection}
+            />
+          </>
         );
 
       case 'settings':
         return (
-          <SettingsPage
-            onBack={() => setCurrentScreen('wallet')}
-            config={sdk.config}
-            onOpenFiatCurrencies={() => setCurrentScreen('fiatCurrencies')}
-            onOpenBuyProviders={() => { setBuyProvidersSource('settings'); setCurrentScreen('buyProviders'); }}
-          />
+          <>
+            {renderWalletPage()}
+            {renderSettingsPage()}
+          </>
         );
 
       case 'fiatCurrencies':
         return (
-          <FiatCurrenciesPage onBack={() => setCurrentScreen('settings')} />
+          <>
+            {renderWalletPage()}
+            {renderSettingsPage()}
+            <FiatCurrenciesPage onBack={() => setCurrentScreen('settings')} />
+          </>
         );
 
       case 'buyProviders':
         return (
-          <BuyProvidersPage
-            onBack={() => setCurrentScreen(buyProvidersSource === 'settings' ? 'settings' : 'wallet')}
-            slideFrom={buyProvidersSource === 'settings' ? 'right' : 'up'}
-            network={sdk.config?.network}
-          />
+          <>
+            {renderWalletPage()}
+            {buyProvidersSource === 'settings' && renderSettingsPage()}
+            <BuyProvidersPage
+              onBack={() => setCurrentScreen(buyProvidersSource === 'settings' ? 'settings' : 'wallet')}
+              slideFrom={buyProvidersSource === 'settings' ? 'right' : 'up'}
+              // Wallet-sourced = modal-style presentation (slides up from
+              // the Buy button) → X close affordance in the header.
+              // Settings-sourced = drill-in nav (slides in from the
+              // right) → < back affordance. Matches iOS/Material
+              // conventions for modal vs. push navigation.
+              closeStyle={buyProvidersSource === 'settings' ? 'back' : 'close'}
+              network={sdk.config?.network}
+            />
+          </>
         );
 
       case 'backup':
         return (
-          <BackupPage onBack={() => setCurrentScreen('wallet')} />
+          <>
+            {renderWalletPage()}
+            <BackupPage onBack={() => setCurrentScreen('wallet')} />
+          </>
         );
 
       case 'restore':
@@ -277,39 +388,7 @@ const AppContent: React.FC = () => {
         );
 
       case 'wallet':
-        if (!sdk.isConnected) {
-          return (
-            <HomePage
-              onRestoreWallet={() => setCurrentScreen('restore')}
-              onCreateNewWallet={() => setCurrentScreen('generate')}
-              onUsePasskey={() => setCurrentScreen('passkey')}
-              prfAvailable={sdk.prfAvailable}
-            />
-          );
-        }
-        return (
-          <WalletPage
-            walletInfo={sdk.walletInfo}
-            transactions={sdk.transactions}
-            unclaimedDeposits={sdk.unclaimedDeposits}
-            refreshWalletData={sdk.refreshWalletData}
-            isSyncing={sdk.isSyncing}
-            error={sdk.error}
-            onClearError={sdk.clearError}
-            onLogout={handleLogout}
-            hasRejectedDeposits={sdk.hasRejectedDeposits}
-            onOpenGetRefund={(source?: 'menu' | 'icon') => {
-              setRefundAnimationDirection(source === 'icon' ? 'up' : 'left');
-              setCurrentScreen('getRefund');
-            }}
-            onOpenSettings={() => setCurrentScreen('settings')}
-            onOpenBackup={() => setCurrentScreen('backup')}
-            onOpenBuyProviders={() => { setBuyProvidersSource('wallet'); setCurrentScreen('buyProviders'); }}
-            onBuyBitcoin={sdk.handleBuyBitcoin}
-            network={sdk.config?.network}
-            onDepositChanged={sdk.fetchUnclaimedDeposits}
-          />
-        );
+        return <>{renderWalletPage()}</>;
 
       default:
         return <div>Unknown screen</div>;

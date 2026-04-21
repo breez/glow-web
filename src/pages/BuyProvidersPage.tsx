@@ -8,6 +8,14 @@ import { getBuyProviderSettings, saveBuyProviderSettings, ALL_BUY_PROVIDERS, typ
 interface BuyProvidersPageProps {
   onBack: () => void;
   slideFrom?: 'up' | 'right';
+  /**
+   * Close affordance to show in the header. `'close'` (X, top-right)
+   * is the conventional modal dismiss used when the page is presented
+   * from the wallet's Buy button (`slideFrom="up"`). `'back'` (<,
+   * top-left) is the conventional drill-in dismiss used when reached
+   * via Settings → Buy Bitcoin Providers (`slideFrom="right"`).
+   */
+  closeStyle?: 'close' | 'back';
   network?: Network;
 }
 
@@ -26,7 +34,7 @@ const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.React
   },
 };
 
-const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, slideFrom = 'up', network }) => {
+const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, slideFrom = 'up', closeStyle = 'back', network }) => {
   const isMainnet = network === 'mainnet';
   const [enabledProviders, setEnabledProviders] = useState<BuyBitcoinProvider[]>(getBuyProviderSettings);
   const [draggedItem, setDraggedItem] = useState<BuyBitcoinProvider | null>(null);
@@ -92,7 +100,7 @@ const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, slideFrom =
   }, []);
 
   return (
-    <SlideInPage title="Buy Bitcoin Providers" closeStyle="back" onClose={onBack} slideFrom={slideFrom}>
+    <SlideInPage title="Buy Bitcoin Providers" closeStyle={closeStyle} onClose={onBack} slideFrom={slideFrom}>
       <div className="p-4 space-y-2">
         {/* Enabled providers — reorderable */}
         {enabledProviders.map((provider, index) => {
