@@ -287,11 +287,11 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
         setAmount={receive.setAmount}
         description={receive.description}
         setDescription={receive.setDescription}
-        limits={{ min: 1, max: 1000000 }}
         isLoading={receive.isLoading}
         error={receive.error}
         onCreateInvoice={receive.generateBolt11Invoice}
-        onClose={() => receive.setShowAmountPanel(false)}
+        onClose={receive.closeAmountPanel}
+        resetCount={receive.resetCount}
       />
     </>
   );

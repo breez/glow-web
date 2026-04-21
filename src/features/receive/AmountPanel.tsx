@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
   FormError,
@@ -17,6 +17,7 @@ import {
 } from '../../utils/tokenFormatting';
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
 import { dismissKeyboard } from '../../utils/keyboard';
+import { LIGHTNING_INVOICE_MIN_SATS, LIGHTNING_INVOICE_MAX_SATS } from '../../constants/receive';
 
 interface AmountPanelProps {
   isOpen: boolean;
@@ -24,11 +25,18 @@ interface AmountPanelProps {
   setAmount: (v: string) => void;
   description: string;
   setDescription: (v: string) => void;
-  limits: { min: number; max: number };
   isLoading: boolean;
   error: string | null;
   onCreateInvoice: () => void;
   onClose: () => void;
+  // Monotonically-increasing counter from `useReceivePayment.reset()`.
+  // Every bump clears this panel's local `displayAmount` +
+  // `isTokenMode` state. Needed because the outer BottomSheet keeps
+  // AmountPanel mounted across dialog opens (`unmount={false}`), so
+  // without an explicit reset signal the previously-typed amount and
+  // fiat-mode toggle would linger when the user reopens the dialog
+  // later.
+  resetCount: number;
 }
 
 const RECEIVE_QUICK_AMOUNTS_SATS = [100, 1000, 10000, 100000];
@@ -39,11 +47,11 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   setAmount,
   description,
   setDescription,
-  limits: _limits,
   isLoading,
   error,
   onCreateInvoice,
   onClose,
+  resetCount,
 }) => {
   const stableBalance = useStableBalance();
   const hasTokenConfig = !!stableBalance.displayConfig;
@@ -53,6 +61,20 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   // In token mode we show the fiat value locally; the parent's `amount` always holds sats.
   const [displayAmount, setDisplayAmount] = useState('');
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Clear local state whenever the parent dialog calls
+  // `useReceivePayment.reset()` (which bumps `resetCount`). Without
+  // this, `displayAmount` + `isTokenMode` persist across dialog
+  // open/close cycles because the outer BottomSheet keeps this
+  // subtree mounted (`unmount={false}`). Skipping the initial
+  // render (resetCount === 0) so the token-mode default picked
+  // from `stableBalance.isActive && hasTokenConfig` on first mount
+  // stays untouched.
+  useEffect(() => {
+    if (resetCount === 0) return;
+    setDisplayAmount('');
+    setIsTokenMode(stableBalance.isActive && hasTokenConfig);
+  }, [resetCount, stableBalance.isActive, hasTokenConfig]);
 
   const handleToggleDenomination = () => {
     setIsTokenMode(prev => !prev);
@@ -91,7 +113,17 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     }
   };
 
-  const validAmount = amount !== '' && parseInt(amount) > 0;
+  // Range-aware validity check. Mirrors the guard in
+  // `useReceivePayment.generateBolt11Invoice` so the UI disables the
+  // Generate button + Enter-to-submit path for amounts outside the
+  // configured Lightning-invoice receive bounds. Works in both sats
+  // and token mode because `amount` always holds the sats value (the
+  // token-mode input converts fiat → sats via `fiatToSats` on change).
+  const parsedAmount = parseInt(amount);
+  const validAmount = amount !== ''
+    && !isNaN(parsedAmount)
+    && parsedAmount >= LIGHTNING_INVOICE_MIN_SATS
+    && parsedAmount <= LIGHTNING_INVOICE_MAX_SATS;
 
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={onClose} showBackdrop>
@@ -105,9 +137,20 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
         {/* Amount Input */}
         <div className="space-y-4">
           <div>
-            <label className="block text-spark-text-secondary text-sm font-medium mb-2">
-              Amount
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-spark-text-secondary text-sm font-medium">
+                Amount
+              </label>
+              {/* Range badge — matches LnurlWorkflow's Send-side
+                  treatment at features/send/workflows/LnurlWorkflow.tsx.
+                  Uses plain "sats" (not ₿) per CLAUDE.md:
+                  "Range displays and placeholders use 'sats' text,
+                  not ₿". Thin-space separators on the max value match
+                  the Send-side formatting. */}
+              <span className="text-xs text-spark-text-muted">
+                {LIGHTNING_INVOICE_MIN_SATS.toLocaleString('en-US').replace(/,/g, ' ')} – {LIGHTNING_INVOICE_MAX_SATS.toLocaleString('en-US').replace(/,/g, ' ')} sats
+              </span>
+            </div>
             <div className="relative">
               <textarea
                 inputMode={isTokenMode ? 'decimal' : 'numeric'}
