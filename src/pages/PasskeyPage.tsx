@@ -225,10 +225,15 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
 
         // Passkey exists → returning user
         if (found.length === 0) {
-          // Passkey exists but no labels on relays — show picker with default pre-filled
-          setShowManualInput(true);
-          setManualLabel('Default');
-          setPhase('auth-pick');
+          // Passkey exists but no labels on relays → auto-create "Default"
+          // and skip the picker. Mirrors the new-passkey path.
+          connectLabelRef.current = 'Default';
+          setPhase('new-storing');
+        } else if (found.length === 1 && found[0] === 'Default') {
+          // Only label is "Default" → skip the picker and connect directly.
+          setLabels(found);
+          connectLabelRef.current = 'Default';
+          setPhase('connecting');
         } else {
           // Display oldest → newest
           const sorted = [...found].reverse();
@@ -492,7 +497,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
                 }}
                 placeholder="Label name"
                 maxLength={24}
-                className="w-full bg-spark-surface border border-spark-border rounded-xl px-3 py-2 text-spark-text-primary placeholder:text-spark-text-muted focus:outline-none focus:ring-2 focus:ring-spark-primary/50 focus:border-spark-primary text-sm"
+                className="w-full bg-spark-surface rounded-xl px-3 py-2 text-spark-text-primary placeholder:text-spark-text-muted focus:outline-none focus:ring-2 focus:ring-spark-primary/50 text-sm"
                 autoFocus
               />
               {isDuplicate && (
