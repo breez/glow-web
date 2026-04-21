@@ -14,9 +14,19 @@
  * interactive UnlockPage.
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { logger, LogCategory } from '../services/logger';
 
 const UnlockingPage: React.FC = () => {
+  useEffect(() => {
+    logger.info(LogCategory.UI, 'UnlockingPage:mounted');
+    // Second effect runs after paint (via rAF) so we can distinguish
+    // mount-commit from paint-on-screen in shared logs.
+    requestAnimationFrame(() => {
+      logger.info(LogCategory.UI, 'UnlockingPage:painted');
+    });
+  }, []);
+
   return (
     <div className="min-h-dvh h-dvh w-full flex flex-col bg-spark-surface relative">
       <div
