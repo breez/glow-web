@@ -97,23 +97,38 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
     setLeftOffset(rect.left);
   }, [isOpen]);
 
+  // Close the drawer first, then fire the navigation callback once the
+  // drawer's leave animation completes. Kept sequential (not
+  // concurrent) so the drawer's left-edge motion doesn't compete with
+  // SlideInPage's left-edge enter — even though z-[60] on SlideInPage
+  // makes the drawer invisible for most of the overlap, running them
+  // back-to-back feels cleaner and gives the user a moment to see the
+  // drawer close before the new page arrives. 100ms matches the
+  // drawer panel `duration-100` leave transition below — if that
+  // changes, bump this too.
+  const DRAWER_LEAVE_MS = 100;
+  const closeDrawerThen = (fn: () => void) => {
+    onClose();
+    setTimeout(fn, DRAWER_LEAVE_MS);
+  };
+
   const menuItems = [
     // Get Refund - only show when there are rejected deposits
     ...(hasRejectedDeposits && onOpenRefund ? [{
       icon: <RefundIcon />,
       label: 'Get Refund',
-      onClick: () => { onOpenRefund(); onClose(); },
+      onClick: () => closeDrawerThen(onOpenRefund),
       highlight: true
     }] : []),
     {
       icon: <BackupIcon />,
       label: 'Backup',
-      onClick: () => { onOpenBackup(); onClose(); }
+      onClick: () => closeDrawerThen(onOpenBackup)
     },
     {
       icon: <SettingsIcon />,
       label: 'Settings',
-      onClick: () => { onOpenSettings(); onClose(); }
+      onClick: () => closeDrawerThen(onOpenSettings)
     },
     {
       icon: <LogoutIcon />,
@@ -130,13 +145,16 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
 
   return createPortal(
     <Transition show={isOpen} as="div" className="fixed inset-0 z-50">
-      {/* Backdrop */}
+      {/* Backdrop — Material 3 emphasized easing (decelerate enter /
+          accelerate exit) at 100ms. Duration is faster than M3's
+          `motionDurationMedium4` canonical nav-drawer spec (400ms);
+          we prioritise snap over the full M3 arc. */}
       <Transition.Child
         as="div"
-        enter="transition-opacity ease-out duration-200"
+        enter="transition-opacity ease-m3-emphasized-decelerate duration-[150ms]"
         enterFrom="opacity-0"
         enterTo="opacity-100"
-        leave="transition-opacity ease-in duration-150"
+        leave="transition-opacity ease-m3-emphasized-accelerate duration-100"
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
         className="fixed inset-0"
@@ -152,10 +170,10 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
         >
           <Transition.Child
             as="div"
-            enter="transition transform ease-out duration-300"
+            enter="transition transform ease-m3-emphasized-decelerate duration-[150ms]"
             enterFrom="-translate-x-full"
             enterTo="translate-x-0"
-            leave="transition transform ease-in duration-200"
+            leave="transition transform ease-m3-emphasized-accelerate duration-100"
             leaveFrom="translate-x-0"
             leaveTo="-translate-x-full"
             className="w-72 h-full bg-spark-surface border-r border-spark-border shadow-glass-lg px-6 flex flex-col"

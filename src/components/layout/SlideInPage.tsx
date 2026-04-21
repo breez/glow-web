@@ -52,20 +52,46 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
 
   const handleClose = () => {
     setIsOpen(false);
+    // Matches the `duration-200` on leave below + ~20ms padding so
+    // the unmount (which kills the animation mid-flight if it's still
+    // running) lands just after the slide completes.
     setTimeout(onClose, 220);
   };
 
   const { from, to } = slideTransforms[slideFrom];
 
   return (
-    <div className="min-h-dvh h-dvh w-full flex flex-col bg-spark-surface relative">
-      <Transition show={isOpen} appear as="div" className="absolute inset-0">
+    // `absolute inset-0` (not the old `relative h-dvh`) so the page
+    // overlays the sibling WalletPage rendered beneath it in App.tsx's
+    // overlay cases (Settings / Backup / etc.). Without the sibling,
+    // the leave animation slid into empty space and the WalletPage
+    // popped in only after the animation completed — felt jumpy.
+    //
+    // `z-[60]` sits above both the WalletPage bottom-bar (z-30) and
+    // the SideMenu drawer (z-50, rendered via createPortal). When a
+    // menu item is tapped the drawer's leave animation fires at the
+    // same commit as the page's enter animation — raising this layer
+    // above the drawer means the incoming page covers the drawer as
+    // it slides in, collapsing two competing left-edge motions into
+    // one dominant motion.
+    <div className="absolute inset-0 z-[60] flex flex-col">
+      <Transition show={isOpen} appear as="div" className="absolute inset-0 overflow-hidden">
         <Transition.Child
           as="div"
-          enter="transform transition ease-out duration-300"
+          // Material 3 emphasized easing. Enter uses the decelerate
+          // curve so the page arrives with a soft settle; exit uses
+          // the accelerate curve so the page departs quickly (matches
+          // the M3 "standard full-screen" push-navigation pattern).
+          // 250ms enter / 200ms leave hits the M3 medium1/short4 token
+          // pair — shorter than the canonical 300/200 full-screen spec
+          // so the page doesn't drag, but long enough to read as a
+          // deliberate slide rather than a pop. Sits one token above
+          // the drawer (150/100) so the motion hierarchy scales with
+          // the surface size.
+          enter="transform transition ease-m3-emphasized-decelerate duration-[250ms]"
           enterFrom={from}
           enterTo={to}
-          leave="transform transition ease-in duration-200"
+          leave="transform transition ease-m3-emphasized-accelerate duration-200"
           leaveFrom={to}
           leaveTo={from}
           className="absolute inset-0 flex flex-col bg-spark-surface"

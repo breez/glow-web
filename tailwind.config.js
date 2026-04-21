@@ -97,6 +97,20 @@ export default {
       backdropBlur: {
         'xs': '2px',
       },
+      // Material 3 motion easing tokens. Use with the Tailwind `ease-*`
+      // transition-timing-function utility, e.g.
+      //   enter="transition-opacity ease-m3-emphasized-decelerate duration-200"
+      //   leave="transition-opacity ease-m3-emphasized-accelerate duration-200"
+      //
+      // - emphasized:            general bidirectional motion
+      // - emphasized-decelerate: enter / arriving motion (soft settle)
+      // - emphasized-accelerate: exit / leaving motion (quick depart)
+      // See https://m3.material.io/styles/motion/easing-and-duration
+      transitionTimingFunction: {
+        'm3-emphasized': 'cubic-bezier(0.2, 0.0, 0, 1.0)',
+        'm3-emphasized-decelerate': 'cubic-bezier(0.05, 0.7, 0.1, 1.0)',
+        'm3-emphasized-accelerate': 'cubic-bezier(0.3, 0.0, 0.8, 0.15)',
+      },
     },
   },
   plugins: [],
