@@ -112,12 +112,41 @@ if (Capacitor.isNativePlatform()) {
   });
 }
 
-// Hide the initial splash screen - exported so App can call it when truly ready
-export function hideSplash() {
+/**
+ * Fades out and removes the initial splash screen, resolving once the
+ * fade has fully completed and the node is detached.
+ *
+ * Uses the Web Animations API (`Element.animate()`) instead of the
+ * original CSS-transition approach because `transitionend` proved to
+ * be unreliable on Android WebView — production logs captured the
+ * old 300ms fallback firing instead of `transitionend`, meaning the
+ * opacity transition was being janked on the main thread, leaving the
+ * splash partially visible while the biometric prompt raced in on top
+ * of it. WAAPI runs the interpolation on the native compositor, so
+ * it isn't starved by the React commit that happens right before we
+ * kick off the fade, and `animation.finished` is the canonical signal
+ * that every keyframe has been composited.
+ *
+ * Safe to call when there is no splash (returns an already-resolved
+ * Promise), and safe to call fire-and-forget from non-paint-sensitive
+ * call sites that just want the splash gone.
+ */
+export async function hideSplash(): Promise<void> {
   const splash = document.getElementById('splash');
-  if (splash) {
-    splash.classList.add('hidden');
-    setTimeout(() => splash.remove(), 300);
+  if (!splash) return;
+
+  const animation = splash.animate(
+    [{ opacity: 1 }, { opacity: 0 }],
+    { duration: 100, easing: 'ease-out', fill: 'forwards' },
+  );
+
+  try {
+    await animation.finished;
+  } catch {
+    /* animation cancelled (e.g. node removed mid-flight) — swallow;
+       the remove below still detaches the node if it's still there. */
+  } finally {
+    splash.remove();
   }
 }
 
@@ -140,7 +169,7 @@ async function init() {
     logger.error(LogCategory.UI, 'Failed to initialize app', {
       error: error instanceof Error ? error.message : String(error),
     });
-    hideSplash();
+    void hideSplash();
     document.getElementById('root')!.innerHTML = `
       <div style="color: #ef4444; padding: 20px; text-align: center; background: #0a0a0f; min-height: 100vh; display: flex; flex-direction: column; justify-content: center;">
         <h2>Failed to load application</h2>
