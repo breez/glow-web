@@ -185,15 +185,30 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
     );
   }
 
-  /* TODO: Bug: Currently shows loading state switching between BTC and Lightning Address tabs when lightning address is set.
-  if (isLoading) {
+  // Loading state — gated on `!address` so we only show the spinner
+  // while the address is genuinely unknown. The first open after
+  // passkey onboarding (new label, no LN address registered yet)
+  // lands here: `useLightningAddress.load()` hits
+  // `getLightningAddress() → null`, auto-registers a random
+  // username, then re-fetches. `isLoading=true` and `address=null`
+  // for the full lookup→register→re-lookup span — without this
+  // branch the user saw the `!address && !isEditing` fallback
+  // ("Create Lightning Address" button) flash during auto-creation,
+  // which is confusing because they didn't ask to create anything.
+  //
+  // The earlier version of this branch gated on plain `isLoading`
+  // and caused a spinner flash on every tab switch because
+  // `load()` refires on Lightning-tab re-entry even when `address`
+  // is already cached. Gating on `!address` fixes that regression
+  // too: cached-address + in-flight refresh now stays on the QR
+  // view.
+  if (isLoading && !address) {
     return (
       <div className="text-center py-8">
         <LoadingSpinner text="Loading Lightning Address..." />
       </div>
     );
   }
-    */
 
   if (!address && !isEditing) {
     return (

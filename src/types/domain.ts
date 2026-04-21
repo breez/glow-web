@@ -6,7 +6,7 @@ import { InputType } from "@breeztech/breez-sdk-spark/bundler";
 export type PaymentMethod = 'lightning' | 'spark' | 'bitcoin';
 
 // Steps for the Receive dialog
-export type ReceiveStep = 'loading_limits' | 'input' | 'qr' | 'loading';
+export type ReceiveStep = 'input' | 'qr' | 'loading';
 
 // Steps for the Send dialog
 export type PaymentStep = 'input' | 'amount' | 'fee' | 'confirm' | 'processing' | 'result';

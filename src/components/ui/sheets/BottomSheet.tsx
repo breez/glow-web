@@ -348,12 +348,28 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   }
 
   if (animating && dragHeight === null && bodyDragY === 0) {
-    wrapperStyle.transition = 'height 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    // Material 3 emphasized easing for snap-point height/transform
+    // transitions. Bidirectional so we use the neutral emphasized
+    // curve rather than decelerate/accelerate.
+    wrapperStyle.transition = 'height 250ms cubic-bezier(0.2, 0.0, 0, 1.0), transform 250ms cubic-bezier(0.2, 0.0, 0, 1.0)';
   }
 
   return (
+    // `unmount={false}` keeps the whole sheet subtree in the React
+    // tree across open/close cycles. Without it, HeadlessUI tears
+    // down every descendant (BottomSheetCard, DialogHeader, InputStep
+    // / workflows, address + QR displays, contact autocomplete, etc.)
+    // when `show` flips to false — so the first-ever open after a
+    // cold WalletPage mount pays the full reconciliation + hook-init
+    // cost synchronously between the tap and the first paint, which
+    // reads as a ~200-400ms dead window before the sheet starts
+    // sliding up. With `unmount={false}` React keeps component state
+    // warm; HeadlessUI just toggles the `hidden` HTML attribute so
+    // the browser skips layout + paint while closed, and re-opens
+    // only pay browser layout/paint (no React mount).
     <Transition
       show={isOpen}
+      unmount={false}
       as="div"
       className="absolute inset-x-0 top-0 z-50 overflow-hidden flex flex-col justify-end pointer-events-none"
       style={{ height: `${viewportHeight}px` }}
@@ -361,10 +377,20 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       {showBackdrop && (
         <Transition.Child
           as="div"
-          enter="transition-opacity ease-out duration-300"
+          // `unmount={false}` mirrors the outer Transition so the
+          // backdrop's `hidden` toggle stays in lockstep with the
+          // sheet panel's. Without it the child would unmount at
+          // close even if the parent kept its DOM, defeating the
+          // whole point of pre-mounting.
+          unmount={false}
+          // Material 3 bottom-sheet scrim motion: emphasized decelerate
+          // on enter (fade arrives softly), emphasized accelerate on
+          // exit (fade leaves quickly) so the scrim stays in sync with
+          // the panel slide below.
+          enter="transition-opacity ease-m3-emphasized-decelerate duration-[250ms]"
           enterFrom="opacity-0"
           enterTo="opacity-100"
-          leave="transition-opacity ease-in duration-200"
+          leave="transition-opacity ease-m3-emphasized-accelerate duration-200"
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
           className="absolute inset-0 bg-black/60 pointer-events-auto z-0"
@@ -373,10 +399,16 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       )}
       <Transition.Child
         as="div"
-        enter="transform transition ease-out duration-300"
+        unmount={false}
+        // Material 3 bottom-sheet panel motion. `motionDurationMedium1`
+        // (250ms) enter with emphasized decelerate, `motionDurationShort4`
+        // (200ms) exit with emphasized accelerate. Exit keeps the
+        // pre-existing `translate-y-1/2` shortcut so the drop feels
+        // quick even though the duration is 50ms shorter than enter.
+        enter="transform transition ease-m3-emphasized-decelerate duration-[250ms]"
         enterFrom="translate-y-full opacity-0"
         enterTo="translate-y-0 opacity-100"
-        leave="transform transition ease-out duration-300"
+        leave="transform transition ease-m3-emphasized-accelerate duration-200"
         leaveFrom="translate-y-0 opacity-100"
         leaveTo="translate-y-1/2 opacity-0"
         className={`mx-auto w-full ${maxWidthClass} pointer-events-auto z-10 ${className}`}
