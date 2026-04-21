@@ -128,7 +128,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
       <li
         key={tx.id || `${tx.timestamp}-${tx.amount}-${index}`}
         className="transaction-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer animate-list-item"
-        style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
+        style={{ animationDelay: `${Math.min(index * 30, 240)}ms` }}
         onClick={() => onPaymentSelected(tx)}
         data-testid="transaction-item"
       >
