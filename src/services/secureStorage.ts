@@ -51,6 +51,11 @@ interface NativeVaultPlugin {
   storeSeed(options: { seed: string }): Promise<void>;
   retrieveSeed(): Promise<{ seed: string }>;
   clearSeed(): Promise<void>;
+  // Device-only tier (encrypted at rest, no biometric gate).
+  hasStoredSeedDeviceOnly(): Promise<{ stored: boolean }>;
+  storeSeedDeviceOnly(options: { seed: string }): Promise<void>;
+  retrieveSeedDeviceOnly(): Promise<{ seed: string }>;
+  clearSeedDeviceOnly(): Promise<void>;
 }
 
 /**
@@ -379,6 +384,125 @@ function logSecureStorageFailure(operation: string, code: SecureStorageErrorCode
  * only when `Capacitor.isNativePlatform()` is true; the factory below
  * picks `NoopSecureStorage` on web.
  */
+// Module-level init pipeline shared by the biometric + device-only
+// singletons. Both storage tiers share the same fresh-install marker
+// (iOS Keychain entries survive reinstall on both tiers; a clean init
+// must wipe BOTH slots or a user who switches tiers between installs
+// could inherit stale state). Ensures the cleanup runs at most once
+// per process regardless of which singleton's method is called first.
+let sharedInitPromise: Promise<void> | null = null;
+
+function ensureSharedInitialized(): Promise<void> {
+  if (!sharedInitPromise) {
+    sharedInitPromise = runSharedInitialization();
+  }
+  return sharedInitPromise;
+}
+
+/**
+ * Sequential init pipeline. Order matters: the F3 migration must run
+ * AFTER the fresh-install cleanup, so that on a fresh install we
+ * only wipe once (via the install-marker path) and skip the F3 wipe
+ * (it would be redundant and would fire the "Migrated to F3" log
+ * line incorrectly on a device that has never seen F2).
+ */
+async function runSharedInitialization(): Promise<void> {
+  await cleanupStaleEntriesOnFreshInstall();
+  await migrateToF3IfNeeded();
+}
+
+/**
+ * iOS does NOT wipe Keychain entries when an app is reinstalled — they
+ * survive across installs of the same bundle ID. Android Keystore keys
+ * + the plugin's SharedPreferences-backed ciphertext both DO wipe on
+ * uninstall, so this is mostly an iOS concern, but we run the same
+ * logic on both platforms for consistency.
+ *
+ * The fresh-install signal is the absence of an `INSTALL_MARKER_KEY`
+ * entry in `localStorage`. localStorage IS wiped on reinstall on both
+ * platforms, so a missing marker reliably indicates either:
+ *   (1) first ever launch on this device, or
+ *   (2) first launch after an uninstall/reinstall cycle
+ *
+ * In either case we wipe BOTH storage tiers (biometric-bound + device-
+ * only) before any other operation, then write both markers so
+ * subsequent launches skip the cleanup and the F3 migration. A fresh
+ * install starts in the F3 world directly — there's no F2 state to
+ * migrate from.
+ */
+async function cleanupStaleEntriesOnFreshInstall(): Promise<void> {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (localStorage.getItem(INSTALL_MARKER_KEY)) return;
+
+    // Clear both tiers. A user who previously installed in non-passkey
+    // mode could have a device-only entry surviving the reinstall on
+    // iOS — wiping it ensures a fresh install always starts from an
+    // empty slate regardless of the prior install's mode.
+    try {
+      await getNativeVault().clearSeed();
+    } catch {
+      // Best-effort — never block downstream operations on the cleanup.
+    }
+    try {
+      await getNativeVault().clearSeedDeviceOnly();
+    } catch {
+      // Best-effort.
+    }
+    logger.info(LogCategory.AUTH, 'Initialized secure storage on fresh install');
+
+    const now = new Date().toISOString();
+    localStorage.setItem(INSTALL_MARKER_KEY, now);
+    // A fresh install has no F2 state to migrate from, so mark the
+    // F3 migration as already-done. This keeps the migration path
+    // strictly for "user upgraded from an F2 build" and makes the
+    // `migrateToF3IfNeeded` log line meaningful.
+    localStorage.setItem(F3_MIGRATION_MARKER_KEY, now);
+  } catch {
+    // Best-effort — swallow any localStorage / plugin errors so the
+    // wallet still attempts to start up.
+  }
+}
+
+/**
+ * One-shot migration from F2 (no biometric-bound crypto) to F3
+ * (biometric-bound crypto). See `F3_MIGRATION_MARKER_KEY` for the
+ * reasoning.
+ *
+ * The migration is a forced re-onboarding: we wipe the secure store
+ * entirely, which causes the next `hasStoredSeed` to return `false`,
+ * which causes the wallet startup code in `useBreezSdk` to fall
+ * through to the passkey onboarding flow. After the user completes
+ * the passkey ceremony (a single extra tap), the seed is re-persisted
+ * via `storeSeed`, which now uses the F3 access control.
+ *
+ * We considered a read-then-rewrite approach (decrypt with F2,
+ * re-encrypt with F3) but rejected it because:
+ *   - It requires a biometric prompt before the user has any visual
+ *     context, which is jarring.
+ *   - It couples the init code to platform-specific crypto details
+ *     that would be invisible everywhere else.
+ *   - Re-onboarding costs a single passkey tap and exercises the
+ *     fallback path we want to keep working anyway.
+ */
+async function migrateToF3IfNeeded(): Promise<void> {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (localStorage.getItem(F3_MIGRATION_MARKER_KEY)) return;
+
+    try {
+      await getNativeVault().clearSeed();
+      logger.info(LogCategory.AUTH, 'Migrated secure storage to F3 (biometric-bound crypto)');
+    } catch {
+      // Best-effort — never block downstream operations on the migration.
+    }
+    localStorage.setItem(F3_MIGRATION_MARKER_KEY, new Date().toISOString());
+  } catch {
+    // Best-effort — swallow any localStorage / plugin errors so the
+    // wallet still attempts to start up.
+  }
+}
+
 class NativeSecureStorage implements SecureStorage {
   /**
    * Single in-flight `retrieveSeed` promise so concurrent callers share the
@@ -387,19 +511,12 @@ class NativeSecureStorage implements SecureStorage {
    */
   private inflightRetrieve: Promise<Seed> | null = null;
 
-  /**
-   * Single in-flight init promise. The init pass runs once per process and
-   * wipes any stale Keychain entries from a previous install of this app
-   * bundle — see {@link cleanupStaleEntriesOnFreshInstall} for why.
-   */
-  private initPromise: Promise<void> | null = null;
-
   isSupported(): boolean {
     return true;
   }
 
   async hasStoredSeed(): Promise<boolean> {
-    await this.ensureInitialized();
+    await ensureSharedInitialized();
     try {
       const result = await getNativeVault().hasStoredSeed();
       return result.stored;
@@ -413,7 +530,7 @@ class NativeSecureStorage implements SecureStorage {
   }
 
   async storeSeed(seed: Seed): Promise<void> {
-    await this.ensureInitialized();
+    await ensureSharedInitialized();
     const blob: PersistedSeedBlob = {
       version: 1,
       seed: serializeSeedForStorage(seed),
@@ -434,7 +551,7 @@ class NativeSecureStorage implements SecureStorage {
   }
 
   async retrieveSeed(): Promise<Seed> {
-    await this.ensureInitialized();
+    await ensureSharedInitialized();
     // De-duplicate concurrent callers so we only show one biometric prompt.
     if (this.inflightRetrieve) {
       return this.inflightRetrieve;
@@ -459,34 +576,11 @@ class NativeSecureStorage implements SecureStorage {
       throw new SecureStorageError(code, getErrorMessage(err) ?? 'Failed to retrieve seed.');
     }
 
-    // Decode the JSON blob the plugin handed back.
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(result.seed);
-    } catch {
-      logSecureStorageFailure('retrieveSeed', 'KEY_INVALIDATED');
-      throw new SecureStorageError(
-        'KEY_INVALIDATED',
-        'Stored seed blob is not valid JSON.',
-      );
-    }
-
-    if (!isPersistedSeedBlob(parsed)) {
-      // Most likely an old / incompatible version. Treat as KEY_INVALIDATED
-      // so the caller wipes and re-onboards.
-      logSecureStorageFailure('retrieveSeed', 'KEY_INVALIDATED');
-      throw new SecureStorageError(
-        'KEY_INVALIDATED',
-        'Stored seed blob has an unexpected shape.',
-      );
-    }
-
-    logSecureStorageSuccess('retrieveSeed');
-    return deserializeSeedFromStorage(parsed.seed);
+    return decodeStoredSeedBlob(result.seed, 'retrieveSeed');
   }
 
   async clearSeed(): Promise<void> {
-    await this.ensureInitialized();
+    await ensureSharedInitialized();
     try {
       await getNativeVault().clearSeed();
       logSecureStorageSuccess('clearSeed');
@@ -496,108 +590,104 @@ class NativeSecureStorage implements SecureStorage {
       throw new SecureStorageError(code, getErrorMessage(err) ?? 'Failed to clear stored seed.');
     }
   }
+}
 
-  /**
-   * One-shot init guard. Multiple concurrent callers share the same
-   * `initPromise`, so the cleanup runs at most once per process.
-   */
-  private ensureInitialized(): Promise<void> {
-    if (!this.initPromise) {
-      this.initPromise = this.runInitialization();
-    }
-    return this.initPromise;
+/**
+ * Shared seed-blob decoder used by both tiers. The JSON envelope is
+ * identical across biometric / device-only — only the on-disk encryption
+ * policy differs — so parsing is tier-agnostic.
+ */
+function decodeStoredSeedBlob(raw: string, operation: string): Seed {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    logSecureStorageFailure(operation, 'KEY_INVALIDATED');
+    throw new SecureStorageError(
+      'KEY_INVALIDATED',
+      'Stored seed blob is not valid JSON.',
+    );
+  }
+  if (!isPersistedSeedBlob(parsed)) {
+    logSecureStorageFailure(operation, 'KEY_INVALIDATED');
+    throw new SecureStorageError(
+      'KEY_INVALIDATED',
+      'Stored seed blob has an unexpected shape.',
+    );
+  }
+  logSecureStorageSuccess(operation);
+  return deserializeSeedFromStorage(parsed.seed);
+}
+
+/**
+ * Native device-only tier. Encrypted at rest via the same iOS Keychain /
+ * Android Keystore primitives the biometric-bound tier uses, but WITHOUT
+ * the biometric gate. Used for non-passkey users who opted out of the
+ * passkey flow during onboarding — their seed never lives in plaintext
+ * localStorage on native hosts, but reads don't pop a biometric prompt.
+ *
+ * The TS interface is deliberately the same `SecureStorage` contract as
+ * the biometric tier so callers can swap between them. The error-code
+ * surface is a strict subset (no `USER_CANCELLED` / `BIOMETRIC_*` since
+ * there's no prompt), but keeping the superset type simplifies the
+ * shared call sites in `useBreezSdk.ts`.
+ */
+class NativeDeviceOnlyStorage implements SecureStorage {
+  isSupported(): boolean {
+    return true;
   }
 
-  /**
-   * Sequential init pipeline. Order matters: the F3 migration must run
-   * AFTER the fresh-install cleanup, so that on a fresh install we
-   * only wipe once (via the install-marker path) and skip the F3 wipe
-   * (it would be redundant and would fire the "Migrated to F3" log
-   * line incorrectly on a device that has never seen F2).
-   */
-  private async runInitialization(): Promise<void> {
-    await this.cleanupStaleEntriesOnFreshInstall();
-    await this.migrateToF3IfNeeded();
-  }
-
-  /**
-   * iOS does NOT wipe Keychain entries when an app is reinstalled — they
-   * survive across installs of the same bundle ID. Android Keystore keys
-   * + the plugin's SharedPreferences-backed ciphertext both DO wipe on
-   * uninstall, so this is mostly an iOS concern, but we run the same
-   * logic on both platforms for consistency.
-   *
-   * The fresh-install signal is the absence of an `INSTALL_MARKER_KEY`
-   * entry in `localStorage`. localStorage IS wiped on reinstall on both
-   * platforms, so a missing marker reliably indicates either:
-   *   (1) first ever launch on this device, or
-   *   (2) first launch after an uninstall/reinstall cycle
-   *
-   * In either case we wipe any stored seed before any other operation,
-   * then write BOTH markers so subsequent launches skip the cleanup
-   * and the F3 migration. A fresh install starts in the F3 world
-   * directly — there's no F2 state to migrate from.
-   */
-  private async cleanupStaleEntriesOnFreshInstall(): Promise<void> {
+  async hasStoredSeed(): Promise<boolean> {
+    await ensureSharedInitialized();
     try {
-      if (typeof localStorage === 'undefined') return;
-      if (localStorage.getItem(INSTALL_MARKER_KEY)) return;
-
-      try {
-        await getNativeVault().clearSeed();
-        logger.info(LogCategory.AUTH, 'Initialized secure storage on fresh install');
-      } catch {
-        // Best-effort — never block downstream operations on the cleanup.
-      }
-      const now = new Date().toISOString();
-      localStorage.setItem(INSTALL_MARKER_KEY, now);
-      // A fresh install has no F2 state to migrate from, so mark the
-      // F3 migration as already-done. This keeps the migration path
-      // strictly for "user upgraded from an F2 build" and makes the
-      // `migrateToF3IfNeeded` log line meaningful.
-      localStorage.setItem(F3_MIGRATION_MARKER_KEY, now);
-    } catch {
-      // Best-effort — swallow any localStorage / plugin errors so the
-      // wallet still attempts to start up.
+      const result = await getNativeVault().hasStoredSeedDeviceOnly();
+      return result.stored;
+    } catch (err) {
+      const code = mapNativeVaultErrorCode(err);
+      logSecureStorageFailure('hasStoredSeedDeviceOnly', code);
+      return false;
     }
   }
 
-  /**
-   * One-shot migration from F2 (no biometric-bound crypto) to F3
-   * (biometric-bound crypto). See `F3_MIGRATION_MARKER_KEY` for the
-   * reasoning.
-   *
-   * The migration is a forced re-onboarding: we wipe the secure store
-   * entirely, which causes the next `hasStoredSeed` to return `false`,
-   * which causes the wallet startup code in `useBreezSdk` to fall
-   * through to the passkey onboarding flow. After the user completes
-   * the passkey ceremony (a single extra tap), the seed is re-persisted
-   * via `storeSeed`, which now uses the F3 access control.
-   *
-   * We considered a read-then-rewrite approach (decrypt with F2,
-   * re-encrypt with F3) but rejected it because:
-   *   - It requires a biometric prompt before the user has any visual
-   *     context, which is jarring.
-   *   - It couples the init code to platform-specific crypto details
-   *     that would be invisible everywhere else.
-   *   - Re-onboarding costs a single passkey tap and exercises the
-   *     fallback path we want to keep working anyway.
-   */
-  private async migrateToF3IfNeeded(): Promise<void> {
+  async storeSeed(seed: Seed): Promise<void> {
+    await ensureSharedInitialized();
+    const blob: PersistedSeedBlob = {
+      version: 1,
+      seed: serializeSeedForStorage(seed),
+      createdAt: new Date().toISOString(),
+    };
     try {
-      if (typeof localStorage === 'undefined') return;
-      if (localStorage.getItem(F3_MIGRATION_MARKER_KEY)) return;
+      await getNativeVault().storeSeedDeviceOnly({ seed: JSON.stringify(blob) });
+      logSecureStorageSuccess('storeSeedDeviceOnly');
+    } catch (err) {
+      const code = mapNativeVaultErrorCode(err);
+      logSecureStorageFailure('storeSeedDeviceOnly', code);
+      throw new SecureStorageError(code, getErrorMessage(err) ?? 'Failed to persist seed.');
+    }
+  }
 
-      try {
-        await getNativeVault().clearSeed();
-        logger.info(LogCategory.AUTH, 'Migrated secure storage to F3 (biometric-bound crypto)');
-      } catch {
-        // Best-effort — never block downstream operations on the migration.
-      }
-      localStorage.setItem(F3_MIGRATION_MARKER_KEY, new Date().toISOString());
-    } catch {
-      // Best-effort — swallow any localStorage / plugin errors so the
-      // wallet still attempts to start up.
+  async retrieveSeed(): Promise<Seed> {
+    await ensureSharedInitialized();
+    let result: { seed: string };
+    try {
+      result = await getNativeVault().retrieveSeedDeviceOnly();
+    } catch (err) {
+      const code = mapNativeVaultErrorCode(err);
+      logSecureStorageFailure('retrieveSeedDeviceOnly', code);
+      throw new SecureStorageError(code, getErrorMessage(err) ?? 'Failed to retrieve seed.');
+    }
+    return decodeStoredSeedBlob(result.seed, 'retrieveSeedDeviceOnly');
+  }
+
+  async clearSeed(): Promise<void> {
+    await ensureSharedInitialized();
+    try {
+      await getNativeVault().clearSeedDeviceOnly();
+      logSecureStorageSuccess('clearSeedDeviceOnly');
+    } catch (err) {
+      const code = mapNativeVaultErrorCode(err);
+      logSecureStorageFailure('clearSeedDeviceOnly', code);
+      throw new SecureStorageError(code, getErrorMessage(err) ?? 'Failed to clear stored seed.');
     }
   }
 }
@@ -685,8 +775,20 @@ function createSecureStorage(): SecureStorage {
   return Capacitor.isNativePlatform() ? new NativeSecureStorage() : new NoopSecureStorage();
 }
 
+function createDeviceOnlyStorage(): SecureStorage {
+  return Capacitor.isNativePlatform() ? new NativeDeviceOnlyStorage() : new NoopSecureStorage();
+}
+
 /**
- * Module-level singleton.
- * Import as: `import { secureStorage } from '@/services/secureStorage';`
+ * Module-level singletons.
+ *
+ * `secureStorage` — biometric-bound tier (passkey users).
+ * `deviceOnlyStorage` — encrypted at rest, no biometric gate (non-passkey users).
+ *
+ * Both resolve to `NoopSecureStorage` on non-native hosts.
+ *
+ * Import as:
+ *   `import { secureStorage, deviceOnlyStorage } from '@/services/secureStorage';`
  */
 export const secureStorage: SecureStorage = createSecureStorage();
+export const deviceOnlyStorage: SecureStorage = createDeviceOnlyStorage();
