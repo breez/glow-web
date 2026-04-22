@@ -176,8 +176,14 @@ export function useSendPayment(): UseSendPaymentReturn {
             }
           },
         });
-      } catch {
-        // If listener setup fails, just stay on 'converting' — non-critical
+      } catch (e) {
+        // Non-fatal: the UI just stays on the 'converting' phase until
+        // the payment itself returns. Worth logging because a missing
+        // listener is the only way the spinner can stick on a converted
+        // payment that succeeded silently.
+        logger.warn(LogCategory.PAYMENT, 'Failed to attach conversion-progress listener', {
+          error: formatError(e),
+        });
       }
     }
 
@@ -224,8 +230,14 @@ export function useSendPayment(): UseSendPaymentReturn {
             }
           },
         });
-      } catch {
-        // If listener setup fails, just stay on 'converting' — non-critical
+      } catch (e) {
+        // Non-fatal: the UI just stays on the 'converting' phase until
+        // the payment itself returns. Worth logging because a missing
+        // listener is the only way the spinner can stick on a converted
+        // payment that succeeded silently.
+        logger.warn(LogCategory.PAYMENT, 'Failed to attach conversion-progress listener', {
+          error: formatError(e),
+        });
       }
     }
 

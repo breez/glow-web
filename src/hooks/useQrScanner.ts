@@ -77,19 +77,13 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
       qrScannerRef.current = new QrScanner(
         videoRef.current,
         (result) => {
-          logger.debug(LogCategory.UI, 'QR code detected', {
-            length: result.data.length,
-          });
           onScan(result.data);
           stopScanning();
         },
         {
-          onDecodeError: (decodeError) => {
-            // Ignore decode errors - they happen frequently while scanning
-            logger.debug(LogCategory.UI, 'QR decode error', {
-              error: formatError(decodeError),
-            });
-          },
+          // Decode errors fire on every frame that doesn't resolve to a QR
+          // code — expected during normal scanning, so they're swallowed.
+          onDecodeError: () => {},
           // Disable qr-scanner's built-in scan-region overlay: we draw our
           // own corner brackets in QrScannerDialog and having both visible
           // at once looks like a rendering bug (two overlapping squares).
@@ -101,7 +95,6 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
       );
 
       await qrScannerRef.current.start();
-      logger.info(LogCategory.UI, 'QR scanner started successfully');
       setIsInitializing(false);
       setIsScanning(true);
 
@@ -109,9 +102,6 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
       // check may have returned stale results before the user allowed access
       try {
         const cameras = await QrScanner.listCameras(false);
-        logger.debug(LogCategory.UI, 'Cameras after permission', {
-          count: cameras.length,
-        });
         const uniqueIds = new Set(cameras.map(c => c.id));
         setHasMultipleCameras(uniqueIds.size > 1);
       } catch (e) {

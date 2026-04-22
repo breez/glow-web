@@ -63,9 +63,6 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
     if (isOpen) {
       // Wait for the transition to complete (300ms) plus a buffer
       const timer = setTimeout(() => {
-        logger.debug(LogCategory.UI, 'Checking video element after transition', {
-          videoReady: Boolean(videoRef.current),
-        });
         if (videoRef.current) {
           startScanningRef.current();
         } else {

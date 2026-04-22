@@ -272,8 +272,6 @@ export function useBreezSdk(
   // ----------------------------------------
 
   const handleSdkEvent = useCallback((event: SdkEvent) => {
-    logger.debug(LogCategory.SDK, 'SDK event received', { eventType: event.type });
-
     if (event.type === 'synced') {
       if (isSyncingRef.current) {
         logger.info(LogCategory.SESSION, 'Restoration sync complete; hiding overlay');
@@ -285,10 +283,6 @@ export function useBreezSdk(
     } else if (event.type === 'paymentSucceeded') {
       const paymentId = event.payment.id;
       const alreadyShown = shownPaymentIdsRef.current.has(paymentId);
-      logger.debug(LogCategory.PAYMENT, 'Payment succeeded event received', {
-        alreadyShown,
-        payment: JSON.parse(JSON.stringify(event.payment)),
-      });
       if (!alreadyShown) {
         shownPaymentIdsRef.current.add(paymentId);
         setTimeout(() => shownPaymentIdsRef.current.delete(paymentId), 30000);
@@ -337,10 +331,7 @@ export function useBreezSdk(
     let connectedSdk: BreezSdk | undefined;
     try {
       logger.info(LogCategory.SDK, 'Initiating wallet connection', { restore });
-      if (sdk) {
-        logger.debug(LogCategory.SDK, 'Wallet already connected; skipping');
-        return;
-      }
+      if (sdk) return;
 
       setIsLoading(true);
       setIsSyncing(restore);
@@ -537,16 +528,12 @@ export function useBreezSdk(
   // app-resume listener when the user tabs back into a stuck
   // UnlockingPage.
   const retryUnlock = useCallback(async () => {
-    logger.info(LogCategory.AUTH, 'retryUnlock:enter');
     // Prevent concurrent biometric prompts: BiometricPrompt throws if
     // authenticate() is called while another prompt is already live,
     // and the two call-sites (mount timeout + resume listener) can
     // race. The ref is set synchronously before the first await so
     // the second caller bails out cleanly.
-    if (retryUnlockInFlightRef.current) {
-      logger.warn(LogCategory.AUTH, 'retryUnlock:skipped (in-flight)');
-      return;
-    }
+    if (retryUnlockInFlightRef.current) return;
     retryUnlockInFlightRef.current = true;
     if (!secureStorage.isSupported()) {
       // Web or unsupported host — should never reach UnlockPage here, but
@@ -558,7 +545,6 @@ export function useBreezSdk(
     setError(null);
     setIsLoading(true);
     try {
-      logger.info(LogCategory.AUTH, 'retryUnlock:callingRetrieveSeed');
       const seed = await secureStorage.retrieveSeed();
       await connectWallet(seed, false, undefined, 'secureStorage');
       // connectWallet sets startupState='connected' on success.
@@ -743,7 +729,6 @@ export function useBreezSdk(
         && secureStorage.isSupported()
         && (await secureStorage.hasStoredSeed())
       ) {
-        logger.info(LogCategory.AUTH, 'unlock:start');
         // flushSync forces React to commit this state update BEFORE
         // the await below yields control. Without it, the commit can
         // be batched past hideSplash and the biometric prompt lands
@@ -898,7 +883,6 @@ export function useBreezSdk(
       sdk.addEventListener({ onEvent: handleSdkEvent })
         .then(id => {
           eventListenerIdRef.current = id;
-          logger.debug(LogCategory.SDK, 'Registered wallet event listener', { listenerId: id });
         })
         .catch(e => {
           logger.error(LogCategory.SDK, 'Failed to add wallet event listener', { error: formatError(e) });

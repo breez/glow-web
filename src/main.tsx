@@ -67,9 +67,6 @@ if (Capacitor.isNativePlatform()) {
       `${info.keyboardHeight}px`,
     );
     document.documentElement.classList.add('keyboard-visible');
-    logger.debug(LogCategory.UI, 'Keyboard will show', {
-      keyboardHeight: info.keyboardHeight,
-    });
   });
   void Keyboard.addListener('keyboardDidShow', () => {
     // Scroll the focused input into the visible portion of its
@@ -115,7 +112,6 @@ if (Capacitor.isNativePlatform()) {
   void Keyboard.addListener('keyboardWillHide', () => {
     document.documentElement.style.setProperty('--keyboard-height', '0px');
     document.documentElement.classList.remove('keyboard-visible');
-    logger.debug(LogCategory.UI, 'Keyboard will hide');
   });
 }
 

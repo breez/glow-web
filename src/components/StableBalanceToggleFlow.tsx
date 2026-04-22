@@ -144,7 +144,6 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
   }, [isOpen]);
 
   const executeToggle = useCallback(async () => {
-    logger.debug(LogCategory.SDK, 'executeToggle: starting', { direction, hasEstimate: !!conversionEstimate });
     setStep('executing');
     try {
       // Snapshot current balance before toggling so we can detect an increase
@@ -157,17 +156,13 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
         } else {
           balanceBefore = BigInt(infoBefore.balanceSats);
         }
-        logger.debug(LogCategory.SDK, 'executeToggle: balance before toggle', { balanceBefore: balanceBefore.toString() });
       }
 
       const ticker = direction === 'toToken' ? USDB_TICKER : null;
-      logger.debug(LogCategory.SDK, 'executeToggle: calling toggleStableBalance', { ticker });
       await stableBalance.toggleStableBalance(ticker);
-      logger.debug(LogCategory.SDK, 'executeToggle: toggleStableBalance returned');
 
       // If we had a conversion estimate, poll until the new-mode balance increases
       if (conversionEstimate) {
-        logger.debug(LogCategory.SDK, 'executeToggle: starting balance poll');
         const maxAttempts = 30;
         for (let i = 0; i < maxAttempts; i++) {
           await new Promise(r => setTimeout(r, 1000));
@@ -179,19 +174,14 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
           } else {
             currentBalance = BigInt(info.balanceSats);
           }
-          logger.debug(LogCategory.SDK, `executeToggle: poll ${i + 1}/${maxAttempts}`, { currentBalance: currentBalance.toString(), balanceBefore: balanceBefore.toString() });
           if (currentBalance > balanceBefore) break;
         }
-        logger.debug(LogCategory.SDK, 'executeToggle: poll finished');
-      } else {
-        logger.debug(LogCategory.SDK, 'executeToggle: no estimate, skipping poll');
       }
 
-      logger.debug(LogCategory.SDK, 'executeToggle: calling onComplete');
       onComplete();
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
-      logger.error(LogCategory.SDK, 'Failed to toggle stable balance', { error: errorMsg });
+      logger.error(LogCategory.SDK, 'Failed to toggle stable balance', { direction, error: errorMsg });
       setError(`Failed to switch: ${errorMsg}`);
       setStep('confirm');
     }
