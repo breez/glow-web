@@ -5,7 +5,14 @@ import { Keyboard } from '@capacitor/keyboard';
 import App from './App';
 import './index.css';
 import { logger, LogCategory } from '@/services/logger';
+import { installNativeHttpRouter } from '@/services/nativeHttpRouter';
 import initBreezSDK from '@breeztech/breez-sdk-spark';
+
+// Install BEFORE initBreezSDK so the WASM module's first fetch goes
+// through the router. Reroutes specific REST hosts (Lightspark GraphQL)
+// to native HTTP and leaves gRPC-Web to WebView fetch — see
+// nativeHttpRouter.ts for the why.
+installNativeHttpRouter();
 
 // Allow JSON.stringify to handle BigInt values (e.g. payment amounts/fees from SDK)
 (BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
