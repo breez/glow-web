@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Payment } from '@breeztech/breez-sdk-spark';
-import type { ConversionStep } from '@breeztech/breez-sdk-spark';
+import type { Payment, ConversionSide, TokenMetadata } from '@breeztech/breez-sdk-spark';
 import {
   DialogHeader, PaymentInfoCard, PaymentInfoRow,
   CollapsibleCodeField, CollapsibleSection, BottomSheetContainer, BottomSheetCard
@@ -10,7 +9,7 @@ import { useStableBalance } from '../contexts/StableBalanceContext';
 import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig } from '../utils/tokenFormatting';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
-import { getPaymentDescription } from '../utils/paymentDescription';
+import { getPaymentDescription, getProviderDisplayName } from '../utils/paymentDescription';
 import { LogCategory, logger } from '@/services/logger';
 
 interface PaymentDetailsDialogProps {
@@ -77,13 +76,18 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   );
   const payment = optionalPayment!;
 
-  // Format a conversion step's amount or fee in its native unit
-  const formatStepValue = (step: ConversionStep, value: bigint, isFee?: boolean): string => {
-    if (step.method === 'token' && step.tokenMetadata) {
-      const config = stableBalance.displayConfig ?? buildTokenDisplayConfig(step.tokenMetadata, fiatCurrencies);
-      return formatTokenAmount(value, config, isFee ? { fullPrecision: true } : undefined);
+  // Format a conversion side's amount or fee in its native unit
+  // Note: side.amount and side.fee are strings from WASM (u128 serialized as string)
+  const formatSideValue = (side: ConversionSide, isFee?: boolean): string => {
+    const value = BigInt(isFee ? side.fee : side.amount);
+    if (side.asset.ticker === 'BTC') {
+      return `₿${formatWithSpaces(Number(value))}`;
     }
-    return `₿${formatWithSpaces(Number(value))}`;
+    const config = stableBalance.displayConfig ?? buildTokenDisplayConfig(
+      { ticker: side.asset.ticker, decimals: side.asset.decimals } as TokenMetadata,
+      fiatCurrencies,
+    );
+    return formatTokenAmount(value, config, isFee ? { fullPrecision: true } : undefined);
   };
 
   // Format a fee value in the payment's native denomination
@@ -97,7 +101,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
 
   // When the conversion amount was adjusted (min limit floor or dust prevention),
   // the token amount doesn't match the payment — show sats instead.
-  const isAmountAdjusted = !!payment.conversionDetails?.from?.amountAdjustment;
+  const isAmountAdjusted = payment.conversionDetails?.conversions?.some(c => !!c.amountAdjustment) ?? false;
   const tokenInfo = getTokenAmountFromPayment(payment);
   const tokenDisplayConfig = stableBalance.displayConfig
     ?? (tokenInfo ? buildTokenDisplayConfig(tokenInfo.metadata, fiatCurrencies) : null);
@@ -279,55 +283,43 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
 
 
             {/* Conversion Details — shows original payment values */}
-            {payment.conversionDetails && (
+            {(() => {
+              const conversions = payment.conversionDetails?.conversions;
+              if (!conversions?.length) return null;
+              return (
               <CollapsibleSection
                 label="Conversion Details"
                 isVisible={visibleFields.conversionDetails}
                 onToggle={() => toggleField('conversionDetails')}
               >
-                {payment.conversionDetails.from && (
-                  <PaymentInfoRow
-                    label="Initial Amount"
-                    value={formatStepValue(payment.conversionDetails.from, payment.conversionDetails.from.amount)}
-                  />
-                )}
-                {payment.conversionDetails.to && (
-                  <PaymentInfoRow
-                    label="Converted Amount"
-                    value={formatStepValue(payment.conversionDetails.to, payment.conversionDetails.to.amount)}
-                  />
-                )}
-                {(() => {
-                  // Find the fee from whichever step has it
-                  const fromStep = payment.conversionDetails!.from;
-                  const toStep = payment.conversionDetails!.to;
-                  const fee = fromStep?.fee != null && fromStep.fee > 0n ? fromStep.fee
-                    : (toStep?.fee != null && toStep.fee > 0n) ? toStep.fee
-                    : null;
-                  if (fee != null && fee > 0n) {
-                    // Always denominate using the token step when available
-                    const tokenStep = fromStep?.method === 'token' ? fromStep
-                      : toStep?.method === 'token' ? toStep
-                      : null;
-                    const feeFormatted = formatStepValue(tokenStep ?? fromStep ?? toStep!, fee, true);
-                    return <PaymentInfoRow label="Fee" value={feeFormatted} />;
-                  }
-                  // Fall back to conversionInfo.fee — denominated in the token side's units
-                  const conversionInfoFee = (payment.details?.type === 'spark' || payment.details?.type === 'token')
-                    ? payment.details.conversionInfo?.fee : undefined;
-                  if (!conversionInfoFee || conversionInfoFee === '0') return null;
-                  // Format using the token step metadata if available
-                  const tokenStep = fromStep?.method === 'token' ? fromStep
-                    : toStep?.method === 'token' ? toStep : null;
-                  const feeFormatted = tokenStep?.tokenMetadata
-                    ? formatTokenAmount(BigInt(conversionInfoFee),
-                        stableBalance.displayConfig ?? buildTokenDisplayConfig(tokenStep.tokenMetadata, fiatCurrencies),
-                        { fullPrecision: true })
-                    : formatPaymentFee(BigInt(conversionInfoFee));
-                  return <PaymentInfoRow label="Fee" value={feeFormatted} />;
-                })()}
+                {conversions.map((conv, i) => (
+                  <React.Fragment key={i}>
+                    <PaymentInfoRow
+                      label="Provider"
+                      value={getProviderDisplayName(conv.provider)}
+                    />
+                    <PaymentInfoRow
+                      label="Initial Amount"
+                      value={formatSideValue(conv.from)}
+                    />
+                    <PaymentInfoRow
+                      label="Converted Amount"
+                      value={formatSideValue(conv.to)}
+                    />
+                    {(() => {
+                      // Show fee from whichever side has it
+                      const fromFee = BigInt(conv.from.fee);
+                      const toFee = BigInt(conv.to.fee);
+                      if (fromFee === 0n && toFee === 0n) return null;
+                      // Use the side that has the fee
+                      const feeSide = fromFee > 0n ? conv.from : conv.to;
+                      return <PaymentInfoRow label="Fee" value={formatSideValue(feeSide, true)} />;
+                    })()}
+                  </React.Fragment>
+                ))}
               </CollapsibleSection>
-            )}
+              );
+            })()}
 
           </PaymentInfoCard>
         </div>

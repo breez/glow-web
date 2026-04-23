@@ -13,6 +13,7 @@ import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { formatWithSpaces, formatWithThinSpaces } from '../../../utils/formatNumber';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
+import { getProviderDisplayName } from '../../../utils/paymentDescription';
 import { formatError } from '@/utils/formatError';
 import CryptoIcon from '../../../components/CryptoIcon';
 
@@ -502,7 +503,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                     className={`${cardClass(pendingProvider === key)} ${!ready && !pq.error ? 'opacity-70' : ''} ${pq.error ? 'opacity-50' : ''}`}
                   >
                     <span className="font-display font-medium text-spark-text-primary">
-                      {capitalizeFirst(pq.route.provider)}
+                      {getProviderDisplayName(pq.route.provider)}
                     </span>
                     {pq.loading && (
                       <div className="flex items-center gap-2 mt-2">
@@ -595,7 +596,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
               },
               {
                 label: 'Provider',
-                value: capitalizeFirst(confirmedRoute.provider),
+                value: getProviderDisplayName(confirmedRoute.provider),
               },
               {
                 label: 'Address',
