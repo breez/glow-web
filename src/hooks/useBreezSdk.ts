@@ -79,6 +79,9 @@ export interface BreezSdkState {
   prfAvailable: boolean;
 }
 
+export type SdkEventHandler = (event: SdkEvent) => void;
+export type SdkEventUnsubscribe = () => void;
+
 export interface BreezSdkActions {
   connectWallet: (seed: Seed, restore: boolean, passkeyLabel?: string) => Promise<void>;
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
@@ -87,6 +90,7 @@ export interface BreezSdkActions {
   handleBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
   clearError: () => void;
   dismissCelebration: () => void;
+  subscribeToSdkEvents: (handler: SdkEventHandler) => SdkEventUnsubscribe;
 }
 
 // ============================================
@@ -115,6 +119,19 @@ export function useBreezSdk(
   const eventListenerIdRef = useRef<string | null>(null);
   const shownPaymentIdsRef = useRef<Set<string>>(new Set());
   const sdkRef = useLatest(sdk);
+
+  // In-app event bus: feature hooks subscribe here instead of creating their
+  // own SDK-level listeners, so we only ever register one listener per SDK.
+  const eventSubscribersRef = useRef<Set<SdkEventHandler>>(new Set());
+  const subscribeToSdkEvents = useCallback<BreezSdkActions['subscribeToSdkEvents']>(
+    (handler) => {
+      eventSubscribersRef.current.add(handler);
+      return () => {
+        eventSubscribersRef.current.delete(handler);
+      };
+    },
+    []
+  );
 
   // Stable refs for callbacks used in event handler
   const showToastRef = useLatest(showToast);
@@ -213,6 +230,16 @@ export function useBreezSdk(
       showToastRef.current('error', 'Failed to Claim Deposits', `${event.unclaimedDeposits.length} deposits could not be claimed`);
       fetchUnclaimedDeposits();
     }
+
+    // Fan out to feature subscribers. Each handler is isolated so one throwing
+    // does not prevent the others from running.
+    eventSubscribersRef.current.forEach((handler) => {
+      try {
+        handler(event);
+      } catch (e) {
+        logger.error(LogCategory.SDK, 'SDK event subscriber threw', { error: formatError(e) });
+      }
+    });
   }, [refreshWalletData, fetchUnclaimedDeposits, isSyncingRef, showToastRef]);
 
   // ----------------------------------------
@@ -475,5 +502,6 @@ export function useBreezSdk(
     handleBuyBitcoin,
     clearError: () => setError(null),
     dismissCelebration: () => setCelebrationPayment(null),
+    subscribeToSdkEvents,
   };
 }

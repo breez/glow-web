@@ -3,6 +3,7 @@ import type { Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { usePlatform } from '../../../hooks/usePlatform';
+import { useInvoicePaid } from '../../../hooks/useInvoicePaid';
 import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
 import {
@@ -31,6 +32,8 @@ export interface UseBuyBitcoinOptions {
   onSelectRedirectProvider: (provider: BuyBitcoinProvider) => Promise<void>;
   /** Called after a mobile Cash App redirect; the caller typically closes the dialog. */
   onMobileRedirectComplete: () => void;
+  /** Called when the displayed QR invoice is paid; the caller typically closes the dialog. */
+  onInvoicePaid: () => void;
 }
 
 export interface UseBuyBitcoinReturn {
@@ -66,6 +69,7 @@ export function useBuyBitcoin({
   network,
   onSelectRedirectProvider,
   onMobileRedirectComplete,
+  onInvoicePaid,
 }: UseBuyBitcoinOptions): UseBuyBitcoinReturn {
   const sdk = useWallet();
   const stableBalance = useStableBalance();
@@ -196,6 +200,16 @@ export function useBuyBitcoin({
       setIsGenerating(false);
     }
   }, [amountSats, isMobile, sdk, onMobileRedirectComplete]);
+
+  // Cash App URLs are `https://cash.app/launch/lightning/<bolt11>`. Extract the
+  // invoice only while we're showing the QR so the bus subscription pauses
+  // once we leave that step.
+  const activeInvoice = useMemo(() => {
+    if (step !== 'qr' || !cashAppUrl) return null;
+    return cashAppUrl.split('/').pop() ?? null;
+  }, [step, cashAppUrl]);
+
+  useInvoicePaid(activeInvoice, onInvoicePaid);
 
   const goBackToSelect = useCallback(() => {
     setStep('select');

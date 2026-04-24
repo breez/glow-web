@@ -213,7 +213,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <WalletProvider client={sdk.sdk} isConnected={sdk.isConnected}>
+    <WalletProvider client={sdk.sdk} isConnected={sdk.isConnected} subscribeToSdkEvents={sdk.subscribeToSdkEvents}>
       <FiatDataProvider>
         <StableBalanceProvider>
           <StableBalanceFormatterBridge formatterRef={formatPaymentAmountRef} />

@@ -71,6 +71,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
     network,
     onSelectRedirectProvider: onBuyBitcoin,
     onMobileRedirectComplete: onClose,
+    onInvoicePaid: onClose,
   });
 
   const handleSelect = async (provider: BuyBitcoinProvider) => {
