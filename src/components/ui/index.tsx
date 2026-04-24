@@ -13,6 +13,7 @@ import {
   AlertTriangleIcon,
   CheckIcon,
   ExternalLinkIcon,
+  BackIcon,
 } from '../Icons';
 
 // ============================================
@@ -95,9 +96,19 @@ DialogCard.displayName = 'DialogCard';
 export const DialogHeader: React.FC<{
   title: string;
   onClose: () => void;
+  onBack?: () => void;
   icon?: ReactNode;
-}> = ({ title, onClose, icon }) => (
+}> = ({ title, onClose, onBack, icon }) => (
   <div className="flex justify-center items-center mb-5 relative px-8">
+    {onBack && (
+      <button
+        onClick={onBack}
+        aria-label="Back"
+        className="absolute left-0 top-1/2 -translate-y-1/2 py-2 pl-6 pr-2 -ml-6 text-spark-text-muted hover:text-spark-text-primary transition-colors rounded-lg hover:bg-white/5"
+      >
+        <BackIcon />
+      </button>
+    )}
     <div className="flex items-center gap-2 min-w-0 max-w-full">
       {icon && <span className="text-spark-primary flex-shrink-0">{icon}</span>}
       <h2 className="font-display text-lg font-bold text-spark-text-primary truncate">{title}</h2>
@@ -105,7 +116,8 @@ export const DialogHeader: React.FC<{
     </div>
     <button
       onClick={onClose}
-      className="absolute right-0 top-1/2 -translate-y-1/2 p-2 -mr-2 text-spark-text-muted hover:text-spark-error transition-colors rounded-lg hover:bg-white/5"
+      aria-label="Close"
+      className="absolute right-0 top-1/2 -translate-y-1/2 py-2 pl-2 pr-6 -mr-6 text-spark-text-muted hover:text-spark-error transition-colors rounded-lg hover:bg-white/5"
     >
       <CloseIcon />
     </button>
@@ -210,6 +222,7 @@ export const CollapsibleCodeField: React.FC<{
 export const CopyableText: React.FC<{
   text: string;
   truncate?: boolean;
+  hideText?: boolean;
   showShare?: boolean;
   onCopied?: () => void;
   onShareError?: () => void;
@@ -220,7 +233,7 @@ export const CopyableText: React.FC<{
   textToShare?: string;
   shareLabel?: string;
   'data-testid'?: string;
-}> = ({ text, truncate = false, showShare = false, onCopied, onShareError, label = 'Address', additionalActions, textColor = 'text-spark-text-muted', textToCopy, textToShare, shareLabel, 'data-testid': testId }) => {
+}> = ({ text, truncate = false, hideText = false, showShare = false, onCopied, onShareError, label = 'Address', additionalActions, textColor = 'text-spark-text-muted', textToCopy, textToShare, shareLabel, 'data-testid': testId }) => {
   const [copied, setCopied] = React.useState(false);
   const [canShare, setCanShare] = React.useState(false);
 
@@ -266,14 +279,16 @@ export const CopyableText: React.FC<{
   return (
     <div className="flex flex-col items-center gap-4 w-full" data-testid={testId}>
       {/* Clickable text display */}
-      <button
-        onClick={handleCopy}
-        className={`text-center font-mono text-xs sm:text-sm break-all hover:opacity-80 transition-opacity ${textColor}`}
-        title="Tap to copy"
-        data-testid="copyable-text-content"
-      >
-        {displayText}
-      </button>
+      {!hideText && (
+        <button
+          onClick={handleCopy}
+          className={`text-center font-mono text-xs sm:text-sm break-all hover:opacity-80 transition-opacity ${textColor}`}
+          title="Tap to copy"
+          data-testid="copyable-text-content"
+        >
+          {displayText}
+        </button>
+      )}
 
       {/* Action buttons */}
       <div className="flex gap-2">

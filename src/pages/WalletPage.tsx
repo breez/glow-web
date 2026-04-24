@@ -197,7 +197,8 @@ const WalletPage: React.FC<WalletPageProps> = ({
           onOpenBuyBitcoin={() => {
             if (enabledBuyProviders.length === 0) {
               onOpenBuyProviders();
-            } else if (enabledBuyProviders.length === 1) {
+            } else if (enabledBuyProviders.length === 1 && enabledBuyProviders[0] === 'moonpay') {
+              // MoonPay can redirect directly; Cash App needs amount entry via the dialog.
               setIsBuyLoading(true);
               onBuyBitcoin(enabledBuyProviders[0]).finally(() => setIsBuyLoading(false));
             } else {

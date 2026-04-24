@@ -156,7 +156,7 @@ export function getTokenAmountFromPayment(payment: Payment): TokenPaymentInfo | 
 }
 
 /** Quick amount presets for token-denominated inputs. */
-export const TOKEN_QUICK_AMOUNTS = [1, 5, 10];
+export const TOKEN_QUICK_AMOUNTS = [5, 10, 25];
 
 /** Quick amount presets for sat-denominated inputs. */
 export const SATS_QUICK_AMOUNTS = [1000, 10000, 100000];

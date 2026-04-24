@@ -11,6 +11,7 @@ import { LightningBoltIcon } from '../../components/Icons';
 import { useStableBalance } from '../../contexts/StableBalanceContext';
 import {
   TOKEN_QUICK_AMOUNTS,
+  SATS_QUICK_AMOUNTS,
   formatQuickAmount,
   sanitizeTokenInput,
   fiatToSats,
@@ -29,8 +30,6 @@ interface AmountPanelProps {
   onCreateInvoice: () => void;
   onClose: () => void;
 }
-
-const RECEIVE_QUICK_AMOUNTS_SATS = [100, 1000, 10000, 100000];
 
 const AmountPanel: React.FC<AmountPanelProps> = ({
   isOpen,
@@ -58,7 +57,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     setDisplayAmount('');
   };
 
-  const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : RECEIVE_QUICK_AMOUNTS_SATS;
+  const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : SATS_QUICK_AMOUNTS;
 
   const handleAmountChange = (value: string) => {
     if (isTokenMode && config) {
