@@ -8,7 +8,6 @@ import { formatError } from '../../../utils/formatError';
 import {
   fiatToSats,
   sanitizeTokenInput,
-  TOKEN_QUICK_AMOUNTS,
   type TokenDisplayConfig,
 } from '../../../utils/tokenFormatting';
 import {
@@ -20,6 +19,7 @@ import {
 export type BuyStep = 'select' | 'amount' | 'qr';
 
 const CASH_APP_QUICK_AMOUNTS_SATS = [10000, 50000, 100000];
+const CASH_APP_QUICK_AMOUNTS_TOKEN = [5, 10, 25];
 const MIN_CASH_APP_SATS = 1;
 
 export interface UseBuyBitcoinOptions {
@@ -210,7 +210,7 @@ export function useBuyBitcoin({
 
   const validAmount = amountInput !== '' && amountSats >= MIN_CASH_APP_SATS;
 
-  const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : CASH_APP_QUICK_AMOUNTS_SATS;
+  const quickAmounts = isTokenMode ? CASH_APP_QUICK_AMOUNTS_TOKEN : CASH_APP_QUICK_AMOUNTS_SATS;
 
   return {
     step,
