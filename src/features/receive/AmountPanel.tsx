@@ -48,6 +48,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     amountInput: displayAmount,
     setAmount,
     setAmountInput,
+    resetAmount,
     isTokenMode,
     toggleDenomination,
     isStableBalanceActive,
@@ -62,6 +63,12 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   useEffect(() => {
     setAmountSats(parsedSats);
   }, [parsedSats, setAmountSats]);
+
+  // Clear the input when the dialog closes so it doesn't persist a stale
+  // value on the next open.
+  useEffect(() => {
+    if (!isOpen) resetAmount();
+  }, [isOpen, resetAmount]);
 
   const handleToggleDenomination = () => {
     toggleDenomination();
