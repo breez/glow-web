@@ -85,7 +85,21 @@ export function useBuyBitcoin({
     config: tokenConfig,
     hasTokenConfig,
     amountSats,
+    btcFiatRate,
   } = input;
+
+  // Detect "too large" inputs: parseAmountToSats returns 0 once the result
+  // exceeds Number.MAX_SAFE_INTEGER (would silently overflow the SDK's u64).
+  // Without this hint, the user just sees Continue stay disabled.
+  const amountTooLarge = useMemo(() => {
+    if (amountInput === '' || amountSats > 0) return false;
+    const numeric = Number(amountInput);
+    if (!Number.isFinite(numeric) || numeric <= 0) return false;
+    const projectedSats = isTokenMode && btcFiatRate > 0
+      ? (numeric / btcFiatRate) * 100_000_000
+      : numeric;
+    return projectedSats > Number.MAX_SAFE_INTEGER;
+  }, [amountInput, amountSats, isTokenMode, btcFiatRate]);
 
   const [step, setStep] = useState<BuyStep>('select');
   const [redirectingProvider, setRedirectingProvider] = useState<BuyBitcoinProvider | null>(null);
@@ -210,7 +224,9 @@ export function useBuyBitcoin({
     setCashAppUrl(null);
   }, []);
 
-  const validAmount = amountInput !== '' && amountSats >= MIN_CASH_APP_SATS;
+  const validAmount = amountInput !== '' && amountSats >= MIN_CASH_APP_SATS && !amountTooLarge;
+
+  const displayedError = error ?? (amountTooLarge ? 'Amount is too large' : null);
 
   const quickAmounts = isTokenMode ? CASH_APP_QUICK_AMOUNTS_TOKEN : CASH_APP_QUICK_AMOUNTS_SATS;
 
@@ -222,7 +238,7 @@ export function useBuyBitcoin({
     cashAppUrl,
     generatedAmountSats,
     isGenerating,
-    error,
+    error: displayedError,
     validAmount,
     isMobile,
     quickAmounts,

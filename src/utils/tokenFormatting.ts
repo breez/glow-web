@@ -125,22 +125,28 @@ export function fiatToSats(fiatAmount: number, btcFiatRate: number): number {
  * Parse a user-entered amount string to sats.
  * - Token mode: input is fiat (e.g. "10.50") → converts via btcFiatRate
  * - Sats mode: input is integer sats
- * Returns null when the input can't produce a positive sats value.
+ * Returns null when the input can't produce a positive sats value, or when
+ * the result exceeds JS safe-integer range (such values would lose precision
+ * and overflow the SDK's u64 wire type, causing silent hangs / garbage).
  */
 export function parseAmountToSats(
   input: string,
   isTokenMode: boolean,
   btcFiatRate: number,
 ): number | null {
+  let result: number;
   if (isTokenMode) {
     if (!btcFiatRate || btcFiatRate <= 0) return null;
     const fiat = Number(input);
     if (!Number.isFinite(fiat) || fiat <= 0) return null;
-    return fiatToSats(fiat, btcFiatRate);
+    result = fiatToSats(fiat, btcFiatRate);
+  } else {
+    const sats = Number(input);
+    if (!Number.isInteger(sats) || sats <= 0) return null;
+    result = sats;
   }
-  const sats = Number(input);
-  if (!Number.isInteger(sats) || sats <= 0) return null;
-  return sats;
+  if (!Number.isSafeInteger(result)) return null;
+  return result;
 }
 
 /**
