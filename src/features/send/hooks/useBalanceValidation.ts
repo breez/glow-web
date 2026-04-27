@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
-import { fiatToSats, type TokenDisplayConfig } from '../../../utils/tokenFormatting';
+import { fiatToSats, parseAmountToSats, type TokenDisplayConfig } from '../../../utils/tokenFormatting';
 import type { ConversionEstimate } from '@breeztech/breez-sdk-spark';
 
 interface BalanceValidation {
@@ -37,17 +37,8 @@ export function useBalanceValidation(
     return fiatToSats(fiat, btcFiatRate);
   }, [config, tokenBalance, btcFiatRate]);
 
-  const parseInputToSats = (input: string): number | null => {
-    if (isTokenMode) {
-      if (!hasValidRate(btcFiatRate)) return null;
-      const fiat = Number(input);
-      if (!Number.isFinite(fiat) || fiat <= 0) return null;
-      return fiatToSats(fiat, btcFiatRate);
-    }
-    const sats = Number(input);
-    if (!Number.isInteger(sats) || sats <= 0) return null;
-    return sats;
-  };
+  const parseInputToSats = (input: string): number | null =>
+    parseAmountToSats(input, isTokenMode, btcFiatRate);
 
   const maxAvailableSats = (): number | undefined => {
     if (balanceSats === undefined) return undefined;

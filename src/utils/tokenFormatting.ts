@@ -122,6 +122,28 @@ export function fiatToSats(fiatAmount: number, btcFiatRate: number): number {
 }
 
 /**
+ * Parse a user-entered amount string to sats.
+ * - Token mode: input is fiat (e.g. "10.50") → converts via btcFiatRate
+ * - Sats mode: input is integer sats
+ * Returns null when the input can't produce a positive sats value.
+ */
+export function parseAmountToSats(
+  input: string,
+  isTokenMode: boolean,
+  btcFiatRate: number,
+): number | null {
+  if (isTokenMode) {
+    if (!btcFiatRate || btcFiatRate <= 0) return null;
+    const fiat = Number(input);
+    if (!Number.isFinite(fiat) || fiat <= 0) return null;
+    return fiatToSats(fiat, btcFiatRate);
+  }
+  const sats = Number(input);
+  if (!Number.isInteger(sats) || sats <= 0) return null;
+  return sats;
+}
+
+/**
  * Extract displayable token amount from a payment.
  * - Token payments (details.type === 'token'): amount/fee are in token units
  * - Conversion payments: token step's amount/fee are in token units

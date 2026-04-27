@@ -4,13 +4,10 @@ import { useWallet } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { usePlatform } from '../../../hooks/usePlatform';
 import { useInvoicePaid } from '../../../hooks/useInvoicePaid';
+import { useAmountInput } from '../../../hooks/useAmountInput';
 import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
-import {
-  fiatToSats,
-  sanitizeTokenInput,
-  type TokenDisplayConfig,
-} from '../../../utils/tokenFormatting';
+import { type TokenDisplayConfig } from '../../../utils/tokenFormatting';
 import {
   getBuyProviderSettings,
   filterProvidersByNetwork,
@@ -76,13 +73,22 @@ export function useBuyBitcoin({
   const platform = usePlatform();
   const isMobile = platform.isIOS || platform.isAndroid;
 
-  const hasTokenConfig = !!stableBalance.displayConfig;
-  const tokenConfig = stableBalance.displayConfig;
+  const input = useAmountInput();
+  const {
+    amountInput,
+    setAmount,
+    setAmountInput,
+    resetAmount,
+    isTokenMode,
+    setIsTokenMode,
+    toggleDenomination,
+    config: tokenConfig,
+    hasTokenConfig,
+    amountSats,
+  } = input;
 
   const [step, setStep] = useState<BuyStep>('select');
   const [redirectingProvider, setRedirectingProvider] = useState<BuyBitcoinProvider | null>(null);
-  const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive && hasTokenConfig);
-  const [amountInput, setAmountInput] = useState('');
   const [cashAppUrl, setCashAppUrl] = useState<string | null>(null);
   const [generatedAmountSats, setGeneratedAmountSats] = useState<number | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -101,13 +107,13 @@ export function useBuyBitcoin({
       setStep('select');
       setRedirectingProvider(null);
       setIsTokenMode(stableBalance.isActive && hasTokenConfig);
-      setAmountInput('');
+      resetAmount();
       setCashAppUrl(null);
       setGeneratedAmountSats(null);
       setIsGenerating(false);
       setError(null);
     }
-  }, [isOpen, stableBalance.isActive, hasTokenConfig]);
+  }, [isOpen, stableBalance.isActive, hasTokenConfig, setIsTokenMode, resetAmount]);
 
   const selectProvider = useCallback(
     async (provider: BuyBitcoinProvider) => {
@@ -127,44 +133,26 @@ export function useBuyBitcoin({
     [onSelectRedirectProvider]
   );
 
-  const setAmount = useCallback(
+  const setAmountWithErrorClear = useCallback(
     (value: string) => {
-      if (isTokenMode && tokenConfig) {
-        const sanitized = sanitizeTokenInput(value, tokenConfig.fractionSize);
-        if (sanitized !== null) {
-          setAmountInput(sanitized);
-          setError((prev) => (prev ? null : prev));
-        }
-      } else {
-        setAmountInput(value.replace(/[^0-9]/g, ''));
-        setError((prev) => (prev ? null : prev));
-      }
+      setAmount(value);
+      setError((prev) => (prev ? null : prev));
     },
-    [isTokenMode, tokenConfig]
+    [setAmount],
   );
 
-  const setQuickAmount = useCallback((value: number) => {
-    setAmountInput(String(value));
-    setError(null);
-  }, []);
+  const setQuickAmount = useCallback(
+    (value: number) => {
+      setAmountInput(String(value));
+      setError(null);
+    },
+    [setAmountInput],
+  );
 
-  const toggleDenomination = useCallback(() => {
-    setIsTokenMode((prev) => !prev);
-    setAmountInput('');
+  const toggleDenominationWithErrorClear = useCallback(() => {
+    toggleDenomination();
     setError(null);
-  }, []);
-
-  // Convert the input string to sats based on the current mode.
-  const amountSats = useMemo(() => {
-    if (amountInput === '') return 0;
-    if (isTokenMode && tokenConfig && stableBalance.btcFiatRate > 0) {
-      const fiat = parseFloat(amountInput);
-      if (!fiat || fiat <= 0) return 0;
-      return fiatToSats(fiat, stableBalance.btcFiatRate);
-    }
-    const sats = parseInt(amountInput, 10);
-    return Number.isFinite(sats) ? sats : 0;
-  }, [amountInput, isTokenMode, tokenConfig, stableBalance.btcFiatRate]);
+  }, [toggleDenomination]);
 
   const generate = useCallback(async () => {
     if (!amountSats || amountSats < MIN_CASH_APP_SATS) {
@@ -213,9 +201,9 @@ export function useBuyBitcoin({
 
   const goBackToSelect = useCallback(() => {
     setStep('select');
-    setAmountInput('');
+    resetAmount();
     setError(null);
-  }, []);
+  }, [resetAmount]);
 
   const goBackToAmount = useCallback(() => {
     setStep('amount');
@@ -242,9 +230,9 @@ export function useBuyBitcoin({
     hasTokenConfig,
     tokenConfig,
     selectProvider,
-    setAmount,
+    setAmount: setAmountWithErrorClear,
     setQuickAmount,
-    toggleDenomination,
+    toggleDenomination: toggleDenominationWithErrorClear,
     generate,
     goBackToSelect,
     goBackToAmount,
