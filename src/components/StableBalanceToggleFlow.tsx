@@ -123,9 +123,12 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
     }
   }, [wallet, direction, getOrFetchFiatData]);
 
-  // Use a ref so the isOpen effect always calls the latest startEstimation
+  // Use refs so the isOpen effect snapshots the latest props/callbacks
+  // without re-firing when they change mid-flow.
   const startEstimationRef = useRef(startEstimation);
   startEstimationRef.current = startEstimation;
+  const restorePromptRef = useRef(restorePrompt);
+  restorePromptRef.current = restorePrompt;
 
   // Reset state when flow opens
   useEffect(() => {
@@ -135,7 +138,7 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
       setError(null);
       setInfo(null);
 
-      if (restorePrompt || !hasAcceptedStableDisclaimer()) {
+      if (restorePromptRef.current || !hasAcceptedStableDisclaimer()) {
         setStep('disclaimer');
       } else {
         startEstimationRef.current();
