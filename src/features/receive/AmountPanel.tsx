@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
   FormError,
@@ -8,15 +8,13 @@ import {
   DialogHeader,
 } from '../../components/ui';
 import { LightningBoltIcon } from '../../components/Icons';
-import { useStableBalance } from '../../contexts/StableBalanceContext';
 import {
   TOKEN_QUICK_AMOUNTS,
   SATS_QUICK_AMOUNTS,
   formatQuickAmount,
-  sanitizeTokenInput,
-  parseAmountToSats,
 } from '../../utils/tokenFormatting';
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
+import { useAmountInput } from '../../hooks/useAmountInput';
 import type { Sats } from '../../types/sats';
 
 interface AmountPanelProps {
@@ -45,59 +43,39 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   onCreateInvoice,
   onClose,
 }) => {
-  const stableBalance = useStableBalance();
-  const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive);
-  const config = stableBalance.displayConfig;
+  const input = useAmountInput();
+  const {
+    amountInput: displayAmount,
+    setAmount,
+    setAmountInput,
+    isTokenMode,
+    toggleDenomination,
+    isStableBalanceActive,
+    tokenSymbol,
+    config,
+    btcFiatRate,
+    amountSats: parsedSats,
+  } = input;
 
-  // The display string for the input field. In token mode this holds fiat;
-  // in sats mode it holds sats. The parsed sats value is pushed to the parent
-  // separately so there's no string-passing round trip.
-  const [displayAmount, setDisplayAmount] = useState('');
+  // Push the hook's parsed sats up to the parent. Centralizes the contract:
+  // parent always sees a validated Sats (or null) — never a raw string.
+  useEffect(() => {
+    setAmountSats(parsedSats);
+  }, [parsedSats, setAmountSats]);
 
   const handleToggleDenomination = () => {
-    setIsTokenMode(prev => !prev);
-    setAmountSats(null);
-    setDisplayAmount('');
-  };
-
-  // Force the input back to sats mode when stable balance is deactivated.
-  // Without this, the CurrencySwitcher disappears but isTokenMode stays true,
-  // leaving the input showing a fiat value that's no longer toggleable.
-  useEffect(() => {
-    if (!stableBalance.isActive && isTokenMode) {
-      setIsTokenMode(false);
-      setAmountSats(null);
-      setDisplayAmount('');
-    }
-  }, [stableBalance.isActive, isTokenMode, setAmountSats]);
-
-  const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : SATS_QUICK_AMOUNTS;
-
-  // Push parsed Sats to the parent. parseAmountToSats handles the safe-integer
-  // guard, so the parent always gets either a validated Sats or null.
-  const pushSats = (display: string) => {
-    setAmountSats(parseAmountToSats(display, isTokenMode, stableBalance.btcFiatRate));
+    toggleDenomination();
   };
 
   const handleAmountChange = (value: string) => {
-    if (isTokenMode && config) {
-      const sanitized = sanitizeTokenInput(value, config.fractionSize);
-      if (sanitized !== null) {
-        setDisplayAmount(sanitized);
-        pushSats(sanitized);
-      }
-    } else {
-      const sats = value.replace(/[^0-9]/g, '');
-      setDisplayAmount(sats);
-      pushSats(sats);
-    }
+    setAmount(value);
   };
 
   const handleQuickAmount = (quickAmount: number) => {
-    const sanitized = String(quickAmount);
-    setDisplayAmount(sanitized);
-    pushSats(sanitized);
+    setAmountInput(String(quickAmount));
   };
+
+  const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : SATS_QUICK_AMOUNTS;
 
   const validAmount = amountSats !== null && amountSats > 0n;
 
@@ -105,14 +83,14 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   // can't safely be converted to sats — covers both unsafe-integer overflow
   // (fiat or sats) and unsafe results from fiat→sats conversion.
   const amountTooLarge = useMemo(() => {
-    if (displayAmount === '' || amountSats !== null) return false;
+    if (displayAmount === '' || parsedSats !== null) return false;
     const numeric = Number(displayAmount);
     if (!Number.isFinite(numeric) || numeric <= 0) return false;
-    const projectedSats = isTokenMode && stableBalance.btcFiatRate > 0
-      ? (numeric / stableBalance.btcFiatRate) * 100_000_000
+    const projectedSats = isTokenMode && btcFiatRate > 0
+      ? (numeric / btcFiatRate) * 100_000_000
       : numeric;
     return projectedSats > Number.MAX_SAFE_INTEGER;
-  }, [displayAmount, amountSats, isTokenMode, stableBalance.btcFiatRate]);
+  }, [displayAmount, parsedSats, isTokenMode, btcFiatRate]);
 
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={onClose} showBackdrop>
@@ -141,10 +119,10 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                 className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 pr-16 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus-within:border-spark-primary focus:outline-none transition-all resize-none"
                 data-testid="invoice-amount-input"
               />
-              {stableBalance.isActive && config && (
+              {isStableBalanceActive && tokenSymbol && (
                 <CurrencySwitcher
                   isTokenMode={isTokenMode}
-                  tokenSymbol={config.symbol}
+                  tokenSymbol={tokenSymbol}
                   onSwitch={handleToggleDenomination}
                   disabled={isLoading}
                 />

@@ -2,14 +2,13 @@ import React, { useEffect, useState, useMemo } from 'react';
 import type { ConversionOptions } from '@breeztech/breez-sdk-spark';
 import { FormError, PrimaryButton, SecondaryButton } from '../../../components/ui';
 import { SpinnerIcon } from '../../../components/Icons';
-import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import {
   TOKEN_QUICK_AMOUNTS,
   SATS_QUICK_AMOUNTS,
   formatQuickAmount,
-  sanitizeTokenInput,
 } from '../../../utils/tokenFormatting';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
+import { useAmountInput } from '../../../hooks/useAmountInput';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
 
 export interface AmountStepProps {
@@ -33,65 +32,78 @@ const AmountStep: React.FC<AmountStepProps> = ({
   onBack,
   onNext,
 }) => {
-  const stableBalance = useStableBalance();
-  const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive);
+  const input = useAmountInput({ initialAmount: amount, balanceSats, tokenBalance });
+  const {
+    amountInput: localAmount,
+    setAmount,
+    setAmountInput: setLocalAmount,
+    isTokenMode,
+    setIsTokenMode,
+    toggleDenomination,
+    isStableBalanceActive,
+    tokenIdentifier,
+    tokenSymbol,
+    config,
+    parseToSats,
+    tokenBalanceDisplay,
+    formatSatsAsTokenDisplay,
+    tokenSendAllBelowThreshold,
+  } = input;
+
   const balance = useBalanceValidation(isTokenMode, setIsTokenMode, balanceSats, tokenBalance);
 
-  const [localAmount, setLocalAmount] = useState<string>(amount || '');
   const [feesIncluded, setFeesIncluded] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Sync the parent-provided amount into the input when it changes (e.g. when
+  // the dialog re-opens with a prior value).
   useEffect(() => {
     setLocalAmount(amount || '');
-  }, [amount]);
-
-  // Force the input back to sats mode when stable balance is deactivated
-  // (e.g. user toggled it off while the dialog was open). Without this, the
-  // CurrencySwitcher disappears but isTokenMode stays true, leaving the input
-  // showing a fiat value that's no longer toggleable.
-  useEffect(() => {
-    if (!stableBalance.isActive && isTokenMode) {
-      setIsTokenMode(false);
-      setLocalAmount('');
-      setFeesIncluded(false);
-    }
-  }, [stableBalance.isActive, isTokenMode, setIsTokenMode]);
+  }, [amount, setLocalAmount]);
 
   const handleToggleDenomination = () => {
-    balance.setIsTokenMode?.(!isTokenMode);
-    setLocalAmount('');
+    toggleDenomination();
     setFeesIncluded(false);
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (isTokenMode && balance.config) {
-      const sanitized = sanitizeTokenInput(value, balance.config.fractionSize);
-      if (sanitized !== null) {
-        setLocalAmount(sanitized);
-        setFeesIncluded(false);
-      }
-    } else {
-      setLocalAmount(value);
-      setFeesIncluded(false);
-    }
+    setAmount(e.target.value);
+    setFeesIncluded(false);
   };
 
   const validAmount = isTokenMode
     ? localAmount !== '' && parseFloat(localAmount) > 0
     : localAmount !== '' && parseInt(localAmount) > 0;
 
+  const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : SATS_QUICK_AMOUNTS;
+  const amountNum = isTokenMode ? parseFloat(localAmount) || 0 : parseInt(localAmount) || 0;
+
+  // Send All target value in BTC-as-fiat (when in token mode without a token
+  // balance). null when not applicable or rounds below displayable.
+  const sendAllBtcInTokenDisplay = balanceSats !== undefined ? formatSatsAsTokenDisplay(balanceSats) : null;
+  const hasTokenBalance = tokenBalance !== undefined && tokenBalance > 0n;
+  const showSendAll = hasTokenBalance || (balanceSats !== undefined && balanceSats > 0);
+
+  const isSendAllToken = isTokenMode && hasTokenBalance && localAmount === tokenBalanceDisplay && feesIncluded;
+  const isSendAllBtcInTokenMode = isTokenMode
+    && !hasTokenBalance
+    && sendAllBtcInTokenDisplay !== null
+    && localAmount === sendAllBtcInTokenDisplay
+    && feesIncluded;
+  const isSendAllSats = !isTokenMode && balanceSats !== undefined && amountNum === balanceSats && feesIncluded;
+  const isSendAll = isSendAllSats || isSendAllToken || isSendAllBtcInTokenMode;
+
   const handleNext = () => {
     if (!validAmount) return;
     setLocalError(null);
 
     // Token send-all bypasses validation — amount goes directly as tokenBalance to the SDK
-    if (isTokenMode && isSendAllToken && tokenBalance && stableBalance.tokenIdentifier) {
+    if (isTokenMode && isSendAllToken && tokenBalance && tokenIdentifier) {
       onNext(
         tokenBalance,
         true,
-        stableBalance.tokenIdentifier,
-        { conversionType: { type: 'toBitcoin', fromTokenIdentifier: stableBalance.tokenIdentifier } },
+        tokenIdentifier,
+        { conversionType: { type: 'toBitcoin', fromTokenIdentifier: tokenIdentifier } },
       );
       return;
     }
@@ -110,68 +122,8 @@ const AmountStep: React.FC<AmountStepProps> = ({
     }
 
     // Safe to parse — validateAmount already confirmed the input is valid
-    onNext(balance.parseInputToSats(localAmount)!, feesIncluded);
+    onNext(parseToSats(localAmount)!, feesIncluded);
   };
-
-  const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : SATS_QUICK_AMOUNTS;
-  const amountNum = isTokenMode ? parseFloat(localAmount) || 0 : parseInt(localAmount) || 0;
-
-  // Token send-all: format token balance as display string using BigInt math
-  // (matches formatTokenAmount used by the balance header)
-  const tokenBalanceDisplay = useMemo(() => {
-    if (!tokenBalance || !balance.config) return null;
-    const { decimals, fractionSize } = balance.config;
-    const divisor = BigInt(10 ** decimals);
-    const wholePart = tokenBalance / divisor;
-    const fractionalPart = tokenBalance % divisor;
-    const fractionalStr = fractionalPart.toString().padStart(decimals, '0').slice(0, fractionSize);
-    return `${wholePart}.${fractionalStr}`;
-  }, [tokenBalance, balance.config]);
-
-  // Send All paths:
-  //   - has token balance: switch to token mode, display token balance
-  //   - in token mode without token balance, but BTC > 0: display BTC sats
-  //     converted to fiat (so we don't drop a raw sats integer into a
-  //     fiat-denominated input)
-  //   - sats mode with BTC: display sats
-  const hasTokenBalance = tokenBalance !== undefined && tokenBalance > 0n;
-
-  // BTC balance expressed in the token (fiat) display unit. Computed only when
-  // the user is currently in token mode — used as the Send All target when
-  // there's no token balance to draw from.
-  const sendAllBtcInTokenDisplay = useMemo(() => {
-    if (!isTokenMode || !balance.config) return null;
-    if (balanceSats === undefined || balanceSats <= 0) return null;
-    if (stableBalance.btcFiatRate <= 0) return null;
-    const fiat = (balanceSats / 100_000_000) * stableBalance.btcFiatRate;
-    return fiat.toFixed(balance.config.fractionSize);
-  }, [isTokenMode, balance.config, balanceSats, stableBalance.btcFiatRate]);
-
-  const showSendAll = hasTokenBalance || (balanceSats !== undefined && balanceSats > 0);
-
-  // Send All in token mode is meaningless when both balance sources round
-  // below the displayable threshold (e.g. <$0.01 for USDB). Disable the
-  // button in that case so users don't get a useless "0.00" filled-in value.
-  const tokenSendAllBelowThreshold = useMemo(() => {
-    if (!isTokenMode || !balance.config) return false;
-    const threshold = BigInt(10 ** (balance.config.decimals - balance.config.fractionSize));
-    if (tokenBalance !== undefined && tokenBalance >= threshold) return false;
-    if (balanceSats !== undefined && balanceSats > 0 && stableBalance.btcFiatRate > 0) {
-      const fiat = (balanceSats / 100_000_000) * stableBalance.btcFiatRate;
-      const baseUnits = BigInt(Math.round(fiat * 10 ** balance.config.decimals));
-      if (baseUnits >= threshold) return false;
-    }
-    return true;
-  }, [isTokenMode, balance.config, tokenBalance, balanceSats, stableBalance.btcFiatRate]);
-
-  const isSendAllToken = isTokenMode && hasTokenBalance && localAmount === tokenBalanceDisplay && feesIncluded;
-  const isSendAllBtcInTokenMode = isTokenMode
-    && !hasTokenBalance
-    && sendAllBtcInTokenDisplay !== null
-    && localAmount === sendAllBtcInTokenDisplay
-    && feesIncluded;
-  const isSendAllSats = !isTokenMode && balanceSats !== undefined && amountNum === balanceSats && feesIncluded;
-  const isSendAll = isSendAllSats || isSendAllToken || isSendAllBtcInTokenMode;
 
   // Inline balance error — surface "Amount exceeds available balance" as the
   // user types instead of waiting for them to click Continue. Skipped for
@@ -206,16 +158,16 @@ const AmountStep: React.FC<AmountStepProps> = ({
             inputMode={isTokenMode ? 'decimal' : 'numeric'}
             value={localAmount}
             onChange={handleAmountChange}
-            placeholder={isTokenMode && balance.config ? `Enter amount in ${balance.config.symbol}` : 'Enter amount in satoshis'}
+            placeholder={isTokenMode && tokenSymbol ? `Enter amount in ${tokenSymbol}` : 'Enter amount in satoshis'}
             className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             disabled={isLoading}
             min={isTokenMode ? undefined : 1}
             data-testid="amount-input"
           />
-          {stableBalance.isActive && balance.config && (
+          {isStableBalanceActive && tokenSymbol && (
             <CurrencySwitcher
               isTokenMode={isTokenMode}
-              tokenSymbol={balance.config.symbol}
+              tokenSymbol={tokenSymbol}
               onSwitch={handleToggleDenomination}
               disabled={isLoading}
             />
@@ -240,7 +192,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
                       : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
                 }`}
               >
-                {formatQuickAmount(quickAmount, balance.config, isTokenMode)}
+                {formatQuickAmount(quickAmount, config, isTokenMode)}
               </button>
             );
           })}

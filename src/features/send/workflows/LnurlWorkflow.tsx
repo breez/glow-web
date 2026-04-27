@@ -5,15 +5,14 @@ import { FormError, PrimaryButton, SecondaryButton } from '../../../components/u
 import ConfirmStep from '../steps/ConfirmStep';
 import { logger, LogCategory } from '@/services/logger';
 import { SpinnerIcon } from '@/components/Icons';
-import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import {
   TOKEN_QUICK_AMOUNTS,
-  sanitizeTokenInput,
   formatQuickAmount,
   formatTokenAmount,
   tokenAmountDisplaysAsZero,
 } from '../../../utils/tokenFormatting';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
+import { useAmountInput } from '../../../hooks/useAmountInput';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
 
 interface LnurlWorkflowProps {
@@ -28,12 +27,27 @@ interface LnurlWorkflowProps {
 }
 
 const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, balanceSats, tokenBalance, onBack, onRun, onPrepare, onPay }) => {
-  const stableBalance = useStableBalance();
-  const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive);
+  const input = useAmountInput({ balanceSats, tokenBalance });
+  const {
+    amountInput: amount,
+    setAmount,
+    setAmountInput,
+    isTokenMode,
+    setIsTokenMode,
+    toggleDenomination,
+    isStableBalanceActive,
+    tokenIdentifier,
+    tokenSymbol,
+    config,
+    btcFiatRate,
+    tokenBalanceDisplay,
+    formatSatsAsTokenDisplay,
+    tokenSendAllBelowThreshold,
+  } = input;
+
   const balance = useBalanceValidation(isTokenMode, setIsTokenMode, balanceSats, tokenBalance);
 
   const [step, setStep] = useState<PaymentStep>('amount');
-  const [amount, setAmount] = useState<string>('');
   const [feesIncluded, setFeesIncluded] = useState(false);
   const [comment, setComment] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -56,31 +70,17 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     return null;
   }, [balanceSats, maxSats]);
 
-  // Token send-all: format token balance as display string using BigInt math
-  // (matches formatTokenAmount used by the balance header)
-  const tokenBalanceDisplay = useMemo(() => {
-    if (!tokenBalance || !stableBalance.displayConfig) return null;
-    const { decimals, fractionSize } = stableBalance.displayConfig;
-    const divisor = BigInt(10 ** decimals);
-    const wholePart = tokenBalance / divisor;
-    const fractionalPart = tokenBalance % divisor;
-    const fractionalStr = fractionalPart.toString().padStart(decimals, '0').slice(0, fractionSize);
-    return `${wholePart}.${fractionalStr}`;
-  }, [tokenBalance, stableBalance.displayConfig]);
-
   const hasTokenBalance = tokenBalance !== undefined && tokenBalance > 0n;
 
-  // BTC balance expressed in the token (fiat) display unit. Capped at maxSats
-  // (LNURL upper bound) so Send All never overshoots the LNURL service's range.
+  // BTC balance expressed in the token (fiat) display unit, capped at maxSats
+  // (LNURL upper bound) and gated by minSats. Uses the hook helper for
+  // conversion + sub-threshold handling.
   const sendAllBtcInTokenDisplay = useMemo(() => {
-    if (!isTokenMode || !stableBalance.displayConfig) return null;
     if (balanceSats === undefined || balanceSats <= 0) return null;
-    if (stableBalance.btcFiatRate <= 0) return null;
     const cappedSats = Math.min(balanceSats, maxSats);
     if (cappedSats < minSats) return null;
-    const fiat = (cappedSats / 100_000_000) * stableBalance.btcFiatRate;
-    return fiat.toFixed(stableBalance.displayConfig.fractionSize);
-  }, [isTokenMode, balanceSats, maxSats, minSats, stableBalance.btcFiatRate, stableBalance.displayConfig]);
+    return formatSatsAsTokenDisplay(cappedSats);
+  }, [balanceSats, maxSats, minSats, formatSatsAsTokenDisplay]);
 
   const isSendAllToken = isTokenMode && hasTokenBalance && amount === tokenBalanceDisplay && feesIncluded;
   const isSendAllBtcInTokenMode = isTokenMode
@@ -89,39 +89,24 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     && amount === sendAllBtcInTokenDisplay
     && feesIncluded;
 
-  // Send All in token mode is meaningless when both balance sources round
-  // below the displayable threshold (e.g. <$0.01 for USDB).
-  const tokenSendAllBelowThreshold = useMemo(() => {
-    if (!isTokenMode || !stableBalance.displayConfig) return false;
-    const threshold = BigInt(10 ** (stableBalance.displayConfig.decimals - stableBalance.displayConfig.fractionSize));
-    if (tokenBalance !== undefined && tokenBalance >= threshold) return false;
-    if (balanceSats !== undefined && balanceSats > 0 && stableBalance.btcFiatRate > 0) {
-      const fiat = (balanceSats / 100_000_000) * stableBalance.btcFiatRate;
-      const baseUnits = BigInt(Math.round(fiat * 10 ** stableBalance.displayConfig.decimals));
-      if (baseUnits >= threshold) return false;
-    }
-    return true;
-  }, [isTokenMode, stableBalance.displayConfig, tokenBalance, balanceSats, stableBalance.btcFiatRate]);
-
-  // LNURL min/max range expressed in the token (fiat) display unit. Lets the
-  // user see the supported range without mentally converting from sats.
-  // Both bounds get a ~ prefix because the values are exchange-rate-derived.
+  // LNURL min/max range expressed in the token (fiat) display unit. Both
+  // bounds get a ~ prefix because the values are exchange-rate-derived.
   // Sub-threshold values (e.g. 1 sat at typical BTC prices rounds below
-  // $0.01) snap up to the smallest displayable amount ($0.01) instead of
-  // rendering as "0.00" or "< $0.01".
+  // $0.01) snap up to the smallest displayable amount ($0.01) so the range
+  // stays informative rather than rendering as "0.00" or "< $0.01".
   const tokenRangeDisplay = useMemo(() => {
-    if (!isTokenMode || !stableBalance.displayConfig || stableBalance.btcFiatRate <= 0) return null;
-    const config = stableBalance.displayConfig;
+    if (!isTokenMode || !config || btcFiatRate <= 0) return null;
     const minDisplayable = BigInt(10 ** (config.decimals - config.fractionSize));
-    const formatSats = (sats: number) => {
-      const fiat = (sats / 100_000_000) * stableBalance.btcFiatRate;
+    const formatBound = (sats: number) => {
+      const fiat = (sats / 100_000_000) * btcFiatRate;
       const baseUnits = BigInt(Math.round(fiat * 10 ** config.decimals));
       return tokenAmountDisplaysAsZero(baseUnits, config)
         ? formatTokenAmount(minDisplayable, config)
         : formatTokenAmount(baseUnits, config);
     };
-    return `~${formatSats(minSats)} – ~${formatSats(maxSats)}`;
-  }, [isTokenMode, stableBalance.displayConfig, stableBalance.btcFiatRate, minSats, maxSats]);
+    return `~${formatBound(minSats)} – ~${formatBound(maxSats)}`;
+  }, [isTokenMode, config, btcFiatRate, minSats, maxSats]);
+
   const description = useMemo(() => {
     const metadataArr = JSON.parse(parsed.metadataStr);
     for (let i = 0; i < metadataArr.length; i++) {
@@ -133,24 +118,13 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
   }, [parsed]);
 
   const handleToggleDenomination = () => {
-    balance.setIsTokenMode?.(!isTokenMode);
-    setAmount('');
+    toggleDenomination();
     setFeesIncluded(false);
   };
 
   useEffect(() => {
     setError(null);
   }, [step]);
-
-  // Force the input back to sats mode when stable balance is deactivated.
-  // See AmountStep for details — same behavior here.
-  useEffect(() => {
-    if (!stableBalance.isActive && isTokenMode) {
-      setIsTokenMode(false);
-      setAmount('');
-      setFeesIncluded(false);
-    }
-  }, [stableBalance.isActive, isTokenMode, setIsTokenMode]);
 
   const onAmountNext = async () => {
     if (commentAllowed && commentMaxLen && comment.length > commentMaxLen) {
@@ -159,7 +133,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     }
 
     // Token send-all bypasses validation — amount goes directly as tokenBalance to the SDK
-    if (isSendAllToken && stableBalance.tokenIdentifier && tokenBalance) {
+    if (isSendAllToken && tokenIdentifier && tokenBalance) {
       setIsLoading(true);
       setError(null);
       try {
@@ -168,9 +142,9 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
           comment: comment ? comment : undefined,
           payRequest: parsed,
           feePolicy: feesIncluded ? 'feesIncluded' : undefined,
-          tokenIdentifier: stableBalance.tokenIdentifier,
+          tokenIdentifier,
           conversionOptions: {
-            conversionType: { type: 'toBitcoin', fromTokenIdentifier: stableBalance.tokenIdentifier },
+            conversionType: { type: 'toBitcoin', fromTokenIdentifier: tokenIdentifier },
           },
         });
         setPrepareResponse(resp);
@@ -283,7 +257,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     ? amount !== '' && parseFloat(amount) > 0
     : amount !== '' && parseInt(amount) > 0;
   const amountNum = isTokenMode ? parseFloat(amount) || 0 : parseInt(amount) || 0;
-  const isSendAllSats = !stableBalance.isActive && sendAllAmount !== null && amountNum === sendAllAmount && feesIncluded;
+  const isSendAllSats = !isStableBalanceActive && sendAllAmount !== null && amountNum === sendAllAmount && feesIncluded;
   const isSendAll = isSendAllSats || isSendAllToken || isSendAllBtcInTokenMode;
 
   // Inline balance error — surface "Amount exceeds available balance" as the
@@ -324,19 +298,11 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
             inputMode={isTokenMode ? 'decimal' : 'numeric'}
             value={amount}
             onChange={(e) => {
-              if (isTokenMode && balance.config) {
-                const sanitized = sanitizeTokenInput(e.target.value, balance.config.fractionSize);
-                if (sanitized !== null) {
-                  setAmount(sanitized);
-                  setFeesIncluded(false);
-                }
-              } else {
-                setAmount(e.target.value);
-                setFeesIncluded(false);
-              }
+              setAmount(e.target.value);
+              setFeesIncluded(false);
             }}
-            placeholder={isTokenMode && balance.config
-              ? `Enter amount in ${balance.config.symbol}`
+            placeholder={isTokenMode && tokenSymbol
+              ? `Enter amount in ${tokenSymbol}`
               : `Between ${minSats.toLocaleString('en-US').replace(/,/g, ' ')} and ${maxSats.toLocaleString('en-US').replace(/,/g, ' ')} sats`
             }
             className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -344,10 +310,10 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
             min={isTokenMode ? undefined : minSats}
             max={isTokenMode ? undefined : maxSats}
           />
-          {stableBalance.isActive && balance.config && (
+          {isStableBalanceActive && tokenSymbol && (
             <CurrencySwitcher
               isTokenMode={isTokenMode}
-              tokenSymbol={balance.config.symbol}
+              tokenSymbol={tokenSymbol}
               onSwitch={handleToggleDenomination}
               disabled={isLoading}
             />
@@ -362,7 +328,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
             return (
               <button
                 key={quickAmount}
-                onClick={() => { setAmount(String(quickAmount)); setFeesIncluded(false); }}
+                onClick={() => { setAmountInput(String(quickAmount)); setFeesIncluded(false); }}
                 disabled={disabled}
                 className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
                   isSelected
@@ -372,7 +338,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
                       : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
                 }`}
               >
-                {formatQuickAmount(quickAmount, balance.config, isTokenMode)}
+                {formatQuickAmount(quickAmount, config, isTokenMode)}
               </button>
             );
           })}
@@ -383,14 +349,14 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
               onClick={() => {
                 if (hasTokenBalance && tokenBalanceDisplay) {
                   if (!isTokenMode) setIsTokenMode(true);
-                  setAmount(tokenBalanceDisplay);
+                  setAmountInput(tokenBalanceDisplay);
                 } else if (sendAllBtcInTokenDisplay !== null) {
                   // In token mode without token balance — fill with BTC sats
                   // converted to fiat (capped at maxSats). Avoids dropping a
                   // raw sats integer into a fiat-denominated input.
-                  setAmount(sendAllBtcInTokenDisplay);
+                  setAmountInput(sendAllBtcInTokenDisplay);
                 } else if (sendAllAmount !== null) {
-                  setAmount(String(sendAllAmount));
+                  setAmountInput(String(sendAllAmount));
                 }
                 setFeesIncluded(true);
               }}

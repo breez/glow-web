@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../../../contexts/WalletContext';
-import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { usePlatform } from '../../../hooks/usePlatform';
 import { useInvoicePaid } from '../../../hooks/useInvoicePaid';
 import { useAmountInput } from '../../../hooks/useAmountInput';
@@ -75,7 +74,6 @@ export function useBuyBitcoin({
   onInvoicePaid,
 }: UseBuyBitcoinOptions): UseBuyBitcoinReturn {
   const sdk = useWallet();
-  const stableBalance = useStableBalance();
   const platform = usePlatform();
   const isMobile = platform.isIOS || platform.isAndroid;
 
@@ -88,6 +86,7 @@ export function useBuyBitcoin({
     isTokenMode,
     setIsTokenMode,
     toggleDenomination,
+    isStableBalanceActive,
     config: tokenConfig,
     amountSats,
     btcFiatRate,
@@ -134,29 +133,20 @@ export function useBuyBitcoin({
     [isOpen, network]
   );
 
-  // Reset local state whenever the dialog closes.
+  // Reset local state whenever the dialog closes. Note: useAmountInput
+  // already handles auto-reset when stable balance is deactivated mid-flow.
   useEffect(() => {
     if (!isOpen) {
       setStep('select');
       setRedirectingProvider(null);
-      setIsTokenMode(stableBalance.isActive);
+      setIsTokenMode(isStableBalanceActive);
       resetAmount();
       setCashAppUrl(null);
       setGeneratedAmountSats(null);
       setIsGenerating(false);
       setError(null);
     }
-  }, [isOpen, stableBalance.isActive, setIsTokenMode, resetAmount]);
-
-  // Force the input back to sats mode when stable balance is deactivated
-  // while the dialog is open (e.g. user toggled it off in another view).
-  useEffect(() => {
-    if (!stableBalance.isActive && isTokenMode) {
-      setIsTokenMode(false);
-      resetAmount();
-      setError(null);
-    }
-  }, [stableBalance.isActive, isTokenMode, setIsTokenMode, resetAmount]);
+  }, [isOpen, isStableBalanceActive, setIsTokenMode, resetAmount]);
 
   const selectProvider = useCallback(
     async (provider: BuyBitcoinProvider) => {
@@ -286,7 +276,7 @@ export function useBuyBitcoin({
     isMobile,
     quickAmounts,
     isTokenMode,
-    isStableBalanceActive: stableBalance.isActive,
+    isStableBalanceActive,
     tokenConfig,
     selectProvider,
     setAmount: setAmountWithErrorClear,
