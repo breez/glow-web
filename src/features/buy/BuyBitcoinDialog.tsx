@@ -140,7 +140,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                     className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     data-testid="cashapp-amount-input"
                   />
-                  {buy.hasTokenConfig && buy.tokenConfig && (
+                  {buy.isStableBalanceActive && buy.tokenConfig && (
                     <CurrencySwitcher
                       isTokenMode={buy.isTokenMode}
                       tokenSymbol={buy.tokenConfig.symbol}

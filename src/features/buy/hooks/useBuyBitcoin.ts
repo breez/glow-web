@@ -54,7 +54,8 @@ export interface UseBuyBitcoinReturn {
   quickAmounts: number[];
   // Token mode
   isTokenMode: boolean;
-  hasTokenConfig: boolean;
+  /** True when stable balance is currently active — gates the CurrencySwitcher. */
+  isStableBalanceActive: boolean;
   tokenConfig: TokenDisplayConfig | null;
   // Actions
   selectProvider: (provider: BuyBitcoinProvider) => Promise<void>;
@@ -88,7 +89,6 @@ export function useBuyBitcoin({
     setIsTokenMode,
     toggleDenomination,
     config: tokenConfig,
-    hasTokenConfig,
     amountSats,
     btcFiatRate,
   } = input;
@@ -139,14 +139,24 @@ export function useBuyBitcoin({
     if (!isOpen) {
       setStep('select');
       setRedirectingProvider(null);
-      setIsTokenMode(stableBalance.isActive && hasTokenConfig);
+      setIsTokenMode(stableBalance.isActive);
       resetAmount();
       setCashAppUrl(null);
       setGeneratedAmountSats(null);
       setIsGenerating(false);
       setError(null);
     }
-  }, [isOpen, stableBalance.isActive, hasTokenConfig, setIsTokenMode, resetAmount]);
+  }, [isOpen, stableBalance.isActive, setIsTokenMode, resetAmount]);
+
+  // Force the input back to sats mode when stable balance is deactivated
+  // while the dialog is open (e.g. user toggled it off in another view).
+  useEffect(() => {
+    if (!stableBalance.isActive && isTokenMode) {
+      setIsTokenMode(false);
+      resetAmount();
+      setError(null);
+    }
+  }, [stableBalance.isActive, isTokenMode, setIsTokenMode, resetAmount]);
 
   const selectProvider = useCallback(
     async (provider: BuyBitcoinProvider) => {
@@ -276,7 +286,7 @@ export function useBuyBitcoin({
     isMobile,
     quickAmounts,
     isTokenMode,
-    hasTokenConfig,
+    isStableBalanceActive: stableBalance.isActive,
     tokenConfig,
     selectProvider,
     setAmount: setAmountWithErrorClear,

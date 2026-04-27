@@ -29,8 +29,7 @@ interface LnurlWorkflowProps {
 
 const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, balanceSats, tokenBalance, onBack, onRun, onPrepare, onPay }) => {
   const stableBalance = useStableBalance();
-  const hasTokenConfig = !!stableBalance.displayConfig;
-  const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive && hasTokenConfig);
+  const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive);
   const balance = useBalanceValidation(isTokenMode, setIsTokenMode, balanceSats, tokenBalance);
 
   const [step, setStep] = useState<PaymentStep>('amount');
@@ -142,6 +141,16 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
   useEffect(() => {
     setError(null);
   }, [step]);
+
+  // Force the input back to sats mode when stable balance is deactivated.
+  // See AmountStep for details — same behavior here.
+  useEffect(() => {
+    if (!stableBalance.isActive && isTokenMode) {
+      setIsTokenMode(false);
+      setAmount('');
+      setFeesIncluded(false);
+    }
+  }, [stableBalance.isActive, isTokenMode, setIsTokenMode]);
 
   const onAmountNext = async () => {
     if (commentAllowed && commentMaxLen && comment.length > commentMaxLen) {
@@ -335,7 +344,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
             min={isTokenMode ? undefined : minSats}
             max={isTokenMode ? undefined : maxSats}
           />
-          {hasTokenConfig && balance.config && (
+          {stableBalance.isActive && balance.config && (
             <CurrencySwitcher
               isTokenMode={isTokenMode}
               tokenSymbol={balance.config.symbol}

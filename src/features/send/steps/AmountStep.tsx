@@ -34,8 +34,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
   onNext,
 }) => {
   const stableBalance = useStableBalance();
-  const hasTokenConfig = !!stableBalance.displayConfig;
-  const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive && hasTokenConfig);
+  const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive);
   const balance = useBalanceValidation(isTokenMode, setIsTokenMode, balanceSats, tokenBalance);
 
   const [localAmount, setLocalAmount] = useState<string>(amount || '');
@@ -45,6 +44,18 @@ const AmountStep: React.FC<AmountStepProps> = ({
   useEffect(() => {
     setLocalAmount(amount || '');
   }, [amount]);
+
+  // Force the input back to sats mode when stable balance is deactivated
+  // (e.g. user toggled it off while the dialog was open). Without this, the
+  // CurrencySwitcher disappears but isTokenMode stays true, leaving the input
+  // showing a fiat value that's no longer toggleable.
+  useEffect(() => {
+    if (!stableBalance.isActive && isTokenMode) {
+      setIsTokenMode(false);
+      setLocalAmount('');
+      setFeesIncluded(false);
+    }
+  }, [stableBalance.isActive, isTokenMode, setIsTokenMode]);
 
   const handleToggleDenomination = () => {
     balance.setIsTokenMode?.(!isTokenMode);
@@ -201,7 +212,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
             min={isTokenMode ? undefined : 1}
             data-testid="amount-input"
           />
-          {hasTokenConfig && balance.config && (
+          {stableBalance.isActive && balance.config && (
             <CurrencySwitcher
               isTokenMode={isTokenMode}
               tokenSymbol={balance.config.symbol}

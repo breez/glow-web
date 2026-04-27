@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
   FormError,
@@ -46,8 +46,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   onClose,
 }) => {
   const stableBalance = useStableBalance();
-  const hasTokenConfig = !!stableBalance.displayConfig;
-  const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive && hasTokenConfig);
+  const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive);
   const config = stableBalance.displayConfig;
 
   // The display string for the input field. In token mode this holds fiat;
@@ -60,6 +59,17 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     setAmountSats(null);
     setDisplayAmount('');
   };
+
+  // Force the input back to sats mode when stable balance is deactivated.
+  // Without this, the CurrencySwitcher disappears but isTokenMode stays true,
+  // leaving the input showing a fiat value that's no longer toggleable.
+  useEffect(() => {
+    if (!stableBalance.isActive && isTokenMode) {
+      setIsTokenMode(false);
+      setAmountSats(null);
+      setDisplayAmount('');
+    }
+  }, [stableBalance.isActive, isTokenMode, setAmountSats]);
 
   const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : SATS_QUICK_AMOUNTS;
 
@@ -131,7 +141,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                 className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 pr-16 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus-within:border-spark-primary focus:outline-none transition-all resize-none"
                 data-testid="invoice-amount-input"
               />
-              {hasTokenConfig && config && (
+              {stableBalance.isActive && config && (
                 <CurrencySwitcher
                   isTokenMode={isTokenMode}
                   tokenSymbol={config.symbol}
