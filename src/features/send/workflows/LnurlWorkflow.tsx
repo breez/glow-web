@@ -193,6 +193,14 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
   const isSendAllSats = !stableBalance.isActive && sendAllAmount !== null && amountNum === sendAllAmount && feesIncluded;
   const isSendAll = isSendAllSats || isSendAllToken;
 
+  // Inline balance error — surface "Amount exceeds available balance" as the
+  // user types instead of waiting for Continue. Computed inline (not via
+  // useMemo) because we're past the early-return for the confirm step and
+  // can't add a Hook here without violating rules-of-hooks.
+  const inlineBalanceError = amountNum > 0 && !isSendAll && balance.exceedsBalance(amountNum)
+    ? 'Amount exceeds available balance'
+    : null;
+
   // amount + optional comment form
   return (
     <div className="space-y-5">
@@ -313,14 +321,14 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
         </div>
       )}
 
-      <FormError error={error} />
+      <FormError error={inlineBalanceError || error} />
 
       {/* Action buttons */}
       <div className="flex gap-3">
         <SecondaryButton onClick={onBack} disabled={isLoading} className="flex-1">
           Back
         </SecondaryButton>
-        <PrimaryButton onClick={onAmountNext} disabled={isLoading || !validAmount} className="flex-1">
+        <PrimaryButton onClick={onAmountNext} disabled={isLoading || !validAmount || !!inlineBalanceError} className="flex-1">
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">
               <SpinnerIcon />

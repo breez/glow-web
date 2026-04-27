@@ -118,6 +118,16 @@ const AmountStep: React.FC<AmountStepProps> = ({
   const isSendAllSats = !isTokenMode && !stableBalance.isActive && balanceSats !== undefined && amountNum === balanceSats && feesIncluded;
   const isSendAll = isSendAllSats || isSendAllToken;
 
+  // Inline balance error — surface "Amount exceeds available balance" as the
+  // user types instead of waiting for them to click Continue. Skipped for
+  // empty/zero input (don't nag while still typing) and for send-all
+  // (which intentionally fills the full balance with feesIncluded on).
+  const inlineBalanceError = useMemo(() => {
+    if (amountNum <= 0) return null;
+    if (isSendAll) return null;
+    return balance.exceedsBalance(amountNum) ? 'Amount exceeds available balance' : null;
+  }, [amountNum, isSendAll, balance]);
+
   return (
     <div className="space-y-5">
       {/* Destination */}
@@ -204,7 +214,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
         </div>
       </div>
 
-      <FormError error={localError || error} />
+      <FormError error={inlineBalanceError || localError || error} />
 
       {/* Action buttons */}
       <div className="flex gap-3">
@@ -213,7 +223,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
         </SecondaryButton>
         <PrimaryButton
           onClick={handleNext}
-          disabled={isLoading || !validAmount}
+          disabled={isLoading || !validAmount || !!inlineBalanceError}
           className="flex-1"
         >
           {isLoading ? (
