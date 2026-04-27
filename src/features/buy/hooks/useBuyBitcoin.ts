@@ -8,6 +8,7 @@ import { useAmountInput } from '../../../hooks/useAmountInput';
 import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
 import { type TokenDisplayConfig } from '../../../utils/tokenFormatting';
+import { toSats, toSdkAmountNumber, type Sats } from '../../../types/sats';
 import {
   getBuyProviderSettings,
   filterProvidersByNetwork,
@@ -18,7 +19,7 @@ export type BuyStep = 'select' | 'amount' | 'qr';
 
 const CASH_APP_QUICK_AMOUNTS_SATS = [10000, 50000, 100000];
 const CASH_APP_QUICK_AMOUNTS_TOKEN = [5, 10, 25];
-const MIN_CASH_APP_SATS = 1;
+const MIN_CASH_APP_SATS: Sats = 1n as Sats;
 // Cash App caps verified-user Bitcoin buys at roughly $100k/week (~$10k/day).
 // Using the weekly ceiling as a generous client-side guardrail — anything above
 // this is sure to be rejected by Cash App, so we fail fast with a clear error.
@@ -45,7 +46,7 @@ export interface UseBuyBitcoinReturn {
   /** Display string bound to the input. Holds fiat in token mode, sats otherwise. */
   amountInput: string;
   cashAppUrl: string | null;
-  generatedAmountSats: number | null;
+  generatedAmountSats: Sats | null;
   isGenerating: boolean;
   error: string | null;
   validAmount: boolean;
@@ -92,11 +93,11 @@ export function useBuyBitcoin({
     btcFiatRate,
   } = input;
 
-  // Detect "too large" inputs: parseAmountToSats returns 0 once the result
-  // exceeds Number.MAX_SAFE_INTEGER (would silently overflow the SDK's u64).
-  // Without this hint, the user just sees Continue stay disabled.
+  // Detect "too large" inputs: parseAmountToSats returns null once the result
+  // exceeds the absolute Bitcoin max. Without this hint, the user just sees
+  // Continue stay disabled.
   const amountTooLarge = useMemo(() => {
-    if (amountInput === '' || amountSats > 0) return false;
+    if (amountInput === '' || amountSats !== null) return false;
     const numeric = Number(amountInput);
     if (!Number.isFinite(numeric) || numeric <= 0) return false;
     const projectedSats = isTokenMode && btcFiatRate > 0
@@ -108,21 +109,21 @@ export function useBuyBitcoin({
   // Cash App's own purchase ceiling — converted to sats at the current rate so
   // we can compare against `amountSats` regardless of which input mode the
   // user is in. Skipped while the rate hasn't loaded.
-  const cashAppMaxSats = useMemo(() => {
+  const cashAppMaxSats = useMemo<Sats | null>(() => {
     if (!btcFiatRate || btcFiatRate <= 0) return null;
-    return Math.floor((CASH_APP_MAX_USD * 100_000_000) / btcFiatRate);
+    return toSats(BigInt(Math.floor((CASH_APP_MAX_USD * 100_000_000) / btcFiatRate)));
   }, [btcFiatRate]);
 
   const exceedsCashAppLimit = useMemo(() => {
     if (cashAppMaxSats === null) return false;
-    if (amountSats <= 0) return false;
+    if (amountSats === null) return false;
     return amountSats > cashAppMaxSats;
   }, [amountSats, cashAppMaxSats]);
 
   const [step, setStep] = useState<BuyStep>('select');
   const [redirectingProvider, setRedirectingProvider] = useState<BuyBitcoinProvider | null>(null);
   const [cashAppUrl, setCashAppUrl] = useState<string | null>(null);
-  const [generatedAmountSats, setGeneratedAmountSats] = useState<number | null>(null);
+  const [generatedAmountSats, setGeneratedAmountSats] = useState<Sats | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -187,12 +188,17 @@ export function useBuyBitcoin({
   }, [toggleDenomination]);
 
   const generate = useCallback(async () => {
-    if (!amountSats || amountSats < MIN_CASH_APP_SATS) {
-      setError(`Amount must be at least ₿${MIN_CASH_APP_SATS.toLocaleString()}`);
+    if (amountSats === null || amountSats < MIN_CASH_APP_SATS) {
+      setError(`Amount must be at least ₿${MIN_CASH_APP_SATS.toString()}`);
       return;
     }
     if (cashAppMaxSats !== null && amountSats > cashAppMaxSats) {
-      setError('Amount is too large');
+      setError('Invalid amount');
+      return;
+    }
+    const amountSatsForSdk = toSdkAmountNumber(amountSats);
+    if (amountSatsForSdk === null) {
+      setError('Invalid amount');
       return;
     }
     setError(null);
@@ -203,7 +209,7 @@ export function useBuyBitcoin({
     const mobileTab = isMobile ? window.open('', '_blank') : null;
 
     try {
-      const response = await sdk.buyBitcoin({ type: 'cashApp', amountSats });
+      const response = await sdk.buyBitcoin({ type: 'cashApp', amountSats: amountSatsForSdk });
       setGeneratedAmountSats(amountSats);
       if (isMobile) {
         if (mobileTab) {
@@ -247,12 +253,13 @@ export function useBuyBitcoin({
   }, []);
 
   const validAmount = amountInput !== ''
+    && amountSats !== null
     && amountSats >= MIN_CASH_APP_SATS
     && !amountTooLarge
     && !exceedsCashAppLimit;
 
   const displayedError = error
-    ?? ((amountTooLarge || exceedsCashAppLimit) ? 'Amount is too large' : null);
+    ?? ((amountTooLarge || exceedsCashAppLimit) ? 'Invalid amount' : null);
 
   const quickAmounts = isTokenMode ? CASH_APP_QUICK_AMOUNTS_TOKEN : CASH_APP_QUICK_AMOUNTS_SATS;
 

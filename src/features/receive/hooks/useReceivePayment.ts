@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useWallet } from '../../../contexts/WalletContext';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
+import { toSdkAmountNumber, type Sats } from '../../../types/sats';
 import type { PaymentMethod, ReceiveStep } from '../../../types/domain';
 
 export interface UseReceivePaymentReturn {
@@ -9,7 +10,8 @@ export interface UseReceivePaymentReturn {
   activeTab: PaymentMethod;
   currentStep: ReceiveStep;
   description: string;
-  amount: string;
+  /** Validated amount in sats (or null until set / when invalid). */
+  amountSats: Sats | null;
   error: string | null;
   isLoading: boolean;
   paymentData: string;
@@ -21,7 +23,7 @@ export interface UseReceivePaymentReturn {
   showAmountPanel: boolean;
   // Actions
   setDescription: (desc: string) => void;
-  setAmount: (amt: string) => void;
+  setAmountSats: (sats: Sats | null) => void;
   setShowAmountPanel: (show: boolean) => void;
   handleTabChange: (tab: PaymentMethod, loadLightningAddress: () => void) => void;
   generateBitcoinAddress: () => Promise<void>;
@@ -35,7 +37,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
   const [activeTab, setActiveTab] = useState<PaymentMethod>('lightning');
   const [currentStep, setCurrentStep] = useState<ReceiveStep>('loading_limits');
   const [description, setDescription] = useState<string>('');
-  const [amount, setAmount] = useState<string>('');
+  const [amountSats, setAmountSats] = useState<Sats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [paymentData, setPaymentData] = useState<string>('');
@@ -50,7 +52,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
   const reset = useCallback(() => {
     setCurrentStep('input');
     setDescription('');
-    setAmount('');
+    setAmountSats(null);
     setError(null);
     setIsLoading(false);
     setPaymentData('');
@@ -95,7 +97,9 @@ export function useReceivePayment(): UseReceivePaymentReturn {
   }, [wallet, bitcoinAddress, bitcoinLoading]);
 
   const generateBolt11Invoice = useCallback(async () => {
-    logger.info(LogCategory.PAYMENT, 'Starting invoice generation', { amount });
+    logger.info(LogCategory.PAYMENT, 'Starting invoice generation', {
+      amountSats: amountSats !== null ? String(amountSats) : null,
+    });
     setError(null);
     setIsLoading(true);
     setCurrentStep('loading');
@@ -106,17 +110,22 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     }
 
     try {
-      const amountSats = parseInt(amount);
-      if (isNaN(amountSats)) {
+      if (amountSats === null) {
+        throw new Error('Invalid amount');
+      }
+      const amountSatsForSdk = toSdkAmountNumber(amountSats);
+      if (amountSatsForSdk === null) {
         throw new Error('Invalid amount');
       }
 
-      logger.debug(LogCategory.PAYMENT, 'Calling wallet.receivePayment for bolt11 invoice', { amountSats });
+      logger.debug(LogCategory.PAYMENT, 'Calling wallet.receivePayment for bolt11 invoice', {
+        amountSats: amountSatsForSdk,
+      });
       const receiveResponse = await wallet.receivePayment({
         paymentMethod: {
           type: 'bolt11Invoice',
           description,
-          amountSats,
+          amountSats: amountSatsForSdk,
         },
       });
       logger.info(LogCategory.PAYMENT, 'Invoice generated successfully', {
@@ -135,7 +144,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       setIsLoading(false);
       logger.debug(LogCategory.PAYMENT, 'Receive invoice generation process finished');
     }
-  }, [wallet, amount, description, showAmountPanel]);
+  }, [wallet, amountSats, description, showAmountPanel]);
 
   const handleTabChange = useCallback((tab: PaymentMethod, loadLightningAddress: () => void) => {
     setActiveTab(tab);
@@ -157,7 +166,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     activeTab,
     currentStep,
     description,
-    amount,
+    amountSats,
     error,
     isLoading,
     paymentData,
@@ -168,7 +177,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     bitcoinLoading,
     showAmountPanel,
     setDescription,
-    setAmount,
+    setAmountSats,
     setShowAmountPanel,
     handleTabChange,
     generateBitcoinAddress,

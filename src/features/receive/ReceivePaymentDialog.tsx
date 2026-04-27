@@ -238,8 +238,8 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
 
       <AmountPanel
         isOpen={isOpen && receive.activeTab === 'lightning' && receive.showAmountPanel}
-        amount={receive.amount}
-        setAmount={receive.setAmount}
+        amountSats={receive.amountSats}
+        setAmountSats={receive.setAmountSats}
         description={receive.description}
         setDescription={receive.setDescription}
         limits={{ min: 1, max: 1000000 }}

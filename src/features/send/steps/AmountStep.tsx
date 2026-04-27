@@ -20,7 +20,7 @@ export interface AmountStepProps {
   isLoading: boolean;
   error: string | null;
   onBack: () => void;
-  onNext: (amountSats: number, feesIncluded?: boolean, tokenIdentifier?: string, conversionOptions?: ConversionOptions) => void;
+  onNext: (amount: bigint, feesIncluded?: boolean, tokenIdentifier?: string, conversionOptions?: ConversionOptions) => void;
 }
 
 const AmountStep: React.FC<AmountStepProps> = ({
@@ -77,7 +77,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
     // Token send-all bypasses validation — amount goes directly as tokenBalance to the SDK
     if (isTokenMode && isSendAllToken && tokenBalance && stableBalance.tokenIdentifier) {
       onNext(
-        Number(tokenBalance),
+        tokenBalance,
         true,
         stableBalance.tokenIdentifier,
         { conversionType: { type: 'toBitcoin', fromTokenIdentifier: stableBalance.tokenIdentifier } },

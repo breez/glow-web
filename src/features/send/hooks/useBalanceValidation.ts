@@ -1,17 +1,23 @@
 import { useMemo } from 'react';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { fiatToSats, parseAmountToSats, type TokenDisplayConfig } from '../../../utils/tokenFormatting';
+import type { Sats } from '../../../types/sats';
 import type { ConversionEstimate } from '@breeztech/breez-sdk-spark';
 
 interface BalanceValidation {
   isTokenMode: boolean;
   setIsTokenMode?: (value: boolean) => void;
-  parseInputToSats: (input: string) => number | null;
+  parseInputToSats: (input: string) => Sats | null;
+  /**
+   * Whether a user-typed display amount (fiat in token mode, sats in sats
+   * mode) exceeds the available balance. Takes a plain `number` because the
+   * value is the raw display value, not a validated Sats.
+   */
   exceedsBalance: (displayAmount: number) => boolean;
   validateAmount: (input: string, feesIncluded?: boolean) => string | null;
   checkInsufficientFunds: (opts: {
     isTokenMode: boolean;
-    totalSats: number;
+    totalSats: Sats;
     conversionEstimate?: ConversionEstimate | null;
   }) => boolean;
   config: TokenDisplayConfig | null;
@@ -37,7 +43,7 @@ export function useBalanceValidation(
     return fiatToSats(fiat, btcFiatRate);
   }, [config, tokenBalance, btcFiatRate]);
 
-  const parseInputToSats = (input: string): number | null =>
+  const parseInputToSats = (input: string): Sats | null =>
     parseAmountToSats(input, isTokenMode, btcFiatRate);
 
   const maxAvailableSats = (): number | undefined => {
@@ -68,7 +74,9 @@ export function useBalanceValidation(
     const parsed = parseInputToSats(input);
     if (parsed === null) return 'Please enter a valid amount';
 
-    const displayAmount = isTokenMode ? Number(input) : parsed;
+    // displayAmount represents the user-typed value (fiat in token mode,
+    // sats in sats mode). exceedsBalance handles both shapes.
+    const displayAmount = isTokenMode ? Number(input) : Number(parsed);
     const isSendAll = !isTokenMode && feesIncluded;
     if (isSendAll) return null;
 
@@ -90,7 +98,9 @@ export function useBalanceValidation(
 
     const available = maxAvailableSats();
     if (available === undefined) return false;
-    return totalSats > available;
+    // available is `number` (sourced from balanceSats) — convert totalSats
+    // for the comparison. Both are bounded by toSats() so neither overflows.
+    return Number(totalSats) > available;
   };
 
   return {

@@ -5,6 +5,7 @@ import {
   sanitizeTokenInput,
   type TokenDisplayConfig,
 } from '../utils/tokenFormatting';
+import type { Sats } from '../types/sats';
 
 export interface UseAmountInputResult {
   /** The raw display string bound to the input. Holds fiat in token mode, sats otherwise. */
@@ -28,10 +29,10 @@ export interface UseAmountInputResult {
   hasTokenConfig: boolean;
   /** BTC→fiat rate exposed for callers that need it directly. */
   btcFiatRate: number;
-  /** Parse the current input (or a passed string) to sats. Returns null when invalid. */
-  parseToSats: (input?: string) => number | null;
-  /** Current input parsed to sats; 0 when input is empty or invalid. */
-  amountSats: number;
+  /** Parse the current input (or a passed string) to a validated Sats value. Returns null when invalid. */
+  parseToSats: (input?: string) => Sats | null;
+  /** Current input parsed to Sats; null when input is empty or invalid. */
+  amountSats: Sats | null;
 }
 
 /**
@@ -73,12 +74,12 @@ export function useAmountInput(initialAmount: string = ''): UseAmountInputResult
   }, []);
 
   const parseToSats = useCallback(
-    (input?: string): number | null =>
+    (input?: string): Sats | null =>
       parseAmountToSats(input ?? amountInput, isTokenMode, btcFiatRate),
     [amountInput, isTokenMode, btcFiatRate],
   );
 
-  const amountSats = useMemo(() => parseToSats() ?? 0, [parseToSats]);
+  const amountSats = useMemo(() => parseToSats(), [parseToSats]);
 
   return {
     amountInput,

@@ -6,6 +6,7 @@ import { formatWithThinSpaces } from '../../../utils/formatNumber';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
+import { toSats } from '../../../types/sats';
 import type { ConversionEstimate } from '@breeztech/breez-sdk-spark';
 
 export interface ConfirmStepProps {
@@ -30,7 +31,13 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
   const fee = Number(feesSat || 0);
   const total = feesIncluded ? amount : amount + fee;
 
-  const insufficientBalance = balance.checkInsufficientFunds({ isTokenMode, totalSats: total, conversionEstimate });
+  // Convert the total to a validated Sats for the balance check. `total` is
+  // sourced from a prepare response so in practice this never exceeds the
+  // cap; if it somehow did, treat as insufficient funds.
+  const totalSats = toSats(total);
+  const insufficientBalance = totalSats === null
+    ? true
+    : balance.checkInsufficientFunds({ isTokenMode, totalSats, conversionEstimate });
   const balanceError = insufficientBalance ? 'Insufficient funds' : null;
 
   // Token-formatted values from conversion estimate

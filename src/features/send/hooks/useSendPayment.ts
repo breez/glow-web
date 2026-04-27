@@ -27,7 +27,7 @@ export interface UseSendPaymentReturn {
   clearError: () => void;
   reset: () => void;
   processInput: (input?: string | null) => Promise<void>;
-  onAmountNext: (amountNum: number, includeFees?: boolean, tokenIdentifier?: string, conversionOptions?: ConversionOptions) => Promise<void>;
+  onAmountNext: (amount: bigint, includeFees?: boolean, tokenIdentifier?: string, conversionOptions?: ConversionOptions) => Promise<void>;
   handleSend: (options?: SendPaymentOptions) => Promise<void>;
   handleRun: (runner: () => Promise<void>, hasConversion?: boolean) => Promise<void>;
   setCurrentStep: (step: SendStep) => void;
@@ -62,12 +62,12 @@ export function useSendPayment(): UseSendPaymentReturn {
 
   const prepareSend = useCallback(async (
     paymentRequest: string,
-    amountSats: number,
+    amount: bigint,
     feePolicy?: FeePolicy,
     tokenIdentifier?: string,
     conversionOptions?: ConversionOptions,
   ) => {
-    if (amountSats <= 0) {
+    if (amount <= 0n) {
       setError('Please enter a valid amount');
       return;
     }
@@ -76,7 +76,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     try {
       const response = await wallet.prepareSendPayment({
         paymentRequest,
-        amount: BigInt(amountSats),
+        amount,
         feePolicy,
         tokenIdentifier,
         conversionOptions,
@@ -110,7 +110,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       if (parseResult.type === 'bolt11Invoice' && parseResult.amountMsat && parseResult.amountMsat > 0) {
         const sats = Math.floor(parseResult.amountMsat / 1000);
         setAmount(String(sats));
-        await prepareSend(currentInput, sats);
+        await prepareSend(currentInput, BigInt(sats));
       } else if (parseResult.type === 'bolt11Invoice') {
         setCurrentStep('amount');
       } else if (parseResult.type === 'bitcoinAddress' || parseResult.type === 'sparkAddress') {
@@ -132,19 +132,19 @@ export function useSendPayment(): UseSendPaymentReturn {
   }, [wallet, paymentInput?.rawInput, prepareSend]);
 
   const onAmountNext = useCallback(async (
-    amountNum: number,
+    amount: bigint,
     includeFees?: boolean,
     tokenIdentifier?: string,
     conversionOptions?: ConversionOptions,
   ) => {
-    if (!amountNum || amountNum <= 0) {
+    if (amount <= 0n) {
       setError('Please enter a valid amount');
       return;
     }
     setFeesIncluded(!!includeFees);
     await prepareSend(
       paymentInput?.rawInput || '',
-      amountNum,
+      amount,
       includeFees ? 'feesIncluded' : undefined,
       tokenIdentifier,
       conversionOptions,

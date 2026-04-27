@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
   FormError,
@@ -14,14 +14,16 @@ import {
   SATS_QUICK_AMOUNTS,
   formatQuickAmount,
   sanitizeTokenInput,
-  fiatToSats,
+  parseAmountToSats,
 } from '../../utils/tokenFormatting';
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
+import type { Sats } from '../../types/sats';
 
 interface AmountPanelProps {
   isOpen: boolean;
-  amount: string;
-  setAmount: (v: string) => void;
+  /** Validated amount in sats; null when the input is empty or invalid. */
+  amountSats: Sats | null;
+  setAmountSats: (sats: Sats | null) => void;
   description: string;
   setDescription: (v: string) => void;
   limits: { min: number; max: number };
@@ -33,8 +35,8 @@ interface AmountPanelProps {
 
 const AmountPanel: React.FC<AmountPanelProps> = ({
   isOpen,
-  amount,
-  setAmount,
+  amountSats,
+  setAmountSats,
   description,
   setDescription,
   limits: _limits,
@@ -48,47 +50,59 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive && hasTokenConfig);
   const config = stableBalance.displayConfig;
 
-  // In token mode we show the fiat value locally; the parent's `amount` always holds sats.
+  // The display string for the input field. In token mode this holds fiat;
+  // in sats mode it holds sats. The parsed sats value is pushed to the parent
+  // separately so there's no string-passing round trip.
   const [displayAmount, setDisplayAmount] = useState('');
 
   const handleToggleDenomination = () => {
     setIsTokenMode(prev => !prev);
-    setAmount('');
+    setAmountSats(null);
     setDisplayAmount('');
   };
 
   const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : SATS_QUICK_AMOUNTS;
+
+  // Push parsed Sats to the parent. parseAmountToSats handles the safe-integer
+  // guard, so the parent always gets either a validated Sats or null.
+  const pushSats = (display: string) => {
+    setAmountSats(parseAmountToSats(display, isTokenMode, stableBalance.btcFiatRate));
+  };
 
   const handleAmountChange = (value: string) => {
     if (isTokenMode && config) {
       const sanitized = sanitizeTokenInput(value, config.fractionSize);
       if (sanitized !== null) {
         setDisplayAmount(sanitized);
-        const fiat = parseFloat(sanitized);
-        if (fiat > 0 && stableBalance.btcFiatRate > 0) {
-          setAmount(String(fiatToSats(fiat, stableBalance.btcFiatRate)));
-        } else {
-          setAmount('');
-        }
+        pushSats(sanitized);
       }
     } else {
       const sats = value.replace(/[^0-9]/g, '');
-      setAmount(sats);
       setDisplayAmount(sats);
+      pushSats(sats);
     }
   };
 
   const handleQuickAmount = (quickAmount: number) => {
-    if (isTokenMode && stableBalance.btcFiatRate > 0) {
-      setDisplayAmount(String(quickAmount));
-      setAmount(String(fiatToSats(quickAmount, stableBalance.btcFiatRate)));
-    } else {
-      setDisplayAmount(String(quickAmount));
-      setAmount(String(quickAmount));
-    }
+    const sanitized = String(quickAmount);
+    setDisplayAmount(sanitized);
+    pushSats(sanitized);
   };
 
-  const validAmount = amount !== '' && parseInt(amount) > 0;
+  const validAmount = amountSats !== null && amountSats > 0n;
+
+  // "Invalid amount" surfaces when the input is non-empty and positive but
+  // can't safely be converted to sats — covers both unsafe-integer overflow
+  // (fiat or sats) and unsafe results from fiat→sats conversion.
+  const amountTooLarge = useMemo(() => {
+    if (displayAmount === '' || amountSats !== null) return false;
+    const numeric = Number(displayAmount);
+    if (!Number.isFinite(numeric) || numeric <= 0) return false;
+    const projectedSats = isTokenMode && stableBalance.btcFiatRate > 0
+      ? (numeric / stableBalance.btcFiatRate) * 100_000_000
+      : numeric;
+    return projectedSats > Number.MAX_SAFE_INTEGER;
+  }, [displayAmount, amountSats, isTokenMode, stableBalance.btcFiatRate]);
 
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={onClose} showBackdrop>
@@ -163,7 +177,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
             />
           </div>
 
-          <FormError error={error} data-testid="invoice-error-message" />
+          <FormError error={amountTooLarge ? 'Invalid amount' : error} data-testid="invoice-error-message" />
 
           {/* Generate Button */}
           <PrimaryButton
