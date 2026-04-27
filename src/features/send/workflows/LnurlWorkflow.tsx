@@ -6,7 +6,13 @@ import ConfirmStep from '../steps/ConfirmStep';
 import { logger, LogCategory } from '@/services/logger';
 import { SpinnerIcon } from '@/components/Icons';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
-import { TOKEN_QUICK_AMOUNTS, sanitizeTokenInput, formatQuickAmount } from '../../../utils/tokenFormatting';
+import {
+  TOKEN_QUICK_AMOUNTS,
+  sanitizeTokenInput,
+  formatQuickAmount,
+  formatTokenAmount,
+  tokenAmountDisplaysAsZero,
+} from '../../../utils/tokenFormatting';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
 
@@ -64,7 +70,59 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
   }, [tokenBalance, stableBalance.displayConfig]);
 
   const hasTokenBalance = tokenBalance !== undefined && tokenBalance > 0n;
+
+  // BTC balance expressed in the token (fiat) display unit. Capped at maxSats
+  // (LNURL upper bound) so Send All never overshoots the LNURL service's range.
+  const sendAllBtcInTokenDisplay = useMemo(() => {
+    if (!isTokenMode || !stableBalance.displayConfig) return null;
+    if (balanceSats === undefined || balanceSats <= 0) return null;
+    if (stableBalance.btcFiatRate <= 0) return null;
+    const cappedSats = Math.min(balanceSats, maxSats);
+    if (cappedSats < minSats) return null;
+    const fiat = (cappedSats / 100_000_000) * stableBalance.btcFiatRate;
+    return fiat.toFixed(stableBalance.displayConfig.fractionSize);
+  }, [isTokenMode, balanceSats, maxSats, minSats, stableBalance.btcFiatRate, stableBalance.displayConfig]);
+
   const isSendAllToken = isTokenMode && hasTokenBalance && amount === tokenBalanceDisplay && feesIncluded;
+  const isSendAllBtcInTokenMode = isTokenMode
+    && !hasTokenBalance
+    && sendAllBtcInTokenDisplay !== null
+    && amount === sendAllBtcInTokenDisplay
+    && feesIncluded;
+
+  // Send All in token mode is meaningless when both balance sources round
+  // below the displayable threshold (e.g. <$0.01 for USDB).
+  const tokenSendAllBelowThreshold = useMemo(() => {
+    if (!isTokenMode || !stableBalance.displayConfig) return false;
+    const threshold = BigInt(10 ** (stableBalance.displayConfig.decimals - stableBalance.displayConfig.fractionSize));
+    if (tokenBalance !== undefined && tokenBalance >= threshold) return false;
+    if (balanceSats !== undefined && balanceSats > 0 && stableBalance.btcFiatRate > 0) {
+      const fiat = (balanceSats / 100_000_000) * stableBalance.btcFiatRate;
+      const baseUnits = BigInt(Math.round(fiat * 10 ** stableBalance.displayConfig.decimals));
+      if (baseUnits >= threshold) return false;
+    }
+    return true;
+  }, [isTokenMode, stableBalance.displayConfig, tokenBalance, balanceSats, stableBalance.btcFiatRate]);
+
+  // LNURL min/max range expressed in the token (fiat) display unit. Lets the
+  // user see the supported range without mentally converting from sats.
+  // Both bounds get a ~ prefix because the values are exchange-rate-derived.
+  // Sub-threshold values (e.g. 1 sat at typical BTC prices rounds below
+  // $0.01) snap up to the smallest displayable amount ($0.01) instead of
+  // rendering as "0.00" or "< $0.01".
+  const tokenRangeDisplay = useMemo(() => {
+    if (!isTokenMode || !stableBalance.displayConfig || stableBalance.btcFiatRate <= 0) return null;
+    const config = stableBalance.displayConfig;
+    const minDisplayable = BigInt(10 ** (config.decimals - config.fractionSize));
+    const formatSats = (sats: number) => {
+      const fiat = (sats / 100_000_000) * stableBalance.btcFiatRate;
+      const baseUnits = BigInt(Math.round(fiat * 10 ** config.decimals));
+      return tokenAmountDisplaysAsZero(baseUnits, config)
+        ? formatTokenAmount(minDisplayable, config)
+        : formatTokenAmount(baseUnits, config);
+    };
+    return `~${formatSats(minSats)} – ~${formatSats(maxSats)}`;
+  }, [isTokenMode, stableBalance.displayConfig, stableBalance.btcFiatRate, minSats, maxSats]);
   const description = useMemo(() => {
     const metadataArr = JSON.parse(parsed.metadataStr);
     for (let i = 0; i < metadataArr.length; i++) {
@@ -105,6 +163,32 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
           conversionOptions: {
             conversionType: { type: 'toBitcoin', fromTokenIdentifier: stableBalance.tokenIdentifier },
           },
+        });
+        setPrepareResponse(resp);
+        setStep('confirm');
+      } catch (err) {
+        logger.error(LogCategory.PAYMENT, 'Failed to prepare LNURL Pay', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        setError(`Failed to prepare LNURL Pay: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // BTC send-all displayed in token mode — use the raw sats balance (capped
+    // at maxSats) to avoid losing precision through fiat→sats round-tripping.
+    if (isSendAllBtcInTokenMode && balanceSats !== undefined) {
+      const cappedSats = Math.min(balanceSats, maxSats);
+      setIsLoading(true);
+      setError(null);
+      try {
+        const resp = await onPrepare({
+          amount: BigInt(cappedSats),
+          comment: comment ? comment : undefined,
+          payRequest: parsed,
+          feePolicy: 'feesIncluded',
         });
         setPrepareResponse(resp);
         setStep('confirm');
@@ -191,7 +275,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     : amount !== '' && parseInt(amount) > 0;
   const amountNum = isTokenMode ? parseFloat(amount) || 0 : parseInt(amount) || 0;
   const isSendAllSats = !stableBalance.isActive && sendAllAmount !== null && amountNum === sendAllAmount && feesIncluded;
-  const isSendAll = isSendAllSats || isSendAllToken;
+  const isSendAll = isSendAllSats || isSendAllToken || isSendAllBtcInTokenMode;
 
   // Inline balance error — surface "Amount exceeds available balance" as the
   // user types instead of waiting for Continue. Computed inline (not via
@@ -215,9 +299,13 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
           <label className="block text-sm font-medium text-spark-text-primary">
             Amount
           </label>
-          {!isTokenMode && (
+          {!isTokenMode ? (
             <span className="text-xs text-spark-text-secondary">
               {minSats.toLocaleString('en-US').replace(/,/g, ' ')} – {maxSats.toLocaleString('en-US').replace(/,/g, ' ')}
+            </span>
+          ) : tokenRangeDisplay && (
+            <span className="text-xs text-spark-text-secondary">
+              {tokenRangeDisplay}
             </span>
           )}
         </div>
@@ -279,21 +367,31 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
               </button>
             );
           })}
-          {(hasTokenBalance || (!stableBalance.isActive && sendAllAmount !== null && sendAllAmount >= minSats)) && (
+          {(hasTokenBalance
+            || sendAllBtcInTokenDisplay !== null
+            || (sendAllAmount !== null && sendAllAmount >= minSats)) && (
             <button
               onClick={() => {
                 if (hasTokenBalance && tokenBalanceDisplay) {
                   if (!isTokenMode) setIsTokenMode(true);
                   setAmount(tokenBalanceDisplay);
+                } else if (sendAllBtcInTokenDisplay !== null) {
+                  // In token mode without token balance — fill with BTC sats
+                  // converted to fiat (capped at maxSats). Avoids dropping a
+                  // raw sats integer into a fiat-denominated input.
+                  setAmount(sendAllBtcInTokenDisplay);
                 } else if (sendAllAmount !== null) {
                   setAmount(String(sendAllAmount));
                 }
                 setFeesIncluded(true);
               }}
+              disabled={tokenSendAllBelowThreshold}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                isSendAll
-                  ? 'bg-spark-primary text-white'
-                  : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+                tokenSendAllBelowThreshold
+                  ? 'opacity-40 cursor-not-allowed border border-spark-border text-spark-text-secondary'
+                  : isSendAll
+                    ? 'bg-spark-primary text-white'
+                    : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
               }`}
             >
               Send All

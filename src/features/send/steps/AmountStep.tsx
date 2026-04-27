@@ -85,6 +85,13 @@ const AmountStep: React.FC<AmountStepProps> = ({
       return;
     }
 
+    // BTC send-all displayed in token mode — pass the raw sats balance to
+    // avoid losing precision through fiat→sats round-tripping.
+    if (isSendAllBtcInTokenMode && balanceSats !== undefined) {
+      onNext(BigInt(balanceSats), true);
+      return;
+    }
+
     const validationError = balance.validateAmount(localAmount, feesIncluded);
     if (validationError) {
       setLocalError(validationError);
@@ -110,13 +117,50 @@ const AmountStep: React.FC<AmountStepProps> = ({
     return `${wholePart}.${fractionalStr}`;
   }, [tokenBalance, balance.config]);
 
-  // Send All: when stable balance is active, always use token path (switch to token mode if needed)
-  // When stable balance is not active, use sats path
+  // Send All paths:
+  //   - has token balance: switch to token mode, display token balance
+  //   - in token mode without token balance, but BTC > 0: display BTC sats
+  //     converted to fiat (so we don't drop a raw sats integer into a
+  //     fiat-denominated input)
+  //   - sats mode with BTC: display sats
   const hasTokenBalance = tokenBalance !== undefined && tokenBalance > 0n;
-  const showSendAll = hasTokenBalance || (!stableBalance.isActive && balanceSats !== undefined && balanceSats > 0);
+
+  // BTC balance expressed in the token (fiat) display unit. Computed only when
+  // the user is currently in token mode — used as the Send All target when
+  // there's no token balance to draw from.
+  const sendAllBtcInTokenDisplay = useMemo(() => {
+    if (!isTokenMode || !balance.config) return null;
+    if (balanceSats === undefined || balanceSats <= 0) return null;
+    if (stableBalance.btcFiatRate <= 0) return null;
+    const fiat = (balanceSats / 100_000_000) * stableBalance.btcFiatRate;
+    return fiat.toFixed(balance.config.fractionSize);
+  }, [isTokenMode, balance.config, balanceSats, stableBalance.btcFiatRate]);
+
+  const showSendAll = hasTokenBalance || (balanceSats !== undefined && balanceSats > 0);
+
+  // Send All in token mode is meaningless when both balance sources round
+  // below the displayable threshold (e.g. <$0.01 for USDB). Disable the
+  // button in that case so users don't get a useless "0.00" filled-in value.
+  const tokenSendAllBelowThreshold = useMemo(() => {
+    if (!isTokenMode || !balance.config) return false;
+    const threshold = BigInt(10 ** (balance.config.decimals - balance.config.fractionSize));
+    if (tokenBalance !== undefined && tokenBalance >= threshold) return false;
+    if (balanceSats !== undefined && balanceSats > 0 && stableBalance.btcFiatRate > 0) {
+      const fiat = (balanceSats / 100_000_000) * stableBalance.btcFiatRate;
+      const baseUnits = BigInt(Math.round(fiat * 10 ** balance.config.decimals));
+      if (baseUnits >= threshold) return false;
+    }
+    return true;
+  }, [isTokenMode, balance.config, tokenBalance, balanceSats, stableBalance.btcFiatRate]);
+
   const isSendAllToken = isTokenMode && hasTokenBalance && localAmount === tokenBalanceDisplay && feesIncluded;
-  const isSendAllSats = !isTokenMode && !stableBalance.isActive && balanceSats !== undefined && amountNum === balanceSats && feesIncluded;
-  const isSendAll = isSendAllSats || isSendAllToken;
+  const isSendAllBtcInTokenMode = isTokenMode
+    && !hasTokenBalance
+    && sendAllBtcInTokenDisplay !== null
+    && localAmount === sendAllBtcInTokenDisplay
+    && feesIncluded;
+  const isSendAllSats = !isTokenMode && balanceSats !== undefined && amountNum === balanceSats && feesIncluded;
+  const isSendAll = isSendAllSats || isSendAllToken || isSendAllBtcInTokenMode;
 
   // Inline balance error — surface "Amount exceeds available balance" as the
   // user types instead of waiting for them to click Continue. Skipped for
@@ -193,19 +237,28 @@ const AmountStep: React.FC<AmountStepProps> = ({
             <button
               onClick={() => {
                 if (hasTokenBalance && tokenBalanceDisplay) {
-                  // When stable balance is active, always use token path
+                  // Token send-all: switch to token mode + show token balance
                   if (!isTokenMode) setIsTokenMode(true);
                   setLocalAmount(tokenBalanceDisplay);
-                } else {
+                } else if (sendAllBtcInTokenDisplay !== null) {
+                  // No token balance but in token mode — fill with BTC sats
+                  // converted to fiat so the input stays in the user's chosen
+                  // unit instead of jumping back to sats.
+                  setLocalAmount(sendAllBtcInTokenDisplay);
+                } else if (balanceSats !== undefined) {
+                  // Sats mode (with or without stable balance)
                   setLocalAmount(String(balanceSats));
                 }
                 setFeesIncluded(true);
                 setLocalError(null);
               }}
+              disabled={tokenSendAllBelowThreshold}
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                isSendAll
-                  ? 'bg-spark-primary text-white'
-                  : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+                tokenSendAllBelowThreshold
+                  ? 'opacity-40 cursor-not-allowed border border-spark-border text-spark-text-secondary'
+                  : isSendAll
+                    ? 'bg-spark-primary text-white'
+                    : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
               }`}
             >
               Send All
