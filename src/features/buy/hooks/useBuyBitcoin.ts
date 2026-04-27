@@ -19,6 +19,10 @@ export type BuyStep = 'select' | 'amount' | 'qr';
 const CASH_APP_QUICK_AMOUNTS_SATS = [10000, 50000, 100000];
 const CASH_APP_QUICK_AMOUNTS_TOKEN = [5, 10, 25];
 const MIN_CASH_APP_SATS = 1;
+// Cash App caps verified-user Bitcoin buys at roughly $100k/week (~$10k/day).
+// Using the weekly ceiling as a generous client-side guardrail — anything above
+// this is sure to be rejected by Cash App, so we fail fast with a clear error.
+const CASH_APP_MAX_USD = 100_000;
 
 export interface UseBuyBitcoinOptions {
   /** Whether the dialog is open — used to reset state when closed. */
@@ -101,6 +105,20 @@ export function useBuyBitcoin({
     return projectedSats > Number.MAX_SAFE_INTEGER;
   }, [amountInput, amountSats, isTokenMode, btcFiatRate]);
 
+  // Cash App's own purchase ceiling — converted to sats at the current rate so
+  // we can compare against `amountSats` regardless of which input mode the
+  // user is in. Skipped while the rate hasn't loaded.
+  const cashAppMaxSats = useMemo(() => {
+    if (!btcFiatRate || btcFiatRate <= 0) return null;
+    return Math.floor((CASH_APP_MAX_USD * 100_000_000) / btcFiatRate);
+  }, [btcFiatRate]);
+
+  const exceedsCashAppLimit = useMemo(() => {
+    if (cashAppMaxSats === null) return false;
+    if (amountSats <= 0) return false;
+    return amountSats > cashAppMaxSats;
+  }, [amountSats, cashAppMaxSats]);
+
   const [step, setStep] = useState<BuyStep>('select');
   const [redirectingProvider, setRedirectingProvider] = useState<BuyBitcoinProvider | null>(null);
   const [cashAppUrl, setCashAppUrl] = useState<string | null>(null);
@@ -173,6 +191,10 @@ export function useBuyBitcoin({
       setError(`Amount must be at least ₿${MIN_CASH_APP_SATS.toLocaleString()}`);
       return;
     }
+    if (cashAppMaxSats !== null && amountSats > cashAppMaxSats) {
+      setError('Amount is too large');
+      return;
+    }
     setError(null);
     setIsGenerating(true);
 
@@ -201,7 +223,7 @@ export function useBuyBitcoin({
     } finally {
       setIsGenerating(false);
     }
-  }, [amountSats, isMobile, sdk, onMobileRedirectComplete]);
+  }, [amountSats, cashAppMaxSats, isMobile, sdk, onMobileRedirectComplete]);
 
   // Cash App URLs are `https://cash.app/launch/lightning/<bolt11>`. Extract the
   // invoice only while we're showing the QR so the bus subscription pauses
@@ -224,9 +246,13 @@ export function useBuyBitcoin({
     setCashAppUrl(null);
   }, []);
 
-  const validAmount = amountInput !== '' && amountSats >= MIN_CASH_APP_SATS && !amountTooLarge;
+  const validAmount = amountInput !== ''
+    && amountSats >= MIN_CASH_APP_SATS
+    && !amountTooLarge
+    && !exceedsCashAppLimit;
 
-  const displayedError = error ?? (amountTooLarge ? 'Amount is too large' : null);
+  const displayedError = error
+    ?? ((amountTooLarge || exceedsCashAppLimit) ? 'Amount is too large' : null);
 
   const quickAmounts = isTokenMode ? CASH_APP_QUICK_AMOUNTS_TOKEN : CASH_APP_QUICK_AMOUNTS_SATS;
 
