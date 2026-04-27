@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { PrepareSendPaymentResponse, FeePolicy, SendPaymentOptions, SdkEvent, ConversionOptions } from '@breeztech/breez-sdk-spark';
 import type { SendInput } from '@/types/domain';
-import { useWallet } from '../../../contexts/WalletContext';
+import { useWallet, useWalletInfo } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { getTokenBalance } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
@@ -35,6 +35,7 @@ export interface UseSendPaymentReturn {
 
 export function useSendPayment(): UseSendPaymentReturn {
   const wallet = useWallet();
+  const walletInfo = useWalletInfo();
   const stableBalance = useStableBalance();
 
   const [currentStep, setCurrentStep] = useState<SendStep>('input');
@@ -44,24 +45,20 @@ export function useSendPayment(): UseSendPaymentReturn {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [prepareResponse, setPrepareResponse] = useState<PrepareSendPaymentResponse | null>(null);
   const [paymentResult, setPaymentResult] = useState<'success' | 'failure' | null>(null);
-  const [balanceSats, setBalanceSats] = useState<number | undefined>(undefined);
-  const [tokenBalance, setTokenBalance] = useState<bigint | undefined>(undefined);
   const [feesIncluded, setFeesIncluded] = useState(false);
   const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>('sending');
 
-  const fetchBalance = useCallback(() => {
-    wallet.getInfo({}).then(info => {
-      if (info) {
-        setBalanceSats(info.balanceSats);
-        if (stableBalance.isActive && stableBalance.tokenIdentifier && info.tokenBalances) {
-          const tb = getTokenBalance(info.tokenBalances, stableBalance.tokenIdentifier);
-          setTokenBalance(tb ? tb.balance : 0n);
-        } else {
-          setTokenBalance(undefined);
-        }
-      }
-    }).catch(() => { /* balance fetch is best-effort */ });
-  }, [wallet, stableBalance.isActive, stableBalance.tokenIdentifier]);
+  // Balance is read live from the wallet info context, which is auto-refreshed
+  // by useBreezSdk on `synced`/`paymentSucceeded`/`claimedDeposits` events. We
+  // don't snapshot it locally — that was the bug that caused validation to use
+  // a stale balance after auto-conversion completed mid-flow.
+  const balanceSats = walletInfo?.balanceSats;
+  const tokenBalance = useMemo<bigint | undefined>(() => {
+    if (!walletInfo?.tokenBalances) return undefined;
+    if (!stableBalance.isActive || !stableBalance.tokenIdentifier) return undefined;
+    const tb = getTokenBalance(walletInfo.tokenBalances, stableBalance.tokenIdentifier);
+    return tb ? tb.balance : 0n;
+  }, [walletInfo, stableBalance.isActive, stableBalance.tokenIdentifier]);
 
   const prepareSend = useCallback(async (
     paymentRequest: string,
@@ -115,13 +112,10 @@ export function useSendPayment(): UseSendPaymentReturn {
         setAmount(String(sats));
         await prepareSend(currentInput, sats);
       } else if (parseResult.type === 'bolt11Invoice') {
-        fetchBalance();
         setCurrentStep('amount');
       } else if (parseResult.type === 'bitcoinAddress' || parseResult.type === 'sparkAddress') {
-        fetchBalance();
         setCurrentStep('amount');
       } else if (parseResult.type === 'lnurlPay' || parseResult.type === 'lightningAddress') {
-        fetchBalance();
         setCurrentStep('workflow');
       } else if (parseResult.type === 'lnurlAuth') {
         setCurrentStep('workflow');
@@ -135,7 +129,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [wallet, paymentInput?.rawInput, prepareSend, fetchBalance]);
+  }, [wallet, paymentInput?.rawInput, prepareSend]);
 
   const onAmountNext = useCallback(async (
     amountNum: number,
@@ -265,8 +259,6 @@ export function useSendPayment(): UseSendPaymentReturn {
     setPrepareResponse(null);
     setError(null);
     setIsLoading(false);
-    setBalanceSats(undefined);
-    setTokenBalance(undefined);
     setFeesIncluded(false);
     setPaymentInput(null);
     setPaymentResult(null);

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo } from 'react';
-import type { BreezSdk } from '@breeztech/breez-sdk-spark';
+import type { BreezSdk, GetInfoResponse } from '@breeztech/breez-sdk-spark';
 import type { SdkEventHandler, SdkEventUnsubscribe } from '../hooks/useBreezSdk';
 
 type SubscribeToSdkEvents = (handler: SdkEventHandler) => SdkEventUnsubscribe;
@@ -18,6 +18,10 @@ const WalletContext = createContext<WalletContextValue>({
   subscribeToSdkEvents: noopSubscribe,
 });
 
+// Live wallet info (balance, token balances) lives in its own context so that
+// SDK consumers (`useWallet`, `useSdkEvents`) don't re-render on every sync.
+const WalletInfoContext = createContext<GetInfoResponse | null>(null);
+
 export const WalletProvider: React.FC<{
   children: React.ReactNode;
   client: BreezSdk | null;
@@ -29,6 +33,19 @@ export const WalletProvider: React.FC<{
     [client, isConnected, subscribeToSdkEvents]
   );
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
+};
+
+/**
+ * Provides the latest `walletInfo` (balance, token balances) to descendants.
+ * The value is owned by `useBreezSdk`, which auto-refreshes it on `synced`,
+ * `paymentSucceeded`, and `claimedDeposits` events. Consumers should read via
+ * `useWalletInfo()` and re-render on each refresh.
+ */
+export const WalletInfoProvider: React.FC<{
+  children: React.ReactNode;
+  walletInfo: GetInfoResponse | null;
+}> = ({ children, walletInfo }) => {
+  return <WalletInfoContext.Provider value={walletInfo}>{children}</WalletInfoContext.Provider>;
 };
 
 /**
@@ -59,4 +76,14 @@ export const useWalletConnection = () => {
  */
 export const useSdkEvents = (): SubscribeToSdkEvents => {
   return useContext(WalletContext).subscribeToSdkEvents;
+};
+
+/**
+ * Returns the latest wallet info (balance, token balances) from the global
+ * SDK state. Auto-updates on SDK events — callers should not snapshot the
+ * value into local state for validation. Returns null until the wallet has
+ * loaded.
+ */
+export const useWalletInfo = (): GetInfoResponse | null => {
+  return useContext(WalletInfoContext);
 };

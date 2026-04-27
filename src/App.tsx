@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { WalletProvider } from './contexts/WalletContext';
+import { WalletProvider, WalletInfoProvider } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
 import InstallPrompt from './components/InstallPrompt';
@@ -214,21 +214,23 @@ const AppContent: React.FC = () => {
 
   return (
     <WalletProvider client={sdk.sdk} isConnected={sdk.isConnected} subscribeToSdkEvents={sdk.subscribeToSdkEvents}>
-      <FiatDataProvider>
-        <StableBalanceProvider>
-          <StableBalanceFormatterBridge formatterRef={formatPaymentAmountRef} />
-          <ContactsProvider>
-            {renderCurrentScreen()}
-          </ContactsProvider>
-          {sdk.celebrationPayment !== null && (
-            <PaymentReceivedCelebration
-              payment={sdk.celebrationPayment}
-              onClose={sdk.dismissCelebration}
-            />
-          )}
-          <InstallPrompt />
-        </StableBalanceProvider>
-      </FiatDataProvider>
+      <WalletInfoProvider walletInfo={sdk.walletInfo}>
+        <FiatDataProvider>
+          <StableBalanceProvider>
+            <StableBalanceFormatterBridge formatterRef={formatPaymentAmountRef} />
+            <ContactsProvider>
+              {renderCurrentScreen()}
+            </ContactsProvider>
+            {sdk.celebrationPayment !== null && (
+              <PaymentReceivedCelebration
+                payment={sdk.celebrationPayment}
+                onClose={sdk.dismissCelebration}
+              />
+            )}
+            <InstallPrompt />
+          </StableBalanceProvider>
+        </FiatDataProvider>
+      </WalletInfoProvider>
     </WalletProvider>
   );
 };
