@@ -67,6 +67,8 @@ interface PasskeyPageProps {
   onBack: () => void;
   sdkConnected?: boolean;
   onFlowComplete?: () => void;
+  /** Skip the listLabels() detection step and start directly at the create-passkey review screen. */
+  skipDetection?: boolean;
 }
 
 // ============================================
@@ -78,9 +80,10 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   onBack,
   sdkConnected,
   onFlowComplete,
+  skipDetection = false,
 }) => {
-  const [phase, setPhase] = useState<Phase>('detecting');
-  const [isNewUser, setIsNewUser] = useState(false);
+  const [phase, setPhase] = useState<Phase>(skipDetection ? 'review' : 'detecting');
+  const [isNewUser, setIsNewUser] = useState(skipDetection);
   const [labels, setLabels] = useState<string[]>([]);
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
