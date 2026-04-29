@@ -16,15 +16,20 @@ const STARS = [
 interface HomePageProps {
   onRestoreWallet: () => void;
   onCreateNewWallet: () => void;
+  onCreatePasskey: () => void;
   onUsePasskey: () => void;
   prfAvailable: boolean;
+  /** True when this device has previously used a passkey (prioritize sign-in). */
+  hasPasskeyBefore?: boolean;
 }
 
 const HomePage: React.FC<HomePageProps> = ({
   onRestoreWallet,
   onCreateNewWallet,
+  onCreatePasskey,
   onUsePasskey,
   prfAvailable,
+  hasPasskeyBefore = false,
 }) => {
   const [starsAnimating, setStarsAnimating] = useState(false);
   const [showMnemonicFlow, setShowMnemonicFlow] = useState(false);
@@ -128,23 +133,57 @@ const HomePage: React.FC<HomePageProps> = ({
         {/* CTA Buttons */}
         <div className="w-full max-w-xs space-y-4 min-h-[11rem]">
           {prfAvailable && !showMnemonicFlow ? (
-            <>
-              {/* Primary: Use Passkey (default when PRF available) */}
-              <button
-                onClick={onUsePasskey}
-                data-testid="create-wallet-passkey-button"
-                className="button w-full py-4 text-base tracking-wider"
-              >
-                Use Passkey
-              </button>
+            hasPasskeyBefore ? (
+              <>
+                <button
+                  onClick={onUsePasskey}
+                  data-testid="use-passkey-button"
+                  className="button w-full py-4 text-base tracking-wider"
+                >
+                  Sign in with passkey
+                </button>
 
-              <button
-                onClick={() => setShowMnemonicFlow(true)}
-                className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors w-full text-center py-2"
-              >
-                Use Recovery Phrase Instead
-              </button>
-            </>
+                <button
+                  onClick={onCreatePasskey}
+                  data-testid="create-passkey-button"
+                  className="button-secondary w-full py-4 rounded-xl font-display font-semibold text-sm tracking-wide"
+                >
+                  Create a new passkey
+                </button>
+
+                <button
+                  onClick={() => setShowMnemonicFlow(true)}
+                  className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors w-full text-center py-2"
+                >
+                  Use Recovery Phrase Instead
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={onCreatePasskey}
+                  data-testid="create-passkey-button"
+                  className="button w-full py-4 text-base tracking-wider"
+                >
+                  Get Started
+                </button>
+
+                <button
+                  onClick={onUsePasskey}
+                  data-testid="use-passkey-button"
+                  className="button-secondary w-full py-4 rounded-xl font-display font-semibold text-sm tracking-wide"
+                >
+                  I already have a passkey
+                </button>
+
+                <button
+                  onClick={() => setShowMnemonicFlow(true)}
+                  className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors w-full text-center py-2"
+                >
+                  Use Recovery Phrase Instead
+                </button>
+              </>
+            )
           ) : (
             <>
               {/* Mnemonic flow */}

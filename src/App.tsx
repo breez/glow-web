@@ -25,7 +25,7 @@ import { ContactsProvider } from './contexts/ContactsContext';
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
 import type { Seed, Payment } from '@breeztech/breez-sdk-spark';
 
-type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey';
+type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'passkeyCreate';
 
 // Bridge component that feeds StableBalance formatter back to useBreezSdk via a mutable ref
 const StableBalanceFormatterBridge: React.FC<{ formatterRef: React.MutableRefObject<((payment: Payment) => string) | undefined> }> = ({ formatterRef }) => {
@@ -83,7 +83,7 @@ const AppContent: React.FC = () => {
 
   // Render screens
   const renderCurrentScreen = () => {
-    if (sdk.isLoading && currentScreen !== 'restore' && currentScreen !== 'passkey') {
+    if (sdk.isLoading && currentScreen !== 'restore' && currentScreen !== 'passkey' && currentScreen !== 'passkeyCreate') {
       return (
         <div className="absolute inset-0 bg-spark-void/95 backdrop-blur-sm z-50 flex items-center justify-center">
           <LoadingSpinner />
@@ -97,8 +97,10 @@ const AppContent: React.FC = () => {
           <HomePage
             onRestoreWallet={() => setCurrentScreen('restore')}
             onCreateNewWallet={() => setCurrentScreen('generate')}
+            onCreatePasskey={() => setCurrentScreen('passkeyCreate')}
             onUsePasskey={() => setCurrentScreen('passkey')}
             prfAvailable={sdk.prfAvailable}
+            hasPasskeyBefore={sdk.hasPasskeyBefore}
           />
         );
 
@@ -112,6 +114,20 @@ const AppContent: React.FC = () => {
             }}
             sdkConnected={passkeySdkConnected}
             onFlowComplete={handlePasskeyFlowComplete}
+          />
+        );
+
+      case 'passkeyCreate':
+        return (
+          <PasskeyPage
+            onWalletRestored={handlePasskeyConnect}
+            onBack={() => {
+              setPasskeySdkConnected(false);
+              setCurrentScreen('home');
+            }}
+            sdkConnected={passkeySdkConnected}
+            onFlowComplete={handlePasskeyFlowComplete}
+            skipDetection
           />
         );
 
@@ -178,8 +194,10 @@ const AppContent: React.FC = () => {
             <HomePage
               onRestoreWallet={() => setCurrentScreen('restore')}
               onCreateNewWallet={() => setCurrentScreen('generate')}
+              onCreatePasskey={() => setCurrentScreen('passkeyCreate')}
               onUsePasskey={() => setCurrentScreen('passkey')}
               prfAvailable={sdk.prfAvailable}
+              hasPasskeyBefore={sdk.hasPasskeyBefore}
             />
           );
         }

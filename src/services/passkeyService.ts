@@ -14,6 +14,8 @@ import { logger, LogCategory } from './logger';
 
 // Storage key — presence signals passkey mode
 const PASSKEY_LABEL_KEY = 'passkeyLabel';
+// Persistent flag — survives logout/cancel, remembers this device has used a passkey
+const PASSKEY_REGISTERED_KEY = 'passkeyRegistered';
 
 /**
  * Create a fresh Passkey instance.
@@ -62,18 +64,29 @@ export function isPasskeyMode(): boolean {
 
 /**
  * Set passkey mode by storing the label.
+ * Also marks this device as having used a passkey (persistent hint).
  */
 export function setPasskeyMode(label?: string): void {
   localStorage.setItem(PASSKEY_LABEL_KEY, label ?? 'Default');
+  localStorage.setItem(PASSKEY_REGISTERED_KEY, '1');
 }
 
 /**
  * Clear passkey mode.
- * Does NOT clear the persistent "passkey registered" flag — the passkey
+ * Does NOT clear the persistent "passkey registered" flag: the passkey
  * still exists on the device and should be reused on next login.
  */
 export function clearPasskeyMode(): void {
   localStorage.removeItem(PASSKEY_LABEL_KEY);
+}
+
+/**
+ * Check if this device has ever successfully used a passkey.
+ * Survives logout and cancelled prompts so the home screen can
+ * prioritize the sign-in path for returning users.
+ */
+export function hasPasskeyHistory(): boolean {
+  return localStorage.getItem(PASSKEY_REGISTERED_KEY) === '1';
 }
 
 /**
