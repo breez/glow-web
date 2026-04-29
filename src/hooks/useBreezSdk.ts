@@ -115,7 +115,6 @@ export function useBreezSdk(
   const [hasRejectedDeposits, setHasRejectedDeposits] = useState(false);
   const [celebrationPayment, setCelebrationPayment] = useState<Payment | null>(null);
   const [prfAvailable, setPrfAvailable] = useState(false);
-  const [hasPasskeyBefore] = useState(hasPasskeyHistory);
 
   // Refs
   const isInitialLoadRef = useRef(true);
@@ -498,7 +497,7 @@ export function useBreezSdk(
     hasRejectedDeposits,
     celebrationPayment,
     prfAvailable,
-    hasPasskeyBefore,
+    hasPasskeyBefore: hasPasskeyHistory(),
     // Actions
     connectWallet,
     refreshWalletData,

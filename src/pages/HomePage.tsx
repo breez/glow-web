@@ -33,6 +33,7 @@ const HomePage: React.FC<HomePageProps> = ({
 }) => {
   const [starsAnimating, setStarsAnimating] = useState(false);
   const [showMnemonicFlow, setShowMnemonicFlow] = useState(false);
+  const [showCreateWarning, setShowCreateWarning] = useState(false);
   const { handleTap: handleLogoTap } = useSecretTap(5, 2000, false, () => setShowMnemonicFlow(v => !v));
 
   // Trigger star animation on mount
@@ -134,30 +135,60 @@ const HomePage: React.FC<HomePageProps> = ({
         <div className="w-full max-w-xs space-y-4 min-h-[11rem]">
           {prfAvailable && !showMnemonicFlow ? (
             hasPasskeyBefore ? (
-              <>
-                <button
-                  onClick={onUsePasskey}
-                  data-testid="use-passkey-button"
-                  className="button w-full py-4 text-base tracking-wider"
-                >
-                  Sign in with passkey
-                </button>
+              showCreateWarning ? (
+                <>
+                  <div className="text-center space-y-2 mb-2">
+                    <p className="text-spark-text-primary text-sm font-display font-semibold">
+                      Are you sure?
+                    </p>
+                    <p className="text-spark-text-secondary text-xs leading-relaxed">
+                      Creating a new passkey will generate a separate account.
+                      Your existing account will not be affected, but you will
+                      need to sign in with your original passkey to access it.
+                    </p>
+                  </div>
 
-                <button
-                  onClick={onCreatePasskey}
-                  data-testid="create-passkey-button"
-                  className="button-secondary w-full py-4 rounded-xl font-display font-semibold text-sm tracking-wide"
-                >
-                  Create a new passkey
-                </button>
+                  <button
+                    onClick={onCreatePasskey}
+                    data-testid="confirm-create-passkey-button"
+                    className="button w-full py-4 text-base tracking-wider"
+                  >
+                    Create new account
+                  </button>
 
-                <button
-                  onClick={() => setShowMnemonicFlow(true)}
-                  className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors w-full text-center py-2"
-                >
-                  Use Recovery Phrase Instead
-                </button>
-              </>
+                  <button
+                    onClick={() => setShowCreateWarning(false)}
+                    className="button-secondary w-full py-4 rounded-xl font-display font-semibold text-sm tracking-wide"
+                  >
+                    Go Back
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={onUsePasskey}
+                    data-testid="use-passkey-button"
+                    className="button w-full py-4 text-base tracking-wider"
+                  >
+                    Sign in with passkey
+                  </button>
+
+                  <button
+                    onClick={() => setShowCreateWarning(true)}
+                    data-testid="create-passkey-button"
+                    className="button-secondary w-full py-4 rounded-xl font-display font-semibold text-sm tracking-wide"
+                  >
+                    Create a new passkey
+                  </button>
+
+                  <button
+                    onClick={() => setShowMnemonicFlow(true)}
+                    className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors w-full text-center py-2"
+                  >
+                    Use Recovery Phrase Instead
+                  </button>
+                </>
+              )
             ) : (
               <>
                 <button
