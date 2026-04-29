@@ -16,7 +16,7 @@
     "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
-    "@breeztech/breez-sdk-spark": "^0.13.5",
+    "@breeztech/breez-sdk-spark": "^0.13.6",
     "@headlessui/react": "^1.7.17",
     "@zxing/browser": "^0.1.5",
     "@zxing/library": "^0.21.3",

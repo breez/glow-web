@@ -363,16 +363,17 @@ export function useBreezSdk(
 
   const handleBuyBitcoin = useCallback(async (provider: BuyBitcoinProvider) => {
     if (!sdk) return;
+    // CashApp requires an amount and is driven by the BuyBitcoinDialog amount step
+    // (see useBuyBitcoin.generate), so this top-level handler only covers
+    // redirect-only providers like MoonPay.
+    if (provider === 'cashApp') return;
 
     // Pre-open a blank tab synchronously (during user gesture) to avoid popup blockers.
-    // On mobile/PWA this will likely return null — we fall back to same-tab navigation.
+    // On mobile/PWA this will likely return null, we fall back to same-tab navigation.
     const newTab = window.open('', '_blank');
 
     try {
-      const request = provider === 'cashApp'
-        ? { type: 'cashApp' as const }
-        : { type: 'moonpay' as const };
-      const response = await sdk.buyBitcoin(request);
+      const response = await sdk.buyBitcoin({ type: 'moonpay' });
       if (newTab) {
         newTab.location.href = response.url;
       } else {
