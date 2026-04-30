@@ -433,24 +433,25 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       } catch (e) {
         if (cancelled) return;
         // Platform refused because excludeCredentials matched an
-        // already-registered passkey. Even when the user reaches the
-        // create flow via the `passkeyCreate` route, this is the
-        // platform-level guard that catches edge cases like a wiped
-        // localStorage where `hasPasskeyHistory` returned false but the
-        // OS still has the credential.
+        // already-registered passkey. Don't surface this as an error:
+        // since we know the user has a usable passkey, just route
+        // them straight into the sign-in flow. They get the right
+        // outcome (signed into their existing wallet) without seeing
+        // a confusing "passkey already exists" error.
         if (e instanceof PasskeyAlreadyExistsError) {
-          setError(
-            'A passkey for Glow already exists on this device. Use it to sign in instead of creating a new one.',
-          );
-          setErrorKind('already-exists');
-          // Restore the persistent flag so HomePage flips back to the
-          // "Sign in with passkey" CTA on next render. The plugin's
-          // synced keychain told us a credential exists; we should
-          // never have gotten this far in the create flow if the home
-          // screen was reading the truth, but localStorage was wiped
-          // (post-uninstall). Re-establish the flag now that we know.
+          logger.info(LogCategory.AUTH, 'Create flow detected existing passkey, auto-routing to sign-in');
+          // Restore the persistent flag so HomePage and the rest of
+          // the app treat this as a returning-user session.
           localStorage.setItem('passkeyRegistered', '1');
-          logger.warn(LogCategory.AUTH, 'Passkey creation blocked by excludeCredentialIds, restoring hasPasskeyHistory flag');
+          setIsNewUser(false);
+          // Reset detect-fail counter so the upcoming sign-in attempt
+          // gets the fresh-install retry budget if applicable.
+          detectingFailCountRef.current = 0;
+          // Skip aasa-checking: it was already verified earlier in
+          // this session and re-running it would bounce through the
+          // skipDetection -> review path, putting the user right back
+          // on the create flow they just came from.
+          setPhase('detecting');
           return;
         }
         // Surface the underlying error message and Capacitor error code
@@ -880,7 +881,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             setIsNewUser(true);
             setPhase('review');
           }}>
-            Create a new passkey
+            Create Passkey
           </SecondaryButton>
         </div>
       );
@@ -910,7 +911,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             // session, so re-running it is redundant anyway.
             setPhase('detecting');
           }}>
-            Sign in with passkey
+            Use Passkey
           </PrimaryButton>
           <SecondaryButton className="w-full" onClick={handleRetry}>
             Try Again

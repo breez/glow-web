@@ -157,7 +157,7 @@ const HomePage: React.FC<HomePageProps> = ({
                   data-testid="use-passkey-button"
                   className="button w-full py-4 text-base tracking-wider"
                 >
-                  Sign in with passkey
+                  Use Passkey
                 </button>
               </>
             ) : (
@@ -175,7 +175,7 @@ const HomePage: React.FC<HomePageProps> = ({
                   data-testid="use-passkey-button"
                   className="button-secondary w-full py-4 rounded-xl font-display font-semibold text-sm tracking-wide"
                 >
-                  I already have a passkey
+                  Use Existing Passkey
                 </button>
 
                 <button

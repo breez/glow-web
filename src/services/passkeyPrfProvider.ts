@@ -57,6 +57,39 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+// Local credential-IDs registry for the BROWSER path. Web has no
+// equivalent of iOS's iCloud-synced keychain, so localStorage is the
+// best-effort persistence — wiped on app reset / cache clear, but
+// survives reloads. We share the same key passkeyService writes on
+// create so the read-side here always sees newly-registered IDs
+// without needing a runtime hook into passkeyService.
+//
+// Native is unaffected: it reads from the plugin's synced keychain
+// inside KnownCredentialsStore, so this fallback is unused there.
+const PASSKEY_KNOWN_CREDENTIALS_KEY = 'passkeyKnownCredentials';
+
+function getKnownLocal(): string[] {
+  try {
+    const raw = localStorage.getItem(PASSKEY_KNOWN_CREDENTIALS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((x): x is string => typeof x === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function addKnownLocal(credentialIdBase64: string): void {
+  const existing = getKnownLocal();
+  if (existing.includes(credentialIdBase64)) return;
+  localStorage.setItem(
+    PASSKEY_KNOWN_CREDENTIALS_KEY,
+    JSON.stringify([...existing, credentialIdBase64]),
+  );
+}
+
 async function createPrfCredential(
   rpId: string,
   rpName: string,
@@ -119,15 +152,38 @@ async function createPrfCredential(
   return bytesToBase64(new Uint8Array(credential.rawId));
 }
 
-async function evaluatePrf(rpId: string, salt: string): Promise<Uint8Array> {
+async function evaluatePrf(
+  rpId: string,
+  salt: string,
+  allowCredentialIds: string[] = [],
+): Promise<{ seed: Uint8Array; credentialId: Uint8Array }> {
   const saltBytes = new TextEncoder().encode(salt);
   const challenge = crypto.getRandomValues(new Uint8Array(32));
+
+  // Constrain assertion to specific credential IDs when the caller
+  // provided them. Without this, the browser picks any credential
+  // for the RP, which produces non-deterministic seeds when multiple
+  // credentials exist (different PRF keys per passkey). Mirrors the
+  // SDK's iOS PasskeyProvider behavior.
+  const allowCredentials: PublicKeyCredentialDescriptor[] = allowCredentialIds
+    .map((id): PublicKeyCredentialDescriptor | null => {
+      try {
+        return {
+          id: base64ToArrayBuffer(id),
+          type: 'public-key' as const,
+          transports: ['internal', 'hybrid'] as AuthenticatorTransport[],
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter((d): d is PublicKeyCredentialDescriptor => d !== null);
 
   const credential = await navigator.credentials.get({
     publicKey: {
       challenge,
       rpId,
-      allowCredentials: [],
+      allowCredentials,
       userVerification: 'required',
       extensions: {
         prf: { eval: { first: saltBytes } },
@@ -143,11 +199,37 @@ async function evaluatePrf(rpId: string, salt: string): Promise<Uint8Array> {
     throw new Error('PRF evaluation failed');
   }
 
-  return new Uint8Array(extResults.prf.results.first);
+  return {
+    seed: new Uint8Array(extResults.prf.results.first),
+    credentialId: new Uint8Array(credential.rawId),
+  };
 }
 
 class BrowserPasskeyPrfProvider {
   constructor(private readonly rpId: string, private readonly rpName: string) {}
+
+  /**
+   * Optional callback fired with the credential ID returned by every
+   * successful WebAuthn assertion (sign-in path). Mirrors the SDK's
+   * iOS `PasskeyProvider.onAssertionCredentialId` so the host can
+   * record which credential was used and populate
+   * excludeCredentialIds / allowCredentialIds on subsequent requests.
+   *
+   * Useful for migrating users whose passkey predates the host's own
+   * credential-ID tracking: the first successful sign-in surfaces
+   * the ID, after which the host's records are correct and the
+   * platform-level "already exists" check fires on future create
+   * attempts. Set before calling derivePrfSeed.
+   */
+  onAssertionCredentialId?: (credentialIdBase64: string) => void;
+
+  /**
+   * Optional list of base64-encoded credential IDs to constrain
+   * assertion to. When non-empty, the browser refuses any credential
+   * not in this list, even if it matches the RP. Set before calling
+   * derivePrfSeed.
+   */
+  allowCredentialIds: string[] = [];
 
   async isPrfAvailable(): Promise<boolean> {
     return checkPlatformAuthenticator();
@@ -168,7 +250,22 @@ class BrowserPasskeyPrfProvider {
   }
 
   async derivePrfSeed(salt: string): Promise<Uint8Array> {
-    return evaluatePrf(this.rpId, salt);
+    const { seed, credentialId } = await evaluatePrf(
+      this.rpId,
+      salt,
+      this.allowCredentialIds,
+    );
+    // Capture-on-sign-in: surface the credential ID so the host can
+    // record it. Best-effort — failures here must not block the
+    // seed return because the assertion already succeeded.
+    try {
+      this.onAssertionCredentialId?.(bytesToBase64(credentialId));
+    } catch (e) {
+      logger.warn(LogCategory.AUTH, 'onAssertionCredentialId callback threw', {
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+    return seed;
   }
 
   /**
@@ -313,12 +410,31 @@ class AppPasskeyPrfProvider implements PrfProvider {
   async derivePrfSeed(salt: string): Promise<Uint8Array> {
     const autoRegister = this.mode === 'create';
     logger.info(LogCategory.AUTH, 'Deriving PRF seed', { mode: this.mode });
-    // Browser provider's derivePrfSeed signature is (salt) only; native's
-    // is (salt, { autoRegister }). Branch by capability instead of
-    // forcing an option-bag on both.
-    const seed = native
-      ? await (sdkProvider as NativePasskeyPrfProvider).derivePrfSeed(salt, { autoRegister })
-      : await (sdkProvider as BrowserPasskeyPrfProvider).derivePrfSeed(salt);
+
+    let seed: Uint8Array;
+    if (native) {
+      seed = await (sdkProvider as NativePasskeyPrfProvider).derivePrfSeed(salt, { autoRegister });
+    } else {
+      // Browser path: configure allowCredentialIds + capture-on-sign-in
+      // before the assertion. We read the locally-tracked list from
+      // localStorage (the web counterpart to the iOS plugin's synced
+      // keychain). This gives the same single-passkey enforcement on
+      // web that the native path gets via the plugin: assertion is
+      // constrained to credentials we tracked, and successful
+      // assertions backfill the list (covering pre-tracking installs).
+      const browser = sdkProvider as BrowserPasskeyPrfProvider;
+      browser.allowCredentialIds = getKnownLocal();
+      browser.onAssertionCredentialId = (idBase64) => addKnownLocal(idBase64);
+      try {
+        seed = await browser.derivePrfSeed(salt);
+      } finally {
+        // Reset to defaults so a stray follow-up call without a
+        // refreshed list doesn't accidentally allow nothing.
+        browser.allowCredentialIds = [];
+        browser.onAssertionCredentialId = undefined;
+      }
+    }
+
     logger.info(LogCategory.AUTH, 'PRF seed derived successfully');
     this.onAuthComplete?.();
     return seed;

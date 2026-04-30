@@ -100,18 +100,14 @@ export class NativePasskeyPrfProvider {
       });
       return credentialId;
     } catch (e) {
-      // iOS reports the platform's "credential already registered"
-      // refusal as ASAuthorizationError.failed with the underlying
-      // message intact, which the SDK then maps to AuthenticationFailed
-      // (not the cleaner InvalidStateError → PasskeyAlreadyExistsError
-      // path the browser uses). Detect by message content and rethrow
-      // as the typed error so PasskeyPage's existing handler can
-      // surface the proper recovery UX.
+      // The SDK surfaces the platform's duplicate-prevention refusal
+      // (ASAuthorizationError.matchedExcludedCredential on iOS) as
+      // PasskeyPrfError.CredentialAlreadyExists, which the Capacitor
+      // plugin maps to error code "CREDENTIAL_ALREADY_EXISTS". Rethrow
+      // as the typed JS error so PasskeyPage's existing handler can
+      // route the user to the sign-in path.
       const code = (e as { code?: string })?.code;
-      const msg = e instanceof Error ? e.message : String(e);
-      const isAlreadyExists = code === 'AUTHENTICATION_FAILED'
-        && /already\s+registered/i.test(msg);
-      if (isAlreadyExists) {
+      if (code === 'CREDENTIAL_ALREADY_EXISTS') {
         const { PasskeyAlreadyExistsError } = await import('./passkeyPrfProvider');
         throw new PasskeyAlreadyExistsError();
       }
