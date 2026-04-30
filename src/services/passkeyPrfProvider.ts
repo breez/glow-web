@@ -31,26 +31,82 @@ async function checkPlatformAuthenticator(): Promise<boolean> {
   return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
 }
 
-async function createPrfCredential(rpId: string, rpName: string): Promise<void> {
+/**
+ * Thrown when `createPrfCredential` asks the platform to register a
+ * new passkey but it refuses because an entry in `excludeCredentials`
+ * matches a credential already on the device.
+ */
+export class PasskeyAlreadyExistsError extends Error {
+  constructor() {
+    super('A passkey for this app already exists on this device');
+    this.name = 'PasskeyAlreadyExistsError';
+  }
+}
+
+function base64ToArrayBuffer(b64: string): ArrayBuffer {
+  const binary = atob(b64);
+  const buffer = new ArrayBuffer(binary.length);
+  const view = new Uint8Array(buffer);
+  for (let i = 0; i < binary.length; i++) view[i] = binary.charCodeAt(i);
+  return buffer;
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+async function createPrfCredential(
+  rpId: string,
+  rpName: string,
+  excludeCredentialIds: string[] = [],
+): Promise<string> {
   const challenge = crypto.getRandomValues(new Uint8Array(32));
   const userId = crypto.getRandomValues(new Uint8Array(16));
 
-  const credential = await navigator.credentials.create({
-    publicKey: {
-      challenge,
-      rp: { name: rpName, id: rpId },
-      user: { id: userId, name: rpName, displayName: rpName },
-      pubKeyCredParams: [
-        { alg: -7, type: 'public-key' },
-        { alg: -257, type: 'public-key' },
-      ],
-      authenticatorSelection: {
-        userVerification: 'required',
-        residentKey: 'required',
+  const excludeCredentials: PublicKeyCredentialDescriptor[] = excludeCredentialIds
+    .map((id): PublicKeyCredentialDescriptor | null => {
+      try {
+        return {
+          id: base64ToArrayBuffer(id),
+          type: 'public-key' as const,
+          transports: ['internal', 'hybrid'] as AuthenticatorTransport[],
+        };
+      } catch {
+        // Skip malformed entries rather than abort the whole register.
+        return null;
+      }
+    })
+    .filter((d): d is PublicKeyCredentialDescriptor => d !== null);
+
+  let credential: PublicKeyCredential;
+  try {
+    credential = await navigator.credentials.create({
+      publicKey: {
+        challenge,
+        rp: { name: rpName, id: rpId },
+        user: { id: userId, name: rpName, displayName: rpName },
+        pubKeyCredParams: [
+          { alg: -7, type: 'public-key' },
+          { alg: -257, type: 'public-key' },
+        ],
+        authenticatorSelection: {
+          userVerification: 'required',
+          residentKey: 'required',
+        },
+        extensions: { prf: {} } as AuthenticationExtensionsClientInputs,
+        excludeCredentials,
       },
-      extensions: { prf: {} } as AuthenticationExtensionsClientInputs,
-    },
-  }) as PublicKeyCredential;
+    }) as PublicKeyCredential;
+  } catch (e) {
+    // Platform refuses when an existing credential matches an entry
+    // in excludeCredentials. Browsers raise InvalidStateError.
+    if (e instanceof DOMException && e.name === 'InvalidStateError') {
+      throw new PasskeyAlreadyExistsError();
+    }
+    throw e;
+  }
 
   const extResults = credential.getClientExtensionResults() as {
     prf?: { enabled?: boolean };
@@ -59,6 +115,8 @@ async function createPrfCredential(rpId: string, rpName: string): Promise<void> 
   if (!extResults.prf?.enabled) {
     throw new Error('PRF extension not supported by this authenticator');
   }
+
+  return bytesToBase64(new Uint8Array(credential.rawId));
 }
 
 async function evaluatePrf(rpId: string, salt: string): Promise<Uint8Array> {
@@ -95,8 +153,18 @@ class BrowserPasskeyPrfProvider {
     return checkPlatformAuthenticator();
   }
 
-  async createPasskey(): Promise<void> {
-    await createPrfCredential(this.rpId, this.rpName);
+  /**
+   * @returns base64-encoded credential ID of the newly created passkey.
+   * @throws PasskeyAlreadyExistsError when excludeCredentialIds blocks.
+   */
+  async createPasskey(
+    options: { excludeCredentialIds?: string[] } = {},
+  ): Promise<string> {
+    return createPrfCredential(
+      this.rpId,
+      this.rpName,
+      options.excludeCredentialIds ?? [],
+    );
   }
 
   async derivePrfSeed(salt: string): Promise<Uint8Array> {
@@ -185,6 +253,28 @@ class AppPasskeyPrfProvider implements PrfProvider {
   /** Optional callback fired after a PRF prompt succeeds in derivePrfSeed. */
   onAuthComplete?: () => void;
 
+  /**
+   * Mode for the next `derivePrfSeed` call (and any chained calls until
+   * reset). Controls whether the underlying native provider is allowed
+   * to fall back to passkey registration when no credential is found.
+   *
+   * - `'sign-in'` (autoRegister=false): used by explicit Sign-in flows
+   *   so a missing credential surfaces as `CredentialNotFound` instead
+   *   of silently registering a new passkey. Required for the
+   *   one-passkey-per-RP guarantee: if the user taps "Sign in" and
+   *   the credential is unavailable (cancelled, lockout, missing),
+   *   auto-creating a parallel passkey would silently produce a
+   *   second unrelated wallet.
+   * - `'create'` (autoRegister=true): default; matches the previous
+   *   behavior where derivePrfSeed auto-registers if needed.
+   *
+   * On the browser path this is a no-op: BrowserPasskeyPrfProvider
+   * never auto-registers (`navigator.credentials.get` simply throws
+   * when no credential is found). Surfaced for API parity with the
+   * native plugin path.
+   */
+  mode: 'sign-in' | 'create' = 'create';
+
   async isPrfAvailable(): Promise<boolean> {
     try {
       const available = await sdkProvider.isPrfAvailable();
@@ -200,15 +290,35 @@ class AppPasskeyPrfProvider implements PrfProvider {
     }
   }
 
-  async createPasskey(): Promise<void> {
-    logger.info(LogCategory.AUTH, 'Creating new passkey');
-    await sdkProvider.createPasskey();
+  /**
+   * Create a new passkey with PRF support.
+   *
+   * @param options.excludeCredentialIds list of base64 credential IDs
+   *        the platform should refuse to duplicate. Pass every previously
+   *        registered ID to enforce one-passkey-per-device-per-RP.
+   * @returns base64-encoded credential ID of the newly created passkey.
+   * @throws PasskeyAlreadyExistsError when excludeCredentialIds blocks.
+   */
+  async createPasskey(
+    options: { excludeCredentialIds?: string[] } = {},
+  ): Promise<string> {
+    logger.info(LogCategory.AUTH, 'Creating new passkey', {
+      excludeCount: options.excludeCredentialIds?.length ?? 0,
+    });
+    const credentialId = await sdkProvider.createPasskey(options);
     logger.info(LogCategory.AUTH, 'Passkey created with PRF support');
+    return credentialId;
   }
 
   async derivePrfSeed(salt: string): Promise<Uint8Array> {
-    logger.info(LogCategory.AUTH, 'Deriving PRF seed');
-    const seed = await sdkProvider.derivePrfSeed(salt);
+    const autoRegister = this.mode === 'create';
+    logger.info(LogCategory.AUTH, 'Deriving PRF seed', { mode: this.mode });
+    // Browser provider's derivePrfSeed signature is (salt) only; native's
+    // is (salt, { autoRegister }). Branch by capability instead of
+    // forcing an option-bag on both.
+    const seed = native
+      ? await (sdkProvider as NativePasskeyPrfProvider).derivePrfSeed(salt, { autoRegister })
+      : await (sdkProvider as BrowserPasskeyPrfProvider).derivePrfSeed(salt);
     logger.info(LogCategory.AUTH, 'PRF seed derived successfully');
     this.onAuthComplete?.();
     return seed;

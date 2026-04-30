@@ -30,10 +30,12 @@ declare global {
             rpName?: string;
             userName?: string;
             userDisplayName?: string;
-          }): Promise<void>;
+            excludeCredentialIds?: string[];
+          }): Promise<{ credentialId: string }>;
           derivePrfSeed(options: {
             rpId?: string;
             salt: string;
+            autoRegister?: boolean;
           }): Promise<{ seed: string }>;
           checkDomainAssociation(options?: {
             rpId?: string;
@@ -70,17 +72,36 @@ export class NativePasskeyPrfProvider {
     return available;
   }
 
-  async createPasskey(): Promise<void> {
-    await getPlugin().createPasskey({
+  /**
+   * @returns base64-encoded credential ID of the newly created passkey
+   *          as reported by the platform.
+   * @throws PasskeyAlreadyExistsError when the platform refuses because
+   *         a credential listed in `excludeCredentialIds` is already on
+   *         the device. The Capacitor plugin maps the platform-level
+   *         InvalidStateError to a `CONFIGURATION_ERROR` / generic
+   *         rejection; callers should treat any failure here as the
+   *         "already exists" signal when excludeCredentialIds was
+   *         non-empty.
+   */
+  async createPasskey(
+    options: { excludeCredentialIds?: string[] } = {},
+  ): Promise<string> {
+    const { credentialId } = await getPlugin().createPasskey({
       rpId: this.rpId,
       rpName: this.rpName,
+      excludeCredentialIds: options.excludeCredentialIds ?? [],
     });
+    return credentialId;
   }
 
-  async derivePrfSeed(salt: string): Promise<Uint8Array> {
+  async derivePrfSeed(
+    salt: string,
+    options: { autoRegister?: boolean } = {},
+  ): Promise<Uint8Array> {
     const { seed } = await getPlugin().derivePrfSeed({
       rpId: this.rpId,
       salt,
+      autoRegister: options.autoRegister,
     });
     // Decode base64 to Uint8Array
     const binary = atob(seed);

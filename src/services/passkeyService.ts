@@ -12,10 +12,16 @@ import { Passkey, Wallet, NostrRelayConfig } from '@breeztech/breez-sdk-spark';
 import { passkeyPrfProvider } from './passkeyPrfProvider';
 import { logger, LogCategory } from './logger';
 
-// Storage key — presence signals passkey mode
+// Storage key: presence signals passkey mode
 const PASSKEY_LABEL_KEY = 'passkeyLabel';
-// Persistent flag — survives logout/cancel, remembers this device has used a passkey
+// Persistent flag, survives logout/cancel: remembers this device has used a passkey
 const PASSKEY_REGISTERED_KEY = 'passkeyRegistered';
+// JSON-encoded array of base64-encoded credential IDs for every passkey
+// this device has registered against this RP. Passed verbatim as
+// `excludeCredentialIds` on subsequent createPasskey calls so the
+// platform refuses to register a duplicate even if PASSKEY_REGISTERED
+// was wiped (defense-in-depth: protects against localStorage clears).
+const KNOWN_CREDENTIALS_KEY = 'passkeyKnownCredentials';
 
 /**
  * Create a fresh Passkey instance.
@@ -31,13 +37,53 @@ function createPasskeyInstance(): Passkey {
 
 /**
  * Create a new passkey with PRF support.
- * Only registers the credential — no seed derivation.
+ * Only registers the credential, no seed derivation.
  * Triggers exactly 1 WebAuthn prompt.
+ *
+ * Passes every previously-registered credential ID for this RP as
+ * `excludeCredentialIds`, so the platform refuses if any of them is
+ * still on the device. Captures the new credential ID and persists
+ * it for future excludeCredentialIds lists.
+ *
+ * @throws PasskeyAlreadyExistsError if the platform refuses because a
+ *         credential listed in excludeCredentialIds is registered.
  */
 export async function createPasskey(): Promise<void> {
   logger.info(LogCategory.AUTH, 'Creating new passkey');
-  await passkeyPrfProvider.createPasskey();
+  const excludeCredentialIds = getKnownCredentialIds();
+  const credentialId = await passkeyPrfProvider.createPasskey({ excludeCredentialIds });
+  if (credentialId) addKnownCredentialId(credentialId);
+  localStorage.setItem(PASSKEY_REGISTERED_KEY, '1');
   logger.info(LogCategory.AUTH, 'Passkey created successfully');
+}
+
+/**
+ * Read the persisted list of base64-encoded credential IDs this device
+ * has registered. Returns an empty array if storage is unset or invalid.
+ */
+export function getKnownCredentialIds(): string[] {
+  try {
+    const raw = localStorage.getItem(KNOWN_CREDENTIALS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((x): x is string => typeof x === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Append a credential ID to the persisted list. No-op if already present.
+ */
+export function addKnownCredentialId(credentialId: string): void {
+  const existing = getKnownCredentialIds();
+  if (existing.includes(credentialId)) return;
+  localStorage.setItem(
+    KNOWN_CREDENTIALS_KEY,
+    JSON.stringify([...existing, credentialId]),
+  );
 }
 
 /**
