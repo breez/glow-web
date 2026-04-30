@@ -68,6 +68,50 @@ function bytesToBase64(bytes: Uint8Array): string {
 // inside KnownCredentialsStore, so this fallback is unused there.
 const PASSKEY_KNOWN_CREDENTIALS_KEY = 'passkeyKnownCredentials';
 
+// Race-window marker: set to a timestamp right after a successful
+// `createPasskey` so the *first* subsequent sign-in can recover from
+// password managers that haven't finished indexing the new credential
+// (observed with Chrome Password Manager on iOS). Cleared after the
+// first successful assertion.
+const PASSKEY_JUST_CREATED_AT_KEY = 'passkeyJustCreatedAt';
+// How long after create we treat NotAllowedError + whitelist as a
+// likely indexing race rather than a genuine user cancel. Long enough
+// to cover the user reading the "passkey saved" toast and tapping
+// sign-in; short enough that later cancellations don't double-prompt.
+const PASSKEY_JUST_CREATED_WINDOW_MS = 2 * 60 * 1000;
+
+export function markPasskeyJustCreated(): void {
+  try {
+    localStorage.setItem(PASSKEY_JUST_CREATED_AT_KEY, String(Date.now()));
+  } catch {
+    // localStorage unavailable: degraded UX (no race recovery) but
+    // not fatal.
+  }
+}
+
+function consumePasskeyJustCreated(): boolean {
+  try {
+    const raw = localStorage.getItem(PASSKEY_JUST_CREATED_AT_KEY);
+    if (!raw) return false;
+    const ts = Number(raw);
+    if (!Number.isFinite(ts)) {
+      localStorage.removeItem(PASSKEY_JUST_CREATED_AT_KEY);
+      return false;
+    }
+    return Date.now() - ts < PASSKEY_JUST_CREATED_WINDOW_MS;
+  } catch {
+    return false;
+  }
+}
+
+function clearPasskeyJustCreated(): void {
+  try {
+    localStorage.removeItem(PASSKEY_JUST_CREATED_AT_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 function getKnownLocal(): string[] {
   try {
     const raw = localStorage.getItem(PASSKEY_KNOWN_CREDENTIALS_KEY);
@@ -250,22 +294,50 @@ class BrowserPasskeyPrfProvider {
   }
 
   async derivePrfSeed(salt: string): Promise<Uint8Array> {
-    const { seed, credentialId } = await evaluatePrf(
-      this.rpId,
-      salt,
-      this.allowCredentialIds,
-    );
+    let result: { seed: Uint8Array; credentialId: Uint8Array };
+    try {
+      result = await evaluatePrf(this.rpId, salt, this.allowCredentialIds);
+    } catch (e) {
+      // Race seen with non-iCloud password managers on iOS (e.g.
+      // Chrome Password Manager): `navigator.credentials.create`
+      // resolves before the credential is queryable via
+      // `navigator.credentials.get`. The next assertion is constrained
+      // by `allowCredentials = [justCreatedId]` and the manager
+      // reports no matching credential, raising `NotAllowedError`.
+      //
+      // Retry once without the whitelist so any RP-scoped credential
+      // can satisfy the assertion. Capture-on-sign-in still records
+      // whichever credential the user picked in the system sheet, so
+      // future calls converge back to the constrained path. Only
+      // retry when we actually had a non-empty whitelist (an empty
+      // list already means "any credential" and a NotAllowedError
+      // there is genuine: cancelled, locked out, or no credential).
+      const isNotAllowed = e instanceof DOMException && e.name === 'NotAllowedError';
+      const justCreated = consumePasskeyJustCreated();
+      if (!isNotAllowed || this.allowCredentialIds.length === 0 || !justCreated) {
+        throw e;
+      }
+      logger.warn(
+        LogCategory.AUTH,
+        'PRF assertion NotAllowedError within just-created window; retrying without allowCredentials',
+        { whitelistSize: this.allowCredentialIds.length },
+      );
+      result = await evaluatePrf(this.rpId, salt, []);
+    }
+    // First successful assertion clears the race-window marker so a
+    // later genuine cancel doesn't get rescued into a double-prompt.
+    clearPasskeyJustCreated();
     // Capture-on-sign-in: surface the credential ID so the host can
     // record it. Best-effort — failures here must not block the
     // seed return because the assertion already succeeded.
     try {
-      this.onAssertionCredentialId?.(bytesToBase64(credentialId));
+      this.onAssertionCredentialId?.(bytesToBase64(result.credentialId));
     } catch (e) {
       logger.warn(LogCategory.AUTH, 'onAssertionCredentialId callback threw', {
         error: e instanceof Error ? e.message : String(e),
       });
     }
-    return seed;
+    return result.seed;
   }
 
   /**
