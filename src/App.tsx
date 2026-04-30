@@ -100,6 +100,7 @@ const AppContent: React.FC = () => {
             onCreatePasskey={() => setCurrentScreen('passkeyCreate')}
             onUsePasskey={() => setCurrentScreen('passkey')}
             prfAvailable={sdk.prfAvailable}
+            hasPasskeyBefore={sdk.hasPasskeyBefore}
           />
         );
 

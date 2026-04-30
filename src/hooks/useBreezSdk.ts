@@ -23,6 +23,7 @@ import {
   setPasskeyMode,
   clearPasskeyMode,
   getWallet,
+  hasPasskeyHistory,
 } from '../services/passkeyService';
 
 
@@ -77,6 +78,7 @@ export interface BreezSdkState {
   hasRejectedDeposits: boolean;
   celebrationPayment: Payment | null;
   prfAvailable: boolean;
+  hasPasskeyBefore: boolean;
 }
 
 export type SdkEventHandler = (event: SdkEvent) => void;
@@ -495,6 +497,7 @@ export function useBreezSdk(
     hasRejectedDeposits,
     celebrationPayment,
     prfAvailable,
+    hasPasskeyBefore: hasPasskeyHistory(),
     // Actions
     connectWallet,
     refreshWalletData,
