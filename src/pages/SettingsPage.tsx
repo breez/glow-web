@@ -9,6 +9,7 @@ import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs, exportDatabaseState } from '@/services/logExport';
 import { useSecretTap } from '@/hooks/useSecretTap';
 import { useToast } from '@/contexts/ToastContext';
+import { isNativePlatform } from '@/services/nativePasskeyPrfProvider';
 
 const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
 
@@ -380,15 +381,30 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
                   <button
                     type="button"
                     onClick={() => {
+                      // Intentionally only clear the flag — leave
+                      // `passkeyKnownCredentials` in place. On native
+                      // the credential-IDs registry lives in the
+                      // iCloud-synced plugin keychain so this matters
+                      // less, but on web that localStorage entry IS
+                      // the registry. Wiping it here would empty the
+                      // browser's excludeCredentialIds list and
+                      // silently allow a duplicate passkey on the
+                      // next Create attempt — which is exactly the
+                      // "platform-level already-exists check still
+                      // fires" guarantee this button claims to
+                      // preserve.
                       localStorage.removeItem('passkeyRegistered');
-                      localStorage.removeItem('passkeyKnownCredentials');
-                      logger.warn(LogCategory.AUTH, 'Dev: cleared passkeyRegistered flag (kept keychain)');
+                      logger.warn(LogCategory.AUTH, 'Dev: cleared passkeyRegistered flag (kept credential IDs)');
                       showToast('success', 'Passkey history cleared', 'Restart the app to see "Get Started" CTA.');
                     }}
                     className="w-full bg-spark-surface border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary text-sm hover:border-spark-border-light transition-colors text-left"
                   >
                     <span className="font-medium block">Forget passkey history</span>
-                    <span className="text-spark-text-muted text-xs">Clears local flag only. Keeps the iCloud-synced credential IDs so the platform-level "already exists" check still fires.</span>
+                    <span className="text-spark-text-muted text-xs">
+                      {isNativePlatform()
+                        ? 'Clears local flag only. Keeps the iCloud-synced credential IDs so the platform-level "already exists" check still fires.'
+                        : 'Clears local flag only. Keeps tracked credential IDs in localStorage so the browser-level "already exists" check still fires.'}
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -407,7 +423,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
                       localStorage.removeItem('passkeyKnownCredentials');
                       logger.warn(LogCategory.AUTH, 'Dev: full passkey state wipe');
                       if (keychainCleared) {
-                        showToast('success', 'Passkey state wiped', 'Local + iCloud-synced credential IDs cleared.');
+                        showToast(
+                          'success',
+                          'Passkey state wiped',
+                          isNativePlatform()
+                            ? 'Local flag + iCloud-synced credential IDs cleared.'
+                            : 'Local flag + tracked credential IDs cleared.',
+                        );
                       } else {
                         showToast('error', 'Partial wipe', 'Local cleared but plugin keychain clear failed; check logs.');
                       }
@@ -415,7 +437,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
                     className="w-full bg-spark-surface border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary text-sm hover:border-spark-border-light transition-colors text-left"
                   >
                     <span className="font-medium block">Wipe all passkey state</span>
-                    <span className="text-spark-text-muted text-xs">Clears local flag AND the plugin's iCloud-synced credential-IDs entry. Pair with a Settings -&gt; Passwords delete for a true zero state.</span>
+                    <span className="text-spark-text-muted text-xs">
+                      {isNativePlatform()
+                        ? "Clears local flag AND the plugin's iCloud-synced credential-IDs entry. Pair with a Settings -> Passwords delete for a true zero state."
+                        : 'Clears local flag AND localStorage credential-IDs registry. Pair with a browser-level passkey delete (Chrome / Safari Passwords) for a true zero state.'}
+                    </span>
                   </button>
                 </div>
               </div>
