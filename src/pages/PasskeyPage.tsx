@@ -8,11 +8,15 @@ import { NostrKeyIcon, CheckIcon, PasskeyIcon } from '../components/Icons';
 import {
   createPasskey,
   getWallet,
+  hasPasskeyHistory,
   listLabels,
   saveLabel,
   setPasskeyMode,
 } from '@/services/passkeyService';
-import { passkeyPrfProvider } from '@/services/passkeyPrfProvider';
+import {
+  passkeyPrfProvider,
+  PasskeyAlreadyExistsError,
+} from '@/services/passkeyPrfProvider';
 import { logger, LogCategory } from '@/services/logger';
 import StepperBar from '@/components/OnboardingStepper';
 
@@ -112,12 +116,24 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   }, [sdkConnected, phase]);
 
   // On mount: detect passkey by trying listLabels() (WebAuthn get).
-  // The "Use Passkey" button click on HomePage is the user interaction.
-  // Success → passkey exists → returning user.
-  // Failure → no passkey / cancelled → new user flow.
+  // The "Sign in with passkey" button click on HomePage is the user
+  // interaction. Success → passkey exists → returning user. Failure
+  // depends on whether the device has a registered passkey:
+  //  - hasPasskeyHistory=true: a returning user whose discovery just
+  //    failed (cancelled prompt, missing credential, relay error).
+  //    Refuse to silently register a parallel passkey: surface a
+  //    retry-able error and stay on the detecting phase.
+  //  - hasPasskeyHistory=false: a genuine first-time user; route to
+  //    the new-user create flow.
   useEffect(() => {
     if (phase !== 'detecting') return;
     let cancelled = false;
+
+    // Sign-in path: tell the provider not to auto-register if discovery
+    // can't find a credential. On native this maps to autoRegister=false
+    // on the SDK PasskeyProvider, which surfaces CredentialNotFound
+    // instead of silently registering. No-op on browser.
+    passkeyPrfProvider.mode = 'sign-in';
 
     // Update spinner text once WebAuthn prompt completes
     passkeyPrfProvider.onAuthComplete = () => {
@@ -145,7 +161,24 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         }
       } catch (e) {
         if (cancelled) return;
-        // No passkey or user cancelled → new user flow
+        const errorName = e instanceof Error ? e.name : '';
+        const isCancelled = errorName === 'NotAllowedError' || errorName === 'AbortError';
+        if (hasPasskeyHistory()) {
+          // Returning user: never silently fall to creation. Surface a
+          // retryable error and stay on the detecting phase. The
+          // detecting-phase error UI offers a Retry button that clears
+          // the error and re-runs the effect.
+          logger.warn(LogCategory.AUTH, 'Sign-in failed for returning user, NOT auto-registering', {
+            errorName,
+            error: e instanceof Error ? e.message : String(e),
+          });
+          setError(
+            isCancelled
+              ? 'Sign-in cancelled. Please try again.'
+              : 'Could not sign in with your passkey. Please try again.',
+          );
+          return;
+        }
         logger.info(LogCategory.AUTH, 'No existing passkey, starting new user flow');
         setPhase('review');
       }
@@ -155,6 +188,9 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     return () => {
       cancelled = true;
       passkeyPrfProvider.onAuthComplete = undefined;
+      // Restore the default mode so subsequent flows (e.g. new-storing,
+      // connecting) can auto-register if needed.
+      passkeyPrfProvider.mode = 'create';
     };
   }, [phase]);
 
@@ -172,6 +208,19 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         setPhase('new-storing');
       } catch (e) {
         if (cancelled) return;
+        // Platform refused because excludeCredentials matched an
+        // already-registered passkey. Even when the user reaches the
+        // create flow via the `passkeyCreate` route, this is the
+        // platform-level guard that catches edge cases like a wiped
+        // localStorage where `hasPasskeyHistory` returned false but the
+        // OS still has the credential.
+        if (e instanceof PasskeyAlreadyExistsError) {
+          setError(
+            'A passkey for Glow already exists on this device. Use it to sign in instead of creating a new one.',
+          );
+          logger.warn(LogCategory.AUTH, 'Passkey creation blocked by excludeCredentialIds');
+          return;
+        }
         setError('Failed to create passkey');
         logger.error(LogCategory.AUTH, 'Passkey creation failed', {
           error: e instanceof Error ? e.message : String(e),
