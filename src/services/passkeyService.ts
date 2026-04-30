@@ -1,11 +1,18 @@
 /**
  * Passkey Service.
  *
- * Wraps the Breez SDK's Passkey class to provide
- * passkey-based wallet creation and restoration functionality.
+ * Wraps the Breez SDK's Passkey class to provide passkey-based wallet
+ * creation and restoration functionality.
  *
- * Creates a fresh Passkey instance per operation so that no stale
- * PRF session or cached state can survive between wizard steps.
+ * Uses a module-level singleton Passkey instance so the SDK's internal
+ * `nostr_keys: OnceCell` cache survives across calls. With the prior
+ * "fresh instance per operation" pattern, every call to `saveLabel` /
+ * `listLabels` re-derived the Nostr identity from scratch, firing a
+ * fresh PRF prompt. The singleton lets the SDK reuse a cached identity
+ * after the first successful derivation in a given session.
+ *
+ * The singleton must be invalidated whenever the underlying credential
+ * or relay configuration changes (logout, RP switch, deletion-recovery).
  */
 
 import { Passkey, Wallet, NostrRelayConfig } from '@breeztech/breez-sdk-spark';
@@ -23,16 +30,37 @@ const PASSKEY_REGISTERED_KEY = 'passkeyRegistered';
 // was wiped (defense-in-depth: protects against localStorage clears).
 const KNOWN_CREDENTIALS_KEY = 'passkeyKnownCredentials';
 
+let cachedPasskey: Passkey | null = null;
+
 /**
- * Create a fresh Passkey instance.
- * No caching — each call gets a clean instance with no stale state.
+ * Lazy singleton accessor for the SDK Passkey instance.
+ *
+ * The SDK keeps an internal `OnceCell` for the derived Nostr identity;
+ * reusing the same instance across calls preserves that cache and
+ * prevents redundant PRF prompts on follow-up Nostr operations
+ * (`saveLabel`, `listLabels`) within the same session. The wallet seed
+ * (`getWallet`) uses a different salt and still requires its own PRF
+ * call. Tier 2 of the passkey UX overhaul collapses both into a single
+ * assertion via dual-salt PRF.
  */
-function createPasskeyInstance(): Passkey {
+function getPasskey(): Passkey {
+  if (cachedPasskey !== null) return cachedPasskey;
   const breezApiKey = import.meta.env.VITE_BREEZ_API_KEY;
   const relayConfig: NostrRelayConfig | undefined = breezApiKey
     ? { breezApiKey }
     : undefined;
-  return new Passkey(passkeyPrfProvider, relayConfig ?? null);
+  cachedPasskey = new Passkey(passkeyPrfProvider, relayConfig ?? null);
+  return cachedPasskey;
+}
+
+/**
+ * Discard the cached Passkey instance. Called whenever the underlying
+ * credential or relay configuration changes (logout, deletion-recovery,
+ * future RP switch). Forces the next call to construct a fresh instance
+ * with an empty Nostr-identity cache.
+ */
+function invalidatePasskey(): void {
+  cachedPasskey = null;
 }
 
 /**
@@ -116,6 +144,11 @@ export async function clearPasskeyHistory(): Promise<void> {
   }
   localStorage.removeItem(PASSKEY_REGISTERED_KEY);
   localStorage.removeItem(KNOWN_CREDENTIALS_KEY);
+  // The cached Nostr identity is keyed off the now-deleted passkey;
+  // reusing it after the next create would still derive against the
+  // previous PRF output (whatever the SDK happened to keep in the
+  // OnceCell). Drop the singleton so the next call rebuilds.
+  invalidatePasskey();
 }
 
 /**
@@ -128,7 +161,7 @@ export async function isPrfAvailable(): Promise<boolean> {
     return false;
   }
 
-  const passkey = createPasskeyInstance();
+  const passkey = getPasskey();
   return await passkey.isAvailable();
 }
 
@@ -153,9 +186,16 @@ export function setPasskeyMode(label?: string): void {
  * Clear passkey mode.
  * Does NOT clear the persistent "passkey registered" flag: the passkey
  * still exists on the device and should be reused on next login.
+ *
+ * Invalidates the cached Passkey instance so the next sign-in starts
+ * from a clean SDK state. The user could log in with a different label
+ * after logout and the cached Nostr identity (tied to the same RP, but
+ * potentially derived under a different account context) should not
+ * leak across sessions.
  */
 export function clearPasskeyMode(): void {
   localStorage.removeItem(PASSKEY_LABEL_KEY);
+  invalidatePasskey();
 }
 
 /**
@@ -172,7 +212,7 @@ export function hasPasskeyHistory(): boolean {
  */
 export async function listLabels(): Promise<string[]> {
   logger.info(LogCategory.AUTH, 'Listing labels from nostr relays');
-  const passkey = createPasskeyInstance();
+  const passkey = getPasskey();
   return await passkey.listLabels();
 }
 
@@ -181,7 +221,7 @@ export async function listLabels(): Promise<string[]> {
  */
 export async function saveLabel(label: string): Promise<void> {
   logger.info(LogCategory.AUTH, 'Saving label to nostr relays');
-  const passkey = createPasskeyInstance();
+  const passkey = getPasskey();
   await passkey.storeLabel(label);
 }
 
@@ -198,7 +238,7 @@ export async function getWallet(label?: string): Promise<Wallet> {
 
   logger.info(LogCategory.AUTH, 'Deriving wallet via passkey');
 
-  const passkey = createPasskeyInstance();
+  const passkey = getPasskey();
   try {
     const wallet = await passkey.getWallet(effectiveLabel);
     logger.info(LogCategory.AUTH, 'Passkey wallet derived successfully');
