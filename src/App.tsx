@@ -301,6 +301,7 @@ const AppContent: React.FC = () => {
             sdkConnected={passkeySdkConnected}
             isSecuringSeed={sdk.isSecuringSeed}
             onFlowComplete={handlePasskeyFlowComplete}
+            consumeFreshInstallSignal={sdk.consumeFreshInstallSignal}
           />
         );
 

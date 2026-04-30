@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { WarningIcon, SpinnerIcon, EyeIcon, FingerprintIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
 import { isPasskeyMode, getWallet } from '@/services/passkeyService';
-import { deviceOnlyStorage } from '@/services/secureStorage';
+import { deviceOnlyStorage, secureStorage, getBiometryLabel } from '@/services/secureStorage';
 import { logger, LogCategory } from '@/services/logger';
 
 interface BackupPageProps {
@@ -44,6 +44,28 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
     };
   }, [isPasskey]);
 
+  // Tracks whether passkey-based reveal failed once, so we can offer a
+  // secureStorage fallback button in the error UI. We don't try
+  // secureStorage automatically: the happy path is "passkey is the
+  // source of truth", and we want to honor that whenever it's
+  // available. Auto-fallback would mask passkey deletion / corruption
+  // from users who care about the distinction.
+  const [passkeyAttemptFailed, setPasskeyAttemptFailed] = useState(false);
+
+  // Resolved at mount: 'Face ID', 'Touch ID', 'fingerprint', etc.
+  // Used to label the biometric fallback button so iOS users see
+  // "Reveal with Face ID" while Android fingerprint users see
+  // "Reveal with fingerprint", etc. Null on web or when no biometry
+  // is enrolled; the button label degrades gracefully to "Reveal".
+  const [biometryLabel, setBiometryLabel] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getBiometryLabel().then((label) => {
+      if (!cancelled) setBiometryLabel(label);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   const handleRevealPasskey = async () => {
     setIsLoading(true);
     setError(null);
@@ -54,9 +76,41 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
         setIsRevealed(true);
       } else {
         setError('Could not derive recovery phrase');
+        setPasskeyAttemptFailed(true);
       }
     } catch (e) {
       logger.error(LogCategory.AUTH, 'Failed to derive mnemonic from passkey', {
+        error: e instanceof Error ? e.message : String(e),
+      });
+      setError(e instanceof Error ? e.message : 'Failed to authenticate');
+      setPasskeyAttemptFailed(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fallback path: read the seed directly from biometric-bound
+  // secureStorage. Only surfaced after the passkey path failed, so
+  // users with intact passkeys never bypass the passkey ceremony.
+  // Useful when the passkey was deleted from Settings -> Passwords:
+  // the cached seed survives there and can be revealed via Face ID.
+  const handleRevealWithBiometric = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      if (!secureStorage.isSupported() || !(await secureStorage.hasStoredSeed())) {
+        setError('No recovery phrase available on this device');
+        return;
+      }
+      const seed = await secureStorage.retrieveSeed();
+      if (seed.type === 'mnemonic' && seed.mnemonic) {
+        setMnemonic(seed.mnemonic);
+        setIsRevealed(true);
+      } else {
+        setError('Could not retrieve recovery phrase');
+      }
+    } catch (e) {
+      logger.error(LogCategory.AUTH, 'Biometric fallback retrieveSeed failed', {
         error: e instanceof Error ? e.message : String(e),
       });
       setError(e instanceof Error ? e.message : 'Failed to authenticate');
@@ -82,6 +136,8 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
     setIsRevealed(false);
     if (isPasskey) {
       setMnemonic(null);
+      setPasskeyAttemptFailed(false);
+      setError(null);
     }
   };
 
@@ -108,8 +164,11 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             </div>
           )}
 
-          {/* Reveal button — passkey mode */}
-          {isPasskey && !isRevealed && !mnemonic && (
+          {/* Reveal button — passkey mode, happy path. After a passkey
+              attempt fails, this card is replaced by the fallback card
+              below, which subsumes both the error and the Face ID
+              recovery action into one tile. */}
+          {isPasskey && !isRevealed && !mnemonic && !passkeyAttemptFailed && (
             <button
               onClick={handleRevealPasskey}
               disabled={isLoading}
@@ -145,11 +204,44 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             </button>
           )}
 
-          {/* Error message (passkey only) */}
-          {error && (
+          {/* Mnemonic-mode error: passkey-mode errors are now folded
+              into the fallback card below, so this only renders for
+              non-passkey edge cases. */}
+          {error && !isPasskey && (
             <div className="bg-spark-error/10 border border-spark-error/30 rounded-xl p-4 text-center">
               <p className="text-spark-error text-sm">{error}</p>
             </div>
+          )}
+
+          {/* Biometric fallback (passkey only). Single card that
+              replaces both the original reveal tile and the error
+              banner once the passkey attempt has failed. Visually
+              mirrors the happy-path tile: same title, swap the
+              "Requires passkey authentication" subtitle for "Requires
+              {biometric}". The label-driven biometric naming matches
+              the convention used elsewhere (UnlockPage). */}
+          {isPasskey && passkeyAttemptFailed && !isRevealed && !mnemonic && (
+            <button
+              onClick={handleRevealWithBiometric}
+              disabled={isLoading}
+              className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
+                {isLoading ? (
+                  <SpinnerIcon size="xl" className="text-spark-primary" />
+                ) : (
+                  <FingerprintIcon size="xl" className="text-spark-primary" />
+                )}
+              </div>
+              <span className="font-display font-semibold text-spark-text-primary">
+                {isLoading ? 'Authenticating...' : 'Tap to reveal phrase'}
+              </span>
+              <span className="text-sm text-spark-text-muted">
+                {isLoading
+                  ? `Complete ${biometryLabel ?? 'biometric'} authentication`
+                  : `Requires ${biometryLabel ?? 'biometric authentication'}`}
+              </span>
+            </button>
           )}
 
           {/* Mnemonic word grid (shared) */}

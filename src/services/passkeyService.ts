@@ -40,28 +40,38 @@ function createPasskeyInstance(): Passkey {
  * Only registers the credential, no seed derivation.
  * Triggers exactly 1 WebAuthn prompt.
  *
- * Passes every previously-registered credential ID for this RP as
- * `excludeCredentialIds`, so the platform refuses if any of them is
- * still on the device. Captures the new credential ID and persists
- * it for future excludeCredentialIds lists.
+ * The native plugin reads its own iCloud-synced keychain entry for
+ * excludeCredentialIds and merges it with any IDs we pass from
+ * localStorage. This means: even if the app was uninstalled (wiping
+ * localStorage), the plugin's keychain entry survives via iCloud
+ * Keychain and the platform will refuse a duplicate registration.
  *
  * @throws PasskeyAlreadyExistsError if the platform refuses because a
- *         credential listed in excludeCredentialIds is registered.
+ *         credential is already registered for this RP.
  */
 export async function createPasskey(): Promise<void> {
   logger.info(LogCategory.AUTH, 'Creating new passkey');
-  const excludeCredentialIds = getKnownCredentialIds();
+  // Pass the localStorage-tracked IDs as a legacy fallback: the plugin
+  // merges them with its own keychain. Browser path uses these as the
+  // sole source.
+  const excludeCredentialIds = getKnownCredentialIdsLocal();
   const credentialId = await passkeyPrfProvider.createPasskey({ excludeCredentialIds });
-  if (credentialId) addKnownCredentialId(credentialId);
+  if (credentialId) addKnownCredentialIdLocal(credentialId);
   localStorage.setItem(PASSKEY_REGISTERED_KEY, '1');
   logger.info(LogCategory.AUTH, 'Passkey created successfully');
 }
 
 /**
- * Read the persisted list of base64-encoded credential IDs this device
- * has registered. Returns an empty array if storage is unset or invalid.
+ * Read the localStorage-backed list of base64 credential IDs.
+ *
+ * Browser-only fallback. On native, the canonical source is the
+ * plugin's iCloud-synced keychain (queried via
+ * `passkeyPrfProvider.getKnownCredentialIds()`); the localStorage
+ * copy is kept in sync as a legacy escape hatch but loses parity if
+ * the app is uninstalled or if a sibling iOS device registered the
+ * passkey first.
  */
-export function getKnownCredentialIds(): string[] {
+function getKnownCredentialIdsLocal(): string[] {
   try {
     const raw = localStorage.getItem(KNOWN_CREDENTIALS_KEY);
     if (!raw) return [];
@@ -74,16 +84,38 @@ export function getKnownCredentialIds(): string[] {
   }
 }
 
-/**
- * Append a credential ID to the persisted list. No-op if already present.
- */
-export function addKnownCredentialId(credentialId: string): void {
-  const existing = getKnownCredentialIds();
+function addKnownCredentialIdLocal(credentialId: string): void {
+  const existing = getKnownCredentialIdsLocal();
   if (existing.includes(credentialId)) return;
   localStorage.setItem(
     KNOWN_CREDENTIALS_KEY,
     JSON.stringify([...existing, credentialId]),
   );
+}
+
+/**
+ * Called by the deletion-recovery flow when sign-in returns
+ * `CREDENTIAL_NOT_FOUND` on a device that has previously registered:
+ * the user has manually deleted the passkey from Settings → Passwords,
+ * so all our local memory of it is stale. Wipes:
+ *   - the plugin's iCloud-synced keychain entry (other devices will
+ *     still have their own copy syncing back, which is fine: any
+ *     surviving credential will be re-discovered there).
+ *   - the localStorage flag and known-IDs list.
+ * After this runs, the home screen's CTA gating reverts to first-time
+ * user state, allowing a fresh create flow.
+ */
+export async function clearPasskeyHistory(): Promise<void> {
+  logger.warn(LogCategory.AUTH, 'Clearing passkey history (deletion detected)');
+  try {
+    await passkeyPrfProvider.clearKnownCredentialIds();
+  } catch (e) {
+    logger.warn(LogCategory.AUTH, 'Failed to clear plugin keychain', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+  localStorage.removeItem(PASSKEY_REGISTERED_KEY);
+  localStorage.removeItem(KNOWN_CREDENTIALS_KEY);
 }
 
 /**

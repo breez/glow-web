@@ -40,6 +40,12 @@ declare global {
           checkDomainAssociation(options?: {
             rpId?: string;
           }): Promise<DomainAssociation>;
+          getKnownCredentialIds(options?: {
+            rpId?: string;
+          }): Promise<{ credentialIds: string[] }>;
+          clearKnownCredentialIds(options?: {
+            rpId?: string;
+          }): Promise<void>;
         };
       };
     };
@@ -86,12 +92,50 @@ export class NativePasskeyPrfProvider {
   async createPasskey(
     options: { excludeCredentialIds?: string[] } = {},
   ): Promise<string> {
-    const { credentialId } = await getPlugin().createPasskey({
-      rpId: this.rpId,
-      rpName: this.rpName,
-      excludeCredentialIds: options.excludeCredentialIds ?? [],
-    });
-    return credentialId;
+    try {
+      const { credentialId } = await getPlugin().createPasskey({
+        rpId: this.rpId,
+        rpName: this.rpName,
+        excludeCredentialIds: options.excludeCredentialIds ?? [],
+      });
+      return credentialId;
+    } catch (e) {
+      // iOS reports the platform's "credential already registered"
+      // refusal as ASAuthorizationError.failed with the underlying
+      // message intact, which the SDK then maps to AuthenticationFailed
+      // (not the cleaner InvalidStateError → PasskeyAlreadyExistsError
+      // path the browser uses). Detect by message content and rethrow
+      // as the typed error so PasskeyPage's existing handler can
+      // surface the proper recovery UX.
+      const code = (e as { code?: string })?.code;
+      const msg = e instanceof Error ? e.message : String(e);
+      const isAlreadyExists = code === 'AUTHENTICATION_FAILED'
+        && /already\s+registered/i.test(msg);
+      if (isAlreadyExists) {
+        const { PasskeyAlreadyExistsError } = await import('./passkeyPrfProvider');
+        throw new PasskeyAlreadyExistsError();
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * Read the persisted list of base64-encoded credential IDs for this
+   * provider's RP ID. Backed by iCloud Keychain on iOS (and Block Store
+   * on Android once implemented), so the list survives app uninstall.
+   */
+  async getKnownCredentialIds(): Promise<string[]> {
+    const { credentialIds } = await getPlugin().getKnownCredentialIds({ rpId: this.rpId });
+    return credentialIds;
+  }
+
+  /**
+   * Clear the persisted list. Called by the deletion-recovery flow on
+   * sign-in CredentialNotFound, when the OS reports the passkey is gone
+   * but our stale list still contains its ID.
+   */
+  async clearKnownCredentialIds(): Promise<void> {
+    await getPlugin().clearKnownCredentialIds({ rpId: this.rpId });
   }
 
   async derivePrfSeed(

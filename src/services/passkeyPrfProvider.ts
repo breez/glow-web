@@ -335,7 +335,7 @@ class AppPasskeyPrfProvider implements PrfProvider {
    * Browser: performs a local registrable-suffix check of `rpId` against
    * `window.location.hostname`.
    *
-   * Never throws — verification-level failures surface as `Skipped`, not
+   * Never throws: verification-level failures surface as `Skipped`, not
    * a rejected promise. Callers gate onboarding/discovery UX on the
    * `kind` discriminator.
    */
@@ -349,6 +349,27 @@ class AppPasskeyPrfProvider implements PrfProvider {
       ...(result.kind === 'Skipped' ? { reason: result.reason } : {}),
     });
     return result;
+  }
+
+  /**
+   * Read the persisted list of base64-encoded credential IDs for this
+   * RP. On native, backed by iCloud Keychain (iOS) so the list survives
+   * app uninstall. On browser, returns an empty array (no equivalent
+   * cross-install storage; localStorage is wiped on app reset anyway).
+   */
+  async getKnownCredentialIds(): Promise<string[]> {
+    if (!native) return [];
+    return (sdkProvider as NativePasskeyPrfProvider).getKnownCredentialIds();
+  }
+
+  /**
+   * Clear the persisted list. Used by the deletion-recovery flow when
+   * sign-in returns CredentialNotFound: the OS no longer has the
+   * passkey, so the keychain list is stale.
+   */
+  async clearKnownCredentialIds(): Promise<void> {
+    if (!native) return;
+    return (sdkProvider as NativePasskeyPrfProvider).clearKnownCredentialIds();
   }
 }
 

@@ -31,6 +31,7 @@ import {
   hasPasskeyHistory,
 } from '../services/passkeyService';
 import { secureStorage, deviceOnlyStorage, SecureStorageError } from '../services/secureStorage';
+import { passkeyPrfProvider } from '../services/passkeyPrfProvider';
 
 
 // ============================================
@@ -145,6 +146,24 @@ export interface BreezSdkState {
   celebrationPayment: Payment | null;
   prfAvailable: boolean;
   hasPasskeyBefore: boolean;
+  /**
+   * True for the first app session after a fresh install (or restore
+   * from another Apple-ID device), set by the startup probe when it
+   * restores `passkeyRegistered` from the iCloud-synced keychain.
+   *
+   * PasskeyPage reads this once on mount via `consumeFreshInstallSignal`
+   * to enable a one-shot silent retry of the detecting phase: iCloud
+   * Keychain syncs our credential-IDs metadata fast enough for the
+   * home screen to render "Sign in with passkey", but the actual
+   * passkey credential records can lag a few seconds. The first
+   * assertion fails fast with no Face ID prompt; the silent retry
+   * bridges that window.
+   *
+   * Consumed (flipped to false) on first read so subsequent sign-in
+   * attempts in the same session don't get the silent retry — only
+   * the post-fresh-install case where the iCloud race actually applies.
+   */
+  isFreshInstallRestore: boolean;
   startupState: StartupState;
   /**
    * True while `secureStorage.storeSeed` is in flight during
@@ -189,6 +208,12 @@ export interface BreezSdkActions {
   clearError: () => void;
   dismissCelebration: () => void;
   subscribeToSdkEvents: (handler: SdkEventHandler) => SdkEventUnsubscribe;
+  /**
+   * Read `isFreshInstallRestore` and atomically flip it to false so
+   * the silent retry only fires on the first sign-in attempt of a
+   * post-fresh-install session.
+   */
+  consumeFreshInstallSignal: () => boolean;
   /**
    * Called from `UnlockPage` to retry the biometric unlock after an earlier
    * cancel or lockout. Re-runs `secureStorage.retrieveSeed` then
@@ -704,6 +729,42 @@ export function useBreezSdk(
     isPrfAvailable().then(setPrfAvailable).catch(() => setPrfAvailable(false));
   }, []);
 
+  // Set when the startup probe restores the `passkeyRegistered` flag
+  // from the plugin's iCloud-synced keychain — i.e. this app launch
+  // is the first one after a fresh install (or restore from another
+  // Apple-ID device). PasskeyPage uses this signal to allow ONE
+  // silent retry of the detecting phase: iCloud Keychain syncs the
+  // credential-IDs metadata fast enough for the home screen, but the
+  // actual passkey records can lag a few seconds, causing the first
+  // assertion to fail with no Face ID prompt.
+  // Reset to false after PasskeyPage consumes it (via
+  // `consumeFreshInstallSignal`) so subsequent sign-ins in the same
+  // session don't get the auto-retry quietness.
+  const [freshInstallRestore, setFreshInstallRestore] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const ids = await passkeyPrfProvider.getKnownCredentialIds();
+        if (cancelled) return;
+        if (ids.length > 0 && localStorage.getItem('passkeyRegistered') !== '1') {
+          logger.info(LogCategory.AUTH, 'Restoring passkeyRegistered flag from synced keychain', { count: ids.length });
+          localStorage.setItem('passkeyRegistered', '1');
+          setFreshInstallRestore(true);
+        }
+      } catch (e) {
+        // Best-effort: a missing plugin (web build) returns []. Other
+        // failures shouldn't block app start.
+        logger.debug(LogCategory.AUTH, 'getKnownCredentialIds failed during startup probe', {
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, []);
+
   // Auto-reconnect on mount
   useEffect(() => {
     logger.initSession().catch((e) => {
@@ -961,6 +1022,7 @@ export function useBreezSdk(
     celebrationPayment,
     prfAvailable,
     hasPasskeyBefore: hasPasskeyHistory(),
+    isFreshInstallRestore: freshInstallRestore,
     startupState,
     isSecuringSeed,
     // Actions
@@ -972,6 +1034,11 @@ export function useBreezSdk(
     clearError: () => setError(null),
     dismissCelebration: () => setCelebrationPayment(null),
     subscribeToSdkEvents,
+    consumeFreshInstallSignal: () => {
+      const v = freshInstallRestore;
+      if (v) setFreshInstallRestore(false);
+      return v;
+    },
     retryUnlock,
   };
 }

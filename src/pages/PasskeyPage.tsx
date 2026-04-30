@@ -6,6 +6,7 @@ import PageLayout from '../components/layout/PageLayout';
 import { AlertCard } from '../components/AlertCard';
 import { NostrKeyIcon, CheckIcon, PasskeyIcon } from '../components/Icons';
 import {
+  clearPasskeyHistory,
   createPasskey,
   getWallet,
   hasPasskeyHistory,
@@ -76,10 +77,16 @@ type Phase =
 
 /** Step index for the new user inline stepper (3 steps). */
 function newUserStepIndex(phase: Phase): number {
+  // review/aasa-checking/detecting are pre-flight phases where step 1
+  // hasn't started yet. Returning 0 surfaces step 1 as "next up"
+  // rather than the bare-default 3 which the stepper renders as
+  // "all done" — visually wrong for a screen that's literally
+  // titled "Create your passkey".
+  if (phase === 'review' || phase === 'aasa-checking' || phase === 'detecting') return 0;
   if (phase === 'creating') return 0;
   if (phase === 'new-storing') return 1;
   if (phase === 'connecting' || phase === 'initializing') return 2;
-  return 3; // all complete
+  return 3; // all complete (post-flow)
 }
 
 
@@ -109,6 +116,17 @@ interface PasskeyPageProps {
   onFlowComplete?: () => void;
   /** Skip the listLabels() detection step and start directly at the create-passkey review screen. */
   skipDetection?: boolean;
+  /**
+   * Read-and-clear function for the "first sign-in after fresh install"
+   * signal from useBreezSdk. Returns true once when the startup probe
+   * had to restore `passkeyRegistered` from the iCloud-synced keychain
+   * (meaning the device was just reinstalled or restored from another
+   * Apple-ID device). PasskeyPage uses this to enable a one-shot
+   * silent retry of the detecting phase, bridging the gap between
+   * iCloud syncing the credential-IDs metadata and syncing the actual
+   * passkey records. Returns false on every subsequent call.
+   */
+  consumeFreshInstallSignal?: () => boolean;
 }
 
 // ============================================
@@ -122,6 +140,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   isSecuringSeed,
   onFlowComplete,
   skipDetection = false,
+  consumeFreshInstallSignal,
 }) => {
   // AASA verification runs first for both paths; the post-AASA transition
   // branches on `skipDetection` to either jump straight to 'review' (new
@@ -132,6 +151,15 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   const [labels, setLabels] = useState<string[]>([]);
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Discriminates the error state so the AlertCard can show a short
+  // generic title (avoiding the overflow that long messages caused
+  // when the error string itself was the title), and so the footer
+  // can offer kind-specific recovery actions (e.g. "Sign in with
+  // passkey" when the create flow refused because a passkey already
+  // exists, instead of just generic Retry).
+  const [errorKind, setErrorKind] = useState<
+    null | 'generic' | 'already-exists' | 'sign-in-failed'
+  >(null);
   const [manualLabel, setManualLabel] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
   const [detectingText, setDetectingText] = useState('Detecting passkey...');
@@ -153,6 +181,30 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
 
   // Label to use when entering the connecting phase
   const connectLabelRef = useRef<string | undefined>(undefined);
+
+  // Counts how many times the detecting phase has failed during this
+  // session of the page. The silent retry fires only on the FIRST
+  // failure AND only when this PasskeyPage instance was opened in
+  // the post-fresh-install window (see `isFreshInstallRef` below).
+  const detectingFailCountRef = useRef(0);
+
+  // Captures whether this PasskeyPage instance opened during the
+  // window after a fresh install / iCloud restore — i.e., the
+  // startup probe just put `passkeyRegistered=1` into localStorage
+  // because it found credential IDs in the iCloud-synced keychain
+  // that hadn't replicated to localStorage yet.
+  //
+  // Read once on mount and then permanently captured so subsequent
+  // re-renders don't change behavior. Only this state enables the
+  // silent retry, because only here is iCloud Keychain plausibly
+  // mid-sync. Regular sign-in failures (cancelled prompt, etc.) on
+  // a long-running install go straight to the error UI.
+  const isFreshInstallRef = useRef<boolean>(false);
+  useEffect(() => {
+    isFreshInstallRef.current = consumeFreshInstallSignal?.() ?? false;
+    // Run once on mount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ============================================
   // Effects — auto-triggered phases
@@ -230,6 +282,15 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     if (phase !== 'detecting') return;
     let cancelled = false;
 
+    // Reset spinner text on every detecting entry. Without this, a
+    // previous attempt that progressed past the assertion (so the
+    // onAuthComplete callback fired and flipped the spinner to
+    // "Discovering labels...") leaves the stale label in place when
+    // the retry comes back through this effect — the user sees
+    // "Discovering labels..." while the new attempt is still on the
+    // assertion step, which reads as a stuck state.
+    setDetectingText('Detecting passkey...');
+
     // Sign-in path: tell the provider not to auto-register if discovery
     // can't find a credential. On native this maps to autoRegister=false
     // on the SDK PasskeyProvider, which surfaces CredentialNotFound
@@ -268,14 +329,63 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       } catch (e) {
         if (cancelled) return;
         const errorName = e instanceof Error ? e.name : '';
-        const isCancelled = errorName === 'NotAllowedError' || errorName === 'AbortError';
+        const errorCode = (e as { code?: string })?.code;
+        const isCancelled = errorName === 'NotAllowedError' || errorName === 'AbortError'
+          || errorCode === 'USER_CANCELLED';
+        // Definitive "no credential on this device" signal. On native this
+        // comes from the SDK provider with autoRegister=false (we set
+        // mode='sign-in' above). It distinguishes a deleted-from-Settings
+        // case from a cancelled prompt, which is what lets us recover.
+        const isCredentialNotFound = errorCode === 'CREDENTIAL_NOT_FOUND';
         if (hasPasskeyHistory()) {
-          // Returning user: never silently fall to creation. Surface a
-          // retryable error and stay on the detecting phase. The
-          // detecting-phase error UI offers a Retry button that clears
-          // the error and re-runs the effect.
+          if (isCredentialNotFound) {
+            // The OS no longer has this user's passkey, but our local
+            // hasPasskeyHistory flag says we registered one before.
+            // Most likely cause: user deleted the passkey via
+            // Settings → Passwords. Stale local state. Reset and route
+            // them to the new-user create flow with an explanation.
+            logger.warn(LogCategory.AUTH, 'Sign-in returned CredentialNotFound for returning user, clearing stale state');
+            await clearPasskeyHistory();
+            if (cancelled) return;
+            setError(
+              'Your Glow passkey is no longer on this device. You can create a new one.',
+            );
+            setPhase('review');
+            return;
+          }
+          // First failure for a returning user, AND the page was
+          // opened during the fresh-install window: silently retry
+          // once before showing the error UI. Bridges the iCloud
+          // Keychain stage-2 sync gap that only exists right after
+          // a fresh install. On a stable install, a failure here is
+          // a real signal (cancelled prompt, deleted credential,
+          // relay error) and we go straight to the error UI.
+          if (detectingFailCountRef.current === 0 && isFreshInstallRef.current) {
+            detectingFailCountRef.current = 1;
+            logger.info(LogCategory.AUTH, 'Sign-in failed on first attempt, retrying silently', {
+              errorName,
+              errorCode,
+            });
+            // Keep the spinner label as "Detecting passkey..." through
+            // the retry: too many text changes during a single sign-in
+            // attempt reads as flicker. The retry itself is just a
+            // 3s heuristic pause -- iOS doesn't expose iCloud Keychain
+            // sync state, so we can't promise any specific work is
+            // happening, and labelling it "Retrying..." or "Syncing..."
+            // would imply visibility we don't have.
+            setTimeout(() => {
+              if (cancelled) return;
+              setPhase('aasa-checking');
+            }, 3000);
+            return;
+          }
+          // Returning user, second failure (cancelled prompt, relay
+          // error, transient network, or stage-2 sync still pending).
+          // Never silently fall to creation: surface a retryable error
+          // and stay on detecting.
           logger.warn(LogCategory.AUTH, 'Sign-in failed for returning user, NOT auto-registering', {
             errorName,
+            errorCode,
             error: e instanceof Error ? e.message : String(e),
           });
           setError(
@@ -283,6 +393,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
               ? 'Sign-in cancelled. Please try again.'
               : 'Could not sign in with your passkey. Please try again.',
           );
+          setErrorKind('sign-in-failed');
           return;
         }
         logger.info(LogCategory.AUTH, 'No existing passkey, starting new user flow');
@@ -294,9 +405,16 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     return () => {
       cancelled = true;
       passkeyPrfProvider.onAuthComplete = undefined;
-      // Restore the default mode so subsequent flows (e.g. new-storing,
-      // connecting) can auto-register if needed.
-      passkeyPrfProvider.mode = 'create';
+      // Do NOT reset mode here. The downstream phases of the sign-in
+      // flow (auth-pick → connecting) all call derivePrfSeed via the
+      // SDK's getWallet/saveLabel/listLabels paths, and they MUST
+      // continue to use autoRegister=false. Otherwise a credential
+      // that's been deleted between detecting and connecting (e.g. via
+      // Settings → Passwords) would be silently re-registered with a
+      // brand-new private key, producing a brand-new seed and
+      // surfacing the user into an empty parallel wallet. The
+      // creating effect re-sets mode='create' explicitly when it's
+      // time to genuinely register a new passkey.
     };
   }, [phase]);
 
@@ -324,12 +442,33 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           setError(
             'A passkey for Glow already exists on this device. Use it to sign in instead of creating a new one.',
           );
-          logger.warn(LogCategory.AUTH, 'Passkey creation blocked by excludeCredentialIds');
+          setErrorKind('already-exists');
+          // Restore the persistent flag so HomePage flips back to the
+          // "Sign in with passkey" CTA on next render. The plugin's
+          // synced keychain told us a credential exists; we should
+          // never have gotten this far in the create flow if the home
+          // screen was reading the truth, but localStorage was wiped
+          // (post-uninstall). Re-establish the flag now that we know.
+          localStorage.setItem('passkeyRegistered', '1');
+          logger.warn(LogCategory.AUTH, 'Passkey creation blocked by excludeCredentialIds, restoring hasPasskeyHistory flag');
           return;
         }
-        setError('Failed to create passkey');
+        // Surface the underlying error message and Capacitor error code
+        // (when present) directly in the UI. Generic "Failed to create
+        // passkey" is unhelpful for diagnosis: the user can't tell
+        // whether they cancelled, the entitlement is wrong, the AASA
+        // CDN is stale, the existing keychain blocked them, etc.
+        const code = (e as { code?: string })?.code;
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(
+          code
+            ? `Failed to create passkey [${code}]: ${msg}`
+            : `Failed to create passkey: ${msg}`,
+        );
+        setErrorKind('generic');
         logger.error(LogCategory.AUTH, 'Passkey creation failed', {
-          error: e instanceof Error ? e.message : String(e),
+          errorCode: code,
+          error: msg,
         });
       }
     };
@@ -360,6 +499,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       } catch (e) {
         if (cancelled) return;
         setError('Failed to save label to Nostr');
+        setErrorKind('generic');
         logger.error(LogCategory.AUTH, 'Failed to save label', {
           error: e instanceof Error ? e.message : String(e),
         });
@@ -391,6 +531,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       } catch (e) {
         if (cancelled) return;
         setError('Failed to connect');
+        setErrorKind('generic');
         logger.error(LogCategory.AUTH, 'Passkey wallet restore failed', {
           error: e instanceof Error ? e.message : String(e),
         });
@@ -406,11 +547,15 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   // ============================================
 
   /** Clear error to re-trigger the current phase's effect. */
-  const handleRetry = () => setError(null);
+  const handleRetry = () => {
+    setError(null);
+    setErrorKind(null);
+  };
 
   /** Navigate back from an error state to the previous interactive phase. */
   const handleErrorBack = () => {
     setError(null);
+    setErrorKind(null);
     switch (phase) {
       case 'creating':
         onBack();
@@ -641,9 +786,14 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     switch (phase) {
       case 'aasa-checking': return renderSpinner('Verifying app domain...');
       case 'aasa-error': return renderAasaError();
-      case 'detecting': return renderSpinner(detectingText);
+      case 'detecting': return error ? null : renderSpinner(detectingText);
       case 'review': return renderReview();
-      case 'creating': return error ? renderReview() : renderSpinner('Initializing passkey...');
+      // When the create flow fails the AlertCard alone is the page;
+      // re-rendering renderReview() (icon, heading, warning card)
+      // alongside it crowds the layout and competes with the error
+      // for the user's attention. The footer carries the recovery
+      // actions.
+      case 'creating': return error ? null : renderSpinner('Initializing passkey...');
       case 'new-storing':
         if (error) return null;
         return renderSpinner('Saving label...');
@@ -695,6 +845,75 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           </SecondaryButton>
           <SecondaryButton className="w-full" onClick={onBack}>
             Go Back
+          </SecondaryButton>
+        </div>
+      );
+    }
+
+    // Detecting failure for a returning user: iOS may surface this as
+    // either a CredentialNotFound error (which we auto-recover from) or
+    // a USER_CANCELLED (which we can't distinguish from a "no passkey"
+    // dismissal of the system sheet). For the latter case, we leave the
+    // user on the error screen and offer two paths:
+    //   1. Try Again — re-runs detecting (auto-recovers if iOS now
+    //      reports CredentialNotFound clearly).
+    //   2. Forget passkey & create new — explicit recovery: clears the
+    //      keychain + localStorage flag and routes to the create flow.
+    //      For users whose passkey really is gone (deleted via
+    //      Settings) but iOS reports the dismissal as a cancel.
+    if (error && phase === 'detecting' && hasPasskeyHistory()) {
+      return (
+        <div className="max-w-xl mx-auto space-y-3">
+          <PrimaryButton className="w-full" onClick={() => {
+            setError(null);
+            // Bounce through aasa-checking to force the detecting effect
+            // to re-run. Just clearing `error` while staying on detecting
+            // doesn't re-trigger the effect (its deps are [phase] only),
+            // and the AASA precheck is cheap (no biometric prompt).
+            setPhase('aasa-checking');
+          }}>
+            Try Again
+          </PrimaryButton>
+          <SecondaryButton className="w-full" onClick={async () => {
+            await clearPasskeyHistory();
+            setError(null);
+            setIsNewUser(true);
+            setPhase('review');
+          }}>
+            Create a new passkey
+          </SecondaryButton>
+        </div>
+      );
+    }
+
+    // "Already exists" recovery: a passkey is on the device but the
+    // user landed on the create flow (post-uninstall race, dev wipe,
+    // etc.). Offer the right action — sign in with the existing
+    // passkey — as the primary, with Try Again as a secondary safety
+    // net for users who'd rather poke the create flow again.
+    if (error && phase === 'creating' && errorKind === 'already-exists') {
+      return (
+        <div className="max-w-xl mx-auto space-y-3">
+          <PrimaryButton className="w-full" onClick={() => {
+            setError(null);
+            setErrorKind(null);
+            setIsNewUser(false);
+            // Reset detect-fail counter so this entry into detecting
+            // gets the fresh-install retry budget if applicable.
+            detectingFailCountRef.current = 0;
+            // Route DIRECTLY to detecting, skipping aasa-checking.
+            // We're entering this branch from a `passkeyCreate` route
+            // (skipDetection=true), and the aasa-checking effect's
+            // post-success transition reads skipDetection and routes
+            // back to 'review' — bouncing the user right back to the
+            // create flow. AASA was already verified earlier in this
+            // session, so re-running it is redundant anyway.
+            setPhase('detecting');
+          }}>
+            Sign in with passkey
+          </PrimaryButton>
+          <SecondaryButton className="w-full" onClick={handleRetry}>
+            Try Again
           </SecondaryButton>
         </div>
       );
@@ -778,17 +997,34 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   return (
     <PageLayout onBack={onBack} footer={footer} title="Get Started">
       <div className="max-w-xl mx-auto w-full flex flex-col min-h-full">
-        {isNewUser && (
+        {/* Hide the stepper while an error is showing: the user isn't
+            actively progressing through a step, and a half-filled bar
+            below an "already exists" / "couldn't create" AlertCard
+            reads as visual clutter rather than progress feedback. */}
+        {isNewUser && !error && (
           <StepperBar stepCount={3} activeIndex={newUserStepIndex(phase)} />
         )}
         <div className="mt-6 space-y-4 flex flex-col flex-1">
           {content}
           {error && (
-            <AlertCard variant="error" title={error}>
-              <p className="text-spark-text-secondary text-sm">
-                {phase === 'new-storing' || phase === 'connecting'
-                  ? 'Please check your internet connection and try again.'
-                  : 'Please ensure your device supports passkeys and is the correct device.'}
+            <AlertCard
+              variant="error"
+              title={
+                errorKind === 'already-exists'
+                  ? 'Passkey already exists'
+                  : errorKind === 'sign-in-failed'
+                    ? 'Sign-in failed'
+                    : phase === 'new-storing'
+                      ? "Couldn't save label"
+                      : phase === 'connecting'
+                        ? "Couldn't connect"
+                        : phase === 'creating'
+                          ? "Couldn't create passkey"
+                          : 'Something went wrong'
+              }
+            >
+              <p className="text-spark-text-secondary text-sm break-words">
+                {error}
               </p>
             </AlertCard>
           )}
