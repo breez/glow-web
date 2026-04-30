@@ -10,7 +10,7 @@
  * once Spark SDK PR #781 is published.
  */
 
-import type { PasskeyPrfProvider } from '@breeztech/breez-sdk-spark';
+import type { PrfProvider } from '@breeztech/breez-sdk-spark';
 import {
   NativePasskeyPrfProvider,
   isNativePlatform,
@@ -178,10 +178,10 @@ const sdkProvider = native
 /**
  * App-level wrapper around the platform-specific provider.
  *
- * Implements the SDK's PasskeyPrfProvider interface and delegates to either
+ * Implements the SDK's PrfProvider interface and delegates to either
  * the native or browser provider, adding logging and the onAuthComplete hook.
  */
-class AppPasskeyPrfProvider implements PasskeyPrfProvider {
+class AppPasskeyPrfProvider implements PrfProvider {
   /** Optional callback fired after a PRF prompt succeeds in derivePrfSeed. */
   onAuthComplete?: () => void;
 
