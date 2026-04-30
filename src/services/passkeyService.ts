@@ -9,7 +9,7 @@
  */
 
 import { Passkey, Wallet, NostrRelayConfig } from '@breeztech/breez-sdk-spark';
-import { passkeyPrfProvider, markPasskeyJustCreated } from './passkeyPrfProvider';
+import { passkeyPrfProvider } from './passkeyPrfProvider';
 import { logger, LogCategory } from './logger';
 
 // Storage key: presence signals passkey mode
@@ -58,11 +58,6 @@ export async function createPasskey(): Promise<void> {
   const credentialId = await passkeyPrfProvider.createPasskey({ excludeCredentialIds });
   if (credentialId) addKnownCredentialIdLocal(credentialId);
   localStorage.setItem(PASSKEY_REGISTERED_KEY, '1');
-  // Open the indexing-race recovery window so the next sign-in can
-  // fall back to an unconstrained assertion if the platform's
-  // password manager (e.g. Chrome PM on iOS) hasn't surfaced the
-  // credential yet. See passkeyPrfProvider for full rationale.
-  markPasskeyJustCreated();
   logger.info(LogCategory.AUTH, 'Passkey created successfully');
 }
 
