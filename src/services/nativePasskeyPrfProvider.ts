@@ -84,10 +84,11 @@ export class NativePasskeyPrfProvider {
    * @throws PasskeyAlreadyExistsError when the platform refuses because
    *         a credential listed in `excludeCredentialIds` is already on
    *         the device. The Capacitor plugin maps the platform-level
-   *         InvalidStateError to a `CONFIGURATION_ERROR` / generic
-   *         rejection; callers should treat any failure here as the
-   *         "already exists" signal when excludeCredentialIds was
-   *         non-empty.
+   *         duplicate refusal (iOS `matchedExcludedCredential`,
+   *         Android `CreatePublicKeyCredentialDomException` with
+   *         `InvalidStateError`) to error code
+   *         `CREDENTIAL_ALREADY_EXISTS`, which is rethrown here as the
+   *         typed JS error.
    */
   async createPasskey(
     options: { excludeCredentialIds?: string[] } = {},
@@ -108,7 +109,11 @@ export class NativePasskeyPrfProvider {
       // route the user to the sign-in path.
       const code = (e as { code?: string })?.code;
       if (code === 'CREDENTIAL_ALREADY_EXISTS') {
-        const { PasskeyAlreadyExistsError } = await import('./passkeyPrfProvider');
+        // Direct import from the SDK avoids a circular import on
+        // ./passkeyPrfProvider, which itself imports this module.
+        const { PasskeyAlreadyExistsError } = await import(
+          '@breeztech/breez-sdk-spark/passkey-prf-provider'
+        );
         throw new PasskeyAlreadyExistsError();
       }
       throw e;
@@ -117,8 +122,10 @@ export class NativePasskeyPrfProvider {
 
   /**
    * Read the persisted list of base64-encoded credential IDs for this
-   * provider's RP ID. Backed by iCloud Keychain on iOS (and Block Store
-   * on Android once implemented), so the list survives app uninstall.
+   * provider's RP ID. Backed by iCloud Keychain on iOS and Google Play
+   * Block Store on Android (with `EncryptedSharedPreferences` as a
+   * non-Play fallback), so the list survives app uninstall and device
+   * transfer for users signed into the cloud account.
    */
   async getKnownCredentialIds(): Promise<string[]> {
     const { credentialIds } = await getPlugin().getKnownCredentialIds({ rpId: this.rpId });

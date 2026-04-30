@@ -329,6 +329,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       } catch (e) {
         if (cancelled) return;
         const errorName = e instanceof Error ? e.name : '';
+        const errorMessage = e instanceof Error ? e.message : '';
         const errorCode = (e as { code?: string })?.code;
         const isCancelled = errorName === 'NotAllowedError' || errorName === 'AbortError'
           || errorCode === 'USER_CANCELLED';
@@ -336,7 +337,22 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         // comes from the SDK provider with autoRegister=false (we set
         // mode='sign-in' above). It distinguishes a deleted-from-Settings
         // case from a cancelled prompt, which is what lets us recover.
-        const isCredentialNotFound = errorCode === 'CREDENTIAL_NOT_FOUND';
+        //
+        // On web there is no equivalent typed code: WebAuthn intentionally
+        // collapses cancel / lockout / no-credential / timeout into a
+        // single `NotAllowedError`. Best we can do is heuristic-match on
+        // the SDK's lower-level error message, which mirrors the
+        // string-pattern set in the SDK's own `_isNoCredentialError`. The
+        // heuristic may misclassify a true cancel as "no credential" on
+        // some browser builds; the worst case is an extra "Create a new
+        // passkey" prompt the user can dismiss with Try Again.
+        const looksLikeNoCredentialMessage =
+          errorMessage.includes('Credential not found') ||
+          errorMessage.includes('no credentials') ||
+          errorMessage.includes('No credentials') ||
+          errorMessage.includes('empty allowCredentials');
+        const isCredentialNotFound = errorCode === 'CREDENTIAL_NOT_FOUND'
+          || looksLikeNoCredentialMessage;
         if (hasPasskeyHistory()) {
           if (isCredentialNotFound) {
             // The OS no longer has this user's passkey, but our local
