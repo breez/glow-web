@@ -90,8 +90,11 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
               error: formatError(decodeError),
             });
           },
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
+          // Disable qr-scanner's built-in scan-region overlay: we draw our
+          // own corner brackets in QrScannerDialog and having both visible
+          // at once looks like a rendering bug (two overlapping squares).
+          highlightScanRegion: false,
+          highlightCodeOutline: false,
           preferredCamera: facingMode,
           maxScansPerSecond: 5,
         }

@@ -7,6 +7,7 @@ import { searchContacts } from '../../../hooks/useContacts';
 import { logger, LogCategory } from '@/services/logger';
 import { ClipboardIcon, QrCodeIcon, SpinnerIcon, ContactsIcon, CloseIcon } from '@/components/Icons';
 import type { Contact } from '@breeztech/breez-sdk-spark';
+import { dismissKeyboard } from '../../../utils/keyboard';
 
 export interface InputStepProps {
   paymentInput: string;
@@ -105,13 +106,39 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
             </button>
           </div>
         ) : (
-          // Text input with autocomplete
+          // Text input with autocomplete. Rendered as a <textarea> so
+          // long bolt11 invoices wrap visually instead of scrolling
+          // horizontally, but Enter is intercepted and submits
+          // instead of inserting a newline — this input never
+          // accepts multi-line content, so the newline default is
+          // user-hostile. Shift+Enter still inserts a newline for
+          // desktop users who want to paste formatted content.
           <div className="relative h-full">
             <textarea
               value={localPaymentInput}
               onChange={(e) => setLocalPaymentInput(e.target.value)}
               onFocus={() => setIsInputFocused(true)}
               onBlur={() => setTimeout(() => setIsInputFocused(false), 100)}
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  // Always dismiss the keyboard on Enter, even when
+                  // the field is empty — tapping Go on an empty
+                  // field should at minimum retract the keyboard
+                  // so the user can see the Paste / Scan / Contacts
+                  // shortcut buttons underneath. Only advance to
+                  // the next step if there's actually content to
+                  // submit.
+                  await dismissKeyboard();
+                  if (localPaymentInput.trim() && !isLoading) {
+                    onContinue(localPaymentInput);
+                  }
+                }
+              }}
+              enterKeyHint="go"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               placeholder="lnbc... / bc1... / sp1... / user@domain.com / contact"
               className="w-full h-full p-4 bg-spark-dark text-spark-text-primary placeholder-spark-text-muted focus:ring-0 resize-none font-mono text-sm border outline-none transition-all rounded-xl border-spark-border focus:border-spark-primary"
               disabled={isLoading}
@@ -164,7 +191,12 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
 
       {/* Continue button */}
       <PrimaryButton
-        onClick={() => onContinue(localPaymentInput)}
+        onClick={async () => {
+          // Dismiss the keyboard so the parsing / amount-entry step
+          // has the full viewport to work with.
+          await dismissKeyboard();
+          onContinue(localPaymentInput);
+        }}
         disabled={isLoading || !localPaymentInput.trim()}
         className="w-full"
         data-testid="continue-button"

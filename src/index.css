@@ -266,13 +266,16 @@ h6 {
   transition: all 0.1s ease;
 }
 
-/* Premium QR Scanner Button - Viewfinder Style */
+/* Premium QR Scanner Button - Viewfinder Style.
+   Width matches height (3rem) so the viewfinder bracket reads as a
+   square, with the extra width reclaimed by the flex:1 Send/Receive
+   buttons on either side. */
 .qr-scanner-button {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 4.5rem;
+  width: 3rem;
   height: 3rem;
   flex-shrink: 0;
   background: transparent;
@@ -292,28 +295,28 @@ h6 {
 
 .qr-corner--tl {
   top: 0;
-  left: 8px;
+  left: 0;
   border-top: 2px solid var(--spark-primary);
   border-left: 2px solid var(--spark-primary);
 }
 
 .qr-corner--tr {
   top: 0;
-  right: 8px;
+  right: 0;
   border-top: 2px solid var(--spark-primary);
   border-right: 2px solid var(--spark-primary);
 }
 
 .qr-corner--bl {
   bottom: 0;
-  left: 8px;
+  left: 0;
   border-bottom: 2px solid var(--spark-primary);
   border-left: 2px solid var(--spark-primary);
 }
 
 .qr-corner--br {
   bottom: 0;
-  right: 8px;
+  right: 0;
   border-bottom: 2px solid var(--spark-primary);
   border-right: 2px solid var(--spark-primary);
 }
@@ -410,8 +413,31 @@ select {
    BOTTOM BAR
    ============================================ */
 
+/* ============================================
+   VIDEO ELEMENT (QR SCANNER)
+   ============================================ */
+
+/* Hide the Android WebView default "play button" overlay that appears
+   briefly on the QR scanner's <video> element during camera switches.
+   Without this, the scaleX(-1) mirror applied for the front camera
+   flips the default play icon along with the feed, which looks like
+   a rendering bug to users. */
+video::-webkit-media-controls,
+video::-webkit-media-controls-enclosure,
+video::-webkit-media-controls-overlay-play-button,
+video::-webkit-media-controls-start-playback-button,
+video::-webkit-media-controls-panel {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+
 .bottom-bar {
-  background: rgba(15, 15, 24, 0.95);
+  /* Match the CollapsingWalletHeader glassmorphism
+     (bg-spark-surface/80 in Tailwind = rgba(21,21,32,0.8)) so the
+     bottom action bar reads as the same surface as the top app bar.
+     Previously rgba(15,15,24,0.95) (spark-dark at 95%) made the
+     footer noticeably darker than the header. */
+  background: rgba(21, 21, 32, 0.8);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--spark-border);
@@ -773,6 +799,10 @@ select {
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   /* Top/bottom safe area handled by individual components */
+  /* `relative` so sibling overlay SlideInPages with `absolute inset-0`
+     stack against this container (respecting the max-w-4xl column
+     and horizontal safe-area padding) rather than the viewport. */
+  position: relative;
 }
 
 /* ============================================
@@ -1049,7 +1079,8 @@ main {
   }
 
   .qr-scanner-button {
-    width: 3.5rem;
+    /* Square even on small screens — 3rem matches the button height. */
+    width: 3rem;
   }
 
   .qr-corner {

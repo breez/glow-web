@@ -13,7 +13,9 @@ import {
   setPasskeyMode,
 } from '@/services/passkeyService';
 import { passkeyPrfProvider } from '@/services/passkeyPrfProvider';
+import type { DomainAssociation } from '@/services/passkeyPrfProvider';
 import { logger, LogCategory } from '@/services/logger';
+import { shareOrDownloadLogs } from '@/services/logExport';
 import StepperBar from '@/components/OnboardingStepper';
 
 // ============================================
@@ -23,7 +25,24 @@ import StepperBar from '@/components/OnboardingStepper';
 /**
  * Phase state machine.
  *
- * On mount: "Use Passkey" was clicked → try listLabels() immediately.
+ * On mount: "Use Passkey" was clicked → first run the platform's
+ * out-of-band domain verification check, then try listLabels().
+ *
+ *   aasa-checking → aasa-error       (domain verification missing/stale)
+ *                 → detecting → …    (verification OK or verification-skipped)
+ *
+ * Why the pre-check: on iOS/Android, AASA/assetlinks misconfiguration
+ * (or CDN propagation lag after a bundle-ID change) causes WebAuthn
+ * ceremonies to fail with opaque errors that are indistinguishable from
+ * "no credential found" — routing users silently into a broken
+ * create-passkey path. The pre-check surfaces this as a dedicated,
+ * actionable error state BEFORE any biometric prompt fires.
+ *
+ * On `Skipped` (provider has no verification source, or check couldn't
+ * complete due to offline/timeout), we proceed to `detecting` as normal
+ * so offline-first UX isn't broken.
+ *
+ * From `detecting`:
  *   Success → passkey exists → returning user flow (auth-pick or connect-ready)
  *   Failure → no passkey    → new user flow (review)
  *
@@ -38,7 +57,9 @@ import StepperBar from '@/components/OnboardingStepper';
  *   detecting (prompt 1) → auth-pick → new-storing (prompt 2) → connecting (prompt 3) → initializing
  */
 type Phase =
-  | 'detecting'       // On mount: listLabels() — WebAuthn prompt, doubles as detection
+  | 'aasa-checking'   // On mount: checkDomainAssociation() — no user prompt
+  | 'aasa-error'      // Domain verification confirmed NOT associated
+  | 'detecting'       // listLabels() — WebAuthn prompt, doubles as detection
   // New user flow
   | 'review'          // Warning + I understand → triggers createPasskey()
   | 'creating'        // createPasskey() in progress (prompt)
@@ -66,6 +87,21 @@ interface PasskeyPageProps {
   onWalletRestored: (seed: Seed, label: string) => void;
   onBack: () => void;
   sdkConnected?: boolean;
+  /**
+   * True while `secureStorage.storeSeed` is in flight during the
+   * onboarding flow. When true, the `initializing` phase swaps its
+   * loading label from "Starting Glow…" to "Setting up biometric
+   * unlock…" so the second biometric prompt (F3 biometric-bound
+   * store) has visual context instead of appearing on top of an
+   * unrelated spinner.
+   *
+   * Note: on iOS the label flashes for <200ms because
+   * SecAccessControl gates RETRIEVAL only, not SecItemAdd — users
+   * effectively never see this state there. Android fingerprint-
+   * backed BiometricPrompt.CryptoObject genuinely blocks at the
+   * sensor, so Android is where the label actually communicates.
+   */
+  isSecuringSeed?: boolean;
   onFlowComplete?: () => void;
   /** Skip the listLabels() detection step and start directly at the create-passkey review screen. */
   skipDetection?: boolean;
@@ -79,10 +115,15 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   onWalletRestored,
   onBack,
   sdkConnected,
+  isSecuringSeed,
   onFlowComplete,
   skipDetection = false,
 }) => {
-  const [phase, setPhase] = useState<Phase>(skipDetection ? 'review' : 'detecting');
+  // AASA verification runs first for both paths; the post-AASA transition
+  // branches on `skipDetection` to either jump straight to 'review' (new
+  // user via Create Passkey CTA) or 'detecting' (existing user via Use
+  // Passkey CTA).
+  const [phase, setPhase] = useState<Phase>('aasa-checking');
   const [isNewUser, setIsNewUser] = useState(skipDetection);
   const [labels, setLabels] = useState<string[]>([]);
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
@@ -90,6 +131,15 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   const [manualLabel, setManualLabel] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
   const [detectingText, setDetectingText] = useState('Detecting passkey...');
+  /**
+   * Details of a `NotAssociated` verification result, surfaced verbatim
+   * on the AASA error screen so users/maintainers see what went wrong
+   * (which CDN reported the bundle missing, what bundle ID it expected,
+   * etc.). Null outside the `aasa-error` phase.
+   */
+  const [aasaFailure, setAasaFailure] = useState<
+    { source: string; reason: string } | null
+  >(null);
 
   // Stable refs for callbacks (avoid stale closures in effects)
   const onWalletRestoredRef = useRef(onWalletRestored);
@@ -111,6 +161,57 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     }
   }, [sdkConnected, phase]);
 
+  // On mount (and on Retry after aasa-error): verify the app's bundle ID
+  // is listed by the platform's out-of-band domain verification source
+  // (Apple AASA CDN on iOS, Google Digital Asset Links on Android,
+  // registrable-suffix check in the browser).
+  //
+  // No user prompt fires during this check — it's a background HTTP
+  // fetch on native / synchronous local check in the browser. On
+  // `Associated` or `Skipped` we proceed to the normal detecting flow;
+  // only `NotAssociated` blocks, and only with a concrete reason
+  // surfaced in the UI.
+  useEffect(() => {
+    if (phase !== 'aasa-checking') return;
+    let cancelled = false;
+
+    const run = async () => {
+      let result: DomainAssociation;
+      try {
+        result = await passkeyPrfProvider.checkDomainAssociation();
+      } catch (e) {
+        // The provider is documented to never throw (verification-level
+        // failures surface as `Skipped`). Defensive fallback — if the
+        // contract changes, treat as Skipped so the app doesn't hard-stop
+        // on a diagnostic pre-check.
+        if (cancelled) return;
+        logger.warn(LogCategory.AUTH, 'Domain association check threw (unexpected)', {
+          error: e instanceof Error ? e.message : String(e),
+        });
+        setPhase(skipDetection ? 'review' : 'detecting');
+        return;
+      }
+
+      if (cancelled) return;
+
+      if (result.kind === 'NotAssociated') {
+        setAasaFailure({ source: result.source, reason: result.reason });
+        setPhase('aasa-error');
+        return;
+      }
+
+      // Associated or Skipped: either way, proceed with the next phase.
+      // Skipped is explicitly NOT a negative signal: it means the
+      // provider couldn't verify (offline / no verification source),
+      // not that verification failed.
+      setAasaFailure(null);
+      setPhase(skipDetection ? 'review' : 'detecting');
+    };
+
+    run();
+    return () => { cancelled = true; };
+  }, [phase]);
+
   // On mount: detect passkey by trying listLabels() (WebAuthn get).
   // The "Use Passkey" button click on HomePage is the user interaction.
   // Success → passkey exists → returning user.
@@ -131,10 +232,15 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
 
         // Passkey exists → returning user
         if (found.length === 0) {
-          // Passkey exists but no labels on relays — show picker with default pre-filled
-          setShowManualInput(true);
-          setManualLabel('Default');
-          setPhase('auth-pick');
+          // Passkey exists but no labels on relays → auto-create "Default"
+          // and skip the picker. Mirrors the new-passkey path.
+          connectLabelRef.current = 'Default';
+          setPhase('new-storing');
+        } else if (found.length === 1) {
+          // Single label: skip the picker and connect directly.
+          setLabels(found);
+          connectLabelRef.current = found[0];
+          setPhase('connecting');
         } else {
           // Display oldest → newest
           const sorted = [...found].reverse();
@@ -398,7 +504,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
                 }}
                 placeholder="Label name"
                 maxLength={24}
-                className="w-full bg-spark-surface border border-spark-border rounded-xl px-3 py-2 text-spark-text-primary placeholder:text-spark-text-muted focus:outline-none focus:ring-2 focus:ring-spark-primary/50 focus:border-spark-primary text-sm"
+                className="w-full bg-spark-surface rounded-xl px-3 py-2 text-spark-text-primary placeholder:text-spark-text-muted focus:outline-none focus:ring-2 focus:ring-spark-primary/50 text-sm"
                 autoFocus
               />
               {isDuplicate && (
@@ -419,6 +525,64 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     </div>
   );
 
+  /**
+   * Dedicated error state for NotAssociated domain verification. Surfaces
+   * the failure source + reason verbatim so users can report the exact
+   * diagnostic and maintainers can fix the right side (CDN propagation,
+   * assetlinks.json, bundle-ID entry, etc.). No timeline promises — we
+   * can't predict when a stale CDN will refresh.
+   */
+  const renderAasaError = () => (
+    // w-full + min-w-0 prevent the AlertCard's long diagnostic tokens
+    // (URLs, `delegate_permission/common.get_login_creds` etc.) from
+    // widening the flex/grid parent and making the whole page
+    // horizontally scrollable on mobile. max-w-xl remains the desktop
+    // cap.
+    <div className="w-full min-w-0 max-w-xl mx-auto space-y-4 py-8">
+      <div className="flex justify-center mb-6">
+        <div className="p-4 rounded-full bg-red-500/10">
+          <PasskeyIcon size="lg" className="text-red-500" />
+        </div>
+      </div>
+      <div className="text-center space-y-2">
+        <h2 className="text-2xl font-semibold text-spark-text-primary">
+          Passkey verification failed
+        </h2>
+        <p className="text-spark-text-secondary">
+          This device can't complete a passkey ceremony until the app's
+          domain configuration is recognized.
+        </p>
+      </div>
+      {aasaFailure && (
+        <AlertCard variant="warning" title="Diagnostic details">
+          {/* break-all (word-break: break-all) is intentional here —
+              `break-words` (overflow-wrap: break-word) only splits at
+              word boundaries and doesn't help with long unbroken tokens
+              like `delegate_permission/common.get_login_creds` or URLs,
+              which were pushing the AlertCard past the viewport on
+              narrow screens and making the whole page scrollable. */}
+          <div className="space-y-2 text-sm break-all min-w-0">
+            <p>
+              <span className="font-semibold">Source:</span>{' '}
+              {aasaFailure.source}
+            </p>
+            <p>
+              <span className="font-semibold">Reason:</span>{' '}
+              {aasaFailure.reason}
+            </p>
+          </div>
+        </AlertCard>
+      )}
+      <p className="text-xs text-spark-text-secondary text-center px-2">
+        This typically happens when the app's domain configuration was
+        recently deployed and the platform's verification cache hasn't
+        refreshed, or when the configuration is missing entirely. There's
+        no guaranteed refresh time — retry periodically, or share logs so
+        the team can check server-side state.
+      </p>
+    </div>
+  );
+
 
   // ============================================
   // Content & footer routing
@@ -426,6 +590,8 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
 
   const content = (() => {
     switch (phase) {
+      case 'aasa-checking': return renderSpinner('Verifying app domain...');
+      case 'aasa-error': return renderAasaError();
       case 'detecting': return renderSpinner(detectingText);
       case 'review': return renderReview();
       case 'creating': return error ? renderReview() : renderSpinner('Initializing passkey...');
@@ -437,11 +603,54 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         if (error) return null;
         return renderSpinner('Starting Glow...');
       case 'initializing':
-        return renderSpinner('Starting Glow...');
+        // F3: while `secureStorage.storeSeed` is in flight, the user is
+        // being shown a biometric prompt to bind the seed to a
+        // biometric-gated Keychain / Keystore key. Swap the label so
+        // the prompt has visible context and doesn't look like a bug.
+        return renderSpinner(
+          isSecuringSeed ? 'Setting up biometric unlock...' : 'Starting Glow...',
+        );
     }
   })();
 
   const footer = (() => {
+    // AASA pre-check failed with NotAssociated. Offer the user two
+    // actions: retry the check (in case server-side state has updated),
+    // or share diagnostic logs so the team can check CDN / origin state.
+    // No "Continue anyway" escape — WebAuthn will fail for the same
+    // reason, so routing users into that broken path only produces
+    // follow-on opaque errors.
+    if (phase === 'aasa-error') {
+      return (
+        <div className="max-w-xl mx-auto space-y-3">
+          <PrimaryButton
+            className="w-full"
+            onClick={() => {
+              setAasaFailure(null);
+              setPhase('aasa-checking');
+            }}
+          >
+            Retry check
+          </PrimaryButton>
+          <SecondaryButton
+            className="w-full"
+            onClick={() => {
+              shareOrDownloadLogs().catch((e) => {
+                logger.warn(LogCategory.UI, 'Log share/download failed from AASA error', {
+                  error: e instanceof Error ? e.message : String(e),
+                });
+              });
+            }}
+          >
+            Share diagnostic logs
+          </SecondaryButton>
+          <SecondaryButton className="w-full" onClick={onBack}>
+            Go Back
+          </SecondaryButton>
+        </div>
+      );
+    }
+
     // Error state on any auto-triggered phase: Retry + Back
     if (error && ['creating', 'new-storing', 'connecting'].includes(phase)) {
       return (

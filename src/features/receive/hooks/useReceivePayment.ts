@@ -4,6 +4,7 @@ import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { toSdkAmountNumber, type Sats } from '../../../types/sats';
 import type { PaymentMethod, ReceiveStep } from '../../../types/domain';
+import { LIGHTNING_INVOICE_MIN_SATS, LIGHTNING_INVOICE_MAX_SATS } from '../../../constants/receive';
 
 export interface UseReceivePaymentReturn {
   // State
@@ -21,10 +22,29 @@ export interface UseReceivePaymentReturn {
   sparkLoading: boolean;
   bitcoinLoading: boolean;
   showAmountPanel: boolean;
+  // Monotonically-increasing counter bumped by `reset()` AND by
+  // `closeAmountPanel()`. AmountPanel watches this to clear its own
+  // local state (`displayAmount`, `isTokenMode`) so the amount
+  // fields are empty on the next open. We can't rely on unmount /
+  // remount to do that for us because the outer BottomSheet keeps
+  // the subtree mounted across opens (`unmount={false}` — avoids
+  // first-open animation jank). The counter semantics cleanly
+  // distinguish user-initiated closes (which bump) from internal
+  // `setShowAmountPanel(false)` → true transitions on the
+  // SDK-error-recovery path (which don't bump, so the amount is
+  // preserved when the panel re-opens with the error message).
+  resetCount: number;
   // Actions
   setDescription: (desc: string) => void;
   setAmountSats: (sats: Sats | null) => void;
   setShowAmountPanel: (show: boolean) => void;
+  // User-initiated close of the AmountPanel. Clears the typed
+  // amount + description, bumps `resetCount`, and collapses the
+  // panel. Wired into the AmountPanel's X button + backdrop tap +
+  // back-button gesture. The raw `setShowAmountPanel(false)` stays
+  // available as an escape hatch for the SDK-error-recovery path
+  // where the amount must survive the panel closing and reopening.
+  closeAmountPanel: () => void;
   handleTabChange: (tab: PaymentMethod, loadLightningAddress: () => void) => void;
   generateBitcoinAddress: () => Promise<void>;
   generateBolt11Invoice: () => Promise<void>;
@@ -35,7 +55,14 @@ export function useReceivePayment(): UseReceivePaymentReturn {
   const wallet = useWallet();
 
   const [activeTab, setActiveTab] = useState<PaymentMethod>('lightning');
-  const [currentStep, setCurrentStep] = useState<ReceiveStep>('loading_limits');
+  // Initialise to 'input' (not a loading placeholder) so that when the
+  // BottomSheet is held in the tree across opens (`unmount={false}` in
+  // BottomSheet.tsx), the first paint on first-ever open shows the
+  // input step directly rather than a short-lived spinner frame that
+  // swaps out to taller input content mid-enter animation. `reset()`
+  // below still sets 'input' on every open, so this only changes the
+  // pre-reset initial render.
+  const [currentStep, setCurrentStep] = useState<ReceiveStep>('input');
   const [description, setDescription] = useState<string>('');
   const [amountSats, setAmountSats] = useState<Sats | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +75,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
   const [sparkLoading, setSparkLoading] = useState<boolean>(false);
   const [bitcoinLoading, setBitcoinLoading] = useState<boolean>(false);
   const [showAmountPanel, setShowAmountPanel] = useState<boolean>(false);
+  const [resetCount, setResetCount] = useState<number>(0);
 
   const reset = useCallback(() => {
     setCurrentStep('input');
@@ -62,6 +90,29 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     setSparkLoading(false);
     setBitcoinLoading(false);
     setShowAmountPanel(false);
+    setResetCount((c) => c + 1);
+  }, []);
+
+  const closeAmountPanel = useCallback(() => {
+    // User-initiated close: collapse the panel, then clear the
+    // typed amount + description + any lingering error AFTER the
+    // BottomSheet exit animation (~200ms Material 3 emphasized-
+    // accelerate, per BottomSheet.tsx) finishes. Without the
+    // deferral, the fields visibly blank out while the panel is
+    // still sliding off-screen — jarring. The +50ms buffer absorbs
+    // minor variation in animation end timing so the clear always
+    // lands after the panel is fully hidden. Bumping `resetCount`
+    // is what signals AmountPanel to reset its local
+    // `displayAmount` / `isTokenMode` on the next reopen. Does NOT
+    // touch `currentStep` / `paymentData` / `feeSats` because those
+    // belong to the outer dialog's tab state, not the amount panel.
+    setShowAmountPanel(false);
+    setTimeout(() => {
+      setAmountSats(null);
+      setDescription('');
+      setError(null);
+      setResetCount((c) => c + 1);
+    }, 250);
   }, []);
 
   const generateSparkAddress = useCallback(async () => {
@@ -101,6 +152,33 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       amountSats: amountSats !== null ? String(amountSats) : null,
     });
     setError(null);
+
+    // Synchronous validation before switching to the loading state.
+    // Defense-in-depth: AmountPanel's `validAmount` guard already
+    // disables the submit controls for invalid or out-of-range
+    // amounts, so this should never fire from the UI path. Kept to
+    // protect against programmatic callers and to keep the invariant
+    // close to the SDK call. Errors here skip the loading-step flash
+    // and just set `error` so the panel stays open with the message.
+    if (amountSats === null) {
+      setError('Please enter a valid amount');
+      return;
+    }
+    if (amountSats < BigInt(LIGHTNING_INVOICE_MIN_SATS)) {
+      setError(`Amount must be at least ₿${LIGHTNING_INVOICE_MIN_SATS.toLocaleString()}`);
+      return;
+    }
+    if (amountSats > BigInt(LIGHTNING_INVOICE_MAX_SATS)) {
+      setError(`Amount must be at most ₿${LIGHTNING_INVOICE_MAX_SATS.toLocaleString()}`);
+      return;
+    }
+
+    const amountSatsForSdk = toSdkAmountNumber(amountSats);
+    if (amountSatsForSdk === null) {
+      setError('Invalid amount');
+      return;
+    }
+
     setIsLoading(true);
     setCurrentStep('loading');
 
@@ -110,14 +188,6 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     }
 
     try {
-      if (amountSats === null) {
-        throw new Error('Invalid amount');
-      }
-      const amountSatsForSdk = toSdkAmountNumber(amountSats);
-      if (amountSatsForSdk === null) {
-        throw new Error('Invalid amount');
-      }
-
       logger.debug(LogCategory.PAYMENT, 'Calling wallet.receivePayment for bolt11 invoice', {
         amountSats: amountSatsForSdk,
       });
@@ -176,9 +246,11 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     sparkLoading,
     bitcoinLoading,
     showAmountPanel,
+    resetCount,
     setDescription,
     setAmountSats,
     setShowAmountPanel,
+    closeAmountPanel,
     handleTabChange,
     generateBitcoinAddress,
     generateBolt11Invoice,

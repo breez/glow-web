@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import type { GetInfoResponse, FiatCurrency } from '@breeztech/breez-sdk-spark';
+import { safeAreaTop } from '../utils/safeAreaInsets';
 import { getFiatSettings } from '../services/settings';
 import { formatWithThinSpaces } from '../utils/formatNumber';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
@@ -242,13 +243,18 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
         <div className="absolute inset-4 bg-gradient-radial from-amber-400/20 to-transparent blur-2xl" />
       </div>
 
-      {/* Header content - padded below safe area */}
+      {/* Header content - padded below safe area. safeAreaTop resolves
+          to a fixed 0.5rem gap on Android native (where env() is
+          unreliable) and to env(safe-area-inset-top) on iOS / web. */}
       <div
         className="relative z-10 px-4 pb-2"
-        style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+        style={{ paddingTop: safeAreaTop }}
       >
-        {/* Top bar with menu and network */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Top bar with menu and network. Fixed h-14 (56dp) matches the
+            Material toolbar height used by SlideInPage and PageLayout so
+            the menu/back buttons land at the same screen y coordinate on
+            every screen. */}
+        <div className="h-14 flex items-center justify-between mb-4">
           {/* Menu button */}
           <button
             onClick={onOpenMenu}

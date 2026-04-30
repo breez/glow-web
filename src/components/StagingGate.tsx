@@ -31,7 +31,7 @@ const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
     setIsChecking(false);
     // Hide the splash screen so the password prompt (or app) is visible
     if (!authenticated) {
-      hideSplash();
+      void hideSplash();
     }
   }, [stagingPassword]);
 

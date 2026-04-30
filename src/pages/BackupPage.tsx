@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { WarningIcon, SpinnerIcon, EyeIcon, FingerprintIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
 import { isPasskeyMode, getWallet } from '@/services/passkeyService';
+import { deviceOnlyStorage } from '@/services/secureStorage';
 import { logger, LogCategory } from '@/services/logger';
 
 interface BackupPageProps {
@@ -18,9 +19,29 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
   const isPasskey = isPasskeyMode();
 
   useEffect(() => {
-    if (!isPasskey) {
+    if (isPasskey) return;
+    let cancelled = false;
+    (async () => {
+      if (deviceOnlyStorage.isSupported() && (await deviceOnlyStorage.hasStoredSeed())) {
+        try {
+          const seed = await deviceOnlyStorage.retrieveSeed();
+          if (cancelled) return;
+          if (seed.type === 'mnemonic') {
+            setMnemonic(seed.mnemonic);
+            return;
+          }
+        } catch (e) {
+          logger.warn(LogCategory.AUTH, 'Failed to read mnemonic from device-only storage', {
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
+      }
+      if (cancelled) return;
       setMnemonic(localStorage.getItem('walletMnemonic'));
-    }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [isPasskey]);
 
   const handleRevealPasskey = async () => {

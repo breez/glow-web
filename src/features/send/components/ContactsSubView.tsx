@@ -1,10 +1,11 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import type { Contact } from '@breeztech/breez-sdk-spark';
 import { useContactsContext } from '../../../contexts/ContactsContext';
 import { isValidLightningAddress, searchContacts } from '../../../hooks/useContacts';
 import { FormInput, FormError, PrimaryButton, ConfirmDialog } from '../../../components/ui';
 import { BackIcon, PlusIcon, EditPencilIcon, TrashIcon, ContactsIcon, SearchIcon } from '../../../components/Icons';
 import { useWallet } from '../../../contexts/WalletContext';
+import { dismissKeyboard } from '../../../utils/keyboard';
 
 interface ContactsSubViewProps {
   onSelect: (address: string) => void;
@@ -22,7 +23,9 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
   const [formAddress, setFormAddress] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const nameInputRef = useRef<HTMLInputElement>(null);
+  // Ref to the Lightning Address input so the Name field's Enter
+  // handler can programmatically focus it (enterKeyHint="next").
+  const addressInputRef = useRef<HTMLInputElement>(null);
 
   const filteredContacts = useMemo(() => {
     if (!searchQuery.trim()) return [...contacts].sort((a, b) => a.name.localeCompare(b.name));
@@ -30,14 +33,6 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
   }, [contacts, searchQuery]);
 
   const isFormOpen = showAddForm || !!editingContact;
-
-  // Auto-focus name field when add/edit form opens
-  useEffect(() => {
-    if (isFormOpen) {
-      const timer = setTimeout(() => nameInputRef.current?.focus(), 50);
-      return () => clearTimeout(timer);
-    }
-  }, [isFormOpen]);
 
   const resetForm = () => {
     setFormName('');
@@ -61,6 +56,12 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
   };
 
   const handleSave = async () => {
+    // Dismiss the soft keyboard up front: users expect the keyboard to
+    // retract the moment they commit the form, regardless of whether
+    // validation passes or fails. Leaving it up while an inline error
+    // appears covers the error message and looks broken.
+    await dismissKeyboard();
+
     const name = formName.trim();
     const address = formAddress.trim();
     if (!name) { setFormError('Name is required'); return; }
@@ -101,13 +102,13 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
   };
 
   return (
-    <div className="flex flex-col relative overflow-hidden min-h-[420px]">
+    <div className="flex flex-col flex-1 relative overflow-hidden">
       {/* Contacts list view */}
       <div
-        className={`transition-all duration-200 ease-out ${
+        className={`flex flex-col transition-all duration-200 ease-out ${
           isFormOpen
             ? 'absolute inset-0 opacity-0 -translate-x-full pointer-events-none'
-            : 'relative opacity-100 translate-x-0'
+            : 'relative flex-1 opacity-100 translate-x-0'
         }`}
       >
         {/* Header */}
@@ -137,6 +138,24 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={async (e) => {
+              // The search input filters the contact list as the user
+              // types — there's no async "submit" action to take on
+              // Enter. Just retract the keyboard so the user can see
+              // the filtered results without the keyboard covering
+              // them.
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                await dismissKeyboard();
+              }
+            }}
+            enterKeyHint="search"
+            type="search"
+            inputMode="search"
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
             placeholder="Search contacts..."
             className="w-full bg-spark-dark border border-spark-border rounded-xl pl-9 pr-4 py-2.5 text-sm text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-0 transition-all"
           />
@@ -209,11 +228,13 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
         )}
       </div>
 
-      {/* Add/Edit form view — slides in from right */}
+      {/* Add/Edit form view — slides in from right. Uses flex-col so
+          the action buttons snap to the bottom of the available card
+          space instead of sitting below the last input. */}
       <div
-        className={`transition-all duration-200 ease-out ${
+        className={`flex flex-col transition-all duration-200 ease-out ${
           isFormOpen
-            ? 'relative opacity-100 translate-x-0'
+            ? 'relative flex-1 opacity-100 translate-x-0'
             : 'absolute inset-0 opacity-0 translate-x-full pointer-events-none'
         }`}
       >
@@ -230,17 +251,30 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
           </h2>
         </div>
 
-        {/* Form */}
+        {/* Form fields take the natural content height */}
         <div className="space-y-4">
           <div className="space-y-1.5">
             <label htmlFor="subview-contact-name" className="text-sm text-spark-text-secondary font-medium">Name</label>
             <input
-              ref={nameInputRef}
               id="subview-contact-name"
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                // Enter on the Name field moves focus to the
+                // Lightning Address field. On Android the soft
+                // keyboard's action button is labelled "Next" (via
+                // enterKeyHint) so the behaviour matches the label.
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addressInputRef.current?.focus();
+                }
+              }}
+              enterKeyHint="next"
               placeholder="Contact name"
               disabled={isSaving}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
@@ -248,25 +282,46 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
             <label htmlFor="subview-contact-address" className="text-sm text-spark-text-secondary font-medium">Lightning Address</label>
             <FormInput
               id="subview-contact-address"
+              inputRef={addressInputRef}
               value={formAddress}
               onChange={(e) => setFormAddress(e.target.value)}
-              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && formName.trim() && formAddress.trim()) handleSave(); }}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                // Enter on the last field submits. handleSave runs
+                // its own validation and surfaces inline errors if
+                // any field is empty or malformed, so we don't gate
+                // on field state here — the Done button should
+                // always trigger a submit attempt.
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void handleSave();
+                }
+              }}
+              enterKeyHint="done"
+              inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              autoComplete="off"
+              spellCheck={false}
               placeholder="user@domain.com"
               disabled={isSaving}
             />
           </div>
           <FormError error={formError} />
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={resetForm}
-              className="flex-1 py-3 text-sm font-medium border border-spark-border text-spark-text-secondary rounded-xl hover:text-spark-text-primary transition-colors"
-            >
-              Cancel
-            </button>
-            <PrimaryButton onClick={handleSave} disabled={isSaving} className="flex-1">
-              {isSaving ? 'Saving...' : 'Save'}
-            </PrimaryButton>
-          </div>
+        </div>
+
+        {/* Action buttons pinned to the bottom of the form area via
+            mt-auto so the sheet feels consistent with PasskeyPage /
+            GeneratePage's bottom-aligned primary actions. */}
+        <div className="flex gap-3 pt-4 mt-auto">
+          <button
+            onClick={resetForm}
+            className="flex-1 py-3 text-sm font-medium border border-spark-border text-spark-text-secondary rounded-xl hover:text-spark-text-primary transition-colors"
+          >
+            Cancel
+          </button>
+          <PrimaryButton onClick={handleSave} disabled={isSaving} className="flex-1">
+            {isSaving ? 'Saving...' : 'Save'}
+          </PrimaryButton>
         </div>
       </div>
 

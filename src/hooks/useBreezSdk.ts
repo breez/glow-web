@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import type {
   BreezSdk,
   Config,
@@ -10,6 +11,10 @@ import type {
   Seed,
 } from '@breeztech/breez-sdk-spark';
 import { connect, initLogging } from '@breeztech/breez-sdk-spark';
+import { Capacitor } from '@capacitor/core';
+import type { PluginListenerHandle } from '@capacitor/core';
+import { App } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { useLatest } from './useLatest';
 import { buildConnectConfig } from './buildConnectConfig';
 import { logger, LogCategory, logSdkMessage } from '../services/logger';
@@ -25,6 +30,7 @@ import {
   getWallet,
   hasPasskeyHistory,
 } from '../services/passkeyService';
+import { secureStorage, deviceOnlyStorage, SecureStorageError } from '../services/secureStorage';
 
 
 // ============================================
@@ -62,8 +68,68 @@ const getSavedMnemonic = () => localStorage.getItem(MNEMONIC_KEY);
 const clearMnemonic = () => localStorage.removeItem(MNEMONIC_KEY);
 
 // ============================================
+// Legacy mnemonic → secure storage migration
+// ============================================
+
+/**
+ * One-shot migration helper. On a native build, if the user has a plaintext
+ * mnemonic in localStorage AND nothing in device-only secure storage yet,
+ * copy it across and wipe the plaintext copy. Runs silently on every
+ * startup until the migration completes — after that, `getSavedMnemonic()`
+ * returns null and the helper is a no-op.
+ *
+ * Targets the device-only tier (not the biometric-bound tier) because
+ * pre-0.0.3 installs had no passkey mode for these users — they are
+ * non-passkey mnemonic users, and the 0.0.3 regression that forced them
+ * through a biometric prompt is the whole reason this branch exists.
+ * Migrating them into the biometric tier would repeat that mistake.
+ *
+ * Failure here is non-fatal: we keep the legacy mnemonic in place and try
+ * again on the next startup. The wallet still connects via the legacy path
+ * in the meantime.
+ */
+async function migrateLegacyMnemonicIfNeeded(): Promise<void> {
+  if (!deviceOnlyStorage.isSupported()) return;
+  const legacy = getSavedMnemonic();
+  if (!legacy) return;
+  try {
+    if (await deviceOnlyStorage.hasStoredSeed()) return;
+    await deviceOnlyStorage.storeSeed({ type: 'mnemonic', mnemonic: legacy });
+    clearMnemonic();
+    logger.info(LogCategory.AUTH, 'Migrated plaintext mnemonic into device-only secure storage');
+  } catch {
+    // Failure is non-fatal — deviceOnlyStorage already logged the typed
+    // error code via its own breadcrumbs. We keep the legacy mnemonic
+    // in place and try again on the next startup; the wallet still
+    // connects via the legacy path in the meantime.
+  }
+}
+
+// ============================================
 // Types
 // ============================================
+
+/**
+ * Coarse-grained state machine for the startup / lock screen routing.
+ *
+ * - `'loading'`: initial mount, auto-reconnect in progress. Router shows a spinner.
+ * - `'no-wallet'`: no credentials persisted anywhere. Router shows the welcome
+ *   / onboarding page.
+ * - `'native-unlocking'`: a seed is persisted in native secure storage and an
+ *   auto-triggered biometric prompt is currently visible. Router shows the
+ *   `UnlockingPage` placeholder (Glow logo + "Authenticating…" spinner) as a
+ *   branded backdrop behind the OS biometric card.
+ * - `'native-locked'`: the auto-triggered biometric was cancelled or hit the
+ *   biometric lockout — router shows the interactive `UnlockPage` from which
+ *   the user can retry biometric or abandon the locked wallet and re-onboard.
+ * - `'connected'`: the SDK is connected to a wallet.
+ */
+export type StartupState =
+  | 'loading'
+  | 'no-wallet'
+  | 'native-unlocking'
+  | 'native-locked'
+  | 'connected';
 
 export interface BreezSdkState {
   sdk: BreezSdk | null;
@@ -79,13 +145,43 @@ export interface BreezSdkState {
   celebrationPayment: Payment | null;
   prfAvailable: boolean;
   hasPasskeyBefore: boolean;
+  startupState: StartupState;
+  /**
+   * True while `secureStorage.storeSeed` is in flight during
+   * onboarding. UI code uses this to show a distinct loading label
+   * ("Setting up biometric unlock…") instead of the generic "Starting
+   * Glow…" spinner, so the user understands why they're being
+   * prompted for a second biometric right after the passkey ceremony.
+   *
+   * Only set by the onboarding path in `connectWallet`. The retrieve
+   * path (`checkForExistingWallet` then `retrieveSeed`) triggers its
+   * own inline biometric prompt and has its own loading copy on the
+   * welcome / unlock page, so this flag stays false there.
+   */
+  isSecuringSeed: boolean;
 }
 
 export type SdkEventHandler = (event: SdkEvent) => void;
 export type SdkEventUnsubscribe = () => void;
 
+/**
+ * Where the seed handed to `connectWallet` came from. Controls whether the
+ * post-connect persist block writes the seed back to secure storage.
+ *
+ * - `'onboarding'` (default): the seed is fresh from the passkey ceremony or
+ *   mnemonic restore flow; secure storage doesn't have it yet, so we write.
+ * - `'secureStorage'`: the seed was just retrieved from native secure
+ *   storage; writing it back is a redundant Keystore round-trip.
+ */
+export type ConnectSeedSource = 'onboarding' | 'secureStorage';
+
 export interface BreezSdkActions {
-  connectWallet: (seed: Seed, restore: boolean, passkeyLabel?: string) => Promise<void>;
+  connectWallet: (
+    seed: Seed,
+    restore: boolean,
+    passkeyLabel?: string,
+    source?: ConnectSeedSource,
+  ) => Promise<void>;
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
   fetchUnclaimedDeposits: () => Promise<void>;
   handleLogout: () => Promise<void>;
@@ -93,6 +189,12 @@ export interface BreezSdkActions {
   clearError: () => void;
   dismissCelebration: () => void;
   subscribeToSdkEvents: (handler: SdkEventHandler) => SdkEventUnsubscribe;
+  /**
+   * Called from `UnlockPage` to retry the biometric unlock after an earlier
+   * cancel or lockout. Re-runs `secureStorage.retrieveSeed` then
+   * `connectWallet` and updates `startupState` based on the outcome.
+   */
+  retryUnlock: () => Promise<void>;
 }
 
 // ============================================
@@ -115,12 +217,19 @@ export function useBreezSdk(
   const [hasRejectedDeposits, setHasRejectedDeposits] = useState(false);
   const [celebrationPayment, setCelebrationPayment] = useState<Payment | null>(null);
   const [prfAvailable, setPrfAvailable] = useState(false);
+  const [startupState, setStartupState] = useState<StartupState>('loading');
+  const [isSecuringSeed, setIsSecuringSeed] = useState(false);
 
   // Refs
   const isInitialLoadRef = useRef(true);
   const eventListenerIdRef = useRef<string | null>(null);
   const shownPaymentIdsRef = useRef<Set<string>>(new Set());
   const sdkRef = useLatest(sdk);
+  // Guards the retryUnlock flow against concurrent invocation. The
+  // app-resume listener and checkForExistingWallet both try to fire
+  // retryUnlock on their own schedules, and BiometricPrompt crashes
+  // if authenticate() is called while another prompt is already live.
+  const retryUnlockInFlightRef = useRef(false);
 
   // In-app event bus: feature hooks subscribe here instead of creating their
   // own SDK-level listeners, so we only ever register one listener per SDK.
@@ -248,7 +357,12 @@ export function useBreezSdk(
   // Connection lifecycle
   // ----------------------------------------
 
-  const connectWallet = useCallback(async (seed: Seed, restore: boolean, passkeyLabel?: string) => {
+  const connectWallet = useCallback(async (
+    seed: Seed,
+    restore: boolean,
+    passkeyLabel?: string,
+    source: ConnectSeedSource = 'onboarding',
+  ) => {
     let connectedSdk: BreezSdk | undefined;
     try {
       logger.info(LogCategory.SDK, 'Initiating wallet connection', { restore });
@@ -283,10 +397,73 @@ export function useBreezSdk(
       logger.authSuccess(seed.type);
       logger.info(LogCategory.SDK, 'Wallet connected successfully');
 
+      // Always persist the passkey label marker (non-sensitive) so the
+      // legacy fallback path can still detect passkey mode if secure storage
+      // becomes unavailable later (e.g. KEY_INVALIDATED on biometric change).
       if (passkeyLabel != null) {
         setPasskeyMode(passkeyLabel);
-      } else if (seed.type === 'mnemonic') {
-        saveMnemonic(seed.mnemonic);
+      }
+
+      // Persist the seed itself — but skip this entirely when the seed was
+      // sourced from secure storage (we'd be writing the same bytes back
+      // through a Keystore round-trip on every relaunch, which is wasteful
+      // and clutters the breadcrumb trail).
+      //
+      // The write target depends on the onboarding mode:
+      //   - Passkey mode (`passkeyLabel != null`) → biometric-bound
+      //     `secureStorage`. Reads will prompt Face ID / Touch ID /
+      //     BiometricPrompt on every relaunch.
+      //   - Non-passkey mode → `deviceOnlyStorage`. Encrypted at rest
+      //     via Keychain / Keystore but with no biometric gate, so
+      //     relaunch reconnects silently like the web path does.
+      //   - Web → plaintext localStorage fallback (unchanged).
+      //
+      // Non-fatal on failure for all paths — the wallet is already
+      // connected from the in-memory seed; the typed error breadcrumb
+      // is emitted by the storage layer, so we don't double-log here.
+      if (source !== 'secureStorage') {
+        if (passkeyLabel != null && secureStorage.isSupported()) {
+          // F3: biometric-bound store. On Android the write triggers a
+          // visible BiometricPrompt, so we flip `isSecuringSeed`
+          // around the await to swap the onboarding loading copy from
+          // "Starting Glow…" to "Setting up biometric unlock…" —
+          // otherwise the prompt looks like it appeared out of nowhere
+          // on top of an unrelated loading screen. On iOS, the
+          // Keychain's biometric grace period reuses the
+          // authentication from the preceding passkey ceremony, so no
+          // visible prompt appears — flipping the label would be
+          // misleading. Keep the generic "Starting Glow…" copy on iOS.
+          const shouldShowSecuringLabel =
+            typeof window !== 'undefined' &&
+            // Capacitor runtime global access mirrors nativePasskeyPrfProvider.ts
+            (window as unknown as {
+              Capacitor?: { getPlatform?: () => string };
+            }).Capacitor?.getPlatform?.() === 'android';
+          if (shouldShowSecuringLabel) {
+            setIsSecuringSeed(true);
+          }
+          try {
+            await secureStorage.storeSeed(seed);
+          } catch {
+            // Intentionally swallowed — see comment above.
+          } finally {
+            if (shouldShowSecuringLabel) {
+              setIsSecuringSeed(false);
+            }
+          }
+        } else if (deviceOnlyStorage.isSupported()) {
+          // Non-passkey on native: encrypted-at-rest storage with no
+          // biometric prompt. No `isSecuringSeed` flip — this path is
+          // silent by design.
+          try {
+            await deviceOnlyStorage.storeSeed(seed);
+          } catch {
+            // Intentionally swallowed — see comment above.
+          }
+        } else if (seed.type === 'mnemonic') {
+          // Web (legacy): unchanged plaintext localStorage write.
+          saveMnemonic(seed.mnemonic);
+        }
       }
 
       const [info, txns] = await Promise.all([
@@ -297,6 +474,7 @@ export function useBreezSdk(
       setTransactions(filterOngoingConversionPayments(txns.payments));
 
       setIsConnected(true);
+      setStartupState('connected');
 
       try {
         const result = await connectedSdk.listUnclaimedDeposits({});
@@ -342,6 +520,24 @@ export function useBreezSdk(
       logger.warn(LogCategory.SESSION, 'Failed to end log session', { error: formatError(e) });
     }
 
+    // Wipe BOTH secure-storage tiers first. Failure is non-fatal — the
+    // user is still logged out either way. Each tier emits its own typed
+    // error breadcrumb on failure, so we don't double-log here.
+    if (secureStorage.isSupported()) {
+      try {
+        await secureStorage.clearSeed();
+      } catch {
+        // Intentionally swallowed — see comment above.
+      }
+    }
+    if (deviceOnlyStorage.isSupported()) {
+      try {
+        await deviceOnlyStorage.clearSeed();
+      } catch {
+        // Intentionally swallowed — see comment above.
+      }
+    }
+
     // Always reset all state — even if disconnect threw
     setSdk(null);
     clearMnemonic();
@@ -359,9 +555,102 @@ export function useBreezSdk(
     setHasRejectedDeposits(false);
     setCelebrationPayment(null);
     setIsLoading(false);
+    setStartupState('no-wallet');
     clearNetworkOverride();
     showToast('success', 'Successfully logged out');
   }, [sdk, showToast]);
+
+  // Re-run the biometric unlock flow after the user cancelled or was locked
+  // out on the previous attempt. Called by UnlockPage's "Unlock" button,
+  // and also auto-fired by checkForExistingWallet on mount and by the
+  // app-resume listener when the user tabs back into a stuck
+  // UnlockingPage.
+  const retryUnlock = useCallback(async () => {
+    logger.info(LogCategory.AUTH, 'retryUnlock:enter');
+    // Prevent concurrent biometric prompts: BiometricPrompt throws if
+    // authenticate() is called while another prompt is already live,
+    // and the two call-sites (mount timeout + resume listener) can
+    // race. The ref is set synchronously before the first await so
+    // the second caller bails out cleanly.
+    if (retryUnlockInFlightRef.current) {
+      logger.warn(LogCategory.AUTH, 'retryUnlock:skipped (in-flight)');
+      return;
+    }
+    retryUnlockInFlightRef.current = true;
+    if (!secureStorage.isSupported()) {
+      // Web or unsupported host — should never reach UnlockPage here, but
+      // route back to welcome just in case.
+      setStartupState('no-wallet');
+      retryUnlockInFlightRef.current = false;
+      return;
+    }
+    setError(null);
+    setIsLoading(true);
+    try {
+      logger.info(LogCategory.AUTH, 'retryUnlock:callingRetrieveSeed');
+      const seed = await secureStorage.retrieveSeed();
+      await connectWallet(seed, false, undefined, 'secureStorage');
+      // connectWallet sets startupState='connected' on success.
+    } catch (e) {
+      setIsLoading(false);
+      if (e instanceof SecureStorageError) {
+        switch (e.code) {
+          case 'USER_CANCELLED':
+            // Silent — stay on UnlockPage, let the user tap again.
+            setStartupState('native-locked');
+            break;
+          case 'BIOMETRIC_LOCKOUT':
+            setError(
+              'Biometric unlock is locked. Unlock your device with your passcode and try again.',
+            );
+            setStartupState('native-locked');
+            break;
+          case 'KEY_INVALIDATED':
+            // Stored entry voided (e.g. new biometric enrollment). Wipe and
+            // route the user back to welcome so they can re-onboard.
+            await secureStorage.clearSeed().catch(() => { /* best-effort */ });
+            setError('Your biometric enrollment changed. Please set up your wallet again.');
+            setStartupState('no-wallet');
+            break;
+          case 'BIOMETRIC_NOT_ENROLLED':
+            setError('Biometric authentication is not set up on this device.');
+            setStartupState('no-wallet');
+            break;
+          case 'BIOMETRIC_UNAVAILABLE':
+            // Most common cause on iOS: the user denied the
+            // NSFaceIDUsageDescription system permission prompt, so
+            // LAContext.canEvaluatePolicy now returns false. Keep the
+            // user on UnlockPage with a helpful error so they can grant
+            // the permission in Settings and retry, rather than
+            // routing them back to welcome / onboarding which would
+            // look like the wallet was lost.
+            setError(
+              'Biometric authentication is unavailable. Please enable Face ID / Touch ID / fingerprint for Glow in your device settings and try again.',
+            );
+            setStartupState('native-locked');
+            break;
+          case 'NO_STORED_SEED':
+            // Nothing to retrieve — back to welcome.
+            setStartupState('no-wallet');
+            break;
+          case 'NOT_SUPPORTED':
+          case 'UNKNOWN':
+          default:
+            setError('Unable to unlock wallet. Please try again.');
+            setStartupState('native-locked');
+            break;
+        }
+      } else {
+        logger.error(LogCategory.SDK, 'Unexpected error retrying unlock', {
+          error: formatError(e),
+        });
+        setError('Unable to unlock wallet. Please try again.');
+        setStartupState('native-locked');
+      }
+    } finally {
+      retryUnlockInFlightRef.current = false;
+    }
+  }, [connectWallet]);
 
   const handleBuyBitcoin = useCallback(async (provider: BuyBitcoinProvider) => {
     if (!sdk) return;
@@ -370,13 +659,23 @@ export function useBreezSdk(
     // redirect-only providers like MoonPay.
     if (provider === 'cashApp') return;
 
-    // Pre-open a blank tab synchronously (during user gesture) to avoid popup blockers.
-    // On mobile/PWA this will likely return null, we fall back to same-tab navigation.
-    const newTab = window.open('', '_blank');
+    // On web, pre-open a blank tab synchronously during the user gesture
+    // so the popup blocker doesn't swallow it after the await. On native
+    // hosts we defer the URL open until after the SDK responds and hand
+    // it straight to @capacitor/browser (Chrome Custom Tabs on Android,
+    // SFSafariViewController on iOS), which opens the provider page
+    // completely outside the app's WebView (avoiding the earlier bug
+    // where setting window.location.href navigated the glow-web WebView
+    // to the provider URL and got stuck in a redirect loop when the
+    // user returned to the app).
+    const isNative = Capacitor.isNativePlatform();
+    const newTab = isNative ? null : window.open('', '_blank');
 
     try {
       const response = await sdk.buyBitcoin({ type: 'moonpay' });
-      if (newTab) {
+      if (isNative) {
+        await Browser.open({ url: response.url });
+      } else if (newTab) {
         newTab.location.href = response.url;
       } else {
         window.location.href = response.url;
@@ -412,52 +711,216 @@ export function useBreezSdk(
     });
 
     const checkForExistingWallet = async () => {
-      const savedMnemonic = getSavedMnemonic();
-      if (savedMnemonic) {
-        try {
-          setIsLoading(true);
-          await connectWallet({ type: 'mnemonic', mnemonic: savedMnemonic }, false);
-        } catch (e) {
-          logger.error(LogCategory.SDK, 'Failed to connect with saved mnemonic', { error: formatError(e) });
-          setError('Failed to connect with saved mnemonic. Please try again.');
-          clearMnemonic();
-          setIsLoading(false);
+      // (A) One-shot migration: on native, copy any plaintext mnemonic
+      //     into device-only secure storage and wipe the plaintext copy.
+      //     No-op on web.
+      await migrateLegacyMnemonicIfNeeded();
+
+      // (B) 0.0.3 regression recovery. The 0.0.3 release wrote every
+      //     seed into the biometric-bound `secureStorage` tier,
+      //     including non-passkey mnemonic users who never opted into
+      //     a biometric flow. On upgrade, those users would get a
+      //     biometric prompt on every relaunch and the Backup page
+      //     would report "no seed" (because it only checked
+      //     localStorage). Detect the orphan entry and wipe it
+      //     silently so the user lands on the welcome screen and
+      //     re-restores from their 24 words into the correct tier.
+      //     `clearSeed` is unauthenticated on both platforms, so this
+      //     wipe does NOT trigger a biometric prompt.
+      if (
+        secureStorage.isSupported()
+        && !isPasskeyMode()
+        && (await secureStorage.hasStoredSeed())
+      ) {
+        logger.warn(
+          LogCategory.AUTH,
+          'Clearing orphaned biometric-bound seed from 0.0.3 regression',
+        );
+        await secureStorage.clearSeed().catch(() => { /* best-effort */ });
+      }
+
+      // (C) Passkey biometric unlock. Two carefully ordered steps so
+      //     the OS biometric prompt lands over a fully-painted branded
+      //     placeholder, not a black splash:
+      //
+      //       1. `flushSync(setStartupState('native-unlocking'))` forces
+      //          React to commit the route change to the DOM before we
+      //          touch the splash — without it the commit can be
+      //          batched past the next step.
+      //       2. `await hideSplash()` runs the fade on the native
+      //          compositor via the Web Animations API. It awaits the
+      //          animation's `.finished` Promise before resolving, so
+      //          `retryUnlock` (and therefore the biometric prompt)
+      //          only fires once the splash is fully gone and
+      //          UnlockingPage is on screen.
+      //
+      //     An earlier CSS-transition-based fade failed here: on
+      //     Android WebView, `transitionend` never fired, so a 300ms
+      //     fallback timer caught it — meaning the transition was
+      //     being janked on the main thread and the splash stayed
+      //     partially visible while the biometric prompt raced in on
+      //     top of it. WAAPI sidesteps that by running on the
+      //     compositor thread.
+      //
+      //     The two-page split (UnlockingPage vs UnlockPage) keeps the
+      //     placeholder purely decorative — just the Glow logo and an
+      //     "Authenticating…" spinner — and the retry screen purely
+      //     interactive, so each surface reads cleanly without a
+      //     mid-component isLoading toggle.
+      let useLegacy = true;
+      if (
+        isPasskeyMode()
+        && secureStorage.isSupported()
+        && (await secureStorage.hasStoredSeed())
+      ) {
+        logger.info(LogCategory.AUTH, 'unlock:start');
+        // flushSync forces React to commit this state update BEFORE
+        // the await below yields control. Without it, the commit can
+        // be batched past hideSplash and the biometric prompt lands
+        // on a still-unmounted UnlockingPage.
+        flushSync(() => {
+          setStartupState('native-unlocking');
+        });
+        useLegacy = false;
+
+        // Hide the splash and WAIT for its fade to complete. WAAPI
+        // runs the animation on the compositor, so React's paint of
+        // UnlockingPage (which flushSync just committed to the DOM)
+        // composites in parallel with the fade — by frame 2 of the
+        // 100ms fade, UnlockingPage is on screen behind the
+        // translucent splash. On re-runs (splash already gone) this
+        // resolves synchronously.
+        if (isInitialLoadRef.current) {
+          isInitialLoadRef.current = false;
+          await hideSplash();
         }
-      } else if (isPasskeyMode()) {
+
+        // Fire retryUnlock. Fire-and-forget: retryUnlock owns its
+        // own error handling and updates startupState / error as
+        // appropriate (success → 'connected', cancel/lockout →
+        // 'native-locked').
+        void retryUnlock();
+      } else if (
+        deviceOnlyStorage.isSupported()
+        && (await deviceOnlyStorage.hasStoredSeed())
+      ) {
+        // (D) Non-passkey native silent reconnect. Encrypted-at-rest
+        //     seed, no biometric prompt. Retrieval is a plain Keychain
+        //     / Keystore decrypt — the user sees the splash fade into
+        //     the connected wallet with no placeholder page.
+        //     `source: 'secureStorage'` skips the re-write back into
+        //     storage.
+        useLegacy = false;
         setIsLoading(true);
-        let wallet;
         try {
-          wallet = await getWallet();
+          const seed = await deviceOnlyStorage.retrieveSeed();
+          await connectWallet(seed, false, undefined, 'secureStorage');
         } catch (e) {
-          logger.error(LogCategory.AUTH, 'Passkey authentication failed', { error: formatError(e) });
-          if (e instanceof DOMException && e.name === 'NotAllowedError') {
-            clearPasskeyMode();
-          }
-          setError('Failed to authenticate with passkey. Please try again.');
+          logger.error(
+            LogCategory.SDK,
+            'Failed to silently reconnect from device-only storage',
+            { error: formatError(e) },
+          );
+          // Fall through to welcome; the user can re-restore manually.
           setIsLoading(false);
         }
-        if (wallet) {
+      }
+
+      // (E) Legacy flow. Reached on web, or on native when no stored
+      //     seed was found in either tier above.
+      if (useLegacy) {
+        const savedMnemonic = getSavedMnemonic();
+        if (savedMnemonic) {
           try {
-            await connectWallet(wallet.seed, false, wallet.label);
+            setIsLoading(true);
+            await connectWallet({ type: 'mnemonic', mnemonic: savedMnemonic }, false);
           } catch (e) {
-            logger.error(LogCategory.SDK, 'Failed to connect after passkey auth', { error: formatError(e) });
-            setError('Failed to connect wallet. Please try again.');
+            logger.error(LogCategory.SDK, 'Failed to connect with saved mnemonic', { error: formatError(e) });
+            setError('Failed to connect with saved mnemonic. Please try again.');
+            clearMnemonic();
             setIsLoading(false);
           }
+        } else if (isPasskeyMode()) {
+          // Passkey mode but no stored seed (e.g. KEY_INVALIDATED on
+          // biometric change, or a web host that doesn't support
+          // secureStorage). Fall through to the passkey re-derive path.
+          setIsLoading(true);
+          let wallet;
+          try {
+            wallet = await getWallet();
+          } catch (e) {
+            logger.error(LogCategory.AUTH, 'Passkey authentication failed', { error: formatError(e) });
+            if (e instanceof DOMException && e.name === 'NotAllowedError') {
+              clearPasskeyMode();
+            }
+            setError('Failed to authenticate with passkey. Please try again.');
+            setIsLoading(false);
+          }
+          if (wallet) {
+            try {
+              await connectWallet(wallet.seed, false, wallet.label);
+            } catch (e) {
+              logger.error(LogCategory.SDK, 'Failed to connect after passkey auth', { error: formatError(e) });
+              setError('Failed to connect wallet. Please try again.');
+              setIsLoading(false);
+            }
+          }
+        } else {
+          setIsLoading(false);
         }
-      } else {
-        setIsLoading(false);
       }
+
+      // Default any leftover 'loading' state to 'no-wallet' so the router
+      // can show the welcome page. If a success path already transitioned
+      // to 'connected' or a locked path set 'native-locked', this functional
+      // update leaves it untouched.
+      setStartupState((current) => (current === 'loading' ? 'no-wallet' : current));
 
       if (isInitialLoadRef.current) {
         isInitialLoadRef.current = false;
-        hideSplash();
+        // Fire-and-forget on the non-passkey tail: we're not racing
+        // the biometric prompt here, so there's no reason to await
+        // the fade. hideSplash resolves on its own timeline.
+        void hideSplash();
       }
     };
 
     checkForExistingWallet();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only initialization
   }, []);
+
+  // Re-fire retryUnlock when the app returns to the foreground while
+  // stuck on UnlockingPage. Guards against the case where the user
+  // backgrounds the app during the splash fade-out window (see
+  // hideSplash in checkForExistingWallet) before the system
+  // biometric prompt appears: the BiometricPrompt call would land on
+  // a non-STARTED activity, FragmentManager would refuse the
+  // transaction, and the authentication callback would never fire —
+  // leaving the JS Promise hung and the UnlockingPage visible with no
+  // prompt. BiometricPromptAuth.kt also guards this on the native
+  // side, but the resume listener is a belt-and-braces safety net so
+  // the user can always unstick by tabbing back in. retryUnlock is
+  // idempotent via retryUnlockInFlightRef.
+  const startupStateRef = useLatest(startupState);
+  const retryUnlockRef = useLatest(retryUnlock);
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let handle: PluginListenerHandle | null = null;
+    let cancelled = false;
+    void App.addListener('appStateChange', ({ isActive }) => {
+      if (!isActive) return;
+      if (startupStateRef.current === 'native-unlocking') {
+        void retryUnlockRef.current();
+      }
+    }).then((h) => {
+      if (cancelled) h.remove();
+      else handle = h;
+    });
+    return () => {
+      cancelled = true;
+      handle?.remove();
+    };
+  }, [startupStateRef, retryUnlockRef]);
 
   // Event listener lifecycle
   useEffect(() => {
@@ -498,6 +961,8 @@ export function useBreezSdk(
     celebrationPayment,
     prfAvailable,
     hasPasskeyBefore: hasPasskeyHistory(),
+    startupState,
+    isSecuringSeed,
     // Actions
     connectWallet,
     refreshWalletData,
@@ -507,5 +972,6 @@ export function useBreezSdk(
     clearError: () => setError(null),
     dismissCelebration: () => setCelebrationPayment(null),
     subscribeToSdkEvents,
+    retryUnlock,
   };
 }

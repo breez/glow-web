@@ -15,6 +15,7 @@ import {
   ExternalLinkIcon,
   BackIcon,
 } from '../Icons';
+import { useBackButton } from '../../hooks/useBackButton';
 
 // ============================================
 // RE-EXPORTS FROM MODULAR FILES
@@ -507,6 +508,14 @@ export const ConfirmDialog: React.FC<{
 }) => {
     const cardEl = useBottomSheetCardEl();
 
+    // Android hardware back button dismisses the confirm dialog (maps
+    // to "Cancel" — the safer of the two options). This is placed
+    // BEFORE the early-return so the hook order stays stable across
+    // renders regardless of isOpen flips.
+    useBackButton(() => {
+      onCancel();
+    }, isOpen);
+
     if (!isOpen) return null;
 
     const confirmButtonStyles = {
@@ -516,7 +525,11 @@ export const ConfirmDialog: React.FC<{
     };
 
     const content = (
-      <div className="absolute inset-0 bg-spark-void/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+      // fixed (not absolute) so the backdrop dims the full viewport even
+      // when the dialog is portaled into a bottom-sheet card. bg-black/85
+      // + backdrop-blur-md produces a visibly dimmed background rather
+      // than the barely-perceptible spark-void/80 over a dark app canvas.
+      <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-opacity duration-300">
         <DialogCard maxWidth="sm">
           <div className="text-center">
             <h3 className="font-display text-lg font-bold text-spark-text-primary mb-3">

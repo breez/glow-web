@@ -17,6 +17,8 @@ import UnclaimedDepositDetailsPage from './UnclaimedDepositDetailsPage';
 import SaveContactDialog from '../features/send/components/SaveContactDialog';
 import BuyBitcoinDialog from '../features/buy/BuyBitcoinDialog';
 import { getBuyProviderSettings, filterProvidersByNetwork } from '../services/settings';
+import { useStatusBarColor } from '../hooks/useStatusBarColor';
+import { STATUS_BAR_WALLET_GLASS } from '../utils/statusBarManager';
 
 interface WalletPageProps {
   walletInfo: GetInfoResponse | null;
@@ -55,6 +57,14 @@ const WalletPage: React.FC<WalletPageProps> = ({
 }) => {
   const wallet = useWallet();
   const { showToast } = useToast();
+
+  // Tint the native system bars to the wallet page glass effective
+  // color so the CollapsingWalletHeader glassmorphism reads as a
+  // continuous surface with the status bar. Other pages (drawer,
+  // slide-ins, landing) push spark-surface on top of this via the
+  // same manager, and their pop restores #13131d when they close.
+  useStatusBarColor(STATUS_BAR_WALLET_GLASS);
+
   const [scrollProgress, setScrollProgress] = useState<number>(0);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
   const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false);

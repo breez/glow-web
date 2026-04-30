@@ -74,6 +74,30 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
   const receive = useReceivePayment();
   const [showChangeConfirm, setShowChangeConfirm] = useState<boolean>(false);
 
+  // First-paint deferral. On a fresh post-install launch the main
+  // thread is still contending with WASM compile + SDK connect
+  // callbacks when the user taps Receive. With `unmount={false}` the
+  // sheet subtree lives in the React tree across opens but HeadlessUI
+  // hides it via the `hidden` attribute (effectively `display: none`),
+  // so the browser skips laying it out until `isOpen` flips to true.
+  // At that point the full subtree — tabs, step container, address
+  // displays — gets laid out synchronously with the paint that starts
+  // the enter animation, pushing the first frame of the slide-up back
+  // far enough to read as lag. Deferring the heavy subtree by one RAF
+  // lets the browser commit a minimal sheet shell first so the enter
+  // animation starts on its own frame, then paints the real content
+  // on the next frame while the sheet is already sliding up. Sticky —
+  // once true, stays true for the session, so subsequent opens render
+  // content immediately (no placeholder flash).
+  const [isContentReady, setIsContentReady] = useState(false);
+  useEffect(() => {
+    if (!isOpen || isContentReady) return;
+    const id = requestAnimationFrame(() => {
+      setIsContentReady(true);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [isOpen, isContentReady]);
+
   const {
     address: lightningAddress,
     isLoading: lightningAddressLoading,
@@ -155,70 +179,91 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
             icon={<ArrowDownIcon />}
           />
 
-          <TabContainer>
-            <TabList>
-              <Tab isActive={receive.activeTab === 'lightning'} onClick={() => handleTabChange('lightning')} data-testid="lightning-tab">
-                <LightningBoltIcon size="sm" />
-                Lightning
-              </Tab>
-              <Tab isActive={receive.activeTab === 'bitcoin'} onClick={() => handleTabChange('bitcoin')} data-testid="bitcoin-tab">
-                <span className="font-bold text-sm">₿</span>
-                Bitcoin
-              </Tab>
-            </TabList>
+          {isContentReady ? (
+            <TabContainer>
+              <TabList>
+                <Tab isActive={receive.activeTab === 'lightning'} onClick={() => handleTabChange('lightning')} data-testid="lightning-tab">
+                  <LightningBoltIcon size="sm" />
+                  Lightning
+                </Tab>
+                <Tab isActive={receive.activeTab === 'bitcoin'} onClick={() => handleTabChange('bitcoin')} data-testid="bitcoin-tab">
+                  <span className="font-bold text-sm">₿</span>
+                  Bitcoin
+                </Tab>
+              </TabList>
 
-            <StepContainer>
-              {receive.currentStep === 'loading_limits' && (
-                <div className="flex flex-col items-center justify-center h-40">
-                  <LoadingSpinner />
-                </div>
-              )}
+              <StepContainer>
+                {receive.currentStep === 'input' && (
+                  <div className="pt-6">
+                    {receive.activeTab === 'lightning' && (
+                      <LightningAddressDisplay
+                        address={lightningAddress}
+                        isLoading={lightningAddressLoading}
+                        isEditing={isEditingLightningAddress}
+                        editValue={lightningAddressEditValue}
+                        error={lightningAddressError}
+                        isSupported={isLightningAddressSupported}
+                        supportMessage={lightningAddressSupportMessage}
+                        onEdit={() => beginEditLightningAddress(lightningAddress)}
+                        onSave={handleSaveLightningAddress}
+                        onCancel={() => cancelEditLightningAddress()}
+                        onEditValueChange={setLightningAddressEditValue}
+                        onCustomizeAmount={() => receive.setShowAmountPanel(true)}
+                      />
+                    )}
 
-              {receive.currentStep === 'input' && (
-                <div className="pt-6">
-                  {receive.activeTab === 'lightning' && (
-                    <LightningAddressDisplay
-                      address={lightningAddress}
-                      isLoading={lightningAddressLoading}
-                      isEditing={isEditingLightningAddress}
-                      editValue={lightningAddressEditValue}
-                      error={lightningAddressError}
-                      isSupported={isLightningAddressSupported}
-                      supportMessage={lightningAddressSupportMessage}
-                      onEdit={() => beginEditLightningAddress(lightningAddress)}
-                      onSave={handleSaveLightningAddress}
-                      onCancel={() => cancelEditLightningAddress()}
-                      onEditValueChange={setLightningAddressEditValue}
-                      onCustomizeAmount={() => receive.setShowAmountPanel(true)}
-                    />
-                  )}
+                    {receive.activeTab === 'spark' && (
+                      <SparkAddressDisplay address={receive.sparkAddress} isLoading={receive.sparkLoading} />
+                    )}
 
-                  {receive.activeTab === 'spark' && (
-                    <SparkAddressDisplay address={receive.sparkAddress} isLoading={receive.sparkLoading} />
-                  )}
+                    {receive.activeTab === 'bitcoin' && (
+                      <BitcoinAddressDisplay address={receive.bitcoinAddress} isLoading={receive.bitcoinLoading} />
+                    )}
+                  </div>
+                )}
 
-                  {receive.activeTab === 'bitcoin' && (
-                    <BitcoinAddressDisplay address={receive.bitcoinAddress} isLoading={receive.bitcoinLoading} />
-                  )}
-                </div>
-              )}
+                {receive.currentStep === 'loading' && (
+                  <div className="flex flex-col items-center justify-center h-40" data-testid="invoice-generation-loading">
+                    <LoadingSpinner text={`Generating ${getQRTitle().toLowerCase()}...`} />
+                  </div>
+                )}
 
-              {receive.currentStep === 'loading' && (
-                <div className="flex flex-col items-center justify-center h-40" data-testid="invoice-generation-loading">
-                  <LoadingSpinner text={`Generating ${getQRTitle().toLowerCase()}...`} />
-                </div>
-              )}
-
-              {receive.currentStep === 'qr' && (
-                <QRCodeDisplay
-                  paymentData={receive.paymentData}
-                  feeSats={receive.feeSats}
-                  title={getQRTitle()}
-                  description={getQRDescription()}
-                />
-              )}
-            </StepContainer>
-          </TabContainer>
+                {receive.currentStep === 'qr' && (
+                  <QRCodeDisplay
+                    paymentData={receive.paymentData}
+                    feeSats={receive.feeSats}
+                    title={getQRTitle()}
+                    description={getQRDescription()}
+                  />
+                )}
+              </StepContainer>
+            </TabContainer>
+          ) : lightningAddress ? (
+            // Placeholder matched to the Lightning-tab QR view when
+            // the preloaded address is already available by the time
+            // the user taps Receive. A fixed min-height stops the
+            // sheet from entering at ~150px and then lurching up to
+            // ~450px when the real QR + copy row mounts on the next
+            // frame (translate-y-% is relative to element height, so
+            // mid-animation height jumps reposition the sheet
+            // visibly).
+            <div className="min-h-[450px]" aria-hidden />
+          ) : (
+            // Placeholder mirroring LightningAddressDisplay's own
+            // `isLoading && !address` render (`text-center py-8` +
+            // "Loading Lightning Address..." spinner). When the real
+            // content mounts on the next frame the spinner simply
+            // stays where it is — no visual pop, no height snap —
+            // and takes over the "loading" role until the SDK
+            // response lands. On first-ever post-install tap the
+            // preload is usually still in flight so this branch
+            // dominates. Tabs are always Lightning at this point
+            // because `isContentReady` gates the tab UI, so a
+            // Lightning-specific copy is safe.
+            <div className="text-center py-8">
+              <LoadingSpinner text="Loading Lightning Address..." />
+            </div>
+          )}
         </BottomSheetCard>
 
         <ConfirmDialog
@@ -242,11 +287,11 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
         setAmountSats={receive.setAmountSats}
         description={receive.description}
         setDescription={receive.setDescription}
-        limits={{ min: 1, max: 1000000 }}
         isLoading={receive.isLoading}
         error={receive.error}
         onCreateInvoice={receive.generateBolt11Invoice}
-        onClose={() => receive.setShowAmountPanel(false)}
+        onClose={receive.closeAmountPanel}
+        resetCount={receive.resetCount}
       />
     </>
   );

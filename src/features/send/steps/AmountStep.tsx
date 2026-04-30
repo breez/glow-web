@@ -10,6 +10,7 @@ import {
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
 import { useAmountInput } from '../../../hooks/useAmountInput';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
+import { dismissKeyboard } from '../../../utils/keyboard';
 
 export interface AmountStepProps {
   paymentInput: string;
@@ -93,11 +94,15 @@ const AmountStep: React.FC<AmountStepProps> = ({
   const isSendAllSats = !isTokenMode && balanceSats !== undefined && amountNum === balanceSats && feesIncluded;
   const isSendAll = isSendAllSats || isSendAllToken || isSendAllBtcInTokenMode;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!validAmount) return;
     setLocalError(null);
 
-    // Token send-all bypasses validation — amount goes directly as tokenBalance to the SDK
+    // Dismiss the keyboard before advancing to confirm: the confirm
+    // step has no inputs and shouldn't inherit an open keyboard.
+    await dismissKeyboard();
+
+    // Token send-all bypasses validation: amount goes directly as tokenBalance to the SDK
     if (isTokenMode && isSendAllToken && tokenBalance && tokenIdentifier) {
       onNext(
         tokenBalance,
@@ -156,8 +161,20 @@ const AmountStep: React.FC<AmountStepProps> = ({
           <input
             type={isTokenMode ? 'text' : 'number'}
             inputMode={isTokenMode ? 'decimal' : 'numeric'}
+            enterKeyHint="done"
             value={localAmount}
             onChange={handleAmountChange}
+            onKeyDown={async (e) => {
+              // Enter on the amount field commits and advances to
+              // the confirm step. Matches the soft keyboard's Done
+              // action hint.
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (validAmount && !isLoading) {
+                  await handleNext();
+                }
+              }
+            }}
             placeholder={isTokenMode && tokenSymbol ? `Enter amount in ${tokenSymbol}` : 'Enter amount in satoshis'}
             className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             disabled={isLoading}
