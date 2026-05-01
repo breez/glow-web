@@ -65,9 +65,6 @@
     "vite-plugin-wasm": "^3.2.2",
     "vitest": "^3.2.4"
   },
-  "engines": {
-    "node": "20.x"
-  },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "4.57.0"
   }
