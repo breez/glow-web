@@ -368,6 +368,10 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     // only pay browser layout/paint (no React mount).
     <Transition
       show={isOpen}
+      // `appear` animates on the very first mount when show is already
+      // true. Needed so consumers that remount this component on each
+      // open (via key) still get the enter animation.
+      appear
       unmount={false}
       as="div"
       className="absolute inset-x-0 top-0 z-50 overflow-hidden flex flex-col justify-end pointer-events-none"

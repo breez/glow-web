@@ -81,6 +81,9 @@ const WalletPage: React.FC<WalletPageProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const enabledBuyProviders = useMemo(() => filterProvidersByNetwork(getBuyProviderSettings(), network), [isMenuOpen, network]);
   const [saveContactAddress, setSaveContactAddress] = useState<string | null>(null);
+  // Bump on each open so SaveContactDialog remounts and lazy-inits its
+  // state from the new address, instead of relying on a reset effect.
+  const [saveContactSession, setSaveContactSession] = useState(0);
 
   const transactionsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -138,7 +141,10 @@ const WalletPage: React.FC<WalletPageProps> = ({
       setTimeout(() => {
         showToast('info', 'Save as contact?', lightningAddress, {
           label: 'Save',
-          onClick: () => setSaveContactAddress(lightningAddress),
+          onClick: () => {
+            setSaveContactSession(s => s + 1);
+            setSaveContactAddress(lightningAddress);
+          },
         });
       }, 500);
     }
@@ -324,6 +330,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
 
       {/* Save Contact Dialog */}
       <SaveContactDialog
+        key={saveContactSession}
         isOpen={!!saveContactAddress}
         lightningAddress={saveContactAddress || ''}
         onClose={() => setSaveContactAddress(null)}

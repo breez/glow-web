@@ -10,7 +10,11 @@ interface SaveContactDialogProps {
 }
 
 const SaveContactDialog: React.FC<SaveContactDialogProps> = ({ isOpen, lightningAddress, onClose }) => {
-  const [name, setName] = useState('');
+  // Initialise state from the address that was passed when this instance
+  // mounted. Parents are expected to bump a `key` on each open so a new
+  // open with a new address always gets fresh state via remount, instead
+  // of the previous reset-in-effect pattern.
+  const [name, setName] = useState(() => lightningAddress.split('@')[0] || '');
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,26 +29,11 @@ const SaveContactDialog: React.FC<SaveContactDialogProps> = ({ isOpen, lightning
     };
   }, []);
 
-  // Reset state when dialog opens
+  // Auto-focus name input on mount (which is now per-open thanks to key)
   useEffect(() => {
-    if (isOpen) {
-      setName(lightningAddress.split('@')[0] || '');
-      setIsSaving(false);
-      setSaved(false);
-      setError(null);
-      if (closeTimerRef.current) {
-        clearTimeout(closeTimerRef.current);
-        closeTimerRef.current = null;
-      }
-    }
-  }, [isOpen, lightningAddress]);
-
-  // Auto-focus name input when dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => nameInputRef.current?.focus(), 350);
-      return () => clearTimeout(timer);
-    }
+    if (!isOpen) return;
+    const timer = setTimeout(() => nameInputRef.current?.focus(), 350);
+    return () => clearTimeout(timer);
   }, [isOpen]);
 
   const handleSave = async () => {
