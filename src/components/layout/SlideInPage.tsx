@@ -1,5 +1,5 @@
 import React, { ReactNode, useState } from 'react';
-import { Transition } from '@headlessui/react';
+import { Transition, TransitionChild } from '@headlessui/react';
 import { CloseIcon, BackIcon } from '../Icons';
 import { safeAreaTop, safeAreaBottom } from '../../utils/safeAreaInsets';
 import { useStatusBarColor } from '../../hooks/useStatusBarColor';
@@ -76,7 +76,7 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
     // one dominant motion.
     <div className="absolute inset-0 z-[60] flex flex-col">
       <Transition show={isOpen} appear as="div" className="absolute inset-0 overflow-hidden">
-        <Transition.Child
+        <TransitionChild
           as="div"
           // Material 3 emphasized easing. Enter uses the decelerate
           // curve so the page arrives with a soft settle; exit uses
@@ -151,7 +151,7 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
               </div>
             </footer>
           )}
-        </Transition.Child>
+        </TransitionChild>
       </Transition>
     </div>
   );

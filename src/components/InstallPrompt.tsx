@@ -77,6 +77,7 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({ onClose }) => {
   return (
     <Transition
       show={isVisible}
+      as="div"
       enter="transform transition ease-out duration-300"
       enterFrom="translate-y-full opacity-0"
       enterTo="translate-y-0 opacity-100"

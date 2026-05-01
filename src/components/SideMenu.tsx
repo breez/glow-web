@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Transition } from '@headlessui/react';
+import { Transition, TransitionChild } from '@headlessui/react';
 import { isPasskeyMode } from '@/services/passkeyService';
 import { RefundIcon, BackupIcon, SettingsIcon, LogoutIcon, CloseIcon, AlertTriangleIcon } from './Icons';
 import { safeAreaTop, safeAreaBottom } from '../utils/safeAreaInsets';
@@ -149,7 +149,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
           accelerate exit) at 100ms. Duration is faster than M3's
           `motionDurationMedium4` canonical nav-drawer spec (400ms);
           we prioritise snap over the full M3 arc. */}
-      <Transition.Child
+      <TransitionChild
         as="div"
         enter="transition-opacity ease-m3-emphasized-decelerate duration-[150ms]"
         enterFrom="opacity-0"
@@ -160,7 +160,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
         className="fixed inset-0"
       >
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      </Transition.Child>
+      </TransitionChild>
 
       {/* Panel */}
       {leftOffset !== null && (
@@ -168,7 +168,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
           className="fixed top-0 bottom-0 w-72 overflow-hidden"
           style={{ left: leftOffset }}
         >
-          <Transition.Child
+          <TransitionChild
             as="div"
             enter="transition transform ease-m3-emphasized-decelerate duration-[150ms]"
             enterFrom="-translate-x-full"
@@ -246,7 +246,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
 
             {/* Logout Confirmation Dialog */}
             <Transition show={showLogoutConfirm} as="div" className="fixed inset-0 z-60">
-              <Transition.Child
+              <TransitionChild
                 as="div"
                 enter="transition-opacity ease-out duration-150"
                 enterFrom="opacity-0"
@@ -258,7 +258,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                 onClick={() => setShowLogoutConfirm(false)}
               />
               <div className="fixed inset-0 flex items-center justify-center p-4">
-                <Transition.Child
+                <TransitionChild
                   as="div"
                   enter="transition transform ease-out duration-200"
                   enterFrom="opacity-0 scale-95"
@@ -298,10 +298,10 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                       Logout
                     </button>
                   </div>
-                </Transition.Child>
+                </TransitionChild>
               </div>
             </Transition>
-          </Transition.Child>
+          </TransitionChild>
         </div>
       )}
     </Transition>,

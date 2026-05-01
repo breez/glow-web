@@ -1,5 +1,5 @@
 import React, { ReactNode, forwardRef, useState, useRef, useCallback, useEffect } from 'react';
-import { Transition } from '@headlessui/react';
+import { Transition, TransitionChild } from '@headlessui/react';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
 import type { PluginListenerHandle } from '@capacitor/core';
@@ -375,7 +375,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       style={{ height: `${viewportHeight}px` }}
     >
       {showBackdrop && (
-        <Transition.Child
+        <TransitionChild
           as="div"
           // `unmount={false}` mirrors the outer Transition so the
           // backdrop's `hidden` toggle stays in lockstep with the
@@ -397,7 +397,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
           onClick={onClose}
         />
       )}
-      <Transition.Child
+      <TransitionChild
         as="div"
         unmount={false}
         // Material 3 bottom-sheet panel motion. `motionDurationMedium1`
@@ -449,7 +449,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
           }
           return child;
         })}
-      </Transition.Child>
+      </TransitionChild>
     </Transition>
   );
 };
