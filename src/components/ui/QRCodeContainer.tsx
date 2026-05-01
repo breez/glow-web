@@ -1,5 +1,5 @@
 import React from 'react';
-import QRCode from 'react-qr-code';
+import { QRCode } from 'react-qr-code';
 
 /**
  * QR Code display component with decorative corners.
