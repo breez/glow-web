@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import type { DepositInfo, MaxFee } from '@breeztech/breez-sdk-spark';
 import { BottomSheetContainer, BottomSheetCard, DialogHeader, PrimaryButton, SecondaryButton, PaymentInfoCard, CollapsibleCodeField } from '../components/ui';
@@ -13,6 +13,29 @@ interface UnclaimedDepositDetailsPageProps {
   onChanged?: () => void;
 }
 
+// Derive the initial claim/fee state from the deposit's automatic-claim
+// outcome. Pure function so it can be reused as the lazy useState init.
+function deriveInitialClaimState(
+  deposit: DepositInfo | null,
+): { claimError: string | null; requiredFeeSats: number | null } {
+  if (!deposit || !deposit.isMature) {
+    return { claimError: null, requiredFeeSats: null };
+  }
+  const claimErrorData = deposit.claimError;
+  if (!claimErrorData) {
+    return { claimError: null, requiredFeeSats: null };
+  }
+  if (claimErrorData.type === 'maxDepositClaimFeeExceeded') {
+    // Fee exceeded - show required fee for user approval
+    return { claimError: null, requiredFeeSats: claimErrorData.requiredFeeSats || 0 };
+  }
+  if (claimErrorData.type === 'generic') {
+    return { claimError: claimErrorData.message || 'Automatic claim failed', requiredFeeSats: null };
+  }
+  // missingUtxo or other error - can only reject
+  return { claimError: 'Automatic claim failed', requiredFeeSats: null };
+}
+
 const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = ({
   deposit,
   onBack,
@@ -20,41 +43,16 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
 }) => {
   const wallet = useWallet();
 
+  // Parent keys this component on deposit identity, so the prop is
+  // stable per mount. claimError stays in useState because handleClaim
+  // can update it after a retry; requiredFeeSats is purely derived.
+  const initialClaim = useMemo(() => deriveInitialClaimState(deposit), [deposit]);
+  const requiredFeeSats = initialClaim.requiredFeeSats;
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [claimError, setClaimError] = useState<string | null>(null);
-  const [requiredFeeSats, setRequiredFeeSats] = useState<number | null>(null);
+  const [claimError, setClaimError] = useState<string | null>(() => initialClaim.claimError);
   const [isTxIdVisible, setIsTxIdVisible] = useState<boolean>(false);
 
   const isConfirming = deposit ? !deposit.isMature : false;
-
-  // Check if deposit has a claim error from automatic claim attempt
-  useEffect(() => {
-    if (!deposit || !deposit.isMature) {
-      setClaimError(null);
-      setRequiredFeeSats(null);
-      return;
-    }
-
-    const claimErrorData = deposit.claimError;
-
-    if (claimErrorData) {
-      if (claimErrorData.type === 'maxDepositClaimFeeExceeded') {
-        // Fee exceeded - show required fee for user approval
-        setRequiredFeeSats(claimErrorData.requiredFeeSats || 0);
-        setClaimError(null);
-      } else if (claimErrorData.type === 'generic') {
-        setClaimError(claimErrorData.message || 'Automatic claim failed');
-        setRequiredFeeSats(null);
-      } else {
-        // missingUtxo or other error - can only reject
-        setClaimError('Automatic claim failed');
-        setRequiredFeeSats(null);
-      }
-    } else {
-      setClaimError(null);
-      setRequiredFeeSats(null);
-    }
-  }, [deposit]);
 
 
   const handleClaim = async () => {

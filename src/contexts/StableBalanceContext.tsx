@@ -34,7 +34,9 @@ export const StableBalanceProvider: React.FC<StableBalanceProviderProps> = ({ ch
   const { sdk, isConnected } = useWalletConnection();
   const { fiatRates, fiatCurrencies } = useFiatData();
   const [activeLabel, setActiveLabel] = useState<string | null>(() => getCachedStableTicker());
-  const [displayConfig, setDisplayConfig] = useState<TokenDisplayConfig | null>(null);
+  // Underlying value; the consumer-facing `displayConfig` below gates on
+  // connection status, so external callers see null when disconnected.
+  const [rawDisplayConfig, setDisplayConfig] = useState<TokenDisplayConfig | null>(null);
   const [isToggling, setIsToggling] = useState(false);
 
   // Derive tokenIdentifier from activeLabel
@@ -44,15 +46,11 @@ export const StableBalanceProvider: React.FC<StableBalanceProviderProps> = ({ ch
     return null;
   }, [activeLabel]);
 
-  // Load active label from SDK user settings on connect
+  // Load active label from SDK on connect. activeLabel is cache-seeded
+  // so the UI shows the correct mode instantly on reload; the SDK read
+  // here corrects any drift.
   useEffect(() => {
-    if (!isConnected || !sdk) {
-      // Don't clear activeLabel here — it's initialized from cache so
-      // the UI can show the correct mode instantly on reload. The SDK
-      // sync below will correct any drift once connected.
-      setDisplayConfig(null);
-      return;
-    }
+    if (!isConnected || !sdk) return;
 
     let cancelled = false;
 
@@ -72,6 +70,8 @@ export const StableBalanceProvider: React.FC<StableBalanceProviderProps> = ({ ch
 
     return () => { cancelled = true; };
   }, [isConnected, sdk]);
+
+  const displayConfig = isConnected && sdk ? rawDisplayConfig : null;
 
   // Fetch token metadata and build display config (re-runs when fiat currencies load for better symbol matching)
   useEffect(() => {

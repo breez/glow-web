@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import type { GetInfoResponse } from '@breeztech/breez-sdk-spark';
 import { USDB_TOKEN_IDENTIFIER } from '../constants/stableBalance';
 import { getTokenBalance } from '../utils/tokenFormatting';
@@ -20,37 +20,26 @@ export function useRestoreStableBalancePrompt({
   walletInfo,
   isStableBalanceActive,
 }: UseRestoreStableBalancePromptArgs): UseRestoreStableBalancePromptResult {
-  const [shouldPrompt, setShouldPrompt] = useState(false);
-  const wasSyncing = useRef(false);
-  const syncJustCompleted = useRef(false);
+  // The "prompted" flag lives in localStorage; bump this tick on
+  // markPrompted so the hook re-renders and re-reads it.
+  const [, setPromptedTick] = useState(0);
 
-  // Effect 1: Track isSyncing transitions
-  useEffect(() => {
-    if (isSyncing) {
-      wasSyncing.current = true;
-    } else if (wasSyncing.current) {
-      // Sync just transitioned from true → false
-      syncJustCompleted.current = true;
-      wasSyncing.current = false;
-    }
-  }, [isSyncing]);
-
-  // Effect 2: Check balance after sync when walletInfo updates
-  useEffect(() => {
-    if (!syncJustCompleted.current || !walletInfo || isStableBalanceActive) return;
-    syncJustCompleted.current = false;
-
-    if (hasPromptedStableRestore()) return;
-
+  let shouldPrompt = false;
+  if (
+    !isSyncing
+    && walletInfo
+    && !isStableBalanceActive
+    && !hasPromptedStableRestore()
+  ) {
     const tokenBal = getTokenBalance(walletInfo.tokenBalances, USDB_TOKEN_IDENTIFIER);
     if (tokenBal && tokenBal.balance > 0n) {
-      setShouldPrompt(true);
+      shouldPrompt = true;
     }
-  }, [walletInfo, isStableBalanceActive]);
+  }
 
   const markPrompted = useCallback(() => {
     setStableRestorePrompted();
-    setShouldPrompt(false);
+    setPromptedTick(t => t + 1);
   }, []);
 
   return { shouldPrompt, markPrompted };

@@ -122,6 +122,9 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
 
             {send.currentStep === 'input' && (
               <InputStep
+                // Remount on contact-selection change so InputStep
+                // lazy-inits from the latest props.
+                key={`input-${selectedContactAddress ?? ''}`}
                 paymentInput={send.paymentInput?.rawInput || ''}
                 selectedContactAddress={selectedContactAddress}
                 isLoading={send.isLoading}

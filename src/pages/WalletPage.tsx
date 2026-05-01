@@ -301,9 +301,11 @@ const WalletPage: React.FC<WalletPageProps> = ({
         />
       )}
 
-      {/* Unclaimed Deposit Details */}
+      {/* Keyed on deposit identity so the page remounts on a new
+          selection and lazy-inits its claim/fee state. */}
       {selectedDeposit && (
         <UnclaimedDepositDetailsPage
+          key={`${selectedDeposit.txid}:${selectedDeposit.vout}`}
           deposit={selectedDeposit}
           onBack={handleDepositDetailsClose}
           onChanged={handleDepositChanged}

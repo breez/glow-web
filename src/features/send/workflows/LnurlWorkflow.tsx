@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { LnurlPayRequestDetails, PrepareLnurlPayRequest, PrepareLnurlPayResponse } from '@breeztech/breez-sdk-spark';
 import type { PaymentStep } from '../../../types/domain';
 import { FormError, PrimaryButton, SecondaryButton } from '../../../components/ui';
@@ -101,10 +101,8 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     setFeesIncluded(false);
   };
 
-  useEffect(() => {
-    setError(null);
-  }, [step]);
-
+  // setError is only called in onAmountNext, so step changes don't
+  // need a clearing effect; the confirm-back handler clears inline.
   const onAmountNext = async () => {
     if (commentAllowed && commentMaxLen && comment.length > commentMaxLen) {
       setError(`Comment must be at most ${commentMaxLen} characters`);
@@ -228,7 +226,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
       ? BigInt(prepareResponse.amountSats)
       : BigInt(balance.parseInputToSats(amount) || 0);
     return (
-      <ConfirmStep amountSats={confirmAmountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} error={error} isLoading={isLoading} onBack={() => { setPrepareResponse(null); setStep('amount'); }} onConfirm={onConfirm} />
+      <ConfirmStep amountSats={confirmAmountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} error={error} isLoading={isLoading} onBack={() => { setPrepareResponse(null); setError(null); setStep('amount'); }} onConfirm={onConfirm} />
     );
   }
 

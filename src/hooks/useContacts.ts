@@ -45,12 +45,18 @@ export interface UseContactsReturn {
   refreshContacts: () => Promise<void>;
 }
 
+const EMPTY_CONTACTS: Contact[] = [];
+
 export function useContacts(): UseContactsReturn {
   const { sdk: wallet } = useWalletConnection();
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasSynced, setHasSynced] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Underlying state is only meaningful while a wallet is connected. We
+  // don't reset it on disconnect (avoiding setState-in-effect); the returned
+  // values are gated on `wallet` below so consumers see the cleared shape
+  // immediately, derived during render.
+  const [contactsState, setContacts] = useState<Contact[]>([]);
+  const [isLoadingState, setIsLoading] = useState(false);
+  const [hasSyncedState, setHasSynced] = useState(false);
+  const [errorState, setError] = useState<string | null>(null);
 
   const refreshContacts = useCallback(async () => {
     if (!wallet) return;
@@ -60,7 +66,7 @@ export function useContacts(): UseContactsReturn {
         if (prev.length === result.length && prev.every((c, i) =>
           c.id === result[i].id && c.name === result[i].name && c.paymentIdentifier === result[i].paymentIdentifier
         )) {
-          return prev; // unchanged — keep same reference to avoid downstream re-renders
+          return prev; // unchanged: keep reference stable to avoid downstream re-renders
         }
         return result;
       });
@@ -71,17 +77,27 @@ export function useContacts(): UseContactsReturn {
     }
   }, [wallet]);
 
-  // Reset state when wallet disconnects; fetch when it connects
+  // Adjust-state-on-prop-change pattern (React docs): flip isLoading
+  // synchronously when wallet appears, no setState-in-effect.
+  const [walletForFetch, setWalletForFetch] = useState(wallet);
+  if (walletForFetch !== wallet) {
+    setWalletForFetch(wallet);
+    if (wallet) setIsLoading(true);
+  }
+
+  // No reset on disconnect: the public values below are gated on
+  // `wallet`, so consumers see empty when disconnected regardless.
   useEffect(() => {
-    if (!wallet) {
-      setContacts([]);
-      setHasSynced(false);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    refreshContacts().finally(() => setIsLoading(false));
+    if (!wallet) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        await refreshContacts();
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [refreshContacts, wallet]);
 
   // Refresh contacts when SDK sync completes (contacts may not be available until first sync)
@@ -117,6 +133,13 @@ export function useContacts(): UseContactsReturn {
       }
     };
   }, [wallet, refreshContacts]);
+
+  // Gate the public values on `wallet` so disconnected consumers see
+  // the cleared shape without a reset effect.
+  const contacts = wallet ? contactsState : EMPTY_CONTACTS;
+  const isLoading = wallet ? isLoadingState : false;
+  const hasSynced = wallet ? hasSyncedState : false;
+  const error = wallet ? errorState : null;
 
   const addressMap = useMemo(() => {
     const map = new Map<string, Contact>();

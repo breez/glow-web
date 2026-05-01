@@ -163,7 +163,9 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   >(null);
   const [manualLabel, setManualLabel] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
-  const [detectingText, setDetectingText] = useState('Detecting passkey...');
+  // True once the WebAuthn assertion completes; drives the spinner
+  // label switch from "Detecting passkey..." to "Discovering labels...".
+  const [isDiscoveringLabels, setIsDiscoveringLabels] = useState(false);
   /**
    * Details of a `NotAssociated` verification result, surfaced verbatim
    * on the AASA error screen so users/maintainers see what went wrong
@@ -281,24 +283,15 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     if (phase !== 'detecting') return;
     let cancelled = false;
 
-    // Reset spinner text on every detecting entry. Without this, a
-    // previous attempt that progressed past the assertion (so the
-    // onAuthComplete callback fired and flipped the spinner to
-    // "Discovering labels...") leaves the stale label in place when
-    // the retry comes back through this effect — the user sees
-    // "Discovering labels..." while the new attempt is still on the
-    // assertion step, which reads as a stuck state.
-    setDetectingText('Detecting passkey...');
-
     // Sign-in path: tell the provider not to auto-register if discovery
     // can't find a credential. On native this maps to autoRegister=false
     // on the SDK PasskeyProvider, which surfaces CredentialNotFound
     // instead of silently registering. No-op on browser.
     passkeyPrfProvider.mode = 'sign-in';
 
-    // Update spinner text once WebAuthn prompt completes
+    // Update spinner state once WebAuthn prompt completes
     passkeyPrfProvider.onAuthComplete = () => {
-      if (!cancelled) setDetectingText('Discovering labels...');
+      if (!cancelled) setIsDiscoveringLabels(true);
     };
 
     const run = async () => {
@@ -420,6 +413,10 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     return () => {
       cancelled = true;
       passkeyPrfProvider.onAuthComplete = undefined;
+      // Reset the spinner-label flag so a re-entry into the detecting
+      // phase starts back at "Detecting passkey..." rather than
+      // inheriting the previous attempt's "Discovering labels..." state.
+      setIsDiscoveringLabels(false);
       // Do NOT reset mode here. The downstream phases of the sign-in
       // flow (auth-pick → connecting) all call derivePrfSeed via the
       // SDK's getWallet/saveLabel/listLabels paths, and they MUST
@@ -802,7 +799,9 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     switch (phase) {
       case 'aasa-checking': return renderSpinner('Verifying app domain...');
       case 'aasa-error': return renderAasaError();
-      case 'detecting': return error ? null : renderSpinner(detectingText);
+      case 'detecting': return error
+        ? null
+        : renderSpinner(isDiscoveringLabels ? 'Discovering labels...' : 'Detecting passkey...');
       case 'review': return renderReview();
       // When the create flow fails the AlertCard alone is the page;
       // re-rendering renderReview() (icon, heading, warning card)

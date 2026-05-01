@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import {
   parseAmountToSats,
@@ -99,6 +99,18 @@ export function useAmountInput(options: UseAmountInputOptions = {}): UseAmountIn
   const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive);
   const [amountInput, setAmountInput] = useState(initialAmount);
 
+  // Adjust-state-on-prop-change pattern (React docs): when stable
+  // balance flips off mid-flow, drop token mode and clear the input
+  // so the no-longer-toggleable fiat value doesn't get stuck.
+  const [prevStableActive, setPrevStableActive] = useState(stableBalance.isActive);
+  if (prevStableActive !== stableBalance.isActive) {
+    setPrevStableActive(stableBalance.isActive);
+    if (!stableBalance.isActive && isTokenMode) {
+      setIsTokenMode(false);
+      setAmountInput('');
+    }
+  }
+
   const setAmount = useCallback(
     (value: string) => {
       if (isTokenMode && config) {
@@ -117,17 +129,6 @@ export function useAmountInput(options: UseAmountInputOptions = {}): UseAmountIn
     setIsTokenMode((prev) => !prev);
     setAmountInput('');
   }, []);
-
-  // Auto-reset to sats mode when stable balance is deactivated mid-flow.
-  // Without this, the CurrencySwitcher disappears in the consumer but
-  // isTokenMode stays true, leaving a fiat value in the input that's no
-  // longer toggleable.
-  useEffect(() => {
-    if (!stableBalance.isActive && isTokenMode) {
-      setIsTokenMode(false);
-      setAmountInput('');
-    }
-  }, [stableBalance.isActive, isTokenMode]);
 
   const parseToSats = useCallback(
     (input?: string): Sats | null =>

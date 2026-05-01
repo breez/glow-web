@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { WalletProvider, WalletInfoProvider } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
@@ -57,7 +57,10 @@ const StableBalanceFormatterBridge: React.FC<{ formatterRef: React.MutableRefObj
 };
 
 const AppContent: React.FC = () => {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+  // User-driven navigation only. SDK-derived screens ('unlock',
+  // 'unlocking', auto-'wallet' on reconnect) are layered in by
+  // `currentScreen` below.
+  const [userScreen, setUserScreen] = useState<Screen>('home');
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
   const [buyProvidersSource, setBuyProvidersSource] = useState<'wallet' | 'settings'>('wallet');
   const [passkeySdkConnected, setPasskeySdkConnected] = useState(false);
@@ -68,35 +71,21 @@ const AppContent: React.FC = () => {
 
   const sdk = useBreezSdk(showToast);
 
-  // Auto-navigate to wallet when SDK reconnects from saved mnemonic OR
-  // from a successful biometric unlock (either the auto-triggered one
-  // shown behind UnlockingPage or the interactive retry on UnlockPage).
-  useEffect(() => {
-    if (
-      sdk.isConnected &&
-      (currentScreen === 'home' ||
-        currentScreen === 'unlock' ||
-        currentScreen === 'unlocking')
-    ) {
-      setCurrentScreen('wallet');
-    }
-  }, [sdk.isConnected, currentScreen]);
-
-  // Route 'native-unlocking' → UnlockingPage (branded placeholder behind
-  // the auto-triggered biometric) and 'native-locked' → UnlockPage
-  // (interactive retry after cancel / lockout).
-  useEffect(() => {
-    if (sdk.startupState === 'native-unlocking' && currentScreen !== 'unlocking') {
-      setCurrentScreen('unlocking');
-    } else if (sdk.startupState === 'native-locked' && currentScreen !== 'unlock') {
-      setCurrentScreen('unlock');
-    }
-  }, [sdk.startupState, currentScreen]);
+  // SDK startup state takes precedence; otherwise the user's screen
+  // wins, with one exception: an SDK auto-reconnect (saved mnemonic /
+  // biometric unlock) promotes the still-initial 'home' to 'wallet'
+  // so the user lands in the wallet without an explicit click.
+  const currentScreen: Screen = useMemo(() => {
+    if (sdk.startupState === 'native-unlocking') return 'unlocking';
+    if (sdk.startupState === 'native-locked') return 'unlock';
+    if (sdk.isConnected && userScreen === 'home') return 'wallet';
+    return userScreen;
+  }, [sdk.startupState, sdk.isConnected, userScreen]);
 
   // Navigate to wallet after successful connect
   const handleConnect = async (mnemonic: string, restore: boolean) => {
     await sdk.connectWallet({ type: 'mnemonic', mnemonic }, restore);
-    setCurrentScreen('wallet');
+    setUserScreen('wallet');
   };
 
   // Navigate to wallet after passkey connect
@@ -111,11 +100,11 @@ const AppContent: React.FC = () => {
 
   const handlePasskeyFlowComplete = useCallback(() => {
     setPasskeySdkConnected(false);
-    setCurrentScreen('wallet');
+    setUserScreen('wallet');
   }, []);
 
   const handleLogout = async () => {
-    setCurrentScreen('home');
+    setUserScreen('home');
     await sdk.handleLogout();
   };
 
@@ -142,18 +131,18 @@ const AppContent: React.FC = () => {
       case 'settings':
       case 'backup':
       case 'getRefund':
-        setCurrentScreen('wallet');
+        setUserScreen('wallet');
         return true;
       case 'fiatCurrencies':
-        setCurrentScreen('settings');
+        setUserScreen('settings');
         return true;
       case 'buyProviders':
-        setCurrentScreen(buyProvidersSource === 'settings' ? 'settings' : 'wallet');
+        setUserScreen(buyProvidersSource === 'settings' ? 'settings' : 'wallet');
         return true;
       case 'restore':
       case 'generate':
       case 'passkey':
-        setCurrentScreen('home');
+        setUserScreen('home');
         return true;
       case 'unlock':
       case 'unlocking':
@@ -171,19 +160,18 @@ const AppContent: React.FC = () => {
 
   // Render screens
   const renderCurrentScreen = () => {
-    // Startup-state overlays take precedence over `currentScreen` and
-    // are derived directly from `sdk.startupState` so they render on
-    // the SAME commit as the state change, not the tick-later commit
-    // after the App.tsx routing effect copies it into `currentScreen`.
+    // Startup-state overlays take precedence and are derived directly
+    // from `sdk.startupState`. The `currentScreen` memo above already
+    // maps these to 'unlocking' / 'unlock', but the explicit early
+    // returns below keep the SDK state authoritative even if
+    // `currentScreen` later grows additional sources of truth.
     //
     // This matters for cold-launch unlock: useBreezSdk flips
     // startupState='native-unlocking', then waits for paint before
-    // fading the splash. If we instead routed through the
-    // currentScreen effect, the first commit would still render
-    // HomePage, the splash fade would start while HomePage is under
-    // it, and UnlockingPage would only appear on the second commit
-    // (often after the biometric prompt has already landed over a
-    // black splash). Deriving directly collapses it to one commit.
+    // fading the splash. Because the derivation runs synchronously
+    // during render, UnlockingPage commits in the same render tick as
+    // the state change, not on the tick-later commit that a routing
+    // effect would have produced.
     if (sdk.startupState === 'native-unlocking') {
       return <UnlockingPage />;
     }
@@ -222,10 +210,10 @@ const AppContent: React.FC = () => {
         // preserve the pre-refactor behavior of the `wallet` case.
         return (
           <HomePage
-            onRestoreWallet={() => setCurrentScreen('restore')}
-            onCreateNewWallet={() => setCurrentScreen('generate')}
-            onCreatePasskey={() => setCurrentScreen('passkeyCreate')}
-            onUsePasskey={() => setCurrentScreen('passkey')}
+            onRestoreWallet={() => setUserScreen('restore')}
+            onCreateNewWallet={() => setUserScreen('generate')}
+            onCreatePasskey={() => setUserScreen('passkeyCreate')}
+            onUsePasskey={() => setUserScreen('passkey')}
             prfAvailable={sdk.prfAvailable}
             hasPasskeyBefore={sdk.hasPasskeyBefore}
           />
@@ -244,11 +232,11 @@ const AppContent: React.FC = () => {
           hasRejectedDeposits={sdk.hasRejectedDeposits}
           onOpenGetRefund={(source?: 'menu' | 'icon') => {
             setRefundAnimationDirection(source === 'icon' ? 'up' : 'left');
-            setCurrentScreen('getRefund');
+            setUserScreen('getRefund');
           }}
-          onOpenSettings={() => setCurrentScreen('settings')}
-          onOpenBackup={() => setCurrentScreen('backup')}
-          onOpenBuyProviders={() => { setBuyProvidersSource('wallet'); setCurrentScreen('buyProviders'); }}
+          onOpenSettings={() => setUserScreen('settings')}
+          onOpenBackup={() => setUserScreen('backup')}
+          onOpenBuyProviders={() => { setBuyProvidersSource('wallet'); setUserScreen('buyProviders'); }}
           onBuyBitcoin={sdk.handleBuyBitcoin}
           network={sdk.config?.network}
           onDepositChanged={sdk.fetchUnclaimedDeposits}
@@ -263,10 +251,10 @@ const AppContent: React.FC = () => {
     // wallet directly.
     const renderSettingsPage = () => (
       <SettingsPage
-        onBack={() => setCurrentScreen('wallet')}
+        onBack={() => setUserScreen('wallet')}
         config={sdk.config}
-        onOpenFiatCurrencies={() => setCurrentScreen('fiatCurrencies')}
-        onOpenBuyProviders={() => { setBuyProvidersSource('settings'); setCurrentScreen('buyProviders'); }}
+        onOpenFiatCurrencies={() => setUserScreen('fiatCurrencies')}
+        onOpenBuyProviders={() => { setBuyProvidersSource('settings'); setUserScreen('buyProviders'); }}
       />
     );
 
@@ -281,10 +269,10 @@ const AppContent: React.FC = () => {
       case 'home':
         return (
           <HomePage
-            onRestoreWallet={() => setCurrentScreen('restore')}
-            onCreateNewWallet={() => setCurrentScreen('generate')}
-            onCreatePasskey={() => setCurrentScreen('passkeyCreate')}
-            onUsePasskey={() => setCurrentScreen('passkey')}
+            onRestoreWallet={() => setUserScreen('restore')}
+            onCreateNewWallet={() => setUserScreen('generate')}
+            onCreatePasskey={() => setUserScreen('passkeyCreate')}
+            onUsePasskey={() => setUserScreen('passkey')}
             prfAvailable={sdk.prfAvailable}
             hasPasskeyBefore={sdk.hasPasskeyBefore}
           />
@@ -296,7 +284,7 @@ const AppContent: React.FC = () => {
             onWalletRestored={handlePasskeyConnect}
             onBack={() => {
               setPasskeySdkConnected(false);
-              setCurrentScreen('home');
+              setUserScreen('home');
             }}
             sdkConnected={passkeySdkConnected}
             isSecuringSeed={sdk.isSecuringSeed}
@@ -311,7 +299,7 @@ const AppContent: React.FC = () => {
             onWalletRestored={handlePasskeyConnect}
             onBack={() => {
               setPasskeySdkConnected(false);
-              setCurrentScreen('home');
+              setUserScreen('home');
             }}
             sdkConnected={passkeySdkConnected}
             onFlowComplete={handlePasskeyFlowComplete}
@@ -337,7 +325,7 @@ const AppContent: React.FC = () => {
           <>
             {renderWalletPage()}
             <GetRefundPage
-              onBack={() => setCurrentScreen('wallet')}
+              onBack={() => setUserScreen('wallet')}
               animationDirection={refundAnimationDirection}
             />
           </>
@@ -356,7 +344,7 @@ const AppContent: React.FC = () => {
           <>
             {renderWalletPage()}
             {renderSettingsPage()}
-            <FiatCurrenciesPage onBack={() => setCurrentScreen('settings')} />
+            <FiatCurrenciesPage onBack={() => setUserScreen('settings')} />
           </>
         );
 
@@ -366,7 +354,7 @@ const AppContent: React.FC = () => {
             {renderWalletPage()}
             {buyProvidersSource === 'settings' && renderSettingsPage()}
             <BuyProvidersPage
-              onBack={() => setCurrentScreen(buyProvidersSource === 'settings' ? 'settings' : 'wallet')}
+              onBack={() => setUserScreen(buyProvidersSource === 'settings' ? 'settings' : 'wallet')}
               slideFrom={buyProvidersSource === 'settings' ? 'right' : 'up'}
               // Wallet-sourced = modal-style presentation (slides up from
               // the Buy button) → X close affordance in the header.
@@ -383,7 +371,7 @@ const AppContent: React.FC = () => {
         return (
           <>
             {renderWalletPage()}
-            <BackupPage onBack={() => setCurrentScreen('wallet')} />
+            <BackupPage onBack={() => setUserScreen('wallet')} />
           </>
         );
 
@@ -391,7 +379,7 @@ const AppContent: React.FC = () => {
         return (
           <RestorePage
             onConnect={(mnemonic) => handleConnect(mnemonic, true)}
-            onBack={() => setCurrentScreen('home')}
+            onBack={() => setUserScreen('home')}
             onClearError={sdk.clearError}
             isLoading={sdk.isLoading}
           />
@@ -401,7 +389,7 @@ const AppContent: React.FC = () => {
         return (
           <GeneratePage
             onMnemonicConfirmed={(mnemonic) => handleConnect(mnemonic, false)}
-            onBack={() => setCurrentScreen('home')}
+            onBack={() => setUserScreen('home')}
             error={sdk.error}
             onClearError={sdk.clearError}
           />

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { SimpleAlert } from '../../../components/AlertCard';
 import { PrimaryButton } from '../../../components/ui';
 import ContactAutocomplete from '../components/ContactAutocomplete';
@@ -20,31 +20,19 @@ export interface InputStepProps {
   onOpenContacts?: () => void;
 }
 
+// Parent (SendPaymentDialog) keys this on `selectedContactAddress` so
+// a fresh contact pick remounts and lazy-init re-reads the props.
 const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddress, isLoading, error, onClearError, onContinue, onScanQr, onOpenContacts }) => {
-  const [localPaymentInput, setLocalPaymentInput] = useState<string>(paymentInput || '');
-  const [isInputFocused, setIsInputFocused] = useState(false);
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const { contacts } = useContactsContext();
-
-  useEffect(() => {
-    setLocalPaymentInput(paymentInput || '');
-    // If the paymentInput matches a contact, show it as selected
-    if (paymentInput) {
-      const match = contacts.find(c => c.paymentIdentifier === paymentInput);
-      if (match) setSelectedContact(match);
-    }
-  }, [paymentInput, contacts]);
-
-  // Handle contact selected from ContactsSubView
-  useEffect(() => {
-    if (selectedContactAddress) {
-      const match = contacts.find(c => c.paymentIdentifier === selectedContactAddress);
-      if (match) {
-        setSelectedContact(match);
-        setLocalPaymentInput(selectedContactAddress);
-      }
-    }
-  }, [selectedContactAddress, contacts]);
+  const [localPaymentInput, setLocalPaymentInput] = useState<string>(() =>
+    selectedContactAddress || paymentInput || ''
+  );
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(() => {
+    const initialAddress = selectedContactAddress || paymentInput;
+    if (!initialAddress) return null;
+    return contacts.find(c => c.paymentIdentifier === initialAddress) || null;
+  });
 
   const autocompleteContacts = useMemo(() => searchContacts(contacts, localPaymentInput), [contacts, localPaymentInput]);
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Transition, TransitionChild } from '@headlessui/react';
 import { isPasskeyMode } from '@/services/passkeyService';
@@ -19,6 +19,36 @@ const STARS = [
   { x: 34, y: -2, size: 2.5 },
 ];
 
+// External-store measurement of the content-root's left offset, used
+// to anchor the drawer panel to the centered max-w-4xl column.
+// Module-level so identities are stable for useSyncExternalStore.
+const subscribeContentRoot = (notify: () => void) => {
+  let rafId: number | null = null;
+  const initialNotify = () => {
+    rafId = null;
+    notify();
+  };
+  // Re-notify after subscribe so the first render (null result before
+  // content-root is in the DOM) gets re-evaluated next frame.
+  rafId = requestAnimationFrame(initialNotify);
+  window.addEventListener('resize', notify);
+  window.addEventListener('scroll', notify, true);
+  return () => {
+    if (rafId !== null) cancelAnimationFrame(rafId);
+    window.removeEventListener('resize', notify);
+    window.removeEventListener('scroll', notify, true);
+  };
+};
+
+const getContentRootLeft = (): number | null => {
+  if (typeof document === 'undefined') return null;
+  const el = document.getElementById('content-root');
+  return el ? el.getBoundingClientRect().left : null;
+};
+
+// SSR contract for useSyncExternalStore. SideMenu is client-only.
+const getServerSnapshot = (): number | null => null;
+
 interface SideMenuProps {
   isOpen: boolean;
   onClose: () => void;
@@ -35,7 +65,11 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
   // panel's solid bg. Tied to isOpen so popping happens on close.
   useStatusBarColor(STATUS_BAR_SURFACE, isOpen);
 
-  const [leftOffset, setLeftOffset] = useState<number | null>(null);
+  const leftOffset = useSyncExternalStore(
+    subscribeContentRoot,
+    getContentRootLeft,
+    getServerSnapshot
+  );
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // When the logout confirmation dialog opens, dim the system bars to
@@ -56,45 +90,21 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
     setShowLogoutConfirm(false);
   }, showLogoutConfirm);
 
-  const [starsAnimating, setStarsAnimating] = useState(false);
-  const prevIsOpenRef = useRef(false);
+  // Stars animate after the 300ms slide-in delay. Derived from isOpen
+  // so close flips it off immediately without a reset in an effect.
+  const [starsLit, setStarsLit] = useState(false);
+  const starsAnimating = isOpen && starsLit;
 
   const isPasskey = isPasskeyMode();
 
   // Trigger star animation when sidebar opens
   useEffect(() => {
-    if (isOpen && !prevIsOpenRef.current) {
-      // Sidebar just opened - start star animation after slide-in completes
-      const timer = setTimeout(() => setStarsAnimating(true), 300);
-      return () => clearTimeout(timer);
-    } else if (!isOpen) {
-      setStarsAnimating(false);
-    }
-    prevIsOpenRef.current = isOpen;
-  }, [isOpen]);
-
-  useEffect(() => {
-    const calc = () => {
-      const el = document.getElementById('content-root');
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      setLeftOffset(rect.left);
-    };
-    calc();
-    window.addEventListener('resize', calc);
-    window.addEventListener('scroll', calc, true);
-    return () => {
-      window.removeEventListener('resize', calc);
-      window.removeEventListener('scroll', calc, true);
-    };
-  }, []);
-
-  useLayoutEffect(() => {
     if (!isOpen) return;
-    const el = document.getElementById('content-root');
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    setLeftOffset(rect.left);
+    const timer = setTimeout(() => setStarsLit(true), 300);
+    return () => {
+      clearTimeout(timer);
+      setStarsLit(false);
+    };
   }, [isOpen]);
 
   // Close the drawer first, then fire the navigation callback once the

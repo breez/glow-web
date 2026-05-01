@@ -33,68 +33,77 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     new URLSearchParams(window.location.search).get('dev') === 'true'
     || localStorage.getItem(DEV_MODE_STORAGE_KEY) === 'true'
   );
-  const [selectedNetwork, setSelectedNetwork] = useState<Network>('mainnet');
-  const [feeType, setFeeType] = useState<'fixed' | 'rate' | 'networkRecommended'>('fixed');
-  const [feeValue, setFeeValue] = useState<string>('1');
-  const [syncIntervalSecs, setSyncIntervalSecs] = useState<string>('');
-  const [lnurlDomain, setLnurlDomain] = useState<string>('');
-  const [preferSparkOverLightning, setPreferSparkOverLightning] = useState<boolean>(false);
+  // Network and persisted settings only change via handlers that
+  // reload the page, so reading once at mount is sufficient.
+  const [selectedNetwork, setSelectedNetwork] = useState<Network>(
+    () => (new URLSearchParams(window.location.search).get('network') || 'mainnet') as Network,
+  );
+
+  const [feeType, setFeeType] = useState<'fixed' | 'rate' | 'networkRecommended'>(() => {
+    const s = getSettings();
+    return s.depositMaxFee.type;
+  });
+  const [feeValue, setFeeValue] = useState<string>(() => {
+    const s = getSettings();
+    if (s.depositMaxFee.type === 'fixed') return String(s.depositMaxFee.amount);
+    if (s.depositMaxFee.type === 'rate') return String(s.depositMaxFee.satPerVbyte);
+    return String(s.depositMaxFee.leewaySatPerVbyte);
+  });
+
+  // SettingsPage only mounts after wallet connect, so `config` is
+  // effectively stable for this lifetime; capture once via lazy init.
+  const [syncIntervalSecs, setSyncIntervalSecs] = useState<string>(() => {
+    const s = getSettings();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK config type doesn't expose all fields
+    const cfg: any = config ?? {};
+    if (typeof s.syncIntervalSecs === 'number') return String(s.syncIntervalSecs);
+    if (typeof cfg.syncIntervalSecs === 'number') return String(cfg.syncIntervalSecs);
+    return '';
+  });
+  const [lnurlDomain, setLnurlDomain] = useState<string>(() => {
+    const s = getSettings();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK config type doesn't expose all fields
+    const cfg: any = config ?? {};
+    if (typeof s.lnurlDomain === 'string') return s.lnurlDomain;
+    if (typeof cfg.lnurlDomain === 'string') return cfg.lnurlDomain;
+    return '';
+  });
+  const [preferSparkOverLightning, setPreferSparkOverLightning] = useState<boolean>(() => {
+    const s = getSettings();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK config type doesn't expose all fields
+    const cfg: any = config ?? {};
+    if (typeof s.preferSparkOverLightning === 'boolean') return s.preferSparkOverLightning;
+    if (typeof cfg.preferSparkOverLightning === 'boolean') return cfg.preferSparkOverLightning;
+    return false;
+  });
+
   const [sparkPrivateModeEnabled, setSparkPrivateModeEnabled] = useState<boolean>(true);
   const [isLoadingUserSettings, setIsLoadingUserSettings] = useState<boolean>(true);
 
   const [isDownloadingLogs, setIsDownloadingLogs] = useState<boolean>(false);
   const [isExportingDb, setIsExportingDb] = useState<boolean>(false);
 
+  // Async SDK read for sparkPrivateModeEnabled. Stays in an effect
+  // because it awaits a Promise; setState happens post-await.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    // Get current network from URL
-    const network = (params.get('network') || 'mainnet') as Network;
-    setSelectedNetwork(network);
-
-    const s = getSettings();
-    if (s.depositMaxFee.type === 'fixed') {
-      setFeeType('fixed');
-      setFeeValue(String(s.depositMaxFee.amount));
-    } else if (s.depositMaxFee.type === 'rate') {
-      setFeeType('rate');
-      setFeeValue(String(s.depositMaxFee.satPerVbyte));
-    } else if (s.depositMaxFee.type === 'networkRecommended') {
-      setFeeType('networkRecommended');
-      setFeeValue(String(s.depositMaxFee.leewaySatPerVbyte));
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK config type doesn't expose all fields
-    const cfg: any = config ?? {};
-    setSyncIntervalSecs(
-      typeof s.syncIntervalSecs === 'number'
-        ? String(s.syncIntervalSecs)
-        : (typeof cfg.syncIntervalSecs === 'number' ? String(cfg.syncIntervalSecs) : '')
-    );
-    setLnurlDomain(
-      typeof s.lnurlDomain === 'string'
-        ? s.lnurlDomain
-        : (typeof cfg.lnurlDomain === 'string' ? cfg.lnurlDomain : '')
-    );
-    setPreferSparkOverLightning(
-      typeof s.preferSparkOverLightning === 'boolean'
-        ? s.preferSparkOverLightning
-        : (typeof cfg.preferSparkOverLightning === 'boolean' ? cfg.preferSparkOverLightning : false)
-    );
-
+    let cancelled = false;
     (async () => {
       try {
-        setIsLoadingUserSettings(true);
         const us = await wallet.getUserSettings();
+        if (cancelled) return;
         setSparkPrivateModeEnabled(us.sparkPrivateModeEnabled !== false);
       } catch (e) {
         logger.warn(LogCategory.SDK, 'Failed to load user settings from SDK', {
           error: e instanceof Error ? e.message : String(e),
         });
       } finally {
-        setIsLoadingUserSettings(false);
+        if (!cancelled) setIsLoadingUserSettings(false);
       }
     })();
-  }, [config, wallet]);
+    return () => {
+      cancelled = true;
+    };
+  }, [wallet]);
 
   // Persist dev mode to localStorage when toggled via secret tap
   useEffect(() => {
