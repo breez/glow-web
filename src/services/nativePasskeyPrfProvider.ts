@@ -8,6 +8,8 @@
  * in transparently by passkeyPrfProvider.ts on native platforms.
  */
 
+import { PasskeyAlreadyExistsError } from '@breeztech/breez-sdk-spark/passkey-prf-provider';
+
 /**
  * Result of a domain-association verification check. Mirrors the Rust
  * `DomainAssociation` enum shape from the SDK so cross-platform callers
@@ -109,11 +111,6 @@ export class NativePasskeyPrfProvider {
       // route the user to the sign-in path.
       const code = (e as { code?: string })?.code;
       if (code === 'CREDENTIAL_ALREADY_EXISTS') {
-        // Direct import from the SDK avoids a circular import on
-        // ./passkeyPrfProvider, which itself imports this module.
-        const { PasskeyAlreadyExistsError } = await import(
-          '@breeztech/breez-sdk-spark/passkey-prf-provider'
-        );
         throw new PasskeyAlreadyExistsError();
       }
       throw e;

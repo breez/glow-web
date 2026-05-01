@@ -10,6 +10,7 @@ import { shareOrDownloadLogs, exportDatabaseState } from '@/services/logExport';
 import { useSecretTap } from '@/hooks/useSecretTap';
 import { useToast } from '@/contexts/ToastContext';
 import { isNativePlatform } from '@/services/nativePasskeyPrfProvider';
+import { passkeyPrfProvider } from '@/services/passkeyPrfProvider';
 
 const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
 
@@ -411,7 +412,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
                     onClick={async () => {
                       let keychainCleared = true;
                       try {
-                        const { passkeyPrfProvider } = await import('@/services/passkeyPrfProvider');
                         await passkeyPrfProvider.clearKnownCredentialIds();
                       } catch (e) {
                         keychainCleared = false;
