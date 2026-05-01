@@ -287,16 +287,12 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     setBodyDragY(0);
   }, []);
 
-  // Reset on close
-  useEffect(() => {
-    if (!isOpen) {
-      setSnapIndex(0);
-      setDragHeight(null);
-      setBodyDragY(0);
-      setAnimating(false);
-      dragging.current = false;
-    }
-  }, [isOpen]);
+  // No reset-on-close needed: consumers either re-mount this sheet on
+  // every open (via parent-managed `key={openSession}` or conditional
+  // render), so on each open the internal state — snapIndex, dragHeight,
+  // bodyDragY, animating, dragging.current — starts at its useState/useRef
+  // default. State left over from a prior session is dropped with the
+  // unmount.
 
   // Wire the Android hardware back button to close the sheet while
   // it's open. Uses the shared LIFO back-button stack in

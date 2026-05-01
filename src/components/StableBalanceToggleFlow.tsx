@@ -129,21 +129,19 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
   const startEstimationRef = useLatest(startEstimation);
   const restorePromptRef = useLatest(restorePrompt);
 
-  // Reset state when flow opens
+  // No reset-in-effect needed — parent (CollapsingWalletHeader) bumps
+  // `toggleFlowSession` on every open and passes it as `key`, so each
+  // open is a fresh mount with all useState at defaults. We only need to
+  // route into the right initial step on first mount.
   useEffect(() => {
-    if (isOpen) {
-      setConversionEstimate(null);
-      setResolvedDisplayConfig(null);
-      setError(null);
-      setInfo(null);
-
-      if (restorePromptRef.current || !hasAcceptedStableDisclaimer()) {
-        setStep('disclaimer');
-      } else {
-        startEstimationRef.current();
-      }
+    if (!isOpen) return;
+    if (restorePromptRef.current || !hasAcceptedStableDisclaimer()) {
+      setStep('disclaimer');
+    } else {
+      startEstimationRef.current();
     }
-  }, [isOpen, restorePromptRef, startEstimationRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const executeToggle = useCallback(async () => {
     logger.debug(LogCategory.SDK, 'executeToggle: starting', { direction, hasEstimate: !!conversionEstimate });

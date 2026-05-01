@@ -44,6 +44,10 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   const [toggleFlowOpen, setToggleFlowOpen] = useState(false);
   const [toggleDirection, setToggleDirection] = useState<'toToken' | 'toBitcoin'>('toToken');
   const [isRestorePrompt, setIsRestorePrompt] = useState(false);
+  // Bumped on every open of the toggle flow so the dialog remounts and
+  // its internal state lazy-inits fresh, rather than relying on a
+  // reset-in-effect inside StableBalanceToggleFlow.
+  const [toggleFlowSession, setToggleFlowSession] = useState(0);
 
   const restorePrompt = useRestoreStableBalancePrompt({
     isSyncing: !!isSyncing,
@@ -56,6 +60,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
     if (restorePrompt.shouldPrompt) {
       setToggleDirection('toToken');
       setIsRestorePrompt(true);
+      setToggleFlowSession(s => s + 1);
       setToggleFlowOpen(true);
     }
   }, [restorePrompt.shouldPrompt]);
@@ -63,6 +68,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   const handleSuffixTap = useCallback(() => {
     if (stableBalance.isToggling) return;
     setToggleDirection(stableBalance.isActive ? 'toBitcoin' : 'toToken');
+    setToggleFlowSession(s => s + 1);
     setToggleFlowOpen(true);
   }, [stableBalance]);
 
@@ -376,6 +382,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
     </div>
 
     <StableBalanceToggleFlow
+      key={toggleFlowSession}
       isOpen={toggleFlowOpen}
       direction={toggleDirection}
       restorePrompt={isRestorePrompt}

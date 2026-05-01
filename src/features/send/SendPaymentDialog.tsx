@@ -35,26 +35,23 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
   const [showContactsView, setShowContactsView] = useState(false);
   const [selectedContactAddress, setSelectedContactAddress] = useState<string | null>(null);
 
-  // Reset state when dialog opens, or process initial data
+  // Parent (WalletPage) bumps `sendDialogSession` on every open and passes
+  // it as `key`, so each open is a fresh mount: hooks re-init, useState
+  // returns defaults, no reset-in-effect needed. We only need an effect
+  // to consume `initialRawInput` on first mount.
   useEffect(() => {
-    if (isOpen) {
-      send.reset();
-      setShowContactsView(false);
-      setSelectedContactAddress(null);
-      if (initialRawInput) {
-        void (async () => {
-          try {
-            await send.processInput(initialRawInput);
-          } catch (err) {
-            logger.error(LogCategory.PAYMENT, 'Failed to process initial payment input', {
-              error: formatError(err),
-            });
-          }
-        })();
+    if (!initialRawInput) return;
+    void (async () => {
+      try {
+        await send.processInput(initialRawInput);
+      } catch (err) {
+        logger.error(LogCategory.PAYMENT, 'Failed to process initial payment input', {
+          error: formatError(err),
+        });
       }
-    }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, initialRawInput]);
+  }, [initialRawInput]);
 
   // Detect successful send to non-contact lightning address for save prompt
   const lightningAddressForSave = useMemo(() => {

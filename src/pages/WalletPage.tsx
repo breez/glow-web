@@ -81,9 +81,25 @@ const WalletPage: React.FC<WalletPageProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const enabledBuyProviders = useMemo(() => filterProvidersByNetwork(getBuyProviderSettings(), network), [isMenuOpen, network]);
   const [saveContactAddress, setSaveContactAddress] = useState<string | null>(null);
-  // Bump on each open so SaveContactDialog remounts and lazy-inits its
-  // state from the new address, instead of relying on a reset effect.
+  // Bump these on each open so each dialog remounts and lazy-inits its
+  // state, instead of relying on a reset-in-effect inside the dialog.
   const [saveContactSession, setSaveContactSession] = useState(0);
+  const [sendDialogSession, setSendDialogSession] = useState(0);
+  const [receiveDialogSession, setReceiveDialogSession] = useState(0);
+  const [buyBitcoinSession, setBuyBitcoinSession] = useState(0);
+
+  const openSendDialog = useCallback(() => {
+    setSendDialogSession(s => s + 1);
+    setIsSendDialogOpen(true);
+  }, []);
+  const openReceiveDialog = useCallback(() => {
+    setReceiveDialogSession(s => s + 1);
+    setIsReceiveDialogOpen(true);
+  }, []);
+  const openBuyBitcoinDialog = useCallback(() => {
+    setBuyBitcoinSession(s => s + 1);
+    setIsBuyBitcoinOpen(true);
+  }, []);
 
   const transactionsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -166,9 +182,9 @@ const WalletPage: React.FC<WalletPageProps> = ({
     // If scanner was opened from Send dialog, reopen it
     if (scannerOpenedFromSend) {
       setScannerOpenedFromSend(false);
-      setIsSendDialogOpen(true);
+      openSendDialog();
     }
-  }, [scannerOpenedFromSend]);
+  }, [scannerOpenedFromSend, openSendDialog]);
 
   const handleScanFromSendDialog = useCallback(() => {
     setIsSendDialogOpen(false);
@@ -188,7 +204,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
       setIsQrScannerOpen(false);
       setScannerOpenedFromSend(false);
       setPaymentInput(data);
-      setIsSendDialogOpen(true);
+      openSendDialog();
     } catch (error) {
       logger.error(LogCategory.UI, 'Failed to parse QR code', {
         error: error instanceof Error ? error.message : String(error),
@@ -218,7 +234,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
               setIsBuyLoading(true);
               onBuyBitcoin(enabledBuyProviders[0]).finally(() => setIsBuyLoading(false));
             } else {
-              setIsBuyBitcoinOpen(true);
+              openBuyBitcoinDialog();
             }
           }}
           isBuyLoading={isBuyLoading}
@@ -244,6 +260,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
 
       {/* Send Payment Dialog - always mounted for instant response */}
       <SendPaymentDialog
+        key={`send-${sendDialogSession}`}
         isOpen={isSendDialogOpen}
         onClose={handleSendDialogClose}
         initialRawInput={paymentInput}
@@ -253,12 +270,14 @@ const WalletPage: React.FC<WalletPageProps> = ({
 
       {/* Receive Payment Dialog - always mounted for instant response */}
       <ReceivePaymentDialog
+        key={`receive-${receiveDialogSession}`}
         isOpen={isReceiveDialogOpen}
         onClose={handleReceiveDialogClose}
       />
 
       {/* Buy Bitcoin Dialog */}
       <BuyBitcoinDialog
+        key={`buy-${buyBitcoinSession}`}
         isOpen={isBuyBitcoinOpen}
         onClose={() => setIsBuyBitcoinOpen(false)}
         onBuyBitcoin={onBuyBitcoin}
@@ -295,7 +314,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
       <div className="bottom-bar flex items-center z-30">
         {/* Send button */}
         <button
-          onClick={() => setIsSendDialogOpen(true)}
+          onClick={openSendDialog}
           className="action-button action-button-send"
           data-testid="send-button"
         >
@@ -319,7 +338,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
 
         {/* Receive button */}
         <button
-          onClick={() => setIsReceiveDialogOpen(true)}
+          onClick={openReceiveDialog}
           className="action-button action-button-receive"
           data-testid="receive-button"
         >
@@ -330,7 +349,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
 
       {/* Save Contact Dialog */}
       <SaveContactDialog
-        key={saveContactSession}
+        key={`save-contact-${saveContactSession}`}
         isOpen={!!saveContactAddress}
         lightningAddress={saveContactAddress || ''}
         onClose={() => setSaveContactAddress(null)}

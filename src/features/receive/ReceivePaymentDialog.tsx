@@ -111,17 +111,16 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     cancelEdit: cancelEditLightningAddress,
     setEditValue: setLightningAddressEditValue,
     save: saveLightningAddress,
-    reset: resetLightningAddress,
   } = useLightningAddress();
 
+  // Parent (WalletPage) bumps `receiveDialogSession` on every open and
+  // passes it as `key`, so each open is a fresh mount: hooks re-init,
+  // no reset-in-effect needed. We only need to kick off the address
+  // pre-load on first mount.
   useEffect(() => {
-    if (isOpen) {
-      receive.reset();
-      resetLightningAddress();
-      loadLightningAddress();
-    }
+    loadLightningAddress();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, []);
 
   // Re-trigger bitcoin address generation after reset clears the address
   useEffect(() => {

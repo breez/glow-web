@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { Payment } from '@breeztech/breez-sdk-spark';
 import type { ConversionStep } from '@breeztech/breez-sdk-spark';
 import {
@@ -35,14 +35,10 @@ const getDefaultVisibleFields = () => ({
 });
 
 const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPayment, onClose }) => {
-  const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>(getDefaultVisibleFields());
-
-  // Reset all expanded fields when a new payment is opened
-  useEffect(() => {
-    if (optionalPayment) {
-      setVisibleFields(getDefaultVisibleFields());
-    }
-  }, [optionalPayment]);
+  // Parent unmounts/remounts this component on payment selection change
+  // (`{selectedPayment && <PaymentDetailsDialog ... />}`), so lazy init is
+  // sufficient — no reset-in-effect needed.
+  const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>(getDefaultVisibleFields);
 
   // Format date and time
   const formatDateTime = (timestamp: number): string => {

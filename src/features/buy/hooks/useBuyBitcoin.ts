@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../../../contexts/WalletContext';
 import { usePlatform } from '../../../hooks/usePlatform';
@@ -80,7 +80,6 @@ export function useBuyBitcoin({
     setAmountInput,
     resetAmount,
     isTokenMode,
-    setIsTokenMode,
     toggleDenomination,
     isStableBalanceActive,
     config: tokenConfig,
@@ -115,20 +114,9 @@ export function useBuyBitcoin({
     [isOpen, network]
   );
 
-  // Reset local state whenever the dialog closes. Note: useAmountInput
-  // already handles auto-reset when stable balance is deactivated mid-flow.
-  useEffect(() => {
-    if (!isOpen) {
-      setStep('select');
-      setRedirectingProvider(null);
-      setIsTokenMode(isStableBalanceActive);
-      resetAmount();
-      setCashAppUrl(null);
-      setGeneratedAmountSats(null);
-      setIsGenerating(false);
-      setError(null);
-    }
-  }, [isOpen, isStableBalanceActive, setIsTokenMode, resetAmount]);
+  // No reset-on-close needed — parent (WalletPage) bumps `buyBitcoinSession`
+  // on each open and passes it as `key`, so each open is a fresh mount of
+  // the dialog and this hook, with all useState initialised to defaults.
 
   const selectProvider = useCallback(
     async (provider: BuyBitcoinProvider) => {
