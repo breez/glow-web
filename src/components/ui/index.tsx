@@ -236,11 +236,8 @@ export const CopyableText: React.FC<{
   'data-testid'?: string;
 }> = ({ text, truncate = false, hideText = false, showShare = false, onCopied, onShareError, label = 'Address', additionalActions, textColor = 'text-spark-text-muted', textToCopy, textToShare, shareLabel, 'data-testid': testId }) => {
   const [copied, setCopied] = React.useState(false);
-  const [canShare, setCanShare] = React.useState(false);
-
-  React.useEffect(() => {
-    setCanShare(typeof navigator !== 'undefined' && !!navigator.share);
-  }, []);
+  // Web Share API support is fixed for the page lifetime; read once at init.
+  const [canShare] = React.useState(() => typeof navigator !== 'undefined' && !!navigator.share);
 
   const handleCopy = () => {
     const textToUse = textToCopy || text;

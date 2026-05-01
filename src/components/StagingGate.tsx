@@ -18,22 +18,21 @@ interface StagingGateProps {
 const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
   const stagingPassword = import.meta.env.VITE_STAGING_PASSWORD;
 
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  // Read the persisted auth flag synchronously during initial render so we
+  // never paint a checking spinner — sessionStorage is sync-available and the
+  // value is stable for the session.
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() =>
+    !!stagingPassword && sessionStorage.getItem(STAGING_AUTH_KEY) === 'true'
+  );
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [isChecking, setIsChecking] = useState(!!stagingPassword);
 
-  // Check sessionStorage on mount and hide splash since StagingGate blocks App content
+  // Hide the splash so the password prompt (or app) becomes visible.
   useEffect(() => {
-    if (!stagingPassword) return;
-    const authenticated = sessionStorage.getItem(STAGING_AUTH_KEY) === 'true';
-    setIsAuthenticated(authenticated);
-    setIsChecking(false);
-    // Hide the splash screen so the password prompt (or app) is visible
-    if (!authenticated) {
+    if (stagingPassword && !isAuthenticated) {
       void hideSplash();
     }
-  }, [stagingPassword]);
+  }, [stagingPassword, isAuthenticated]);
 
   // If no password configured, render children immediately (production mode)
   if (!stagingPassword) {
@@ -52,15 +51,6 @@ const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
       setPassword('');
     }
   };
-
-  // Still checking sessionStorage
-  if (isChecking) {
-    return (
-      <div className="min-h-screen bg-spark-void flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-spark-border border-t-spark-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
 
   // Authenticated - render app
   if (isAuthenticated) {
