@@ -65,5 +65,8 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "4.57.0"
+  },
+  "overrides": {
+    "crypto-browserify": "npm:@meteorjs/crypto-browserify@^3.12.4"
   }
 }
