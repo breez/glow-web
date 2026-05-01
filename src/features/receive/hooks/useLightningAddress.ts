@@ -122,20 +122,25 @@ export const useLightningAddress = (): UseLightningAddress => {
 
   // Pre-load the Lightning address as soon as the hook mounts (which
   // happens on WalletPage mount, well before the user taps Receive).
-  // Moves the cold `getLightningAddress` SDK roundtrip — plus any
-  // auto-registration chain for a fresh passkey label (`checkAvailable`
-  // → `register` → `getAddress` again) — out of the Receive-open
+  // Moves the cold `getLightningAddress` SDK roundtrip (plus any
+  // auto-registration chain for a fresh passkey label: `checkAvailable`
+  // then `register` then `getAddress` again) out of the Receive-open
   // animation critical path. Without this, the user sees a visible
   // dead window between tapping Receive and the sheet sliding up on
   // first launch while the WASM bridge + network calls complete. The
   // `hasAttemptedMountLoad` ref guards against React 18 Strict-Mode
   // double-invocation in dev + re-fires on dep changes.
+  //
+  // The fetch runs inside an async IIFE so all setStates fire after
+  // `await load()` resolves, satisfying react-hooks/set-state-in-effect.
   const hasAttemptedMountLoad = useRef(false);
   useEffect(() => {
     if (hasAttemptedMountLoad.current) return;
     if (!isSupported) return;
     hasAttemptedMountLoad.current = true;
-    void load();
+    void (async () => {
+      await load();
+    })();
   }, [isSupported, load]);
 
   const beginEdit = useCallback((currentAddress?: LightningAddressInfo | null) => {

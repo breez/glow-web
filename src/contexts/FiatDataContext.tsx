@@ -20,26 +20,6 @@ export const FiatDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [fiatRates, setFiatRates] = useState<Rate[]>([]);
   const [fiatCurrencies, setFiatCurrencies] = useState<FiatCurrency[]>([]);
 
-  const fetchFiatData = useCallback(async () => {
-    if (!sdk) return;
-    try {
-      const [ratesResult, currenciesResult] = await Promise.all([
-        sdk.listFiatRates(),
-        sdk.listFiatCurrencies(),
-      ]);
-      setFiatRates(ratesResult.rates);
-      setFiatCurrencies(currenciesResult.currencies);
-      logger.info(LogCategory.SDK, 'Fiat data fetched', {
-        ratesCount: ratesResult.rates.length,
-        currenciesCount: currenciesResult.currencies.length,
-      });
-    } catch (error) {
-      logger.warn(LogCategory.SDK, 'Failed to fetch fiat data', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }, [sdk]);
-
   const getOrFetchFiatData = useCallback(async (): Promise<FiatData> => {
     if (fiatRates.length > 0 && fiatCurrencies.length > 0) {
       return { fiatRates, fiatCurrencies };
@@ -56,10 +36,33 @@ export const FiatDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     if (!isConnected || !sdk) return;
-    fetchFiatData();
-    const interval = setInterval(fetchFiatData, 60000);
-    return () => clearInterval(interval);
-  }, [isConnected, sdk, fetchFiatData]);
+    let cancelled = false;
+    const fetchFiatData = async () => {
+      try {
+        const [ratesResult, currenciesResult] = await Promise.all([
+          sdk.listFiatRates(),
+          sdk.listFiatCurrencies(),
+        ]);
+        if (cancelled) return;
+        setFiatRates(ratesResult.rates);
+        setFiatCurrencies(currenciesResult.currencies);
+        logger.info(LogCategory.SDK, 'Fiat data fetched', {
+          ratesCount: ratesResult.rates.length,
+          currenciesCount: currenciesResult.currencies.length,
+        });
+      } catch (error) {
+        logger.warn(LogCategory.SDK, 'Failed to fetch fiat data', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    };
+    void fetchFiatData();
+    const interval = setInterval(() => { void fetchFiatData(); }, 60000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [isConnected, sdk]);
 
   return (
     <FiatDataContext.Provider value={{ fiatRates, fiatCurrencies, getOrFetchFiatData }}>

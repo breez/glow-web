@@ -59,24 +59,29 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     return d.refund_tx_id || d.refundTxId || d.refund_txid || d.refundTxid || null;
   };
 
+  // Pure fetch: returns the sorted list, leaves setState to callers so
+  // the mount effect can commit post-await.
+  const fetchRejectedDeposits = useCallback(async (): Promise<DepositInfo[]> => {
+    const list = (await wallet.listUnclaimedDeposits({})).deposits;
+    // Only show deposits that have been rejected
+    const rejectedDeposits = list.filter(d => isDepositRejected(d.txid, d.vout));
+
+    // Sort: non-broadcasted (no refundTxId) first, then broadcasted
+    return rejectedDeposits.sort((a, b) => {
+      const aHasRefund = hasRefundTx(a);
+      const bHasRefund = hasRefundTx(b);
+
+      // Non-broadcasted (false) should come before broadcasted (true)
+      if (aHasRefund === bHasRefund) return 0;
+      return aHasRefund ? 1 : -1;
+    });
+  }, [wallet]);
+
   const load = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const list = (await wallet.listUnclaimedDeposits({})).deposits;
-      // Only show deposits that have been rejected
-      const rejectedDeposits = list.filter(d => isDepositRejected(d.txid, d.vout));
-
-      // Sort: non-broadcasted (no refundTxId) first, then broadcasted
-      const sortedDeposits = rejectedDeposits.sort((a, b) => {
-        const aHasRefund = hasRefundTx(a);
-        const bHasRefund = hasRefundTx(b);
-
-        // Non-broadcasted (false) should come before broadcasted (true)
-        if (aHasRefund === bHasRefund) return 0;
-        return aHasRefund ? 1 : -1;
-      });
-
+      const sortedDeposits = await fetchRejectedDeposits();
       setDeposits(sortedDeposits);
     } catch (e) {
       logger.error(LogCategory.PAYMENT, 'Failed to load rejected deposits', {
@@ -86,11 +91,28 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     } finally {
       setIsLoading(false);
     }
-  }, [wallet]);
+  }, [fetchRejectedDeposits]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const sortedDeposits = await fetchRejectedDeposits();
+        if (cancelled) return;
+        setDeposits(sortedDeposits);
+        setError(null);
+      } catch (e) {
+        if (cancelled) return;
+        logger.error(LogCategory.PAYMENT, 'Failed to load rejected deposits', {
+          error: e instanceof Error ? e.message : String(e),
+        });
+        setError('Failed to load rejected deposits');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [fetchRejectedDeposits]);
 
   useEffect(() => {
     let listenerId: string | null = null;
