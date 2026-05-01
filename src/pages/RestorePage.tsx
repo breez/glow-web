@@ -32,7 +32,7 @@ const RestorePage: React.FC<RestorePageProps> = ({
     setError(null);
     try {
       await onConnect(cleaned);
-    } catch (err) {
+    } catch {
       setError('Invalid recovery phrase. Please check your words and try again.');
     }
   };

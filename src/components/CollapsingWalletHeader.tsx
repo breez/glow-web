@@ -122,6 +122,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   // Compute balances
   const btcBalanceSat = walletInfo?.balanceSats || 0;
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- optional-chain dep won't reconcile with React Compiler's inference, but we're not running the compiler and the manual memo is doing real reference-stability work today
   const tokenBalanceInfo = useMemo(() => {
     if (!stableBalance.isActive || !walletInfo?.tokenBalances || !stableBalance.tokenIdentifier) return null;
     return getTokenBalance(walletInfo.tokenBalances, stableBalance.tokenIdentifier);

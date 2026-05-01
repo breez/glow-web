@@ -46,6 +46,19 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   // State for expandable transaction ID fields in examples
   const [expandedTxIds, setExpandedTxIds] = useState<Record<string, boolean>>({});
 
+  // Check if deposit has been refunded
+  const hasRefundTx = (deposit: DepositInfo) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK DepositInfo doesn't expose refund fields
+    const d = deposit as any;
+    return Boolean(d.refund_tx_id || d.refundTxId || d.refund_txid || d.refundTxid);
+  };
+
+  const getRefundTxId = (deposit: DepositInfo) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK DepositInfo doesn't expose refund fields
+    const d = deposit as any;
+    return d.refund_tx_id || d.refundTxId || d.refund_txid || d.refundTxid || null;
+  };
+
   const load = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -163,19 +176,6 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   const getRefundAmount = () => {
     if (!selectedDeposit) return 0;
     return selectedDeposit.amountSats - getSelectedFee();
-  };
-
-  // Check if deposit has been refunded
-  const hasRefundTx = (deposit: DepositInfo) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK DepositInfo doesn't expose refund fields
-    const d = deposit as any;
-    return Boolean(d.refund_tx_id || d.refundTxId || d.refund_txid || d.refundTxid);
-  };
-
-  const getRefundTxId = (deposit: DepositInfo) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK DepositInfo doesn't expose refund fields
-    const d = deposit as any;
-    return d.refund_tx_id || d.refundTxId || d.refund_txid || d.refundTxid || null;
   };
 
   // Get mempool.space URL for a transaction
