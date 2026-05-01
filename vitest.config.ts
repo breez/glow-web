@@ -1,10 +1,9 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import wasm from 'vite-plugin-wasm';
-import topLevelAwait from 'vite-plugin-top-level-await';
 
 export default defineConfig({
-  plugins: [react(), wasm(), topLevelAwait()],
+  plugins: [react(), wasm()],
   test: {
     globals: true,
     environment: 'happy-dom',
@@ -24,10 +23,8 @@ export default defineConfig({
     },
     // Pool configuration for test isolation
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: false,
-      },
+    forks: {
+      singleFork: false,
     },
     // Deps handling for WASM module
     server: {
