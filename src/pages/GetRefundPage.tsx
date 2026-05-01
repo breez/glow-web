@@ -406,7 +406,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                 {refundError && (
                   <div className="bg-spark-warning/10 border border-spark-warning/30 rounded-2xl p-4">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-xl bg-spark-warning/20 flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-spark-warning/20 flex items-center justify-center shrink-0">
                         <WarningIcon size="md" className="text-spark-warning" />
                       </div>
                       <h3 className="font-display font-bold text-spark-warning">Refund Failed</h3>

@@ -100,7 +100,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
   // Close the drawer first, then fire the navigation callback once the
   // drawer's leave animation completes. Kept sequential (not
   // concurrent) so the drawer's left-edge motion doesn't compete with
-  // SlideInPage's left-edge enter — even though z-[60] on SlideInPage
+  // SlideInPage's left-edge enter — even though z-60 on SlideInPage
   // makes the drawer invisible for most of the overlap, running them
   // back-to-back feels cleaner and gives the user a moment to see the
   // drawer close before the new page arrives. 100ms matches the
@@ -151,7 +151,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
           we prioritise snap over the full M3 arc. */}
       <TransitionChild
         as="div"
-        enter="transition-opacity ease-m3-emphasized-decelerate duration-[150ms]"
+        enter="transition-opacity ease-m3-emphasized-decelerate duration-150"
         enterFrom="opacity-0"
         enterTo="opacity-100"
         leave="transition-opacity ease-m3-emphasized-accelerate duration-100"
@@ -170,7 +170,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
         >
           <TransitionChild
             as="div"
-            enter="transition transform ease-m3-emphasized-decelerate duration-[150ms]"
+            enter="transition transform ease-m3-emphasized-decelerate duration-150"
             enterFrom="-translate-x-full"
             enterTo="translate-x-0"
             leave="transition transform ease-m3-emphasized-accelerate duration-100"

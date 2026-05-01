@@ -108,7 +108,7 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({
       >
         <div className="flex items-center gap-3 px-5 py-4">
           {/* Icon */}
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             {icon}
           </div>
 
@@ -130,7 +130,7 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({
                   action.onClick();
                 }, 300);
               }}
-              className="flex-shrink-0 px-3 py-1 text-xs font-semibold text-white bg-spark-primary/80 hover:bg-spark-primary rounded-full transition-colors"
+              className="shrink-0 px-3 py-1 text-xs font-semibold text-white bg-spark-primary/80 hover:bg-spark-primary rounded-full transition-colors"
             >
               {action.label}
             </button>
@@ -142,7 +142,7 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({
               setIsVisible(false);
               setTimeout(onClose, 300);
             }}
-            className={`flex-shrink-0 p-1 opacity-70 hover:opacity-100 transition-opacity ${textClass}`}
+            className={`shrink-0 p-1 opacity-70 hover:opacity-100 transition-opacity ${textClass}`}
           >
             <CloseIcon size="sm" />
           </button>

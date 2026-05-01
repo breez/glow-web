@@ -715,7 +715,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
                 }}
                 placeholder="Label name"
                 maxLength={24}
-                className="w-full bg-spark-surface rounded-xl px-3 py-2 text-spark-text-primary placeholder:text-spark-text-muted focus:outline-none focus:ring-2 focus:ring-spark-primary/50 text-sm"
+                className="w-full bg-spark-surface rounded-xl px-3 py-2 text-spark-text-primary placeholder:text-spark-text-muted focus:outline-hidden focus:ring-2 focus:ring-spark-primary/50 text-sm"
                 autoFocus
               />
               {isDuplicate && (
@@ -767,7 +767,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       {aasaFailure && (
         <AlertCard variant="warning" title="Diagnostic details">
           {/* break-all (word-break: break-all) is intentional here —
-              `break-words` (overflow-wrap: break-word) only splits at
+              `wrap-break-word` (overflow-wrap: break-word) only splits at
               word boundaries and doesn't help with long unbroken tokens
               like `delegate_permission/common.get_login_creds` or URLs,
               which were pushing the AlertCard past the viewport on
@@ -1040,7 +1040,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
                           : 'Something went wrong'
               }
             >
-              <p className="text-spark-text-secondary text-sm break-words">
+              <p className="text-spark-text-secondary text-sm wrap-break-word">
                 {error}
               </p>
             </AlertCard>

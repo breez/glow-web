@@ -79,7 +79,7 @@ export const AlertCard: React.FC<AlertCardProps> = ({
     <div className={`border rounded-2xl p-4 ${styles.container} ${className}`}>
       <div className="flex items-center gap-3 mb-2">
         {displayIcon && (
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${styles.iconBg}`}>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${styles.iconBg}`}>
             {displayIcon}
           </div>
         )}
@@ -123,7 +123,7 @@ export const SimpleAlert: React.FC<SimpleAlertProps> = ({
   };
 
   const icons: Record<AlertVariant, ReactNode> = {
-    info: <InfoIcon className={`flex-shrink-0 ${iconColors[variant]}`} />,
+    info: <InfoIcon className={`shrink-0 ${iconColors[variant]}`} />,
     warning: <WarningIcon size="md" className={iconColors[variant]} />,
     success: <CheckCircleIcon size="md" className={iconColors[variant]} />,
     error: <ErrorIcon size="md" className={iconColors[variant]} />,

@@ -49,12 +49,12 @@ const SkeletonTransactionRow: React.FC<{ index: number }> = ({ index }) => (
     className="flex items-center gap-3 px-3 py-3 rounded-xl animate-skeleton-item"
     style={{ animationDelay: `${index * 100}ms` }}
   >
-    <div className="w-10 h-10 rounded-xl bg-spark-surface animate-pulse flex-shrink-0" />
+    <div className="w-10 h-10 rounded-xl bg-spark-surface animate-pulse shrink-0" />
     <div className="flex-1 min-w-0 space-y-2">
-      <div className="h-4 w-32 rounded bg-spark-surface animate-pulse" />
-      <div className="h-3 w-20 rounded bg-spark-surface animate-pulse" />
+      <div className="h-4 w-32 rounded-sm bg-spark-surface animate-pulse" />
+      <div className="h-3 w-20 rounded-sm bg-spark-surface animate-pulse" />
     </div>
-    <div className="h-4 w-16 rounded bg-spark-surface animate-pulse flex-shrink-0" />
+    <div className="h-4 w-16 rounded-sm bg-spark-surface animate-pulse shrink-0" />
   </li>
 );
 
@@ -96,7 +96,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
         <div className="px-4 py-3 flex-1 overflow-hidden" style={{ maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)' }}>
           <div className="flex items-center gap-2 mb-3">
             <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">Payments</h2>
-            <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
+            <div className="flex-1 h-px bg-linear-to-r from-spark-border to-transparent" />
           </div>
           <ul className="space-y-2">
             {Array.from({ length: 20 }, (_, i) => (
@@ -134,7 +134,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
       >
         {/* Transaction type icon */}
         <div className={`
-          w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
+          w-10 h-10 rounded-xl flex items-center justify-center shrink-0
           ${isReceive ? 'bg-spark-success/15 text-spark-success' : 'bg-spark-electric/15 text-spark-electric'}
           ${isPending ? 'animate-pulse' : ''}
         `}>
@@ -147,12 +147,12 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
             <p className="text-[15px] font-medium text-spark-text-primary truncate">
               {getPaymentDescription(tx, findContactByAddress, stableBalance.displayConfig?.fiatCurrencyName)}
             </p>
-            <span className="text-spark-text-muted flex-shrink-0">{getMethodIcon(tx)}</span>
+            <span className="text-spark-text-muted shrink-0">{getMethodIcon(tx)}</span>
             {isPending && (
-              <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-spark-warning animate-pulse" />
+              <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-spark-warning animate-pulse" />
             )}
             {isFailed && (
-              <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-spark-error/15 text-spark-error text-[10px] font-medium uppercase">
+              <span className="shrink-0 px-1.5 py-0.5 rounded-sm bg-spark-error/15 text-spark-error text-[10px] font-medium uppercase">
                 Failed
               </span>
             )}
@@ -184,7 +184,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
         {/* Amount - right aligned */}
         <span
           className={`
-            font-mono font-semibold text-[15px] flex-shrink-0 inline-flex items-center
+            font-mono font-semibold text-[15px] shrink-0 inline-flex items-center
             ${isFailed ? 'text-spark-text-muted line-through' : ''}
             ${!isFailed && isReceive ? 'text-spark-success' : ''}
             ${!isFailed && !isReceive ? 'text-spark-electric' : ''}
@@ -216,7 +216,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
             <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
               Pending Confirmation
             </h2>
-            <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
+            <div className="flex-1 h-px bg-linear-to-r from-spark-border to-transparent" />
           </div>
           <ul className="space-y-2 mb-6">
             {confirming.map((tx, index) => renderTransactionItem(tx, index))}
@@ -231,7 +231,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
             <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
               Pending Approval
             </h2>
-            <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
+            <div className="flex-1 h-px bg-linear-to-r from-spark-border to-transparent" />
           </div>
           <ul className="space-y-2 mb-6">
             {pendingApproval.map((tx, index) => renderTransactionItem(tx, index))}
@@ -246,7 +246,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
             <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
               Payments
             </h2>
-            <div className="flex-1 h-px bg-gradient-to-r from-spark-border to-transparent" />
+            <div className="flex-1 h-px bg-linear-to-r from-spark-border to-transparent" />
           </div>
           <ul className="space-y-2">
             {regularPayments.map((tx, index) => renderTransactionItem(tx, index))}

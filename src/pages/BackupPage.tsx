@@ -151,7 +151,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
           {isPasskey && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-6">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-spark-primary/20 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-spark-primary/20 flex items-center justify-center shrink-0">
                   <FingerprintIcon size="md" className="text-spark-primary" />
                 </div>
                 <div>

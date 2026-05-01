@@ -62,7 +62,7 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center transition-all duration-500 ${
+      className={`fixed inset-0 z-100 flex items-center justify-center transition-all duration-500 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
       onClick={() => {

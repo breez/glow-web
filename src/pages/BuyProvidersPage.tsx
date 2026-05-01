@@ -23,7 +23,7 @@ const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.React
   moonpay: {
     name: 'MoonPay',
     icon: (
-      <div className="w-6 h-6 rounded bg-white flex items-center justify-center p-1">
+      <div className="w-6 h-6 rounded-sm bg-white flex items-center justify-center p-1">
         <MoonPayIcon className="w-full h-full text-[#7B36D9]" />
       </div>
     ),

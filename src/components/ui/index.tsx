@@ -111,9 +111,9 @@ export const DialogHeader: React.FC<{
       </button>
     )}
     <div className="flex items-center gap-2 min-w-0 max-w-full">
-      {icon && <span className="text-spark-primary flex-shrink-0">{icon}</span>}
+      {icon && <span className="text-spark-primary shrink-0">{icon}</span>}
       <h2 className="font-display text-lg font-bold text-spark-text-primary truncate">{title}</h2>
-      {icon && <span className="w-5 h-5 flex-shrink-0" aria-hidden="true" />}
+      {icon && <span className="w-5 h-5 shrink-0" aria-hidden="true" />}
     </div>
     <button
       onClick={onClose}
@@ -205,7 +205,7 @@ export const CollapsibleCodeField: React.FC<{
           className="font-mono text-xs break-all flex items-center gap-1 group"
         >
           <span className="text-spark-text-secondary">{value}</span>
-          <ExternalLinkIcon className="w-3.5 h-3.5 flex-shrink-0 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" />
+          <ExternalLinkIcon className="w-3.5 h-3.5 shrink-0 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" />
         </a>
       ) : (
         <code className="text-spark-text-secondary font-mono text-xs break-all">
@@ -343,10 +343,10 @@ export const Alert: React.FC<{
   };
 
   const icons = {
-    info: <InfoIcon className="flex-shrink-0" />,
-    warning: <WarningIcon className="flex-shrink-0" />,
-    success: <CheckCircleIcon className="flex-shrink-0" />,
-    error: <ErrorIcon className="flex-shrink-0" size="md" />,
+    info: <InfoIcon className="shrink-0" />,
+    warning: <WarningIcon className="shrink-0" />,
+    success: <CheckCircleIcon className="shrink-0" />,
+    error: <ErrorIcon className="shrink-0" size="md" />,
   };
 
   return (
@@ -405,7 +405,7 @@ export const ErrorMessageBox: React.FC<{
   return (
     <div className={`bg-spark-error/10 border border-spark-error/30 rounded-2xl p-4 ${className}`}>
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 rounded-xl bg-spark-error/20 flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-spark-error/20 flex items-center justify-center shrink-0">
           <AlertTriangleIcon className="text-spark-error" />
         </div>
         <h3 className="font-display font-bold text-spark-error">{title}</h3>
@@ -574,7 +574,7 @@ export const Checkbox: React.FC<{
   <button
     type="button"
     onClick={onChange}
-    className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked
+    className={`w-6 h-6 rounded border-2 flex items-center justify-center shrink-0 transition-all ${checked
       ? 'bg-spark-primary border-spark-primary'
       : 'bg-transparent border-spark-text-muted hover:border-spark-text-secondary'
       } ${className}`}
@@ -603,7 +603,7 @@ export const Switch: React.FC<{
     aria-checked={checked}
     disabled={disabled}
     onClick={onChange}
-    className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-spark-primary focus-visible:ring-offset-2 focus-visible:ring-offset-spark-dark ${checked ? 'bg-spark-primary' : 'bg-spark-border'
+    className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-hidden focus-visible:ring-2 focus-visible:ring-spark-primary focus-visible:ring-offset-2 focus-visible:ring-offset-spark-dark ${checked ? 'bg-spark-primary' : 'bg-spark-border'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
   >
     <span

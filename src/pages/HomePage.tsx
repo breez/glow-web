@@ -141,7 +141,7 @@ const HomePage: React.FC<HomePageProps> = ({
         </p>
 
         {/* CTA Buttons */}
-        <div className="w-full max-w-xs space-y-4 min-h-[11rem]">
+        <div className="w-full max-w-xs space-y-4 min-h-44">
           {prfAvailable && !showMnemonicFlow ? (
             hasPasskeyBefore ? (
               // Returning user (has registered a passkey before): the only

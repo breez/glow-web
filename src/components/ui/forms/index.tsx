@@ -136,7 +136,7 @@ export const FormError: React.FC<{
   if (!error) return null;
   return (
     <div className="flex items-center gap-2 text-spark-error text-sm mt-2">
-      <ErrorIcon className="flex-shrink-0" />
+      <ErrorIcon className="shrink-0" />
       <span>{error}</span>
     </div>
   );

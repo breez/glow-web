@@ -22,7 +22,7 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({ contacts, isV
           onClick={() => onSelect(contact.paymentIdentifier)}
           className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left border-t border-spark-border/50`}
         >
-          <div className="w-8 h-8 rounded-full bg-spark-primary/15 flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-spark-primary/15 flex items-center justify-center shrink-0">
             <span className="text-spark-primary font-display font-bold text-xs">
               {contact.name.charAt(0).toUpperCase()}
             </span>

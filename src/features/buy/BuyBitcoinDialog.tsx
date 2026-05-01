@@ -21,12 +21,12 @@ const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.React
   moonpay: {
     name: 'MoonPay',
     icon: (
-      <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center flex-shrink-0 p-2">
+      <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shrink-0 p-2">
         <MoonPayIcon className="w-full h-full text-[#7B36D9]" />
       </div>
     ),
     loadingIcon: (
-      <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center flex-shrink-0 p-2 animate-pulse">
+      <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shrink-0 p-2 animate-pulse">
         <MoonPayIcon className="w-full h-full text-[#7B36D9]" />
       </div>
     ),
@@ -34,12 +34,12 @@ const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.React
   cashApp: {
     name: 'Cash App',
     icon: (
-      <div className="w-11 h-11 rounded-xl bg-[#00D64F] flex items-center justify-center flex-shrink-0 p-1">
+      <div className="w-11 h-11 rounded-xl bg-[#00D64F] flex items-center justify-center shrink-0 p-1">
         <CashAppIcon className="w-full h-full text-[#00D64F]" />
       </div>
     ),
     loadingIcon: (
-      <div className="w-11 h-11 rounded-xl bg-[#00D64F] flex items-center justify-center flex-shrink-0 p-1 animate-pulse">
+      <div className="w-11 h-11 rounded-xl bg-[#00D64F] flex items-center justify-center shrink-0 p-1 animate-pulse">
         <CashAppIcon className="w-full h-full text-[#00D64F]" />
       </div>
     ),
@@ -47,7 +47,7 @@ const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.React
 };
 
 const cashAppHeaderIcon = (
-  <div className="w-5 h-5 rounded bg-[#00D64F] flex items-center justify-center p-0.5">
+  <div className="w-5 h-5 rounded-sm bg-[#00D64F] flex items-center justify-center p-0.5">
     <CashAppIcon className="w-full h-full text-[#00D64F]" />
   </div>
 );

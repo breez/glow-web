@@ -186,7 +186,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group"
               >
                 {/* Avatar */}
-                <div className="w-9 h-9 rounded-full bg-spark-primary/15 flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 rounded-full bg-spark-primary/15 flex items-center justify-center shrink-0">
                   <span className="text-spark-primary font-display font-bold text-sm">
                     {contact.name.charAt(0).toUpperCase()}
                   </span>
@@ -206,7 +206,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
                 </button>
 
                 {/* Actions — subtle until hover/focus */}
-                <div className="flex items-center gap-0.5 flex-shrink-0 md:opacity-50 md:group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-0.5 shrink-0 md:opacity-50 md:group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => handleStartEdit(contact)}
                     className="p-1.5 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"

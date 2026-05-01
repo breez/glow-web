@@ -387,7 +387,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
           // on enter (fade arrives softly), emphasized accelerate on
           // exit (fade leaves quickly) so the scrim stays in sync with
           // the panel slide below.
-          enter="transition-opacity ease-m3-emphasized-decelerate duration-[250ms]"
+          enter="transition-opacity ease-m3-emphasized-decelerate duration-250"
           enterFrom="opacity-0"
           enterTo="opacity-100"
           leave="transition-opacity ease-m3-emphasized-accelerate duration-200"
@@ -405,7 +405,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
         // (200ms) exit with emphasized accelerate. Exit keeps the
         // pre-existing `translate-y-1/2` shortcut so the drop feels
         // quick even though the duration is 50ms shorter than enter.
-        enter="transform transition ease-m3-emphasized-decelerate duration-[250ms]"
+        enter="transform transition ease-m3-emphasized-decelerate duration-250"
         enterFrom="translate-y-full opacity-0"
         enterTo="translate-y-0 opacity-100"
         leave="transform transition ease-m3-emphasized-accelerate duration-200"
@@ -485,7 +485,7 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
         >
           {/* Handle hit area: large touch target, small visual indicator */}
           <div
-            className="bottom-sheet-handle-zone flex-shrink-0"
+            className="bottom-sheet-handle-zone shrink-0"
             onPointerDown={_onHandlePointerDown}
             style={{ touchAction: 'none' }}
           >

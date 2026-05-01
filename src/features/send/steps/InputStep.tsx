@@ -87,7 +87,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
         {selectedContact ? (
           // Selected contact chip
           <div className="w-full h-full px-4 bg-spark-dark border border-spark-border rounded-xl flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-spark-primary/15 flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-spark-primary/15 flex items-center justify-center shrink-0">
               <span className="text-spark-primary font-display font-bold text-xs">
                 {selectedContact.name.charAt(0).toUpperCase()}
               </span>
@@ -99,7 +99,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
             <button
               onClick={handleClearContact}
               disabled={isLoading}
-              className="p-1 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors flex-shrink-0"
+              className="p-1 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors shrink-0"
               aria-label="Clear contact"
             >
               <CloseIcon size="sm" />
@@ -140,7 +140,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
               autoCorrect="off"
               spellCheck={false}
               placeholder="lnbc... / bc1... / sp1... / user@domain.com / contact"
-              className="w-full h-full p-4 bg-spark-dark text-spark-text-primary placeholder-spark-text-muted focus:ring-0 resize-none font-mono text-sm border outline-none transition-all rounded-xl border-spark-border focus:border-spark-primary"
+              className="w-full h-full p-4 bg-spark-dark text-spark-text-primary placeholder-spark-text-muted focus:ring-0 resize-none font-mono text-sm border outline-hidden transition-all rounded-xl border-spark-border focus:border-spark-primary"
               disabled={isLoading}
               data-testid="payment-input"
             />

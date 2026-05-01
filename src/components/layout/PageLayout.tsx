@@ -28,7 +28,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
     <div className="min-h-dvh h-dvh w-full flex flex-col bg-spark-surface relative">
       {showHeader && (
         <header
-          className="relative z-10 flex-shrink-0 border-b border-spark-border bg-spark-surface/80 backdrop-blur-sm"
+          className="relative z-10 shrink-0 border-b border-spark-border bg-spark-surface/80 backdrop-blur-sm"
           style={{ paddingTop: safeAreaTop }}
         >
           {/* Fixed h-14 (56dp) Material toolbar height, matching the
@@ -62,7 +62,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
       {/* Fixed footer */}
       {footer && (
         <footer
-          className="relative z-10 flex-shrink-0 w-full border-t border-spark-border bg-spark-surface/80 backdrop-blur-sm"
+          className="relative z-10 shrink-0 w-full border-t border-spark-border bg-spark-surface/80 backdrop-blur-sm"
           style={{ paddingBottom: safeAreaBottom }}
         >
           <div className="px-4 py-4">

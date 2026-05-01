@@ -20,10 +20,10 @@ interface SlideInPageProps {
 }
 
 const slideTransforms: Record<SlideDirection, { from: string; to: string }> = {
-  left: { from: 'translate-x-[-100%]', to: 'translate-x-0' },
+  left: { from: '-translate-x-full', to: 'translate-x-0' },
   right: { from: 'translate-x-full', to: 'translate-x-0' },
   up: { from: 'translate-y-full', to: 'translate-y-0' },
-  down: { from: 'translate-y-[-100%]', to: 'translate-y-0' },
+  down: { from: '-translate-y-full', to: 'translate-y-0' },
 };
 
 /**
@@ -67,14 +67,14 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
     // the leave animation slid into empty space and the WalletPage
     // popped in only after the animation completed — felt jumpy.
     //
-    // `z-[60]` sits above both the WalletPage bottom-bar (z-30) and
+    // `z-60` sits above both the WalletPage bottom-bar (z-30) and
     // the SideMenu drawer (z-50, rendered via createPortal). When a
     // menu item is tapped the drawer's leave animation fires at the
     // same commit as the page's enter animation — raising this layer
     // above the drawer means the incoming page covers the drawer as
     // it slides in, collapsing two competing left-edge motions into
     // one dominant motion.
-    <div className="absolute inset-0 z-[60] flex flex-col">
+    <div className="absolute inset-0 z-60 flex flex-col">
       <Transition show={isOpen} appear as="div" className="absolute inset-0 overflow-hidden">
         <TransitionChild
           as="div"
@@ -88,7 +88,7 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
           // deliberate slide rather than a pop. Sits one token above
           // the drawer (150/100) so the motion hierarchy scales with
           // the surface size.
-          enter="transform transition ease-m3-emphasized-decelerate duration-[250ms]"
+          enter="transform transition ease-m3-emphasized-decelerate duration-250"
           enterFrom={from}
           enterTo={to}
           leave="transform transition ease-m3-emphasized-accelerate duration-200"
@@ -98,7 +98,7 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
         >
           {/* Header with safe area top padding */}
           <header
-            className="flex-shrink-0 border-b border-spark-border"
+            className="shrink-0 border-b border-spark-border"
             style={{ paddingTop: safeAreaTop }}
           >
             {/* Fixed h-14 (56dp) Material toolbar height, matching the
@@ -141,7 +141,7 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
           {/* Optional footer with safe area bottom padding */}
           {footer && (
             <footer
-              className="flex-shrink-0 border-t border-spark-border bg-spark-surface"
+              className="shrink-0 border-t border-spark-border bg-spark-surface"
               style={{ paddingBottom: safeAreaBottom }}
             >
               <div className="p-4">

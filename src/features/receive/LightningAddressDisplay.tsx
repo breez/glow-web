@@ -114,9 +114,9 @@ const EditingForm: React.FC<EditingFormProps> = ({
             placeholder="satoshi"
             disabled={isLoading}
             rows={1}
-            className="flex-1 min-w-0 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-none resize-none"
+            className="flex-1 min-w-0 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-hidden resize-none"
           />
-          <span className="flex-shrink-0 px-4 py-3 text-spark-text-muted font-medium text-sm">
+          <span className="shrink-0 px-4 py-3 text-spark-text-muted font-medium text-sm">
             @breez.tips
           </span>
         </div>

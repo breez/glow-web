@@ -226,7 +226,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
       {/* Scrollable transaction list */}
       <div
         ref={transactionsContainerRef}
-        className="flex-grow overflow-y-auto relative z-0 scrollbar-hidden"
+        className="grow overflow-y-auto relative z-0 scrollbar-hidden"
         onScroll={handleScroll}
       >
         <TransactionList
