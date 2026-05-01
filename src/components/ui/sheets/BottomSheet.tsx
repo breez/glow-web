@@ -123,7 +123,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   const startHeight = useRef(0);
   const source = useRef<'handle' | 'body'>('body');
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const contentHeight = useRef(0);
+  const [contentHeight, setContentHeight] = useState(0);
 
   // Keep viewportHeight in sync with the visible viewport.
   // visualViewport.resize is the primary signal. On native Capacitor
@@ -182,12 +182,11 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   }, [viewportHeight, maxHeightVh]);
 
   const getSnapPoints = useCallback((): number[] => {
-    const content = contentHeight.current;
     const full = maxPx();
     // If content fills most of the screen, only one snap point
-    if (content >= full * 0.9) return [full];
-    return [content, full];
-  }, [maxPx]);
+    if (contentHeight >= full * 0.9) return [full];
+    return [contentHeight, full];
+  }, [maxPx, contentHeight]);
 
   const getSnapHeight = useCallback((index: number): number => {
     const points = getSnapPoints();
@@ -207,7 +206,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     // Use rAF to measure after layout
     const id = requestAnimationFrame(() => {
       if (wrapperRef.current) {
-        contentHeight.current = wrapperRef.current.getBoundingClientRect().height;
+        setContentHeight(wrapperRef.current.getBoundingClientRect().height);
       }
     });
     return () => cancelAnimationFrame(id);

@@ -22,6 +22,7 @@ import type { DomainAssociation } from '@/services/passkeyPrfProvider';
 import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs } from '@/services/logExport';
 import StepperBar from '@/components/OnboardingStepper';
+import { useLatest } from '../hooks/useLatest';
 
 // ============================================
 // Types
@@ -174,10 +175,8 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   >(null);
 
   // Stable refs for callbacks (avoid stale closures in effects)
-  const onWalletRestoredRef = useRef(onWalletRestored);
-  onWalletRestoredRef.current = onWalletRestored;
-  const onFlowCompleteRef = useRef(onFlowComplete);
-  onFlowCompleteRef.current = onFlowComplete;
+  const onWalletRestoredRef = useLatest(onWalletRestored);
+  const onFlowCompleteRef = useLatest(onFlowComplete);
 
   // Label to use when entering the connecting phase
   const connectLabelRef = useRef<string | undefined>(undefined);
@@ -215,7 +214,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     if (sdkConnected && phase === 'initializing') {
       onFlowCompleteRef.current?.();
     }
-  }, [sdkConnected, phase]);
+  }, [sdkConnected, phase, onFlowCompleteRef]);
 
   // On mount (and on Retry after aasa-error): verify the app's bundle ID
   // is listed by the platform's out-of-band domain verification source
@@ -557,7 +556,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
 
     run();
     return () => { cancelled = true; };
-  }, [phase, error]);
+  }, [phase, error, onWalletRestoredRef]);
 
   // ============================================
   // Handlers

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { ConversionEstimate } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../contexts/WalletContext';
 import { useStableBalance } from '../contexts/StableBalanceContext';
@@ -8,6 +8,7 @@ import { getTokenBalance, fiatToSats, buildTokenDisplayConfig, type TokenDisplay
 import { hasAcceptedStableDisclaimer, setStableDisclaimerAccepted } from '../services/settings';
 import { logger, LogCategory } from '../services/logger';
 import StableBalanceDisclaimer from './StableBalanceDisclaimer';
+import { useLatest } from '../hooks/useLatest';
 import StableBalanceFeeConfirm from './StableBalanceFeeConfirm';
 
 type FlowStep = 'disclaimer' | 'estimating' | 'confirm' | 'executing';
@@ -125,10 +126,8 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
 
   // Use refs so the isOpen effect snapshots the latest props/callbacks
   // without re-firing when they change mid-flow.
-  const startEstimationRef = useRef(startEstimation);
-  startEstimationRef.current = startEstimation;
-  const restorePromptRef = useRef(restorePrompt);
-  restorePromptRef.current = restorePrompt;
+  const startEstimationRef = useLatest(startEstimation);
+  const restorePromptRef = useLatest(restorePrompt);
 
   // Reset state when flow opens
   useEffect(() => {
@@ -144,7 +143,7 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
         startEstimationRef.current();
       }
     }
-  }, [isOpen]);
+  }, [isOpen, restorePromptRef, startEstimationRef]);
 
   const executeToggle = useCallback(async () => {
     logger.debug(LogCategory.SDK, 'executeToggle: starting', { direction, hasEstimate: !!conversionEstimate });

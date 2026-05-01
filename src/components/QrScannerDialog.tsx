@@ -4,6 +4,7 @@ import { BottomSheetContainer, FloatingIconButton } from './ui';
 import { useQrScanner } from '../hooks/useQrScanner';
 import { logger, LogCategory } from '@/services/logger';
 import { CameraFlipIcon, ImageIcon, AlertTriangleIcon } from './Icons';
+import { useLatest } from '../hooks/useLatest';
 
 interface QrScannerDialogProps {
   isOpen: boolean;
@@ -54,12 +55,14 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
   } = useQrScanner({ onScan: handleScan });
 
   // Use refs to avoid effect re-running when callbacks change
-  const startScanningRef = useRef(startScanning);
-  const stopScanningRef = useRef(stopScanning);
-  startScanningRef.current = startScanning;
-  stopScanningRef.current = stopScanning;
+  const startScanningRef = useLatest(startScanning);
+  const stopScanningRef = useLatest(stopScanning);
 
   useEffect(() => {
+    // Capture the stop callback at effect start so cleanup invokes the
+    // function that was current when the effect began, not whatever
+    // happens to be in the ref at unmount time.
+    const stop = stopScanningRef.current;
     if (isOpen) {
       // Wait for the transition to complete (300ms) plus a buffer
       const timer = setTimeout(() => {
@@ -75,12 +78,12 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
 
       return () => {
         clearTimeout(timer);
-        stopScanningRef.current();
+        stop();
       };
     } else {
-      stopScanningRef.current();
+      stop();
     }
-  }, [isOpen, videoRef]);
+  }, [isOpen, videoRef, startScanningRef, stopScanningRef]);
 
   const handleClose = () => {
     stopScanning();

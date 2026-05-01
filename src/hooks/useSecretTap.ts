@@ -1,10 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useLatest } from './useLatest';
 
 export function useSecretTap(threshold = 5, timeoutMs = 2000, initialActivated: boolean | (() => boolean) = false, onToggle?: () => void) {
   const [tapCount, setTapCount] = useState(0);
   const [activated, setActivated] = useState(initialActivated);
-  const onToggleRef = useRef(onToggle);
-  onToggleRef.current = onToggle;
+  const onToggleRef = useLatest(onToggle);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const handleTap = useCallback(() => {
@@ -23,7 +23,7 @@ export function useSecretTap(threshold = 5, timeoutMs = 2000, initialActivated: 
 
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setTapCount(0), timeoutMs);
-  }, [threshold, timeoutMs]);
+  }, [threshold, timeoutMs, onToggleRef]);
 
   useEffect(() => {
     return () => clearTimeout(timerRef.current);

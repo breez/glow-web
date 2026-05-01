@@ -13,6 +13,7 @@ import SendPaymentDialog from '../features/send/SendPaymentDialog';
 import ReceivePaymentDialog from '../features/receive/ReceivePaymentDialog';
 import QrScannerDialog from '../components/QrScannerDialog';
 import PaymentDetailsDialog from '../components/PaymentDetailsDialog';
+import { useLatest } from '../hooks/useLatest';
 import UnclaimedDepositDetailsPage from './UnclaimedDepositDetailsPage';
 import SaveContactDialog from '../features/send/components/SaveContactDialog';
 import BuyBitcoinDialog from '../features/buy/BuyBitcoinDialog';
@@ -84,8 +85,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const transactionsContainerRef = useRef<HTMLDivElement>(null);
 
   // Refs for dialog states to use in stable callbacks (advanced-event-handler-refs optimization)
-  const dialogStateRef = useRef({ isSendDialogOpen, isReceiveDialogOpen, selectedPayment, selectedDeposit });
-  dialogStateRef.current = { isSendDialogOpen, isReceiveDialogOpen, selectedPayment, selectedDeposit };
+  const dialogStateRef = useLatest({ isSendDialogOpen, isReceiveDialogOpen, selectedPayment, selectedDeposit });
   const collapseThreshold = 100;
 
   const handleScroll = useCallback(() => {
@@ -117,7 +117,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
       // Open regular payment details
       setSelectedPayment(payment);
     }
-  }, []);
+  }, [dialogStateRef]);
 
   const handlePaymentDetailsClose = useCallback(() => {
     setSelectedPayment(null);

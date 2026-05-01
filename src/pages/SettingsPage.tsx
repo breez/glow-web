@@ -109,8 +109,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     if (isDevMode) {
       url.searchParams.set('dev', 'true');
     }
-    // eslint-disable-next-line react-hooks/immutability -- intentional browser navigation: we want a full page reload to reinitialize the SDK with the new network
-    window.location.href = url.toString();
+    window.location.assign(url.toString());
   };
 
   const handleSave = async () => {
