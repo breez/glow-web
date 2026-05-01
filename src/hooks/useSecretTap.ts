@@ -5,7 +5,7 @@ export function useSecretTap(threshold = 5, timeoutMs = 2000, initialActivated: 
   const [activated, setActivated] = useState(initialActivated);
   const onToggleRef = useRef(onToggle);
   onToggleRef.current = onToggle;
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const handleTap = useCallback(() => {
     setTapCount(prev => {
