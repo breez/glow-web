@@ -21,7 +21,6 @@ import {
 import type { DomainAssociation } from '@/services/passkeyPrfProvider';
 import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs } from '@/services/logExport';
-import StepperBar from '@/components/OnboardingStepper';
 import { useLatest } from '../hooks/useLatest';
 
 // ============================================
@@ -75,20 +74,6 @@ type Phase =
   // Shared
   | 'connecting'      // Connect to Nostr step: getWallet() in progress (prompt)
   | 'initializing';   // Initialize step: SDK connecting
-
-/** Step index for the new user inline stepper (3 steps). */
-function newUserStepIndex(phase: Phase): number {
-  // review/aasa-checking/detecting are pre-flight phases where step 1
-  // hasn't started yet. Returning 0 surfaces step 1 as "next up"
-  // rather than the bare-default 3 which the stepper renders as
-  // "all done" — visually wrong for a screen that's literally
-  // titled "Create your passkey".
-  if (phase === 'review' || phase === 'aasa-checking' || phase === 'detecting') return 0;
-  if (phase === 'creating') return 0;
-  if (phase === 'new-storing') return 1;
-  if (phase === 'connecting' || phase === 'initializing') return 2;
-  return 3; // all complete (post-flow)
-}
 
 
 // ============================================
@@ -1012,13 +997,6 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   return (
     <PageLayout onBack={onBack} footer={footer} title="Get Started">
       <div className="max-w-xl mx-auto w-full flex flex-col min-h-full">
-        {/* Hide the stepper while an error is showing: the user isn't
-            actively progressing through a step, and a half-filled bar
-            below an "already exists" / "couldn't create" AlertCard
-            reads as visual clutter rather than progress feedback. */}
-        {isNewUser && !error && (
-          <StepperBar stepCount={3} activeIndex={newUserStepIndex(phase)} />
-        )}
         <div className="mt-6 space-y-4 flex flex-col flex-1">
           {content}
           {error && (
