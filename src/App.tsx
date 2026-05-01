@@ -302,6 +302,7 @@ const AppContent: React.FC = () => {
               setUserScreen('home');
             }}
             sdkConnected={passkeySdkConnected}
+            isSecuringSeed={sdk.isSecuringSeed}
             onFlowComplete={handlePasskeyFlowComplete}
             skipDetection
           />
