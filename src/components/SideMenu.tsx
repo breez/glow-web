@@ -7,17 +7,7 @@ import { safeAreaTop, safeAreaBottom } from '../utils/safeAreaInsets';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE, STATUS_BAR_DIALOG_SCRIM } from '../utils/statusBarManager';
 import { useBackButton } from '../hooks/useBackButton';
-// Star positions around the logo (relative to center, in pixels)
-const STARS = [
-  { x: -28, y: -20, size: 3 },
-  { x: 30, y: -15, size: 2 },
-  { x: -22, y: 22, size: 2.5 },
-  { x: 26, y: 25, size: 2 },
-  { x: -8, y: -30, size: 2 },
-  { x: 12, y: 28, size: 3 },
-  { x: -32, y: 5, size: 2 },
-  { x: 34, y: -2, size: 2.5 },
-];
+import GlowLogo from './GlowLogo';
 
 // External-store measurement of the content-root's left offset, used
 // to anchor the drawer panel to the centered max-w-4xl column.
@@ -90,14 +80,13 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
     setShowLogoutConfirm(false);
   }, showLogoutConfirm);
 
+  const isPasskey = isPasskeyMode();
+
   // Stars animate after the 300ms slide-in delay. Derived from isOpen
   // so close flips it off immediately without a reset in an effect.
   const [starsLit, setStarsLit] = useState(false);
   const starsAnimating = isOpen && starsLit;
 
-  const isPasskey = isPasskeyMode();
-
-  // Trigger star animation when sidebar opens
   useEffect(() => {
     if (!isOpen) return;
     const timer = setTimeout(() => setStarsLit(true), 300);
@@ -191,28 +180,8 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-8 pt-6">
-              <div className="flex items-center gap-3">
-                <div className="w-16 h-16 flex items-center justify-center relative">
-                  <img
-                    src="/assets/Glow_Logo.png"
-                    alt="Glow"
-                    className="w-full h-full object-contain"
-                  />
-                  {/* Twinkling stars */}
-                  {STARS.map((star, i) => (
-                    <span
-                      key={i}
-                      className={`sidebar-star ${starsAnimating ? 'animate' : ''}`}
-                      style={{
-                        width: star.size,
-                        height: star.size,
-                        left: `calc(50% + ${star.x}px)`,
-                        top: `calc(50% + ${star.y}px)`,
-                        boxShadow: starsAnimating ? `0 0 ${star.size * 2}px var(--spark-primary)` : 'none',
-                      }}
-                    />
-                  ))}
-                </div>
+              <div className="flex items-center gap-2.5">
+                <GlowLogo sizePx={40} starsAnimating={starsAnimating} />
                 <h2 className="font-display text-xl font-bold text-spark-text-primary">Glow</h2>
               </div>
               <button

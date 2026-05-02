@@ -53,12 +53,6 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'paymen
     <div className="flex flex-col items-center justify-center py-12">
       {/* Animated Glow logo */}
       <div className="relative mb-8">
-        {/* Pulsing glow rings */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="absolute w-28 h-28 rounded-full bg-spark-primary/15 animate-ping" style={{ animationDuration: '2s' }} />
-          <div className="absolute w-24 h-24 rounded-full bg-spark-primary/20 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
-        </div>
-
         {/* Logo container with spinning ring */}
         <div className="relative w-24 h-24 flex items-center justify-center">
           {/* Spinning ring */}
@@ -86,7 +80,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'paymen
           {/* Icon */}
           {isAuth ? renderIcon() : (
             <img
-              src="/assets/Glow_Logo.png"
+              src="/assets/Glow_Logo.svg"
               alt="Processing"
               className="w-14 h-14 object-contain animate-pulse drop-shadow-[0_0_15px_rgba(212,165,116,0.4)]"
               style={{ animationDuration: '2s' }}

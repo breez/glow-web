@@ -4,18 +4,7 @@ import type { Payment } from '@breeztech/breez-sdk-spark';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig } from '../utils/tokenFormatting';
-
-// Star positions around the logo (same as sidebar)
-const STARS = [
-  { x: -45, y: -35, size: 4 },
-  { x: 50, y: -30, size: 3 },
-  { x: -40, y: 40, size: 3.5 },
-  { x: 45, y: 45, size: 3 },
-  { x: -12, y: -55, size: 3 },
-  { x: 18, y: 55, size: 4 },
-  { x: -55, y: 8, size: 3 },
-  { x: 58, y: -5, size: 3.5 },
-];
+import GlowLogo from './GlowLogo';
 
 interface PaymentReceivedCelebrationProps {
   payment: Payment;
@@ -32,7 +21,7 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
     // Trigger entrance animation
     requestAnimationFrame(() => setIsVisible(true));
 
-    // Start star animation after logo appears
+    // Start dot animation after the logo settles in
     const starTimer = setTimeout(() => setStarsAnimating(true), 500);
 
     // Auto close after animation
@@ -73,46 +62,24 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
       {/* Backdrop with blur */}
       <div className="absolute inset-0 bg-spark-void/90 backdrop-blur-md" />
 
-      {/* Radiating glow rings */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="absolute w-64 h-64 rounded-full bg-spark-primary/10 animate-ping" style={{ animationDuration: '2s' }} />
-        <div className="absolute w-48 h-48 rounded-full bg-spark-primary/15 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.3s' }} />
-        <div className="absolute w-32 h-32 rounded-full bg-spark-primary/20 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.6s' }} />
-      </div>
-
       {/* Main content */}
       <div
         className={`relative z-10 flex flex-col items-center transform transition-all duration-700 ${
           isVisible ? 'scale-100 translate-y-0' : 'scale-50 translate-y-20'
         }`}
       >
-        {/* Glow Logo with sparkle stars */}
+        {/* Glow Logo */}
         <div className="relative mb-8">
           {/* Outer glow */}
-          <div className="absolute -inset-4 rounded-full bg-spark-primary/30 blur-2xl" />
+          <div className="absolute -inset-4 rounded-full blur-2xl" style={{ background: 'rgba(212,165,116,0.30)' }} />
 
           {/* Logo container */}
           <div className="relative w-28 h-28 flex items-center justify-center">
-            <img
-              src="/assets/Glow_Logo.png"
-              alt="Glow"
-              className="w-24 h-24 object-contain drop-shadow-[0_0_30px_rgba(212,165,116,0.6)]"
+            <GlowLogo
+              sizePx={96}
+              starsAnimating={starsAnimating}
+              imgClassName="drop-shadow-[0_0_30px_rgba(212,165,116,0.6)]"
             />
-
-            {/* Sparkle stars */}
-            {STARS.map((star, i) => (
-              <span
-                key={i}
-                className={`sidebar-star ${starsAnimating ? 'animate' : ''}`}
-                style={{
-                  width: star.size,
-                  height: star.size,
-                  left: `calc(50% + ${star.x}px)`,
-                  top: `calc(50% + ${star.y}px)`,
-                  boxShadow: starsAnimating ? `0 0 ${star.size * 3}px var(--spark-primary)` : 'none',
-                }}
-              />
-            ))}
           </div>
         </div>
 
@@ -122,24 +89,22 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
         </h2>
 
         {/* Amount with brand glow */}
-        <div className="relative animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-          <div className="absolute inset-0 blur-xl bg-spark-primary/40 rounded-2xl" />
-          <div className="relative px-10 py-5 rounded-2xl bg-spark-surface/80 border border-spark-primary/30 text-center">
-            {displayText ? (
-              <span className="text-5xl font-display font-bold text-spark-primary">
-                +{(() => {
-                  const match = displayText.match(/^([^\d-]+)(.*)/);
-                  if (match) return <><span className="text-3xl opacity-70">{match[1]}</span>{match[2]}</>;
-                  return displayText;
-                })()}
-              </span>
-            ) : (
-              <span className="relative text-5xl font-mono font-bold text-spark-primary">
-                <span className="absolute right-full top-1/2 -translate-y-1/2 mr-0.5 text-3xl text-spark-primary opacity-70">₿</span>
-                {formatSatsAmount(Number(payment.amount))}
-              </span>
-            )}
-          </div>
+        <div className="relative animate-fade-in-up text-center" style={{ animationDelay: '0.4s' }}>
+          <div className="absolute inset-0 blur-2xl rounded-full" style={{ background: 'rgba(212,165,116,0.35)' }} />
+          {displayText ? (
+            <span className="relative text-5xl font-display font-bold text-spark-primary">
+              +{(() => {
+                const match = displayText.match(/^([^\d-]+)(.*)/);
+                if (match) return <><span className="text-3xl opacity-70">{match[1]}</span>{match[2]}</>;
+                return displayText;
+              })()}
+            </span>
+          ) : (
+            <span className="relative inline-flex items-center gap-1 text-5xl font-mono font-bold text-spark-primary">
+              <span className="text-3xl opacity-70">₿</span>
+              {formatSatsAmount(Number(payment.amount))}
+            </span>
+          )}
         </div>
 
         {/* Tap to dismiss hint */}

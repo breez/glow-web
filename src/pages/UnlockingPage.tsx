@@ -35,7 +35,7 @@ const UnlockingPage: React.FC = () => {
       >
         <div className="max-w-sm w-full flex flex-col items-center gap-8">
           <img
-            src="/assets/Glow_Logo.png"
+            src="/assets/Glow_Logo.svg"
             alt="Glow"
             className="w-28 h-28"
           />

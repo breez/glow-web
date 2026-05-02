@@ -1,20 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useSecretTap } from '@/hooks/useSecretTap';
+import GlowLogo from '@/components/GlowLogo';
 import { safeAreaTop, safeAreaBottom } from '@/utils/safeAreaInsets';
 import { useStatusBarColor } from '@/hooks/useStatusBarColor';
 import { STATUS_BAR_DARK } from '@/utils/statusBarManager';
-
-// Star positions around the logo (relative to center, in pixels) - larger radius for bigger logo
-const STARS = [
-  { x: -55, y: -40, size: 3.5 },
-  { x: 58, y: -30, size: 2.5 },
-  { x: -45, y: 45, size: 3 },
-  { x: 52, y: 50, size: 2.5 },
-  { x: -15, y: -60, size: 2.5 },
-  { x: 20, y: 55, size: 3.5 },
-  { x: -62, y: 10, size: 2.5 },
-  { x: 65, y: -5, size: 3 },
-];
 
 interface HomePageProps {
   onRestoreWallet: () => void;
@@ -38,11 +27,10 @@ const HomePage: React.FC<HomePageProps> = ({
   // system bars to the same solid tone while we're shown.
   useStatusBarColor(STATUS_BAR_DARK);
 
-  const [starsAnimating, setStarsAnimating] = useState(false);
   const [showMnemonicFlow, setShowMnemonicFlow] = useState(false);
+  const [starsAnimating, setStarsAnimating] = useState(false);
   const { handleTap: handleLogoTap } = useSecretTap(5, 2000, false, () => setShowMnemonicFlow(v => !v));
 
-  // Trigger star animation on mount
   useEffect(() => {
     const timer = setTimeout(() => setStarsAnimating(true), 300);
     return () => clearTimeout(timer);
@@ -100,32 +88,16 @@ const HomePage: React.FC<HomePageProps> = ({
 
         {/* Logo */}
         <div className="mb-10 relative">
-          {/* Outer glow ring */}
-          <div className="absolute -inset-10 bg-gradient-radial from-spark-primary/25 via-spark-primary/5 to-transparent blur-2xl animate-glow-pulse" />
+          {/* Soft halo behind the logo (the page's central glow handles the bigger ambient pulse) */}
+          <div className="absolute -inset-8 bg-gradient-radial from-spark-primary/20 via-spark-primary/5 to-transparent blur-2xl animate-glow-pulse" />
 
           {/* Icon container */}
-          <div className="relative w-36 h-36 flex items-center justify-center">
-            <img
-              src="/assets/Glow_Logo.png"
-              alt="Glow"
-              className="w-full h-full object-contain"
-              onClick={handleLogoTap}
-            />
-            {/* Twinkling stars */}
-            {STARS.map((star, i) => (
-              <span
-                key={i}
-                className={`sidebar-star ${starsAnimating ? 'animate' : ''}`}
-                style={{
-                  width: star.size,
-                  height: star.size,
-                  left: `calc(50% + ${star.x}px)`,
-                  top: `calc(50% + ${star.y}px)`,
-                  boxShadow: starsAnimating ? `0 0 ${star.size * 2}px var(--spark-primary)` : 'none',
-                }}
-              />
-            ))}
-          </div>
+          <GlowLogo
+            sizePx={144}
+            starsAnimating={starsAnimating}
+            onClick={handleLogoTap}
+            imgClassName="drop-shadow-[0_0_24px_rgba(212,165,116,0.45)]"
+          />
         </div>
 
         {/* Title */}

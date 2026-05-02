@@ -36,8 +36,14 @@
     },
     {
       "src": "/icons/Glow_favicon.png",
-      "sizes": "32x32",
+      "sizes": "64x64",
       "type": "image/png"
+    },
+    {
+      "src": "/assets/Glow_Logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ],
   "shortcuts": [],

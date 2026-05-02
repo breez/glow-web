@@ -1,18 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PrimaryButton, ErrorMessageBox } from '../../../components/ui';
 import { CloseIcon } from '../../../components/Icons';
-
-// Star positions around the logo (smaller scale for in-dialog)
-const STARS = [
-  { x: -35, y: -28, size: 3 },
-  { x: 38, y: -24, size: 2.5 },
-  { x: -32, y: 32, size: 2.5 },
-  { x: 35, y: 35, size: 2.5 },
-  { x: -10, y: -42, size: 2.5 },
-  { x: 14, y: 42, size: 3 },
-  { x: -42, y: 6, size: 2.5 },
-  { x: 44, y: -4, size: 2.5 },
-];
+import GlowLogo from '../../../components/GlowLogo';
 
 export interface ResultStepProps {
   result: 'success' | 'failure';
@@ -104,30 +93,15 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
       {/* Result icon */}
       <div className="relative mb-6">
         {/* Glow effect */}
-        <div className="absolute -inset-3 rounded-full bg-spark-primary/20 blur-xl" />
+        <div className="absolute -inset-3 rounded-full blur-xl" style={{ background: 'rgba(212,165,116,0.20)' }} />
 
-        {/* Logo with sparkles */}
+        {/* Logo */}
         <div className="relative w-20 h-20 flex items-center justify-center">
-          <img
-            src="/assets/Glow_Logo.png"
-            alt="Glow"
-            className="w-16 h-16 object-contain drop-shadow-[0_0_20px_rgba(212,165,116,0.5)]"
+          <GlowLogo
+            sizePx={64}
+            starsAnimating={starsAnimating}
+            imgClassName="drop-shadow-[0_0_20px_rgba(212,165,116,0.5)]"
           />
-
-          {/* Sparkle stars */}
-          {STARS.map((star, i) => (
-            <span
-              key={i}
-              className={`sidebar-star ${starsAnimating ? 'animate' : ''}`}
-              style={{
-                width: star.size,
-                height: star.size,
-                left: `calc(50% + ${star.x}px)`,
-                top: `calc(50% + ${star.y}px)`,
-                boxShadow: starsAnimating ? `0 0 ${star.size * 2}px var(--spark-primary)` : 'none',
-              }}
-            />
-          ))}
         </div>
       </div>
 

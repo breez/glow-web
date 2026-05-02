@@ -58,7 +58,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
           {/* Logo + headline */}
           <div className="flex flex-col items-center gap-4">
             <img
-              src="/assets/Glow_Logo.png"
+              src="/assets/Glow_Logo.svg"
               alt="Glow"
               className="w-36 h-36"
             />
