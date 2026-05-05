@@ -139,7 +139,7 @@ const HomePage: React.FC<HomePageProps> = ({
                   data-testid="create-passkey-button"
                   className="button w-full py-4 text-base tracking-wider"
                 >
-                  Get Started
+                  Create Passkey
                 </button>
 
                 <button
