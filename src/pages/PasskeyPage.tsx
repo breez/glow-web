@@ -100,7 +100,7 @@ interface PasskeyPageProps {
    */
   isSecuringSeed?: boolean;
   onFlowComplete?: () => void;
-  /** Skip the listLabels() detection step and start directly at the create-passkey review screen. */
+  /** Skip the listLabels() detection step and start the create-passkey flow directly. */
   skipDetection?: boolean;
   /**
    * Read-and-clear function for the "first sign-in after fresh install"
@@ -129,7 +129,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   consumeFreshInstallSignal,
 }) => {
   // AASA verification runs first for both paths; the post-AASA transition
-  // branches on `skipDetection` to either jump straight to 'review' (new
+  // branches on `skipDetection` to either jump straight to 'creating' (new
   // user via Create Passkey CTA) or 'detecting' (existing user via Use
   // Passkey CTA).
   const [phase, setPhase] = useState<Phase>('aasa-checking');
@@ -230,7 +230,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         logger.warn(LogCategory.AUTH, 'Domain association check threw (unexpected)', {
           error: e instanceof Error ? e.message : String(e),
         });
-        setPhase(skipDetection ? 'review' : 'detecting');
+        setPhase(skipDetection ? 'creating' : 'detecting');
         return;
       }
 
@@ -247,7 +247,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       // provider couldn't verify (offline / no verification source),
       // not that verification failed.
       setAasaFailure(null);
-      setPhase(skipDetection ? 'review' : 'detecting');
+      setPhase(skipDetection ? 'creating' : 'detecting');
     };
 
     run();
@@ -446,8 +446,9 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           detectingFailCountRef.current = 0;
           // Skip aasa-checking: it was already verified earlier in
           // this session and re-running it would bounce through the
-          // skipDetection -> review path, putting the user right back
-          // on the create flow they just came from.
+          // skipDetection -> creating path, re-firing createPasskey()
+          // and putting the user right back on the create flow they
+          // just came from.
           setPhase('detecting');
           return;
         }
@@ -905,9 +906,10 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             // We're entering this branch from a `passkeyCreate` route
             // (skipDetection=true), and the aasa-checking effect's
             // post-success transition reads skipDetection and routes
-            // back to 'review' — bouncing the user right back to the
-            // create flow. AASA was already verified earlier in this
-            // session, so re-running it is redundant anyway.
+            // to 'creating', which would re-fire createPasskey() and
+            // bounce the user right back to the create flow. AASA was
+            // already verified earlier in this session, so re-running
+            // it is redundant anyway.
             setPhase('detecting');
           }}>
             Use Passkey
