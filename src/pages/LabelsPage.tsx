@@ -157,8 +157,14 @@ const LabelsPage: React.FC<LabelsPageProps> = ({ onBack, onSwitchLabel }) => {
     }
   };
 
+  const footer = !isLoading && loadError ? (
+    <PrimaryButton className="w-full" onClick={handleRetry}>
+      Try Again
+    </PrimaryButton>
+  ) : undefined;
+
   return (
-    <SlideInPage title="Labels" closeStyle="back" onClose={onBack} slideFrom="right">
+    <SlideInPage title="Labels" closeStyle="back" onClose={onBack} slideFrom="right" footer={footer}>
       <div className="p-4 space-y-4">
           {isLoading && (
             <div className="flex items-center justify-center py-12">
@@ -171,11 +177,6 @@ const LabelsPage: React.FC<LabelsPageProps> = ({ onBack, onSwitchLabel }) => {
               <p className="text-spark-text-secondary text-sm wrap-break-word">
                 {loadError}
               </p>
-              <div className="mt-3">
-                <SecondaryButton onClick={handleRetry}>
-                  Try Again
-                </SecondaryButton>
-              </div>
             </AlertCard>
           )}
 
