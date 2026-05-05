@@ -29,6 +29,7 @@ import {
   clearPasskeyMode,
   getWallet,
   hasPasskeyHistory,
+  markLabelUsed,
 } from '../services/passkeyService';
 import { secureStorage, deviceOnlyStorage, SecureStorageError } from '../services/secureStorage';
 import { passkeyPrfProvider } from '../services/passkeyPrfProvider';
@@ -220,6 +221,11 @@ export interface BreezSdkActions {
    * `connectWallet` and updates `startupState` based on the outcome.
    */
   retryUnlock: () => Promise<void>;
+  /**
+   * Disconnect, derive the new wallet via passkey, reconnect with it.
+   * Throws on PRF cancel / network failure / SDK error.
+   */
+  switchPasskeyLabel: (newLabel: string) => Promise<void>;
 }
 
 // ============================================
@@ -427,6 +433,7 @@ export function useBreezSdk(
       // becomes unavailable later (e.g. KEY_INVALIDATED on biometric change).
       if (passkeyLabel != null) {
         setPasskeyMode(passkeyLabel);
+        markLabelUsed(passkeyLabel);
       }
 
       // Persist the seed itself — but skip this entirely when the seed was
@@ -573,6 +580,102 @@ export function useBreezSdk(
     clearNetworkOverride();
     showToast('success', 'Successfully logged out');
   }, [sdk, showToast]);
+
+  const switchPasskeyLabel = useCallback(async (newLabel: string): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+
+    // PRF first so a cancel here leaves the active wallet untouched.
+    let wallet;
+    try {
+      wallet = await getWallet(newLabel);
+    } catch (e) {
+      setIsLoading(false);
+      throw e;
+    }
+
+    if (sdk) {
+      try {
+        await sdk.disconnect();
+      } catch (e) {
+        logger.warn(LogCategory.SDK, 'SDK disconnect failed during label switch', {
+          error: formatError(e),
+        });
+      }
+    }
+    setSdk(null);
+    setIsConnected(false);
+    setIsSyncing(true);
+    setWalletInfo(null);
+    setTransactions([]);
+    setUnclaimedDeposits([]);
+    setHasRejectedDeposits(false);
+    setCelebrationPayment(null);
+    setCachedStableTicker(null);
+    clearStableRestorePrompted();
+    shownPaymentIdsRef.current.clear();
+
+    if (secureStorage.isSupported()) {
+      try {
+        await secureStorage.clearSeed();
+      } catch {
+        // storeSeed below overwrites anyway.
+      }
+    }
+
+    let connectedSdk: BreezSdk | undefined;
+    try {
+      const cfg = buildConnectConfig();
+      setConfig(cfg);
+
+      connectedSdk = await connect({
+        config: cfg,
+        seed: wallet.seed,
+        storageDir: 'spark-wallet-example',
+      });
+      setSdk(connectedSdk);
+      setPasskeyMode(wallet.label);
+
+      if (secureStorage.isSupported()) {
+        try {
+          await secureStorage.storeSeed(wallet.seed);
+        } catch {
+          // In-memory seed keeps the session alive; relaunch re-prompts.
+        }
+      }
+
+      const [info, txns] = await Promise.all([
+        connectedSdk.getInfo({}),
+        connectedSdk.listPayments({ offset: 0, limit: 100 }),
+      ]);
+      setWalletInfo(info);
+      setTransactions(filterOngoingConversionPayments(txns.payments));
+      setIsConnected(true);
+      markLabelUsed(wallet.label);
+
+      try {
+        const result = await connectedSdk.listUnclaimedDeposits({});
+        setUnclaimedDeposits(result.deposits);
+        setHasRejectedDeposits(result.deposits.some(d => isDepositRejected(d.txid, d.vout)));
+      } catch (e) {
+        logger.warn(LogCategory.SDK, 'Deposit fetch failed after label switch', {
+          error: formatError(e),
+        });
+      }
+    } catch (e) {
+      const errorMsg = formatError(e);
+      logger.error(LogCategory.SDK, 'Failed to connect after label switch', { error: errorMsg });
+      if (connectedSdk) {
+        try { await connectedSdk.disconnect(); } catch { /* best-effort */ }
+        setSdk(null);
+      }
+      setError('Failed to switch label. Please try again.');
+      throw e;
+    } finally {
+      setIsSyncing(false);
+      setIsLoading(false);
+    }
+  }, [sdk]);
 
   // Re-run the biometric unlock flow after the user cancelled or was locked
   // out on the previous attempt. Called by UnlockPage's "Unlock" button,
@@ -1029,5 +1132,6 @@ export function useBreezSdk(
       return v;
     },
     retryUnlock,
+    switchPasskeyLabel,
   };
 }

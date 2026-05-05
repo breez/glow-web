@@ -3,14 +3,11 @@ import { FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../
 import { getSettings, saveSettings, UserSettings } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
-import { CurrencyIcon, ChevronRightIcon, DownloadIcon } from '../components/Icons';
+import { CurrencyIcon, ChevronRightIcon, DownloadIcon, ShieldCheckIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs, exportDatabaseState } from '@/services/logExport';
 import { useSecretTap } from '@/hooks/useSecretTap';
-import { useToast } from '@/contexts/ToastContext';
-import { isNativePlatform } from '@/services/nativePasskeyPrfProvider';
-import { passkeyPrfProvider } from '@/services/passkeyPrfProvider';
 
 const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
 
@@ -19,11 +16,17 @@ interface SettingsPageProps {
   config: Config | null;
   onOpenFiatCurrencies: () => void;
   onOpenBuyProviders: () => void;
+  onOpenPasskeySettings: () => void;
 }
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatCurrencies, onOpenBuyProviders }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({
+  onBack,
+  config,
+  onOpenFiatCurrencies,
+  onOpenBuyProviders,
+  onOpenPasskeySettings,
+}) => {
   const wallet = useWallet();
-  const { showToast } = useToast();
   const {
     handleTap: devTap,
     activated: isDevMode,
@@ -184,60 +187,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
     <SlideInPage title="Settings" onClose={onBack} slideFrom="left" footer={footer}>
       <div className="p-4">
         <div className="max-w-xl mx-auto w-full space-y-4">
-          {/* Dev Mode Network Selector */}
-          {isDevMode && (
-            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Network</h3>
-              <div className="flex gap-2">
-                {(['mainnet', 'regtest'] as Network[]).map((network) => (
-                  <button
-                    key={network}
-                    onClick={() => handleNetworkChange(network)}
-                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${selectedNetwork === network
-                        ? 'bg-spark-primary text-white'
-                        : 'bg-spark-surface border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
-                      }`}
-                  >
-                    {network === 'mainnet' ? 'Mainnet' : 'Regtest'}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-spark-text-muted mt-2">
-                Changing network will reload the app and reconnect.
-              </p>
-            </div>
-          )}
-
-          {/* Dev Mode Fee Settings */}
-          {isDevMode && (
-            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Deposit Claim Fee</h3>
-              <FormGroup>
-                <div className="flex gap-2 items-center">
-                  <select
-                    value={feeType}
-                    onChange={(e) => setFeeType(e.currentTarget.value as 'fixed' | 'rate' | 'networkRecommended')}
-                    className="min-w-[160px] bg-spark-surface border border-spark-border rounded-xl px-3 py-3 text-spark-text-primary text-sm focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20"
-                    aria-label="Max fee type"
-                  >
-                    <option className="bg-spark-surface" value="fixed">Fixed (sats)</option>
-                    <option className="bg-spark-surface" value="rate">Rate (sat/vB)</option>
-                    <option className="bg-spark-surface" value="networkRecommended">Network + leeway</option>
-                  </select>
-                  <div className="flex-1">
-                    <FormInput
-                      id="deposit-fee-default"
-                      type="number"
-                      min={0}
-                      value={feeValue}
-                      onChange={(e) => setFeeValue(e.target.value)}
-                      placeholder={feeType === 'fixed' ? 'sats' : 'sat/vB'}
-                    />
-                  </div>
-                </div>
-              </FormGroup>
-            </div>
-          )}
+          {/* Order: page nav, exports, reconnect, toggles, inputs.
+              The "Save Changes" footer applies the toggles + inputs;
+              everything above it commits on tap. */}
 
           {/* Display */}
           <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
@@ -268,7 +220,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
             </div>
           </div>
 
-          {/* SDK Logs */}
+          {/* Passkey & Labels */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Passkey</h3>
+              <button
+                className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
+                type="button"
+                onClick={onOpenPasskeySettings}
+              >
+                <div className="flex items-center gap-3">
+                  <ShieldCheckIcon size="md" />
+                  <span>Passkey & Labels</span>
+                </div>
+                <ChevronRightIcon size="md" />
+              </button>
+            </div>
+          )}
+
+          {/* Diagnostics */}
           <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
             <h3 className="font-display font-semibold text-spark-text-primary mb-3">Diagnostics</h3>
             <button
@@ -286,176 +256,155 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, config, onOpenFiatC
             </button>
           </div>
 
-          {/* Dev Mode Advanced Settings */}
+          {/* Database */}
           {isDevMode && (
-            <>
-              <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                <h3 className="font-display font-semibold text-spark-text-primary mb-3">Sync Settings</h3>
-                <FormGroup>
-                  <label htmlFor="sync-interval" className="block text-sm text-spark-text-secondary mb-1">
-                    Sync interval (seconds)
-                  </label>
-                  <FormInput
-                    id="sync-interval"
-                    type="number"
-                    min={0}
-                    value={syncIntervalSecs}
-                    onChange={(e) => setSyncIntervalSecs(e.target.value)}
-                    placeholder="e.g. 30"
-                  />
-                </FormGroup>
-              </div>
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Database</h3>
+              <button
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors disabled:opacity-50"
+                type="button"
+                onClick={handleExportDb}
+                disabled={isExportingDb}
+              >
+                {isExportingDb ? (
+                  <LoadingSpinner size="small" />
+                ) : (
+                  <DownloadIcon size="md" />
+                )}
+                {isExportingDb ? 'Exporting...' : 'Export Database'}
+              </button>
+            </div>
+          )}
 
-              <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                <h3 className="font-display font-semibold text-spark-text-primary mb-3">LNURL</h3>
-                <FormGroup>
-                  <label htmlFor="lnurl-domain" className="block text-sm text-spark-text-secondary mb-1">
-                    Custom domain
-                  </label>
-                  <FormInput
-                    id="lnurl-domain"
-                    type="text"
-                    value={lnurlDomain}
-                    onChange={(e) => setLnurlDomain(e.target.value)}
-                    placeholder="example.com"
-                  />
-                </FormGroup>
-              </div>
-
-              <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <span className="font-display font-medium text-spark-text-primary block">Prefer Spark</span>
-                    <span className="text-sm text-spark-text-muted">Use Spark address over Lightning invoice when available</span>
-                  </div>
-                  <Switch
-                    checked={preferSparkOverLightning}
-                    onChange={() => setPreferSparkOverLightning(!preferSparkOverLightning)}
-                  />
-                </div>
-              </div>
-
-              <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                <h3 className="font-display font-semibold text-spark-text-primary mb-3">Database</h3>
-                <button
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors disabled:opacity-50"
-                  type="button"
-                  onClick={handleExportDb}
-                  disabled={isExportingDb}
-                >
-                  {isExportingDb ? (
-                    <LoadingSpinner size="small" />
-                  ) : (
-                    <DownloadIcon size="md" />
-                  )}
-                  {isExportingDb ? 'Exporting...' : 'Export Database'}
-                </button>
-              </div>
-
-              {/* Privacy Settings - Dev Mode only */}
-              <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <h3 className="font-display font-semibold text-spark-text-primary">Privacy</h3>
-                  {isLoadingUserSettings && <LoadingSpinner size="small" />}
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <span className="font-display font-medium text-spark-text-primary block">Private Mode</span>
-                    <span className="text-sm text-spark-text-muted">Hide your address from public explorers (not suitable for zaps)</span>
-                  </div>
-                  <Switch
-                    checked={sparkPrivateModeEnabled}
-                    onChange={() => setSparkPrivateModeEnabled(!sparkPrivateModeEnabled)}
-                    disabled={isLoadingUserSettings}
-                  />
-                </div>
-              </div>
-
-              {/* Passkey state reset (dev mode). Two paths because
-                  testing the hardening flows benefits from cleaning
-                  different layers independently:
-                    - Flag-only: clears `passkeyRegistered` but leaves
-                      the plugin's iCloud-synced credential-IDs
-                      keychain entry intact. Use to reach the Get
-                      Started CTA while a real passkey still exists
-                      in iCloud Keychain — the path that exercises
-                      the platform's `excludeCredentialIds` refusal
-                      via PasskeyAlreadyExistsError.
-                    - Full wipe: clears flag + plugin keychain entry.
-                      Use after deleting the actual passkey from
-                      Settings -> Passwords to reach a true zero
-                      state for testing the new-user flow. */}
-              <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-                <h3 className="font-display font-semibold text-spark-text-primary mb-3">Passkey state (dev)</h3>
-                <div className="space-y-2">
+          {/* Network */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Network</h3>
+              <div className="flex gap-2">
+                {(['mainnet', 'regtest'] as Network[]).map((network) => (
                   <button
-                    type="button"
-                    onClick={() => {
-                      // Intentionally only clear the flag — leave
-                      // `passkeyKnownCredentials` in place. On native
-                      // the credential-IDs registry lives in the
-                      // iCloud-synced plugin keychain so this matters
-                      // less, but on web that localStorage entry IS
-                      // the registry. Wiping it here would empty the
-                      // browser's excludeCredentialIds list and
-                      // silently allow a duplicate passkey on the
-                      // next Create attempt — which is exactly the
-                      // "platform-level already-exists check still
-                      // fires" guarantee this button claims to
-                      // preserve.
-                      localStorage.removeItem('passkeyRegistered');
-                      logger.warn(LogCategory.AUTH, 'Dev: cleared passkeyRegistered flag (kept credential IDs)');
-                      showToast('success', 'Passkey history cleared', 'Restart the app to see "Get Started" CTA.');
-                    }}
-                    className="w-full bg-spark-surface border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary text-sm hover:border-spark-border-light transition-colors text-left"
+                    key={network}
+                    onClick={() => handleNetworkChange(network)}
+                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${selectedNetwork === network
+                        ? 'bg-spark-primary text-white'
+                        : 'bg-spark-surface border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+                      }`}
                   >
-                    <span className="font-medium block">Forget passkey history</span>
-                    <span className="text-spark-text-muted text-xs">
-                      {isNativePlatform()
-                        ? 'Clears local flag only. Keeps the iCloud-synced credential IDs so the platform-level "already exists" check still fires.'
-                        : 'Clears local flag only. Keeps tracked credential IDs in localStorage so the browser-level "already exists" check still fires.'}
-                    </span>
+                    {network === 'mainnet' ? 'Mainnet' : 'Regtest'}
                   </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      let keychainCleared = true;
-                      try {
-                        await passkeyPrfProvider.clearKnownCredentialIds();
-                      } catch (e) {
-                        keychainCleared = false;
-                        logger.warn(LogCategory.AUTH, 'Dev wipe: clearKnownCredentialIds threw', {
-                          error: e instanceof Error ? e.message : String(e),
-                        });
-                      }
-                      localStorage.removeItem('passkeyRegistered');
-                      localStorage.removeItem('passkeyKnownCredentials');
-                      logger.warn(LogCategory.AUTH, 'Dev: full passkey state wipe');
-                      if (keychainCleared) {
-                        showToast(
-                          'success',
-                          'Passkey state wiped',
-                          isNativePlatform()
-                            ? 'Local flag + iCloud-synced credential IDs cleared.'
-                            : 'Local flag + tracked credential IDs cleared.',
-                        );
-                      } else {
-                        showToast('error', 'Partial wipe', 'Local cleared but plugin keychain clear failed; check logs.');
-                      }
-                    }}
-                    className="w-full bg-spark-surface border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary text-sm hover:border-spark-border-light transition-colors text-left"
-                  >
-                    <span className="font-medium block">Wipe all passkey state</span>
-                    <span className="text-spark-text-muted text-xs">
-                      {isNativePlatform()
-                        ? "Clears local flag AND the plugin's iCloud-synced credential-IDs entry. Pair with a Settings -> Passwords delete for a true zero state."
-                        : 'Clears local flag AND localStorage credential-IDs registry. Pair with a browser-level passkey delete (Chrome / Safari Passwords) for a true zero state.'}
-                    </span>
-                  </button>
-                </div>
+                ))}
               </div>
+              <p className="text-xs text-spark-text-muted mt-2">
+                Changing network will reload the app and reconnect.
+              </p>
+            </div>
+          )}
 
-            </>
+          {/* Privacy */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="font-display font-semibold text-spark-text-primary">Privacy</h3>
+                {isLoadingUserSettings && <LoadingSpinner size="small" />}
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <span className="font-display font-medium text-spark-text-primary block">Private Mode</span>
+                  <span className="text-sm text-spark-text-muted">Hide your address from public explorers (not suitable for zaps)</span>
+                </div>
+                <Switch
+                  checked={sparkPrivateModeEnabled}
+                  onChange={() => setSparkPrivateModeEnabled(!sparkPrivateModeEnabled)}
+                  disabled={isLoadingUserSettings}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Prefer Spark */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <span className="font-display font-medium text-spark-text-primary block">Prefer Spark</span>
+                  <span className="text-sm text-spark-text-muted">Use Spark address over Lightning invoice when available</span>
+                </div>
+                <Switch
+                  checked={preferSparkOverLightning}
+                  onChange={() => setPreferSparkOverLightning(!preferSparkOverLightning)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Deposit Claim Fee */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Deposit Claim Fee</h3>
+              <FormGroup>
+                <div className="flex gap-2 items-center">
+                  <select
+                    value={feeType}
+                    onChange={(e) => setFeeType(e.currentTarget.value as 'fixed' | 'rate' | 'networkRecommended')}
+                    className="min-w-[160px] bg-spark-surface border border-spark-border rounded-xl px-3 py-3 text-spark-text-primary text-sm focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20"
+                    aria-label="Max fee type"
+                  >
+                    <option className="bg-spark-surface" value="fixed">Fixed (sats)</option>
+                    <option className="bg-spark-surface" value="rate">Rate (sat/vB)</option>
+                    <option className="bg-spark-surface" value="networkRecommended">Network + leeway</option>
+                  </select>
+                  <div className="flex-1">
+                    <FormInput
+                      id="deposit-fee-default"
+                      type="number"
+                      min={0}
+                      value={feeValue}
+                      onChange={(e) => setFeeValue(e.target.value)}
+                      placeholder={feeType === 'fixed' ? 'sats' : 'sat/vB'}
+                    />
+                  </div>
+                </div>
+              </FormGroup>
+            </div>
+          )}
+
+          {/* Sync Settings */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Sync Settings</h3>
+              <FormGroup>
+                <label htmlFor="sync-interval" className="block text-sm text-spark-text-secondary mb-1">
+                  Sync interval (seconds)
+                </label>
+                <FormInput
+                  id="sync-interval"
+                  type="number"
+                  min={0}
+                  value={syncIntervalSecs}
+                  onChange={(e) => setSyncIntervalSecs(e.target.value)}
+                  placeholder="e.g. 30"
+                />
+              </FormGroup>
+            </div>
+          )}
+
+          {/* LNURL */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <h3 className="font-display font-semibold text-spark-text-primary mb-3">LNURL</h3>
+              <FormGroup>
+                <label htmlFor="lnurl-domain" className="block text-sm text-spark-text-secondary mb-1">
+                  Custom domain
+                </label>
+                <FormInput
+                  id="lnurl-domain"
+                  type="text"
+                  value={lnurlDomain}
+                  onChange={(e) => setLnurlDomain(e.target.value)}
+                  placeholder="example.com"
+                />
+              </FormGroup>
+            </div>
           )}
 
           {/* Version / Dev Mode Toggle */}

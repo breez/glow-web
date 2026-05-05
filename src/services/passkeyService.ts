@@ -21,6 +21,14 @@ const PASSKEY_REGISTERED_KEY = 'passkeyRegistered';
 // platform refuses to register a duplicate even if PASSKEY_REGISTERED
 // was wiped (defense-in-depth: protects against localStorage clears).
 const KNOWN_CREDENTIALS_KEY = 'passkeyKnownCredentials';
+// Per-device timestamps. WebAuthn doesn't expose creation / last-use
+// dates, so we record them locally on each successful PRF ceremony.
+const PASSKEY_FIRST_SEEN_KEY = 'passkeyFirstSeenAt';
+const PASSKEY_LAST_SEEN_KEY = 'passkeyLastSeenAt';
+// Per-label last-used timestamps. Recorded each time a label is loaded
+// into the active wallet (initial connect or switchPasskeyLabel) so the
+// Labels page can surface a relative "last used" hint per row.
+const PASSKEY_LABEL_LAST_USED_PREFIX = 'passkeyLabelLastUsed:';
 
 let cachedPasskey: Passkey | null = null;
 
@@ -61,7 +69,62 @@ export async function createPasskey(): Promise<void> {
   const credentialId = await passkeyPrfProvider.createPasskey({ excludeCredentialIds });
   if (credentialId) addKnownCredentialIdLocal(credentialId);
   localStorage.setItem(PASSKEY_REGISTERED_KEY, '1');
+  markPasskeyUsed();
   logger.info(LogCategory.AUTH, 'Passkey created successfully');
+}
+
+/**
+ * Stamp first-seen (set once) and last-seen (always) for the passkey.
+ * Call after any successful PRF ceremony.
+ */
+export function markPasskeyUsed(): void {
+  const now = String(Date.now());
+  if (!localStorage.getItem(PASSKEY_FIRST_SEEN_KEY)) {
+    localStorage.setItem(PASSKEY_FIRST_SEEN_KEY, now);
+  }
+  localStorage.setItem(PASSKEY_LAST_SEEN_KEY, now);
+}
+
+export function getPasskeyMeta(): { firstSeenAt?: number; lastSeenAt?: number } {
+  const first = localStorage.getItem(PASSKEY_FIRST_SEEN_KEY);
+  const last = localStorage.getItem(PASSKEY_LAST_SEEN_KEY);
+  return {
+    firstSeenAt: first ? Number(first) : undefined,
+    lastSeenAt: last ? Number(last) : undefined,
+  };
+}
+
+/**
+ * Stamp last-used for a specific label. Called from the wallet hook
+ * whenever a label is brought online (initial connect or switch), so
+ * the Labels page can render a "last used" hint per row.
+ */
+export function markLabelUsed(label: string): void {
+  localStorage.setItem(`${PASSKEY_LABEL_LAST_USED_PREFIX}${label}`, String(Date.now()));
+}
+
+/**
+ * Read the last-used timestamp for a label. Returns undefined when the
+ * label has never been activated on this device.
+ */
+export function getLabelLastUsed(label: string): number | undefined {
+  const raw = localStorage.getItem(`${PASSKEY_LABEL_LAST_USED_PREFIX}${label}`);
+  if (raw === null) return undefined;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+/**
+ * Wipe every per-label last-used entry. Used by the wipe / forget
+ * surfaces in PasskeyLocalStatePage and by the deletion-recovery flow
+ * when the passkey itself is being torn down.
+ */
+export function clearAllLabelLastUsed(): void {
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith(PASSKEY_LABEL_LAST_USED_PREFIX)) {
+      localStorage.removeItem(key);
+    }
+  }
 }
 
 /**
@@ -119,6 +182,9 @@ export async function clearPasskeyHistory(): Promise<void> {
   }
   localStorage.removeItem(PASSKEY_REGISTERED_KEY);
   localStorage.removeItem(KNOWN_CREDENTIALS_KEY);
+  localStorage.removeItem(PASSKEY_FIRST_SEEN_KEY);
+  localStorage.removeItem(PASSKEY_LAST_SEEN_KEY);
+  clearAllLabelLastUsed();
   invalidatePasskey();
 }
 
@@ -207,6 +273,7 @@ export async function getWallet(label?: string): Promise<Wallet> {
   try {
     const wallet = await passkey.getWallet(effectiveLabel);
     logger.info(LogCategory.AUTH, 'Passkey wallet derived successfully');
+    markPasskeyUsed();
     return wallet;
   } catch (e) {
     logger.error(LogCategory.AUTH, 'Failed to derive passkey wallet', {

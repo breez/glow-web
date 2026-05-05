@@ -22,6 +22,10 @@ import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import BuyProvidersPage from './pages/BuyProvidersPage';
 import UnlockPage from './pages/UnlockPage';
 import UnlockingPage from './pages/UnlockingPage';
+import PasskeySettingsPage from './pages/PasskeySettingsPage';
+import PasskeyManagementPage from './pages/PasskeyManagementPage';
+import LabelsPage from './pages/LabelsPage';
+import PasskeyLocalStatePage from './pages/PasskeyLocalStatePage';
 import { ContactsProvider } from './contexts/ContactsContext';
 
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
@@ -30,7 +34,7 @@ import { STATUS_BAR_LOADING } from './utils/statusBarManager';
 import { useBackButton } from './hooks/useBackButton';
 import type { Seed, Payment } from '@breeztech/breez-sdk-spark';
 
-type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'passkeyCreate' | 'unlock' | 'unlocking';
+type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'passkeyCreate' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState';
 
 // Full-screen dim spinner shown while sdk.isLoading is true (logout in
 // progress, SDK reconnect, etc). Wrapped as its own component so the
@@ -134,7 +138,13 @@ const AppContent: React.FC = () => {
         setUserScreen('wallet');
         return true;
       case 'fiatCurrencies':
+      case 'passkeySettings':
         setUserScreen('settings');
+        return true;
+      case 'passkeyManagement':
+      case 'labels':
+      case 'passkeyLocalState':
+        setUserScreen('passkeySettings');
         return true;
       case 'buyProviders':
         setUserScreen(buyProvidersSource === 'settings' ? 'settings' : 'wallet');
@@ -255,6 +265,18 @@ const AppContent: React.FC = () => {
         config={sdk.config}
         onOpenFiatCurrencies={() => setUserScreen('fiatCurrencies')}
         onOpenBuyProviders={() => { setBuyProvidersSource('settings'); setUserScreen('buyProviders'); }}
+        onOpenPasskeySettings={() => setUserScreen('passkeySettings')}
+      />
+    );
+
+    // Backdrop beneath the three sub-pages so their close animations
+    // reveal the hub rather than skipping back to Settings.
+    const renderPasskeySettingsPage = () => (
+      <PasskeySettingsPage
+        onBack={() => setUserScreen('settings')}
+        onOpenPasskey={() => setUserScreen('passkeyManagement')}
+        onOpenLabels={() => setUserScreen('labels')}
+        onOpenLocalState={() => setUserScreen('passkeyLocalState')}
       />
     );
 
@@ -346,6 +368,51 @@ const AppContent: React.FC = () => {
             {renderWalletPage()}
             {renderSettingsPage()}
             <FiatCurrenciesPage onBack={() => setUserScreen('settings')} />
+          </>
+        );
+
+      case 'passkeySettings':
+        return (
+          <>
+            {renderWalletPage()}
+            {renderSettingsPage()}
+            {renderPasskeySettingsPage()}
+          </>
+        );
+
+      case 'passkeyManagement':
+        return (
+          <>
+            {renderWalletPage()}
+            {renderSettingsPage()}
+            {renderPasskeySettingsPage()}
+            <PasskeyManagementPage onBack={() => setUserScreen('passkeySettings')} />
+          </>
+        );
+
+      case 'labels':
+        return (
+          <>
+            {renderWalletPage()}
+            {renderSettingsPage()}
+            {renderPasskeySettingsPage()}
+            <LabelsPage
+              onBack={() => setUserScreen('passkeySettings')}
+              onSwitchLabel={async (label) => {
+                await sdk.switchPasskeyLabel(label);
+                setUserScreen('wallet');
+              }}
+            />
+          </>
+        );
+
+      case 'passkeyLocalState':
+        return (
+          <>
+            {renderWalletPage()}
+            {renderSettingsPage()}
+            {renderPasskeySettingsPage()}
+            <PasskeyLocalStatePage onBack={() => setUserScreen('passkeySettings')} />
           </>
         );
 

@@ -121,6 +121,45 @@ const result = await wallet.newSdkMethod({ param: value });
 4. Pass prop through WalletPage to SideMenu
 5. Add screen type and case in `src/App.tsx`
 
+### Adding Passkey & Labels items
+
+The Settings → Passkey entry opens the **Passkey & Labels** hub at `src/pages/PasskeySettingsPage.tsx`. The hub has three sub-pages:
+
+- Passkey: `src/pages/PasskeyManagementPage.tsx`
+- Labels: `src/pages/LabelsPage.tsx`
+- Local State: `src/pages/PasskeyLocalStatePage.tsx`
+
+**Screen wiring (in `src/App.tsx`):**
+The screen types `'passkeySettings'`, `'passkeyManagement'`, `'labels'`, and `'passkeyLocalState'` each layer on top of `renderSettingsPage()` + `renderPasskeySettingsPage()` so the back stack stays consistent.
+
+**Adding a new sub-page to the hub:**
+1. Create the page under `src/pages/`
+2. Register a row inside `PasskeySettingsPage.tsx` that navigates to the new screen
+3. Add a screen type string in `src/App.tsx` and a case that renders the new page on top of `renderPasskeySettingsPage()`
+
+**Dev gating:**
+The Settings entry is gated behind `isDevMode` (toggled via `useSecretTap`). Keep new hub items dev-only until they are ready for production.
+
+**Switching active passkey label:**
+Use `sdk.switchPasskeyLabel(label)` from `useBreezSdk` to switch the active label without bouncing through the home page. This triggers a fresh PRF prompt and reconnects the SDK with the new label.
+
+```tsx
+const { sdk } = useBreezSdk();
+await sdk.switchPasskeyLabel(nextLabel);
+```
+
+### Passkey Metadata
+
+Per-device passkey metadata lives in `src/services/passkeyService.ts` and is persisted in `localStorage`:
+
+- `passkeyRegistered`: whether a passkey has been registered on this device
+- `passkeyKnownCredentials`: known credential IDs for this device
+- `passkeyLabel`: active label for the current passkey
+- `passkeyFirstSeenAt`: timestamp of the first successful PRF ceremony
+- `passkeyLastSeenAt`: timestamp of the most recent successful PRF ceremony
+
+Call `markPasskeyUsed()` after any successful PRF ceremony to update `passkeyLastSeenAt` (and seed `passkeyFirstSeenAt` on first use).
+
 ### Build Notes
 - `npm run dev` works with npm-linked SDK packages
 - `npm run build` may fail with linked packages (vite polyfill resolution)
