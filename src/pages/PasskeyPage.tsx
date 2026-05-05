@@ -444,11 +444,9 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           // Reset detect-fail counter so the upcoming sign-in attempt
           // gets the fresh-install retry budget if applicable.
           detectingFailCountRef.current = 0;
-          // Skip aasa-checking: it was already verified earlier in
-          // this session and re-running it would bounce through the
-          // skipDetection -> creating path, re-firing createPasskey()
-          // and putting the user right back on the create flow they
-          // just came from.
+          // Skip aasa-checking. Re-running it under skipDetection=true
+          // would route through 'creating' and re-fire createPasskey(),
+          // bouncing the user back to the flow they just came from.
           setPhase('detecting');
           return;
         }
@@ -902,14 +900,9 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             // Reset detect-fail counter so this entry into detecting
             // gets the fresh-install retry budget if applicable.
             detectingFailCountRef.current = 0;
-            // Route DIRECTLY to detecting, skipping aasa-checking.
-            // We're entering this branch from a `passkeyCreate` route
-            // (skipDetection=true), and the aasa-checking effect's
-            // post-success transition reads skipDetection and routes
-            // to 'creating', which would re-fire createPasskey() and
-            // bounce the user right back to the create flow. AASA was
-            // already verified earlier in this session, so re-running
-            // it is redundant anyway.
+            // Skip aasa-checking. Under skipDetection=true it would
+            // route to 'creating' and re-fire createPasskey(), bouncing
+            // the user back to the flow they just came from.
             setPhase('detecting');
           }}>
             Use Passkey

@@ -1,18 +1,10 @@
 /**
  * Passkey Service.
  *
- * Wraps the Breez SDK's Passkey class to provide passkey-based wallet
- * creation and restoration functionality.
- *
- * Uses a module-level singleton Passkey instance so the SDK's internal
- * `nostr_keys: OnceCell` cache survives across calls. With the prior
- * "fresh instance per operation" pattern, every call to `saveLabel` /
- * `listLabels` re-derived the Nostr identity from scratch, firing a
- * fresh PRF prompt. The singleton lets the SDK reuse a cached identity
- * after the first successful derivation in a given session.
- *
- * The singleton must be invalidated whenever the underlying credential
- * or relay configuration changes (logout, RP switch, deletion-recovery).
+ * Wraps the Breez SDK's Passkey class. Holds a module-level singleton
+ * so the SDK's internal Nostr-identity cache survives across calls
+ * (otherwise `saveLabel`/`listLabels` would re-prompt for PRF each time).
+ * Invalidate the singleton when the credential or relay config changes.
  */
 
 import { Passkey, Wallet, NostrRelayConfig } from '@breeztech/breez-sdk-spark';
@@ -32,17 +24,6 @@ const KNOWN_CREDENTIALS_KEY = 'passkeyKnownCredentials';
 
 let cachedPasskey: Passkey | null = null;
 
-/**
- * Lazy singleton accessor for the SDK Passkey instance.
- *
- * The SDK keeps an internal `OnceCell` for the derived Nostr identity;
- * reusing the same instance across calls preserves that cache and
- * prevents redundant PRF prompts on follow-up Nostr operations
- * (`saveLabel`, `listLabels`) within the same session. The wallet seed
- * (`getWallet`) uses a different salt and still requires its own PRF
- * call. Tier 2 of the passkey UX overhaul collapses both into a single
- * assertion via dual-salt PRF.
- */
 function getPasskey(): Passkey {
   if (cachedPasskey !== null) return cachedPasskey;
   const breezApiKey = import.meta.env.VITE_BREEZ_API_KEY;
@@ -53,12 +34,6 @@ function getPasskey(): Passkey {
   return cachedPasskey;
 }
 
-/**
- * Discard the cached Passkey instance. Called whenever the underlying
- * credential or relay configuration changes (logout, deletion-recovery,
- * future RP switch). Forces the next call to construct a fresh instance
- * with an empty Nostr-identity cache.
- */
 function invalidatePasskey(): void {
   cachedPasskey = null;
 }
@@ -144,10 +119,6 @@ export async function clearPasskeyHistory(): Promise<void> {
   }
   localStorage.removeItem(PASSKEY_REGISTERED_KEY);
   localStorage.removeItem(KNOWN_CREDENTIALS_KEY);
-  // The cached Nostr identity is keyed off the now-deleted passkey;
-  // reusing it after the next create would still derive against the
-  // previous PRF output (whatever the SDK happened to keep in the
-  // OnceCell). Drop the singleton so the next call rebuilds.
   invalidatePasskey();
 }
 
@@ -186,12 +157,6 @@ export function setPasskeyMode(label?: string): void {
  * Clear passkey mode.
  * Does NOT clear the persistent "passkey registered" flag: the passkey
  * still exists on the device and should be reused on next login.
- *
- * Invalidates the cached Passkey instance so the next sign-in starts
- * from a clean SDK state. The user could log in with a different label
- * after logout and the cached Nostr identity (tied to the same RP, but
- * potentially derived under a different account context) should not
- * leak across sessions.
  */
 export function clearPasskeyMode(): void {
   localStorage.removeItem(PASSKEY_LABEL_KEY);

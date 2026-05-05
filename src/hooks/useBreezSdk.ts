@@ -448,14 +448,9 @@ export function useBreezSdk(
       // is emitted by the storage layer, so we don't double-log here.
       if (source !== 'secureStorage') {
         if (passkeyLabel != null && secureStorage.isSupported()) {
-          // F3 storeSeed may or may not surface a BiometricPrompt.
-          // If the platform grace period covers it (the common case
-          // when onboarding chains right after a passkey ceremony),
-          // the call returns in tens of milliseconds. Defer the label
-          // flip so the silent path never reads "Setting up biometric
-          // unlock…" at all; only when storeSeed is still in flight
-          // past 250ms (i.e. a prompt is actually visible) does the
-          // label change to provide context.
+          // Only flip the label if storeSeed actually prompts. The
+          // platform grace period often returns within 250ms, in which
+          // case we never show "Setting up biometric unlock…".
           const labelDeferMs = 250;
           let flipped = false;
           const flipTimer = setTimeout(() => {
