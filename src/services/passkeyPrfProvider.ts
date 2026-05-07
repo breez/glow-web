@@ -32,6 +32,7 @@ import { logger, LogCategory } from './logger';
 import {
   markCredentialUsed,
   setCredentialUserName,
+  getCredentialUserName,
 } from './passkeyMetadata';
 
 export type { DomainAssociation } from './nativePasskeyPrfProvider';
@@ -51,11 +52,6 @@ const PASSKEY_KNOWN_CREDENTIALS_KEY = 'passkeyKnownCredentials';
 // Pathological cases (test loops, runaway code paths) get an LRU drop
 // instead of unbounded growth.
 const KNOWN_CREDENTIALS_MAX = 32;
-
-// Marker set: credentials we've already given a custom user.name to
-// (either at create or via signalRename). Gates re-rename since
-// WebAuthn doesn't expose the stored user.name on assertion.
-const PASSKEY_CUSTOM_NAMED_KEY = 'passkeyCustomNamedCredentials';
 
 // The credentialId of the most recent successful sign-in. Used to
 // constrain follow-up sign-in derives (listLabels, saveLabel, label
@@ -85,32 +81,6 @@ function addKnownLocal(credentialIdBase64: string): void {
   // LRU drop: oldest entries leave first when we exceed the cap.
   while (next.length > KNOWN_CREDENTIALS_MAX) next.shift();
   localStorage.setItem(PASSKEY_KNOWN_CREDENTIALS_KEY, JSON.stringify(next));
-}
-
-function getCustomNamedLocal(): string[] {
-  try {
-    const raw = localStorage.getItem(PASSKEY_CUSTOM_NAMED_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? parsed.filter((x): x is string => typeof x === 'string')
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function addCustomNamedLocal(credentialIdBase64: string): void {
-  const existing = getCustomNamedLocal();
-  if (existing.includes(credentialIdBase64)) return;
-  try {
-    localStorage.setItem(
-      PASSKEY_CUSTOM_NAMED_KEY,
-      JSON.stringify([...existing, credentialIdBase64]),
-    );
-  } catch {
-    // Best-effort; signalRename is idempotent across the timestamp shape.
-  }
 }
 
 function getActiveCredId(): string | null {
@@ -211,38 +181,17 @@ function createTimestampLabel(): string {
 
 /**
  * Best-effort retroactive rename via WebAuthn L3
- * `PublicKeyCredential.signalCurrentUserDetails`. Pushes a per-credential
- * label (`Glow · <ISO timestamp>`) to the authenticator so legacy
- * passkeys that all share `user.name = "Glow"` (and therefore collapse
- * into a single row in Apple Passwords / similar pickers) become
- * individually identifiable in the OS-level passkey settings and the
- * next sign-in picker. The timestamp on a renamed legacy credential
- * is the (first) sign-in time on this device, not the original create
- * time — we don't have a way to recover the original create time
- * post-hoc.
+ * `PublicKeyCredential.signalCurrentUserDetails`. Pushes `Glow · <ISO
+ * timestamp>` to legacy passkeys whose `user.name = "Glow"` collapses
+ * them into a single picker row, so each becomes individually
+ * identifiable in OS settings and the sign-in picker.
  *
- * No-op when:
- * - The browser doesn't expose `signalCurrentUserDetails` (Safari < 18,
- *   Firefox, Chrome < 132 without the flag).
- * - The credential doesn't exist on this device for the given rpId
- *   (signal API throws; we swallow).
- * - userHandle is null (rare; the credential isn't discoverable).
- *
- * Idempotent — calling with the same name on the same credential is
- * a no-op at the platform level. Safe to invoke on every sign-in.
- *
- * Does NOT update Glow's local user.name cache. The Web's
- * `signalCurrentUserDetails` resolves successfully even on browsers
- * (or platform / passkey-provider combinations) that don't actually
- * propagate the rename to the underlying credential record, so we
- * can't use the call's resolution as evidence the platform-side
- * label is now `label`. Caching the would-be label would make Glow's
- * management list claim a name the user can't see in their OS
- * Settings or password manager. The local cache is owned by
- * `captureAssertion`, which only writes a fallback when nothing
- * was previously known — that value is consistent with what we
- * actually did write at create time, never with a label only this
- * call attempted.
+ * Idempotent: the cached `user.name` (`getCredentialUserName`) is the
+ * source of truth. First call for a cred mints a timestamp and caches
+ * it; later calls re-push the identical string and the platform
+ * no-ops. If something reverts the platform-side label, the next
+ * sign-in's cached re-push reapplies it. No-op when the browser lacks
+ * `signalCurrentUserDetails` (e.g. older iOS WebKit).
  */
 async function signalRename(
   rpId: string,
@@ -260,26 +209,35 @@ async function signalRename(
 
   if (typeof signal !== 'function') return;
 
-  // Skip credentials we've already named (created or previously
-  // renamed) to avoid drifting their label on every sign-in.
   const credIdB64 = bytesToBase64(credentialId);
-  if (getCustomNamedLocal().includes(credIdB64)) return;
+  let label = getCredentialUserName(credIdB64);
+  const minted = !label;
+  if (!label) label = `Glow · ${createTimestampLabel()}`;
 
   try {
-    const label = `Glow · ${createTimestampLabel()}`;
     await signal.call(PublicKeyCredential, {
       rpId,
       userId: bytesToBase64Url(userHandle),
       name: label,
       displayName: label,
     });
-    addCustomNamedLocal(credIdB64);
+    // Cache only after resolve so a throw (e.g. cred not on this
+    // device) doesn't leave a phantom label.
+    if (minted) setCredentialUserName(credIdB64, label);
     logger.info(LogCategory.AUTH, 'Passkey rename signaled');
   } catch (e) {
     logger.warn(LogCategory.AUTH, 'signalCurrentUserDetails failed', {
       error: e instanceof Error ? e.message : String(e),
     });
   }
+}
+
+// Migration: drop the legacy marker. signalRename now keys on the
+// per-cred user.name cache instead.
+try {
+  localStorage.removeItem('passkeyCustomNamedCredentials');
+} catch {
+  // Best-effort.
 }
 
 // ============================================
@@ -483,13 +441,9 @@ class AppPasskeyPrfProvider implements PrfProvider {
         browser.currentSignal = undefined;
       }
     }
-    // Mark so signalRename leaves this cred's label alone.
-    addCustomNamedLocal(credentialId);
-    // Cache the label we set so PasskeyManagementPage can render it
-    // in place of the generic "Passkey" fallback when no AAGUID is
-    // available (which happens for synced creds we never created
-    // locally — those don't run this path, so they stay unnamed
-    // until the first signalRename succeeds).
+    // Cache the label so PasskeyManagementPage renders it (instead
+    // of the generic "Passkey" fallback) and signalRename re-pushes
+    // the same string on later sign-ins.
     setCredentialUserName(credentialId, label);
     // Pin the immediate next derive (setupWallet's bulk PRF) to this
     // cred so the OS picker auto-resolves on Android instead of
