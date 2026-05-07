@@ -762,8 +762,21 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         // dedicated "passkey already exists" state with a clear
         // "Use Passkey" CTA so the next biometric prompt is one the
         // user explicitly opted into.
-        if (e instanceof PasskeyAlreadyExistsError) {
-          logger.info(LogCategory.AUTH, 'Create flow detected existing passkey, surfacing already-exists state');
+        const errMsg = e instanceof Error ? e.message : String(e);
+        // Android Chrome's Credential Manager swallows InvalidStateError
+        // into "An unknown error occurred while talking to the credential
+        // manager", so the SDK never sees a typed DOMException to map to
+        // PasskeyAlreadyExistsError. Heuristic-recover when we know the
+        // device has registered creds.
+        const knownCreds = localStorage.getItem('passkeyKnownCredentials');
+        const hasKnownCreds = !!knownCreds && knownCreds !== '[]';
+        const looksLikeAndroidDupRefusal = !isNativePlatform()
+          && /credential manager/i.test(errMsg)
+          && hasKnownCreds;
+        if (e instanceof PasskeyAlreadyExistsError || looksLikeAndroidDupRefusal) {
+          logger.info(LogCategory.AUTH, 'Create flow detected existing passkey, surfacing already-exists state', {
+            heuristic: !(e instanceof PasskeyAlreadyExistsError),
+          });
           // Restore the persistent flag so HomePage and the rest of
           // the app treat this as a returning-user session.
           localStorage.setItem('passkeyRegistered', '1');
@@ -782,16 +795,15 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         // whether they cancelled, the entitlement is wrong, the AASA
         // CDN is stale, the existing keychain blocked them, etc.
         const code = (e as { code?: string })?.code;
-        const msg = e instanceof Error ? e.message : String(e);
         setError(
           code
-            ? `Failed to create passkey [${code}]: ${msg}`
-            : `Failed to create passkey: ${msg}`,
+            ? `Failed to create passkey [${code}]: ${errMsg}`
+            : `Failed to create passkey: ${errMsg}`,
         );
         setErrorKind('generic');
         logger.error(LogCategory.AUTH, 'Passkey creation failed', {
           errorCode: code,
-          error: msg,
+          error: errMsg,
         });
       }
     };

@@ -174,6 +174,21 @@ export function isMobileBrowser(): boolean {
   return /Android|iPhone|iPad|iPod|Mobi/i.test(ua);
 }
 
+// All iOS browsers share WebKit, where signalCurrentUserDetails has been
+// observed to (a) fire spurious "Passkey Updated" notifications on
+// Apple Passwords and (b) cause GPM (via the AutoFill credential
+// provider extension) to materialize a duplicate credential instead of
+// updating in place. Until WebKit / iOS fix these, signalRename skips
+// iOS entirely.
+function isIos(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  if (/iPhone|iPad|iPod/i.test(ua)) return true;
+  // iPadOS 13+ reports a Mac UA but exposes touch points.
+  if (/Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1) return true;
+  return false;
+}
+
 /** Local-time, second precision, ASCII-only, e.g. `May 6, 2026 21:14:56`. */
 function createTimestampLabel(): string {
   const d = new Date();
@@ -216,6 +231,7 @@ async function signalRename(
   }).signalCurrentUserDetails;
 
   if (typeof signal !== 'function') return;
+  if (isIos()) return;
 
   const credIdB64 = bytesToBase64(credentialId);
   let label = getCredentialUserName(credIdB64);
