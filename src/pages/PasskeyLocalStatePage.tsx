@@ -8,6 +8,7 @@ import {
   clearAllLabelLastUsed,
   clearAllCredentialMeta,
   clearAllHiddenCredentials,
+  clearAllCredentialAaguids,
 } from '../services/passkeyService';
 import { useToast } from '@/contexts/ToastContext';
 import { logger, LogCategory } from '@/services/logger';
@@ -16,14 +17,16 @@ interface PasskeyLocalStatePageProps {
   onBack: () => void;
   /**
    * Called after a successful Forget / Wipe so the host can route the
-   * user out of the settings stack — typically to home via logout, so
+   * user out of the settings stack, typically to home via logout, so
    * the dev doesn't have to walk back through Settings → Passkey &
-   * Labels → Wallet manually after every wipe.
+   * Labels → Wallet manually after every wipe. Not invoked by the
+   * narrower Clear provider info path because that operation doesn't
+   * affect home-page routing state.
    */
   onCompleted: () => void;
 }
 
-type ConfirmKind = 'forget' | 'wipe' | null;
+type ConfirmKind = 'forget' | 'wipe' | 'aaguids' | null;
 
 // `passkeyHome` is where the OS keeps the passkey itself. `systemDelete`
 // is the surface users navigate to remove it. The credential IDs Glow
@@ -101,10 +104,11 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack, o
     // AAGUIDs intentionally kept: they're only captured at create
     // time and not recoverable on sign-in. Wiping them would lose
     // provider name/icon for any credential that still exists on the
-    // device (or in iCloud Keychain / Block Store).
+    // device (or in iCloud Keychain / Block Store). The narrower
+    // Clear provider info option below targets that case explicitly.
     logger.warn(LogCategory.AUTH, 'User performed full passkey state wipe (kept AAGUIDs)');
     if (keychainCleared) {
-      showToast('success', 'Passkey state wiped');
+      showToast('success', 'Tracked passkeys wiped');
     } else {
       showToast('error', 'Partial wipe', 'Tracked passkey IDs clear failed; check logs.');
     }
@@ -113,9 +117,22 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack, o
     onCompleted();
   };
 
+  const handleClearAaguids = () => {
+    // Drops every per-credential AAGUID + backupEligible entry.
+    // Per-cred metadata, the credential-IDs registry, and the welcome
+    // marker stay, so no sign-out is needed: only the management
+    // page display surface changes (provider becomes a generic
+    // 'Passkey' label until each credential is re-created).
+    clearAllCredentialAaguids();
+    logger.warn(LogCategory.AUTH, 'User cleared provider info (AAGUID + BE)');
+    showToast('success', 'Provider info cleared');
+    setConfirm(null);
+  };
+
   const items: Array<{ kind: ConfirmKind; title: string }> = [
     { kind: 'forget', title: 'Forget history' },
-    { kind: 'wipe', title: 'Wipe all state' },
+    { kind: 'wipe', title: 'Wipe tracked passkeys' },
+    { kind: 'aaguids', title: 'Clear provider info' },
   ];
 
   return (
@@ -141,7 +158,7 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack, o
       <ConfirmDialog
         isOpen={confirm === 'forget'}
         title="Forget history?"
-        message="Glow returns to the new-user welcome screen on next launch. Your passkey is untouched — trying to create a new one will still be refused as a duplicate by the OS."
+        message="Glow signs you out and shows the new-user welcome screen. Tracked credential IDs and provider info are kept, so trying to create a new passkey is still refused by the OS as a duplicate."
         confirmLabel="Forget"
         cancelLabel="Cancel"
         variant="warning"
@@ -151,12 +168,23 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack, o
 
       <ConfirmDialog
         isOpen={confirm === 'wipe'}
-        title="Wipe all state?"
-        message={`Glow forgets the welcome-screen marker and the passkey IDs it tracks on this device, so you can register a new passkey afterward. Your existing passkey stays in ${copy.passkeyHome} until you delete it from ${copy.systemDelete}.`}
+        title="Wipe tracked passkeys?"
+        message={`Glow signs you out and forgets the credential IDs it tracks on this device, the active selection, per-credential metadata, and the welcome-screen marker. Provider info (AAGUIDs) is kept. Your actual passkeys stay in ${copy.passkeyHome} until you remove them from ${copy.systemDelete}.`}
         confirmLabel={isWorking ? 'Working…' : 'Wipe'}
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={handleWipe}
+        onCancel={() => setConfirm(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={confirm === 'aaguids'}
+        title="Clear provider info?"
+        message='Glow forgets the provider name (AAGUID) and sync indicator for every known passkey. Sync indicator recovers on next sign-in. Provider name is captured at create time only, so existing passkeys will show "Passkey" on the management page until re-created.'
+        confirmLabel="Clear"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleClearAaguids}
         onCancel={() => setConfirm(null)}
       />
     </SlideInPage>
