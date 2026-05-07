@@ -4,7 +4,7 @@ import SlideInPage from '../components/layout/SlideInPage';
 import { ConfirmDialog } from '../components/ui';
 import { TrashIcon } from '../components/Icons';
 import { passkeyPrfProvider } from '../services/passkeyPrfProvider';
-import { clearAllLabelLastUsed } from '../services/passkeyService';
+import { clearAllCredentialAaguids, clearAllLabelLastUsed } from '../services/passkeyService';
 import { useToast } from '@/contexts/ToastContext';
 import { logger, LogCategory } from '@/services/logger';
 
@@ -58,6 +58,7 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack })
     localStorage.removeItem('passkeyFirstSeenAt');
     localStorage.removeItem('passkeyLastSeenAt');
     clearAllLabelLastUsed();
+    clearAllCredentialAaguids();
     logger.warn(LogCategory.AUTH, 'User cleared passkey history (kept credential IDs)');
     showToast('success', 'Passkey history cleared', 'Restart the app to see "Get Started".');
     setConfirm(null);
@@ -79,6 +80,7 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack })
     localStorage.removeItem('passkeyFirstSeenAt');
     localStorage.removeItem('passkeyLastSeenAt');
     clearAllLabelLastUsed();
+    clearAllCredentialAaguids();
     logger.warn(LogCategory.AUTH, 'User performed full passkey state wipe');
     if (keychainCleared) {
       showToast('success', 'Passkey state wiped', 'Local flag and tracked passkey IDs cleared.');

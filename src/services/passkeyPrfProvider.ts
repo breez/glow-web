@@ -159,35 +159,38 @@ class AppPasskeyPrfProvider implements PrfProvider {
   }
 
   /**
-   * Create a new passkey with PRF support.
+   * Create a new passkey. Returns credential ID + AAGUID + BE flag.
+   * AAGUID and backupEligible are null on the native path until the
+   * Capacitor plugin starts surfacing them.
    *
-   * @param options.excludeCredentialIds list of base64 credential IDs
-   *        the platform should refuse to duplicate. Pass every previously
-   *        registered ID to enforce one-passkey-per-device-per-RP.
-   * @returns base64-encoded credential ID of the newly created passkey.
    * @throws PasskeyAlreadyExistsError when excludeCredentialIds blocks.
    */
   async createPasskey(
     options: { excludeCredentialIds?: string[] } = {},
-  ): Promise<string> {
+  ): Promise<{ credentialId: string; aaguid: string | null; backupEligible: boolean | null }> {
     logger.info(LogCategory.AUTH, 'Creating new passkey', {
       excludeCount: options.excludeCredentialIds?.length ?? 0,
     });
 
     let credentialId: string;
+    let aaguid: string | null = null;
+    let backupEligible: boolean | null = null;
+
     if (native) {
       credentialId = await (sdkProvider as NativePasskeyPrfProvider).createPasskey(options);
     } else {
-      // Browser: SDK's createPasskey takes Uint8Array[] and returns
-      // Uint8Array. Convert at the boundary so the host-side registry
-      // can stay on stable base64 strings.
       const excludeBytes = (options.excludeCredentialIds ?? []).map(base64ToBytes);
       const browser = sdkProvider as SdkBrowserPasskeyProvider;
-      const idBytes = await browser.createPasskey(excludeBytes);
-      credentialId = bytesToBase64(idBytes);
+      const result = await browser.createPasskey(excludeBytes);
+      credentialId = bytesToBase64(result.credentialId);
+      aaguid = result.aaguid ? bytesToBase64(result.aaguid) : null;
+      backupEligible = result.backupEligible;
     }
-    logger.info(LogCategory.AUTH, 'Passkey created with PRF support');
-    return credentialId;
+    logger.info(LogCategory.AUTH, 'Passkey created with PRF support', {
+      hasAaguid: aaguid != null,
+      backupEligible,
+    });
+    return { credentialId, aaguid, backupEligible };
   }
 
   async derivePrfSeed(salt: string): Promise<Uint8Array> {

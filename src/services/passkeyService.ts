@@ -21,6 +21,10 @@ const PASSKEY_REGISTERED_KEY = 'passkeyRegistered';
 // platform refuses to register a duplicate even if PASSKEY_REGISTERED
 // was wiped (defense-in-depth: protects against localStorage clears).
 const KNOWN_CREDENTIALS_KEY = 'passkeyKnownCredentials';
+// Per-credential AAGUID (base64) recorded at create time. Drives the
+// provider name + icon on the passkey management page. Captured only
+// at create: WebAuthn doesn't expose AAGUID on assertion.
+const PASSKEY_AAGUID_PREFIX = 'passkeyAaguid:';
 // Per-device timestamps. WebAuthn doesn't expose creation / last-use
 // dates, so we record them locally on each successful PRF ceremony.
 const PASSKEY_FIRST_SEEN_KEY = 'passkeyFirstSeenAt';
@@ -66,11 +70,32 @@ export async function createPasskey(): Promise<void> {
   // merges them with its own keychain. Browser path uses these as the
   // sole source.
   const excludeCredentialIds = getKnownCredentialIdsLocal();
-  const credentialId = await passkeyPrfProvider.createPasskey({ excludeCredentialIds });
-  if (credentialId) addKnownCredentialIdLocal(credentialId);
+  const { credentialId, aaguid } = await passkeyPrfProvider.createPasskey({ excludeCredentialIds });
+  if (credentialId) {
+    addKnownCredentialIdLocal(credentialId);
+    if (aaguid) {
+      localStorage.setItem(`${PASSKEY_AAGUID_PREFIX}${credentialId}`, aaguid);
+    }
+  }
   localStorage.setItem(PASSKEY_REGISTERED_KEY, '1');
   markPasskeyUsed();
   logger.info(LogCategory.AUTH, 'Passkey created successfully');
+}
+
+/** Returns undefined for credentials predating AAGUID capture or native credentials (plugin doesn't surface it yet). */
+export function getCredentialAaguid(credentialId: string): string | undefined {
+  return localStorage.getItem(`${PASSKEY_AAGUID_PREFIX}${credentialId}`) ?? undefined;
+}
+
+export function getAllCredentialAaguids(): string[] {
+  const out: string[] = [];
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith(PASSKEY_AAGUID_PREFIX)) {
+      const v = localStorage.getItem(key);
+      if (v) out.push(v);
+    }
+  }
+  return out;
 }
 
 /**
@@ -122,6 +147,15 @@ export function getLabelLastUsed(label: string): number | undefined {
 export function clearAllLabelLastUsed(): void {
   for (const key of Object.keys(localStorage)) {
     if (key.startsWith(PASSKEY_LABEL_LAST_USED_PREFIX)) {
+      localStorage.removeItem(key);
+    }
+  }
+}
+
+/** Drop every per-credential AAGUID entry. */
+export function clearAllCredentialAaguids(): void {
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith(PASSKEY_AAGUID_PREFIX)) {
       localStorage.removeItem(key);
     }
   }
@@ -185,6 +219,7 @@ export async function clearPasskeyHistory(): Promise<void> {
   localStorage.removeItem(PASSKEY_FIRST_SEEN_KEY);
   localStorage.removeItem(PASSKEY_LAST_SEEN_KEY);
   clearAllLabelLastUsed();
+  clearAllCredentialAaguids();
   invalidatePasskey();
 }
 
