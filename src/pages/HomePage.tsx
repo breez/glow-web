@@ -178,7 +178,15 @@ const HomePage: React.FC<HomePageProps> = ({
                     explicit "create" vs "use existing" avoids the
                     sheet entirely on the create path. The sign-in
                     path still triggers it (user opted into discovery
-                    by clicking, so the picker is expected). */}
+                    by clicking, so the picker is expected).
+
+                    Duplicate-create safety: PasskeyPage's `creating`
+                    effect populates excludeCredentials from
+                    localStorage and surfaces an explicit
+                    "already-exists" state on InvalidStateError, so
+                    a returning user who taps Create gets a clear
+                    "Use Passkey" pivot instead of a silent re-prompt
+                    or a duplicate cred. */}
                 <button
                   onClick={onCreatePasskey}
                   data-testid="create-passkey-button"

@@ -4,7 +4,11 @@ import SlideInPage from '../components/layout/SlideInPage';
 import { ConfirmDialog } from '../components/ui';
 import { TrashIcon } from '../components/Icons';
 import { passkeyPrfProvider } from '../services/passkeyPrfProvider';
-import { clearAllLabelLastUsed } from '../services/passkeyService';
+import {
+  clearAllLabelLastUsed,
+  clearAllCredentialMeta,
+  clearAllHiddenCredentials,
+} from '../services/passkeyService';
 import { useToast } from '@/contexts/ToastContext';
 import { logger, LogCategory } from '@/services/logger';
 
@@ -92,7 +96,9 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack, o
     localStorage.removeItem('passkeyFirstSeenAt');
     localStorage.removeItem('passkeyLastSeenAt');
     clearAllLabelLastUsed();
-    // AAGUIDs intentionally kept — they're only captured at create
+    clearAllCredentialMeta();
+    clearAllHiddenCredentials();
+    // AAGUIDs intentionally kept: they're only captured at create
     // time and not recoverable on sign-in. Wiping them would lose
     // provider name/icon for any credential that still exists on the
     // device (or in iCloud Keychain / Block Store).

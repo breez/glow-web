@@ -31,6 +31,8 @@ import {
   hasPasskeyHistory,
   markLabelUsed,
   invalidatePasskey,
+  pinActivePasskeyCredentialId,
+  setPendingSwitchFromCredentialId,
 } from '../services/passkeyService';
 import { secureStorage, deviceOnlyStorage, SecureStorageError } from '../services/secureStorage';
 import { passkeyPrfProvider } from '../services/passkeyPrfProvider';
@@ -227,6 +229,20 @@ export interface BreezSdkActions {
    * Throws on PRF cancel / network failure / SDK error.
    */
   switchPasskeyLabel: (newLabel: string) => Promise<void>;
+  /**
+   * Pin a different passkey credential for the next sign-in and clear
+   * the active SDK session + label so the caller can route through
+   * PasskeyPage (which runs label discovery against the new cred's
+   * Nostr identity). Does not run any biometric ceremony itself.
+   *
+   * The optional `onPinned` callback fires synchronously after the
+   * localStorage pin but BEFORE the SDK is nulled, so callers can
+   * navigate away from layers that depend on `useWallet()` (e.g.
+   * SettingsPage under PasskeyManagementPage) before the SDK
+   * disappears, avoiding a transient render with `sdk = null` while
+   * those layers are still mounted.
+   */
+  prepareSwitchPasskeyCredential: (newCredId: string, onPinned?: () => void) => Promise<void>;
 }
 
 // ============================================
@@ -678,6 +694,73 @@ export function useBreezSdk(
       setIsSyncing(false);
       setIsLoading(false);
     }
+  }, [sdk]);
+
+  const prepareSwitchPasskeyCredential = useCallback(async (
+    newCredId: string,
+    onPinned?: () => void,
+  ): Promise<void> => {
+    // Capture the cred we're switching FROM so PasskeyPage's
+    // detect-failure branch can roll back if the new cred turns out
+    // to be deleted. Skip when no previous cred exists or we're
+    // re-pinning to the same one (defensive — the management page
+    // already gates "Use this passkey" off the active row).
+    const fromCredId = localStorage.getItem('passkeyActiveCredentialId');
+    if (fromCredId && fromCredId !== newCredId) {
+      setPendingSwitchFromCredentialId(fromCredId);
+    }
+
+    // Pin the new cred BEFORE invalidating; the next derive (run by
+    // PasskeyPage's detect after we route there) will pick it up via
+    // the SDK provider's `allowCredentialIds` mechanism. Also clears
+    // the active label since each credential derives its own Nostr
+    // identity, so the prior label may not exist under the new cred.
+    pinActivePasskeyCredentialId(newCredId);
+
+    // Fire the route-change callback synchronously so the caller can
+    // unmount any layers that depend on `useWallet()` (most notably
+    // SettingsPage under PasskeyManagementPage) BEFORE we null the
+    // SDK below. Without this, a transient render with sdk=null
+    // while SettingsPage is still mounted causes useWallet() to
+    // throw, blanking the screen until reload.
+    onPinned?.();
+
+    setIsLoading(true);
+    setError(null);
+
+    if (sdk) {
+      try {
+        await sdk.disconnect();
+      } catch (e) {
+        logger.warn(LogCategory.SDK, 'SDK disconnect failed during credential switch', {
+          error: formatError(e),
+        });
+      }
+    }
+
+    // Wipe the previous identity's seed from secure storage so the
+    // startup probe doesn't auto-rehydrate the old wallet on the way
+    // back through PasskeyPage.
+    if (secureStorage.isSupported()) {
+      try {
+        await secureStorage.clearSeed();
+      } catch {
+        // Best effort; the next storeSeed overwrites.
+      }
+    }
+
+    setSdk(null);
+    setIsConnected(false);
+    setIsSyncing(false);
+    setWalletInfo(null);
+    setTransactions([]);
+    setUnclaimedDeposits([]);
+    setHasRejectedDeposits(false);
+    setCelebrationPayment(null);
+    setCachedStableTicker(null);
+    clearStableRestorePrompted();
+    shownPaymentIdsRef.current.clear();
+    setIsLoading(false);
   }, [sdk]);
 
   // Re-run the biometric unlock flow after the user cancelled or was locked
@@ -1136,5 +1219,6 @@ export function useBreezSdk(
     },
     retryUnlock,
     switchPasskeyLabel,
+    prepareSwitchPasskeyCredential,
   };
 }

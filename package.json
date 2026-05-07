@@ -16,7 +16,7 @@
     "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
-    "@breeztech/breez-sdk-spark": "file:./vendor/breeztech-breez-sdk-spark-v0.13.7-passkey-aaguid.tgz",
+    "@breeztech/breez-sdk-spark": "file:vendor/breeztech-breez-sdk-spark-v0.13.7-passkey-web-ux.tgz",
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",
     "@capacitor/core": "^8.3.0",
@@ -38,6 +38,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@playwright/test": "^1.52.0",
+    "@tailwindcss/postcss": "^4.2.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
@@ -47,7 +48,6 @@
     "@typescript-eslint/parser": "^8.0.0",
     "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "^4.0.0",
-    "@tailwindcss/postcss": "^4.2.4",
     "dotenv": "^17.2.3",
     "eslint": "^10.0.0",
     "eslint-plugin-react-hooks": "^7.0.0",

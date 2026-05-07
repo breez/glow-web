@@ -375,7 +375,21 @@ const AppContent: React.FC = () => {
             {renderWalletPage()}
             {renderSettingsPage()}
             {renderPasskeySettingsPage()}
-            <PasskeyManagementPage onBack={() => setUserScreen('passkeySettings')} />
+            <PasskeyManagementPage
+              onBack={() => setUserScreen('passkeySettings')}
+              onSwitchCredential={async (credId) => {
+                // Route as soon as the cred is pinned (synchronously)
+                // so the layered SettingsPage unmounts before
+                // useBreezSdk nulls the SDK in the disconnect step.
+                // Otherwise SettingsPage's useWallet() throws on the
+                // transient render and blanks the screen.
+                await sdk.prepareSwitchPasskeyCredential(credId, () => {
+                  setPasskeySdkConnected(false);
+                  setPasskeySkipDetection(false);
+                  setUserScreen('passkey');
+                });
+              }}
+            />
           </>
         );
 

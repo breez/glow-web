@@ -10,6 +10,28 @@
 import { Passkey, Wallet, NostrRelayConfig } from '@breeztech/breez-sdk-spark';
 import { passkeyPrfProvider } from './passkeyPrfProvider';
 import { logger, LogCategory } from './logger';
+import {
+  markCredentialUsed,
+  clearAllCredentialMeta,
+  clearAllHiddenCredentials,
+  unhideCredential,
+  removeCredentialMeta,
+  removeCredentialUserName,
+} from './passkeyMetadata';
+
+// Re-export so existing call sites keep importing from passkeyService
+// without each page rewriting its imports.
+export {
+  markCredentialUsed,
+  getCredentialMeta,
+  clearAllCredentialMeta,
+  getHiddenCredentialIds,
+  hideCredential,
+  unhideCredential,
+  clearAllHiddenCredentials,
+  setCredentialUserName,
+  getCredentialUserName,
+} from './passkeyMetadata';
 
 // Storage key: presence signals passkey mode
 const PASSKEY_LABEL_KEY = 'passkeyLabel';
@@ -21,6 +43,9 @@ const PASSKEY_REGISTERED_KEY = 'passkeyRegistered';
 // platform refuses to register a duplicate even if PASSKEY_REGISTERED
 // was wiped (defense-in-depth: protects against localStorage clears).
 const KNOWN_CREDENTIALS_KEY = 'passkeyKnownCredentials';
+// Mirrors the cap in passkeyPrfProvider.ts so both writers stay below
+// the same bound.
+const KNOWN_CREDENTIALS_MAX = 32;
 // Per-credential AAGUID (base64) recorded at create time. Drives the
 // provider name + icon on the passkey management page. Captured only
 // at create: WebAuthn doesn't expose AAGUID on assertion.
@@ -30,6 +55,16 @@ const PASSKEY_AAGUID_PREFIX = 'passkeyAaguid:';
 // the credential can sync to the user's other devices via the provider;
 // false means it's bound to this device (typically a hardware key).
 const PASSKEY_BE_PREFIX = 'passkeyBackupEligible:';
+// Per-credential user.name lives in passkeyMetadata.ts (no-cycle
+// helper module).
+//
+// Holds the credential ID we were signed in with BEFORE a switch
+// attempt fired. Consumed by PasskeyPage's detect-failure branch when
+// the switch target turns out to be deleted: cleanup is targeted to
+// only the failing cred, and the active cred pin is restored to this
+// value so the user lands back on their previous wallet instead of
+// being thrown into the new-user create flow.
+const PASSKEY_PENDING_SWITCH_FROM_KEY = 'passkeyPendingSwitchFromCredentialId';
 // Per-device timestamps. WebAuthn doesn't expose creation / last-use
 // dates, so we record them locally on each successful PRF ceremony.
 const PASSKEY_FIRST_SEEN_KEY = 'passkeyFirstSeenAt';
@@ -38,6 +73,10 @@ const PASSKEY_LAST_SEEN_KEY = 'passkeyLastSeenAt';
 // into the active wallet (initial connect or switchPasskeyLabel) so the
 // Labels page can surface a relative "last used" hint per row.
 const PASSKEY_LABEL_LAST_USED_PREFIX = 'passkeyLabelLastUsed:';
+// Per-credential first-/last-seen timestamps + the user-hidden list
+// live in passkeyMetadata.ts (see file-level comment there for the
+// import-cycle rationale). Re-exports above preserve the existing
+// import surface.
 
 // Cached Passkey instance keeps the SDK's Nostr OnceCell warm across
 // chained operations in a single onboarding flow (createPasskey →
@@ -92,6 +131,11 @@ export async function createPasskey(): Promise<void> {
     if (backupEligible !== null) {
       localStorage.setItem(`${PASSKEY_BE_PREFIX}${credentialId}`, backupEligible ? '1' : '0');
     }
+    // user.name is captured inside passkeyPrfProvider.createPasskey
+    // (it owns the label string) so it lands in the same place as
+    // AAGUID and BE metadata without us needing to thread the
+    // computed label through the return value.
+    markCredentialUsed(credentialId);
   }
   localStorage.setItem(PASSKEY_REGISTERED_KEY, '1');
   markPasskeyUsed();
@@ -185,6 +229,11 @@ export function clearAllLabelLastUsed(): void {
   }
 }
 
+// markCredentialUsed / getCredentialMeta / clearAllCredentialMeta /
+// getHiddenCredentialIds / hideCredential / unhideCredential /
+// clearAllHiddenCredentials live in passkeyMetadata.ts and are
+// re-exported at the top of this file.
+
 /** Drop every per-credential AAGUID entry. */
 export function clearAllCredentialAaguids(): void {
   for (const key of Object.keys(localStorage)) {
@@ -192,6 +241,84 @@ export function clearAllCredentialAaguids(): void {
       localStorage.removeItem(key);
     }
   }
+}
+
+// setCredentialUserName / getCredentialUserName live in
+// passkeyMetadata.ts (passkeyPrfProvider needs setCredentialUserName
+// from inside signalRename, and the no-cycle home for those helpers
+// is passkeyMetadata; see file-level comment there). Re-exported
+// at the top of this file.
+
+/** Targeted single-credential teardown for the deletion-of-one case
+ * (notably: the user picked a credential to switch to, and it turned
+ * out to be deleted). Differs from `clearPasskeyHistory` in that it
+ * preserves OTHER known creds + their per-cred metadata, so the
+ * management list keeps showing whatever the user can still actually
+ * use.
+ *
+ * Removes:
+ *  - `credentialId` from the canonical store (native plugin's
+ *    iCloud-synced keychain on iOS / Block Store on Android,
+ *    localStorage on web)
+ *  - per-cred AAGUID, BE, user.name, first/last-seen
+ *  - the cred's hidden flag (if any)
+ *  - calls PublicKeyCredential.signalUnknownCredential for
+ *    password-manager cleanup (best effort, no-op where the API isn't
+ *    available)
+ *
+ * Does NOT touch:
+ *  - other creds' AAGUID / BE / user.name / timestamps
+ *  - the global passkeyRegistered / passkeyFirstSeenAt /
+ *    passkeyLastSeenAt fields (they describe the device, not the
+ *    cred)
+ */
+export async function removeStaleCredential(credentialId: string): Promise<void> {
+  if (!credentialId) return;
+  logger.warn(LogCategory.AUTH, 'Removing stale credential metadata', { credentialId });
+
+  // Best-effort: tell the password manager to hide this cred.
+  try {
+    await passkeyPrfProvider.signalUnknownCredentials([credentialId]);
+  } catch (e) {
+    logger.debug(LogCategory.AUTH, 'signalUnknownCredentials failed during stale removal', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+
+  // Drop from the canonical store (native plugin's iCloud-synced
+  // keychain on iOS / Block Store on Android / localStorage on web)
+  // so PasskeyManagementPage stops listing the dead cred.
+  try {
+    await passkeyPrfProvider.removeKnownCredentialId(credentialId);
+  } catch (e) {
+    logger.debug(LogCategory.AUTH, 'removeKnownCredentialId failed during stale removal', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+
+  localStorage.removeItem(`${PASSKEY_AAGUID_PREFIX}${credentialId}`);
+  localStorage.removeItem(`${PASSKEY_BE_PREFIX}${credentialId}`);
+  removeCredentialUserName(credentialId);
+  removeCredentialMeta(credentialId);
+  unhideCredential(credentialId);
+}
+
+/** Capture the credential we're switching FROM so PasskeyPage can
+ * roll back if the switch target turns out to be deleted. */
+export function setPendingSwitchFromCredentialId(credentialId: string | null): void {
+  if (credentialId) {
+    localStorage.setItem(PASSKEY_PENDING_SWITCH_FROM_KEY, credentialId);
+  } else {
+    localStorage.removeItem(PASSKEY_PENDING_SWITCH_FROM_KEY);
+  }
+}
+
+/** Read-and-clear the pending switch source. Returns null when no
+ * switch is in flight. */
+export function consumePendingSwitchFromCredentialId(): string | null {
+  const v = localStorage.getItem(PASSKEY_PENDING_SWITCH_FROM_KEY);
+  localStorage.removeItem(PASSKEY_PENDING_SWITCH_FROM_KEY);
+  return v;
 }
 
 /**
@@ -220,10 +347,9 @@ function getKnownCredentialIdsLocal(): string[] {
 function addKnownCredentialIdLocal(credentialId: string): void {
   const existing = getKnownCredentialIdsLocal();
   if (existing.includes(credentialId)) return;
-  localStorage.setItem(
-    KNOWN_CREDENTIALS_KEY,
-    JSON.stringify([...existing, credentialId]),
-  );
+  const next = [...existing, credentialId];
+  while (next.length > KNOWN_CREDENTIALS_MAX) next.shift();
+  localStorage.setItem(KNOWN_CREDENTIALS_KEY, JSON.stringify(next));
 }
 
 /**
@@ -240,6 +366,21 @@ function addKnownCredentialIdLocal(credentialId: string): void {
  */
 export async function clearPasskeyHistory(): Promise<void> {
   logger.warn(LogCategory.AUTH, 'Clearing passkey history (deletion detected)');
+  // Snapshot known credential IDs BEFORE wiping so we can tell the
+  // browser's password manager to hide the now-defunct creds via the
+  // WebAuthn Signal API. Without this, a stale passkey can keep
+  // surfacing in cross-device pickers (iCloud Keychain on a sibling
+  // Apple device, Google Password Manager on an Android cluster) until
+  // the user manually prunes it from system settings. Best-effort: the
+  // signal API is web-only and gracefully no-ops where unsupported.
+  let knownIds: string[] = [];
+  try {
+    knownIds = await passkeyPrfProvider.getKnownCredentialIds();
+  } catch (e) {
+    logger.debug(LogCategory.AUTH, 'getKnownCredentialIds failed pre-wipe', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
   try {
     await passkeyPrfProvider.clearKnownCredentialIds();
   } catch (e) {
@@ -247,13 +388,18 @@ export async function clearPasskeyHistory(): Promise<void> {
       error: e instanceof Error ? e.message : String(e),
     });
   }
+  if (knownIds.length > 0) {
+    void passkeyPrfProvider.signalUnknownCredentials(knownIds);
+  }
   localStorage.removeItem(PASSKEY_REGISTERED_KEY);
   localStorage.removeItem(KNOWN_CREDENTIALS_KEY);
   localStorage.removeItem('passkeyActiveCredentialId');
   localStorage.removeItem(PASSKEY_FIRST_SEEN_KEY);
   localStorage.removeItem(PASSKEY_LAST_SEEN_KEY);
   clearAllLabelLastUsed();
-  // AAGUIDs intentionally kept — only captured at create time and not
+  clearAllCredentialMeta();
+  clearAllHiddenCredentials();
+  // AAGUIDs intentionally kept: only captured at create time and not
   // recoverable on sign-in.
   invalidatePasskey();
 }
@@ -305,6 +451,26 @@ export function clearPasskeyMode(): void {
   // Drop active-cred filter so the next sign-in is discoverable
   // (lets the OS picker surface synced creds again).
   localStorage.removeItem('passkeyActiveCredentialId');
+  invalidatePasskey();
+}
+
+/**
+ * Pin the next sign-in to a specific credential ID. Used by the
+ * "Use this passkey" action in PasskeyManagementPage when switching
+ * between known creds. Clears the active label since each cred derives
+ * its own Nostr identity (so the new cred's label set is independent
+ * of the old one). Drops the cached Passkey instance so the next
+ * derive runs fresh. Unhides the cred since active and hidden are
+ * mutually exclusive (a hidden cred would not appear in the management
+ * list while being silently active).
+ *
+ * Caller is responsible for disconnecting the current SDK session and
+ * routing to PasskeyPage so the detect flow can run the new sign-in.
+ */
+export function pinActivePasskeyCredentialId(credentialId: string): void {
+  localStorage.setItem('passkeyActiveCredentialId', credentialId);
+  localStorage.removeItem(PASSKEY_LABEL_KEY);
+  unhideCredential(credentialId);
   invalidatePasskey();
 }
 

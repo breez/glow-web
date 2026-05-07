@@ -43,13 +43,13 @@ declare global {
             salt: string;
             autoRegister?: boolean;
             allowCredentialIds?: string[];
-          }): Promise<{ seed: string }>;
+          }): Promise<{ seed: string; credentialId: string | null }>;
           derivePrfSeeds(options: {
             rpId?: string;
             salts: string[];
             autoRegister?: boolean;
             allowCredentialIds?: string[];
-          }): Promise<{ seeds: string[] }>;
+          }): Promise<{ seeds: string[]; credentialId: string | null }>;
           checkDomainAssociation(options?: {
             rpId?: string;
           }): Promise<DomainAssociation>;
@@ -57,6 +57,10 @@ declare global {
             rpId?: string;
           }): Promise<{ credentialIds: string[] }>;
           clearKnownCredentialIds(options?: {
+            rpId?: string;
+          }): Promise<void>;
+          removeKnownCredentialId(options: {
+            credentialId: string;
             rpId?: string;
           }): Promise<void>;
         };
@@ -97,6 +101,19 @@ export function getPlatform(): 'ios' | 'android' | 'web' {
 export class NativePasskeyPrfProvider {
   private rpId: string;
   private rpName: string;
+
+  /**
+   * Optional callback fired with the credential ID returned by every
+   * successful native PRF derive. Mirrors the SDK browser provider's
+   * `onAssertionCredentialId`: hosts can use it to update per-cred
+   * metadata (last-sign-in timestamp, active cred pin) on every
+   * sign-in, not just on create.
+   *
+   * Set before calling `derivePrfSeed` / `derivePrfSeeds`. Not invoked
+   * by `createPasskey` (the credentialId is part of its return value
+   * directly).
+   */
+  onAssertionCredentialId?: (credentialId: Uint8Array) => void;
 
   constructor(options: { rpId: string; rpName: string }) {
     this.rpId = options.rpId;
@@ -193,16 +210,37 @@ export class NativePasskeyPrfProvider {
     await getPlugin().clearKnownCredentialIds({ rpId: this.rpId });
   }
 
+  /**
+   * Remove a single credential ID from the persisted list. Used by the
+   * switch-failure recovery path so a deleted passkey stops appearing
+   * in the management list while the rest of the user's known
+   * credentials remain tracked.
+   */
+  async removeKnownCredentialId(credentialId: string): Promise<void> {
+    if (!credentialId) return;
+    await getPlugin().removeKnownCredentialId({
+      credentialId,
+      rpId: this.rpId,
+    });
+  }
+
   async derivePrfSeed(
     salt: string,
     options: { autoRegister?: boolean; allowCredentialIds?: string[] } = {},
   ): Promise<Uint8Array> {
-    const { seed } = await getPlugin().derivePrfSeed({
+    const { seed, credentialId } = await getPlugin().derivePrfSeed({
       rpId: this.rpId,
       salt,
       autoRegister: options.autoRegister,
       allowCredentialIds: options.allowCredentialIds,
     });
+    if (credentialId && this.onAssertionCredentialId) {
+      try {
+        this.onAssertionCredentialId(base64ToBytes(credentialId));
+      } catch {
+        // Best-effort: never let host bookkeeping break the seed return.
+      }
+    }
     return base64ToBytes(seed);
   }
 
@@ -211,12 +249,19 @@ export class NativePasskeyPrfProvider {
     salts: string[],
     options: { autoRegister?: boolean; allowCredentialIds?: string[] } = {},
   ): Promise<Uint8Array[]> {
-    const { seeds } = await getPlugin().derivePrfSeeds({
+    const { seeds, credentialId } = await getPlugin().derivePrfSeeds({
       rpId: this.rpId,
       salts,
       autoRegister: options.autoRegister,
       allowCredentialIds: options.allowCredentialIds,
     });
+    if (credentialId && this.onAssertionCredentialId) {
+      try {
+        this.onAssertionCredentialId(base64ToBytes(credentialId));
+      } catch {
+        // Best-effort: never let host bookkeeping break the seeds return.
+      }
+    }
     return seeds.map(base64ToBytes);
   }
 
