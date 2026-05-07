@@ -320,7 +320,9 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
             || (sendAllAmount !== null && sendAllAmount >= minSats)) && (
             <button
               onClick={() => {
-                if (hasTokenBalance && tokenBalanceDisplay) {
+                if (!isTokenMode && sendAllAmount !== null) {
+                  setAmountInput(String(sendAllAmount));
+                } else if (hasTokenBalance && tokenBalanceDisplay) {
                   if (!isTokenMode) setIsTokenMode(true);
                   setAmountInput(tokenBalanceDisplay);
                 } else if (sendAllBtcInTokenDisplay !== null) {

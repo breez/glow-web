@@ -216,7 +216,9 @@ const AmountStep: React.FC<AmountStepProps> = ({
           {showSendAll && (
             <button
               onClick={() => {
-                if (hasTokenBalance && tokenBalanceDisplay) {
+                if (!isTokenMode && balanceSats !== undefined) {
+                  setLocalAmount(String(balanceSats));
+                } else if (hasTokenBalance && tokenBalanceDisplay) {
                   // Token send-all: switch to token mode + show token balance
                   if (!isTokenMode) setIsTokenMode(true);
                   setLocalAmount(tokenBalanceDisplay);
