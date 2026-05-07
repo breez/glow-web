@@ -1,11 +1,10 @@
 /**
- * Passkey Service.
+ * Passkey service: thin wrapper over the SDK's Passkey class.
  *
- * Wraps the Breez SDK's Passkey class to provide
- * passkey-based wallet creation and restoration functionality.
- *
- * Creates a fresh Passkey instance per operation so that no stale
- * PRF session or cached state can survive between wizard steps.
+ * The SDK instance is held in a module-level singleton so its
+ * `nostr_keys` OnceCell survives across calls and follow-up Nostr
+ * operations don't re-prompt. Invalidate via `invalidatePasskey()`
+ * whenever the underlying credential or relay config changes.
  */
 
 import { Passkey, Wallet, NostrRelayConfig } from '@breeztech/breez-sdk-spark';
@@ -31,16 +30,20 @@ const PASSKEY_LAST_SEEN_KEY = 'passkeyLastSeenAt';
 // Labels page can surface a relative "last used" hint per row.
 const PASSKEY_LABEL_LAST_USED_PREFIX = 'passkeyLabelLastUsed:';
 
-/**
- * Create a fresh Passkey instance.
- * No caching: each call gets a clean instance with no stale state.
- */
-function createPasskeyInstance(): Passkey {
+let cachedPasskey: Passkey | null = null;
+
+function getPasskey(): Passkey {
+  if (cachedPasskey !== null) return cachedPasskey;
   const breezApiKey = import.meta.env.VITE_BREEZ_API_KEY;
   const relayConfig: NostrRelayConfig | undefined = breezApiKey
     ? { breezApiKey }
     : undefined;
-  return new Passkey(passkeyPrfProvider, relayConfig ?? null);
+  cachedPasskey = new Passkey(passkeyPrfProvider, relayConfig ?? null);
+  return cachedPasskey;
+}
+
+function invalidatePasskey(): void {
+  cachedPasskey = null;
 }
 
 /**
@@ -182,6 +185,7 @@ export async function clearPasskeyHistory(): Promise<void> {
   localStorage.removeItem(PASSKEY_FIRST_SEEN_KEY);
   localStorage.removeItem(PASSKEY_LAST_SEEN_KEY);
   clearAllLabelLastUsed();
+  invalidatePasskey();
 }
 
 /**
@@ -194,7 +198,7 @@ export async function isPrfAvailable(): Promise<boolean> {
     return false;
   }
 
-  const passkey = createPasskeyInstance();
+  const passkey = getPasskey();
   return await passkey.isAvailable();
 }
 
@@ -216,12 +220,12 @@ export function setPasskeyMode(label?: string): void {
 }
 
 /**
- * Clear passkey mode.
- * Does NOT clear the persistent "passkey registered" flag: the passkey
- * still exists on the device and should be reused on next login.
+ * Clear passkey mode. Does NOT clear the persistent "passkey
+ * registered" flag: the passkey still exists on the device.
  */
 export function clearPasskeyMode(): void {
   localStorage.removeItem(PASSKEY_LABEL_KEY);
+  invalidatePasskey();
 }
 
 /**
@@ -238,7 +242,7 @@ export function hasPasskeyHistory(): boolean {
  */
 export async function listLabels(): Promise<string[]> {
   logger.info(LogCategory.AUTH, 'Listing labels from nostr relays');
-  const passkey = createPasskeyInstance();
+  const passkey = getPasskey();
   return await passkey.listLabels();
 }
 
@@ -247,7 +251,7 @@ export async function listLabels(): Promise<string[]> {
  */
 export async function saveLabel(label: string): Promise<void> {
   logger.info(LogCategory.AUTH, 'Saving label to nostr relays');
-  const passkey = createPasskeyInstance();
+  const passkey = getPasskey();
   await passkey.storeLabel(label);
 }
 
@@ -264,7 +268,7 @@ export async function getWallet(label?: string): Promise<Wallet> {
 
   logger.info(LogCategory.AUTH, 'Deriving wallet via passkey');
 
-  const passkey = createPasskeyInstance();
+  const passkey = getPasskey();
   try {
     const wallet = await passkey.getWallet(effectiveLabel);
     logger.info(LogCategory.AUTH, 'Passkey wallet derived successfully');
@@ -272,6 +276,35 @@ export async function getWallet(label?: string): Promise<Wallet> {
     return wallet;
   } catch (e) {
     logger.error(LogCategory.AUTH, 'Failed to derive passkey wallet', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+    throw e;
+  }
+}
+
+/**
+ * Derive Nostr identity + wallet seed in one PRF ceremony.
+ *
+ * @param publishLabel - When true (default), publishes the label
+ *   to Nostr (idempotent). Pass `false` for speculative cold-restore.
+ */
+export async function setupWallet(
+  label?: string,
+  publishLabel: boolean = true,
+): Promise<Wallet> {
+  const effectiveLabel = label ?? localStorage.getItem(PASSKEY_LABEL_KEY) ?? undefined;
+
+  logger.info(LogCategory.AUTH, 'Setting up wallet via single-prompt passkey ceremony', {
+    publishLabel,
+  });
+
+  const passkey = getPasskey();
+  try {
+    const wallet = await passkey.setupWallet(effectiveLabel, publishLabel);
+    logger.info(LogCategory.AUTH, 'Passkey wallet setup complete');
+    return wallet;
+  } catch (e) {
+    logger.error(LogCategory.AUTH, 'Failed to set up passkey wallet', {
       error: e instanceof Error ? e.message : String(e),
     });
     throw e;

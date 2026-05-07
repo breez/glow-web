@@ -198,14 +198,14 @@ class AppPasskeyPrfProvider implements PrfProvider {
     if (native) {
       seed = await (sdkProvider as NativePasskeyPrfProvider).derivePrfSeed(salt, { autoRegister });
     } else {
-      // Browser path: configure allowCredentialIds + capture-on-sign-in
-      // before the assertion. The localStorage list is the web
-      // counterpart to the iOS plugin's synced keychain / Android's
-      // Block Store: assertion is constrained to credentials we
-      // tracked, and successful assertions backfill the list (covering
-      // pre-tracking installs).
+      // Sign-in constrains to tracked credentials (deterministic
+      // seed). Create-mode skips: some authenticators (Chrome
+      // Password Manager on Android 12 observed) don't surface a
+      // just-registered credential through allowCredentials
+      // filtering yet — trust discoverability instead.
       const browser = sdkProvider as SdkBrowserPasskeyProvider;
-      browser.allowCredentialIds = getKnownLocal().map(base64ToBytes);
+      browser.allowCredentialIds =
+        this.mode === 'create' ? [] : getKnownLocal().map(base64ToBytes);
       browser.onAssertionCredentialId = (idBytes) => {
         try {
           addKnownLocal(bytesToBase64(idBytes));
@@ -218,8 +218,6 @@ class AppPasskeyPrfProvider implements PrfProvider {
       try {
         seed = await browser.derivePrfSeed(salt);
       } finally {
-        // Reset to defaults so a stray follow-up call without a
-        // refreshed list doesn't accidentally allow nothing.
         browser.allowCredentialIds = [];
         browser.onAssertionCredentialId = undefined;
       }
@@ -228,6 +226,45 @@ class AppPasskeyPrfProvider implements PrfProvider {
     logger.info(LogCategory.AUTH, 'PRF seed derived successfully');
     this.onAuthComplete?.();
     return seed;
+  }
+
+  /** Bulk PRF derivation. Output order matches input order. */
+  async derivePrfSeeds(salts: string[]): Promise<Uint8Array[]> {
+    const autoRegister = this.mode === 'create';
+    logger.info(LogCategory.AUTH, 'Deriving bulk PRF seeds', {
+      mode: this.mode,
+      count: salts.length,
+    });
+
+    let seeds: Uint8Array[];
+    if (native) {
+      seeds = await (sdkProvider as NativePasskeyPrfProvider).derivePrfSeeds(salts, { autoRegister });
+    } else {
+      const browser = sdkProvider as SdkBrowserPasskeyProvider;
+      browser.allowCredentialIds =
+        this.mode === 'create' ? [] : getKnownLocal().map(base64ToBytes);
+      browser.onAssertionCredentialId = (idBytes) => {
+        try {
+          addKnownLocal(bytesToBase64(idBytes));
+        } catch (e) {
+          logger.warn(LogCategory.AUTH, 'addKnownLocal failed', {
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
+      };
+      try {
+        seeds = await browser.derivePrfSeeds(salts);
+      } finally {
+        browser.allowCredentialIds = [];
+        browser.onAssertionCredentialId = undefined;
+      }
+    }
+
+    logger.info(LogCategory.AUTH, 'Bulk PRF seeds derived successfully', {
+      count: seeds.length,
+    });
+    this.onAuthComplete?.();
+    return seeds;
   }
 
   /**

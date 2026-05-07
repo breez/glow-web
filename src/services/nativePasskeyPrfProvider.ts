@@ -39,6 +39,11 @@ declare global {
             salt: string;
             autoRegister?: boolean;
           }): Promise<{ seed: string }>;
+          derivePrfSeeds(options: {
+            rpId?: string;
+            salts: string[];
+            autoRegister?: boolean;
+          }): Promise<{ seeds: string[] }>;
           checkDomainAssociation(options?: {
             rpId?: string;
           }): Promise<DomainAssociation>;
@@ -62,8 +67,25 @@ function getPlugin() {
   return plugin;
 }
 
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
 export function isNativePlatform(): boolean {
   return window.Capacitor?.isNativePlatform?.() === true;
+}
+
+export function getPlatform(): 'ios' | 'android' | 'web' {
+  const p = (window.Capacitor as { getPlatform?: () => string } | undefined)
+    ?.getPlatform?.();
+  if (p === 'ios') return 'ios';
+  if (p === 'android') return 'android';
+  return 'web';
 }
 
 export class NativePasskeyPrfProvider {
@@ -147,13 +169,20 @@ export class NativePasskeyPrfProvider {
       salt,
       autoRegister: options.autoRegister,
     });
-    // Decode base64 to Uint8Array
-    const binary = atob(seed);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes;
+    return base64ToBytes(seed);
+  }
+
+  /** Bulk PRF derivation; native plugin uses dual-salt where supported. */
+  async derivePrfSeeds(
+    salts: string[],
+    options: { autoRegister?: boolean } = {},
+  ): Promise<Uint8Array[]> {
+    const { seeds } = await getPlugin().derivePrfSeeds({
+      rpId: this.rpId,
+      salts,
+      autoRegister: options.autoRegister,
+    });
+    return seeds.map(base64ToBytes);
   }
 
   /**

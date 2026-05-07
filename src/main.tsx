@@ -158,6 +158,16 @@ async function init() {
     await initBreezSDK();
     logger.info(LogCategory.SDK, 'WASM module initialized successfully');
 
+    // Warm up the native KnownCredentialsStore so the iCloud-synced
+    // Keychain (iOS) / Block Store (Android) read pays its first-touch
+    // cost off the user-visible critical path. Fire-and-forget; failures
+    // here just mean we pay it later inside the onboarding flow.
+    if (Capacitor.isNativePlatform()) {
+      void import('@/services/passkeyPrfProvider').then(({ passkeyPrfProvider }) => {
+        passkeyPrfProvider.getKnownCredentialIds().catch(() => undefined);
+      });
+    }
+
     // Render the app - splash stays visible until App signals it's ready
     ReactDOM.createRoot(document.getElementById('root')!).render(
       <App />

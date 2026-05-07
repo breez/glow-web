@@ -455,9 +455,6 @@ export function useBreezSdk(
       // is emitted by the storage layer, so we don't double-log here.
       if (source !== 'secureStorage') {
         if (passkeyLabel != null && secureStorage.isSupported()) {
-          // Only flip the label if storeSeed actually prompts. The
-          // platform grace period often returns within 250ms, in which
-          // case we never show "Setting up biometric unlock…".
           const labelDeferMs = 250;
           let flipped = false;
           const flipTimer = setTimeout(() => {

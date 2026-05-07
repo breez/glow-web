@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Seed } from '@breeztech/breez-sdk-spark';
+import { Seed, Wallet } from '@breeztech/breez-sdk-spark';
 import { PrimaryButton, SecondaryButton } from '../components/ui';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PageLayout from '../components/layout/PageLayout';
@@ -9,6 +9,7 @@ import {
   clearPasskeyHistory,
   createPasskey,
   getWallet,
+  setupWallet,
   hasPasskeyHistory,
   listLabels,
   saveLabel,
@@ -167,6 +168,17 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
 
   // Label to use when entering the connecting phase
   const connectLabelRef = useRef<string | undefined>(undefined);
+  /**
+   * What `connecting` should do:
+   * - `'setup'`: dual-salt setupWallet with publish (derives Nostr +
+   *   wallet, publishes label).
+   * - `'derive-only'`: single-salt getWallet for an already-published
+   *   label.
+   * - `'use-speculative'`: reuse `speculativeWalletRef`, no PRF.
+   */
+  const connectActionRef = useRef<'setup' | 'derive-only' | 'use-speculative'>('derive-only');
+  /** Wallet pre-derived for 'Default' during detection's dual-salt assertion. */
+  const speculativeWalletRef = useRef<Wallet | null>(null);
 
   // Counts how many times the detecting phase has failed during this
   // session of the page. The silent retry fires only on the FIRST
@@ -281,22 +293,36 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
 
     const run = async () => {
       try {
+        // Dual-salt assert 'Default' BEFORE listLabels so a user whose
+        // label is 'Default' completes restore in one prompt. Must
+        // pass publishLabel=false: users whose actual label is not
+        // 'Default' would otherwise get a stray Nostr publish.
+        const speculative = await setupWallet('Default', false);
+        if (cancelled) return;
+        speculativeWalletRef.current = speculative;
+
         const found = await listLabels();
         if (cancelled) return;
 
-        // Passkey exists → returning user
         if (found.length === 0) {
-          // Passkey exists but no labels on relays → auto-create "Default"
-          // and skip the picker. Mirrors the new-passkey path.
           connectLabelRef.current = 'Default';
-          setPhase('new-storing');
+          await saveLabel('Default');
+          if (cancelled) return;
+          connectActionRef.current = 'use-speculative';
+          setPhase('connecting');
         } else if (found.length === 1) {
-          // Single label: skip the picker and connect directly.
           setLabels(found);
           connectLabelRef.current = found[0];
+          if (found[0] === 'Default') {
+            connectActionRef.current = 'use-speculative';
+          } else {
+            connectActionRef.current = 'derive-only';
+            speculativeWalletRef.current = null;
+          }
           setPhase('connecting');
         } else {
-          // Display oldest → newest
+          // Display oldest → newest. Speculative stays cached for the
+          // case the user picks 'Default' from the picker.
           const sorted = [...found].reverse();
           setLabels(sorted);
           const defaultIdx = sorted.indexOf('Default');
@@ -343,6 +369,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             setError(
               'Your Glow passkey is no longer on this device. You can create a new one.',
             );
+            setErrorKind('sign-in-failed');
             setPhase('review');
             return;
           }
@@ -376,21 +403,24 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           // error, transient network, or stage-2 sync still pending).
           // Never silently fall to creation: surface a retryable error
           // and stay on detecting.
+          const underlying = e instanceof Error ? e.message : String(e);
+          console.error('[Glow] Sign-in failed', { errorName, errorCode, error: underlying, raw: e });
           logger.warn(LogCategory.AUTH, 'Sign-in failed for returning user, NOT auto-registering', {
             errorName,
             errorCode,
-            error: e instanceof Error ? e.message : String(e),
+            error: underlying,
           });
           setError(
             isCancelled
               ? 'Sign-in cancelled. Please try again.'
-              : 'Could not sign in with your passkey. Please try again.',
+              : `Could not sign in with your passkey. ${underlying ? `[${underlying}]` : ''} Please try again.`,
           );
           setErrorKind('sign-in-failed');
           return;
         }
         logger.info(LogCategory.AUTH, 'No existing passkey, starting new user flow');
-        setPhase('review');
+        setIsNewUser(true);
+        setPhase('creating');
       }
     };
 
@@ -426,7 +456,11 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         if (cancelled) return;
         logger.info(LogCategory.AUTH, 'Passkey created successfully');
         connectLabelRef.current = 'Default';
-        setPhase('new-storing');
+        // Use bulk-PRF setup: a single ceremony derives the Nostr
+        // identity + wallet seed and publishes the label. Replaces the
+        // legacy new-storing → connecting two-prompt sequence.
+        connectActionRef.current = 'setup';
+        setPhase('connecting');
       } catch (e) {
         if (cancelled) return;
         // Platform refused because excludeCredentials matched an
@@ -507,30 +541,55 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     return () => { cancelled = true; };
   }, [phase, error]);
 
-  // Connect: derive wallet (final prompt)
+  // Connect: produce the wallet, dispatched on `connectActionRef`.
   useEffect(() => {
     if (phase !== 'connecting' || error) return;
     let cancelled = false;
 
     const run = async () => {
       try {
-        const w = await getWallet(connectLabelRef.current);
+        const action = connectActionRef.current;
+        const label = connectLabelRef.current;
+        let w: Wallet;
+        if (action === 'use-speculative') {
+          const cached = speculativeWalletRef.current;
+          if (!cached) {
+            throw new Error('use-speculative selected but no cached wallet');
+          }
+          w = cached;
+        } else if (action === 'setup') {
+          w = await setupWallet(label);
+        } else {
+          w = await getWallet(label);
+        }
         if (cancelled) return;
-        logger.info(LogCategory.AUTH, 'Passkey wallet derived');
+        logger.info(LogCategory.AUTH, 'Passkey wallet derived', { action });
+
+        // Reflect the just-published label in the picker state so
+        // navigating back doesn't show a stale list.
+        if (action === 'setup') {
+          const labelToSave = label ?? 'Default';
+          setLabels(prev => prev.includes(labelToSave) ? prev : [...prev, labelToSave]);
+          setSelectedLabel(labelToSave);
+          setShowManualInput(false);
+          setManualLabel('');
+        }
 
         // Remember label locally
-        if (connectLabelRef.current) {
-          setPasskeyMode(connectLabelRef.current);
+        if (label) {
+          setPasskeyMode(label);
         }
 
         setPhase('initializing');
         onWalletRestoredRef.current(w.seed, w.label);
       } catch (e) {
         if (cancelled) return;
-        setError('Failed to connect');
+        const underlying = e instanceof Error ? e.message : String(e);
+        console.error('[Glow] Connect failed', { error: underlying, raw: e });
+        setError(`Failed to connect. ${underlying ? `[${underlying}]` : ''}`);
         setErrorKind('generic');
         logger.error(LogCategory.AUTH, 'Passkey wallet restore failed', {
-          error: e instanceof Error ? e.message : String(e),
+          error: underlying,
         });
       }
     };
@@ -786,12 +845,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       case 'detecting': return error
         ? null
         : renderSpinner(isDiscoveringLabels ? 'Discovering labels...' : 'Detecting passkey...');
-      case 'review': return renderReview();
-      // When the create flow fails the AlertCard alone is the page;
-      // re-rendering renderReview() (icon, heading, warning card)
-      // alongside it crowds the layout and competes with the error
-      // for the user's attention. The footer carries the recovery
-      // actions.
+      case 'review': return error ? null : renderReview();
       case 'creating': return error ? null : renderSpinner('Initializing passkey...');
       case 'new-storing':
         if (error) return null;
@@ -873,11 +927,10 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           }}>
             Try Again
           </PrimaryButton>
-          <SecondaryButton className="w-full" onClick={async () => {
-            await clearPasskeyHistory();
+          <SecondaryButton className="w-full" onClick={() => {
             setError(null);
             setIsNewUser(true);
-            setPhase('review');
+            setPhase('creating');
           }}>
             Create Passkey
           </SecondaryButton>
@@ -929,6 +982,8 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     }
 
     if (phase === 'review') {
+      // Only reachable via the deletion-recovery path in the
+      // detection effect; the error AlertCard above explains why.
       return (
         <div className="max-w-xl mx-auto space-y-3">
           <PrimaryButton className="w-full" onClick={() => {
@@ -936,7 +991,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             setError(null);
             setPhase('creating');
           }}>
-            I Understand
+            Create Passkey
           </PrimaryButton>
           <SecondaryButton className="w-full" onClick={onBack}>
             Go Back
@@ -961,13 +1016,27 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             disabled={!canConnect}
             onClick={() => {
               if (showManualInput) {
-                // New label → save to relays first, then connect
+                // New label → use bulk-PRF setup so we publish the label
+                // AND derive the wallet seed in a single ceremony.
                 connectLabelRef.current = trimmedManual;
+                connectActionRef.current = 'setup';
+                speculativeWalletRef.current = null;
                 setError(null);
-                setPhase('new-storing');
+                setPhase('connecting');
+              } else if (selectedLabel === 'Default' && speculativeWalletRef.current) {
+                // Speculative fast path: the user picked 'Default',
+                // which we already pre-derived during detection. No
+                // new PRF ceremony needed.
+                connectLabelRef.current = selectedLabel;
+                connectActionRef.current = 'use-speculative';
+                setError(null);
+                setPhase('connecting');
               } else {
-                // Existing label → connect directly
+                // Existing non-Default label → derive only. Discard
+                // any speculative wallet (it was for 'Default').
                 connectLabelRef.current = selectedLabel || undefined;
+                connectActionRef.current = 'derive-only';
+                speculativeWalletRef.current = null;
                 setError(null);
                 setPhase('connecting');
               }
