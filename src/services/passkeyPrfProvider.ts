@@ -174,15 +174,23 @@ export function isMobileBrowser(): boolean {
   return /Android|iPhone|iPad|iPod|Mobi/i.test(ua);
 }
 
-/** UTC ISO-8601 to second precision, e.g. `2026-05-06T21:14:56`. */
+/** Local-time, second precision, ASCII-only, e.g. `May 6, 2026 21:14:56`. */
 function createTimestampLabel(): string {
-  return new Date().toISOString().slice(0, 19);
+  const d = new Date();
+  const datePart = d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const timePart = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return `${datePart} ${timePart}`;
 }
 
 /**
  * Best-effort retroactive rename via WebAuthn L3
- * `PublicKeyCredential.signalCurrentUserDetails`. Pushes `Glow · <ISO
- * timestamp>` to legacy passkeys whose `user.name = "Glow"` collapses
+ * `PublicKeyCredential.signalCurrentUserDetails`. Pushes `Glow · <local
+ * datetime>` to legacy passkeys whose `user.name = "Glow"` collapses
  * them into a single picker row, so each becomes individually
  * identifiable in OS settings and the sign-in picker.
  *
