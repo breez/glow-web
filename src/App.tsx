@@ -34,7 +34,7 @@ import { STATUS_BAR_LOADING } from './utils/statusBarManager';
 import { useBackButton } from './hooks/useBackButton';
 import type { Seed, Payment } from '@breeztech/breez-sdk-spark';
 
-type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'passkeyCreate' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState';
+type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState';
 
 // Full-screen dim spinner shown while sdk.isLoading is true (logout in
 // progress, SDK reconnect, etc). Wrapped as its own component so the
@@ -68,6 +68,12 @@ const AppContent: React.FC = () => {
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
   const [buyProvidersSource, setBuyProvidersSource] = useState<'wallet' | 'settings'>('wallet');
   const [passkeySdkConnected, setPasskeySdkConnected] = useState(false);
+  // True when the user entered the passkey screen via the explicit
+  // "Create New Wallet" CTA on browsers without `immediateGet`. Skips
+  // PasskeyPage's discovery (`detecting`) phase so we don't trigger a
+  // cross-device QR picker on the first click of a fresh-user
+  // onboarding. Read by PasskeyPage as the `skipDetection` prop.
+  const [passkeySkipDetection, setPasskeySkipDetection] = useState(false);
   const { showToast } = useToast();
   const formatPaymentAmountRef = useRef<((payment: Payment) => string) | undefined>(undefined);
 
@@ -200,7 +206,6 @@ const AppContent: React.FC = () => {
       sdk.isLoading &&
       currentScreen !== 'restore' &&
       currentScreen !== 'passkey' &&
-      currentScreen !== 'passkeyCreate' &&
       currentScreen !== 'unlock' &&
       currentScreen !== 'unlocking'
     ) {
@@ -222,10 +227,9 @@ const AppContent: React.FC = () => {
           <HomePage
             onRestoreWallet={() => setUserScreen('restore')}
             onCreateNewWallet={() => setUserScreen('generate')}
-            onCreatePasskey={() => setUserScreen('passkeyCreate')}
-            onUsePasskey={() => setUserScreen('passkey')}
+            onUsePasskey={() => { setPasskeySkipDetection(false); setUserScreen('passkey'); }}
+            onCreatePasskey={() => { setPasskeySkipDetection(true); setUserScreen('passkey'); }}
             prfAvailable={sdk.prfAvailable}
-            hasPasskeyBefore={sdk.hasPasskeyBefore}
           />
         );
       }
@@ -293,10 +297,9 @@ const AppContent: React.FC = () => {
           <HomePage
             onRestoreWallet={() => setUserScreen('restore')}
             onCreateNewWallet={() => setUserScreen('generate')}
-            onCreatePasskey={() => setUserScreen('passkeyCreate')}
-            onUsePasskey={() => setUserScreen('passkey')}
+            onUsePasskey={() => { setPasskeySkipDetection(false); setUserScreen('passkey'); }}
+            onCreatePasskey={() => { setPasskeySkipDetection(true); setUserScreen('passkey'); }}
             prfAvailable={sdk.prfAvailable}
-            hasPasskeyBefore={sdk.hasPasskeyBefore}
           />
         );
 
@@ -312,21 +315,7 @@ const AppContent: React.FC = () => {
             isSecuringSeed={sdk.isSecuringSeed}
             onFlowComplete={handlePasskeyFlowComplete}
             consumeFreshInstallSignal={sdk.consumeFreshInstallSignal}
-          />
-        );
-
-      case 'passkeyCreate':
-        return (
-          <PasskeyPage
-            onWalletRestored={handlePasskeyConnect}
-            onBack={() => {
-              setPasskeySdkConnected(false);
-              setUserScreen('home');
-            }}
-            sdkConnected={passkeySdkConnected}
-            isSecuringSeed={sdk.isSecuringSeed}
-            onFlowComplete={handlePasskeyFlowComplete}
-            skipDetection
+            skipDetection={passkeySkipDetection}
           />
         );
 
@@ -412,7 +401,7 @@ const AppContent: React.FC = () => {
             {renderWalletPage()}
             {renderSettingsPage()}
             {renderPasskeySettingsPage()}
-            <PasskeyLocalStatePage onBack={() => setUserScreen('passkeySettings')} />
+            <PasskeyLocalStatePage onBack={() => setUserScreen('passkeySettings')} onCompleted={handleLogout} />
           </>
         );
 

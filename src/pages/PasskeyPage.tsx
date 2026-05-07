@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Seed, Wallet } from '@breeztech/breez-sdk-spark';
 import { PrimaryButton, SecondaryButton } from '../components/ui';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -6,11 +7,11 @@ import PageLayout from '../components/layout/PageLayout';
 import { AlertCard } from '../components/AlertCard';
 import { NostrKeyIcon, CheckIcon, PasskeyIcon } from '../components/Icons';
 import {
-  clearPasskeyHistory,
   createPasskey,
   getWallet,
   setupWallet,
   hasPasskeyHistory,
+  clearPasskeyHistory,
   listLabels,
   saveLabel,
   setPasskeyMode,
@@ -19,6 +20,7 @@ import {
   passkeyPrfProvider,
   PasskeyAlreadyExistsError,
 } from '@/services/passkeyPrfProvider';
+import { isNativePlatform } from '@/services/nativePasskeyPrfProvider';
 import type { DomainAssociation } from '@/services/passkeyPrfProvider';
 import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs } from '@/services/logExport';
@@ -116,6 +118,18 @@ interface PasskeyPageProps {
   consumeFreshInstallSignal?: () => boolean;
 }
 
+// WebAuthn ceremonies have an OS-level inactivity timer (60s on iOS,
+// similar on Android Credential Manager) that surfaces as the same
+// NotAllowedError / USER_CANCELLED-shaped error a user dismiss does.
+// We can't read the underlying reason, but elapsed time is reliable
+// enough to discriminate: a real human dismiss takes < ~30s in practice;
+// anything above the timeout floor is overwhelmingly the OS giving up.
+const LIKELY_TIMEOUT_MS = 45_000;
+
+function isLikelyTimeout(elapsedMs: number): boolean {
+  return elapsedMs >= LIKELY_TIMEOUT_MS;
+}
+
 // ============================================
 // Component
 // ============================================
@@ -145,10 +159,18 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   // passkey" when the create flow refused because a passkey already
   // exists, instead of just generic Retry).
   const [errorKind, setErrorKind] = useState<
-    null | 'generic' | 'already-exists' | 'sign-in-failed'
+    null | 'generic' | 'already-exists' | 'sign-in-failed' | 'sign-in-cancelled'
   >(null);
   const [manualLabel, setManualLabel] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
+  // Mirrors HomePage's two-CTA gate. When the user reached this page from
+  // a two-CTA HomePage (i.e., they explicitly chose "Use Existing Passkey"
+  // over "Create Passkey"), inline-Create on a sign-in failure contradicts
+  // their explicit intent. Send them back to home instead, where they can
+  // pick Create on its own. The provider caches the capability after
+  // HomePage's mount-time probe, so this resolves synchronously in
+  // practice.
+  const [immediateGetSupported, setImmediateGetSupported] = useState<boolean | null>(null);
   // True once the WebAuthn assertion completes; drives the spinner
   // label switch from "Detecting passkey..." to "Discovering labels...".
   const [isDiscoveringLabels, setIsDiscoveringLabels] = useState(false);
@@ -214,6 +236,14 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       onFlowCompleteRef.current?.();
     }
   }, [sdkConnected, phase, onFlowCompleteRef]);
+
+  useEffect(() => {
+    let cancelled = false;
+    passkeyPrfProvider.supportsImmediateGet().then((supported) => {
+      if (!cancelled) setImmediateGetSupported(supported);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   // On mount (and on Retry after aasa-error): verify the app's bundle ID
   // is listed by the platform's out-of-band domain verification source
@@ -291,6 +321,17 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       if (!cancelled) setIsDiscoveringLabels(true);
     };
 
+    // Wall-clock the assertion so a cancel-shaped error can be
+    // disambiguated against the no-creds case on platforms that
+    // collapse both into the same code. iOS's
+    // preferImmediatelyAvailableCredentials and web's
+    // mediation: 'immediate' both return synchronously when no
+    // credential is available (no UI rendered) but report the
+    // failure indistinguishably from a user dismissing a sheet.
+    // A sub-threshold elapsed time means no UI rendered, so we
+    // route silently to create. Android stays deterministic via
+    // `NoCredentialException` and never reaches this branch.
+    const detectStartMs = Date.now();
     const run = async () => {
       try {
         // Dual-salt assert 'Default' BEFORE listLabels so a user whose
@@ -331,11 +372,25 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         }
       } catch (e) {
         if (cancelled) return;
-        const errorName = e instanceof Error ? e.name : '';
-        const errorMessage = e instanceof Error ? e.message : '';
-        const errorCode = (e as { code?: string })?.code;
+        // Rust's setupWallet wraps the underlying PrfProvider error in
+        // a generic `Error("PRF error: Passkey error: …")`, dropping the
+        // platform code and name. The provider stashes the raw
+        // pre-wrap shape on `lastDeriveError` so we can recover the
+        // original `USER_CANCELLED` / `CREDENTIAL_NOT_FOUND` here.
+        const raw = passkeyPrfProvider.lastDeriveError;
+        const errorName = raw?.name ?? (e instanceof Error ? e.name : '');
+        const errorMessage = raw?.message ?? (e instanceof Error ? e.message : '');
+        const errorCode = raw?.code ?? (e as { code?: string })?.code;
+        // Cancellation can surface as:
+        //   - native: error.code === 'USER_CANCELLED' (Capacitor bridge)
+        //   - browser (raw): error.name === 'NotAllowedError' / 'AbortError'
+        //   - browser (SDK-wrapped): the SDK's _mapError replaces a cancel
+        //     NotAllowedError with `new Error('User cancelled authentication')`,
+        //     dropping the name. Match the message pattern as a fallback.
+        const messageLooksCancelled = /cancel{1,2}ed|cancellation/i.test(errorMessage);
         const isCancelled = errorName === 'NotAllowedError' || errorName === 'AbortError'
-          || errorCode === 'USER_CANCELLED';
+          || errorCode === 'USER_CANCELLED'
+          || messageLooksCancelled;
         // Definitive "no credential on this device" signal. On native this
         // comes from the SDK provider with autoRegister=false (we set
         // mode='sign-in' above). It distinguishes a deleted-from-Settings
@@ -356,14 +411,55 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           errorMessage.includes('empty allowCredentials');
         const isCredentialNotFound = errorCode === 'CREDENTIAL_NOT_FOUND'
           || looksLikeNoCredentialMessage;
+        const elapsedMs = Date.now() - detectStartMs;
+        const FAST_FAIL_MAX_MS = 300;
+        // Fast fail with no UI rendered → OS deterministically has no
+        // matching cred. The shape differs per platform, so dispatch
+        // explicitly:
+        //
+        //   Android: NoCredentialException → typed CREDENTIAL_NOT_FOUND.
+        //     Reliable on its own; the time check just confirms it
+        //     fired pre-UI rather than after a slow internal path.
+        //
+        //   iOS: preferImmediatelyAvailableCredentials silent fail
+        //     conflates "no cred" and "user cancel" into the same
+        //     USER_CANCELLED-shaped error. Only the elapsed time
+        //     distinguishes deletion from a real user dismiss.
+        //
+        //   Web: WebAuthn collapses every failure mode into NotAllowedError
+        //     and there's no fast silent path. Skip — the slow-path
+        //     branches below handle web's hybrid sheet.
+        const platform = isNativePlatform() ? Capacitor.getPlatform() : 'web';
+        let isFastFailNoCred = false;
+        if (elapsedMs < FAST_FAIL_MAX_MS) {
+          if (platform === 'android') isFastFailNoCred = isCredentialNotFound;
+          else if (platform === 'ios') isFastFailNoCred = isCancelled;
+        }
         if (hasPasskeyHistory()) {
-          if (isCredentialNotFound) {
-            // The OS no longer has this user's passkey, but our local
-            // hasPasskeyHistory flag says we registered one before.
-            // Most likely cause: user deleted the passkey via
-            // Settings → Passwords. Stale local state. Reset and route
-            // them to the new-user create flow with an explanation.
-            logger.warn(LogCategory.AUTH, 'Sign-in returned CredentialNotFound for returning user, clearing stale state');
+          if (isFastFailNoCred) {
+            if (detectingFailCountRef.current === 0 && isFreshInstallRef.current) {
+              // Fresh-install sync gap: retry budget covers iCloud
+              // Keychain stage-2 / Block Store sync before we assume
+              // deletion. 3s pause before re-firing detecting.
+              detectingFailCountRef.current = 1;
+              logger.info(LogCategory.AUTH, 'Fast no-cred on fresh install, silent retry', {
+                errorCode,
+                isCredentialNotFound,
+                isCancelled,
+                elapsedMs,
+              });
+              setTimeout(() => {
+                if (cancelled) return;
+                setPhase('aasa-checking');
+              }, 3000);
+              return;
+            }
+            logger.warn(LogCategory.AUTH, 'Fast no-cred on returning user, treating as Settings deletion', {
+              errorCode,
+              isCredentialNotFound,
+              isCancelled,
+              elapsedMs,
+            });
             await clearPasskeyHistory();
             if (cancelled) return;
             setError(
@@ -371,6 +467,17 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             );
             setErrorKind('sign-in-failed');
             setPhase('review');
+            return;
+          }
+          if (isCredentialNotFound) {
+            // Slow CREDENTIAL_NOT_FOUND = user saw a UI and dismissed.
+            // Cred is still on the device; auto-clearing would lure a
+            // duplicate. Surface retryable error.
+            logger.warn(LogCategory.AUTH, 'Slow CREDENTIAL_NOT_FOUND on returning user (likely user dismissal), surfacing retryable error');
+            setError(
+              'Could not find your Glow passkey on this device. Try again, or check Settings → Passwords.',
+            );
+            setErrorKind('sign-in-failed');
             return;
           }
           // First failure for a returning user, AND the page was
@@ -409,18 +516,102 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             errorName,
             errorCode,
             error: underlying,
+            elapsedMs,
           });
           setError(
             isCancelled
-              ? 'Sign-in cancelled. Please try again.'
+              ? (isLikelyTimeout(elapsedMs)
+                ? 'Sign-in timed out. The system stopped waiting for biometrics. Please try again.'
+                : 'Sign-in cancelled. Please try again.')
               : `Could not sign in with your passkey. ${underlying ? `[${underlying}]` : ''} Please try again.`,
           );
           setErrorKind('sign-in-failed');
           return;
         }
-        logger.info(LogCategory.AUTH, 'No existing passkey, starting new user flow');
-        setIsNewUser(true);
-        setPhase('creating');
+        // Routing precedence:
+        //   1. CREDENTIAL_NOT_FOUND (Android NoCredentialException, or
+        //      iOS .notHandled / "no credential" message) → deterministic
+        //      no-creds → silent fall-through to create.
+        //   2. USER_CANCELLED with a fast elapsed time → iOS conflates
+        //      no-creds and user-dismiss into the same code, so a sub-
+        //      threshold elapsed reliably means no UI was rendered.
+        //      Treat as no-creds. Threshold is conservative: iOS fast-
+        //      fail returns in < 100ms, real user dismiss takes seconds.
+        //   3. USER_CANCELLED with a slow elapsed time → user actually
+        //      dismissed a passkey sheet, so they have creds. Surface
+        //      a cancel-specific error that does NOT offer Create
+        //      (would lure them into duplicating a passkey they already
+        //      have).
+        //   4. Anything else (unknown failure) → generic error with
+        //      both retry and explicit-create as escape hatches.
+        if (isCredentialNotFound) {
+          logger.info(LogCategory.AUTH, 'No existing passkey (deterministic), starting new user flow', { errorCode });
+          setIsNewUser(true);
+          setPhase('creating');
+          return;
+        }
+        if (isCancelled && elapsedMs < FAST_FAIL_MAX_MS) {
+          logger.info(LogCategory.AUTH, 'Fast cancel implies no creds, starting new user flow', {
+            errorName,
+            errorCode,
+            elapsedMs,
+          });
+          setIsNewUser(true);
+          setPhase('creating');
+          return;
+        }
+        if (isCancelled) {
+          // Native (iOS/Android) reaches here only after a slow
+          // dismiss — the fast-fail no-creds case was already routed
+          // silently to create above. So a slow cancel on native
+          // means the user definitively has a passkey and dismissed
+          // the picker; offering Create would lure a duplicate.
+          //
+          // Web can't make that distinction: the browser renders the
+          // hybrid (QR/cross-device) sheet for both no-creds and
+          // has-creds, both elapse past the threshold, and both
+          // surface as the same NotAllowedError. Show the generic
+          // failure with both Try Again and Create as escape hatches
+          // so genuine new users aren't stuck.
+          if (isNativePlatform()) {
+            logger.info(LogCategory.AUTH, 'User dismissed passkey sheet (native); refusing to offer Create', {
+              errorCode,
+              elapsedMs,
+            });
+            setError(
+              isLikelyTimeout(elapsedMs)
+                ? 'Sign-in timed out. The system stopped waiting for biometrics. Please try again.'
+                : 'Sign-in cancelled. Please pick your passkey to continue.',
+            );
+            setErrorKind('sign-in-cancelled');
+          } else {
+            logger.info(LogCategory.AUTH, 'Web cancel-shaped failure; surfacing error with retry + escape', {
+              errorCode,
+              elapsedMs,
+            });
+            setError(
+              isLikelyTimeout(elapsedMs)
+                ? 'Sign-in timed out. Please try again.'
+                : 'Could not sign in. Please try again.',
+            );
+            // Leave errorKind unset so the generic detecting branch
+            // renders the right escape (Create vs. Go Back) based on
+            // the two-CTA gate. The 'sign-in-failed' kind is reserved
+            // for returning users where offering Create would lure a
+            // duplicate.
+            setErrorKind(null);
+          }
+          return;
+        }
+        logger.info(LogCategory.AUTH, 'Sign-in failed; surfacing retryable error', {
+          errorName,
+          errorCode,
+          elapsedMs,
+        });
+        setError('Could not sign in with your passkey. Please try again.');
+        // Same reasoning as the web cancel branch above: defer the
+        // escape-hatch choice to the render branch.
+        setErrorKind(null);
       }
     };
 
@@ -547,6 +738,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     let cancelled = false;
 
     const run = async () => {
+      const connectStartMs = Date.now();
       try {
         const action = connectActionRef.current;
         const label = connectLabelRef.current;
@@ -585,11 +777,31 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       } catch (e) {
         if (cancelled) return;
         const underlying = e instanceof Error ? e.message : String(e);
-        console.error('[Glow] Connect failed', { error: underlying, raw: e });
-        setError(`Failed to connect. ${underlying ? `[${underlying}]` : ''}`);
+        const elapsedMs = Date.now() - connectStartMs;
+        // The PRF derive inside setupWallet / getWallet hits the same
+        // OS timer as the detecting-phase ceremony (60s on iOS, similar
+        // on Android Credential Manager). Recover the raw error code
+        // through lastDeriveError since Rust's setupWallet wraps it.
+        const raw = passkeyPrfProvider.lastDeriveError;
+        const errorCode = raw?.code ?? (e as { code?: string })?.code;
+        const messageLooksCancelled = /cancel{1,2}ed|cancellation/i.test(raw?.message ?? underlying);
+        const isCancelled = errorCode === 'USER_CANCELLED'
+          || raw?.name === 'NotAllowedError'
+          || raw?.name === 'AbortError'
+          || messageLooksCancelled;
+        console.error('[Glow] Connect failed', { error: underlying, errorCode, elapsedMs, raw: e });
+        if (isCancelled && isLikelyTimeout(elapsedMs)) {
+          setError('Sign-in timed out. The system stopped waiting for biometrics. Please try again.');
+        } else if (isCancelled) {
+          setError('Sign-in cancelled. Please try again.');
+        } else {
+          setError(`Failed to connect. ${underlying ? `[${underlying}]` : ''}`);
+        }
         setErrorKind('generic');
         logger.error(LogCategory.AUTH, 'Passkey wallet restore failed', {
           error: underlying,
+          errorCode,
+          elapsedMs,
         });
       }
     };
@@ -903,22 +1115,16 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       );
     }
 
-    // Detecting failure for a returning user: iOS may surface this as
-    // either a CredentialNotFound error (which we auto-recover from) or
-    // a USER_CANCELLED (which we can't distinguish from a "no passkey"
-    // dismissal of the system sheet). For the latter case, we leave the
-    // user on the error screen and offer two paths:
-    //   1. Try Again — re-runs detecting (auto-recovers if iOS now
-    //      reports CredentialNotFound clearly).
-    //   2. Forget passkey & create new — explicit recovery: clears the
-    //      keychain + localStorage flag and routes to the create flow.
-    //      For users whose passkey really is gone (deleted via
-    //      Settings) but iOS reports the dismissal as a cancel.
-    if (error && phase === 'detecting' && hasPasskeyHistory()) {
+    // Detecting failure where the user explicitly dismissed a sheet
+    // (cancel-shaped error with elapsed time past the no-creds
+    // fast-fail threshold). They have a passkey; offering Create
+    // here would lure a duplicate, so only retry is shown.
+    if (error && phase === 'detecting' && errorKind === 'sign-in-cancelled') {
       return (
         <div className="max-w-xl mx-auto space-y-3">
           <PrimaryButton className="w-full" onClick={() => {
             setError(null);
+            setErrorKind(null);
             // Bounce through aasa-checking to force the detecting effect
             // to re-run. Just clearing `error` while staying on detecting
             // doesn't re-trigger the effect (its deps are [phase] only),
@@ -927,13 +1133,58 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           }}>
             Try Again
           </PrimaryButton>
-          <SecondaryButton className="w-full" onClick={() => {
+        </div>
+      );
+    }
+
+    // Returning-user sign-in failures (cancelled, transient
+    // CREDENTIAL_NOT_FOUND, relay error). Never offer Create — the
+    // user has hasPasskeyHistory, exclude registry is intact, but
+    // wiring Create here would lure a duplicate when sign-in is
+    // genuinely retryable.
+    if (error && phase === 'detecting' && errorKind === 'sign-in-failed') {
+      return (
+        <div className="max-w-xl mx-auto space-y-3">
+          <PrimaryButton className="w-full" onClick={() => {
             setError(null);
-            setIsNewUser(true);
-            setPhase('creating');
+            setErrorKind(null);
+            setPhase('aasa-checking');
           }}>
-            Create Passkey
-          </SecondaryButton>
+            Try Again
+          </PrimaryButton>
+        </div>
+      );
+    }
+
+    // Detecting failure for other reasons (unknown errors).
+    //
+    // Two-CTA web (immediateGet not supported) reaches this branch
+    // after the user explicitly chose "Use Existing Passkey" on
+    // HomePage. Inline-Create here would contradict that choice and
+    // lure a duplicate, so just offer Try Again — the system back
+    // button is the route to home if they want Create instead.
+    // Single-CTA paths (native, web with immediateGet) keep the
+    // inline Create — the user took an ambiguous "Get Started"
+    // entry, so Create is a legitimate continuation.
+    if (error && phase === 'detecting') {
+      const retryOnly = !isNativePlatform() && immediateGetSupported !== true;
+      return (
+        <div className="max-w-xl mx-auto space-y-3">
+          <PrimaryButton className="w-full" onClick={() => {
+            setError(null);
+            setPhase('aasa-checking');
+          }}>
+            Try Again
+          </PrimaryButton>
+          {!retryOnly && (
+            <SecondaryButton className="w-full" onClick={() => {
+              setError(null);
+              setIsNewUser(true);
+              setPhase('creating');
+            }}>
+              Create Passkey
+            </SecondaryButton>
+          )}
         </div>
       );
     }
@@ -1069,15 +1320,17 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
               title={
                 errorKind === 'already-exists'
                   ? 'Passkey already exists'
-                  : errorKind === 'sign-in-failed'
-                    ? 'Sign-in failed'
-                    : phase === 'new-storing'
-                      ? "Couldn't save label"
-                      : phase === 'connecting'
-                        ? "Couldn't connect"
-                        : phase === 'creating'
-                          ? "Couldn't create passkey"
-                          : 'Something went wrong'
+                  : errorKind === 'sign-in-cancelled'
+                    ? 'Sign-in cancelled'
+                    : errorKind === 'sign-in-failed'
+                      ? 'Sign-in failed'
+                      : phase === 'new-storing'
+                        ? "Couldn't save label"
+                        : phase === 'connecting'
+                          ? "Couldn't connect"
+                          : phase === 'creating'
+                            ? "Couldn't create passkey"
+                            : 'Something went wrong'
               }
             >
               <p className="text-spark-text-secondary text-sm wrap-break-word">

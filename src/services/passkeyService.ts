@@ -1,10 +1,10 @@
 /**
  * Passkey service: thin wrapper over the SDK's Passkey class.
  *
- * The SDK instance is held in a module-level singleton so its
- * `nostr_keys` OnceCell survives across calls and follow-up Nostr
- * operations don't re-prompt. Invalidate via `invalidatePasskey()`
- * whenever the underlying credential or relay config changes.
+ * Caches a single SDK Passkey instance so its Nostr OnceCell survives
+ * across chained operations in one onboarding flow (1 biometric
+ * prompt instead of 3). Invalidate via `invalidatePasskey()` whenever
+ * the active label changes (logout, label switch, history clear).
  */
 
 import { Passkey, Wallet, NostrRelayConfig } from '@breeztech/breez-sdk-spark';
@@ -25,6 +25,11 @@ const KNOWN_CREDENTIALS_KEY = 'passkeyKnownCredentials';
 // provider name + icon on the passkey management page. Captured only
 // at create: WebAuthn doesn't expose AAGUID on assertion.
 const PASSKEY_AAGUID_PREFIX = 'passkeyAaguid:';
+// Per-credential backup-eligibility (BE) flag recorded at create time.
+// "1" / "0" string. Drives the cross-device sync indicator: true means
+// the credential can sync to the user's other devices via the provider;
+// false means it's bound to this device (typically a hardware key).
+const PASSKEY_BE_PREFIX = 'passkeyBackupEligible:';
 // Per-device timestamps. WebAuthn doesn't expose creation / last-use
 // dates, so we record them locally on each successful PRF ceremony.
 const PASSKEY_FIRST_SEEN_KEY = 'passkeyFirstSeenAt';
@@ -34,6 +39,13 @@ const PASSKEY_LAST_SEEN_KEY = 'passkeyLastSeenAt';
 // Labels page can surface a relative "last used" hint per row.
 const PASSKEY_LABEL_LAST_USED_PREFIX = 'passkeyLabelLastUsed:';
 
+// Cached Passkey instance keeps the SDK's Nostr OnceCell warm across
+// chained operations in a single onboarding flow (createPasskey →
+// setupWallet → saveLabel etc.) so each call doesn't re-derive Nostr
+// identity via a fresh PRF ceremony — turns 3 biometric prompts into 1.
+// Invalidate via `invalidatePasskey()` on every label change /
+// logout / passkey-history clear so a switched label can't reuse the
+// prior label's identity.
 let cachedPasskey: Passkey | null = null;
 
 function getPasskey(): Passkey {
@@ -46,7 +58,7 @@ function getPasskey(): Passkey {
   return cachedPasskey;
 }
 
-function invalidatePasskey(): void {
+export function invalidatePasskey(): void {
   cachedPasskey = null;
 }
 
@@ -70,11 +82,15 @@ export async function createPasskey(): Promise<void> {
   // merges them with its own keychain. Browser path uses these as the
   // sole source.
   const excludeCredentialIds = getKnownCredentialIdsLocal();
-  const { credentialId, aaguid } = await passkeyPrfProvider.createPasskey({ excludeCredentialIds });
+  const { credentialId, aaguid, backupEligible } =
+    await passkeyPrfProvider.createPasskey({ excludeCredentialIds });
   if (credentialId) {
     addKnownCredentialIdLocal(credentialId);
     if (aaguid) {
       localStorage.setItem(`${PASSKEY_AAGUID_PREFIX}${credentialId}`, aaguid);
+    }
+    if (backupEligible !== null) {
+      localStorage.setItem(`${PASSKEY_BE_PREFIX}${credentialId}`, backupEligible ? '1' : '0');
     }
   }
   localStorage.setItem(PASSKEY_REGISTERED_KEY, '1');
@@ -96,6 +112,23 @@ export function getAllCredentialAaguids(): string[] {
     }
   }
   return out;
+}
+
+/**
+ * Read the most-recently-recorded backup-eligibility flag across all
+ * credentials Glow knows about on this device. Returns undefined when
+ * no flag was captured (predates BE tracking, or platform path didn't
+ * surface it).
+ */
+export function getLatestBackupEligible(): boolean | undefined {
+  let latest: string | null = null;
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith(PASSKEY_BE_PREFIX)) {
+      latest = localStorage.getItem(key);
+    }
+  }
+  if (latest === null) return undefined;
+  return latest === '1';
 }
 
 /**
@@ -155,7 +188,7 @@ export function clearAllLabelLastUsed(): void {
 /** Drop every per-credential AAGUID entry. */
 export function clearAllCredentialAaguids(): void {
   for (const key of Object.keys(localStorage)) {
-    if (key.startsWith(PASSKEY_AAGUID_PREFIX)) {
+    if (key.startsWith(PASSKEY_AAGUID_PREFIX) || key.startsWith(PASSKEY_BE_PREFIX)) {
       localStorage.removeItem(key);
     }
   }
@@ -216,10 +249,12 @@ export async function clearPasskeyHistory(): Promise<void> {
   }
   localStorage.removeItem(PASSKEY_REGISTERED_KEY);
   localStorage.removeItem(KNOWN_CREDENTIALS_KEY);
+  localStorage.removeItem('passkeyActiveCredentialId');
   localStorage.removeItem(PASSKEY_FIRST_SEEN_KEY);
   localStorage.removeItem(PASSKEY_LAST_SEEN_KEY);
   clearAllLabelLastUsed();
-  clearAllCredentialAaguids();
+  // AAGUIDs intentionally kept — only captured at create time and not
+  // recoverable on sign-in.
   invalidatePasskey();
 }
 
@@ -248,6 +283,13 @@ export function isPasskeyMode(): boolean {
 /**
  * Set passkey mode by storing the label.
  * Also marks this device as having used a passkey (persistent hint).
+ *
+ * Does NOT invalidate the Passkey cache: this fires at the END of a
+ * successful sign-in, when the cached instance has a freshly-warmed
+ * Nostr OnceCell that subsequent settings ops (Labels page,
+ * saveLabel, etc.) need to reuse to avoid re-prompting. Label
+ * switches invalidate explicitly at the start of `switchPasskeyLabel`
+ * before the new derive runs.
  */
 export function setPasskeyMode(label?: string): void {
   localStorage.setItem(PASSKEY_LABEL_KEY, label ?? 'Default');
@@ -260,6 +302,9 @@ export function setPasskeyMode(label?: string): void {
  */
 export function clearPasskeyMode(): void {
   localStorage.removeItem(PASSKEY_LABEL_KEY);
+  // Drop active-cred filter so the next sign-in is discoverable
+  // (lets the OS picker surface synced creds again).
+  localStorage.removeItem('passkeyActiveCredentialId');
   invalidatePasskey();
 }
 

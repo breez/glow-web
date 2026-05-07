@@ -17,6 +17,7 @@ import type { PrfProvider } from '@breeztech/breez-sdk-spark';
 import {
   PasskeyAlreadyExistsError,
   PasskeyProvider as SdkBrowserPasskeyProvider,
+  type CreatePasskeyRequest,
 } from '@breeztech/breez-sdk-spark/passkey-prf-provider';
 import {
   NativePasskeyPrfProvider,
@@ -33,19 +34,22 @@ export type { DomainAssociation } from './nativePasskeyPrfProvider';
 // because there is exactly one declaration shipped by the SDK.
 export { PasskeyAlreadyExistsError };
 
-// ============================================
-// Browser credential-IDs registry (localStorage)
-// ============================================
-
-// Web has no equivalent of iOS's iCloud-synced keychain or Android's
-// Block Store, so localStorage is the best-effort persistence: wiped on
-// app reset / cache clear, but survives reloads. Shared key with
-// passkeyService so the read side here always sees newly-registered
-// IDs without needing a runtime hook into passkeyService.
-//
-// Native is unaffected: the plugin reads from synced platform storage
-// inside KnownCredentialsStore, so this fallback is unused there.
+// localStorage shadow of credential IDs we've seen (browser-only;
+// native uses the iCloud-synced KnownCredentialsStore).
 const PASSKEY_KNOWN_CREDENTIALS_KEY = 'passkeyKnownCredentials';
+
+// Marker set: credentials we've already given a custom user.name to
+// (either at create or via signalRename). Gates re-rename since
+// WebAuthn doesn't expose the stored user.name on assertion.
+const PASSKEY_CUSTOM_NAMED_KEY = 'passkeyCustomNamedCredentials';
+
+// The credentialId of the most recent successful sign-in. Used to
+// constrain follow-up sign-in derives (listLabels, saveLabel, label
+// switch) to that exact cred so the picker auto-picks on native and
+// shows a single-row list on web — eliminates ambiguity about which
+// passkey is "current". Cleared on logout / history clear; preserved
+// across label switches (labels share a credential).
+const PASSKEY_ACTIVE_CRED_KEY = 'passkeyActiveCredentialId';
 
 function getKnownLocal(): string[] {
   try {
@@ -69,14 +73,43 @@ function addKnownLocal(credentialIdBase64: string): void {
   );
 }
 
-// ============================================
-// Base64 ↔ Uint8Array helpers
-// ============================================
+function getCustomNamedLocal(): string[] {
+  try {
+    const raw = localStorage.getItem(PASSKEY_CUSTOM_NAMED_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((x): x is string => typeof x === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
 
-// The SDK's browser PasskeyProvider exchanges credential IDs as
-// Uint8Array. The host-side registry persists strings (for stable
-// localStorage shape and parity with iOS/Android base64 keychain
-// values), so every boundary needs an encode/decode hop.
+function addCustomNamedLocal(credentialIdBase64: string): void {
+  const existing = getCustomNamedLocal();
+  if (existing.includes(credentialIdBase64)) return;
+  try {
+    localStorage.setItem(
+      PASSKEY_CUSTOM_NAMED_KEY,
+      JSON.stringify([...existing, credentialIdBase64]),
+    );
+  } catch {
+    // Best-effort; signalRename is idempotent across the timestamp shape.
+  }
+}
+
+function getActiveCredId(): string | null {
+  return localStorage.getItem(PASSKEY_ACTIVE_CRED_KEY);
+}
+
+function setActiveCredId(credentialIdBase64: string): void {
+  try {
+    localStorage.setItem(PASSKEY_ACTIVE_CRED_KEY, credentialIdBase64);
+  } catch {
+    // Best-effort; the cache + warm Nostr OnceCell still cover most flows.
+  }
+}
 
 function base64ToBytes(b64: string): Uint8Array {
   const binary = atob(b64);
@@ -89,6 +122,98 @@ function bytesToBase64(bytes: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
+}
+
+// Chrome's signalCurrentUserDetails takes userId as base64url string,
+// not BufferSource as the spec declares.
+function bytesToBase64Url(bytes: Uint8Array): string {
+  return bytesToBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function captureRawError(e: unknown): RawDeriveError {
+  return {
+    code: (e as { code?: string })?.code,
+    name: e instanceof Error ? e.name : undefined,
+    message: e instanceof Error ? e.message : String(e),
+  };
+}
+
+// Mobile browsers' get() picker prominently surfaces cross-device QR
+// for empty allowCredentials, while desktop's doesn't — gates the
+// two-CTA HomePage fallback. Prefers UA Client Hints; falls back to
+// UA string with the iPad-on-iOS-13+ Mac-UA disambiguation.
+export function isMobileBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const uaData = (navigator as { userAgentData?: { mobile?: boolean } }).userAgentData;
+  if (uaData && typeof uaData.mobile === 'boolean') return uaData.mobile;
+  const ua = navigator.userAgent || '';
+  if (/Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1) return true;
+  return /Android|iPhone|iPad|iPod|Mobi/i.test(ua);
+}
+
+/** UTC ISO-8601 to second precision, e.g. `2026-05-06T21:14:56`. */
+function createTimestampLabel(): string {
+  return new Date().toISOString().slice(0, 19);
+}
+
+/**
+ * Best-effort retroactive rename via WebAuthn L3
+ * `PublicKeyCredential.signalCurrentUserDetails`. Pushes a per-credential
+ * label (`Glow · <ISO timestamp>`) to the authenticator so legacy
+ * passkeys that all share `user.name = "Glow"` (and therefore collapse
+ * into a single row in Apple Passwords / similar pickers) become
+ * individually identifiable in the OS-level passkey settings and the
+ * next sign-in picker. The timestamp on a renamed legacy credential
+ * is the (first) sign-in time on this device, not the original create
+ * time — we don't have a way to recover the original create time
+ * post-hoc.
+ *
+ * No-op when:
+ * - The browser doesn't expose `signalCurrentUserDetails` (Safari < 18,
+ *   Firefox, Chrome < 132 without the flag).
+ * - The credential doesn't exist on this device for the given rpId
+ *   (signal API throws; we swallow).
+ * - userHandle is null (rare; the credential isn't discoverable).
+ *
+ * Idempotent — calling with the same name on the same credential is
+ * a no-op at the platform level. Safe to invoke on every sign-in.
+ */
+async function signalRename(
+  rpId: string,
+  userHandle: Uint8Array,
+  credentialId: Uint8Array,
+): Promise<void> {
+  const signal = (PublicKeyCredential as unknown as {
+    signalCurrentUserDetails?: (opts: {
+      rpId: string;
+      userId: string;
+      name: string;
+      displayName: string;
+    }) => Promise<void>;
+  }).signalCurrentUserDetails;
+
+  if (typeof signal !== 'function') return;
+
+  // Skip credentials we've already named (created or previously renamed)
+  // to avoid drifting their label on every sign-in.
+  const credIdB64 = bytesToBase64(credentialId);
+  if (getCustomNamedLocal().includes(credIdB64)) return;
+
+  try {
+    const label = `Glow · ${createTimestampLabel()}`;
+    await signal.call(PublicKeyCredential, {
+      rpId,
+      userId: bytesToBase64Url(userHandle),
+      name: label,
+      displayName: label,
+    });
+    addCustomNamedLocal(credIdB64);
+    logger.info(LogCategory.AUTH, 'Passkey rename signaled');
+  } catch (e) {
+    logger.warn(LogCategory.AUTH, 'signalCurrentUserDetails failed', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
 }
 
 // ============================================
@@ -104,15 +229,36 @@ logger.info(LogCategory.AUTH, 'Passkey PRF provider', {
   platform: native ? 'native' : 'browser',
 });
 
-// `autoRegister: false` matches the prior browser behavior: assertion
-// failures (no credential / cancelled) propagate without silently
-// auto-registering. Onboarding always uses `createPasskey()` explicitly,
-// then `derivePrfSeed()` for the first sign-in. Hosts that want the
-// auto-register-on-first-derive ergonomics can opt in by switching to
-// `autoRegister: true` here.
+// autoRegister false: explicit createPasskey + derivePrfSeed split.
+// authenticatorAttachment + hints scope the create-time chooser to
+// platform authenticators on browsers that honor them; native skips
+// both (preferImmediatelyAvailableCredentials covers it).
 const sdkProvider = native
   ? new NativePasskeyPrfProvider({ rpId, rpName: 'Glow' })
-  : new SdkBrowserPasskeyProvider({ rpId, rpName: 'Glow', autoRegister: false });
+  : new SdkBrowserPasskeyProvider({
+      rpId,
+      rpName: 'Glow',
+      autoRegister: false,
+      authenticatorAttachment: 'platform',
+      hints: ['client-device'],
+    });
+
+/**
+ * Snapshot of a derive call's underlying error, captured *before* it
+ * round-trips through Rust's `setupWallet` / `getWallet` (which rewraps
+ * everything as an opaque "PRF error: Passkey error: …" generic Error
+ * and strips the original variant). Hosts read this from their catch
+ * block to recover the original `USER_CANCELLED` / `CREDENTIAL_NOT_FOUND`
+ * signal.
+ */
+export interface RawDeriveError {
+  /** Plugin-level error code (`USER_CANCELLED`, `CREDENTIAL_NOT_FOUND`, …). */
+  code?: string;
+  /** Original `Error.name`. */
+  name?: string;
+  /** Original `Error.message`. */
+  message?: string;
+}
 
 /**
  * App-level wrapper around the platform-specific provider.
@@ -123,6 +269,23 @@ const sdkProvider = native
 class AppPasskeyPrfProvider implements PrfProvider {
   /** Optional callback fired after a PRF prompt succeeds in derivePrfSeed. */
   onAuthComplete?: () => void;
+
+  /**
+   * Cached `immediateGet` capability flag.
+   *  - `undefined`: not yet checked (lazy)
+   *  - `null`: capability lookup unsupported / failed
+   *  - `true`/`false`: browser explicitly advertised support
+   */
+  private _immediateGetSupported: boolean | null | undefined = undefined;
+
+  /**
+   * Raw error from the most recent derive call. Reset to null at the
+   * start of every `derivePrfSeed` / `derivePrfSeeds` invocation, set
+   * if the underlying platform call rejects. Read it after `setupWallet`
+   * / `getWallet` rejects to recover the original error code, since
+   * Rust's UniFFI binding loses variant info on the way back to JS.
+   */
+  lastDeriveError: RawDeriveError | null = null;
 
   /**
    * Mode for the next `derivePrfSeed` call (and any chained calls until
@@ -143,6 +306,33 @@ class AppPasskeyPrfProvider implements PrfProvider {
    */
   mode: 'sign-in' | 'create' = 'create';
 
+  // True when the discovery probe (sign-in attempt) silently no-UIs
+  // for users with no matching credentials — what HomePage uses to
+  // decide whether to fall back to two explicit CTAs. Native is
+  // always true (preferImmediatelyAvailableCredentials in the
+  // Capacitor passkey-prf plugin); web is true only when the browser
+  // advertises WebAuthn immediateGet support (Chrome flag-gated).
+  async supportsImmediateGet(): Promise<boolean> {
+    if (native) return true;
+    if (this._immediateGetSupported === true) return true;
+    if (this._immediateGetSupported === false) return false;
+    if (this._immediateGetSupported === null) return false;
+    try {
+      if (typeof PublicKeyCredential === 'undefined'
+          || typeof (PublicKeyCredential as { getClientCapabilities?: unknown }).getClientCapabilities !== 'function') {
+        this._immediateGetSupported = null;
+        return false;
+      }
+      const caps = await (PublicKeyCredential as unknown as {
+        getClientCapabilities: (kind: string) => Promise<{ immediateGet?: boolean }>;
+      }).getClientCapabilities('public-key');
+      this._immediateGetSupported = caps?.immediateGet === true;
+    } catch {
+      this._immediateGetSupported = null;
+    }
+    return this._immediateGetSupported === true;
+  }
+
   async isPrfAvailable(): Promise<boolean> {
     try {
       const available = await sdkProvider.isPrfAvailable();
@@ -158,13 +348,7 @@ class AppPasskeyPrfProvider implements PrfProvider {
     }
   }
 
-  /**
-   * Create a new passkey. Returns credential ID + AAGUID + BE flag.
-   * AAGUID and backupEligible are null on the native path until the
-   * Capacitor plugin starts surfacing them.
-   *
-   * @throws PasskeyAlreadyExistsError when excludeCredentialIds blocks.
-   */
+  /** @throws PasskeyAlreadyExistsError when excludeCredentialIds blocks. */
   async createPasskey(
     options: { excludeCredentialIds?: string[] } = {},
   ): Promise<{ credentialId: string; aaguid: string | null; backupEligible: boolean | null }> {
@@ -172,20 +356,44 @@ class AppPasskeyPrfProvider implements PrfProvider {
       excludeCount: options.excludeCredentialIds?.length ?? 0,
     });
 
+    // Per-create label so password managers render distinct picker
+    // rows. Apple Passwords dedupes by (rpId, user.name), so the
+    // rpName-derived default would collapse every Glow passkey into
+    // one row.
+    const label = `Glow · ${createTimestampLabel()}`;
+
     let credentialId: string;
-    let aaguid: string | null = null;
-    let backupEligible: boolean | null = null;
+    let aaguid: string | null;
+    let backupEligible: boolean | null;
 
     if (native) {
-      credentialId = await (sdkProvider as NativePasskeyPrfProvider).createPasskey(options);
+      const result = await (sdkProvider as NativePasskeyPrfProvider).createPasskey({
+        excludeCredentialIds: options.excludeCredentialIds,
+        userName: label,
+        userDisplayName: label,
+      });
+      credentialId = result.credentialId;
+      aaguid = result.aaguid;
+      backupEligible = result.backupEligible;
     } else {
-      const excludeBytes = (options.excludeCredentialIds ?? []).map(base64ToBytes);
+      const request: CreatePasskeyRequest = {
+        excludeCredentialIds: (options.excludeCredentialIds ?? []).map(base64ToBytes),
+        userName: label,
+        userDisplayName: label,
+      };
       const browser = sdkProvider as SdkBrowserPasskeyProvider;
-      const result = await browser.createPasskey(excludeBytes);
+      const result = await browser.createPasskey(request);
       credentialId = bytesToBase64(result.credentialId);
       aaguid = result.aaguid ? bytesToBase64(result.aaguid) : null;
       backupEligible = result.backupEligible;
     }
+    // Mark so signalRename leaves this cred's label alone.
+    addCustomNamedLocal(credentialId);
+    // Pin the immediate next derive (setupWallet's bulk PRF) to this
+    // cred so the OS picker auto-resolves on Android instead of
+    // showing every cred for the RP. iOS' preferImmediatelyAvailableCredentials
+    // already auto-picks single-row matches; this makes Android match.
+    setActiveCredId(credentialId);
     logger.info(LogCategory.AUTH, 'Passkey created with PRF support', {
       hasAaguid: aaguid != null,
       backupEligible,
@@ -197,33 +405,46 @@ class AppPasskeyPrfProvider implements PrfProvider {
     const autoRegister = this.mode === 'create';
     logger.info(LogCategory.AUTH, 'Deriving PRF seed', { mode: this.mode });
 
+    this.lastDeriveError = null;
     let seed: Uint8Array;
-    if (native) {
-      seed = await (sdkProvider as NativePasskeyPrfProvider).derivePrfSeed(salt, { autoRegister });
-    } else {
-      // Sign-in constrains to tracked credentials (deterministic
-      // seed). Create-mode skips: some authenticators (Chrome
-      // Password Manager on Android 12 observed) don't surface a
-      // just-registered credential through allowCredentials
-      // filtering yet — trust discoverability instead.
-      const browser = sdkProvider as SdkBrowserPasskeyProvider;
-      browser.allowCredentialIds =
-        this.mode === 'create' ? [] : getKnownLocal().map(base64ToBytes);
-      browser.onAssertionCredentialId = (idBytes) => {
+    try {
+      if (native) {
+        const activeCredId = getActiveCredId();
+        seed = await (sdkProvider as NativePasskeyPrfProvider).derivePrfSeed(salt, {
+          autoRegister,
+          allowCredentialIds: activeCredId ? [activeCredId] : undefined,
+        });
+      } else {
+        // Constrain follow-up derives to the active cred so listLabels
+        // / saveLabel / label switches auto-pick on native and avoid
+        // ambiguity on web. Initial sign-in (no active cred yet) stays
+        // discoverable so the OS picker can surface synced creds.
+        const activeCredId = getActiveCredId();
+        const browser = sdkProvider as SdkBrowserPasskeyProvider;
+        browser.allowCredentialIds = activeCredId ? [base64ToBytes(activeCredId)] : [];
+        browser.onAssertionCredentialId = (idBytes, userHandle) => {
+          const credIdB64 = bytesToBase64(idBytes);
+          try {
+            addKnownLocal(credIdB64);
+            setActiveCredId(credIdB64);
+          } catch (e) {
+            logger.warn(LogCategory.AUTH, 'addKnownLocal failed', {
+              error: e instanceof Error ? e.message : String(e),
+            });
+          }
+          // Best-effort retroactive rename for legacy "Glow" creds.
+          // Fire-and-forget; must not block the assertion path.
+          if (userHandle) void signalRename(rpId, userHandle, idBytes);
+        };
         try {
-          addKnownLocal(bytesToBase64(idBytes));
-        } catch (e) {
-          logger.warn(LogCategory.AUTH, 'addKnownLocal failed', {
-            error: e instanceof Error ? e.message : String(e),
-          });
+          seed = await browser.derivePrfSeed(salt);
+        } finally {
+          browser.onAssertionCredentialId = undefined;
         }
-      };
-      try {
-        seed = await browser.derivePrfSeed(salt);
-      } finally {
-        browser.allowCredentialIds = [];
-        browser.onAssertionCredentialId = undefined;
       }
+    } catch (e) {
+      this.lastDeriveError = captureRawError(e);
+      throw e;
     }
 
     logger.info(LogCategory.AUTH, 'PRF seed derived successfully');
@@ -239,28 +460,43 @@ class AppPasskeyPrfProvider implements PrfProvider {
       count: salts.length,
     });
 
+    this.lastDeriveError = null;
     let seeds: Uint8Array[];
-    if (native) {
-      seeds = await (sdkProvider as NativePasskeyPrfProvider).derivePrfSeeds(salts, { autoRegister });
-    } else {
-      const browser = sdkProvider as SdkBrowserPasskeyProvider;
-      browser.allowCredentialIds =
-        this.mode === 'create' ? [] : getKnownLocal().map(base64ToBytes);
-      browser.onAssertionCredentialId = (idBytes) => {
+    try {
+      if (native) {
+        const activeCredId = getActiveCredId();
+        seeds = await (sdkProvider as NativePasskeyPrfProvider).derivePrfSeeds(salts, {
+          autoRegister,
+          allowCredentialIds: activeCredId ? [activeCredId] : undefined,
+        });
+      } else {
+        // See derivePrfSeed for the active-cred filter rationale.
+        const activeCredId = getActiveCredId();
+        const browser = sdkProvider as SdkBrowserPasskeyProvider;
+        browser.allowCredentialIds = activeCredId ? [base64ToBytes(activeCredId)] : [];
+        browser.onAssertionCredentialId = (idBytes, userHandle) => {
+          const credIdB64 = bytesToBase64(idBytes);
+          try {
+            addKnownLocal(credIdB64);
+            setActiveCredId(credIdB64);
+          } catch (e) {
+            logger.warn(LogCategory.AUTH, 'addKnownLocal failed', {
+              error: e instanceof Error ? e.message : String(e),
+            });
+          }
+          if (userHandle) {
+            void signalRename(rpId, userHandle, idBytes);
+          }
+        };
         try {
-          addKnownLocal(bytesToBase64(idBytes));
-        } catch (e) {
-          logger.warn(LogCategory.AUTH, 'addKnownLocal failed', {
-            error: e instanceof Error ? e.message : String(e),
-          });
+          seeds = await browser.derivePrfSeeds(salts);
+        } finally {
+          browser.onAssertionCredentialId = undefined;
         }
-      };
-      try {
-        seeds = await browser.derivePrfSeeds(salts);
-      } finally {
-        browser.allowCredentialIds = [];
-        browser.onAssertionCredentialId = undefined;
       }
+    } catch (e) {
+      this.lastDeriveError = captureRawError(e);
+      throw e;
     }
 
     logger.info(LogCategory.AUTH, 'Bulk PRF seeds derived successfully', {

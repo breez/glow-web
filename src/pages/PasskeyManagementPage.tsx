@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Capacitor } from '@capacitor/core';
 import SlideInPage from '../components/layout/SlideInPage';
 import { PasskeyIcon } from '../components/Icons';
 import {
   getAllCredentialAaguids,
+  getLatestBackupEligible,
   getPasskeyMeta,
   hasPasskeyHistory,
 } from '../services/passkeyService';
@@ -28,16 +28,6 @@ function formatTimestamp(ts: number | undefined): string {
   }
 }
 
-// Native plugins don't surface AAGUID yet, so iOS / Android fall back
-// to the platform-default credential store name.
-function getNativeStorageLabel(): string | null {
-  switch (Capacitor.getPlatform()) {
-    case 'ios': return 'iCloud Keychain';
-    case 'android': return 'Google Password Manager';
-    default: return null;
-  }
-}
-
 // Pick the most recent AAGUID Glow has recorded. Unambiguous in the
 // one-passkey-per-device case we ship.
 function resolveProvider(): AaguidProvider | null {
@@ -53,12 +43,10 @@ const PasskeyManagementPage: React.FC<PasskeyManagementPageProps> = ({ onBack })
   const [registered] = useState<boolean>(() => hasPasskeyHistory());
   const [meta] = useState(() => getPasskeyMeta());
   const [provider] = useState<AaguidProvider | null>(() => resolveProvider());
-  const nativeFallback = getNativeStorageLabel();
-  // Title priority: AAGUID provider name > native default > "Passkey".
-  const title = registered
-    ? (provider?.name ?? nativeFallback ?? 'Passkey')
-    : 'No passkey';
+  const [backupEligible] = useState<boolean | undefined>(() => getLatestBackupEligible());
+  const title = registered ? (provider?.name ?? 'Passkey') : 'No passkey';
   const hasTimestamps = registered && (meta.firstSeenAt || meta.lastSeenAt);
+  const showSync = registered && backupEligible !== undefined;
 
   return (
     <SlideInPage title="Passkey" closeStyle="back" onClose={onBack} slideFrom="right">
@@ -83,8 +71,14 @@ const PasskeyManagementPage: React.FC<PasskeyManagementPageProps> = ({ onBack })
             </div>
           </div>
 
-          {hasTimestamps && (
+          {(hasTimestamps || showSync) && (
             <div className="mt-4 border-t border-spark-border pt-3 space-y-1.5">
+              {showSync && (
+                <div className="flex items-center justify-between gap-3 text-xs text-spark-text-muted">
+                  <span>Sync</span>
+                  <span>{backupEligible ? 'Across your devices' : 'This device only'}</span>
+                </div>
+              )}
               {meta.firstSeenAt && (
                 <div className="flex items-center justify-between gap-3 text-xs text-spark-text-muted">
                   <span>First sign-in</span>

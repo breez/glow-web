@@ -4,24 +4,35 @@ import GlowLogo from '@/components/GlowLogo';
 import { safeAreaTop, safeAreaBottom } from '@/utils/safeAreaInsets';
 import { useStatusBarColor } from '@/hooks/useStatusBarColor';
 import { STATUS_BAR_DARK } from '@/utils/statusBarManager';
+import { passkeyPrfProvider } from '@/services/passkeyPrfProvider';
 
 interface HomePageProps {
   onRestoreWallet: () => void;
   onCreateNewWallet: () => void;
-  onCreatePasskey: () => void;
+  /**
+   * Routes through the discovery flow (sign-in attempt first, falls
+   * through to create only if no credential matches). Tripped by the
+   * "Get Started" / "Use Passkey" / "Sign In with Existing Passkey"
+   * CTAs.
+   */
   onUsePasskey: () => void;
+  /**
+   * Routes directly to the create flow, skipping discovery. Tripped by
+   * the "Create New Wallet" CTA on browsers without
+   * `immediateGet` support, where an unconditional discovery probe
+   * would otherwise show a cross-device QR sheet on the first click
+   * for users who genuinely have no passkeys.
+   */
+  onCreatePasskey: () => void;
   prfAvailable: boolean;
-  /** True when this device has previously used a passkey (prioritize sign-in). */
-  hasPasskeyBefore?: boolean;
 }
 
 const HomePage: React.FC<HomePageProps> = ({
   onRestoreWallet,
   onCreateNewWallet,
-  onCreatePasskey,
   onUsePasskey,
+  onCreatePasskey,
   prfAvailable,
-  hasPasskeyBefore = false,
 }) => {
   // Landing page sits on a flat spark-dark background, so pin the
   // system bars to the same solid tone while we're shown.
@@ -29,11 +40,26 @@ const HomePage: React.FC<HomePageProps> = ({
 
   const [showMnemonicFlow, setShowMnemonicFlow] = useState(false);
   const [starsAnimating, setStarsAnimating] = useState(false);
+  // Tri-state: null while the capability probe is in-flight, then true
+  // / false once `getClientCapabilities()` resolves. Default is `null`
+  // (loading) so we don't flash the wrong button set on first paint.
+  // After resolution, `false` is the assumption for any browser that
+  // doesn't advertise `immediateGet` (most current browsers including
+  // mobile Safari and mobile Chrome without the experiment flag).
+  const [immediateGetSupported, setImmediateGetSupported] = useState<boolean | null>(null);
   const { handleTap: handleLogoTap } = useSecretTap(5, 2000, false, () => setShowMnemonicFlow(v => !v));
 
   useEffect(() => {
     const timer = setTimeout(() => setStarsAnimating(true), 300);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    passkeyPrfProvider.supportsImmediateGet().then((supported) => {
+      if (!cancelled) setImmediateGetSupported(supported);
+    });
+    return () => { cancelled = true; };
   }, []);
 
   return (
@@ -115,25 +141,44 @@ const HomePage: React.FC<HomePageProps> = ({
         {/* CTA Buttons */}
         <div className="w-full max-w-xs space-y-4 min-h-44">
           {prfAvailable && !showMnemonicFlow ? (
-            hasPasskeyBefore ? (
-              // Returning user (has registered a passkey before): the only
-              // CTA is sign-in. There's no "Create" path here; multiple
-              // wallets are achieved via multiple labels under a single
-              // passkey, not multiple passkeys per RP per device. The
-              // secret-tap on the logo flips into the mnemonic flow as
-              // a support escape hatch for the rare "I cleared
-              // localStorage" case.
+            immediateGetSupported === true ? (
               <>
+                {/* Single CTA when `immediateGet` is advertised
+                    (Chrome with the experiment flag, native via
+                    preferImmediatelyAvailableCredentials). The probe
+                    runs with `mediation: 'immediate'` and silently
+                    no-UIs when no credential is available, so a fresh
+                    user falls through to create without seeing a
+                    sheet. */}
                 <button
                   onClick={onUsePasskey}
-                  data-testid="use-passkey-button"
+                  data-testid="get-started-button"
                   className="button w-full py-4 text-base tracking-wider"
                 >
-                  Use Passkey
+                  Get Started
+                </button>
+
+                <button
+                  onClick={() => setShowMnemonicFlow(true)}
+                  className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors w-full text-center py-2"
+                >
+                  Use Recovery Phrase Instead
                 </button>
               </>
             ) : (
               <>
+                {/* Two-CTA fallback for browsers without `immediateGet`.
+                    Modern Chromium (desktop + mobile) opens the cross-
+                    device QR / security-key picker for empty-
+                    allowCredentials get() regardless of `hints` /
+                    `authenticatorAttachment`, which is hostile UX for
+                    the common "I just installed Glow" path. Safari and
+                    Firefox surface their own platform-specific sheets
+                    that are similarly noisy. Splitting the entry into
+                    explicit "create" vs "use existing" avoids the
+                    sheet entirely on the create path. The sign-in
+                    path still triggers it (user opted into discovery
+                    by clicking, so the picker is expected). */}
                 <button
                   onClick={onCreatePasskey}
                   data-testid="create-passkey-button"
@@ -144,7 +189,7 @@ const HomePage: React.FC<HomePageProps> = ({
 
                 <button
                   onClick={onUsePasskey}
-                  data-testid="use-passkey-button"
+                  data-testid="signin-passkey-button"
                   className="button-secondary w-full py-4 rounded-xl font-display font-semibold text-sm tracking-wide"
                 >
                   Use Existing Passkey

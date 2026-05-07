@@ -33,16 +33,22 @@ declare global {
             userName?: string;
             userDisplayName?: string;
             excludeCredentialIds?: string[];
-          }): Promise<{ credentialId: string }>;
+          }): Promise<{
+            credentialId: string;
+            aaguid?: string | null;
+            backupEligible?: boolean | null;
+          }>;
           derivePrfSeed(options: {
             rpId?: string;
             salt: string;
             autoRegister?: boolean;
+            allowCredentialIds?: string[];
           }): Promise<{ seed: string }>;
           derivePrfSeeds(options: {
             rpId?: string;
             salts: string[];
             autoRegister?: boolean;
+            allowCredentialIds?: string[];
           }): Promise<{ seeds: string[] }>;
           checkDomainAssociation(options?: {
             rpId?: string;
@@ -115,15 +121,42 @@ export class NativePasskeyPrfProvider {
    *         typed JS error.
    */
   async createPasskey(
-    options: { excludeCredentialIds?: string[] } = {},
-  ): Promise<string> {
+    options: {
+      excludeCredentialIds?: string[];
+      /**
+       * Per-call override for `user.name` on the WebAuthn registration
+       * request. The native plugin forwards this verbatim to the SDK's
+       * iOS/Android `PasskeyProvider.userName`, which becomes the `name`
+       * field on `ASAuthorizationPlatformPublicKeyCredentialRegistrationRequest`
+       * on iOS (also drives Apple Passwords' picker label) and the
+       * `name` field on Android `CreatePublicKeyCredentialRequest`'s
+       * `user` JSON. Keeps glow-app's per-create label format
+       * (`Glow · #<hash>`) consistent with the web path.
+       */
+      userName?: string;
+      /**
+       * Per-call override for `user.displayName`. iOS doesn't expose a
+       * displayName parameter on its registration API (only `name`),
+       * so on iOS this is effectively unused at the credential-storage
+       * layer; Android's CredentialManager does honor it. Set to the
+       * same value as `userName` for cross-platform consistency.
+       */
+      userDisplayName?: string;
+    } = {},
+  ): Promise<{ credentialId: string; aaguid: string | null; backupEligible: boolean | null }> {
     try {
-      const { credentialId } = await getPlugin().createPasskey({
+      const { credentialId, aaguid, backupEligible } = await getPlugin().createPasskey({
         rpId: this.rpId,
         rpName: this.rpName,
         excludeCredentialIds: options.excludeCredentialIds ?? [],
+        userName: options.userName,
+        userDisplayName: options.userDisplayName,
       });
-      return credentialId;
+      return {
+        credentialId,
+        aaguid: aaguid ?? null,
+        backupEligible: backupEligible ?? null,
+      };
     } catch (e) {
       // The SDK surfaces the platform's duplicate-prevention refusal
       // (ASAuthorizationError.matchedExcludedCredential on iOS) as
@@ -162,12 +195,13 @@ export class NativePasskeyPrfProvider {
 
   async derivePrfSeed(
     salt: string,
-    options: { autoRegister?: boolean } = {},
+    options: { autoRegister?: boolean; allowCredentialIds?: string[] } = {},
   ): Promise<Uint8Array> {
     const { seed } = await getPlugin().derivePrfSeed({
       rpId: this.rpId,
       salt,
       autoRegister: options.autoRegister,
+      allowCredentialIds: options.allowCredentialIds,
     });
     return base64ToBytes(seed);
   }
@@ -175,12 +209,13 @@ export class NativePasskeyPrfProvider {
   /** Bulk PRF derivation; native plugin uses dual-salt where supported. */
   async derivePrfSeeds(
     salts: string[],
-    options: { autoRegister?: boolean } = {},
+    options: { autoRegister?: boolean; allowCredentialIds?: string[] } = {},
   ): Promise<Uint8Array[]> {
     const { seeds } = await getPlugin().derivePrfSeeds({
       rpId: this.rpId,
       salts,
       autoRegister: options.autoRegister,
+      allowCredentialIds: options.allowCredentialIds,
     });
     return seeds.map(base64ToBytes);
   }

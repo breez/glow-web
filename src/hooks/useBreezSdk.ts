@@ -30,6 +30,7 @@ import {
   getWallet,
   hasPasskeyHistory,
   markLabelUsed,
+  invalidatePasskey,
 } from '../services/passkeyService';
 import { secureStorage, deviceOnlyStorage, SecureStorageError } from '../services/secureStorage';
 import { passkeyPrfProvider } from '../services/passkeyPrfProvider';
@@ -581,6 +582,11 @@ export function useBreezSdk(
   const switchPasskeyLabel = useCallback(async (newLabel: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
+
+    // Drop the cached Passkey so the new label gets a fresh Nostr
+    // OnceCell. Without this, the SDK reuses the prior label's
+    // identity in cached state.
+    invalidatePasskey();
 
     // PRF first so a cancel here leaves the active wallet untouched.
     let wallet;
