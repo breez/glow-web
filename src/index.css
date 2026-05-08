@@ -484,29 +484,31 @@ h6 {
    FORM ELEMENTS
    ============================================ */
 
-textarea,
-input,
-select {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  background: var(--spark-dark);
-  color: var(--spark-text-primary);
-  border: 1px solid var(--spark-border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  transition: all 0.2s ease;
-}
+@layer base {
+  textarea,
+  input,
+  select {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--spark-dark);
+    color: var(--spark-text-primary);
+    border: 1px solid var(--spark-border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    transition: all 0.2s ease;
+  }
 
-textarea:focus,
-input:focus,
-select:focus {
-  outline: none;
-  border-color: var(--spark-primary);
-  box-shadow: 0 0 0 3px var(--glow-primary);
-}
+  textarea:focus,
+  input:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--spark-primary);
+    box-shadow: 0 0 0 3px var(--glow-primary);
+  }
 
-input::placeholder,
-textarea::placeholder {
-  color: var(--spark-text-muted);
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--spark-text-muted);
+  }
 }
 
 /* Custom select styling */

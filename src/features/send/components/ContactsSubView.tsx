@@ -3,7 +3,7 @@ import type { Contact } from '@breeztech/breez-sdk-spark';
 import { useContactsContext } from '../../../contexts/ContactsContext';
 import { isValidLightningAddress, searchContacts } from '../../../hooks/useContacts';
 import { FormInput, FormError, PrimaryButton, ConfirmDialog } from '../../../components/ui';
-import { BackIcon, PlusIcon, EditPencilIcon, TrashIcon, ContactsIcon, SearchIcon } from '../../../components/Icons';
+import { BackIcon, PlusIcon, EditPencilIcon, TrashIcon, ContactsIcon, SearchIcon, CloseIcon } from '../../../components/Icons';
 import { useWallet } from '../../../contexts/WalletContext';
 import { dismissKeyboard } from '../../../utils/keyboard';
 
@@ -132,10 +132,11 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
 
         {/* Search */}
         <div className="relative mb-3">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-spark-text-muted pointer-events-none">
-            <SearchIcon />
-          </div>
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-spark-text-muted pointer-events-none" />
           <input
+            id="contacts-search"
+            name="contacts-search"
+            aria-label="Search contacts"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={async (e) => {
@@ -150,15 +151,25 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
               }
             }}
             enterKeyHint="search"
-            type="search"
+            type="text"
             inputMode="search"
             autoCapitalize="none"
             autoCorrect="off"
             autoComplete="off"
             spellCheck={false}
             placeholder="Search contacts..."
-            className="w-full bg-spark-dark border border-spark-border rounded-xl pl-9 pr-4 py-2.5 text-sm text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-0 transition-all"
+            className="w-full bg-spark-dark border border-spark-border rounded-xl pl-9 pr-9 py-2.5 text-sm text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-0 transition-all"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-spark-text-muted hover:text-spark-text-primary transition-colors"
+            >
+              <CloseIcon size="sm" />
+            </button>
+          )}
         </div>
 
         {/* Contact list */}
