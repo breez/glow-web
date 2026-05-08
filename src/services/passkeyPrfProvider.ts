@@ -272,6 +272,15 @@ const native = isNativePlatform();
 const rpId = import.meta.env.VITE_PASSKEY_RP_ID
   || (native ? 'keys.breez.technology' : window.location.hostname);
 
+// Google Password Manager AAGUID (base64), and the grace window we hold
+// the next derive call by when GPM was the registering provider on web.
+// GPM indexes new credentials asynchronously: an immediate assertion
+// fires before the credential is discoverable and the picker omits GPM.
+// Mirrors the same fix applied in the native capacitor-passkey-prf
+// plugin (POST_CREATE_GRACE_TOTAL_MS / postCreateGraceTotal).
+const GPM_AAGUID_BASE64 = '6puNZk0BHSE85La0jLV11A==';
+const POST_CREATE_GRACE_TOTAL_MS = 800;
+
 logger.info(LogCategory.AUTH, 'Passkey PRF provider', {
   rpId,
   platform: native ? 'native' : 'browser',
@@ -329,6 +338,14 @@ class AppPasskeyPrfProvider implements PrfProvider {
    *  - `true`/`false`: browser explicitly advertised support
    */
   private _immediateGetSupported: boolean | null | undefined = undefined;
+
+  /**
+   * Deadline (epoch ms) for the post-create grace window held against
+   * the next browser-path derive call when GPM was the registering
+   * provider. `null` when no grace is pending. Native path is handled
+   * by the capacitor-passkey-prf plugin.
+   */
+  private postCreateGraceDeadlineMs: number | null = null;
 
   /**
    * Raw error from the most recent derive call. Reset to null at the
@@ -421,6 +438,16 @@ class AppPasskeyPrfProvider implements PrfProvider {
     }
   }
 
+  private async consumePostCreateGrace(): Promise<void> {
+    const deadline = this.postCreateGraceDeadlineMs;
+    if (deadline === null) return;
+    this.postCreateGraceDeadlineMs = null;
+    const remaining = deadline - Date.now();
+    if (remaining > 0) {
+      await new Promise(resolve => setTimeout(resolve, remaining));
+    }
+  }
+
   /** @throws PasskeyAlreadyExistsError when excludeCredentialIds blocks. */
   async createPasskey(
     options: { excludeCredentialIds?: string[] } = {},
@@ -464,6 +491,9 @@ class AppPasskeyPrfProvider implements PrfProvider {
       } finally {
         browser.currentSignal = undefined;
       }
+      if (aaguid === GPM_AAGUID_BASE64) {
+        this.postCreateGraceDeadlineMs = Date.now() + POST_CREATE_GRACE_TOTAL_MS;
+      }
     }
     // Cache the label so PasskeyManagementPage renders it (instead
     // of the generic "Passkey" fallback) and signalRename re-pushes
@@ -503,6 +533,7 @@ class AppPasskeyPrfProvider implements PrfProvider {
           nativeProvider.onAssertionCredentialId = undefined;
         }
       } else {
+        await this.consumePostCreateGrace();
         // Constrain follow-up derives to the active cred so listLabels
         // / saveLabel / label switches auto-pick on native and avoid
         // ambiguity on web. Initial sign-in (no active cred yet) stays
@@ -567,6 +598,7 @@ class AppPasskeyPrfProvider implements PrfProvider {
           nativeProvider.onAssertionCredentialId = undefined;
         }
       } else {
+        await this.consumePostCreateGrace();
         // See derivePrfSeed for the active-cred filter rationale.
         const activeCredId = getActiveCredId();
         const browser = sdkProvider as SdkBrowserPasskeyProvider;
