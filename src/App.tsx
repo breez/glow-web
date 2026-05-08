@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy } from 'react';
 import { WalletProvider, WalletInfoProvider } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
@@ -22,10 +22,14 @@ import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import BuyProvidersPage from './pages/BuyProvidersPage';
 import UnlockPage from './pages/UnlockPage';
 import UnlockingPage from './pages/UnlockingPage';
-import PasskeySettingsPage from './pages/PasskeySettingsPage';
-import PasskeyManagementPage from './pages/PasskeyManagementPage';
-import LabelsPage from './pages/LabelsPage';
-import PasskeyLocalStatePage from './pages/PasskeyLocalStatePage';
+// Dev-gated Passkey & Labels hub + the AAGUID lookup database it pulls
+// in (~245 KB JSON). Code-split so neither the main bundle nor any
+// non-dev user pays the parse cost; loads on first navigation into the
+// hub. Settles within one paint on a typical connection.
+const PasskeySettingsPage = lazy(() => import('./pages/PasskeySettingsPage'));
+const PasskeyManagementPage = lazy(() => import('./pages/PasskeyManagementPage'));
+const LabelsPage = lazy(() => import('./pages/LabelsPage'));
+const PasskeyLocalStatePage = lazy(() => import('./pages/PasskeyLocalStatePage'));
 import { ContactsProvider } from './contexts/ContactsContext';
 
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
@@ -365,7 +369,9 @@ const AppContent: React.FC = () => {
           <>
             {renderWalletPage()}
             {renderSettingsPage()}
-            {renderPasskeySettingsPage()}
+            <Suspense fallback={null}>
+              {renderPasskeySettingsPage()}
+            </Suspense>
           </>
         );
 
@@ -374,22 +380,24 @@ const AppContent: React.FC = () => {
           <>
             {renderWalletPage()}
             {renderSettingsPage()}
-            {renderPasskeySettingsPage()}
-            <PasskeyManagementPage
-              onBack={() => setUserScreen('passkeySettings')}
-              onSwitchCredential={async (credId) => {
-                // Route as soon as the cred is pinned (synchronously)
-                // so the layered SettingsPage unmounts before
-                // useBreezSdk nulls the SDK in the disconnect step.
-                // Otherwise SettingsPage's useWallet() throws on the
-                // transient render and blanks the screen.
-                await sdk.prepareSwitchPasskeyCredential(credId, () => {
-                  setPasskeySdkConnected(false);
-                  setPasskeySkipDetection(false);
-                  setUserScreen('passkey');
-                });
-              }}
-            />
+            <Suspense fallback={null}>
+              {renderPasskeySettingsPage()}
+              <PasskeyManagementPage
+                onBack={() => setUserScreen('passkeySettings')}
+                onSwitchCredential={async (credId) => {
+                  // Route as soon as the cred is pinned (synchronously)
+                  // so the layered SettingsPage unmounts before
+                  // useBreezSdk nulls the SDK in the disconnect step.
+                  // Otherwise SettingsPage's useWallet() throws on the
+                  // transient render and blanks the screen.
+                  await sdk.prepareSwitchPasskeyCredential(credId, () => {
+                    setPasskeySdkConnected(false);
+                    setPasskeySkipDetection(false);
+                    setUserScreen('passkey');
+                  });
+                }}
+              />
+            </Suspense>
           </>
         );
 
@@ -398,14 +406,16 @@ const AppContent: React.FC = () => {
           <>
             {renderWalletPage()}
             {renderSettingsPage()}
-            {renderPasskeySettingsPage()}
-            <LabelsPage
-              onBack={() => setUserScreen('passkeySettings')}
-              onSwitchLabel={async (label) => {
-                await sdk.switchPasskeyLabel(label);
-                setUserScreen('wallet');
-              }}
-            />
+            <Suspense fallback={null}>
+              {renderPasskeySettingsPage()}
+              <LabelsPage
+                onBack={() => setUserScreen('passkeySettings')}
+                onSwitchLabel={async (label) => {
+                  await sdk.switchPasskeyLabel(label);
+                  setUserScreen('wallet');
+                }}
+              />
+            </Suspense>
           </>
         );
 
@@ -414,8 +424,10 @@ const AppContent: React.FC = () => {
           <>
             {renderWalletPage()}
             {renderSettingsPage()}
-            {renderPasskeySettingsPage()}
-            <PasskeyLocalStatePage onBack={() => setUserScreen('passkeySettings')} onCompleted={handleLogout} />
+            <Suspense fallback={null}>
+              {renderPasskeySettingsPage()}
+              <PasskeyLocalStatePage onBack={() => setUserScreen('passkeySettings')} onCompleted={handleLogout} />
+            </Suspense>
           </>
         );
 
