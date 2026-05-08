@@ -12,6 +12,12 @@ import GlowLogo from './GlowLogo';
 // External-store measurement of the content-root's left offset, used
 // to anchor the drawer panel to the centered max-w-4xl column.
 // Module-level so identities are stable for useSyncExternalStore.
+//
+// Only window resize changes the offset; scroll does not. A previous
+// version of this listener also subscribed to capture-phase scroll,
+// which on mobile fired dozens of forced synchronous layouts per
+// inertial scroll burst (every getBoundingClientRect call) and stalled
+// the main thread enough to drop frames on the drawer's slide-in.
 const subscribeContentRoot = (notify: () => void) => {
   let rafId: number | null = null;
   const initialNotify = () => {
@@ -22,11 +28,9 @@ const subscribeContentRoot = (notify: () => void) => {
   // content-root is in the DOM) gets re-evaluated next frame.
   rafId = requestAnimationFrame(initialNotify);
   window.addEventListener('resize', notify);
-  window.addEventListener('scroll', notify, true);
   return () => {
     if (rafId !== null) cancelAnimationFrame(rafId);
     window.removeEventListener('resize', notify);
-    window.removeEventListener('scroll', notify, true);
   };
 };
 
