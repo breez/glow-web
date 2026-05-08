@@ -481,6 +481,34 @@ h6 {
 }
 
 /* ============================================
+   MOBILE GPU RELIEF
+   ============================================
+   Mobile GPUs (especially older Android / iOS devices) drop frames
+   when compositing stacked backdrop-filter + large filter: blur. The
+   wallet page renders a `backdrop-blur-xl` header on top of two
+   decorative `blur-3xl` / `blur-2xl` radials, and overlays (side
+   menu, dialogs) layer their own backdrop-blur-* on top of that —
+   the cumulative cost is what stalls the side-menu slide-in on
+   mobile browsers.
+
+   Strip the heaviest filters on touch-only viewports. Trade-off is
+   the glass / halo ambience disappears on mobile; layout, color,
+   and structure stay identical.
+*/
+@media (hover: none) and (pointer: coarse) {
+  .backdrop-blur-sm,
+  .backdrop-blur-md,
+  .backdrop-blur-xl {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .blur-2xl,
+  .blur-3xl {
+    filter: none;
+  }
+}
+
+/* ============================================
    FORM ELEMENTS
    ============================================ */
 
