@@ -499,9 +499,11 @@ h6 {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
-  .blur-2xl,
-  .blur-3xl {
+  .blur-2xl {
     filter: blur(12px);
+  }
+  .blur-3xl {
+    filter: blur(16px);
   }
 }
 
