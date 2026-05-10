@@ -92,8 +92,7 @@ export function useBalanceValidation(
     conversionEstimate,
   }) => {
     if (confirmTokenMode && conversionEstimate && tokenBalance !== undefined) {
-      const required = conversionEstimate.amountIn + conversionEstimate.fee;
-      return required > tokenBalance;
+      return conversionEstimate.amountIn > tokenBalance;
     }
 
     const available = maxAvailableSats();
