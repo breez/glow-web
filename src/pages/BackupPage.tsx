@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { WarningIcon, SpinnerIcon, EyeIcon, FingerprintIcon, PasskeyIcon } from '../components/Icons';
+import { Capacitor } from '@capacitor/core';
+import { WarningIcon, SpinnerIcon, EyeIcon, FingerprintIcon, PasskeyIcon, LockIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
 import { isPasskeyMode, getWallet } from '@/services/passkeyService';
 import { deviceOnlyStorage, secureStorage, getBiometryLabel } from '@/services/secureStorage';
+import { hasVault, unlockVault, VaultError } from '@/services/vault';
+import PasswordForm from '@/components/PasswordForm';
 import { logger, LogCategory } from '@/services/logger';
+
+const isWeb = !Capacitor.isNativePlatform();
 
 interface BackupPageProps {
   onBack: () => void;
@@ -15,8 +20,11 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
   const [isRevealed, setIsRevealed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // null while probing IndexedDB; web-non-passkey only.
+  const [vaultExists, setVaultExists] = useState<boolean | null>(null);
 
   const isPasskey = isPasskeyMode();
+  const isWebVault = isWeb && !isPasskey;
 
   useEffect(() => {
     if (isPasskey) return;
@@ -37,12 +45,20 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
         }
       }
       if (cancelled) return;
+      // Vault present: defer mnemonic load until password unlock.
+      // Otherwise fall through to the legacy plaintext (migration window).
+      if (isWebVault) {
+        const exists = await hasVault();
+        if (cancelled) return;
+        setVaultExists(exists);
+        if (exists) return;
+      }
       setMnemonic(localStorage.getItem('walletMnemonic'));
     })();
     return () => {
       cancelled = true;
     };
-  }, [isPasskey]);
+  }, [isPasskey, isWebVault]);
 
   // Tracks whether passkey-based reveal failed once, so we can offer a
   // secureStorage fallback button in the error UI. We don't try
@@ -119,6 +135,27 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
     }
   };
 
+  const handleRevealVault = async (password: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const phrase = await unlockVault(password);
+      setMnemonic(phrase);
+      setIsRevealed(true);
+    } catch (e) {
+      if (e instanceof VaultError && e.code === 'wrong_password') {
+        setError('Wrong password');
+      } else {
+        logger.error(LogCategory.AUTH, 'Failed to unlock vault for backup', {
+          error: e instanceof Error ? e.message : String(e),
+        });
+        setError('Failed to decrypt recovery phrase');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCopy = async () => {
     if (!mnemonic) return;
     try {
@@ -137,6 +174,10 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
     if (isPasskey) {
       setMnemonic(null);
       setPasskeyAttemptFailed(false);
+      setError(null);
+    } else if (isWebVault) {
+      // Drop the decrypted mnemonic; reveal re-prompts for the password.
+      setMnemonic(null);
       setError(null);
     }
   };
@@ -190,8 +231,8 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             </button>
           )}
 
-          {/* Reveal button — mnemonic mode */}
-          {!isPasskey && !isRevealed && mnemonic && (
+          {/* Reveal: native or web-pre-migration (mnemonic already in memory). */}
+          {!isPasskey && !isWebVault && !isRevealed && mnemonic && (
             <button
               onClick={() => setIsRevealed(true)}
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors"
@@ -204,10 +245,28 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             </button>
           )}
 
-          {/* Mnemonic-mode error: passkey-mode errors are now folded
-              into the fallback card below, so this only renders for
-              non-passkey edge cases. */}
-          {error && !isPasskey && (
+          {/* Password-gated reveal: web non-passkey vault. */}
+          {!isPasskey && isWebVault && vaultExists && !isRevealed && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-6 space-y-4">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
+                  <LockIcon size="xl" className="text-spark-primary" />
+                </div>
+                <span className="font-display font-semibold text-spark-text-primary">Enter password to reveal</span>
+                <span className="text-sm text-spark-text-muted">Your recovery phrase is encrypted</span>
+              </div>
+              <PasswordForm
+                mode="unlock"
+                onSubmit={handleRevealVault}
+                isLoading={isLoading}
+                error={error}
+              />
+            </div>
+          )}
+
+          {/* Generic error banner. Vault path uses PasswordForm's inline error;
+              passkey path uses the fallback card below. */}
+          {error && !isPasskey && !isWebVault && (
             <div className="bg-spark-error/10 border border-spark-error/30 rounded-xl p-4 text-center">
               <p className="text-spark-error text-sm">{error}</p>
             </div>
@@ -308,8 +367,9 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             </div>
           )}
 
-          {/* No backup found (mnemonic mode only) */}
-          {!isPasskey && !mnemonic && (
+          {/* No backup found. Vault path waits for the probe to resolve. */}
+          {!isPasskey && !mnemonic && !isRevealed
+            && (!isWebVault || vaultExists === false) && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-8 text-center">
               <div className="w-16 h-16 rounded-2xl bg-spark-error/20 flex items-center justify-center mx-auto mb-4">
                 <WarningIcon size="xl" className="text-spark-error" />

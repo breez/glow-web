@@ -36,6 +36,10 @@ import {
 } from '../services/passkeyService';
 import { secureStorage, deviceOnlyStorage, SecureStorageError } from '../services/secureStorage';
 import { passkeyPrfProvider } from '../services/passkeyPrfProvider';
+import { hasVault, deleteVault } from '../services/vault';
+
+// Password vault is web-only; native uses biometric / deviceOnlyStorage.
+const isWeb = !Capacitor.isNativePlatform();
 
 
 // ============================================
@@ -68,9 +72,9 @@ function initSdkLogging() {
 // ============================================
 
 const MNEMONIC_KEY = 'walletMnemonic';
-const saveMnemonic = (m: string) => localStorage.setItem(MNEMONIC_KEY, m);
 const getSavedMnemonic = () => localStorage.getItem(MNEMONIC_KEY);
 const clearMnemonic = () => localStorage.removeItem(MNEMONIC_KEY);
+const hasLegacyMnemonic = (): boolean => getSavedMnemonic() !== null;
 
 // ============================================
 // Legacy mnemonic → secure storage migration
@@ -127,8 +131,11 @@ async function migrateLegacyMnemonicIfNeeded(): Promise<void> {
  *   `UnlockingPage` placeholder (Glow logo + "Authenticating…" spinner)
  *   as a branded backdrop behind the OS prompt either way.
  * - `'native-locked'`: the auto-triggered biometric was cancelled or hit the
- *   biometric lockout — router shows the interactive `UnlockPage` from which
+ *   biometric lockout. Router shows the interactive `UnlockPage` from which
  *   the user can retry biometric or abandon the locked wallet and re-onboard.
+ * - `'vault-locked'`: web non-passkey, vault exists. Router shows VaultUnlockPage.
+ * - `'needs-migration'`: web non-passkey, legacy plaintext mnemonic without
+ *   a vault yet. Router shows the set-password migration flow.
  * - `'connected'`: the SDK is connected to a wallet.
  */
 export type StartupState =
@@ -136,6 +143,8 @@ export type StartupState =
   | 'no-wallet'
   | 'native-unlocking'
   | 'native-locked'
+  | 'vault-locked'
+  | 'needs-migration'
   | 'connected';
 
 export interface BreezSdkState {
@@ -483,26 +492,27 @@ export function useBreezSdk(
           try {
             await secureStorage.storeSeed(seed);
           } catch {
-            // Intentionally swallowed — see comment above.
+            // Intentionally swallowed, see comment above.
           } finally {
             clearTimeout(flipTimer);
             if (flipped) setIsSecuringSeed(false);
           }
         } else if (deviceOnlyStorage.isSupported()) {
           // Non-passkey on native: encrypted-at-rest storage with no
-          // biometric prompt. No `isSecuringSeed` flip — this path is
+          // biometric prompt. No `isSecuringSeed` flip, this path is
           // silent by design.
           try {
             await deviceOnlyStorage.storeSeed(seed);
           } catch {
-            // Intentionally swallowed — see comment above.
+            // Intentionally swallowed, see comment above.
           }
         } else if (passkeyLabel != null) {
           // Web passkey mode: never cache the PRF-derived seed; wipe
           // any stale plaintext from older builds.
           clearMnemonic();
         } else if (seed.type === 'mnemonic') {
-          saveMnemonic(seed.mnemonic);
+          // Web non-passkey: vault (written by App layer) owns persistence.
+          clearMnemonic();
         }
       }
 
@@ -566,22 +576,29 @@ export function useBreezSdk(
       logger.warn(LogCategory.SESSION, 'Failed to end log session', { error: formatError(e) });
     }
 
-    // Wipe BOTH secure-storage tiers. Failure is non-fatal — the user
+    // Wipe BOTH secure-storage tiers. Failure is non-fatal, the user
     // is still logged out either way. Each tier emits its own typed
     // error breadcrumb on failure, so we don't double-log here.
     if (secureStorage.isSupported()) {
       try {
         await secureStorage.clearSeed();
       } catch {
-        // Intentionally swallowed — see comment above.
+        // Intentionally swallowed, see comment above.
       }
     }
     if (deviceOnlyStorage.isSupported()) {
       try {
         await deviceOnlyStorage.clearSeed();
       } catch {
-        // Intentionally swallowed — see comment above.
+        // Intentionally swallowed, see comment above.
       }
+    }
+    // Unconditional: cheap no-op when no vault, guards against a
+    // passkey/non-passkey toggle leaving a stale vault behind.
+    try {
+      await deleteVault();
+    } catch {
+      // Best-effort.
     }
 
     // Always reset all state — even if disconnect threw
@@ -1100,7 +1117,36 @@ export function useBreezSdk(
           // mode must always re-derive via PRF on launch.
           clearMnemonic();
         }
-        const savedMnemonic = !isPasskeyMode() ? getSavedMnemonic() : null;
+
+        // Web non-passkey: vault first, then legacy-plaintext migration.
+        if (isWeb && !isPasskeyMode()) {
+          try {
+            if (await hasVault()) {
+              setStartupState('vault-locked');
+              setIsLoading(false);
+              if (isInitialLoadRef.current) {
+                isInitialLoadRef.current = false;
+                void hideSplash();
+              }
+              return;
+            }
+          } catch (e) {
+            logger.warn(LogCategory.AUTH, 'hasVault probe failed', { error: formatError(e) });
+          }
+          if (hasLegacyMnemonic()) {
+            setStartupState('needs-migration');
+            setIsLoading(false);
+            if (isInitialLoadRef.current) {
+              isInitialLoadRef.current = false;
+              void hideSplash();
+            }
+            return;
+          }
+        }
+
+        // Native fallback for a legacy plaintext mnemonic the device-only
+        // migration helper missed; leaves the user not stranded.
+        const savedMnemonic = !isWeb && !isPasskeyMode() ? getSavedMnemonic() : null;
         if (savedMnemonic) {
           try {
             setIsLoading(true);

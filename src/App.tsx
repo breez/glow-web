@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { WalletProvider, WalletInfoProvider } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
@@ -22,6 +23,14 @@ import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import BuyProvidersPage from './pages/BuyProvidersPage';
 import UnlockPage from './pages/UnlockPage';
 import UnlockingPage from './pages/UnlockingPage';
+import SetPasswordPage from './pages/SetPasswordPage';
+import VaultUnlockPage from './pages/VaultUnlockPage';
+import { createVault, createVaultFromMaterial, deriveVaultKey, type VaultKeyMaterial } from './services/vault';
+import { isPasswordPwned } from './utils/password';
+
+const PWNED_MESSAGE = 'This password has appeared in a data breach. Please choose a different one.';
+import { logger, LogCategory } from './services/logger';
+import { formatError } from './utils/formatError';
 // Dev-gated Passkey & Labels hub + the AAGUID lookup database it pulls
 // in (~245 KB JSON). Code-split so neither the main bundle nor any
 // non-dev user pays the parse cost; loads on first navigation into the
@@ -38,7 +47,11 @@ import { STATUS_BAR_LOADING } from './utils/statusBarManager';
 import { useBackButton } from './hooks/useBackButton';
 import type { Seed, Payment } from '@breeztech/breez-sdk-spark';
 
-type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState';
+type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState' | 'setPassword' | 'vaultUnlock' | 'migrate';
+
+// Password vault flow is web-only; matches useBreezSdk.isWeb.
+const isWeb = !Capacitor.isNativePlatform();
+const LEGACY_MNEMONIC_KEY = 'walletMnemonic';
 
 // Full-screen dim spinner shown while sdk.isLoading is true (logout in
 // progress, SDK reconnect, etc). Wrapped as its own component so the
@@ -78,6 +91,15 @@ const AppContent: React.FC = () => {
   // cross-device QR picker on the first click of a fresh-user
   // onboarding. Read by PasskeyPage as the `skipDetection` prop.
   const [passkeySkipDetection, setPasskeySkipDetection] = useState(false);
+  // Vault flow state shared across SetPasswordPage / GeneratePage / RestorePage.
+  // Holds derived key material (CryptoKey is non-extractable) instead of
+  // the plaintext password so the password doesn't sit in heap during
+  // the seed-confirmation step.
+  const [pendingMnemonic, setPendingMnemonic] = useState<string | null>(null);
+  const [pendingKeyMaterial, setPendingKeyMaterial] = useState<VaultKeyMaterial | null>(null);
+  const [pendingIsRestore, setPendingIsRestore] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const { showToast } = useToast();
   const formatPaymentAmountRef = useRef<((payment: Payment) => string) | undefined>(undefined);
 
@@ -92,14 +114,143 @@ const AppContent: React.FC = () => {
   const currentScreen: Screen = useMemo(() => {
     if (sdk.startupState === 'native-unlocking') return 'unlocking';
     if (sdk.startupState === 'native-locked') return 'unlock';
+    if (sdk.startupState === 'vault-locked') return 'vaultUnlock';
+    if (sdk.startupState === 'needs-migration') return 'migrate';
     if (sdk.isConnected && userScreen === 'home') return 'wallet';
     return userScreen;
   }, [sdk.startupState, sdk.isConnected, userScreen]);
 
-  // Navigate to wallet after successful connect
-  const handleConnect = async (mnemonic: string, restore: boolean) => {
+  // Connect with a mnemonic and land on the wallet screen. Used after
+  // every flow that already has the seed in hand (vault unlock,
+  // migration, post-vault-create).
+  const openWallet = async (mnemonic: string, restore = false) => {
     await sdk.connectWallet({ type: 'mnemonic', mnemonic }, restore);
     setUserScreen('wallet');
+  };
+
+  // Wraps a vault-related submit step with the loading / try-catch /
+  // error-banner shell that SetPasswordPage and the migrate screen
+  // both need. `failureMsg` is shown to the user AND logged.
+  const runPasswordStep = async (
+    work: () => Promise<void>,
+    failureMsg: string,
+  ): Promise<void> => {
+    setPasswordError(null);
+    setPasswordLoading(true);
+    try {
+      await work();
+    } catch (e) {
+      logger.error(LogCategory.AUTH, failureMsg, { error: formatError(e) });
+      setPasswordError(failureMsg);
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  // Web routes through SetPasswordPage so the vault is created before
+  // connectWallet runs. Native skips it: secure storage handles the seed.
+  const handleConnect = async (mnemonic: string, restore: boolean) => {
+    if (isWeb) {
+      setPendingMnemonic(mnemonic);
+      setPendingIsRestore(restore);
+      setPasswordError(null);
+      setUserScreen('setPassword');
+      return;
+    }
+    await openWallet(mnemonic, restore);
+  };
+
+  // SetPasswordPage submit. Two flows share the form:
+  //   - Restore: pendingMnemonic is set, encrypt + connect inline.
+  //   - Create: derive key now (drop plaintext), defer encryption to
+  //             GeneratePage once the user confirms the new mnemonic.
+  const handlePasswordSet = async (password: string) => {
+    await runPasswordStep(async () => {
+      if (await isPasswordPwned(password)) {
+        setPasswordError(PWNED_MESSAGE);
+        return;
+      }
+      if (pendingMnemonic) {
+        await createVault(pendingMnemonic, password);
+        const mnemonic = pendingMnemonic;
+        const restore = pendingIsRestore;
+        setPendingMnemonic(null);
+        setPendingIsRestore(false);
+        await openWallet(mnemonic, restore);
+      } else {
+        setPendingKeyMaterial(await deriveVaultKey(password));
+        setUserScreen('generate');
+      }
+    }, 'Failed to set up Glow. Please try again.');
+  };
+
+  // GeneratePage confirm. Web non-passkey: encrypt with the key
+  // material captured on SetPasswordPage. Native: hand off to handleConnect.
+  const handleGenerateConfirm = async (mnemonic: string) => {
+    if (!isWeb) {
+      await handleConnect(mnemonic, false);
+      return;
+    }
+    if (!pendingKeyMaterial) {
+      setUserScreen('setPassword');
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      await createVaultFromMaterial(mnemonic, pendingKeyMaterial);
+      setPendingKeyMaterial(null);
+      await openWallet(mnemonic);
+    } catch (e) {
+      logger.error(LogCategory.AUTH, 'Failed to create vault after seed confirmation', { error: formatError(e) });
+      showToast('error', 'Setup Failed', 'Failed to secure Glow. Please try again.');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  // Migrate legacy plaintext mnemonic into the vault. Order matters:
+  // vault is durable before plaintext goes away, and plaintext goes
+  // away before connectWallet so a crash in the connect window can't
+  // leave a vault + plaintext pair. A connect failure leaves the
+  // vault in place; next launch hits 'vault-locked' for retry.
+  const handleMigratePassword = async (password: string) => {
+    await runPasswordStep(async () => {
+      if (await isPasswordPwned(password)) {
+        setPasswordError(PWNED_MESSAGE);
+        return;
+      }
+      const mnemonic = localStorage.getItem(LEGACY_MNEMONIC_KEY);
+      if (!mnemonic) {
+        setPasswordError('No setup found to migrate.');
+        return;
+      }
+      const wordCount = mnemonic.trim().split(/\s+/).length;
+      if (wordCount !== 12 && wordCount !== 24) {
+        setPasswordError('Stored recovery phrase is invalid. Please restore manually.');
+        return;
+      }
+      await createVault(mnemonic, password);
+      localStorage.removeItem(LEGACY_MNEMONIC_KEY);
+      await openWallet(mnemonic);
+    }, 'Failed to migrate. Please try again.');
+  };
+
+  // VaultUnlockPage owns its own loading + wrong-password feedback;
+  // here we just wire the post-decrypt connect with a toast on failure.
+  const handleVaultUnlocked = async (mnemonic: string) => {
+    try {
+      await openWallet(mnemonic);
+    } catch (e) {
+      logger.error(LogCategory.SDK, 'Failed to connect after vault unlock', { error: formatError(e) });
+      showToast('error', 'Failed to open Glow', 'Please try again.');
+    }
+  };
+
+  const handleSetPasswordBack = () => {
+    setPendingMnemonic(null);
+    setPendingKeyMaterial(null);
+    setPasswordError(null);
+    setUserScreen(pendingMnemonic ? 'restore' : 'home');
   };
 
   // Navigate to wallet after passkey connect
@@ -162,7 +313,12 @@ const AppContent: React.FC = () => {
       case 'restore':
       case 'generate':
       case 'passkey':
+      case 'setPassword':
         setUserScreen('home');
+        return true;
+      case 'vaultUnlock':
+      case 'migrate':
+        // Startup-driven; absorb so back doesn't minimise mid-unlock.
         return true;
       case 'unlock':
       case 'unlocking':
@@ -211,7 +367,10 @@ const AppContent: React.FC = () => {
       currentScreen !== 'restore' &&
       currentScreen !== 'passkey' &&
       currentScreen !== 'unlock' &&
-      currentScreen !== 'unlocking'
+      currentScreen !== 'unlocking' &&
+      currentScreen !== 'vaultUnlock' &&
+      currentScreen !== 'setPassword' &&
+      currentScreen !== 'migrate'
     ) {
       return <GlobalLoadingOverlay />;
     }
@@ -230,7 +389,18 @@ const AppContent: React.FC = () => {
         return (
           <HomePage
             onRestoreWallet={() => setUserScreen('restore')}
-            onCreateNewWallet={() => setUserScreen('generate')}
+            onCreateNewWallet={() => {
+              if (isWeb) {
+                // Web: capture password first, GeneratePage consumes it on confirm.
+                setPendingMnemonic(null);
+                setPendingKeyMaterial(null);
+                setPendingIsRestore(false);
+                setPasswordError(null);
+                setUserScreen('setPassword');
+              } else {
+                setUserScreen('generate');
+              }
+            }}
             onUsePasskey={() => { setPasskeySkipDetection(false); setUserScreen('passkey'); }}
             onCreatePasskey={() => { setPasskeySkipDetection(true); setUserScreen('passkey'); }}
             prfAvailable={sdk.prfAvailable}
@@ -300,7 +470,18 @@ const AppContent: React.FC = () => {
         return (
           <HomePage
             onRestoreWallet={() => setUserScreen('restore')}
-            onCreateNewWallet={() => setUserScreen('generate')}
+            onCreateNewWallet={() => {
+              if (isWeb) {
+                // Web: capture password first, GeneratePage consumes it on confirm.
+                setPendingMnemonic(null);
+                setPendingKeyMaterial(null);
+                setPendingIsRestore(false);
+                setPasswordError(null);
+                setUserScreen('setPassword');
+              } else {
+                setUserScreen('generate');
+              }
+            }}
             onUsePasskey={() => { setPasskeySkipDetection(false); setUserScreen('passkey'); }}
             onCreatePasskey={() => { setPasskeySkipDetection(true); setUserScreen('passkey'); }}
             prfAvailable={sdk.prfAvailable}
@@ -471,10 +652,33 @@ const AppContent: React.FC = () => {
       case 'generate':
         return (
           <GeneratePage
-            onMnemonicConfirmed={(mnemonic) => handleConnect(mnemonic, false)}
-            onBack={() => setUserScreen('home')}
+            onMnemonicConfirmed={handleGenerateConfirm}
+            onBack={() => setUserScreen(isWeb ? 'setPassword' : 'home')}
             error={sdk.error}
             onClearError={sdk.clearError}
+          />
+        );
+
+      case 'setPassword':
+        return (
+          <SetPasswordPage
+            onPasswordSet={handlePasswordSet}
+            onBack={handleSetPasswordBack}
+            isLoading={passwordLoading}
+            error={passwordError}
+          />
+        );
+
+      case 'vaultUnlock':
+        return <VaultUnlockPage onUnlocked={handleVaultUnlocked} />;
+
+      case 'migrate':
+        return (
+          <SetPasswordPage
+            mode="migrate"
+            onPasswordSet={handleMigratePassword}
+            isLoading={passwordLoading}
+            error={passwordError}
           />
         );
 

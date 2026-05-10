@@ -130,17 +130,22 @@ export const FormTextarea: React.FC<FormTextareaProps> = ({
   />
 );
 
+// Fixed-height slot prevents layout jump as the error toggles.
 export const FormError: React.FC<{
   error: string | null;
-}> = ({ error }) => {
-  if (!error) return null;
-  return (
-    <div className="flex items-center gap-2 text-spark-error text-sm mt-2">
-      <ErrorIcon className="shrink-0" />
-      <span>{error}</span>
-    </div>
-  );
-};
+}> = ({ error }) => (
+  <div
+    aria-live="polite"
+    className={`flex items-center gap-2 text-spark-error text-sm min-h-5 transition-opacity duration-200 ${error ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+  >
+    {error && (
+      <>
+        <ErrorIcon className="shrink-0" />
+        <span>{error}</span>
+      </>
+    )}
+  </div>
+);
 
 export const FormHint: React.FC<{
   children: ReactNode;
