@@ -158,6 +158,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                   <Bolt11Workflow
                     method={send.prepareResponse.paymentMethod}
                     amountSats={send.prepareResponse.amount}
+                    feesIncluded={send.feesIncluded}
                     conversionEstimate={send.prepareResponse.conversionEstimate}
                     balanceSats={send.balanceSats}
                     tokenBalance={send.tokenBalance}
