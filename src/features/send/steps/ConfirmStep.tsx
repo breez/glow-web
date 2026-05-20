@@ -37,7 +37,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
   const totalSats = toSats(total);
   const insufficientBalance = totalSats === null
     ? true
-    : balance.checkInsufficientFunds({ isTokenMode, totalSats, conversionEstimate });
+    : balance.checkInsufficientFunds({ totalSats, conversionEstimate });
   const balanceError = insufficientBalance ? 'Insufficient funds' : null;
 
   // Token-formatted values from conversion estimate

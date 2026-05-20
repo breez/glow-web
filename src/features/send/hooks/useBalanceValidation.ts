@@ -16,7 +16,6 @@ interface BalanceValidation {
   exceedsBalance: (displayAmount: number) => boolean;
   validateAmount: (input: string, feesIncluded?: boolean) => string | null;
   checkInsufficientFunds: (opts: {
-    isTokenMode: boolean;
     totalSats: Sats;
     conversionEstimate?: ConversionEstimate | null;
   }) => boolean;
@@ -87,19 +86,21 @@ export function useBalanceValidation(
   };
 
   const checkInsufficientFunds: BalanceValidation['checkInsufficientFunds'] = ({
-    isTokenMode: confirmTokenMode,
     totalSats,
     conversionEstimate,
   }) => {
-    if (confirmTokenMode && conversionEstimate && tokenBalance !== undefined) {
-      return conversionEstimate.amountIn > tokenBalance;
-    }
+    // When the prepare response includes a conversion estimate, the SDK has
+    // already validated feasibility against the user's actual token balance
+    // and applied any amount adjustments (FlooredToMinLimit / IncreasedToAvoidDust).
+    // Trust prepare instead of re-deriving from a snapshot that may already be
+    // stale.
+    if (conversionEstimate) return false;
 
-    const available = maxAvailableSats();
-    if (available === undefined) return false;
-    // available is `number` (sourced from balanceSats) — convert totalSats
-    // for the comparison. Both are bounded by toSats() so neither overflows.
-    return Number(totalSats) > available;
+    // Plain BTC send (no conversion engaged): the spend comes out of `balanceSats`.
+    // Token balance is irrelevant here even if stable balance is active, since
+    // no token→BTC conversion was requested.
+    if (balanceSats === undefined) return false;
+    return Number(totalSats) > balanceSats;
   };
 
   return {
