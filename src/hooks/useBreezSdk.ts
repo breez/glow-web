@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import type {
   BreezSdk,
@@ -145,6 +145,7 @@ export interface BreezSdkState {
   isSyncing: boolean;
   walletInfo: GetInfoResponse | null;
   transactions: Payment[];
+  hasPendingConversion: boolean;
   unclaimedDeposits: DepositInfo[];
   config: Config | null;
   error: string | null;
@@ -261,6 +262,13 @@ export function useBreezSdk(
   const [isSyncing, setIsSyncing] = useState(false);
   const [walletInfo, setWalletInfo] = useState<GetInfoResponse | null>(null);
   const [transactions, setTransactions] = useState<Payment[]>([]);
+  // Any payment in the latest snapshot that's still mid-conversion (e.g.
+  // auto-conversion in flight after a receive). While true, balances are in
+  // motion and Send All flows shouldn't trust the snapshot.
+  const hasPendingConversion = useMemo(
+    () => transactions.some(p => p.conversionDetails?.status === 'pending'),
+    [transactions],
+  );
   const [unclaimedDeposits, setUnclaimedDeposits] = useState<DepositInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
@@ -1232,6 +1240,7 @@ export function useBreezSdk(
     isSyncing,
     walletInfo,
     transactions,
+    hasPendingConversion,
     unclaimedDeposits,
     config,
     error,

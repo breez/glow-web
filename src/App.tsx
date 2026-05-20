@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy } from 'react';
-import { WalletProvider, WalletInfoProvider } from './contexts/WalletContext';
+import { WalletProvider, WalletInfoProvider, WalletStatusProvider } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
 import InstallPrompt from './components/InstallPrompt';
@@ -489,6 +489,7 @@ const AppContent: React.FC = () => {
   return (
     <WalletProvider client={sdk.sdk} isConnected={sdk.isConnected} subscribeToSdkEvents={sdk.subscribeToSdkEvents}>
       <WalletInfoProvider walletInfo={sdk.walletInfo}>
+        <WalletStatusProvider hasPendingConversion={sdk.hasPendingConversion}>
         <FiatDataProvider>
           <StableBalanceProvider>
             <StableBalanceFormatterBridge formatterRef={formatPaymentAmountRef} />
@@ -504,6 +505,7 @@ const AppContent: React.FC = () => {
             <InstallPrompt />
           </StableBalanceProvider>
         </FiatDataProvider>
+        </WalletStatusProvider>
       </WalletInfoProvider>
     </WalletProvider>
   );

@@ -12,6 +12,7 @@ import {
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
 import { useAmountInput } from '../../../hooks/useAmountInput';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
+import { useHasPendingConversion } from '../../../contexts/WalletContext';
 
 interface LnurlWorkflowProps {
   parsed: LnurlPayRequestDetails;
@@ -43,6 +44,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
   } = input;
 
   const balance = useBalanceValidation(isTokenMode, setIsTokenMode, balanceSats, tokenBalance);
+  const hasPendingConversion = useHasPendingConversion();
 
   const [step, setStep] = useState<PaymentStep>('amount');
   const [feesIncluded, setFeesIncluded] = useState(false);
@@ -278,8 +280,9 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
               ? `Enter amount in ${tokenSymbol}`
               : `Between ${minSats.toLocaleString('en-US').replace(/,/g, ' ')} and ${maxSats.toLocaleString('en-US').replace(/,/g, ' ')} sats`
             }
-            className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed"
             disabled={isLoading}
+            readOnly={isSendAll}
             min={isTokenMode ? undefined : minSats}
             max={isTokenMode ? undefined : maxSats}
           />
@@ -335,16 +338,22 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
                 }
                 setFeesIncluded(true);
               }}
-              disabled={tokenSendAllBelowThreshold}
+              disabled={tokenSendAllBelowThreshold || hasPendingConversion}
+              title={hasPendingConversion ? 'Balance is updating. Try again in a moment.' : undefined}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                tokenSendAllBelowThreshold
+                tokenSendAllBelowThreshold || hasPendingConversion
                   ? 'opacity-40 cursor-not-allowed border border-spark-border text-spark-text-secondary'
                   : isSendAll
                     ? 'bg-spark-primary text-white'
                     : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
               }`}
             >
-              Send All
+              {hasPendingConversion ? (
+                <span className="inline-flex items-center justify-center gap-1.5">
+                  <SpinnerIcon size="xs" />
+                  Send All
+                </span>
+              ) : 'Send All'}
             </button>
           )}
         </div>

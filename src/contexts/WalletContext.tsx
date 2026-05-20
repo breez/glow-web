@@ -22,6 +22,12 @@ const WalletContext = createContext<WalletContextValue>({
 // SDK consumers (`useWallet`, `useSdkEvents`) don't re-render on every sync.
 const WalletInfoContext = createContext<GetInfoResponse | null>(null);
 
+// Derived live status flags (e.g., in-flight auto-conversion). Separate from
+// WalletInfoContext so unrelated consumers don't re-render on every refresh.
+const WalletStatusContext = createContext<{ hasPendingConversion: boolean }>({
+  hasPendingConversion: false,
+});
+
 export const WalletProvider: React.FC<{
   children: React.ReactNode;
   client: BreezSdk | null;
@@ -46,6 +52,14 @@ export const WalletInfoProvider: React.FC<{
   walletInfo: GetInfoResponse | null;
 }> = ({ children, walletInfo }) => {
   return <WalletInfoContext.Provider value={walletInfo}>{children}</WalletInfoContext.Provider>;
+};
+
+export const WalletStatusProvider: React.FC<{
+  children: React.ReactNode;
+  hasPendingConversion: boolean;
+}> = ({ children, hasPendingConversion }) => {
+  const value = useMemo(() => ({ hasPendingConversion }), [hasPendingConversion]);
+  return <WalletStatusContext.Provider value={value}>{children}</WalletStatusContext.Provider>;
 };
 
 /**
@@ -86,4 +100,13 @@ export const useSdkEvents = (): SubscribeToSdkEvents => {
  */
 export const useWalletInfo = (): GetInfoResponse | null => {
   return useContext(WalletInfoContext);
+};
+
+/**
+ * Returns true while an auto-conversion (or any payment-linked conversion) is
+ * still pending. While true, the balance snapshot in `walletInfo` may be mid
+ * flight: Send All flows should treat it as unsettled and gate the action.
+ */
+export const useHasPendingConversion = (): boolean => {
+  return useContext(WalletStatusContext).hasPendingConversion;
 };
