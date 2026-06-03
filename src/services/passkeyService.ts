@@ -503,6 +503,29 @@ export function recordSignedInCredential(credentialId: Uint8Array | undefined): 
   markPasskeyUsed();
 }
 
+/**
+ * Sign in pinned to the credential we last signed in with, then record
+ * it as active. Pinning makes the OS resume the same wallet instead of
+ * surfacing a picker (which could substitute a sibling credential for
+ * the same RP and derive a different wallet's seed). Fresh state (no
+ * active credential) falls back to an empty `allowCredentials`, i.e. the
+ * discoverable-credential picker for first sign-in.
+ *
+ * This is the single entry point for every resume/sign-in derive so the
+ * active-credential pin can't be silently dropped at one call site.
+ */
+export async function signInPinnedToActiveCredential(
+  label?: string,
+): Promise<SignInResponse> {
+  const activeCredId = getActivePasskeyCredentialIdBytes();
+  const response = await getPasskey().signIn({
+    label,
+    allowCredentials: activeCredId ? [activeCredId] : [],
+  });
+  recordSignedInCredential(response.credential?.credentialId);
+  return response;
+}
+
 export function getCredentialAaguid(credentialId: string): string | undefined {
   return localStorage.getItem(`${PASSKEY_AAGUID_PREFIX}${credentialId}`) ?? undefined;
 }

@@ -3,9 +3,7 @@ import { WarningIcon, SpinnerIcon, EyeIcon, FingerprintIcon, PasskeyIcon } from 
 import SlideInPage from '../components/layout/SlideInPage';
 import {
   isPasskeyMode,
-  getPasskey,
-  recordSignedInCredential,
-  getActivePasskeyCredentialIdBytes,
+  signInPinnedToActiveCredential,
 } from '@/services/passkeyService';
 import { deviceOnlyStorage, secureStorage, getBiometryLabel } from '@/services/secureStorage';
 import { logger, LogCategory } from '@/services/logger';
@@ -78,18 +76,11 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
       // Resolve the active label from the localStorage `passkeyLabel`
       // key so the SDK derives the right wallet for this device.
       const effectiveLabel = localStorage.getItem('passkeyLabel') ?? undefined;
-      // Pin the OS picker to the credential we last signed in with so
-      // the Backup page can only ever reveal the recovery phrase for
-      // the currently logged-in passkey. With an empty allowCredentials
-      // the OS would let users pick a sibling cred for the same RP and
-      // derive a different wallet's seed, which defeats the purpose of
-      // showing "backup for this wallet".
-      const activeCredId = getActivePasskeyCredentialIdBytes();
-      const response = await getPasskey().signIn({
-        label: effectiveLabel,
-        allowCredentials: activeCredId ? [activeCredId] : [],
-      });
-      recordSignedInCredential(response.credential?.credentialId);
+      // Pinned to the active credential so Backup can only ever reveal the
+      // recovery phrase for the currently logged-in passkey: an empty
+      // allowCredentials would let the OS substitute a sibling cred and
+      // derive a different wallet's seed.
+      const response = await signInPinnedToActiveCredential(effectiveLabel);
       const w = response.wallet;
       if (w.seed.type === 'mnemonic' && w.seed.mnemonic) {
         setMnemonic(w.seed.mnemonic);
