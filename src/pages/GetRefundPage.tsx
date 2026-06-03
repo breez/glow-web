@@ -47,17 +47,9 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   const [expandedTxIds, setExpandedTxIds] = useState<Record<string, boolean>>({});
 
   // Check if deposit has been refunded
-  const hasRefundTx = (deposit: DepositInfo) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK DepositInfo doesn't expose refund fields
-    const d = deposit as any;
-    return Boolean(d.refund_tx_id || d.refundTxId || d.refund_txid || d.refundTxid);
-  };
+  const hasRefundTx = (deposit: DepositInfo) => Boolean(deposit.refundTxId);
 
-  const getRefundTxId = (deposit: DepositInfo) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK DepositInfo doesn't expose refund fields
-    const d = deposit as any;
-    return d.refund_tx_id || d.refundTxId || d.refund_txid || d.refundTxid || null;
-  };
+  const getRefundTxId = (deposit: DepositInfo) => deposit.refundTxId ?? null;
 
   // Pure fetch: returns the sorted list, leaves setState to callers so
   // the mount effect can commit post-await.
@@ -174,8 +166,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
       removeRejectedDeposit(selectedDeposit.txid, selectedDeposit.vout);
 
       setRefundSuccess(true);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK result type doesn't expose txId fields
-      setRefundTxId((result as any)?.txId || (result as any)?.txid || null);
+      setRefundTxId(result.txId || null);
       setRefundStep('result');
 
       await load();
