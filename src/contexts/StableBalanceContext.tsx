@@ -142,7 +142,7 @@ export const StableBalanceProvider: React.FC<StableBalanceProviderProps> = ({ ch
     (payment: Payment): string => {
       // When the conversion amount was adjusted (min limit floor or dust prevention),
       // the token amount doesn't match the payment — show sats instead
-      if (payment.conversionDetails?.from?.amountAdjustment) {
+      if (payment.conversionDetails?.conversions?.some(c => c.amountAdjustment)) {
         return `₿${formatWithSpaces(Number(payment.amount))}`;
       }
 

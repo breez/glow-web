@@ -177,18 +177,21 @@ export function getTokenAmountFromPayment(payment: Payment): TokenPaymentInfo | 
     };
   }
 
-  if (payment.conversionDetails) {
-    const { from, to } = payment.conversionDetails;
-    // Use the step matching the payment direction:
-    // - send payments: show "from" (what was sent)
-    // - receive payments: show "to" (what was received)
-    // If the matching step has no token metadata, this is a BTC payment — return null for sats formatting
-    const step = payment.paymentType === 'send' ? from : to;
-    if (step?.tokenMetadata) {
+  if (payment.conversionDetails?.conversions?.length) {
+    // For sends: first conversion's input (e.g., USDB in [AMM, cross-chain])
+    // For receives: last conversion's output (e.g., USDB in [cross-chain, AMM])
+    const convs = payment.conversionDetails.conversions;
+    const side = payment.paymentType === 'send'
+      ? convs[0].from
+      : convs[convs.length - 1].to;
+    if (side && side.asset.ticker !== 'BTC') {
       return {
-        amount: step.amount,
-        fee: step.fee,
-        metadata: step.tokenMetadata,
+        amount: BigInt(side.amount),
+        fee: BigInt(side.fee),
+        metadata: {
+          ticker: side.asset.ticker,
+          decimals: side.asset.decimals,
+        } as TokenMetadata,
       };
     }
   }
