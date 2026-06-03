@@ -14,14 +14,21 @@
 
 const KEY_PREFIX = 'breez.spark.passkey.knownCredentials.';
 
+function key(rpId: string): string {
+  return KEY_PREFIX + rpId;
+}
+
 function readEntries(rpId: string): string[] {
   try {
-    const raw = localStorage.getItem(KEY_PREFIX + rpId);
+    const raw = localStorage.getItem(key(rpId));
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? parsed.filter((x): x is string => typeof x === 'string')
-      : [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    // Fast path: skip the filter allocation when the data is already
+    // well-formed (the common case, since we only ever write strings).
+    return parsed.every((x) => typeof x === 'string')
+      ? (parsed as string[])
+      : parsed.filter((x): x is string => typeof x === 'string');
   } catch {
     return [];
   }
@@ -29,12 +36,15 @@ function readEntries(rpId: string): string[] {
 
 function writeEntries(rpId: string, entries: string[]): void {
   if (entries.length === 0) {
-    localStorage.removeItem(KEY_PREFIX + rpId);
+    localStorage.removeItem(key(rpId));
     return;
   }
-  localStorage.setItem(KEY_PREFIX + rpId, JSON.stringify(entries));
+  localStorage.setItem(key(rpId), JSON.stringify(entries));
 }
 
+// Loop-based on purpose: credential IDs are tiny (≤~64 bytes), so the
+// concat cost is negligible and this avoids the call-stack arg limit of
+// `String.fromCharCode(...bytes)` for any future larger input.
 function bytesToBase64(bytes: Uint8Array): string {
   let s = '';
   for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
@@ -55,20 +65,24 @@ export class LocalStorageCredentialRegistry {
 
   async add(rpId: string, credentialId: Uint8Array): Promise<void> {
     const b64 = bytesToBase64(credentialId);
-    const current = readEntries(rpId);
-    if (current.includes(b64)) return;
-    writeEntries(rpId, [...current, b64]);
+    const entries = readEntries(rpId);
+    if (entries.includes(b64)) return;
+    entries.push(b64);
+    writeEntries(rpId, entries);
   }
 
   async remove(rpId: string, credentialId: Uint8Array): Promise<void> {
     const b64 = bytesToBase64(credentialId);
-    writeEntries(
-      rpId,
-      readEntries(rpId).filter((entry) => entry !== b64),
-    );
+    const entries = readEntries(rpId);
+    const index = entries.indexOf(b64);
+    // Skip the write (and the cross-tab `storage` event it fires) when
+    // the credential wasn't tracked.
+    if (index === -1) return;
+    entries.splice(index, 1);
+    writeEntries(rpId, entries);
   }
 
   async clear(rpId: string): Promise<void> {
-    localStorage.removeItem(KEY_PREFIX + rpId);
+    localStorage.removeItem(key(rpId));
   }
 }
