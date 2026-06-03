@@ -150,15 +150,27 @@ await sdk.switchPasskeyLabel(nextLabel);
 
 ### Passkey Metadata
 
-Per-device passkey metadata lives in `src/services/passkeyService.ts` and is persisted in `localStorage`:
+Per-device passkey metadata lives in `src/services/passkeyService.ts` and `src/services/passkeyMetadata.ts`, persisted in `localStorage`:
 
-- `passkeyRegistered`: whether a passkey has been registered on this device
-- `passkeyKnownCredentials`: known credential IDs for this device
-- `passkeyLabel`: active label for the current passkey
-- `passkeyFirstSeenAt`: timestamp of the first successful PRF ceremony
-- `passkeyLastSeenAt`: timestamp of the most recent successful PRF ceremony
+Device-level keys (`passkeyService.ts`):
 
-Call `markPasskeyUsed()` after any successful PRF ceremony to update `passkeyLastSeenAt` (and seed `passkeyFirstSeenAt` on first use).
+- `passkeyRegistered`: this device has ever successfully used a passkey
+- `passkeyLabel`: active wallet label for the current passkey session
+- `passkeyActiveCredentialId`: the cred we last signed in with; passed back as `allowCredentials` to pin the next derive
+- `passkeyFirstSeenAt` / `passkeyLastSeenAt`: device-level timestamps for the first / most recent PRF ceremony
+- `passkeyPendingSwitchFromCredentialId`: the cred we were signed in with before a switch attempt, used by the switch-recovery branch in `PasskeyPage`
+- `passkeyAaguid:<credId>` / `passkeyBackupEligible:<credId>`: provider AAGUID + BE flag captured at create time, drives the provider icon + sync indicator in the management page
+- `passkeyLabelLastUsed:<label>`: per-label last-used timestamp, surfaces on `LabelsPage` as a relative hint
+
+Per-credential metadata keys (`passkeyMetadata.ts`):
+
+- `passkeyCredFirstSeenAt:<credId>` / `passkeyCredLastSeenAt:<credId>`: per-credential timestamps
+- `passkeyUserName:<credId>`: per-credential picker label captured at create
+- `passkeyHiddenCredentials`: JSON array of credential IDs the user opted to hide from the management page
+
+The credential-IDs list itself is owned by the app, not the SDK (the SDK no longer tracks credentials). On web it lives in `LocalStorageCredentialRegistry` (`src/services/localStorageCredentialRegistry.ts`), one `localStorage` key per RP; on native the Capacitor passkey plugin owns it (Keychain / Block Store). Reach it via `getKnownCredentialIdsBase64()` (`passkeyService.ts`), which wraps `getPasskey().credentials().get()`.
+
+Call `markPasskeyUsed()` after any successful PRF ceremony to update `passkeyLastSeenAt` (and seed `passkeyFirstSeenAt` on first use); `markCredentialUsed(credentialId)` does the per-credential equivalent.
 
 ### Build Notes
 - `npm run dev` works with npm-linked SDK packages

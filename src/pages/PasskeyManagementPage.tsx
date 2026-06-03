@@ -7,11 +7,11 @@ import {
   getCredentialMeta,
   getCredentialUserName,
   getHiddenCredentialIds,
+  getKnownCredentialIdsBase64,
   hideCredential,
   unhideCredential,
   hasPasskeyHistory,
 } from '../services/passkeyService';
-import { passkeyPrfProvider } from '../services/passkeyPrfProvider';
 import { lookupAaguid, type AaguidProvider } from '../services/aaguidLookup';
 
 interface PasskeyManagementPageProps {
@@ -95,7 +95,7 @@ const PasskeyManagementPage: React.FC<PasskeyManagementPageProps> = ({
   // doesn't flicker noticeably.
   React.useEffect(() => {
     let cancelled = false;
-    passkeyPrfProvider.getKnownCredentialIds()
+    getKnownCredentialIdsBase64()
       .then((ids) => { if (!cancelled) setAllCredIds(ids); })
       .catch(() => { if (!cancelled) setAllCredIds([]); });
     return () => { cancelled = true; };
