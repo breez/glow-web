@@ -16,7 +16,7 @@ import {
   setPasskeyMode,
   consumePendingSwitchFromCredentialId,
   recordRegisteredCredential,
-  recordSignedInCredential,
+  signInPinnedToActiveCredential,
   removeStaleCredential,
 } from '@/services/passkeyService';
 import {
@@ -231,12 +231,8 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         // whose label IS 'Default' completes restore in one prompt.
         // signIn (not register) avoids a stray label publish for
         // returning users on non-default labels.
-        const speculativeResponse = await getPasskey().signIn({
-          label: 'Default',
-          allowCredentials: [],
-        });
+        const speculativeResponse = await signInPinnedToActiveCredential('Default');
         const speculative = speculativeResponse.wallet;
-        recordSignedInCredential(speculativeResponse.credential?.credentialId);
         if (cancelled) return;
         // PRF succeeded: clear any in-flight switch-from slot so a
         // later unrelated sign-in failure can't misfire recovery.
@@ -588,11 +584,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           recordRegisteredCredential(response.credential, userName);
           w = response.wallet;
         } else {
-          const response = await getPasskey().signIn({
-            label,
-            allowCredentials: [],
-          });
-          recordSignedInCredential(response.credential?.credentialId);
+          const response = await signInPinnedToActiveCredential(label);
           w = response.wallet;
         }
         if (cancelled) return;

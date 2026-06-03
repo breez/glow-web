@@ -27,13 +27,12 @@ import {
   isPasskeyMode,
   setPasskeyMode,
   clearPasskeyMode,
-  getPasskey,
   getKnownCredentialIdsBase64,
   hasPasskeyHistory,
   markLabelUsed,
   invalidatePasskey,
   pinActivePasskeyCredentialId,
-  recordSignedInCredential,
+  signInPinnedToActiveCredential,
   setPendingSwitchFromCredentialId,
 } from '../services/passkeyService';
 import { secureStorage, deviceOnlyStorage, SecureStorageError } from '../services/secureStorage';
@@ -569,12 +568,11 @@ export function useBreezSdk(
     // PRF first so a cancel here leaves the active wallet untouched.
     let wallet;
     try {
-      const result = await getPasskey().signIn({
-        label: newLabel,
-        allowCredentials: [],
-      });
+      // Switching label stays on the same passkey, so this pins to the
+      // active credential rather than letting the OS picker derive the
+      // new label under a different identity.
+      const result = await signInPinnedToActiveCredential(newLabel);
       wallet = result.wallet;
-      recordSignedInCredential(result.credential?.credentialId);
     } catch (e) {
       setIsLoading(false);
       throw e;
@@ -753,11 +751,7 @@ export function useBreezSdk(
       });
       try {
         const effectiveLabel = localStorage.getItem('passkeyLabel') ?? undefined;
-        const response = await getPasskey().signIn({
-          label: effectiveLabel,
-          allowCredentials: [],
-        });
-        recordSignedInCredential(response.credential?.credentialId);
+        const response = await signInPinnedToActiveCredential(effectiveLabel);
         await connectWallet(response.wallet.seed, false, response.wallet.label);
       } catch (e) {
         logger.error(LogCategory.AUTH, 'Web passkey retry failed', { error: formatError(e) });
@@ -1023,12 +1017,8 @@ export function useBreezSdk(
             // Falls back to the stored `passkeyLabel`; SDK accepts
             // `undefined` for "use whatever signIn negotiates".
             const effectiveLabel = localStorage.getItem('passkeyLabel') ?? undefined;
-            const result = await getPasskey().signIn({
-              label: effectiveLabel,
-              allowCredentials: [],
-            });
+            const result = await signInPinnedToActiveCredential(effectiveLabel);
             wallet = result.wallet;
-            recordSignedInCredential(result.credential?.credentialId);
           } catch (e) {
             logger.error(LogCategory.AUTH, 'Passkey authentication failed', { error: formatError(e) });
             setError('Failed to authenticate with passkey. Please try again.');
