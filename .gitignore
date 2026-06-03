@@ -19,3 +19,4 @@ coverage/
 .claude/settings.local.json
 .claude/launch.json
 .claude/worktrees/
+.DS_Store
