@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { WarningIcon, SpinnerIcon, EyeIcon, FingerprintIcon, PasskeyIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
-import { isPasskeyMode, getWallet } from '@/services/passkeyService';
+import {
+  isPasskeyMode,
+  getPasskey,
+  recordSignedInCredential,
+  getActivePasskeyCredentialIdBytes,
+} from '@/services/passkeyService';
 import { deviceOnlyStorage, secureStorage, getBiometryLabel } from '@/services/secureStorage';
 import { logger, LogCategory } from '@/services/logger';
 
@@ -70,7 +75,22 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const w = await getWallet();
+      // Resolve the active label from the localStorage `passkeyLabel`
+      // key so the SDK derives the right wallet for this device.
+      const effectiveLabel = localStorage.getItem('passkeyLabel') ?? undefined;
+      // Pin the OS picker to the credential we last signed in with so
+      // the Backup page can only ever reveal the recovery phrase for
+      // the currently logged-in passkey. With an empty allowCredentials
+      // the OS would let users pick a sibling cred for the same RP and
+      // derive a different wallet's seed, which defeats the purpose of
+      // showing "backup for this wallet".
+      const activeCredId = getActivePasskeyCredentialIdBytes();
+      const response = await getPasskey().signIn({
+        label: effectiveLabel,
+        allowCredentials: activeCredId ? [activeCredId] : [],
+      });
+      recordSignedInCredential(response.credential?.credentialId);
+      const w = response.wallet;
       if (w.seed.type === 'mnemonic' && w.seed.mnemonic) {
         setMnemonic(w.seed.mnemonic);
         setIsRevealed(true);
@@ -164,10 +184,9 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             </div>
           )}
 
-          {/* Reveal button — passkey mode, happy path. After a passkey
-              attempt fails, this card is replaced by the fallback card
-              below, which subsumes both the error and the Face ID
-              recovery action into one tile. */}
+          {/* Reveal button (passkey mode, happy path). After a failed
+              passkey attempt, the fallback card below replaces this
+              one and folds the error + Face ID retry into one tile. */}
           {isPasskey && !isRevealed && !mnemonic && !passkeyAttemptFailed && (
             <button
               onClick={handleRevealPasskey}
@@ -190,7 +209,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             </button>
           )}
 
-          {/* Reveal button — mnemonic mode */}
+          {/* Reveal button (mnemonic mode) */}
           {!isPasskey && !isRevealed && mnemonic && (
             <button
               onClick={() => setIsRevealed(true)}

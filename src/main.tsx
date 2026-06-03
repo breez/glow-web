@@ -163,8 +163,8 @@ async function init() {
     // cost off the user-visible critical path. Fire-and-forget; failures
     // here just mean we pay it later inside the onboarding flow.
     if (Capacitor.isNativePlatform()) {
-      void import('@/services/passkeyPrfProvider').then(({ passkeyPrfProvider }) => {
-        passkeyPrfProvider.getKnownCredentialIds().catch(() => undefined);
+      void import('@/services/passkeyService').then(({ getKnownCredentialIdsBase64 }) => {
+        getKnownCredentialIdsBase64().catch(() => undefined);
       });
     }
 

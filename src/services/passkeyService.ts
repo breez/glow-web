@@ -1,26 +1,40 @@
 /**
- * Passkey service: thin wrapper over the SDK's Passkey class.
- *
- * Caches a single SDK Passkey instance so its Nostr OnceCell survives
- * across chained operations in one onboarding flow (1 biometric
- * prompt instead of 3). Invalidate via `invalidatePasskey()` whenever
- * the active label changes (logout, label switch, history clear).
+ * Passkey service. Dispatches to the SDK's `PasskeyClient` directly
+ * on web or to the native plugin (which owns its own `PasskeyClient`
+ * inside the iOS / Android binary) via the shared `PasskeyApi` shape.
+ * Plus the host-side localStorage bookkeeping the SDK doesn't model.
  */
 
-import { Passkey, Wallet, NostrRelayConfig } from '@breeztech/breez-sdk-spark';
-import { passkeyPrfProvider } from './passkeyPrfProvider';
+import {
+  PasskeyClient,
+  type PasskeyAvailability,
+  type PasskeyCredential,
+  type RegisterRequest,
+  type RegisterResponse,
+  type SignInRequest,
+  type SignInResponse,
+  type Wallet,
+} from '@breeztech/breez-sdk-spark';
+import {
+  PasskeyAlreadyExistsError,
+  PasskeyCredentialNotFoundError,
+  PasskeyProvider,
+  PasskeyTimedOutError,
+} from '@breeztech/breez-sdk-spark/passkey-prf-provider';
+import { Capacitor } from '@capacitor/core';
+import { LocalStorageCredentialRegistry } from './localStorageCredentialRegistry';
+import { rpId, rpName, signalUnknownCredentials } from './passkeyPrfProvider';
 import { logger, LogCategory } from './logger';
 import {
-  markCredentialUsed,
   clearAllCredentialMeta,
   clearAllHiddenCredentials,
+  markCredentialUsed,
+  setCredentialUserName,
   unhideCredential,
   removeCredentialMeta,
   removeCredentialUserName,
 } from './passkeyMetadata';
 
-// Re-export so existing call sites keep importing from passkeyService
-// without each page rewriting its imports.
 export {
   markCredentialUsed,
   getCredentialMeta,
@@ -33,116 +47,462 @@ export {
   getCredentialUserName,
 } from './passkeyMetadata';
 
-// Storage key: presence signals passkey mode
 const PASSKEY_LABEL_KEY = 'passkeyLabel';
-// Persistent flag, survives logout/cancel: remembers this device has used a passkey
 const PASSKEY_REGISTERED_KEY = 'passkeyRegistered';
-// JSON-encoded array of base64-encoded credential IDs for every passkey
-// this device has registered against this RP. Passed verbatim as
-// `excludeCredentialIds` on subsequent createPasskey calls so the
-// platform refuses to register a duplicate even if PASSKEY_REGISTERED
-// was wiped (defense-in-depth: protects against localStorage clears).
-const KNOWN_CREDENTIALS_KEY = 'passkeyKnownCredentials';
-// Mirrors the cap in passkeyPrfProvider.ts so both writers stay below
-// the same bound.
-const KNOWN_CREDENTIALS_MAX = 32;
-// Per-credential AAGUID (base64) recorded at create time. Drives the
-// provider name + icon on the passkey management page. Captured only
-// at create: WebAuthn doesn't expose AAGUID on assertion.
 const PASSKEY_AAGUID_PREFIX = 'passkeyAaguid:';
-// Per-credential backup-eligibility (BE) flag recorded at create time.
-// "1" / "0" string. Drives the cross-device sync indicator: true means
-// the credential can sync to the user's other devices via the provider;
-// false means it's bound to this device (typically a hardware key).
 const PASSKEY_BE_PREFIX = 'passkeyBackupEligible:';
-// Per-credential user.name lives in passkeyMetadata.ts (no-cycle
-// helper module).
-//
-// Holds the credential ID we were signed in with BEFORE a switch
-// attempt fired. Consumed by PasskeyPage's detect-failure branch when
-// the switch target turns out to be deleted: cleanup is targeted to
-// only the failing cred, and the active cred pin is restored to this
-// value so the user lands back on their previous wallet instead of
-// being thrown into the new-user create flow.
 const PASSKEY_PENDING_SWITCH_FROM_KEY = 'passkeyPendingSwitchFromCredentialId';
-// Per-device timestamps. WebAuthn doesn't expose creation / last-use
-// dates, so we record them locally on each successful PRF ceremony.
 const PASSKEY_FIRST_SEEN_KEY = 'passkeyFirstSeenAt';
 const PASSKEY_LAST_SEEN_KEY = 'passkeyLastSeenAt';
-// Per-label last-used timestamps. Recorded each time a label is loaded
-// into the active wallet (initial connect or switchPasskeyLabel) so the
-// Labels page can surface a relative "last used" hint per row.
 const PASSKEY_LABEL_LAST_USED_PREFIX = 'passkeyLabelLastUsed:';
-// Per-credential first-/last-seen timestamps + the user-hidden list
-// live in passkeyMetadata.ts (see file-level comment there for the
-// import-cycle rationale). Re-exports above preserve the existing
-// import surface.
 
-// Cached Passkey instance keeps the SDK's Nostr OnceCell warm across
-// chained operations in a single onboarding flow (createPasskey →
-// setupWallet → saveLabel etc.) so each call doesn't re-derive Nostr
-// identity via a fresh PRF ceremony — turns 3 biometric prompts into 1.
-// Invalidate via `invalidatePasskey()` on every label change /
-// logout / passkey-history clear so a switched label can't reuse the
-// prior label's identity.
-let cachedPasskey: Passkey | null = null;
+// ---------- PasskeyApi ----------
 
-function getPasskey(): Passkey {
-  if (cachedPasskey !== null) return cachedPasskey;
-  const breezApiKey = import.meta.env.VITE_BREEZ_API_KEY;
-  const relayConfig: NostrRelayConfig | undefined = breezApiKey
-    ? { breezApiKey }
-    : undefined;
-  cachedPasskey = new Passkey(passkeyPrfProvider, relayConfig ?? null);
-  return cachedPasskey;
+/**
+ * Adds `userName` / `userDisplayName` so callers can rotate the
+ * WebAuthn `user.name` per create (Apple Passwords dedupes by
+ * `(rpId, user.name)`).
+ */
+export interface PasskeyRegisterRequest extends RegisterRequest {
+  userName?: string;
+  userDisplayName?: string;
 }
 
-export function invalidatePasskey(): void {
-  cachedPasskey = null;
+/** Mobile-only; SDK doesn't surface `connectWithPasskey` on web. */
+export interface ConnectWithPasskeyRequest {
+  label?: string;
+  excludeCredentials?: Uint8Array[];
+  userName?: string;
+  userDisplayName?: string;
+}
+
+export interface ConnectWithPasskeyResponse {
+  wallet: Wallet;
+  registeredCredential: PasskeyCredential | null;
+}
+
+export interface PasskeyApi {
+  checkAvailability(): Promise<PasskeyAvailability>;
+  register(request: PasskeyRegisterRequest): Promise<RegisterResponse>;
+  signIn(request: SignInRequest): Promise<SignInResponse>;
+  /** Native only. Undefined on web (WebAuthn collapses no-cred + cancel). */
+  connectWithPasskey?(request: ConnectWithPasskeyRequest): Promise<ConnectWithPasskeyResponse>;
+  labels(): { list(): Promise<string[]>; store(label: string): Promise<void> };
+  credentials(): {
+    get(): Promise<Uint8Array[]>;
+    remove(credentialId: Uint8Array): Promise<void>;
+    clear(): Promise<void>;
+  };
+}
+
+// ---------- byte helpers ----------
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s);
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+// ---------- native impl ----------
+
+interface NativePluginWalletJson {
+  seed: { type: 'mnemonic'; mnemonic: string; passphrase: string | null }
+      | { type: 'entropy'; entropy: string };
+  label: string;
+}
+
+interface NativePluginCredentialJson {
+  credentialId: string;
+  userId: string;
+  aaguid: string | null;
+  backupEligible: boolean | null;
+}
+
+interface NativePasskeyPlugin {
+  initialize(opts: {
+    rpId: string;
+    rpName: string;
+    userName?: string;
+    userDisplayName?: string;
+    breezApiKey?: string;
+    defaultLabel?: string;
+  }): Promise<void>;
+  checkAvailability(): Promise<PasskeyAvailability>;
+  register(opts: {
+    label?: string;
+    excludeCredentials?: string[];
+  }): Promise<{ wallet: NativePluginWalletJson; credential: NativePluginCredentialJson }>;
+  signIn(opts: {
+    label?: string;
+    allowCredentials?: string[];
+    preferImmediatelyAvailableCredentials?: boolean;
+  }): Promise<{ wallet: NativePluginWalletJson; labels: string[]; credentialId: string | null }>;
+  connectWithPasskey(opts: {
+    label?: string;
+    excludeCredentials?: string[];
+  }): Promise<{ wallet: NativePluginWalletJson; registeredCredential: NativePluginCredentialJson | null }>;
+  listLabels(): Promise<{ labels: string[] }>;
+  storeLabel(opts: { label: string }): Promise<void>;
+  getKnownCredentialIds(): Promise<{ credentialIds: string[] }>;
+  removeKnownCredentialId(opts: { credentialId: string }): Promise<void>;
+  clearKnownCredentialIds(): Promise<void>;
+}
+
+declare global {
+  interface Window {
+    Capacitor?: {
+      Plugins?: { Passkey?: NativePasskeyPlugin };
+    };
+  }
+}
+
+function decodeWallet(json: NativePluginWalletJson): Wallet {
+  if (json.seed.type === 'mnemonic') {
+    return {
+      seed: {
+        type: 'mnemonic',
+        mnemonic: json.seed.mnemonic,
+        passphrase: json.seed.passphrase ?? undefined,
+      },
+      label: json.label,
+    };
+  }
+  // Passkey-derived wallets are always mnemonic.
+  throw new Error('Unexpected entropy seed from passkey path');
+}
+
+function decodeCredential(json: NativePluginCredentialJson): PasskeyCredential {
+  return {
+    credentialId: base64ToBytes(json.credentialId),
+    userId: base64ToBytes(json.userId),
+    aaguid: json.aaguid ? base64ToBytes(json.aaguid) : undefined,
+    backupEligible: json.backupEligible ?? undefined,
+  };
 }
 
 /**
- * Create a new passkey with PRF support.
- * Only registers the credential, no seed derivation.
- * Triggers exactly 1 WebAuthn prompt.
- *
- * The native plugin reads its own iCloud-synced keychain entry for
- * excludeCredentialIds and merges it with any IDs we pass from
- * localStorage. This means: even if the app was uninstalled (wiping
- * localStorage), the plugin's keychain entry survives via iCloud
- * Keychain and the platform will refuse a duplicate registration.
- *
- * @throws PasskeyAlreadyExistsError if the platform refuses because a
- *         credential is already registered for this RP.
+ * Map plugin `error.code` strings to the SDK's typed Error subclasses
+ * so `instanceof` branches fire on native the same way as on web.
  */
-export async function createPasskey(): Promise<void> {
-  logger.info(LogCategory.AUTH, 'Creating new passkey');
-  // Pass the localStorage-tracked IDs as a legacy fallback: the plugin
-  // merges them with its own keychain. Browser path uses these as the
-  // sole source.
-  const excludeCredentialIds = getKnownCredentialIdsLocal();
-  const { credentialId, aaguid, backupEligible } =
-    await passkeyPrfProvider.createPasskey({ excludeCredentialIds });
-  if (credentialId) {
-    addKnownCredentialIdLocal(credentialId);
-    if (aaguid) {
-      localStorage.setItem(`${PASSKEY_AAGUID_PREFIX}${credentialId}`, aaguid);
-    }
-    if (backupEligible !== null) {
-      localStorage.setItem(`${PASSKEY_BE_PREFIX}${credentialId}`, backupEligible ? '1' : '0');
-    }
-    // user.name is captured inside passkeyPrfProvider.createPasskey
-    // (it owns the label string) so it lands in the same place as
-    // AAGUID and BE metadata without us needing to thread the
-    // computed label through the return value.
-    markCredentialUsed(credentialId);
+function rethrowAsTyped(e: unknown): never {
+  const code = (e as { code?: string })?.code;
+  const message = e instanceof Error ? e.message : String(e);
+  switch (code) {
+    case 'CREDENTIAL_ALREADY_EXISTS': throw new PasskeyAlreadyExistsError(message);
+    case 'CREDENTIAL_NOT_FOUND': throw new PasskeyCredentialNotFoundError(message);
+    case 'USER_TIMED_OUT': throw new PasskeyTimedOutError(message);
+    default: throw e;
   }
-  localStorage.setItem(PASSKEY_REGISTERED_KEY, '1');
-  markPasskeyUsed();
-  logger.info(LogCategory.AUTH, 'Passkey created successfully');
 }
 
-/** Returns undefined for credentials predating AAGUID capture or native credentials (plugin doesn't surface it yet). */
+/**
+ * Web analogue of `rethrowAsTyped`. The WASM layer stringifies the
+ * SDK's `PasskeyError` into a plain `Error` (no `code`/`kind`), so the
+ * typed class the JS provider threw is lost crossing the WASM boundary.
+ * Re-type it by matching the SDK's stable `Display` prefixes so
+ * PasskeyPage's `instanceof` recovery branches fire on web the same way
+ * they do on native. Anything unrecognized rethrows unchanged.
+ */
+function rethrowWasmAsTyped(e: unknown): never {
+  if (
+    e instanceof PasskeyAlreadyExistsError
+    || e instanceof PasskeyCredentialNotFoundError
+    || e instanceof PasskeyTimedOutError
+  ) {
+    throw e;
+  }
+  const message = e instanceof Error ? e.message : String(e);
+  if (/Credential already exists/i.test(message)) throw new PasskeyAlreadyExistsError(message);
+  if (/Credential not found/i.test(message)) throw new PasskeyCredentialNotFoundError(message);
+  if (/Authenticator timed out/i.test(message)) throw new PasskeyTimedOutError(message);
+  throw e;
+}
+
+class NativePasskey implements PasskeyApi {
+  /** The userName the plugin was last initialized with; re-init only if we need a different one. */
+  private lastUserName: string | undefined = undefined;
+  private initialized = false;
+
+  private plugin(): NativePasskeyPlugin {
+    const p = window.Capacitor?.Plugins?.Passkey;
+    if (!p) throw new Error('Passkey plugin not available');
+    return p;
+  }
+
+  private async initPlugin(opts: { userName?: string; userDisplayName?: string } = {}) {
+    if (this.initialized && this.lastUserName === opts.userName) return;
+    await this.plugin().initialize({
+      rpId,
+      rpName,
+      userName: opts.userName,
+      userDisplayName: opts.userDisplayName,
+      breezApiKey: import.meta.env.VITE_BREEZ_API_KEY,
+    });
+    this.initialized = true;
+    this.lastUserName = opts.userName;
+  }
+
+  async checkAvailability(): Promise<PasskeyAvailability> {
+    await this.initPlugin();
+    return this.plugin().checkAvailability();
+  }
+
+  async register(request: PasskeyRegisterRequest): Promise<RegisterResponse> {
+    // Rotating user.name per create avoids Apple Passwords' dedupe.
+    await this.initPlugin({ userName: request.userName, userDisplayName: request.userDisplayName });
+    try {
+      const r = await this.plugin().register({
+        label: request.label,
+        excludeCredentials: request.excludeCredentials?.map(bytesToBase64),
+      });
+      return {
+        wallet: decodeWallet(r.wallet),
+        credential: decodeCredential(r.credential),
+      };
+    } catch (e) { rethrowAsTyped(e); }
+  }
+
+  async signIn(request: SignInRequest): Promise<SignInResponse> {
+    await this.initPlugin();
+    try {
+      const r = await this.plugin().signIn({
+        label: request.label,
+        allowCredentials: request.allowCredentials?.map(bytesToBase64),
+        preferImmediatelyAvailableCredentials: request.preferImmediatelyAvailableCredentials,
+      });
+      return {
+        wallet: decodeWallet(r.wallet),
+        labels: r.labels,
+        // Sign-in assertions carry no attestation, so synthesize a
+        // credential from the bare ID the plugin observed.
+        credential: r.credentialId
+          ? { credentialId: base64ToBytes(r.credentialId) }
+          : undefined,
+      };
+    } catch (e) { rethrowAsTyped(e); }
+  }
+
+  async connectWithPasskey(request: ConnectWithPasskeyRequest): Promise<ConnectWithPasskeyResponse> {
+    await this.initPlugin({ userName: request.userName, userDisplayName: request.userDisplayName });
+    try {
+      const r = await this.plugin().connectWithPasskey({
+        label: request.label,
+        excludeCredentials: request.excludeCredentials?.map(bytesToBase64),
+      });
+      return {
+        wallet: decodeWallet(r.wallet),
+        registeredCredential: r.registeredCredential ? decodeCredential(r.registeredCredential) : null,
+      };
+    } catch (e) { rethrowAsTyped(e); }
+  }
+
+  labels() {
+    return {
+      list: async () => {
+        await this.initPlugin();
+        return (await this.plugin().listLabels()).labels;
+      },
+      store: async (label: string) => {
+        await this.initPlugin();
+        await this.plugin().storeLabel({ label });
+      },
+    };
+  }
+
+  credentials() {
+    return {
+      get: async () => {
+        await this.initPlugin();
+        const r = await this.plugin().getKnownCredentialIds();
+        return r.credentialIds.map(base64ToBytes);
+      },
+      remove: async (credentialId: Uint8Array) => {
+        await this.initPlugin();
+        await this.plugin().removeKnownCredentialId({ credentialId: bytesToBase64(credentialId) });
+      },
+      clear: async () => {
+        await this.initPlugin();
+        await this.plugin().clearKnownCredentialIds();
+      },
+    };
+  }
+}
+
+// ---------- web impl ----------
+
+const browserRegistry = Capacitor.isNativePlatform() ? null : new LocalStorageCredentialRegistry();
+
+function buildBrowserPasskeyClient(opts: { userName?: string; userDisplayName?: string } = {}): PasskeyClient {
+  const provider = new PasskeyProvider({
+    rpId,
+    rpName,
+    userName: opts.userName,
+    userDisplayName: opts.userDisplayName,
+    authenticatorAttachment: 'platform',
+    hints: ['client-device'],
+    defaultTimeoutMs: 55_000,
+  });
+  return new PasskeyClient(provider, import.meta.env.VITE_BREEZ_API_KEY);
+}
+
+class WebPasskey implements PasskeyApi {
+  /** Cached for sign-in / labels / credentials. Register rebuilds for the rotating user.name. */
+  private cached: PasskeyClient | null = null;
+
+  private client(): PasskeyClient {
+    if (!this.cached) this.cached = buildBrowserPasskeyClient();
+    return this.cached;
+  }
+
+  invalidate(): void {
+    this.cached = null;
+  }
+
+  checkAvailability(): Promise<PasskeyAvailability> {
+    return this.client().checkAvailability();
+  }
+
+  async register(request: PasskeyRegisterRequest): Promise<RegisterResponse> {
+    // Fresh client per create rotates user.name (Apple Passwords
+    // dedupes by `(rpId, user.name)`) and re-evaluates the Nostr
+    // identity, which is fine since register publishes the label.
+    const oneShot = buildBrowserPasskeyClient({
+      userName: request.userName,
+      userDisplayName: request.userDisplayName,
+    });
+    try {
+      const response = await oneShot.register({
+        label: request.label,
+        excludeCredentials: request.excludeCredentials,
+      });
+      // The SDK no longer tracks credentials, so record the new ID in
+      // the local store that backs credentials().get().
+      const credentialId = response.credential?.credentialId;
+      if (credentialId) await browserRegistry!.add(rpId, credentialId);
+      return response;
+    } catch (e) { rethrowWasmAsTyped(e); }
+  }
+
+  signIn(request: SignInRequest): Promise<SignInResponse> {
+    return this.client().signIn(request);
+  }
+
+  // No connectWithPasskey on web (left undefined).
+
+  labels() {
+    const c = this.client();
+    return {
+      list: () => c.labels().list(),
+      store: (label: string) => c.labels().store(label),
+    };
+  }
+
+  credentials() {
+    return {
+      get: () => browserRegistry!.read(rpId),
+      remove: (id: Uint8Array) => browserRegistry!.remove(rpId, id),
+      clear: () => browserRegistry!.clear(rpId),
+    };
+  }
+}
+
+// ---------- dispatcher ----------
+
+let cached: PasskeyApi | null = null;
+
+export function getPasskey(): PasskeyApi {
+  if (cached) return cached;
+  cached = Capacitor.isNativePlatform() ? new NativePasskey() : new WebPasskey();
+  return cached;
+}
+
+export function invalidatePasskey(): void {
+  if (cached instanceof WebPasskey) cached.invalidate();
+  cached = null;
+}
+
+// ---------- host-side helpers ----------
+
+/**
+ * Known credential IDs as base64. Native reads the plugin's synced
+ * store (iCloud Keychain / Block Store); web reads the local store.
+ */
+export async function getKnownCredentialIdsBase64(): Promise<string[]> {
+  const ids = await getPasskey().credentials().get();
+  return ids.map(bytesToBase64);
+}
+
+/**
+ * Persist post-register metadata: AAGUID + backupEligible (only
+ * available at create), the rotating user.name, the device-level
+ * registered flag, and pin the new cred as the active one.
+ */
+export function recordRegisteredCredential(
+  cred: RegisterResponse['credential'],
+  userName: string | undefined,
+): void {
+  if (!cred) return;
+  const credentialIdB64 = bytesToBase64(cred.credentialId);
+  if (userName) setCredentialUserName(credentialIdB64, userName);
+  localStorage.setItem('passkeyActiveCredentialId', credentialIdB64);
+  const aaguidBytes = cred.aaguid;
+  if (aaguidBytes) {
+    localStorage.setItem(
+      `${PASSKEY_AAGUID_PREFIX}${credentialIdB64}`,
+      bytesToBase64(aaguidBytes),
+    );
+  }
+  if (cred.backupEligible !== null && cred.backupEligible !== undefined) {
+    localStorage.setItem(
+      `${PASSKEY_BE_PREFIX}${credentialIdB64}`,
+      cred.backupEligible ? '1' : '0',
+    );
+  }
+  markCredentialUsed(credentialIdB64);
+  localStorage.setItem(PASSKEY_REGISTERED_KEY, '1');
+  markPasskeyUsed();
+}
+
+/**
+ * Read the credential ID we last signed in with, as raw bytes for
+ * passing to `signIn({ allowCredentials })`. Returns null when no
+ * passkey session is pinned (fresh state, after `clearPasskeyHistory`,
+ * or in mnemonic mode).
+ *
+ * Callers that surface secrets tied to the active wallet (e.g. the
+ * recovery-phrase reveal) should pin `allowCredentials` to this so
+ * the OS picker can't substitute a sibling credential for the same
+ * RP and derive a different wallet's seed.
+ */
+export function getActivePasskeyCredentialIdBytes(): Uint8Array | null {
+  const b64 = localStorage.getItem('passkeyActiveCredentialId');
+  if (!b64) return null;
+  try {
+    return base64ToBytes(b64);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Pin this cred as active (so subsequent derives constrain
+ * `allowCredentials`) and stamp its last-used timestamp.
+ */
+export function recordSignedInCredential(credentialId: Uint8Array | undefined): void {
+  if (!credentialId) return;
+  const b64 = bytesToBase64(credentialId);
+  localStorage.setItem('passkeyActiveCredentialId', b64);
+  markCredentialUsed(b64);
+  markPasskeyUsed();
+}
+
 export function getCredentialAaguid(credentialId: string): string | undefined {
   return localStorage.getItem(`${PASSKEY_AAGUID_PREFIX}${credentialId}`) ?? undefined;
 }
@@ -158,12 +518,7 @@ export function getAllCredentialAaguids(): string[] {
   return out;
 }
 
-/**
- * Read the most-recently-recorded backup-eligibility flag across all
- * credentials Glow knows about on this device. Returns undefined when
- * no flag was captured (predates BE tracking, or platform path didn't
- * surface it).
- */
+/** Most-recently-recorded BE flag across all known credentials. */
 export function getLatestBackupEligible(): boolean | undefined {
   let latest: string | null = null;
   for (const key of Object.keys(localStorage)) {
@@ -175,10 +530,7 @@ export function getLatestBackupEligible(): boolean | undefined {
   return latest === '1';
 }
 
-/**
- * Stamp first-seen (set once) and last-seen (always) for the passkey.
- * Call after any successful PRF ceremony.
- */
+/** Stamp first-seen (set once) and last-seen (always). */
 export function markPasskeyUsed(): void {
   const now = String(Date.now());
   if (!localStorage.getItem(PASSKEY_FIRST_SEEN_KEY)) {
@@ -196,19 +548,10 @@ export function getPasskeyMeta(): { firstSeenAt?: number; lastSeenAt?: number } 
   };
 }
 
-/**
- * Stamp last-used for a specific label. Called from the wallet hook
- * whenever a label is brought online (initial connect or switch), so
- * the Labels page can render a "last used" hint per row.
- */
 export function markLabelUsed(label: string): void {
   localStorage.setItem(`${PASSKEY_LABEL_LAST_USED_PREFIX}${label}`, String(Date.now()));
 }
 
-/**
- * Read the last-used timestamp for a label. Returns undefined when the
- * label has never been activated on this device.
- */
 export function getLabelLastUsed(label: string): number | undefined {
   const raw = localStorage.getItem(`${PASSKEY_LABEL_LAST_USED_PREFIX}${label}`);
   if (raw === null) return undefined;
@@ -216,11 +559,6 @@ export function getLabelLastUsed(label: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-/**
- * Wipe every per-label last-used entry. Used by the wipe / forget
- * surfaces in PasskeyLocalStatePage and by the deletion-recovery flow
- * when the passkey itself is being torn down.
- */
 export function clearAllLabelLastUsed(): void {
   for (const key of Object.keys(localStorage)) {
     if (key.startsWith(PASSKEY_LABEL_LAST_USED_PREFIX)) {
@@ -229,12 +567,6 @@ export function clearAllLabelLastUsed(): void {
   }
 }
 
-// markCredentialUsed / getCredentialMeta / clearAllCredentialMeta /
-// getHiddenCredentialIds / hideCredential / unhideCredential /
-// clearAllHiddenCredentials live in passkeyMetadata.ts and are
-// re-exported at the top of this file.
-
-/** Drop every per-credential AAGUID entry. */
 export function clearAllCredentialAaguids(): void {
   for (const key of Object.keys(localStorage)) {
     if (key.startsWith(PASSKEY_AAGUID_PREFIX) || key.startsWith(PASSKEY_BE_PREFIX)) {
@@ -243,55 +575,27 @@ export function clearAllCredentialAaguids(): void {
   }
 }
 
-// setCredentialUserName / getCredentialUserName live in
-// passkeyMetadata.ts (passkeyPrfProvider needs setCredentialUserName
-// from inside signalRename, and the no-cycle home for those helpers
-// is passkeyMetadata; see file-level comment there). Re-exported
-// at the top of this file.
-
-/** Targeted single-credential teardown for the deletion-of-one case
- * (notably: the user picked a credential to switch to, and it turned
- * out to be deleted). Differs from `clearPasskeyHistory` in that it
- * preserves OTHER known creds + their per-cred metadata, so the
- * management list keeps showing whatever the user can still actually
- * use.
- *
- * Removes:
- *  - `credentialId` from the canonical store (native plugin's
- *    iCloud-synced keychain on iOS / Block Store on Android,
- *    localStorage on web)
- *  - per-cred AAGUID, BE, user.name, first/last-seen
- *  - the cred's hidden flag (if any)
- *  - calls PublicKeyCredential.signalUnknownCredential for
- *    password-manager cleanup (best effort, no-op where the API isn't
- *    available)
- *
- * Does NOT touch:
- *  - other creds' AAGUID / BE / user.name / timestamps
- *  - the global passkeyRegistered / passkeyFirstSeenAt /
- *    passkeyLastSeenAt fields (they describe the device, not the
- *    cred)
+/**
+ * Drop one cred's metadata when the user confirms it has been
+ * deleted from OS Settings. Preserves siblings and
+ * `passkeyRegistered`.
  */
 export async function removeStaleCredential(credentialId: string): Promise<void> {
   if (!credentialId) return;
   logger.warn(LogCategory.AUTH, 'Removing stale credential metadata', { credentialId });
 
-  // Best-effort: tell the password manager to hide this cred.
   try {
-    await passkeyPrfProvider.signalUnknownCredentials([credentialId]);
+    await signalUnknownCredentials([credentialId]);
   } catch (e) {
     logger.debug(LogCategory.AUTH, 'signalUnknownCredentials failed during stale removal', {
       error: e instanceof Error ? e.message : String(e),
     });
   }
 
-  // Drop from the canonical store (native plugin's iCloud-synced
-  // keychain on iOS / Block Store on Android / localStorage on web)
-  // so PasskeyManagementPage stops listing the dead cred.
   try {
-    await passkeyPrfProvider.removeKnownCredentialId(credentialId);
+    await getPasskey().credentials().remove(base64ToBytes(credentialId));
   } catch (e) {
-    logger.debug(LogCategory.AUTH, 'removeKnownCredentialId failed during stale removal', {
+    logger.debug(LogCategory.AUTH, 'credentials.remove failed during stale removal', {
       error: e instanceof Error ? e.message : String(e),
     });
   }
@@ -303,8 +607,6 @@ export async function removeStaleCredential(credentialId: string): Promise<void>
   unhideCredential(credentialId);
 }
 
-/** Capture the credential we're switching FROM so PasskeyPage can
- * roll back if the switch target turns out to be deleted. */
 export function setPendingSwitchFromCredentialId(credentialId: string | null): void {
   if (credentialId) {
     localStorage.setItem(PASSKEY_PENDING_SWITCH_FROM_KEY, credentialId);
@@ -313,8 +615,6 @@ export function setPendingSwitchFromCredentialId(credentialId: string | null): v
   }
 }
 
-/** Read-and-clear the pending switch source. Returns null when no
- * switch is in flight. */
 export function consumePendingSwitchFromCredentialId(): string | null {
   const v = localStorage.getItem(PASSKEY_PENDING_SWITCH_FROM_KEY);
   localStorage.removeItem(PASSKEY_PENDING_SWITCH_FROM_KEY);
@@ -322,150 +622,70 @@ export function consumePendingSwitchFromCredentialId(): string | null {
 }
 
 /**
- * Read the localStorage-backed list of base64 credential IDs.
- *
- * Browser-only fallback. On native, the canonical source is the
- * plugin's iCloud-synced keychain (queried via
- * `passkeyPrfProvider.getKnownCredentialIds()`); the localStorage
- * copy is kept in sync as a legacy escape hatch but loses parity if
- * the app is uninstalled or if a sibling iOS device registered the
- * passkey first.
- */
-function getKnownCredentialIdsLocal(): string[] {
-  try {
-    const raw = localStorage.getItem(KNOWN_CREDENTIALS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? parsed.filter((x): x is string => typeof x === 'string')
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function addKnownCredentialIdLocal(credentialId: string): void {
-  const existing = getKnownCredentialIdsLocal();
-  if (existing.includes(credentialId)) return;
-  const next = [...existing, credentialId];
-  while (next.length > KNOWN_CREDENTIALS_MAX) next.shift();
-  localStorage.setItem(KNOWN_CREDENTIALS_KEY, JSON.stringify(next));
-}
-
-/**
- * Called by the deletion-recovery flow when sign-in returns
- * `CREDENTIAL_NOT_FOUND` on a device that has previously registered:
- * the user has manually deleted the passkey from Settings → Passwords,
- * so all our local memory of it is stale. Wipes:
- *   - the plugin's iCloud-synced keychain entry (other devices will
- *     still have their own copy syncing back, which is fine: any
- *     surviving credential will be re-discovered there).
- *   - the localStorage flag and known-IDs list.
- * After this runs, the home screen's CTA gating reverts to first-time
- * user state, allowing a fresh create flow.
+ * Wipe device-level passkey history when signIn returns
+ * CredentialNotFound on a previously-registered device.
  */
 export async function clearPasskeyHistory(): Promise<void> {
   logger.warn(LogCategory.AUTH, 'Clearing passkey history (deletion detected)');
-  // Snapshot known credential IDs BEFORE wiping so we can tell the
-  // browser's password manager to hide the now-defunct creds via the
-  // WebAuthn Signal API. Without this, a stale passkey can keep
-  // surfacing in cross-device pickers (iCloud Keychain on a sibling
-  // Apple device, Google Password Manager on an Android cluster) until
-  // the user manually prunes it from system settings. Best-effort: the
-  // signal API is web-only and gracefully no-ops where unsupported.
-  let knownIds: string[] = [];
+  const passkey = getPasskey();
+  let knownIdsB64: string[] = [];
   try {
-    knownIds = await passkeyPrfProvider.getKnownCredentialIds();
+    const ids = await passkey.credentials().get();
+    knownIdsB64 = ids.map(bytesToBase64);
   } catch (e) {
-    logger.debug(LogCategory.AUTH, 'getKnownCredentialIds failed pre-wipe', {
+    logger.debug(LogCategory.AUTH, 'credentials.get failed pre-wipe', {
       error: e instanceof Error ? e.message : String(e),
     });
   }
   try {
-    await passkeyPrfProvider.clearKnownCredentialIds();
+    await passkey.credentials().clear();
   } catch (e) {
-    logger.warn(LogCategory.AUTH, 'Failed to clear plugin keychain', {
+    logger.warn(LogCategory.AUTH, 'Failed to clear credential registry', {
       error: e instanceof Error ? e.message : String(e),
     });
   }
-  if (knownIds.length > 0) {
-    void passkeyPrfProvider.signalUnknownCredentials(knownIds);
+  if (knownIdsB64.length > 0) {
+    void signalUnknownCredentials(knownIdsB64);
   }
   localStorage.removeItem(PASSKEY_REGISTERED_KEY);
-  localStorage.removeItem(KNOWN_CREDENTIALS_KEY);
   localStorage.removeItem('passkeyActiveCredentialId');
   localStorage.removeItem(PASSKEY_FIRST_SEEN_KEY);
   localStorage.removeItem(PASSKEY_LAST_SEEN_KEY);
   clearAllLabelLastUsed();
   clearAllCredentialMeta();
   clearAllHiddenCredentials();
-  // AAGUIDs intentionally kept: only captured at create time and not
-  // recoverable on sign-in.
+  // AAGUIDs intentionally kept: only captured at create.
   invalidatePasskey();
 }
 
-/**
- * Check if PRF (passkey) authentication is available on this device.
- */
+/** Collapse the SDK's four availability variants to a single bool. */
 export async function isPrfAvailable(): Promise<boolean> {
-  // Firefox's PRF support is still unreliable — disable until stable
   const ua = navigator.userAgent;
-  if (/Firefox\//i.test(ua) && !/Seamonkey\//i.test(ua)) {
-    return false;
-  }
+  // Firefox PRF support is still unreliable; gate off entirely.
+  if (/Firefox\//i.test(ua) && !/Seamonkey\//i.test(ua)) return false;
 
-  const passkey = getPasskey();
-  return await passkey.isAvailable();
+  const availability = await getPasskey().checkAvailability();
+  return availability.type !== 'prfUnsupported';
 }
 
-/**
- * Check if the app is in passkey mode.
- * Passkey mode is signalled by a stored label.
- */
 export function isPasskeyMode(): boolean {
   return localStorage.getItem(PASSKEY_LABEL_KEY) !== null;
 }
 
-/**
- * Set passkey mode by storing the label.
- * Also marks this device as having used a passkey (persistent hint).
- *
- * Does NOT invalidate the Passkey cache: this fires at the END of a
- * successful sign-in, when the cached instance has a freshly-warmed
- * Nostr OnceCell that subsequent settings ops (Labels page,
- * saveLabel, etc.) need to reuse to avoid re-prompting. Label
- * switches invalidate explicitly at the start of `switchPasskeyLabel`
- * before the new derive runs.
- */
 export function setPasskeyMode(label?: string): void {
   localStorage.setItem(PASSKEY_LABEL_KEY, label ?? 'Default');
   localStorage.setItem(PASSKEY_REGISTERED_KEY, '1');
 }
 
-/**
- * Clear passkey mode. Does NOT clear the persistent "passkey
- * registered" flag: the passkey still exists on the device.
- */
 export function clearPasskeyMode(): void {
   localStorage.removeItem(PASSKEY_LABEL_KEY);
-  // Drop active-cred filter so the next sign-in is discoverable
-  // (lets the OS picker surface synced creds again).
   localStorage.removeItem('passkeyActiveCredentialId');
   invalidatePasskey();
 }
 
 /**
- * Pin the next sign-in to a specific credential ID. Used by the
- * "Use this passkey" action in PasskeyManagementPage when switching
- * between known creds. Clears the active label since each cred derives
- * its own Nostr identity (so the new cred's label set is independent
- * of the old one). Drops the cached Passkey instance so the next
- * derive runs fresh. Unhides the cred since active and hidden are
- * mutually exclusive (a hidden cred would not appear in the management
- * list while being silently active).
- *
- * Caller is responsible for disconnecting the current SDK session and
- * routing to PasskeyPage so the detect flow can run the new sign-in.
+ * Pin the next sign-in to `credentialId`. Caller disconnects the SDK
+ * and routes to PasskeyPage so the detect flow re-runs.
  */
 export function pinActivePasskeyCredentialId(credentialId: string): void {
   localStorage.setItem('passkeyActiveCredentialId', credentialId);
@@ -474,85 +694,16 @@ export function pinActivePasskeyCredentialId(credentialId: string): void {
   invalidatePasskey();
 }
 
-/**
- * Check if this device has ever successfully used a passkey.
- * Survives logout and cancelled prompts so the home screen can
- * prioritize the sign-in path for returning users.
- */
 export function hasPasskeyHistory(): boolean {
   return localStorage.getItem(PASSKEY_REGISTERED_KEY) === '1';
 }
 
-/**
- * List available labels from nostr relays.
- */
 export async function listLabels(): Promise<string[]> {
   logger.info(LogCategory.AUTH, 'Listing labels from nostr relays');
-  const passkey = getPasskey();
-  return await passkey.listLabels();
+  return getPasskey().labels().list();
 }
 
-/**
- * Save a label to nostr relays so it can be discovered later.
- */
 export async function saveLabel(label: string): Promise<void> {
   logger.info(LogCategory.AUTH, 'Saving label to nostr relays');
-  const passkey = getPasskey();
-  await passkey.storeLabel(label);
-}
-
-/**
- * Derive a Wallet using passkey authentication.
- *
- * Falls back to saved label from localStorage when no label arg provided.
- *
- * @param label - Optional label. If omitted, uses saved label or SDK default.
- * @returns The derived Wallet object containing seed and label.
- */
-export async function getWallet(label?: string): Promise<Wallet> {
-  const effectiveLabel = label ?? localStorage.getItem(PASSKEY_LABEL_KEY) ?? undefined;
-
-  logger.info(LogCategory.AUTH, 'Deriving wallet via passkey');
-
-  const passkey = getPasskey();
-  try {
-    const wallet = await passkey.getWallet(effectiveLabel);
-    logger.info(LogCategory.AUTH, 'Passkey wallet derived successfully');
-    markPasskeyUsed();
-    return wallet;
-  } catch (e) {
-    logger.error(LogCategory.AUTH, 'Failed to derive passkey wallet', {
-      error: e instanceof Error ? e.message : String(e),
-    });
-    throw e;
-  }
-}
-
-/**
- * Derive Nostr identity + wallet seed in one PRF ceremony.
- *
- * @param publishLabel - When true (default), publishes the label
- *   to Nostr (idempotent). Pass `false` for speculative cold-restore.
- */
-export async function setupWallet(
-  label?: string,
-  publishLabel: boolean = true,
-): Promise<Wallet> {
-  const effectiveLabel = label ?? localStorage.getItem(PASSKEY_LABEL_KEY) ?? undefined;
-
-  logger.info(LogCategory.AUTH, 'Setting up wallet via single-prompt passkey ceremony', {
-    publishLabel,
-  });
-
-  const passkey = getPasskey();
-  try {
-    const wallet = await passkey.setupWallet(effectiveLabel, publishLabel);
-    logger.info(LogCategory.AUTH, 'Passkey wallet setup complete');
-    return wallet;
-  } catch (e) {
-    logger.error(LogCategory.AUTH, 'Failed to set up passkey wallet', {
-      error: e instanceof Error ? e.message : String(e),
-    });
-    throw e;
-  }
+  await getPasskey().labels().store(label);
 }

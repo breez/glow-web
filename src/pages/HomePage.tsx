@@ -4,7 +4,7 @@ import GlowLogo from '@/components/GlowLogo';
 import { safeAreaTop, safeAreaBottom } from '@/utils/safeAreaInsets';
 import { useStatusBarColor } from '@/hooks/useStatusBarColor';
 import { STATUS_BAR_DARK } from '@/utils/statusBarManager';
-import { passkeyPrfProvider } from '@/services/passkeyPrfProvider';
+import { supportsImmediateGet } from '@/services/passkeyPrfProvider';
 
 interface HomePageProps {
   onRestoreWallet: () => void;
@@ -56,7 +56,7 @@ const HomePage: React.FC<HomePageProps> = ({
 
   useEffect(() => {
     let cancelled = false;
-    passkeyPrfProvider.supportsImmediateGet().then((supported) => {
+    supportsImmediateGet().then((supported) => {
       if (!cancelled) setImmediateGetSupported(supported);
     });
     return () => { cancelled = true; };

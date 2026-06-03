@@ -3,8 +3,8 @@ import { Capacitor } from '@capacitor/core';
 import SlideInPage from '../components/layout/SlideInPage';
 import { ConfirmDialog } from '../components/ui';
 import { TrashIcon } from '../components/Icons';
-import { passkeyPrfProvider } from '../services/passkeyPrfProvider';
 import {
+  getPasskey,
   clearAllLabelLastUsed,
   clearAllCredentialMeta,
   clearAllHiddenCredentials,
@@ -86,10 +86,10 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack, o
     setIsWorking(true);
     let keychainCleared = true;
     try {
-      await passkeyPrfProvider.clearKnownCredentialIds();
+      await getPasskey().credentials().clear();
     } catch (e) {
       keychainCleared = false;
-      logger.warn(LogCategory.AUTH, 'clearKnownCredentialIds threw during wipe', {
+      logger.warn(LogCategory.AUTH, 'credentials.clear threw during wipe', {
         error: e instanceof Error ? e.message : String(e),
       });
     }
