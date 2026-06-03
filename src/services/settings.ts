@@ -64,17 +64,19 @@ export function getSettings(): UserSettings {
     // Merge with defaults defensively
     const depositMaxFee = parsed?.depositMaxFee ?? defaultSettings.depositMaxFee;
     if (depositMaxFee) {
-      /* eslint-disable @typescript-eslint/no-explicit-any -- validating parsed JSON shape at runtime */
-      if (depositMaxFee.type === 'fixed' && typeof (depositMaxFee as any).amount !== 'number') {
+      // depositMaxFee comes from untrusted persisted JSON, so the typed
+      // shape isn't guaranteed: read each variant's payload as `unknown`
+      // and confirm it is actually a number before trusting it.
+      const fee = depositMaxFee as { amount?: unknown; satPerVbyte?: unknown; leewaySatPerVbyte?: unknown };
+      if (depositMaxFee.type === 'fixed' && typeof fee.amount !== 'number') {
         return defaultSettings;
       }
-      if (depositMaxFee.type === 'rate' && typeof (depositMaxFee as any).satPerVbyte !== 'number') {
+      if (depositMaxFee.type === 'rate' && typeof fee.satPerVbyte !== 'number') {
         return defaultSettings;
       }
-      if (depositMaxFee.type === 'networkRecommended' && typeof (depositMaxFee as any).leewaySatPerVbyte !== 'number') {
+      if (depositMaxFee.type === 'networkRecommended' && typeof fee.leewaySatPerVbyte !== 'number') {
         return defaultSettings;
       }
-      /* eslint-enable @typescript-eslint/no-explicit-any */
     }
     const out: UserSettings = {
       depositMaxFee: depositMaxFee as MaxFee,
