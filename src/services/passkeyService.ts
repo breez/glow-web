@@ -340,15 +340,19 @@ class NativePasskey implements PasskeyApi {
 const browserRegistry = Capacitor.isNativePlatform() ? null : new LocalStorageCredentialRegistry();
 
 function buildBrowserPasskeyClient(opts: { userName?: string; userDisplayName?: string } = {}): PasskeyClient {
-  const provider = new PasskeyProvider({
-    rpId,
-    rpName,
-    userName: opts.userName,
-    userDisplayName: opts.userDisplayName,
-    authenticatorAttachment: 'platform',
-    hints: ['client-device'],
-    defaultTimeoutMs: 55_000,
-  });
+  const provider = new PasskeyProvider(
+    {
+      rpId,
+      rpName,
+      userName: opts.userName,
+      userDisplayName: opts.userDisplayName,
+    },
+    {
+      authenticatorAttachment: 'platform',
+      hints: ['client-device'],
+      defaultTimeoutMs: 55_000,
+    },
+  );
   return new PasskeyClient(provider, import.meta.env.VITE_BREEZ_API_KEY);
 }
 
