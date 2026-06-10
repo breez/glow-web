@@ -37,42 +37,37 @@ const renderSheet = () =>
   );
 
 /** Dispatch a viewport geometry change like a keyboard show/hide. */
-const setViewport = (height: number, pageTop: number, event: 'resize' | 'scroll' = 'resize') => {
+const setViewport = (height: number, event: 'resize' | 'scroll' = 'resize') => {
   act(() => {
     vv.height = height;
-    vv.pageTop = pageTop;
     vv.dispatchEvent(new Event(event));
   });
 };
 
 describe('BottomSheetContainer visual viewport tracking', () => {
-  it('sizes and anchors the wrapper to the visual viewport rect', () => {
+  it('sizes the wrapper to the visual viewport height', () => {
     const { container } = renderSheet();
     const wrapper = container.firstElementChild as HTMLElement;
 
-    expect(wrapper.style.top).toBe('0px');
     expect(wrapper.style.height).toBe('900px');
   });
 
-  it('follows the visual viewport pan when the keyboard opens (#219)', () => {
+  it('shrinks the wrapper when the keyboard opens (#219)', () => {
     const { container } = renderSheet();
     const wrapper = container.firstElementChild as HTMLElement;
 
-    // Keyboard opens: the viewport shrinks and the browser pans down
-    // to reveal a focused input near the bottom of the screen.
-    setViewport(600, 300);
+    setViewport(600);
 
-    expect(wrapper.style.top).toBe('300px');
     expect(wrapper.style.height).toBe('600px');
   });
 
-  it('re-anchors on visual viewport scroll without a resize', () => {
+  it('applies height changes that arrive via scroll events', () => {
     const { container } = renderSheet();
     const wrapper = container.firstElementChild as HTMLElement;
 
-    setViewport(900, 120, 'scroll');
+    setViewport(620, 'scroll');
 
-    expect(wrapper.style.top).toBe('120px');
+    expect(wrapper.style.height).toBe('620px');
   });
 
   it('drops a transient grow when the keyboard re-claims space (focus switch)', () => {
@@ -81,25 +76,22 @@ describe('BottomSheetContainer visual viewport tracking', () => {
     const wrapper = container.firstElementChild as HTMLElement;
 
     // Keyboard opens on the first field.
-    setViewport(600, 300);
+    setViewport(600);
 
     // Focus moves to the next field: the browser reports a transient
     // keyboard hide. The grow must not apply yet.
-    setViewport(900, 0);
+    setViewport(900);
     expect(wrapper.style.height).toBe('600px');
-    expect(wrapper.style.top).toBe('300px');
 
     // Keyboard re-shows (slightly different layout) before the hold
     // expires: tracked immediately, held grow cancelled.
-    setViewport(580, 320);
+    setViewport(580);
     expect(wrapper.style.height).toBe('580px');
-    expect(wrapper.style.top).toBe('320px');
 
     act(() => {
       vi.advanceTimersByTime(500);
     });
     expect(wrapper.style.height).toBe('580px');
-    expect(wrapper.style.top).toBe('320px');
   });
 
   it('applies a real keyboard hide once the grow hold expires', () => {
@@ -107,15 +99,14 @@ describe('BottomSheetContainer visual viewport tracking', () => {
     const { container } = renderSheet();
     const wrapper = container.firstElementChild as HTMLElement;
 
-    setViewport(600, 300);
-    setViewport(900, 0);
+    setViewport(600);
+    setViewport(900);
     expect(wrapper.style.height).toBe('600px');
 
     act(() => {
       vi.advanceTimersByTime(250);
     });
     expect(wrapper.style.height).toBe('900px');
-    expect(wrapper.style.top).toBe('0px');
   });
 
   it('pre-lifts on input focus before the keyboard opens, reverts if none arrives', () => {
@@ -124,8 +115,8 @@ describe('BottomSheetContainer visual viewport tracking', () => {
     const wrapper = container.firstElementChild as HTMLElement;
 
     // Seed the keyboard delta cache with one real keyboard cycle.
-    setViewport(600, 0);
-    setViewport(900, 0);
+    setViewport(600);
+    setViewport(900);
     act(() => {
       vi.advanceTimersByTime(700);
     });

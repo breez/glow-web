@@ -44,12 +44,20 @@ const SNAP_VELOCITY_THRESHOLD = 50;
  */
 const VIEWPORT_GROW_SETTLE_MS = 200;
 
-// Glide between viewport rects: keyboard and pan changes arrive as
-// single step events (on native the WebView resize only reaches the
-// page near the end of the IME animation) and an instant jump reads
-// as a teleport.
-const VIEWPORT_TRANSITION =
-  'top 200ms cubic-bezier(0.2, 0.0, 0, 1.0), height 200ms cubic-bezier(0.2, 0.0, 0, 1.0)';
+// Glide between viewport heights: keyboard changes arrive as single
+// step events (on native the WebView resize only reaches the page
+// near the end of the IME animation) and an instant jump reads as a
+// teleport.
+const VIEWPORT_TRANSITION = 'height 200ms cubic-bezier(0.2, 0.0, 0, 1.0)';
+
+/**
+ * First-focus keyboard estimate as a fraction of the viewport, used
+ * by the web pre-lift when no measured delta is cached yet. Slight
+ * overshoot is fine (the sheet floats briefly until the real shrink
+ * lands); undershoot risks a browser pan. 0.42 covers typical
+ * portrait keyboards with their suggestion bars.
+ */
+const KEYBOARD_ESTIMATE_FRACTION = 0.42;
 
 // Viewport shrink the keyboard caused the last time it opened
 // (survives sheet remounts). Consumed by two pre-positioning paths:
@@ -151,14 +159,10 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   const [viewportHeight, setViewportHeight] = useState<number>(() => {
     return window.visualViewport?.height ?? window.innerHeight;
   });
-  // Offset of the visual viewport from the document top. Mobile web
-  // browsers pan the visual viewport (pageTop > 0) to reveal a focused
-  // input the incoming keyboard would cover; the sheet must follow that
-  // pan or it floats above the keyboard by the pan amount (#219).
-  // Always 0 on native: adjustResize shrinks the WebView instead.
-  const [viewportTop, setViewportTop] = useState<number>(() => {
-    return window.visualViewport?.pageTop ?? 0;
-  });
+  // No pan tracking: browser focus panning is neutralized globally by
+  // webViewportManager's counter-translate on #root (web) and never
+  // happens under adjustResize (native), so anchoring at top 0 always
+  // lines the wrapper bottom up with the keyboard top.
 
   const dragging = useRef(false);
   const startY = useRef(0);
@@ -189,7 +193,6 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       const reference = preLiftBase ?? appliedHeight;
       appliedHeight = window.visualViewport?.height ?? window.innerHeight;
       setViewportHeight(appliedHeight);
-      setViewportTop(window.visualViewport?.pageTop ?? 0);
 
       if (!Capacitor.isNativePlatform() && reference - appliedHeight > 150) {
         // A keyboard-sized shrink landed: remember it for the next
@@ -242,7 +245,6 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     // desktop browsers).
     const onFocusIn = (event: FocusEvent) => {
       if (Capacitor.isNativePlatform()) return;
-      if (lastKeyboardDelta === undefined) return;
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
       if (!wrapperRef.current?.contains(target)) return;
@@ -259,7 +261,18 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       // Viewport already keyboard-shrunk relative to the layout
       // viewport: pre-lifting again would double-shrink.
       if (current < document.documentElement.clientHeight - 50) return;
-      const lifted = current - lastKeyboardDelta;
+      // On the first focus of a session there is no measured delta
+      // yet; estimate one on touch devices so even that focus opens
+      // without a browser pan. Pointer-fine devices (desktop) skip
+      // the estimate: a soft keyboard is unlikely and the revert
+      // would bounce the sheet on every focus.
+      const delta =
+        lastKeyboardDelta ??
+        (window.matchMedia('(pointer: coarse)').matches
+          ? Math.round(current * KEYBOARD_ESTIMATE_FRACTION)
+          : undefined);
+      if (delta === undefined) return;
+      const lifted = current - delta;
       if (lifted <= 0) return;
       preLiftBase = current;
       appliedHeight = lifted;
@@ -595,13 +608,13 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       unmount={false}
       afterLeave={afterLeave}
       as="div"
-      // No overflow-hidden: the keyboard bleed below must paint
-      // outside the wrapper, and the panel only ever animates
-      // downward out of it, into keyboard-covered or off-screen
-      // space (ancestors clip at the page bounds).
-      className="absolute inset-x-0 z-50 flex flex-col justify-end pointer-events-none"
+      // No overflow-hidden: the card's keyboard skirt (index.css,
+      // html.keyboard-visible) must paint below the wrapper, and the
+      // panel only ever animates downward out of it, into
+      // keyboard-covered or off-screen space (ancestors clip at the
+      // page bounds).
+      className="absolute inset-x-0 top-0 z-50 flex flex-col justify-end pointer-events-none"
       style={{
-        top: `${viewportTop}px`,
         height: `${viewportHeight}px`,
         transition: VIEWPORT_TRANSITION,
       }}
@@ -682,17 +695,6 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
           return child;
         })}
       </TransitionChild>
-      {/* Card-surface bleed below the sheet footer. iOS Safari can
-          over-subtract the keyboard from visualViewport.height or
-          restore its focus pan without firing an event, exposing a
-          band of the page behind between the sheet and the keyboard.
-          The bleed paints sheet surface across that band; with an
-          accurate viewport it sits behind the keyboard or past the
-          page bounds, where ancestors clip it. */}
-      <div
-        aria-hidden
-        className={`absolute top-full inset-x-0 mx-auto w-full ${maxWidthClass} h-40 bg-spark-surface pointer-events-auto`}
-      />
     </Transition>
   );
 };

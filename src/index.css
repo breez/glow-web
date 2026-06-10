@@ -206,9 +206,9 @@ body {
 }
 
 /* Collapse non-essential rows while the soft keyboard is up so tall
-   bottom-sheet forms fit above it without inner scrolling. Native
-   only: main.tsx toggles `keyboard-visible` on <html> from the
-   @capacitor/keyboard events; web never sets the class. */
+   bottom-sheet forms fit above it without inner scrolling. The
+   `keyboard-visible` class on <html> comes from main.tsx (native,
+   via @capacitor/keyboard) or webViewportManager (web). */
 html.keyboard-visible .hide-on-keyboard {
   display: none;
 }
@@ -793,6 +793,17 @@ video::-webkit-media-controls-panel {
   width: 100%;
   padding: 0.75em 1.5em 1em 1.5em;
   padding-bottom: calc(1em + env(safe-area-inset-bottom, 0px));
+}
+
+/* While the soft keyboard is up, extend the card 160px below its
+   footer; the negative margin cancels the layout shift so only the
+   painted box grows. Covers the band iOS Safari can expose between
+   the sheet and the keyboard when visualViewport.height
+   over-subtracts around the accessory bar. Being part of the card,
+   it always matches its surface and moves with it. */
+html.keyboard-visible .bottom-sheet-card {
+  padding-bottom: calc(1em + env(safe-area-inset-bottom, 0px) + 160px);
+  margin-bottom: -160px;
 }
 
 .bottom-sheet-card-bordered {

@@ -5,6 +5,7 @@ import { Keyboard } from '@capacitor/keyboard';
 import App from './App';
 import './index.css';
 import { logger, LogCategory } from '@/services/logger';
+import { initWebViewportManager } from '@/utils/webViewportManager';
 import initBreezSDK from '@breeztech/breez-sdk-spark';
 
 // Allow JSON.stringify to handle BigInt values (e.g. payment amounts/fees from SDK)
@@ -111,6 +112,11 @@ if (Capacitor.isNativePlatform()) {
     logger.debug(LogCategory.UI, 'Keyboard will hide');
   });
 }
+
+// On web the same keyboard signals (`keyboard-visible` class +
+// `--keyboard-height` var) come from the viewport manager, which also
+// pins the page against browser focus panning. No-op on native.
+initWebViewportManager();
 
 /**
  * Fades out and removes the initial splash screen, resolving once the
