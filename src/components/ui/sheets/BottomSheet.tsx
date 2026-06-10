@@ -125,6 +125,14 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   const [viewportHeight, setViewportHeight] = useState<number>(() => {
     return window.visualViewport?.height ?? window.innerHeight;
   });
+  // Offset of the visual viewport from the document top. Mobile web
+  // browsers pan the visual viewport (pageTop > 0) to reveal a focused
+  // input the incoming keyboard would cover; the sheet must follow that
+  // pan or it floats above the keyboard by the pan amount (#219).
+  // Always 0 on native: adjustResize shrinks the WebView instead.
+  const [viewportTop, setViewportTop] = useState<number>(() => {
+    return window.visualViewport?.pageTop ?? 0;
+  });
 
   const dragging = useRef(false);
   const startY = useRef(0);
@@ -142,6 +150,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   useEffect(() => {
     const readViewport = () => {
       setViewportHeight(window.visualViewport?.height ?? window.innerHeight);
+      setViewportTop(window.visualViewport?.pageTop ?? 0);
     };
 
     const vv = window.visualViewport;
@@ -421,8 +430,8 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       unmount={false}
       afterLeave={afterLeave}
       as="div"
-      className="absolute inset-x-0 top-0 z-50 overflow-hidden flex flex-col justify-end pointer-events-none"
-      style={{ height: `${viewportHeight}px` }}
+      className="absolute inset-x-0 z-50 overflow-hidden flex flex-col justify-end pointer-events-none"
+      style={{ top: `${viewportTop}px`, height: `${viewportHeight}px` }}
     >
       {showBackdrop && (
         <TransitionChild
