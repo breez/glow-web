@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import type { Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../../../contexts/WalletContext';
 import { usePlatform } from '../../../hooks/usePlatform';
@@ -45,7 +47,6 @@ export interface UseBuyBitcoinReturn {
   isGenerating: boolean;
   error: string | null;
   validAmount: boolean;
-  isMobile: boolean;
   quickAmounts: number[];
   // Token mode
   isTokenMode: boolean;
@@ -170,14 +171,24 @@ export function useBuyBitcoin({
     setError(null);
     setIsGenerating(true);
 
-    // Pre-open a blank tab synchronously during the user gesture so mobile
-    // browsers let us navigate it later without tripping popup blockers.
-    const mobileTab = isMobile ? window.open('', '_blank') : null;
+    // On mobile web, pre-open a blank tab synchronously during the user
+    // gesture so browsers let us navigate it later without tripping popup
+    // blockers. On native hosts we must NOT do this (or fall back to
+    // window.location.href): that navigates the app's own WebView to
+    // cash.app and gets stuck in a redirect loop when the user returns
+    // (same bug as the MoonPay flow, see useBreezSdk.handleBuyBitcoin).
+    // Instead, defer until the SDK responds and hand the URL to
+    // @capacitor/browser (Chrome Custom Tabs / SFSafariViewController).
+    const isNative = Capacitor.isNativePlatform();
+    const mobileTab = isMobile && !isNative ? window.open('', '_blank') : null;
 
     try {
       const response = await sdk.buyBitcoin({ type: 'cashApp', amountSats: amountSatsForSdk });
       setGeneratedAmountSats(amountSats);
-      if (isMobile) {
+      if (isNative) {
+        await Browser.open({ url: response.url });
+        onMobileRedirectComplete();
+      } else if (isMobile) {
         if (mobileTab) {
           mobileTab.location.href = response.url;
         } else {
@@ -237,7 +248,6 @@ export function useBuyBitcoin({
     isGenerating,
     error: displayedError,
     validAmount,
-    isMobile,
     quickAmounts,
     isTokenMode,
     isStableBalanceActive,
