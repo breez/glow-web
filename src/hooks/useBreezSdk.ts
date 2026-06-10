@@ -853,9 +853,8 @@ export function useBreezSdk(
 
     try {
       const response = await sdk.buyBitcoin({ type: 'moonpay' });
-      // When invoked from the buy dialog, dismiss the sheet and let its
-      // leave transition finish before navigating, so the page is never
-      // frozen or bfcache-snapshotted mid-close (breez/glow-web#213).
+      // From the buy dialog: dismiss the sheet and let its leave
+      // transition finish before navigating (#213).
       await closeAndWaitForLeave?.();
       if (isNative) {
         await Browser.open({ url: response.url });
