@@ -51,12 +51,17 @@ const VIEWPORT_GROW_SETTLE_MS = 200;
 const VIEWPORT_TRANSITION =
   'top 200ms cubic-bezier(0.2, 0.0, 0, 1.0), height 200ms cubic-bezier(0.2, 0.0, 0, 1.0)';
 
-// Viewport shrink the keyboard caused the last time it opened (native
-// only, survives sheet remounts). Lets keyboardWillShow pre-position
-// the sheet at the start of the IME animation instead of waiting for
-// the WebView resize, which lands near the animation's end and reads
-// as the sheet lagging the keyboard by its full travel.
-let lastNativeKeyboardDelta: number | undefined;
+// Viewport shrink the keyboard caused the last time it opened
+// (survives sheet remounts). Consumed by two pre-positioning paths:
+// native applies it at keyboardWillShow (the WebView resize only
+// lands near the end of the IME animation), web applies it on
+// focusin inside the sheet, before the keyboard opens, so the
+// browser never needs to pan the page to reveal the caret. The pan
+// is what makes the background page visibly jump on web (#219).
+let lastKeyboardDelta: number | undefined;
+
+/** Revert window (ms) for a web pre-lift that no keyboard confirmed. */
+const PRE_LIFT_REVERT_MS = 1000;
 
 /** Find the nearest snap point, biased by drag direction */
 function resolveSnap(height: number, snapPoints: number[], dy: number): number {
@@ -171,11 +176,39 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   useEffect(() => {
     let appliedHeight = window.visualViewport?.height ?? window.innerHeight;
     let growTimer: ReturnType<typeof setTimeout> | undefined;
+    // Full height captured at a web pre-lift, until a real keyboard
+    // shrink confirms it. Doubles as the "pre-lift pending" flag.
+    let preLiftBase: number | undefined;
+    let preLiftRevert: ReturnType<typeof setTimeout> | undefined;
+    let settleTimers: ReturnType<typeof setTimeout>[] = [];
 
     const apply = () => {
+      // Height before this keyboard appearance: the pre-lift already
+      // moved appliedHeight, so the cached delta must be measured
+      // against the full height captured when the pre-lift ran.
+      const reference = preLiftBase ?? appliedHeight;
       appliedHeight = window.visualViewport?.height ?? window.innerHeight;
       setViewportHeight(appliedHeight);
       setViewportTop(window.visualViewport?.pageTop ?? 0);
+
+      if (!Capacitor.isNativePlatform() && reference - appliedHeight > 150) {
+        // A keyboard-sized shrink landed: remember it for the next
+        // pre-lift, and re-read after the dust settles. iOS Safari
+        // can restore its focus pan without firing another resize or
+        // scroll event, which would otherwise leave the sheet
+        // floating on stale values.
+        lastKeyboardDelta = reference - appliedHeight;
+        preLiftBase = undefined;
+        if (preLiftRevert !== undefined) {
+          clearTimeout(preLiftRevert);
+          preLiftRevert = undefined;
+        }
+        settleTimers.forEach(clearTimeout);
+        settleTimers = [
+          setTimeout(() => readViewport(), 250),
+          setTimeout(() => readViewport(), 600),
+        ];
+      }
     };
 
     // Shrinks and pan changes apply immediately so the sheet never
@@ -198,6 +231,49 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       }
       apply();
     };
+
+    // Web counterpart of the native keyboardWillShow pre-positioning:
+    // when a sheet input takes focus from a non-input (keyboard still
+    // closed), apply the cached keyboard shrink before the keyboard
+    // opens. The caret is then already visible above the incoming
+    // keyboard, so the browser never pans the page and the content
+    // behind the sheet stays static. Reverted if no keyboard-sized
+    // shrink confirms within PRE_LIFT_REVERT_MS (hardware keyboards,
+    // desktop browsers).
+    const onFocusIn = (event: FocusEvent) => {
+      if (Capacitor.isNativePlatform()) return;
+      if (lastKeyboardDelta === undefined) return;
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (!wrapperRef.current?.contains(target)) return;
+      if (!target.matches('input, textarea, [contenteditable="true"]')) return;
+      const from = event.relatedTarget;
+      if (
+        from instanceof HTMLElement &&
+        from.matches('input, textarea, [contenteditable="true"]')
+      ) {
+        // Field switch: keyboard already up, sheet already lifted.
+        return;
+      }
+      const current = window.visualViewport?.height ?? window.innerHeight;
+      // Viewport already keyboard-shrunk relative to the layout
+      // viewport: pre-lifting again would double-shrink.
+      if (current < document.documentElement.clientHeight - 50) return;
+      const lifted = current - lastKeyboardDelta;
+      if (lifted <= 0) return;
+      preLiftBase = current;
+      appliedHeight = lifted;
+      setViewportHeight(lifted);
+      if (preLiftRevert !== undefined) clearTimeout(preLiftRevert);
+      preLiftRevert = setTimeout(() => {
+        preLiftRevert = undefined;
+        if (preLiftBase !== undefined) {
+          preLiftBase = undefined;
+          apply();
+        }
+      }, PRE_LIFT_REVERT_MS);
+    };
+    document.addEventListener('focusin', onFocusIn);
 
     const vv = window.visualViewport;
     vv?.addEventListener('resize', readViewport);
@@ -224,8 +300,8 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
         if (!keyboardUp) {
           fullHeightAtWillShow =
             window.visualViewport?.height ?? window.innerHeight;
-          if (lastNativeKeyboardDelta !== undefined) {
-            appliedHeight = fullHeightAtWillShow - lastNativeKeyboardDelta;
+          if (lastKeyboardDelta !== undefined) {
+            appliedHeight = fullHeightAtWillShow - lastKeyboardDelta;
             setViewportHeight(appliedHeight);
           }
         }
@@ -241,7 +317,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
             fullHeightAtWillShow !== undefined &&
             fullHeightAtWillShow > settled
           ) {
-            lastNativeKeyboardDelta = fullHeightAtWillShow - settled;
+            lastKeyboardDelta = fullHeightAtWillShow - settled;
           }
         });
       };
@@ -272,6 +348,9 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     return () => {
       cancelled = true;
       if (growTimer !== undefined) clearTimeout(growTimer);
+      if (preLiftRevert !== undefined) clearTimeout(preLiftRevert);
+      settleTimers.forEach(clearTimeout);
+      document.removeEventListener('focusin', onFocusIn);
       vv?.removeEventListener('resize', readViewport);
       vv?.removeEventListener('scroll', readViewport);
       capHandles.forEach((h) => {
@@ -516,7 +595,11 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       unmount={false}
       afterLeave={afterLeave}
       as="div"
-      className="absolute inset-x-0 z-50 overflow-hidden flex flex-col justify-end pointer-events-none"
+      // No overflow-hidden: the keyboard bleed below must paint
+      // outside the wrapper, and the panel only ever animates
+      // downward out of it, into keyboard-covered or off-screen
+      // space (ancestors clip at the page bounds).
+      className="absolute inset-x-0 z-50 flex flex-col justify-end pointer-events-none"
       style={{
         top: `${viewportTop}px`,
         height: `${viewportHeight}px`,
@@ -599,6 +682,17 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
           return child;
         })}
       </TransitionChild>
+      {/* Card-surface bleed below the sheet footer. iOS Safari can
+          over-subtract the keyboard from visualViewport.height or
+          restore its focus pan without firing an event, exposing a
+          band of the page behind between the sheet and the keyboard.
+          The bleed paints sheet surface across that band; with an
+          accurate viewport it sits behind the keyboard or past the
+          page bounds, where ancestors clip it. */}
+      <div
+        aria-hidden
+        className={`absolute top-full inset-x-0 mx-auto w-full ${maxWidthClass} h-40 bg-spark-surface pointer-events-auto`}
+      />
     </Transition>
   );
 };

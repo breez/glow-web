@@ -117,4 +117,34 @@ describe('BottomSheetContainer visual viewport tracking', () => {
     expect(wrapper.style.height).toBe('900px');
     expect(wrapper.style.top).toBe('0px');
   });
+
+  it('pre-lifts on input focus before the keyboard opens, reverts if none arrives', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const { container, getByLabelText } = renderSheet();
+    const wrapper = container.firstElementChild as HTMLElement;
+
+    // Seed the keyboard delta cache with one real keyboard cycle.
+    setViewport(600, 0);
+    setViewport(900, 0);
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
+    expect(wrapper.style.height).toBe('900px');
+
+    // Focusing a sheet input from a non-input applies the cached
+    // shrink before any viewport event arrives, so the browser never
+    // needs to pan the page to reveal the caret.
+    act(() => {
+      getByLabelText('amount').dispatchEvent(
+        new FocusEvent('focusin', { bubbles: true }),
+      );
+    });
+    expect(wrapper.style.height).toBe('600px');
+
+    // No keyboard-sized shrink confirmed the pre-lift: revert.
+    act(() => {
+      vi.advanceTimersByTime(1100);
+    });
+    expect(wrapper.style.height).toBe('900px');
+  });
 });
