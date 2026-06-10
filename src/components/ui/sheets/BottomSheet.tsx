@@ -44,13 +44,19 @@ const SNAP_VELOCITY_THRESHOLD = 50;
  */
 const VIEWPORT_GROW_SETTLE_MS = 200;
 
-// Glide between viewport rects on web, where keyboard and pan changes
-// arrive as single step events and an instant jump reads as a teleport.
-// Native is exempt: adjustResize resizes the WebView in lockstep with
-// the keyboard and the sheet must track it without lag.
-const VIEWPORT_TRANSITION = Capacitor.isNativePlatform()
-  ? undefined
-  : 'top 200ms cubic-bezier(0.2, 0.0, 0, 1.0), height 200ms cubic-bezier(0.2, 0.0, 0, 1.0)';
+// Glide between viewport rects: keyboard and pan changes arrive as
+// single step events (on native the WebView resize only reaches the
+// page near the end of the IME animation) and an instant jump reads
+// as a teleport.
+const VIEWPORT_TRANSITION =
+  'top 200ms cubic-bezier(0.2, 0.0, 0, 1.0), height 200ms cubic-bezier(0.2, 0.0, 0, 1.0)';
+
+// Viewport shrink the keyboard caused the last time it opened (native
+// only, survives sheet remounts). Lets keyboardWillShow pre-position
+// the sheet at the start of the IME animation instead of waiting for
+// the WebView resize, which lands near the animation's end and reads
+// as the sheet lagging the keyboard by its full travel.
+let lastNativeKeyboardDelta: number | undefined;
 
 /** Find the nearest snap point, biased by drag direction */
 function resolveSnap(height: number, snapPoints: number[], dy: number): number {
@@ -206,19 +212,58 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       // sample innerHeight / visualViewport.height.
       const delayedRead = () => requestAnimationFrame(readViewport);
 
-      void Keyboard.addListener('keyboardWillShow', delayedRead).then((h) => {
+      // willShow can fire again without a hide when the IME swaps
+      // layouts (numeric to text). Pre-positioning must only run from
+      // the keyboard-closed state or it would shrink an already-shrunk
+      // viewport; tracking keyboardUp also keeps the delta cache from
+      // being computed against a stale full height.
+      let keyboardUp = false;
+      let fullHeightAtWillShow: number | undefined;
+
+      const onWillShow = () => {
+        if (!keyboardUp) {
+          fullHeightAtWillShow =
+            window.visualViewport?.height ?? window.innerHeight;
+          if (lastNativeKeyboardDelta !== undefined) {
+            appliedHeight = fullHeightAtWillShow - lastNativeKeyboardDelta;
+            setViewportHeight(appliedHeight);
+          }
+        }
+        delayedRead();
+      };
+
+      const onDidShow = () => {
+        keyboardUp = true;
+        requestAnimationFrame(() => {
+          readViewport();
+          const settled = window.visualViewport?.height ?? window.innerHeight;
+          if (
+            fullHeightAtWillShow !== undefined &&
+            fullHeightAtWillShow > settled
+          ) {
+            lastNativeKeyboardDelta = fullHeightAtWillShow - settled;
+          }
+        });
+      };
+
+      const onHide = () => {
+        keyboardUp = false;
+        delayedRead();
+      };
+
+      void Keyboard.addListener('keyboardWillShow', onWillShow).then((h) => {
         if (cancelled) h.remove();
         else capHandles.push(h);
       });
-      void Keyboard.addListener('keyboardDidShow', delayedRead).then((h) => {
+      void Keyboard.addListener('keyboardDidShow', onDidShow).then((h) => {
         if (cancelled) h.remove();
         else capHandles.push(h);
       });
-      void Keyboard.addListener('keyboardWillHide', delayedRead).then((h) => {
+      void Keyboard.addListener('keyboardWillHide', onHide).then((h) => {
         if (cancelled) h.remove();
         else capHandles.push(h);
       });
-      void Keyboard.addListener('keyboardDidHide', delayedRead).then((h) => {
+      void Keyboard.addListener('keyboardDidHide', onHide).then((h) => {
         if (cancelled) h.remove();
         else capHandles.push(h);
       });

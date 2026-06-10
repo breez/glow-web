@@ -205,6 +205,14 @@ body {
   flex-direction: column;
 }
 
+/* Collapse non-essential rows while the soft keyboard is up so tall
+   bottom-sheet forms fit above it without inner scrolling. Native
+   only: main.tsx toggles `keyboard-visible` on <html> from the
+   @capacitor/keyboard events; web never sets the class. */
+html.keyboard-visible .hide-on-keyboard {
+  display: none;
+}
+
 /* ============================================
    ATMOSPHERIC BACKGROUND
    ============================================ */
