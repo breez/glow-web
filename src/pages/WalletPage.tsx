@@ -35,7 +35,10 @@ interface WalletPageProps {
   onOpenSettings: () => void;
   onOpenBackup: () => void;
   onOpenBuyProviders: () => void;
-  onBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
+  onBuyBitcoin: (
+    provider: BuyBitcoinProvider,
+    closeAndWaitForLeave?: () => Promise<void>,
+  ) => Promise<void>;
   network?: Network;
   onDepositChanged?: () => void;
 }
