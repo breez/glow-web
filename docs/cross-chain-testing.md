@@ -4,16 +4,20 @@
 
 Cross-chain payments in Glow allow sending BTC or USDB from your Spark wallet to stablecoins (USDC, USDT) on external blockchains. This is **outbound only** — you cannot receive funds from external chains into Glow via this feature.
 
-**Provider:** Orchestra (Flashnet)
+**Providers:** Flashnet (Orchestra) and Boltz
 **Availability:** Mainnet only
 
 ### Supported Chains & Assets
 
-| Chain Family | Chains | Assets | Address Format |
-|---|---|---|---|
-| EVM | Ethereum, Base, Arbitrum, Optimism, Polygon, Avalanche, zkSync | USDC, USDT | `0x` + 40 hex chars |
-| Solana | Solana | USDC, USDT | Base58, 32–44 chars |
-| Tron | Tron | USDC, USDT | `T` prefix, 34 chars |
+Available routes are **discovered dynamically** per destination address by querying the providers — the set of chains is broad and evolves over time (Ethereum, Base, Arbitrum, Optimism, Polygon, Avalanche, BSC, Linea, Sei, Sonic, Unichain, Solana, Tron, and many more). Glow detects the chain family from the address format:
+
+| Chain Family | Address Format |
+|---|---|
+| EVM | `0x` + 40 hex chars |
+| Solana | Base58, 32–44 chars |
+| Tron | `T` prefix, 34 chars |
+
+**Assets:** Glow surfaces only USD-denominated stablecoins — **USDC** and **USDT**. `USDT0` routes are grouped under **USDT**, and bridged/wrapped variants (`PathUSD`, `USDC.e`) are hidden.
 
 ---
 
@@ -164,20 +168,23 @@ When pasting a URI into Glow, the chain, token, and amount are pre-filled from t
 1. **Open Send screen** in Glow
 2. **Paste** the destination address or EIP-681 URI
 3. Glow parses the input and identifies it as a cross-chain address
-4. **Select a route** — Glow shows available chain + asset combinations (e.g., "Base — USDC", "Ethereum — USDT")
+4. **Enter amount** in sats (or USDB if paying from token balance) — for cross-chain the amount is collected *before* the destination details
+5. **Pick the destination** via a short wizard (any step with a single option is skipped automatically):
+   - **Asset** — USDC or USDT
+   - **Chain** — e.g. Base, Arbitrum, Solana (only the chains that offer the chosen asset)
+   - **Provider** — Flashnet or Boltz, each shown with its own live quote (receiving amount + fee); pick the one you prefer
    - If you used an EIP-681 URI with a contract address, routes are filtered to match
-5. **Enter amount** in sats (or USDB if paying from token balance)
-6. **Review the quote:**
-   - Estimated output (e.g., "≈ 95.43 USDC")
-   - Fee amount and basis points
-   - Quote expiry time
-7. **Confirm and send**
-8. Glow transfers funds internally to Orchestra's deposit address, then submits the cross-chain order
+6. **Review and confirm** — the confirm screen shows:
+   - The amount you're sending (₿ sats or USDB)
+   - **Receiving** — estimated output (e.g., "~95.43 USDC")
+   - **Chain**, **Provider**, destination **Address**, and **Fee**
+7. **Send**
+8. Glow transfers funds internally to the provider's deposit address / invoice, then submits the cross-chain order
 
 ### What to Expect
 
 - The payment appears immediately in your transaction list as **pending**
-- Orchestra processes the swap and sends tokens on the destination chain
+- The provider (Flashnet or Boltz) processes the swap and sends tokens on the destination chain
 - Status updates automatically via background polling (~30 seconds)
 - The transaction shows final status: **completed**, **failed**, or **refund needed**
 
@@ -232,16 +239,32 @@ Received tokens sit in your wallet but you need native gas tokens to transfer or
 
 | Status | Meaning | Action |
 |---|---|---|
-| **Pending** | Order submitted, waiting for Orchestra to process | Wait — status updates every ~30 seconds |
+| **Pending** | Order submitted, waiting for the provider to process | Wait — status updates every ~30 seconds |
 | **Completed** | Tokens delivered to destination address | Verify on explorer |
 | **Failed** | Order could not be completed | Funds should be returned to Spark wallet |
-| **Refund Needed** | Spark transfer succeeded but Orchestra submission failed | Contact support — manual resolution may be needed |
+| **Refund Needed** | Spark transfer succeeded but the provider submission failed | Refund will be processed in the background |
 | **Refunded** | Funds returned to Spark wallet after failure | Check Spark balance |
+
+### Resumption After Backgrounding / Killing the App
+
+Cross-chain orders settle off-device, so a send can stay in-flight (**pending**) long after you leave the app. The SDK persists in-flight orders and, on each connect/load, resumes its background monitor — it queries stored pending orders and polls the provider until each reaches a terminal state. These tests confirm an interruption never loses an order or strands it on **pending**.
+
+> **Setup:** start a real cross-chain send with a small amount and wait until it shows **pending** in the transaction list before interrupting. Note the payment so you can find it again after relaunch.
+
+- **Background mid-pending** — with a payment **pending**, send the app to the background (mobile: home / app switcher; web: switch tabs or minimize) for at least ~60s, then return. Verify monitoring resumes (or never stalled) and the status advances to a terminal state (**completed** / **failed** / **refunded**) without a manual refresh.
+- **Force-kill mid-pending** — with a payment **pending**, force-quit the app so the process is fully terminated (mobile: swipe it out of the app switcher; web: close the tab/window). Relaunch, unlock, and wait. Verify the SDK resumes monitoring on load and the payment reaches the **correct terminal status** — not stuck on pending.
+- **Kill right after confirming, before submit** — tap **Send**, then kill the app as fast as possible (around the internal transfer + order submission). Relaunch and verify funds are not stranded: the payment resolves to **completed**, or to **failed** / **refund needed** → **refunded** with the sats credited back to the Spark balance.
+- **Web hard reload mid-pending** — while **pending**, hard-refresh the browser tab (Cmd/Ctrl+Shift+R). The WASM SDK re-initializes; verify it picks the pending order back up and drives it to a terminal status.
+- **Offline interruption** — background or kill the app, go offline (airplane mode / disconnect) for a minute or two, then reopen online. Verify the monitor catches up and reconciles to the terminal status.
+
+For every case, after resumption confirm: the **transaction list** and **payment details** show the correct terminal status and conversion info, and the **Spark balance** reconciles (full refund credited on failure, debited on success). For **completed** sends, cross-check the destination chain on the relevant explorer.
 
 ### Test Checklist
 
-- [ ] **EVM bare address** — paste a 0x address, select a route, send
+- [ ] **EVM bare address** — paste a 0x address, pick asset/chain, send
 - [ ] **EVM with chain selection** — paste same address, pick different chains (Base vs Arbitrum)
+- [ ] **Provider selection** — on an asset/chain offered by both, verify Flashnet and Boltz quotes both load and either can be selected
+- [ ] **Single-option auto-skip** — confirm the wizard skips the asset/chain/provider step when only one option exists
 - [ ] **EIP-681 native send** — paste `ethereum:<addr>@<chainId>?value=<amount>`
 - [ ] **EIP-681 ERC-20** — paste `ethereum:<contract>@<chainId>/transfer?address=<recipient>&uint256=<amount>`
 - [ ] **Solana bare address** — paste base58 address, send
@@ -249,7 +272,11 @@ Received tokens sit in your wallet but you need native gas tokens to transfer or
 - [ ] **Tron bare address** — paste T-address, send
 - [ ] **Tron URI** — paste `tron:<addr>?amount=<amt>&token=<contract>`
 - [ ] **USDB source** — send from USDB balance instead of BTC
-- [ ] **Quote expiry** — let a quote expire and verify it's handled gracefully
+- [ ] **Quote expiry** — wait past a quote's validity, then send, and verify it's handled gracefully (re-quote or a clear error rather than a silent failure)
 - [ ] **Verify on explorer** — confirm tokens arrived on each chain tested
 - [ ] **Token visibility** — confirm tokens appear in destination wallet (may need import)
 - [ ] **Transaction list** — verify cross-chain payments show correct conversion info in Glow
+- [ ] **Background mid-pending** — background the app while pending, return, verify it reaches the correct terminal status without a manual refresh
+- [ ] **Force-kill mid-pending** — kill the app while pending, relaunch, verify the SDK resumes monitoring and shows the correct terminal status
+- [ ] **Web hard reload mid-pending** — hard-refresh the tab while pending, verify resumption to a terminal status
+- [ ] **Offline interruption** — background/kill while offline, reopen online, verify the monitor reconciles

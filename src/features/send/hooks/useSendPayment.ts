@@ -216,7 +216,7 @@ export function useSendPayment(): UseSendPaymentReturn {
 
     // Cross-chain: skip prepareSend — the workflow handles route selection + prepare
     if (paymentInput?.parsedInput.type === 'crossChainAddress') {
-      setAmount(String(amountNum));
+      setAmount(String(amount));
       setTokenIdentifier(tokenIdentifier ?? null);
       setConversionOptions(conversionOptions ?? null);
       setCurrentStep('workflow');

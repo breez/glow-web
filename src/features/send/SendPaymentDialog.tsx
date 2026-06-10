@@ -157,6 +157,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
             {send.currentStep === 'amount' && (
               <AmountStep
                 paymentInput={send.paymentInput?.rawInput || ''}
+                amount={send.amount}
                 balanceSats={send.balanceSats}
                 tokenBalance={send.tokenBalance}
                 isLoading={send.isLoading}
