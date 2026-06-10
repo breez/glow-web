@@ -36,6 +36,21 @@ const maxWidthMap: Record<BottomSheetMaxWidth, string> = {
 const OVER_DRAG_RESISTANCE = 2.5;
 /** Velocity threshold (px) — snap toward the direction of the gesture */
 const SNAP_VELOCITY_THRESHOLD = 50;
+/**
+ * Hold (ms) before a viewport grow is applied on web. Moving focus
+ * between two sheet fields makes mobile browsers report a transient
+ * keyboard hide/show pair; applying the grow at once bounces the
+ * sheet down and back up on every field switch.
+ */
+const VIEWPORT_GROW_SETTLE_MS = 200;
+
+// Glide between viewport rects on web, where keyboard and pan changes
+// arrive as single step events and an instant jump reads as a teleport.
+// Native is exempt: adjustResize resizes the WebView in lockstep with
+// the keyboard and the sheet must track it without lag.
+const VIEWPORT_TRANSITION = Capacitor.isNativePlatform()
+  ? undefined
+  : 'top 200ms cubic-bezier(0.2, 0.0, 0, 1.0), height 200ms cubic-bezier(0.2, 0.0, 0, 1.0)';
 
 /** Find the nearest snap point, biased by drag direction */
 function resolveSnap(height: number, snapPoints: number[], dy: number): number {
@@ -148,9 +163,34 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   // WebViews where visualViewport.resize is delayed or coalesced
   // and fires before the WebView has finished re-laying out.
   useEffect(() => {
-    const readViewport = () => {
-      setViewportHeight(window.visualViewport?.height ?? window.innerHeight);
+    let appliedHeight = window.visualViewport?.height ?? window.innerHeight;
+    let growTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const apply = () => {
+      appliedHeight = window.visualViewport?.height ?? window.innerHeight;
+      setViewportHeight(appliedHeight);
       setViewportTop(window.visualViewport?.pageTop ?? 0);
+    };
+
+    // Shrinks and pan changes apply immediately so the sheet never
+    // sits behind the keyboard. Grows are held briefly on web (see
+    // VIEWPORT_GROW_SETTLE_MS) and dropped if the keyboard re-claims
+    // the space first. Native applies grows directly: adjustResize
+    // resizes the WebView once per keyboard event with no transient.
+    const readViewport = () => {
+      const nextHeight = window.visualViewport?.height ?? window.innerHeight;
+      if (!Capacitor.isNativePlatform() && nextHeight > appliedHeight) {
+        growTimer ??= setTimeout(() => {
+          growTimer = undefined;
+          apply();
+        }, VIEWPORT_GROW_SETTLE_MS);
+        return;
+      }
+      if (growTimer !== undefined) {
+        clearTimeout(growTimer);
+        growTimer = undefined;
+      }
+      apply();
     };
 
     const vv = window.visualViewport;
@@ -186,6 +226,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
 
     return () => {
       cancelled = true;
+      if (growTimer !== undefined) clearTimeout(growTimer);
       vv?.removeEventListener('resize', readViewport);
       vv?.removeEventListener('scroll', readViewport);
       capHandles.forEach((h) => {
@@ -431,7 +472,11 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       afterLeave={afterLeave}
       as="div"
       className="absolute inset-x-0 z-50 overflow-hidden flex flex-col justify-end pointer-events-none"
-      style={{ top: `${viewportTop}px`, height: `${viewportHeight}px` }}
+      style={{
+        top: `${viewportTop}px`,
+        height: `${viewportHeight}px`,
+        transition: VIEWPORT_TRANSITION,
+      }}
     >
       {showBackdrop && (
         <TransitionChild
