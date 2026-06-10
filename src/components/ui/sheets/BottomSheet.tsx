@@ -1,6 +1,7 @@
 import React, { ReactNode, forwardRef, useState, useRef, useCallback, useEffect } from 'react';
 import { Transition, TransitionChild } from '@headlessui/react';
 import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import { Keyboard } from '@capacitor/keyboard';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { useStatusBarColor } from '../../../hooks/useStatusBarColor';
@@ -85,6 +86,15 @@ export interface BottomSheetContainerProps {
   fullHeight?: boolean;
   /** Whether to show a backdrop overlay */
   showBackdrop?: boolean;
+  /**
+   * Fires once the close (leave) transition of both the backdrop and the
+   * panel has fully finished. Caveat: the transition is driven by the
+   * browser's rAF pipeline, which is paused while the page is hidden, so
+   * this never fires for a close dispatched in a background tab. Callers
+   * that need to act "after close" must bound their wait with a timeout
+   * (see closeAndWaitForLeave in BuyBitcoinDialog).
+   */
+  afterLeave?: () => void;
 }
 
 export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
@@ -96,6 +106,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   maxHeightVh = 100,
   fullHeight = false,
   showBackdrop = false,
+  afterLeave,
 }) => {
   // Current snap index: 0 = content, 1 = full. null = not yet measured.
   const [snapIndex, setSnapIndex] = useState(0);
@@ -174,6 +185,53 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       capHandles.forEach((h) => {
         void h.remove();
       });
+    };
+  }, []);
+
+  // Self-heal a frozen leave transition. If the page is hidden the moment
+  // a close is dispatched (a buy flow pre-opened a tab during the tap, or
+  // navigated this tab right after closing), the leave animation never
+  // runs: rAF and CSS transition events are paused while hidden, so
+  // HeadlessUI never reaches the resting state where it sets the `hidden`
+  // attribute. The user then returns to a stuck backdrop with no sheet
+  // content (breez/glow-web#213). Detect exactly that state when the page
+  // becomes visible again (visibilitychange, bfcache pageshow, Capacitor
+  // resume) and remount the closed Transition via a key bump, which
+  // renders it hidden immediately. The predicate is only true in the
+  // pathological state, so the unmount={false} fast path is untouched.
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+  const [healKey, setHealKey] = useState(0);
+  useEffect(() => {
+    const healIfStuck = () => {
+      if (isOpenRef.current) return;
+      const panel = wrapperRef.current;
+      if (panel && !panel.hidden) setHealKey((k) => k + 1);
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') healIfStuck();
+    };
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) healIfStuck();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pageshow', onPageShow);
+
+    let cancelled = false;
+    let resumeHandle: PluginListenerHandle | undefined;
+    if (Capacitor.isNativePlatform()) {
+      void App.addListener('resume', healIfStuck).then((h) => {
+        if (cancelled) void h.remove();
+        else resumeHandle = h;
+      });
+    }
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pageshow', onPageShow);
+      void resumeHandle?.remove();
     };
   }, []);
 
@@ -363,12 +421,17 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     // the browser skips layout + paint while closed, and re-opens
     // only pay browser layout/paint (no React mount).
     <Transition
+      // healKey only changes when the self-heal effect above catches a
+      // frozen leave; remounting snaps the sheet straight to its hidden
+      // resting state.
+      key={healKey}
       show={isOpen}
       // `appear` animates on the very first mount when show is already
       // true. Needed so consumers that remount this component on each
       // open (via key) still get the enter animation.
       appear
       unmount={false}
+      afterLeave={afterLeave}
       as="div"
       className="absolute inset-x-0 top-0 z-50 overflow-hidden flex flex-col justify-end pointer-events-none"
       style={{ height: `${viewportHeight}px` }}

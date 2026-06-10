@@ -29,8 +29,14 @@ export interface UseBuyBitcoinOptions {
   network?: Network;
   /** Called for providers that redirect externally (MoonPay). */
   onSelectRedirectProvider: (provider: BuyBitcoinProvider) => Promise<void>;
-  /** Called after a mobile Cash App redirect; the caller typically closes the dialog. */
-  onMobileRedirectComplete: () => void;
+  /**
+   * Closes the dialog and resolves once the sheet's leave transition has
+   * finished (bounded by a timeout; resolves immediately when the page is
+   * already hidden). The buy flow must not navigate away before this
+   * resolves: a page frozen or snapshotted mid-close restores as a stuck
+   * backdrop on return (breez/glow-web#213).
+   */
+  closeAndWaitForLeave: () => Promise<void>;
   /** Called when the displayed QR invoice is paid; the caller typically closes the dialog. */
   onInvoicePaid: () => void;
 }
@@ -67,7 +73,7 @@ export function useBuyBitcoin({
   isOpen,
   network,
   onSelectRedirectProvider,
-  onMobileRedirectComplete,
+  closeAndWaitForLeave,
   onInvoicePaid,
 }: UseBuyBitcoinOptions): UseBuyBitcoinReturn {
   const sdk = useWallet();
@@ -177,24 +183,29 @@ export function useBuyBitcoin({
     // window.location.href): that navigates the app's own WebView to
     // cash.app and gets stuck in a redirect loop when the user returns
     // (same bug as the MoonPay flow, see useBreezSdk.handleBuyBitcoin).
-    // Instead, defer until the SDK responds and hand the URL to
-    // @capacitor/browser (Chrome Custom Tabs / SFSafariViewController).
+    // Instead, the URL is handed to @capacitor/browser after the SDK
+    // responds (Chrome Custom Tabs / SFSafariViewController).
     const isNative = Capacitor.isNativePlatform();
     const mobileTab = isMobile && !isNative ? window.open('', '_blank') : null;
 
     try {
       const response = await sdk.buyBitcoin({ type: 'cashApp', amountSats: amountSatsForSdk });
       setGeneratedAmountSats(amountSats);
-      if (isNative) {
-        await Browser.open({ url: response.url });
-        onMobileRedirectComplete();
-      } else if (isMobile) {
-        if (mobileTab) {
+      if (isNative || isMobile) {
+        // Order matters: fetch the URL with the sheet still open (spinner
+        // and inline errors keep working), then close the sheet and wait
+        // out its leave transition, then navigate (breez/glow-web#213).
+        // Only the synchronous window.open above needs the tap gesture;
+        // navigating an already-open tab handle and Browser.open have no
+        // user-activation deadline.
+        await closeAndWaitForLeave();
+        if (isNative) {
+          await Browser.open({ url: response.url });
+        } else if (mobileTab) {
           mobileTab.location.href = response.url;
         } else {
           window.location.href = response.url;
         }
-        onMobileRedirectComplete();
       } else {
         setCashAppUrl(response.url);
         setStep('qr');
@@ -206,7 +217,7 @@ export function useBuyBitcoin({
     } finally {
       setIsGenerating(false);
     }
-  }, [amountSats, isMobile, sdk, onMobileRedirectComplete]);
+  }, [amountSats, isMobile, sdk, closeAndWaitForLeave]);
 
   // Cash App URLs are `https://cash.app/launch/lightning/<bolt11>`. Extract the
   // invoice only while we're showing the QR so the bus subscription pauses
