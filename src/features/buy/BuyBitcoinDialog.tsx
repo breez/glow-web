@@ -53,10 +53,8 @@ const cashAppHeaderIcon = (
 );
 
 /**
- * Upper bound on waiting for the sheet's 200ms leave transition before
- * redirecting anyway. The afterLeave callback never fires while the page
- * is hidden (rAF is paused), so the wait must not be unbounded or the
- * user would be stranded on the pre-opened blank tab.
+ * Upper bound on waiting for the sheet's 200ms leave transition:
+ * afterLeave never fires in a hidden page, so the wait must be bounded.
  */
 const SHEET_LEAVE_WAIT_MS = 400;
 
@@ -86,13 +84,10 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
     waiters.forEach((resolve) => resolve());
   }, []);
 
-  // Close the sheet, then wait for its leave transition so the page is
-  // never snapshotted (bfcache) or frozen mid-close when a buy flow
-  // navigates away (breez/glow-web#213). afterLeave is raced against a
-  // bounded timeout, and skipped entirely when the page is already hidden
-  // (a pre-opened blank tab is in the foreground): in those cases the
-  // animation cannot play at all and the stuck-close state is repaired by
-  // BottomSheetContainer's self-heal when the user returns.
+  // Close the sheet and wait out its leave transition so a buy redirect
+  // never navigates mid-close (#213). Races afterLeave against a timeout;
+  // skipped when the page is already hidden (pre-opened tab in front),
+  // where BottomSheetContainer's self-heal repairs the state on return.
   const closeAndWaitForLeave = useCallback(() => {
     onClose();
     if (document.visibilityState === 'hidden') return Promise.resolve();

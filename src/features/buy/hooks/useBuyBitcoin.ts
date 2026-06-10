@@ -30,11 +30,9 @@ export interface UseBuyBitcoinOptions {
   /** Called for providers that redirect externally (MoonPay). */
   onSelectRedirectProvider: (provider: BuyBitcoinProvider) => Promise<void>;
   /**
-   * Closes the dialog and resolves once the sheet's leave transition has
-   * finished (bounded by a timeout; resolves immediately when the page is
-   * already hidden). The buy flow must not navigate away before this
-   * resolves: a page frozen or snapshotted mid-close restores as a stuck
-   * backdrop on return (breez/glow-web#213).
+   * Closes the dialog and resolves once the sheet's leave transition
+   * finishes (bounded). Navigating away earlier restores a stuck
+   * backdrop on return (#213).
    */
   closeAndWaitForLeave: () => Promise<void>;
   /** Called when the displayed QR invoice is paid; the caller typically closes the dialog. */
@@ -177,14 +175,10 @@ export function useBuyBitcoin({
     setError(null);
     setIsGenerating(true);
 
-    // On mobile web, pre-open a blank tab synchronously during the user
-    // gesture so browsers let us navigate it later without tripping popup
-    // blockers. On native hosts we must NOT do this (or fall back to
-    // window.location.href): that navigates the app's own WebView to
-    // cash.app and gets stuck in a redirect loop when the user returns
-    // (same bug as the MoonPay flow, see useBreezSdk.handleBuyBitcoin).
-    // Instead, the URL is handed to @capacitor/browser after the SDK
-    // responds (Chrome Custom Tabs / SFSafariViewController).
+    // Mobile web: pre-open a blank tab synchronously in the tap gesture so
+    // navigating it later doesn't trip popup blockers. Native must not do
+    // this (or fall back to window.location.href): navigating the WebView
+    // to cash.app strands the user, so the URL goes to Browser.open instead.
     const isNative = Capacitor.isNativePlatform();
     const mobileTab = isMobile && !isNative ? window.open('', '_blank') : null;
 
@@ -192,12 +186,9 @@ export function useBuyBitcoin({
       const response = await sdk.buyBitcoin({ type: 'cashApp', amountSats: amountSatsForSdk });
       setGeneratedAmountSats(amountSats);
       if (isNative || isMobile) {
-        // Order matters: fetch the URL with the sheet still open (spinner
-        // and inline errors keep working), then close the sheet and wait
-        // out its leave transition, then navigate (breez/glow-web#213).
-        // Only the synchronous window.open above needs the tap gesture;
-        // navigating an already-open tab handle and Browser.open have no
-        // user-activation deadline.
+        // Close and wait out the sheet's leave transition before
+        // navigating (#213). Tab-handle navigation and Browser.open have
+        // no user-activation deadline, so deferring them is safe.
         await closeAndWaitForLeave();
         if (isNative) {
           await Browser.open({ url: response.url });

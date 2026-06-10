@@ -87,12 +87,9 @@ export interface BottomSheetContainerProps {
   /** Whether to show a backdrop overlay */
   showBackdrop?: boolean;
   /**
-   * Fires once the close (leave) transition of both the backdrop and the
-   * panel has fully finished. Caveat: the transition is driven by the
-   * browser's rAF pipeline, which is paused while the page is hidden, so
-   * this never fires for a close dispatched in a background tab. Callers
-   * that need to act "after close" must bound their wait with a timeout
-   * (see closeAndWaitForLeave in BuyBitcoinDialog).
+   * Fires once the backdrop and panel leave transitions finish. Never
+   * fires while the page is hidden (rAF is paused), so any wait on it
+   * must be bounded by a timeout.
    */
   afterLeave?: () => void;
 }
@@ -188,17 +185,11 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     };
   }, []);
 
-  // Self-heal a frozen leave transition. If the page is hidden the moment
-  // a close is dispatched (a buy flow pre-opened a tab during the tap, or
-  // navigated this tab right after closing), the leave animation never
-  // runs: rAF and CSS transition events are paused while hidden, so
-  // HeadlessUI never reaches the resting state where it sets the `hidden`
-  // attribute. The user then returns to a stuck backdrop with no sheet
-  // content (breez/glow-web#213). Detect exactly that state when the page
-  // becomes visible again (visibilitychange, bfcache pageshow, Capacitor
-  // resume) and remount the closed Transition via a key bump, which
-  // renders it hidden immediately. The predicate is only true in the
-  // pathological state, so the unmount={false} fast path is untouched.
+  // Self-heal a frozen leave: a close dispatched while the page is hidden
+  // never animates (rAF is paused), so HeadlessUI never sets the `hidden`
+  // attribute and the user returns to a stuck backdrop (#213). On return
+  // to visibility, remount the closed Transition via a key bump. The
+  // predicate only holds in that state, so unmount={false} is unaffected.
   const isOpenRef = useRef(isOpen);
   useEffect(() => {
     isOpenRef.current = isOpen;
@@ -421,9 +412,6 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     // the browser skips layout + paint while closed, and re-opens
     // only pay browser layout/paint (no React mount).
     <Transition
-      // healKey only changes when the self-heal effect above catches a
-      // frozen leave; remounting snaps the sheet straight to its hidden
-      // resting state.
       key={healKey}
       show={isOpen}
       // `appear` animates on the very first mount when show is already
