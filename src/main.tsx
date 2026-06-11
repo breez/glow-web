@@ -55,7 +55,12 @@ if (Capacitor.isNativePlatform()) {
   // The `void` on each addListener suppresses the unhandled-promise
   // warning; we don't store the handle because main.tsx runs once at
   // startup and the listener lifetime is the app lifetime.
+  let keyboardHideClassTimer: ReturnType<typeof setTimeout> | null = null;
   void Keyboard.addListener('keyboardWillShow', (info) => {
+    if (keyboardHideClassTimer) {
+      clearTimeout(keyboardHideClassTimer);
+      keyboardHideClassTimer = null;
+    }
     document.documentElement.style.setProperty(
       '--keyboard-height',
       `${info.keyboardHeight}px`,
@@ -107,8 +112,14 @@ if (Capacitor.isNativePlatform()) {
     });
   });
   void Keyboard.addListener('keyboardWillHide', () => {
-    document.documentElement.style.setProperty('--keyboard-height', '0px');
-    document.documentElement.classList.remove('keyboard-visible');
+    // Hold the class through the transient hide/show pair fired when
+    // focus moves between two fields; dropping it at once flaps
+    // hide-on-keyboard rows and the card skirt mid-switch.
+    keyboardHideClassTimer = setTimeout(() => {
+      keyboardHideClassTimer = null;
+      document.documentElement.style.setProperty('--keyboard-height', '0px');
+      document.documentElement.classList.remove('keyboard-visible');
+    }, 250);
     logger.debug(LogCategory.UI, 'Keyboard will hide');
   });
 }

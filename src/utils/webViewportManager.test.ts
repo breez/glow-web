@@ -10,6 +10,11 @@ let vv: FakeVisualViewport;
 let root: HTMLDivElement;
 let layoutHeight: number;
 
+/** Polls past the keyboard-off hysteresis (~18 frames). */
+const pollUntilSettled = () => {
+  for (let i = 0; i < 25; i++) pollWebViewport();
+};
+
 beforeEach(() => {
   layoutHeight = document.documentElement.clientHeight;
   vv = new FakeVisualViewport();
@@ -27,7 +32,7 @@ afterEach(() => {
   // Drain module state back to baseline so tests stay independent.
   vv.height = layoutHeight;
   vv.pageTop = 0;
-  pollWebViewport();
+  pollUntilSettled();
   root.remove();
   Object.defineProperty(window, 'visualViewport', {
     value: undefined,
@@ -55,9 +60,31 @@ describe('pollWebViewport', () => {
     expect(html.style.getPropertyValue('--keyboard-height')).toBe('320px');
 
     vv.height = layoutHeight;
-    pollWebViewport();
+    pollUntilSettled();
     expect(html.classList.contains('keyboard-visible')).toBe(false);
     expect(html.style.getPropertyValue('--keyboard-height')).toBe('0px');
+  });
+
+  it('holds the keyboard-visible class through a transient hide', () => {
+    const html = document.documentElement;
+
+    vv.height = layoutHeight - 320;
+    pollWebViewport();
+    expect(html.classList.contains('keyboard-visible')).toBe(true);
+
+    // Focus switch: the browser reports a momentary full-height
+    // viewport. A few frames must not drop the class.
+    vv.height = layoutHeight;
+    pollWebViewport();
+    pollWebViewport();
+    expect(html.classList.contains('keyboard-visible')).toBe(true);
+
+    // Keyboard re-shows with a different layout: class stays on and
+    // the published height updates.
+    vv.height = layoutHeight - 280;
+    pollWebViewport();
+    expect(html.classList.contains('keyboard-visible')).toBe(true);
+    expect(html.style.getPropertyValue('--keyboard-height')).toBe('280px');
   });
 
   it('reports activity while an editable element is focused', () => {

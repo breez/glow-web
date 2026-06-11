@@ -37,12 +37,19 @@ const OVER_DRAG_RESISTANCE = 2.5;
 /** Velocity threshold (px) — snap toward the direction of the gesture */
 const SNAP_VELOCITY_THRESHOLD = 50;
 /**
- * Hold (ms) before a viewport grow is applied on web. Moving focus
- * between two sheet fields makes mobile browsers report a transient
- * keyboard hide/show pair; applying the grow at once bounces the
- * sheet down and back up on every field switch.
+ * Hold (ms) before a keyboard-sized viewport grow is applied on web.
+ * Moving focus between two sheet fields makes mobile browsers report
+ * a transient keyboard hide/show pair; applying the grow at once
+ * bounces the sheet down and back up on every field switch.
  */
-const VIEWPORT_GROW_SETTLE_MS = 200;
+const VIEWPORT_GROW_SETTLE_MS = 300;
+/**
+ * Grows at or below this (px) bypass the hold: keyboard layout swaps
+ * (numeric to text) and suggestion-bar toggles resize the keyboard by
+ * less than this and should track fluidly, while real dismissals and
+ * switch transients always exceed it.
+ */
+const VIEWPORT_SMALL_GROW_PX = 150;
 
 // Glide between viewport heights: keyboard changes arrive as single
 // step events (on native the WebView resize only reaches the page
@@ -214,14 +221,19 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       }
     };
 
-    // Shrinks and pan changes apply immediately so the sheet never
-    // sits behind the keyboard. Grows are held briefly on web (see
-    // VIEWPORT_GROW_SETTLE_MS) and dropped if the keyboard re-claims
-    // the space first. Native applies grows directly: adjustResize
-    // resizes the WebView once per keyboard event with no transient.
+    // Shrinks, pan changes, and small grows apply immediately so the
+    // sheet never sits behind the keyboard and keyboard layout swaps
+    // track fluidly. Keyboard-sized grows are held briefly on web
+    // (see VIEWPORT_GROW_SETTLE_MS) and dropped if the keyboard
+    // re-claims the space first. Native applies grows directly:
+    // adjustResize resizes the WebView once per keyboard event with
+    // no transient.
     const readViewport = () => {
       const nextHeight = window.visualViewport?.height ?? window.innerHeight;
-      if (!Capacitor.isNativePlatform() && nextHeight > appliedHeight) {
+      if (
+        !Capacitor.isNativePlatform() &&
+        nextHeight - appliedHeight > VIEWPORT_SMALL_GROW_PX
+      ) {
         growTimer ??= setTimeout(() => {
           growTimer = undefined;
           apply();

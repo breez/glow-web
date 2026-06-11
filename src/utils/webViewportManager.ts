@@ -20,6 +20,13 @@ import { Capacitor } from '@capacitor/core';
 const KEYBOARD_MIN_PX = 150;
 /** Idle frames (~1.5s) before the poll loop goes back to sleep. */
 const SLEEP_AFTER_IDLE_FRAMES = 90;
+/**
+ * Frames (~300ms) the keyboard must stay gone before the class drops.
+ * Moving focus between two fields fires a transient hide/show pair;
+ * dropping the class mid-switch flaps hide-on-keyboard rows and the
+ * card skirt on every switch.
+ */
+const KEYBOARD_OFF_FRAMES = 18;
 
 const EDITABLE_SELECTOR = 'input, textarea, [contenteditable="true"]';
 
@@ -27,6 +34,8 @@ let rafId: number | null = null;
 let idleFrames = 0;
 let appliedPageTop = 0;
 let keyboardVisible = false;
+let appliedKeyboardPx = 0;
+let keyboardOffFrames = 0;
 
 /**
  * One measure-and-apply step. Returns true while there is keyboard or
@@ -47,18 +56,27 @@ export function pollWebViewport(): boolean {
     }
   }
 
-  const kb = html.clientHeight - height > KEYBOARD_MIN_PX;
-  if (kb !== keyboardVisible) {
-    keyboardVisible = kb;
-    html.classList.toggle('keyboard-visible', kb);
-    html.style.setProperty(
-      '--keyboard-height',
-      kb ? `${Math.round(html.clientHeight - height)}px` : '0px',
-    );
+  const keyboardPx = Math.round(html.clientHeight - height);
+  if (keyboardPx > KEYBOARD_MIN_PX) {
+    keyboardOffFrames = 0;
+    if (!keyboardVisible || keyboardPx !== appliedKeyboardPx) {
+      keyboardVisible = true;
+      appliedKeyboardPx = keyboardPx;
+      html.classList.add('keyboard-visible');
+      html.style.setProperty('--keyboard-height', `${keyboardPx}px`);
+    }
+  } else if (keyboardVisible) {
+    keyboardOffFrames += 1;
+    if (keyboardOffFrames > KEYBOARD_OFF_FRAMES) {
+      keyboardVisible = false;
+      appliedKeyboardPx = 0;
+      html.classList.remove('keyboard-visible');
+      html.style.setProperty('--keyboard-height', '0px');
+    }
   }
 
   return (
-    kb ||
+    keyboardVisible ||
     pageTop !== 0 ||
     (document.activeElement?.matches(EDITABLE_SELECTOR) ?? false)
   );

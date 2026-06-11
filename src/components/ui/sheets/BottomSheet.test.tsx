@@ -104,9 +104,20 @@ describe('BottomSheetContainer visual viewport tracking', () => {
     expect(wrapper.style.height).toBe('600px');
 
     act(() => {
-      vi.advanceTimersByTime(250);
+      vi.advanceTimersByTime(350);
     });
     expect(wrapper.style.height).toBe('900px');
+  });
+
+  it('applies small grows (keyboard layout swaps) without the hold', () => {
+    const { container } = renderSheet();
+    const wrapper = container.firstElementChild as HTMLElement;
+
+    // Text keyboard up, then a swap to a slightly shorter layout.
+    setViewport(600);
+    setViewport(650);
+
+    expect(wrapper.style.height).toBe('650px');
   });
 
   it('pre-lifts on input focus before the keyboard opens, reverts if none arrives', () => {
