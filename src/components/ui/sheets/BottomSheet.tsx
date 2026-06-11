@@ -8,7 +8,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Sheet, type SheetRef } from 'react-modal-sheet';
+import { Sheet, useVirtualKeyboard, type SheetRef } from 'react-modal-sheet';
 import { usePreventScroll } from '@react-aria/overlays';
 import { useStatusBarColor } from '../../../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE } from '../../../utils/statusBarManager';
@@ -95,6 +95,36 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   const [contentPx, setContentPx] = useState<number | null>(null);
   const currentSnap = useRef(1);
   const fullyOpen = useRef(false);
+  const [snapIndex, setSnapIndex] = useState(1);
+
+  // Manual keyboard mode (avoidKeyboard is off below): the hook keeps
+  // --keyboard-inset-height up to date and we pad the content scroller
+  // with it, so the sheet KEEPS its current snap while the keyboard is
+  // up. The library's built-in avoidance instead snaps to the last
+  // (fullscreen) snap on focus, which expanded the sheet on every
+  // input tap and raced its scroll-into-view against the snap
+  // animation, leaving the focused field off-screen.
+  const { isKeyboardOpen } = useVirtualKeyboard({ isEnabled: isOpen });
+
+  // Snap ladder: [closed, content height, full] with drag-to-expand
+  // between the last two; collapses to [closed, full] for near-full
+  // content. Values are px from the sheet bottom.
+  const useContentSnap =
+    !fullHeight &&
+    contentPx !== null &&
+    contentPx > MIN_CONTENT_SNAP_PX &&
+    contentPx < window.innerHeight * CONTENT_SNAP_COLLAPSE_RATIO;
+  const snapPoints = fullHeight
+    ? undefined
+    : useContentSnap
+      ? [0, contentPx, 1]
+      : [0, 1];
+
+  // Expanded-to-fullscreen state (user dragged a content-sized sheet
+  // to the top snap): square corners + status bar tint, matching the
+  // old implementation. Near-full single-snap sheets keep the rounded
+  // look, as before.
+  const isFullSnap = useContentSnap && snapIndex === 2;
 
   const dismiss = useCallback(() => {
     if (document.activeElement instanceof HTMLElement) {
@@ -114,7 +144,11 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   // for the whole time it's open (the card always meets the nav bar);
   // status bar only when the sheet covers the top of the screen.
   useStatusBarColor(STATUS_BAR_SURFACE, isOpen, 'nav');
-  useStatusBarColor(STATUS_BAR_SURFACE, isOpen && fullHeight, 'status');
+  useStatusBarColor(
+    STATUS_BAR_SURFACE,
+    isOpen && (fullHeight || isFullSnap),
+    'status',
+  );
 
   // Scroll lock + iOS focus-pan suppression from the maintained
   // react-aria package instead of the library's vendored snapshot:
@@ -125,22 +159,6 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   // corrected). The matching disableScrollLocking on <Sheet> below
   // keeps the two locks from stacking.
   usePreventScroll({ isDisabled: !isOpen });
-
-  // Snap ladder: [closed, content height, full] with drag-to-expand
-  // between the last two; collapses to [closed, full] for near-full
-  // content. Values are px from the sheet bottom (detent "default"
-  // keeps the container at full height so there is room to expand,
-  // unlike detent "content" which clamps snaps to content height).
-  const useContentSnap =
-    !fullHeight &&
-    contentPx !== null &&
-    contentPx > MIN_CONTENT_SNAP_PX &&
-    contentPx < window.innerHeight * CONTENT_SNAP_COLLAPSE_RATIO;
-  const snapPoints = fullHeight
-    ? undefined
-    : useContentSnap
-      ? [0, contentPx, 1]
-      : [0, 1];
 
   // Content grew or shrank while resting at the content snap (error
   // banners, async rows): re-snap so the sheet tracks its content the
@@ -163,13 +181,26 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       }}
       onCloseStart={() => {
         fullyOpen.current = false;
+        // Back to the content snap for the next open: onSnap only
+        // fires on changes, so a fullscreen index from this session
+        // would otherwise leak into the next one.
+        currentSnap.current = 1;
+        setSnapIndex(1);
       }}
       onSnap={(index) => {
         currentSnap.current = index;
+        setSnapIndex(index);
       }}
-      detent={fullHeight ? 'full' : 'default'}
+      // "full" for every sheet: the top snap must reach the real top
+      // of the screen. detent "default" reserves safe-area-top + 34px,
+      // which read as a gap when a sheet was dragged to fullscreen.
+      detent="full"
       snapPoints={snapPoints}
       initialSnap={1}
+      avoidKeyboard={false}
+      // While typing, drags would fight the keyboard inset and the
+      // focused field; the built-in avoidance had the same lockout.
+      disableDrag={isKeyboardOpen}
       // The vendored lock is replaced by usePreventScroll above.
       disableScrollLocking
       // Drop the library's decorative styles (white card, grey pills);
@@ -181,7 +212,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       style={{ zIndex: 50 }}
     >
       <Sheet.Container
-        className={`bg-spark-surface ${fullHeight ? '' : 'bottom-sheet-card-bordered'} shadow-glass-lg w-full ${maxWidthMap[maxWidth]} mx-auto ${className}`}
+        className={`bg-spark-surface ${fullHeight || isFullSnap ? 'rounded-none' : 'bottom-sheet-card-bordered'} shadow-glass-lg w-full ${maxWidthMap[maxWidth]} mx-auto ${className}`}
         style={
           maxHeightVh < 100 ? { maxHeight: `${maxHeightVh}dvh` } : undefined
         }
@@ -246,7 +277,19 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
             <div className="bottom-sheet-handle" />
           </div>
         </Sheet.Header>
-        <Sheet.Content scrollClassName="scrollbar-hidden">
+        <Sheet.Content
+          scrollClassName="scrollbar-hidden"
+          // Manual keyboard avoidance (avoidKeyboard is off on the
+          // root): pad the scroller by the keyboard inset kept up to
+          // date by useVirtualKeyboard, so the focused field scrolls
+          // above the keyboard while the sheet keeps its snap. env()
+          // wins on Chromium with the VirtualKeyboard API; the CSS
+          // var is the visualViewport fallback (iOS).
+          scrollStyle={{
+            paddingBottom:
+              'env(keyboard-inset-height, var(--keyboard-inset-height, 0px))',
+          }}
+        >
           <div
             ref={(el) => {
               setCardEl(el);
