@@ -44,6 +44,14 @@ const maxWidthMap: Record<BottomSheetMaxWidth, string> = {
  */
 const MIN_CONTENT_SNAP_PX = 50;
 /**
+ * Extra clearance (px) above the reported keyboard inset. iOS counts
+ * the keyboard accessory bar (autofill / dismiss pills, ~44 to 55px)
+ * as visible viewport, so a field revealed to the reported keyboard
+ * edge sits behind it. Overshoot is harmless: the field just rests a
+ * little higher.
+ */
+const KEYBOARD_ACCESSORY_MARGIN_PX = 64;
+/**
  * Content taller than this fraction of the viewport collapses the snap
  * ladder to [closed, full]: an intermediate snap a few px under full
  * is indistinguishable from it.
@@ -214,7 +222,20 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       <Sheet.Container
         className={`bg-spark-surface ${fullHeight || isFullSnap ? 'rounded-none' : 'bottom-sheet-card-bordered'} shadow-glass-lg w-full ${maxWidthMap[maxWidth]} mx-auto ${className}`}
         style={
-          maxHeightVh < 100 ? { maxHeight: `${maxHeightVh}dvh` } : undefined
+          {
+            // Effective keyboard clearance, consumed by the content
+            // scroller's padding and scroll-padding. The reported
+            // inset alone is not enough on iOS: the viewport treats
+            // the keyboard accessory bar (autofill / dismiss pills)
+            // as visible, so fields revealed to the reported edge
+            // land behind it. The margin lifts them clear.
+            '--keyboard-clearance': isKeyboardOpen
+              ? `calc(env(keyboard-inset-height, var(--keyboard-inset-height, 0px)) + ${KEYBOARD_ACCESSORY_MARGIN_PX}px)`
+              : '0px',
+            ...(maxHeightVh < 100
+              ? { maxHeight: `${maxHeightVh}dvh` }
+              : null),
+          } as React.CSSProperties
         }
       >
         <ContentMeasureContext.Provider value={setContentPx}>
@@ -280,14 +301,15 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
         <Sheet.Content
           scrollClassName="scrollbar-hidden"
           // Manual keyboard avoidance (avoidKeyboard is off on the
-          // root): pad the scroller by the keyboard inset kept up to
-          // date by useVirtualKeyboard, so the focused field scrolls
-          // above the keyboard while the sheet keeps its snap. env()
-          // wins on Chromium with the VirtualKeyboard API; the CSS
-          // var is the visualViewport fallback (iOS).
+          // root): the container computes --keyboard-clearance from
+          // the live keyboard inset plus the iOS accessory-bar
+          // margin. padding gives the scroller room; scroll-padding
+          // makes every reveal mechanism (Safari's caret reveal,
+          // scrollIntoView) land the focused field above the
+          // clearance instead of flush against the reported edge.
           scrollStyle={{
-            paddingBottom:
-              'env(keyboard-inset-height, var(--keyboard-inset-height, 0px))',
+            paddingBottom: 'var(--keyboard-clearance, 0px)',
+            scrollPaddingBottom: 'var(--keyboard-clearance, 0px)',
           }}
         >
           <div
