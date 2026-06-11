@@ -1,5 +1,14 @@
-import React, { ReactNode, forwardRef, useCallback, useState } from 'react';
-import { Sheet } from 'react-modal-sheet';
+import React, {
+  ReactNode,
+  createContext,
+  forwardRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { Sheet, type SheetRef } from 'react-modal-sheet';
 import { useStatusBarColor } from '../../../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE } from '../../../utils/statusBarManager';
 import { useBackButton } from '../../../hooks/useBackButton';
@@ -26,6 +35,29 @@ const maxWidthMap: Record<BottomSheetMaxWidth, string> = {
   xl: 'max-w-xl',
   full: 'max-w-full',
 };
+
+/**
+ * Below this measured content height the content snap is not trusted
+ * (mid-mount measurements, test environments) and the sheet falls back
+ * to [closed, full].
+ */
+const MIN_CONTENT_SNAP_PX = 50;
+/**
+ * Content taller than this fraction of the viewport collapses the snap
+ * ladder to [closed, full]: an intermediate snap a few px under full
+ * is indistinguishable from it.
+ */
+const CONTENT_SNAP_COLLAPSE_RATIO = 0.9;
+
+/**
+ * BottomSheetCard reports its natural height (handle + content) up to
+ * the container, which turns it into the px snap point the sheet opens
+ * at. The report fires synchronously from a ref callback so the snap
+ * exists before the library computes its open animation target.
+ */
+const ContentMeasureContext = createContext<(px: number | null) => void>(
+  () => {},
+);
 
 export interface BottomSheetContainerProps {
   isOpen: boolean;
@@ -58,6 +90,11 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   showBackdrop = false,
   afterLeave,
 }) => {
+  const sheetRef = useRef<SheetRef>(null);
+  const [contentPx, setContentPx] = useState<number | null>(null);
+  const currentSnap = useRef(1);
+  const fullyOpen = useRef(false);
+
   const dismiss = useCallback(() => {
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
@@ -78,12 +115,50 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   useStatusBarColor(STATUS_BAR_SURFACE, isOpen, 'nav');
   useStatusBarColor(STATUS_BAR_SURFACE, isOpen && fullHeight, 'status');
 
+  // Snap ladder: [closed, content height, full] with drag-to-expand
+  // between the last two; collapses to [closed, full] for near-full
+  // content. Values are px from the sheet bottom (detent "default"
+  // keeps the container at full height so there is room to expand,
+  // unlike detent "content" which clamps snaps to content height).
+  const useContentSnap =
+    !fullHeight &&
+    contentPx !== null &&
+    contentPx > MIN_CONTENT_SNAP_PX &&
+    contentPx < window.innerHeight * CONTENT_SNAP_COLLAPSE_RATIO;
+  const snapPoints = fullHeight
+    ? undefined
+    : useContentSnap
+      ? [0, contentPx, 1]
+      : [0, 1];
+
+  // Content grew or shrank while resting at the content snap (error
+  // banners, async rows): re-snap so the sheet tracks its content the
+  // way the old auto-height implementation did.
+  useEffect(() => {
+    if (!isOpen || !useContentSnap || !fullyOpen.current) return;
+    if (currentSnap.current === 1) {
+      sheetRef.current?.snapTo(1);
+    }
+  }, [contentPx, isOpen, useContentSnap]);
+
   return (
     <Sheet
+      ref={sheetRef}
       isOpen={isOpen}
       onClose={dismiss}
       onCloseEnd={afterLeave}
-      detent={fullHeight ? 'full' : 'content'}
+      onOpenEnd={() => {
+        fullyOpen.current = true;
+      }}
+      onCloseStart={() => {
+        fullyOpen.current = false;
+      }}
+      onSnap={(index) => {
+        currentSnap.current = index;
+      }}
+      detent={fullHeight ? 'full' : 'default'}
+      snapPoints={snapPoints}
+      initialSnap={1}
       // Drop the library's decorative styles (white card, grey pills);
       // the surface look comes from our classes below.
       unstyled
@@ -98,7 +173,9 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
           maxHeightVh < 100 ? { maxHeight: `${maxHeightVh}dvh` } : undefined
         }
       >
-        {children}
+        <ContentMeasureContext.Provider value={setContentPx}>
+          {children}
+        </ContentMeasureContext.Provider>
       </Sheet.Container>
       {showBackdrop && (
         <Sheet.Backdrop className="bg-black/60" onTap={dismiss} />
@@ -122,11 +199,34 @@ export interface BottomSheetCardProps {
 export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
   ({ children, className = '' }, ref) => {
     const [cardEl, setCardEl] = useState<HTMLDivElement | null>(null);
+    const reportHeight = useContext(ContentMeasureContext);
+    const handleRef = useRef<HTMLDivElement | null>(null);
+
+    const measure = useCallback(
+      (el: HTMLDivElement | null) => {
+        if (!el) return;
+        reportHeight(el.offsetHeight + (handleRef.current?.offsetHeight ?? 0));
+      },
+      [reportHeight],
+    );
+
+    // Track content growth/shrink after mount (error banners, lists
+    // loading in) so the container can re-snap to the new height.
+    useEffect(() => {
+      if (!cardEl) return;
+      const observer = new ResizeObserver(() => measure(cardEl));
+      observer.observe(cardEl);
+      return () => {
+        observer.disconnect();
+        reportHeight(null);
+      };
+    }, [cardEl, measure, reportHeight]);
 
     return (
       <>
         <Sheet.Header>
           <div
+            ref={handleRef}
             className="bottom-sheet-handle-zone shrink-0"
             style={{ touchAction: 'none' }}
           >
@@ -137,6 +237,11 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
           <div
             ref={(el) => {
               setCardEl(el);
+              // Synchronous first measurement: the ref attaches during
+              // commit, before the library's open effect computes its
+              // animation target, so the sheet opens straight to the
+              // content snap with no full-height flash.
+              measure(el);
               if (typeof ref === 'function') ref(el);
               else if (ref) ref.current = el;
             }}
