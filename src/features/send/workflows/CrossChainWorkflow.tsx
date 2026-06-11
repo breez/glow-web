@@ -44,6 +44,15 @@ function formatCrossChainAmount(amount: bigint, decimals: number): string {
   return fracStr ? `${whole}.${fracStr}` : `${whole}`;
 }
 
+// Receive amounts are estimates ("~"), so 2 decimal places is enough.
+// Rounds to the nearest cent using integer math (no float precision loss).
+function formatReceiveAmount(amount: bigint, decimals: number): string {
+  if (decimals <= 2) return formatCrossChainAmount(amount, decimals);
+  const scale = 10n ** BigInt(decimals - 2);
+  const hundredths = (amount + scale / 2n) / scale;
+  return `${hundredths / 100n}.${(hundredths % 100n).toString().padStart(2, '0')}`;
+}
+
 function truncateAddress(addr: string, maxLen = 42): string {
   if (addr.length <= maxLen) return addr;
   const side = Math.floor((maxLen - 3) / 2);
@@ -97,8 +106,10 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   const effectiveTokenId = tokenIdentifier ?? (useUsdb ? stableBalance.tokenIdentifier! : undefined);
 
   // Derived data
-  // Only show USD-based stablecoin assets, excluding bridged/wrapped variants
-  const EXCLUDED_ASSETS = ['PathUSD', 'USDC.e'];
+  // Allowlist the only stablecoins we support; everything else (HSUSD, PathUSD,
+  // USDC.e, DAI, …) is hidden. USDT0 is accepted but grouped under USDT.
+  const ALLOWED_ASSETS = ['USDC', 'USDT', 'USDT0'];
+  const isAllowedAsset = (asset: string) => ALLOWED_ASSETS.includes(asset.toUpperCase());
   // Group asset variants under a canonical display name (e.g. USDT0 → USDT)
   const ASSET_DISPLAY_GROUP: Record<string, string> = { 'USDT0': 'USDT' };
   const assetDisplayName = (asset: string) => ASSET_DISPLAY_GROUP[asset] ?? asset;
@@ -107,7 +118,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
 
   const uniqueAssets = useMemo(
     () => [...new Set(routes
-      .filter(r => r.asset.toUpperCase().includes('USD') && !EXCLUDED_ASSETS.includes(r.asset))
+      .filter(r => isAllowedAsset(r.asset))
       .map(r => assetDisplayName(r.asset))
     )].sort(),
     [routes]
@@ -271,8 +282,8 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
 
         // Enter wizard — auto-skip steps with single option
         const assets = [...new Set(fetched
-          .filter(r => r.asset.toUpperCase().includes('USD') && !EXCLUDED_ASSETS.includes(r.asset))
-          .map(r => r.asset)
+          .filter(r => isAllowedAsset(r.asset))
+          .map(r => assetDisplayName(r.asset))
         )].sort();
         if (assets.length === 0) {
           setError('No supported stablecoin routes available for this address');
@@ -341,6 +352,25 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   const method = prepareResponse?.paymentMethod;
   const quote = method?.type === 'crossChainAddress' ? method : null;
   const confirmedRoute = quote?.route ?? null;
+
+  // Provider-step derived state. Failed providers are hidden from the list; if
+  // *every* provider fails we surface a single reason + retry instead of a list
+  // of dead cards.
+  const providerList = [...providerQuotes.values()];
+  const isProviderReady = (pq: ProviderQuote) =>
+    !pq.loading && !!pq.response && pq.response.paymentMethod.type === 'crossChainAddress';
+  const visibleProviders = providerList.filter(pq => pq.loading || isProviderReady(pq));
+  const anyProviderLoading = providerList.some(pq => pq.loading);
+  const allProvidersFailed =
+    providerList.length > 0 && !anyProviderLoading && !providerList.some(isProviderReady);
+  const providerFailureReason = (() => {
+    const errs = providerList.map(pq => pq.error ?? '').filter(Boolean);
+    if (errs.some(e => e.toLowerCase().includes('too small')))
+      return 'This amount is too small for the available routes. Try sending a larger amount.';
+    if (errs.some(e => e.toLowerCase().includes('too large')))
+      return 'This amount is too large for the available routes. Try sending a smaller amount.';
+    return 'Couldn’t get a quote from any provider right now. Try again, or go back and use a different amount.';
+  })();
 
   // Shared card style
   const cardClass = (active = false) =>
@@ -481,81 +511,94 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       {/* Step 4: Provider selection */}
       {step === 'provider' && (
         <div className="flex flex-col" style={{ maxHeight: '60vh' }}>
-          {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400 shrink-0">
-              {error}
+          {allProvidersFailed ? (
+            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+              <p className="text-sm font-medium text-spark-text-primary mb-1">Couldn’t get a quote</p>
+              <p className="text-sm text-spark-text-secondary">{providerFailureReason}</p>
+            </div>
+          ) : (
+            <div className="mb-4 min-h-0 flex flex-col">
+              <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">
+                Select Provider for {selectedAsset} ({capitalizeFirst(routesForSelection[0]?.chain ?? '')})
+              </label>
+              <div className="space-y-2 overflow-y-auto min-h-0 pr-1">
+                {visibleProviders.map((pq) => {
+                  const key = pq.route.provider;
+                  const pMethod = pq.response?.paymentMethod;
+                  const pQuote = pMethod?.type === 'crossChainAddress' ? pMethod : null;
+                  const ready = isProviderReady(pq);
+                  return (
+                    <button
+                      key={key}
+                      disabled={!ready}
+                      onClick={() => { if (ready) setPendingProvider(key); }}
+                      className={`${cardClass(pendingProvider === key)} ${!ready ? 'opacity-70' : ''}`}
+                    >
+                      <span className="font-display font-medium text-spark-text-primary">
+                        {getProviderDisplayName(pq.route.provider)}
+                      </span>
+                      {pq.loading && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <SpinnerIcon size="xs" className="animate-spin text-spark-text-secondary" />
+                          <span className="text-xs text-spark-text-secondary">Getting quote...</span>
+                        </div>
+                      )}
+                      {ready && pQuote && (
+                        <div className="mt-2 space-y-1.5">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-spark-text-secondary">Receiving</span>
+                            <span className="font-mono text-sm text-spark-text-primary">
+                              ~{formatReceiveAmount(BigInt(pQuote.estimatedOut), pq.route.decimals)} {pq.route.asset}
+                            </span>
+                          </div>
+                          <div className="border-t border-spark-border/50" />
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-spark-text-secondary">Fee</span>
+                            <span className="font-mono text-sm text-spark-text-primary">
+                              {!(pQuote as any).feeAsset
+                                ? <span className="inline-flex items-center">₿{formatWithSpaces(Number(pQuote.feeAmount))}</span>
+                                : `${formatCrossChainAmount(BigInt(pQuote.feeAmount), pq.route.decimals)} ${(pQuote as any).feeAsset}`
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
-          <div className="mb-4 min-h-0 flex flex-col">
-            <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">
-              Select Provider for {selectedAsset} ({capitalizeFirst(routesForSelection[0]?.chain ?? '')})
-            </label>
-            <div className="space-y-2 overflow-y-auto min-h-0 pr-1">
-              {[...providerQuotes.entries()].map(([key, pq]) => {
-                const pMethod = pq.response?.paymentMethod;
-                const pQuote = pMethod?.type === 'crossChainAddress' ? pMethod : null;
-                const ready = !pq.loading && pq.response && pQuote;
-                return (
-                  <button
-                    key={key}
-                    disabled={!ready}
-                    onClick={() => { if (ready) setPendingProvider(key); }}
-                    className={`${cardClass(pendingProvider === key)} ${!ready && !pq.error ? 'opacity-70' : ''} ${pq.error ? 'opacity-50' : ''}`}
-                  >
-                    <span className="font-display font-medium text-spark-text-primary">
-                      {getProviderDisplayName(pq.route.provider)}
-                    </span>
-                    {pq.loading && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <SpinnerIcon size="xs" className="animate-spin text-spark-text-secondary" />
-                        <span className="text-xs text-spark-text-secondary">Getting quote...</span>
-                      </div>
-                    )}
-                    {pq.error && (
-                      <div className="text-xs text-red-400 mt-2">{pq.error}</div>
-                    )}
-                    {ready && pQuote && (
-                      <div className="mt-2 space-y-1.5">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-spark-text-secondary">Receiving</span>
-                          <span className="font-mono text-sm text-spark-text-primary">
-                            ~{formatCrossChainAmount(BigInt(pQuote.estimatedOut), pq.route.decimals)} {pq.route.asset}
-                          </span>
-                        </div>
-                        <div className="border-t border-spark-border/50" />
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-spark-text-secondary">Fee</span>
-                          <span className="font-mono text-sm text-spark-text-primary">
-                            {!(pQuote as any).feeAsset
-                              ? <span className="inline-flex items-center">₿{formatWithSpaces(Number(pQuote.feeAmount))}</span>
-                              : `${formatCrossChainAmount(BigInt(pQuote.feeAmount), pq.route.decimals)} ${(pQuote as any).feeAsset}`
-                            }
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
           <div className="flex gap-3 shrink-0 pt-2">
-            <SecondaryButton onClick={goBackFromProvider} className="flex-1">
-              Back
-            </SecondaryButton>
-            <PrimaryButton
-              onClick={() => {
-                const pq = pendingProvider ? providerQuotes.get(pendingProvider) : null;
-                if (pq?.response) {
-                  setPrepareResponse(pq.response);
-                  setStep('confirm');
-                }
-              }}
-              className="flex-1"
-              disabled={!pendingProvider}
-            >
-              Continue
-            </PrimaryButton>
+            {allProvidersFailed ? (
+              <>
+                <SecondaryButton onClick={onBack} className="flex-1">
+                  Change Amount
+                </SecondaryButton>
+                <PrimaryButton onClick={() => prepareAllProviders(routesForSelection)} className="flex-1">
+                  Try Again
+                </PrimaryButton>
+              </>
+            ) : (
+              <>
+                <SecondaryButton onClick={goBackFromProvider} className="flex-1">
+                  Back
+                </SecondaryButton>
+                <PrimaryButton
+                  onClick={() => {
+                    const pq = pendingProvider ? providerQuotes.get(pendingProvider) : null;
+                    if (pq?.response) {
+                      setPrepareResponse(pq.response);
+                      setStep('confirm');
+                    }
+                  }}
+                  className="flex-1"
+                  disabled={!pendingProvider}
+                >
+                  Continue
+                </PrimaryButton>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -588,7 +631,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
             items={[
               {
                 label: 'Receiving',
-                value: `~${formatCrossChainAmount(BigInt(quote.estimatedOut), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
+                value: `~${formatReceiveAmount(BigInt(quote.estimatedOut), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
               },
               {
                 label: 'Chain',

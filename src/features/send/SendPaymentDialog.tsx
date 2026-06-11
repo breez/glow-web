@@ -79,7 +79,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
   };
 
   const dialogTitle = send.currentStep === 'input'
-    ? 'Send'
+    ? 'Send BTC or USD'
     : getPaymentMethodName(send.paymentInput);
 
   const recipientLabel = useMemo(() => {
@@ -252,7 +252,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                     feesIncluded={send.feesIncluded}
                     tokenIdentifier={send.tokenIdentifier}
                     conversionOptions={send.conversionOptions}
-                    onBack={() => send.setCurrentStep('amount')}
+                    onBack={send.backToAmount}
                     onRun={send.handleRun}
                   />
                 )}

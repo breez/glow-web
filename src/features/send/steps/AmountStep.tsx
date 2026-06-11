@@ -208,7 +208,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
                 disabled={disabled}
                 className={`flex-1 py-2 rounded-lg text-sm font-mono font-medium transition-all ${
                   isSelected
-                    ? 'bg-spark-electric text-white'
+                    ? 'bg-spark-primary text-white'
                     : disabled
                       ? 'opacity-40 cursor-not-allowed border border-spark-border text-spark-text-secondary'
                       : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'

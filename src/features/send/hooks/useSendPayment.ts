@@ -37,6 +37,7 @@ export interface UseSendPaymentReturn {
   handleSend: (options?: SendPaymentOptions) => Promise<void>;
   handleRun: (runner: () => Promise<void>, hasConversion?: boolean) => Promise<void>;
   setCurrentStep: (step: SendStep) => void;
+  backToAmount: () => void;
 }
 
 export function useSendPayment(): UseSendPaymentReturn {
@@ -349,6 +350,16 @@ export function useSendPayment(): UseSendPaymentReturn {
     setConversionOptions(null);
   }, []);
 
+  // Return to the amount step from the cross-chain workflow. Clears `amount`
+  // first: cross-chain stores it as sats, but the amount step renders in
+  // USD/token mode, so a stale sats value would show in the wrong unit
+  // (e.g. "406 sats" rendered as "$406"). Start fresh instead.
+  const backToAmount = useCallback(() => {
+    setAmount('');
+    setError(null);
+    setCurrentStep('amount');
+  }, []);
+
   return {
     currentStep,
     paymentInput,
@@ -371,5 +382,6 @@ export function useSendPayment(): UseSendPaymentReturn {
     handleSend,
     handleRun,
     setCurrentStep,
+    backToAmount,
   };
 }

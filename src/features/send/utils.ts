@@ -17,7 +17,7 @@ export function getPaymentMethodName(input: SendInput | null): string {
     case 'lnurlAuth':
       return 'LNURL Auth';
     case 'crossChainAddress':
-      return 'Cross-Chain Address';
+      return 'Send USD';
     default:
       return 'Payment';
   }
