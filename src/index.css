@@ -787,25 +787,6 @@ video::-webkit-media-controls-panel {
    BOTTOM SHEET / DIALOG
    ============================================ */
 
-.bottom-sheet-card {
-  background: var(--spark-surface);
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
-  width: 100%;
-  padding: 0.75em 1.5em 1em 1.5em;
-  padding-bottom: calc(1em + env(safe-area-inset-bottom, 0px));
-}
-
-/* While the soft keyboard is up, extend the card 160px below its
-   footer; the negative margin cancels the layout shift so only the
-   painted box grows. Covers the band iOS Safari can expose between
-   the sheet and the keyboard when visualViewport.height
-   over-subtracts around the accessory bar. Being part of the card,
-   it always matches its surface and moves with it. */
-html.keyboard-visible .bottom-sheet-card {
-  padding-bottom: calc(1em + env(safe-area-inset-bottom, 0px) + 160px);
-  margin-bottom: -160px;
-}
-
 .bottom-sheet-card-bordered {
   border-top: 1px solid var(--spark-border);
   border-radius: 1.5rem 1.5rem 0 0;

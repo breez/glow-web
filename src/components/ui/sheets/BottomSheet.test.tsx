@@ -1,180 +1,29 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, act } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { BottomSheetContainer, BottomSheetCard } from './BottomSheet';
 
-// Minimal stand-in for window.visualViewport: just enough surface for
-// the sheet's resize/scroll subscription and rect reads.
-class FakeVisualViewport extends EventTarget {
-  height = 900;
-  pageTop = 0;
-}
-
-let vv: FakeVisualViewport;
-
-beforeEach(() => {
-  vv = new FakeVisualViewport();
-  Object.defineProperty(window, 'visualViewport', {
-    value: vv,
-    configurable: true,
-  });
-});
-
-afterEach(() => {
-  vi.useRealTimers();
-  Object.defineProperty(window, 'visualViewport', {
-    value: undefined,
-    configurable: true,
-  });
-});
-
-const renderSheet = () =>
-  render(
-    <BottomSheetContainer isOpen onClose={() => {}}>
-      <BottomSheetCard>
-        <input aria-label="amount" />
-      </BottomSheetCard>
-    </BottomSheetContainer>,
-  );
-
-/** Dispatch a viewport geometry change like a keyboard show/hide. */
-const setViewport = (height: number, event: 'resize' | 'scroll' = 'resize') => {
-  act(() => {
-    vv.height = height;
-    vv.dispatchEvent(new Event(event));
-  });
-};
-
-describe('BottomSheetContainer visual viewport tracking', () => {
-  it('sizes the wrapper to the visual viewport height', () => {
-    const { container } = renderSheet();
-    const wrapper = container.firstElementChild as HTMLElement;
-
-    expect(wrapper.style.height).toBe('900px');
+// Behavior tests for gestures/keyboard live upstream in
+// react-modal-sheet; these cover the adapter wiring only.
+describe('BottomSheetContainer (react-modal-sheet adapter)', () => {
+  it('renders sheet content when open', async () => {
+    render(
+      <BottomSheetContainer isOpen onClose={() => {}}>
+        <BottomSheetCard>
+          <span>sheet body</span>
+        </BottomSheetCard>
+      </BottomSheetContainer>,
+    );
+    expect(await screen.findByText('sheet body')).toBeInTheDocument();
   });
 
-  it('shrinks the wrapper when the keyboard opens (#219)', () => {
-    const { container } = renderSheet();
-    const wrapper = container.firstElementChild as HTMLElement;
-
-    setViewport(600);
-
-    expect(wrapper.style.height).toBe('600px');
-  });
-
-  it('applies height changes that arrive via scroll events', () => {
-    const { container } = renderSheet();
-    const wrapper = container.firstElementChild as HTMLElement;
-
-    setViewport(620, 'scroll');
-
-    expect(wrapper.style.height).toBe('620px');
-  });
-
-  it('drops a transient grow when the keyboard re-claims space (focus switch)', () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    const { container, getByLabelText } = renderSheet();
-    const wrapper = container.firstElementChild as HTMLElement;
-
-    // Keyboard opens on the first field; focus stays on an editable
-    // through the switch, which is what engages the grow hold.
-    act(() => {
-      getByLabelText('amount').focus();
-    });
-    setViewport(600);
-
-    // Focus moves to the next field: the browser reports a transient
-    // keyboard hide. The grow must not apply yet.
-    setViewport(900);
-    expect(wrapper.style.height).toBe('600px');
-
-    // Keyboard re-shows (slightly different layout) before the hold
-    // expires: tracked immediately, held grow cancelled.
-    setViewport(580);
-    expect(wrapper.style.height).toBe('580px');
-
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
-    expect(wrapper.style.height).toBe('580px');
-  });
-
-  it('applies a focus-retained keyboard hide once the grow hold expires', () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    const { container, getByLabelText } = renderSheet();
-    const wrapper = container.firstElementChild as HTMLElement;
-
-    // iOS keyboard-dismiss chevron hides the keyboard but keeps the
-    // input focused: the grow is held, then applied.
-    act(() => {
-      getByLabelText('amount').focus();
-    });
-    setViewport(600);
-    setViewport(900);
-    expect(wrapper.style.height).toBe('600px');
-
-    act(() => {
-      vi.advanceTimersByTime(350);
-    });
-    expect(wrapper.style.height).toBe('900px');
-  });
-
-  it('tracks a keyboard dismissal immediately once inputs are blurred', () => {
-    const { container, getByLabelText } = renderSheet();
-    const wrapper = container.firstElementChild as HTMLElement;
-
-    act(() => {
-      getByLabelText('amount').focus();
-    });
-    setViewport(600);
-
-    // Submit/backdrop flows blur before the keyboard hides: the grow
-    // must apply without the hold so the sheet rides down with it.
-    act(() => {
-      getByLabelText('amount').blur();
-    });
-    setViewport(900);
-
-    expect(wrapper.style.height).toBe('900px');
-  });
-
-  it('applies small grows (keyboard layout swaps) without the hold', () => {
-    const { container } = renderSheet();
-    const wrapper = container.firstElementChild as HTMLElement;
-
-    // Text keyboard up, then a swap to a slightly shorter layout.
-    setViewport(600);
-    setViewport(650);
-
-    expect(wrapper.style.height).toBe('650px');
-  });
-
-  it('pre-lifts on input focus before the keyboard opens, reverts if none arrives', () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    const { container, getByLabelText } = renderSheet();
-    const wrapper = container.firstElementChild as HTMLElement;
-
-    // Seed the keyboard delta cache with one real keyboard cycle.
-    setViewport(600);
-    setViewport(900);
-    act(() => {
-      vi.advanceTimersByTime(700);
-    });
-    expect(wrapper.style.height).toBe('900px');
-
-    // Focusing a sheet input from a non-input applies the cached
-    // shrink before any viewport event arrives, so the browser never
-    // needs to pan the page to reveal the caret.
-    act(() => {
-      getByLabelText('amount').dispatchEvent(
-        new FocusEvent('focusin', { bubbles: true }),
-      );
-    });
-    expect(wrapper.style.height).toBe('600px');
-
-    // No keyboard-sized shrink confirmed the pre-lift: revert.
-    act(() => {
-      vi.advanceTimersByTime(1100);
-    });
-    expect(wrapper.style.height).toBe('900px');
+  it('renders no content while closed', () => {
+    render(
+      <BottomSheetContainer isOpen={false} onClose={() => {}}>
+        <BottomSheetCard>
+          <span>hidden body</span>
+        </BottomSheetCard>
+      </BottomSheetContainer>,
+    );
+    expect(screen.queryByText('hidden body')).toBeNull();
   });
 });
