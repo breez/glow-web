@@ -37,12 +37,16 @@ const OVER_DRAG_RESISTANCE = 2.5;
 /** Velocity threshold (px) — snap toward the direction of the gesture */
 const SNAP_VELOCITY_THRESHOLD = 50;
 /**
- * Hold (ms) before a keyboard-sized viewport grow is applied on web.
- * Moving focus between two sheet fields makes mobile browsers report
- * a transient keyboard hide/show pair; applying the grow at once
- * bounces the sheet down and back up on every field switch.
+ * Hold (ms) before a keyboard-sized viewport grow is applied on web,
+ * while focus is still on an editable element. Moving focus between
+ * two sheet fields makes mobile browsers report a transient keyboard
+ * hide/show pair; applying the grow at once bounces the sheet down
+ * and back up on every field switch. Real dismissals blur first, so
+ * they bypass the hold and the sheet rides down with the keyboard.
  */
 const VIEWPORT_GROW_SETTLE_MS = 300;
+
+const EDITABLE_SELECTOR = 'input, textarea, [contenteditable="true"]';
 /**
  * Grows at or below this (px) bypass the hold: keyboard layout swaps
  * (numeric to text) and suggestion-bar toggles resize the keyboard by
@@ -225,14 +229,17 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     // sheet never sits behind the keyboard and keyboard layout swaps
     // track fluidly. Keyboard-sized grows are held briefly on web
     // (see VIEWPORT_GROW_SETTLE_MS) and dropped if the keyboard
-    // re-claims the space first. Native applies grows directly:
-    // adjustResize resizes the WebView once per keyboard event with
-    // no transient.
+    // re-claims the space first, but only while an editable element
+    // still has focus: a blurred grow is a real dismissal and must
+    // track the keyboard down without the hang. Native applies grows
+    // directly: adjustResize resizes the WebView once per keyboard
+    // event with no transient.
     const readViewport = () => {
       const nextHeight = window.visualViewport?.height ?? window.innerHeight;
       if (
         !Capacitor.isNativePlatform() &&
-        nextHeight - appliedHeight > VIEWPORT_SMALL_GROW_PX
+        nextHeight - appliedHeight > VIEWPORT_SMALL_GROW_PX &&
+        (document.activeElement?.matches(EDITABLE_SELECTOR) ?? false)
       ) {
         growTimer ??= setTimeout(() => {
           growTimer = undefined;
@@ -260,12 +267,9 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
       if (!wrapperRef.current?.contains(target)) return;
-      if (!target.matches('input, textarea, [contenteditable="true"]')) return;
+      if (!target.matches(EDITABLE_SELECTOR)) return;
       const from = event.relatedTarget;
-      if (
-        from instanceof HTMLElement &&
-        from.matches('input, textarea, [contenteditable="true"]')
-      ) {
+      if (from instanceof HTMLElement && from.matches(EDITABLE_SELECTOR)) {
         // Field switch: keyboard already up, sheet already lifted.
         return;
       }
@@ -650,7 +654,12 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
           leave="transition-opacity ease-m3-emphasized-accelerate duration-200"
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
-          className="absolute inset-0 bg-black/60 pointer-events-auto z-0"
+          // min-h-[100lvh] keeps the scrim covering the whole screen
+          // while the wrapper is keyboard-shrunk; with inset-0 alone
+          // the region below the wrapper showed the raw page during
+          // keyboard transitions (the post-dismissal hang read as the
+          // sheet re-entering over a naked wallet).
+          className="absolute inset-0 min-h-[100lvh] bg-black/60 pointer-events-auto z-0"
           onClick={onClose}
         />
       )}

@@ -72,10 +72,14 @@ describe('BottomSheetContainer visual viewport tracking', () => {
 
   it('drops a transient grow when the keyboard re-claims space (focus switch)', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    const { container } = renderSheet();
+    const { container, getByLabelText } = renderSheet();
     const wrapper = container.firstElementChild as HTMLElement;
 
-    // Keyboard opens on the first field.
+    // Keyboard opens on the first field; focus stays on an editable
+    // through the switch, which is what engages the grow hold.
+    act(() => {
+      getByLabelText('amount').focus();
+    });
     setViewport(600);
 
     // Focus moves to the next field: the browser reports a transient
@@ -94,11 +98,16 @@ describe('BottomSheetContainer visual viewport tracking', () => {
     expect(wrapper.style.height).toBe('580px');
   });
 
-  it('applies a real keyboard hide once the grow hold expires', () => {
+  it('applies a focus-retained keyboard hide once the grow hold expires', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    const { container } = renderSheet();
+    const { container, getByLabelText } = renderSheet();
     const wrapper = container.firstElementChild as HTMLElement;
 
+    // iOS keyboard-dismiss chevron hides the keyboard but keeps the
+    // input focused: the grow is held, then applied.
+    act(() => {
+      getByLabelText('amount').focus();
+    });
     setViewport(600);
     setViewport(900);
     expect(wrapper.style.height).toBe('600px');
@@ -106,6 +115,25 @@ describe('BottomSheetContainer visual viewport tracking', () => {
     act(() => {
       vi.advanceTimersByTime(350);
     });
+    expect(wrapper.style.height).toBe('900px');
+  });
+
+  it('tracks a keyboard dismissal immediately once inputs are blurred', () => {
+    const { container, getByLabelText } = renderSheet();
+    const wrapper = container.firstElementChild as HTMLElement;
+
+    act(() => {
+      getByLabelText('amount').focus();
+    });
+    setViewport(600);
+
+    // Submit/backdrop flows blur before the keyboard hides: the grow
+    // must apply without the hold so the sheet rides down with it.
+    act(() => {
+      getByLabelText('amount').blur();
+    });
+    setViewport(900);
+
     expect(wrapper.style.height).toBe('900px');
   });
 
