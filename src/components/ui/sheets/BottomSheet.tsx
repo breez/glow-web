@@ -9,6 +9,7 @@ import React, {
   useState,
 } from 'react';
 import { Sheet, type SheetRef } from 'react-modal-sheet';
+import { usePreventScroll } from '@react-aria/overlays';
 import { useStatusBarColor } from '../../../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE } from '../../../utils/statusBarManager';
 import { useBackButton } from '../../../hooks/useBackButton';
@@ -115,6 +116,16 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   useStatusBarColor(STATUS_BAR_SURFACE, isOpen, 'nav');
   useStatusBarColor(STATUS_BAR_SURFACE, isOpen && fullHeight, 'status');
 
+  // Scroll lock + iOS focus-pan suppression from the maintained
+  // react-aria package instead of the library's vendored snapshot:
+  // the snapshot predates Adobe's iOS 26 fixes, and Safari's focus
+  // pan slipping through is what briefly shoves the page behind the
+  // sheet off-screen when the keyboard opens (the pan is invisible
+  // to JS until it finishes, so it can only be prevented, not
+  // corrected). The matching disableScrollLocking on <Sheet> below
+  // keeps the two locks from stacking.
+  usePreventScroll({ isDisabled: !isOpen });
+
   // Snap ladder: [closed, content height, full] with drag-to-expand
   // between the last two; collapses to [closed, full] for near-full
   // content. Values are px from the sheet bottom (detent "default"
@@ -159,6 +170,8 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       detent={fullHeight ? 'full' : 'default'}
       snapPoints={snapPoints}
       initialSnap={1}
+      // The vendored lock is replaced by usePreventScroll above.
+      disableScrollLocking
       // Drop the library's decorative styles (white card, grey pills);
       // the surface look comes from our classes below.
       unstyled
