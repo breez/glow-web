@@ -168,6 +168,21 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   // keeps the two locks from stacking.
   usePreventScroll({ isDisabled: !isOpen });
 
+  // Native WebViews resize under the keyboard (adjustResize), which
+  // changes the sheet root's height and invalidates the offset the
+  // current snap was computed from: the sheet was left hanging with
+  // its action buttons cut off after the keyboard closed. Re-snap to
+  // the current index when the keyboard toggles; the rAF lets the
+  // library re-measure the resized root first. On web the root does
+  // not resize (keyboard overlays) and this is a visual no-op.
+  useEffect(() => {
+    if (!fullyOpen.current || fullHeight) return;
+    const id = requestAnimationFrame(() => {
+      sheetRef.current?.snapTo(currentSnap.current);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [isKeyboardOpen, fullHeight]);
+
   // Content grew or shrank while resting at the content snap (error
   // banners, async rows): re-snap so the sheet tracks its content the
   // way the old auto-height implementation did.
