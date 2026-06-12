@@ -68,6 +68,16 @@ const ContentMeasureContext = createContext<(px: number | null) => void>(
   () => {},
 );
 
+/**
+ * Effective keyboard clearance in px (inset + accessory margin, 0
+ * while the keyboard is closed). BottomSheetCard uses it to actively
+ * reveal the focused field: Safari's native caret reveal treats the
+ * area behind the keyboard accessory bar as visible and ignores
+ * scroll-padding, so passive CSS alone left low fields under the
+ * autofill pills.
+ */
+const KeyboardClearanceContext = createContext(0);
+
 export interface BottomSheetContainerProps {
   isOpen: boolean;
   children: ReactNode;
@@ -112,7 +122,12 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   // (fullscreen) snap on focus, which expanded the sheet on every
   // input tap and raced its scroll-into-view against the snap
   // animation, leaving the focused field off-screen.
-  const { isKeyboardOpen } = useVirtualKeyboard({ isEnabled: isOpen });
+  const { isKeyboardOpen, keyboardHeight } = useVirtualKeyboard({
+    isEnabled: isOpen,
+  });
+  const clearancePx = isKeyboardOpen
+    ? keyboardHeight + KEYBOARD_ACCESSORY_MARGIN_PX
+    : 0;
 
   // Snap ladder: [closed, content height, full] with drag-to-expand
   // between the last two; collapses to [closed, full] for near-full
@@ -233,6 +248,13 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       // toasts render at z-50 in the same stacking context); the
       // library would otherwise default to 9999.
       style={{ zIndex: 50 }}
+      // Portal into #root, not document.body: the web viewport
+      // manager pins #root against Safari's focus pan, and sheets
+      // portaled outside it stayed uncompensated. That is what let a
+      // parent sheet slide up behind its child while typing, and
+      // left sheets mispositioned after keyboard dismissal (iOS 26
+      // does not always reset the viewport offset).
+      mountPoint={document.getElementById('root') ?? undefined}
     >
       <Sheet.Container
         className={`bg-spark-surface ${fullHeight || isFullSnap ? 'rounded-none' : 'bottom-sheet-card-bordered'} shadow-glass-lg w-full ${maxWidthMap[maxWidth]} mx-auto ${className}`}
@@ -254,7 +276,9 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
         }
       >
         <ContentMeasureContext.Provider value={setContentPx}>
-          {children}
+          <KeyboardClearanceContext.Provider value={clearancePx}>
+            {children}
+          </KeyboardClearanceContext.Provider>
         </ContentMeasureContext.Provider>
       </Sheet.Container>
       {showBackdrop && (
@@ -280,7 +304,34 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
   ({ children, className = '' }, ref) => {
     const [cardEl, setCardEl] = useState<HTMLDivElement | null>(null);
     const reportHeight = useContext(ContentMeasureContext);
+    const clearancePx = useContext(KeyboardClearanceContext);
     const handleRef = useRef<HTMLDivElement | null>(null);
+    const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+    // Scroll the focused field clear of the keyboard + accessory bar.
+    // Runs when the keyboard inset settles (first focus) and on every
+    // focus moving within the card (field switches while typing).
+    const revealFocused = useCallback(() => {
+      const scroller = scrollerRef.current;
+      const active = document.activeElement;
+      if (!scroller || clearancePx <= 0) return;
+      if (!(active instanceof HTMLElement) || !scroller.contains(active)) {
+        return;
+      }
+      if (!active.matches('input, textarea, [contenteditable="true"]')) {
+        return;
+      }
+      const overlap =
+        active.getBoundingClientRect().bottom -
+        (scroller.getBoundingClientRect().bottom - clearancePx);
+      if (overlap > 0) {
+        scroller.scrollBy({ top: overlap, behavior: 'smooth' });
+      }
+    }, [clearancePx]);
+
+    useEffect(() => {
+      revealFocused();
+    }, [revealFocused]);
 
     const measure = useCallback(
       (el: HTMLDivElement | null) => {
@@ -315,19 +366,23 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
         </Sheet.Header>
         <Sheet.Content
           scrollClassName="scrollbar-hidden"
+          scrollRef={scrollerRef}
           // Manual keyboard avoidance (avoidKeyboard is off on the
           // root): the container computes --keyboard-clearance from
           // the live keyboard inset plus the iOS accessory-bar
-          // margin. padding gives the scroller room; scroll-padding
-          // makes every reveal mechanism (Safari's caret reveal,
-          // scrollIntoView) land the focused field above the
-          // clearance instead of flush against the reported edge.
+          // margin. The padding gives the scroller room; the actual
+          // positioning is revealFocused above (passive
+          // scroll-padding is not honored by Safari's caret reveal).
           scrollStyle={{
             paddingBottom: 'var(--keyboard-clearance, 0px)',
-            scrollPaddingBottom: 'var(--keyboard-clearance, 0px)',
           }}
         >
           <div
+            onFocusCapture={() => {
+              // rAF: let the focus settle and any pending layout
+              // (keyboard padding) apply before measuring.
+              requestAnimationFrame(revealFocused);
+            }}
             ref={(el) => {
               setCardEl(el);
               // Synchronous first measurement: the ref attaches during
