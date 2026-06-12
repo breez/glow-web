@@ -10,6 +10,7 @@ import React, {
 } from 'react';
 import { Sheet, useVirtualKeyboard, type SheetRef } from 'react-modal-sheet';
 import { usePreventScroll } from '@react-aria/overlays';
+import { Capacitor } from '@capacitor/core';
 import { useStatusBarColor } from '../../../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE } from '../../../utils/statusBarManager';
 import { useBackButton } from '../../../hooks/useBackButton';
@@ -78,6 +79,18 @@ const ContentMeasureContext = createContext<(px: number | null) => void>(
  */
 const KeyboardClearanceContext = createContext(0);
 
+// On native the WebView itself resizes with the keyboard (Android
+// adjustResize, iOS resize: 'native'), so the library's keyboard
+// machinery must stay off: its VirtualKeyboard API path flips
+// navigator.virtualKeyboard.overlaysContent inside the already
+// resizing Android WebView (double-compensation: env-inset padding
+// stacked on the native resize), and transient keyboard-state flips
+// added phantom clearance gaps on iOS, which has no accessory bar in
+// the native keyboard.
+const IS_NATIVE = Capacitor.isNativePlatform();
+
+const EDITABLE_SELECTOR = 'input, textarea, [contenteditable="true"]';
+
 export interface BottomSheetContainerProps {
   isOpen: boolean;
   children: ReactNode;
@@ -123,11 +136,27 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   // input tap and raced its scroll-into-view against the snap
   // animation, leaving the focused field off-screen.
   const { isKeyboardOpen, keyboardHeight } = useVirtualKeyboard({
-    isEnabled: isOpen,
+    isEnabled: isOpen && !IS_NATIVE,
   });
   const clearancePx = isKeyboardOpen
     ? keyboardHeight + KEYBOARD_ACCESSORY_MARGIN_PX
     : 0;
+
+  // Viewport height with no keyboard up, the stable basis for the
+  // snap ladder. Recomputing from the live window.innerHeight let the
+  // native WebView resize reshape [closed, content, full] into
+  // [closed, full] mid keyboard (content suddenly exceeded 90% of the
+  // shrunken viewport), silently changing what snap index 1 means and
+  // leaving sheets stuck at fullscreen. Updated from the resize
+  // listener below, only while the keyboard-visible class (main.tsx
+  // on native, webViewportManager on web) is absent.
+  const [stableViewportH, setStableViewportH] = useState(
+    () => window.innerHeight,
+  );
+
+  // True while focus is inside this sheet's container; the viewport
+  // re-snap uses it to freeze sheets that do not own the keyboard.
+  const focusWithin = useRef(false);
 
   // Snap ladder: [closed, content height, full] with drag-to-expand
   // between the last two; collapses to [closed, full] for near-full
@@ -136,7 +165,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     !fullHeight &&
     contentPx !== null &&
     contentPx > MIN_CONTENT_SNAP_PX &&
-    contentPx < window.innerHeight * CONTENT_SNAP_COLLAPSE_RATIO;
+    contentPx < stableViewportH * CONTENT_SNAP_COLLAPSE_RATIO;
   const snapPoints = fullHeight
     ? undefined
     : useContentSnap
@@ -195,18 +224,43 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   useEffect(() => {
     if (!isOpen || fullHeight) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let settle: ReturnType<typeof setTimeout> | undefined;
+    const resnap = () => {
+      if (fullyOpen.current) {
+        sheetRef.current?.snapTo(currentSnap.current);
+      }
+    };
     const onViewportResize = () => {
+      if (!document.documentElement.classList.contains('keyboard-visible')) {
+        setStableViewportH(window.innerHeight);
+      }
       if (timer !== undefined) clearTimeout(timer);
+      if (settle !== undefined) clearTimeout(settle);
       timer = setTimeout(() => {
-        if (fullyOpen.current) {
-          sheetRef.current?.snapTo(currentSnap.current);
-        }
+        // Only the sheet that owns the keyboard tracks the resize.
+        // Sheets behind it (a parent under a child sheet) keep their
+        // offset: the root shrinks from the bottom, so a frozen
+        // offset means visually staying put, which is exactly what a
+        // background layer should do. With no editable focused
+        // (keyboard closing, rotation) every sheet re-snaps.
+        const active = document.activeElement;
+        const keyboardOwnedElsewhere =
+          active instanceof HTMLElement &&
+          active.matches(EDITABLE_SELECTOR) &&
+          !focusWithin.current;
+        if (keyboardOwnedElsewhere) return;
+        resnap();
+        // Second pass: the library re-measures the resized root
+        // asynchronously, and a snap computed against the stale
+        // height leaves a gap above the keyboard. Idempotent.
+        settle = setTimeout(resnap, 300);
       }, 60);
     };
     window.addEventListener('resize', onViewportResize);
     window.visualViewport?.addEventListener('resize', onViewportResize);
     return () => {
       if (timer !== undefined) clearTimeout(timer);
+      if (settle !== undefined) clearTimeout(settle);
       window.removeEventListener('resize', onViewportResize);
       window.visualViewport?.removeEventListener('resize', onViewportResize);
     };
@@ -271,6 +325,15 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       mountPoint={document.getElementById('root') ?? undefined}
     >
       <Sheet.Container
+        onFocusCapture={() => {
+          focusWithin.current = true;
+        }}
+        onBlurCapture={(e) => {
+          const next = e.relatedTarget;
+          if (!(next instanceof Node) || !e.currentTarget.contains(next)) {
+            focusWithin.current = false;
+          }
+        }}
         className={`bg-spark-surface ${fullHeight || isFullSnap ? 'rounded-none' : 'bottom-sheet-card-bordered'} shadow-glass-lg w-full ${maxWidthMap[maxWidth]} mx-auto ${className}`}
         style={
           {
