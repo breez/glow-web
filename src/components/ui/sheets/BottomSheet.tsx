@@ -183,20 +183,34 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   // keeps the two locks from stacking.
   usePreventScroll({ isDisabled: !isOpen });
 
-  // Native WebViews resize under the keyboard (adjustResize), which
-  // changes the sheet root's height and invalidates the offset the
-  // current snap was computed from: the sheet was left hanging with
-  // its action buttons cut off after the keyboard closed. Re-snap to
-  // the current index when the keyboard toggles; the rAF lets the
-  // library re-measure the resized root first. On web the root does
-  // not resize (keyboard overlays) and this is a visual no-op.
+  // Native WebViews resize WITH the keyboard (Android adjustResize,
+  // iOS resize: 'native'), which changes the sheet root's height and
+  // invalidates the offset the current snap was computed from. The
+  // isKeyboardOpen toggle never fires there (innerHeight and
+  // visualViewport.height shrink together, so the measured inset
+  // stays 0), so the trigger must be the resize itself: re-snap to
+  // the current index, debounced past the resize burst so the
+  // library has re-measured the new root height. On web the root
+  // never resizes for the keyboard and the re-snap is a visual no-op.
   useEffect(() => {
-    if (!fullyOpen.current || fullHeight) return;
-    const id = requestAnimationFrame(() => {
-      sheetRef.current?.snapTo(currentSnap.current);
-    });
-    return () => cancelAnimationFrame(id);
-  }, [isKeyboardOpen, fullHeight]);
+    if (!isOpen || fullHeight) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onViewportResize = () => {
+      if (timer !== undefined) clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (fullyOpen.current) {
+          sheetRef.current?.snapTo(currentSnap.current);
+        }
+      }, 60);
+    };
+    window.addEventListener('resize', onViewportResize);
+    window.visualViewport?.addEventListener('resize', onViewportResize);
+    return () => {
+      if (timer !== undefined) clearTimeout(timer);
+      window.removeEventListener('resize', onViewportResize);
+      window.visualViewport?.removeEventListener('resize', onViewportResize);
+    };
+  }, [isOpen, fullHeight]);
 
   // Content grew or shrank while resting at the content snap (error
   // banners, async rows): re-snap so the sheet tracks its content the
