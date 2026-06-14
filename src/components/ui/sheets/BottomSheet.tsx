@@ -142,17 +142,28 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     ? keyboardHeight + KEYBOARD_ACCESSORY_MARGIN_PX
     : 0;
 
-  // Viewport height with no keyboard up, the stable basis for the
-  // snap ladder. Recomputing from the live window.innerHeight let the
-  // native WebView resize reshape [closed, content, full] into
-  // [closed, full] mid keyboard (content suddenly exceeded 90% of the
-  // shrunken viewport), silently changing what snap index 1 means and
-  // leaving sheets stuck at fullscreen. Updated from the resize
-  // listener below, only while the keyboard-visible class (main.tsx
-  // on native, webViewportManager on web) is absent.
+  // Keyboard-free viewport height, the stable basis for the snap
+  // ladder's collapse rule. It must NOT shrink when the native
+  // keyboard resizes the WebView: that reshaped [closed, content,
+  // full] into [closed, full] mid keyboard, silently turning snap
+  // index 1 from content height into fullscreen (the spurious
+  // auto-fullscreen on focus). The keyboard only ever changes height,
+  // never width, so we recompute solely on width changes (orientation
+  // / window resize) and leave it untouched for every keyboard event.
   const [stableViewportH, setStableViewportH] = useState(
     () => window.innerHeight,
   );
+  useEffect(() => {
+    let lastWidth = window.innerWidth;
+    const onResize = () => {
+      if (window.innerWidth !== lastWidth) {
+        lastWidth = window.innerWidth;
+        setStableViewportH(window.innerHeight);
+      }
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // True while focus is inside this sheet's container; the viewport
   // re-snap uses it to freeze sheets that do not own the keyboard.
@@ -212,17 +223,19 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   // keeps the two locks from stacking.
   usePreventScroll({ isDisabled: !isOpen });
 
-  // Native WebViews resize WITH the keyboard (Android adjustResize,
-  // iOS resize: 'native'), which changes the sheet root's height and
-  // invalidates the offset the current snap was computed from. The
-  // isKeyboardOpen toggle never fires there (innerHeight and
-  // visualViewport.height shrink together, so the measured inset
-  // stays 0), so the trigger must be the resize itself: re-snap to
-  // the current index, debounced past the resize burst so the
-  // library has re-measured the new root height. On web the root
-  // never resizes for the keyboard and the re-snap is a visual no-op.
+  // NATIVE ONLY. The keyboard resizes the WebView (Android
+  // adjustResize, iOS resize: 'native'), shrinking the sheet root, but
+  // the library does not recompute its snap offset against the new
+  // height, so the sheet ends up gapped above or overlapped by the
+  // keyboard. Re-snap to the current index when the root resizes.
+  //
+  // Web is deliberately excluded: there the keyboard OVERLAYS (only
+  // the visual viewport shrinks, the root keeps its size), so a
+  // re-snap would move a correctly-placed sheet, leaving a black band
+  // below it and the field still behind the keyboard. Web keyboard
+  // handling is purely the content padding + reveal in BottomSheetCard.
   useEffect(() => {
-    if (!isOpen || fullHeight) return;
+    if (!IS_NATIVE || !isOpen || fullHeight) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let settle: ReturnType<typeof setTimeout> | undefined;
     const resnap = () => {
@@ -231,9 +244,6 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       }
     };
     const onViewportResize = () => {
-      if (!document.documentElement.classList.contains('keyboard-visible')) {
-        setStableViewportH(window.innerHeight);
-      }
       if (timer !== undefined) clearTimeout(timer);
       if (settle !== undefined) clearTimeout(settle);
       timer = setTimeout(() => {
