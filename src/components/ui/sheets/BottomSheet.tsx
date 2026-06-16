@@ -436,7 +436,14 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       // Keep sheets in the app's existing z order (confirm dialogs and
       // toasts render at z-50 in the same stacking context); the
       // library would otherwise default to 9999.
-      style={{ zIndex: 50 }}
+      //
+      // Constrain the library's position:fixed root to the app content
+      // column (#content-root is max-w-4xl) and center it, so on wide web
+      // viewports the sheet tracks the page width instead of spanning the
+      // whole window. The old hand-rolled sheet was absolute inside the
+      // column and inherited this for free. The backdrop is a separate
+      // fixed child and still covers the full viewport.
+      style={{ zIndex: 50, maxWidth: '56rem', marginInline: 'auto' }}
       // Portal into #root, not document.body: the web viewport
       // manager pins #root against Safari's focus pan, and sheets
       // portaled outside it stayed uncompensated. That is what let a
