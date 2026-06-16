@@ -189,8 +189,11 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
             </div>
           </div>
 
-          {/* Quick amount buttons */}
-          <div className="flex gap-2">
+          {/* Quick amount buttons. Hidden while the native keyboard is
+              up: this is the tallest sheet form, and with the row kept
+              the amount/description fields get pushed into inner
+              scrolling, which makes focus switches jump. */}
+          <div className="flex gap-2 hide-on-keyboard">
             {quickAmounts.map((quickAmount) => (
               <button
                 key={quickAmount}

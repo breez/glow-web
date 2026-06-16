@@ -42,7 +42,6 @@ export {
 export type { FormInputProps, FormTextareaProps } from './forms';
 
 // Bottom Sheets
-import { useBottomSheetCardEl } from './sheets/BottomSheetCardContext';
 export { BottomSheetContainer, BottomSheetCard } from './sheets/BottomSheet';
 export type { BottomSheetMaxWidth, BottomSheetContainerProps, BottomSheetCardProps } from './sheets/BottomSheet';
 
@@ -503,8 +502,6 @@ export const ConfirmDialog: React.FC<{
   onConfirm,
   onCancel,
 }) => {
-    const cardEl = useBottomSheetCardEl();
-
     // Android hardware back button dismisses the confirm dialog (maps
     // to "Cancel" — the safer of the two options). This is placed
     // BEFORE the early-return so the hook order stays stable across
@@ -522,10 +519,12 @@ export const ConfirmDialog: React.FC<{
     };
 
     const content = (
-      // fixed (not absolute) so the backdrop dims the full viewport even
-      // when the dialog is portaled into a bottom-sheet card. bg-black/85
-      // + backdrop-blur-md produces a visibly dimmed background rather
-      // than the barely-perceptible spark-void/80 over a dark app canvas.
+      // Portaled to document.body (below) so this fixed overlay is
+      // positioned against the viewport. Rendered inside a bottom sheet
+      // it would otherwise sit under Sheet.Container's translateY
+      // transform, which makes position:fixed resolve relative to that
+      // transformed ancestor and shoves the dialog off-screen whenever
+      // the sheet is snapped or keyboard-lifted.
       <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-opacity duration-300">
         <DialogCard maxWidth="sm">
           <div className="text-center">
@@ -556,7 +555,7 @@ export const ConfirmDialog: React.FC<{
       </div>
     );
 
-    return cardEl ? createPortal(content, cardEl) : content;
+    return createPortal(content, document.body);
   };
 
 // ============================================
