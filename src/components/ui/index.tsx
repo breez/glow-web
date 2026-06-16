@@ -1,5 +1,7 @@
 import React, { ReactNode, forwardRef } from 'react';
 import { createPortal } from 'react-dom';
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
 import { logger, LogCategory } from '@/services/logger';
 import {
   CloseIcon,
@@ -235,8 +237,15 @@ export const CopyableText: React.FC<{
   'data-testid'?: string;
 }> = ({ text, truncate = false, hideText = false, showShare = false, onCopied, onShareError, label = 'Address', additionalActions, textColor = 'text-spark-text-muted', textToCopy, textToShare, shareLabel, 'data-testid': testId }) => {
   const [copied, setCopied] = React.useState(false);
-  // Web Share API support is fixed for the page lifetime; read once at init.
-  const [canShare] = React.useState(() => typeof navigator !== 'undefined' && !!navigator.share);
+  // Share is available via @capacitor/share on native (Android System
+  // WebView does not implement navigator.share, which is why the
+  // button only appeared on iOS before) and via the Web Share API on
+  // the web. Fixed for the page lifetime; read once at init.
+  const [canShare] = React.useState(
+    () =>
+      Capacitor.isNativePlatform() ||
+      (typeof navigator !== 'undefined' && !!navigator.share),
+  );
 
   const handleCopy = () => {
     const textToUse = textToCopy || text;
@@ -254,15 +263,21 @@ export const CopyableText: React.FC<{
   };
 
   const handleShare = async () => {
+    const textToUse = textToShare || text;
+    const shareTitle = shareLabel || label;
     try {
-      const textToUse = textToShare || text;
-      const shareTitle = shareLabel || label;
-      await navigator.share({
-        title: shareTitle,
-        text: textToUse,
-      });
+      if (Capacitor.isNativePlatform()) {
+        await Share.share({ title: shareTitle, text: textToUse });
+      } else {
+        await navigator.share({ title: shareTitle, text: textToUse });
+      }
     } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
+      // Web AbortError = user dismissed the sheet; the native plugin
+      // rejects a dismissed share with a "canceled"/"Share canceled"
+      // message. Neither is an error worth surfacing.
+      const name = (err as Error).name;
+      const message = (err as Error).message ?? '';
+      if (name !== 'AbortError' && !/cancel/i.test(message)) {
         onShareError?.();
       }
     }
