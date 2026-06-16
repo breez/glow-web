@@ -6,7 +6,15 @@ import App from './App';
 import './index.css';
 import { logger, LogCategory } from '@/services/logger';
 import { initWebViewportManager } from '@/utils/webViewportManager';
+import { installUserAgentStrippingFetch } from '@/utils/stripUserAgentFetch';
 import initBreezSDK from '@breeztech/breez-sdk-spark';
+
+// Strip the SDK's custom User-Agent from outgoing requests before the SDK
+// (or anything else) issues one. User-Agent is a forbidden fetch header
+// that some engines forward (WebKit/iOS, Firefox), tripping CORS
+// preflights on strict third-party hosts (blockstream, LNURL hosts). This
+// replaces the previous native HTTP routing (CapacitorHttp, now disabled).
+installUserAgentStrippingFetch();
 
 // Allow JSON.stringify to handle BigInt values (e.g. payment amounts/fees from SDK)
 (BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
