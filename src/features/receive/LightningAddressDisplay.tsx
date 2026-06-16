@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { SimpleAlert } from '../../components/AlertCard';
@@ -53,23 +53,6 @@ const EditingForm: React.FC<EditingFormProps> = ({
   onCancel,
   onSave,
 }) => {
-  const buttonsRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  // Scroll buttons into view when keyboard opens
-  useEffect(() => {
-    const handleFocus = () => {
-      // Small delay to let keyboard animate
-      setTimeout(() => {
-        buttonsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }, 300);
-    };
-
-    const input = inputRef.current;
-    input?.addEventListener('focus', handleFocus);
-    return () => input?.removeEventListener('focus', handleFocus);
-  }, []);
-
   return (
     <div className="pt-2 space-y-5">
       {/* Header with icon */}
@@ -86,7 +69,6 @@ const EditingForm: React.FC<EditingFormProps> = ({
       <div className="space-y-4">
         <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary transition-all">
           <textarea
-            ref={inputRef}
             value={editValue}
             onChange={(e) => onEditValueChange(e.target.value.toLowerCase().replace(/[^a-z0-9\n]/g, '').replace(/\n/g, ''))}
             onKeyDown={async (e) => {
@@ -125,7 +107,7 @@ const EditingForm: React.FC<EditingFormProps> = ({
       </div>
 
       {/* Action buttons */}
-      <div ref={buttonsRef} className="flex gap-3 justify-center pt-2 pb-4">
+      <div className="flex gap-3 justify-center pt-2 pb-4">
         <SecondaryButton onClick={onCancel} className="flex-1">
           Cancel
         </SecondaryButton>

@@ -205,6 +205,30 @@ body {
   flex-direction: column;
 }
 
+/* Collapse non-essential rows while the soft keyboard is up so tall
+   bottom-sheet forms fit above it without inner scrolling. The
+   `keyboard-visible` class on <html> comes from main.tsx (native,
+   via @capacitor/keyboard) or webViewportManager (web). */
+html.keyboard-visible .hide-on-keyboard {
+  display: none;
+}
+
+/* Bottom-sheet content padding. The home-indicator inset is window-
+   geometry-derived and does NOT collapse when the keyboard is up (iOS
+   resize:'native' shrinks the WebView above the keyboard but keeps
+   env(safe-area-inset-bottom) ~34px), so it would otherwise pad the
+   focused field into dead space between the content and the keyboard.
+   Drop the inset only while a field INSIDE this card is focused
+   (:focus-within): a sheet that doesn't own the keyboard, or one
+   returned to after cancelling an edit, keeps its full padding even
+   while the global keyboard-visible class lingers. */
+.bottom-sheet-content-pad {
+  padding-bottom: calc(1em + env(safe-area-inset-bottom, 0px));
+}
+html.keyboard-visible .bottom-sheet-content-pad:focus-within {
+  padding-bottom: 1em;
+}
+
 /* ============================================
    ATMOSPHERIC BACKGROUND
    ============================================ */
@@ -778,14 +802,6 @@ video::-webkit-media-controls-panel {
 /* ============================================
    BOTTOM SHEET / DIALOG
    ============================================ */
-
-.bottom-sheet-card {
-  background: var(--spark-surface);
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
-  width: 100%;
-  padding: 0.75em 1.5em 1em 1.5em;
-  padding-bottom: calc(1em + env(safe-area-inset-bottom, 0px));
-}
 
 .bottom-sheet-card-bordered {
   border-top: 1px solid var(--spark-border);

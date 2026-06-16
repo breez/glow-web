@@ -20,3 +20,4 @@ coverage/
 .claude/launch.json
 .claude/worktrees/
 .DS_Store
+.playwright-mcp/
