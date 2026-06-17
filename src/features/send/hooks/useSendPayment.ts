@@ -23,6 +23,10 @@ export interface UseSendPaymentReturn {
   tokenBalance: bigint | undefined;
   feesIncluded: boolean;
   processingPhase: ProcessingPhase;
+  /** True when the destination carried its own amount (a BIP21 `amount` or a
+   *  bolt11's embedded amount), so the amount step was skipped. Lets the confirm
+   *  step send "back" to input instead of the amount step the user never saw. */
+  amountFixed: boolean;
   // Actions
   clearError: () => void;
   reset: () => void;
@@ -47,6 +51,7 @@ export function useSendPayment(): UseSendPaymentReturn {
   const [paymentResult, setPaymentResult] = useState<'success' | 'failure' | null>(null);
   const [feesIncluded, setFeesIncluded] = useState(false);
   const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>('sending');
+  const [amountFixed, setAmountFixed] = useState(false);
 
   // Balance is read live from the wallet info context, which is auto-refreshed
   // by useBreezSdk on `synced`/`paymentSucceeded`/`claimedDeposits` events. We
@@ -66,6 +71,9 @@ export function useSendPayment(): UseSendPaymentReturn {
     feePolicy?: FeePolicy,
     tokenIdentifier?: string,
     conversionOptions?: ConversionOptions,
+    // Step to return to if prepare fails. Defaults to the amount step, but the
+    // fixed-amount path skips amount entry, so it falls back to input instead.
+    errorStep: SendStep = 'amount',
   ) => {
     if (amount <= 0n) {
       setError('Please enter a valid amount');
@@ -86,7 +94,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to prepare payment', { error: formatError(err) });
       setError(`Failed to prepare payment ${err instanceof Error ? err.message : 'Unknown error'}`);
-      setCurrentStep('amount');
+      setCurrentStep(errorStep);
     } finally {
       setIsLoading(false);
     }
@@ -104,20 +112,64 @@ export function useSendPayment(): UseSendPaymentReturn {
 
     try {
       const parseResult = await wallet.parse(currentInput);
-      const parsed: SendInput = { rawInput: currentInput.trim(), parsedInput: parseResult };
+
+      // Unwrap a BIP21 URI (bitcoin:<addr>?amount=&label=) to its underlying
+      // payment method. `paymentRequest` becomes the bare address/invoice sent to
+      // prepareSendPayment (the URI itself isn't a valid send request), while
+      // `rawInput` keeps the original text so the input field still shows it on
+      // back-navigation. The URI amount (sats) is used as the exact send amount.
+      let effective = parseResult;
+      let paymentRequest = currentInput;
+      let prefillAmountSat: number | undefined;
+      if (parseResult.type === 'bip21') {
+        const method = parseResult.paymentMethods.find(
+          (m) => m.type === 'bitcoinAddress' || m.type === 'sparkAddress' || m.type === 'bolt11Invoice',
+        );
+        if (!method) {
+          setError('Invalid payment destination');
+          setCurrentStep('input');
+          return;
+        }
+        effective = method;
+        if (method.type === 'bolt11Invoice') {
+          paymentRequest = method.invoice.bolt11;
+        } else if (method.type === 'bitcoinAddress' || method.type === 'sparkAddress') {
+          paymentRequest = method.address;
+        }
+        prefillAmountSat = parseResult.amountSat;
+      }
+
+      const parsed: SendInput = { rawInput: currentInput, paymentRequest, parsedInput: effective };
       setPaymentInput(parsed);
 
-      if (parseResult.type === 'bolt11Invoice' && parseResult.amountMsat && parseResult.amountMsat > 0) {
-        const sats = Math.floor(parseResult.amountMsat / 1000);
-        setAmount(String(sats));
-        await prepareSend(currentInput, BigInt(sats));
-      } else if (parseResult.type === 'bolt11Invoice') {
+      // A fixed amount is always denominated in sats and must be paid exactly: a
+      // bolt11 invoice's embedded amount, or a BIP21 `amount` parameter. Prepare
+      // directly with that sats amount and skip amount entry (the same flow used for
+      // amount-bearing bolt11 invoices). This also avoids the amount step's
+      // stable-balance token denomination, where a sats prefill would be read as a
+      // fiat value; the SDK applies any active stable-balance conversion to fund the
+      // exact sats output.
+      const invoiceSats =
+        effective.type === 'bolt11Invoice' && effective.amountMsat && effective.amountMsat > 0
+          ? Math.floor(effective.amountMsat / 1000)
+          : undefined;
+      const fixedSats =
+        invoiceSats ?? (prefillAmountSat && prefillAmountSat > 0 ? prefillAmountSat : undefined);
+      const isPayableAmountType =
+        effective.type === 'bolt11Invoice' ||
+        effective.type === 'bitcoinAddress' ||
+        effective.type === 'sparkAddress';
+
+      if (isPayableAmountType && fixedSats !== undefined) {
+        setAmountFixed(true);
+        setAmount(String(fixedSats));
+        await prepareSend(paymentRequest, BigInt(fixedSats), undefined, undefined, undefined, 'input');
+      } else if (isPayableAmountType) {
+        setAmountFixed(false);
         setCurrentStep('amount');
-      } else if (parseResult.type === 'bitcoinAddress' || parseResult.type === 'sparkAddress') {
-        setCurrentStep('amount');
-      } else if (parseResult.type === 'lnurlPay' || parseResult.type === 'lightningAddress') {
+      } else if (effective.type === 'lnurlPay' || effective.type === 'lightningAddress') {
         setCurrentStep('workflow');
-      } else if (parseResult.type === 'lnurlAuth') {
+      } else if (effective.type === 'lnurlAuth') {
         setCurrentStep('workflow');
       } else {
         setError('Invalid payment destination');
@@ -143,13 +195,13 @@ export function useSendPayment(): UseSendPaymentReturn {
     }
     setFeesIncluded(!!includeFees);
     await prepareSend(
-      paymentInput?.rawInput || '',
+      paymentInput?.paymentRequest || '',
       amount,
       includeFees ? 'feesIncluded' : undefined,
       tokenIdentifier,
       conversionOptions,
     );
-  }, [paymentInput?.rawInput, prepareSend]);
+  }, [paymentInput?.paymentRequest, prepareSend]);
 
   const handleSend = useCallback(async (options?: SendPaymentOptions) => {
     if (!prepareResponse) return;
@@ -263,6 +315,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     setPaymentInput(null);
     setPaymentResult(null);
     setProcessingPhase('sending');
+    setAmountFixed(false);
   }, []);
 
   return {
@@ -277,6 +330,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     tokenBalance,
     feesIncluded,
     processingPhase,
+    amountFixed,
     clearError: useCallback(() => setError(null), []),
     reset,
     processInput,

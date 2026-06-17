@@ -174,7 +174,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                     conversionEstimate={send.prepareResponse.conversionEstimate}
                     balanceSats={send.balanceSats}
                     tokenBalance={send.tokenBalance}
-                    onBack={() => send.setCurrentStep('amount')}
+                    onBack={() => send.setCurrentStep(send.amountFixed ? 'input' : 'amount')}
                     onSend={send.handleSend}
                   />
                 )}
