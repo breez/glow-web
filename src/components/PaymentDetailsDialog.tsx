@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Payment, ConversionSide, TokenMetadata } from '@breeztech/breez-sdk-spark';
 import {
   DialogHeader, PaymentInfoCard, PaymentInfoRow,
@@ -60,6 +60,17 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   const stableBalance = useStableBalance();
   const { fiatCurrencies } = useFiatData();
   const { findContactByAddress } = useContactsContext();
+
+  // TEMP DEBUG: dump raw cross-chain conversion data to diagnose the displayed
+  // "Sent Amount" units. Remove once the field source is confirmed.
+  useEffect(() => {
+    if (optionalPayment?.conversionDetails) {
+      // eslint-disable-next-line no-console
+      console.log('[PaymentDetails] conversionDetails =', JSON.stringify(optionalPayment.conversionDetails, null, 2));
+      // eslint-disable-next-line no-console
+      console.log('[PaymentDetails] conversionInfo =', JSON.stringify((optionalPayment.details as { conversionInfo?: unknown })?.conversionInfo ?? null, null, 2));
+    }
+  }, [optionalPayment]);
 
   if (!optionalPayment) return (
     <BottomSheetContainer isOpen={optionalPayment != null} onClose={onClose}>
@@ -288,32 +299,38 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                 label="Conversion Details"
                 isVisible={visibleFields.conversionDetails}
                 onToggle={() => toggleField('conversionDetails')}
+                bare
               >
-                {conversions.map((conv, i) => (
-                  <React.Fragment key={i}>
-                    <PaymentInfoRow
-                      label="Provider"
-                      value={getProviderDisplayName(conv.provider)}
-                    />
-                    <PaymentInfoRow
-                      label="Initial Amount"
-                      value={formatSideValue(conv.from)}
-                    />
-                    <PaymentInfoRow
-                      label="Converted Amount"
-                      value={formatSideValue(conv.to)}
-                    />
-                    {(() => {
-                      // Show fee from whichever side has it
-                      const fromFee = BigInt(conv.from.fee);
-                      const toFee = BigInt(conv.to.fee);
-                      if (fromFee === 0n && toFee === 0n) return null;
-                      // Use the side that has the fee
-                      const feeSide = fromFee > 0n ? conv.from : conv.to;
-                      return <PaymentInfoRow label="Fee" value={formatSideValue(feeSide, true)} />;
-                    })()}
-                  </React.Fragment>
-                ))}
+                <div className="space-y-3">
+                  {conversions.map((conv, i) => {
+                    const isCrossChain = conv.provider === 'orchestra' || conv.provider === 'boltz';
+                    const fromFee = BigInt(conv.from.fee);
+                    const toFee = BigInt(conv.to.fee);
+                    const feeSide = isCrossChain ? conv.to : (fromFee > 0n ? conv.from : conv.to);
+                    return (
+                      <div
+                        key={i}
+                        className="bg-spark-surface border border-spark-border/50 rounded-lg px-3"
+                      >
+                        <PaymentInfoRow
+                          label="Provider"
+                          value={getProviderDisplayName(conv.provider)}
+                        />
+                        <PaymentInfoRow
+                          label="Initial Amount"
+                          value={formatSideValue(conv.from)}
+                        />
+                        <PaymentInfoRow
+                          label="Converted Amount"
+                          value={formatSideValue(conv.to)}
+                        />
+                        {(fromFee > 0n || toFee > 0n) && (
+                          <PaymentInfoRow label="Fee" value={formatSideValue(feeSide, true)} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </CollapsibleSection>
               );
             })()}

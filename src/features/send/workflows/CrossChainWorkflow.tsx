@@ -10,7 +10,7 @@ import { ChevronDownIcon, CopyFilledIcon, CheckIcon, SpinnerIcon } from '../../.
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
 import { useWallet } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
-import { formatWithSpaces, formatWithThinSpaces } from '../../../utils/formatNumber';
+import { formatWithThinSpaces } from '../../../utils/formatNumber';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
 import { getProviderDisplayName } from '../../../utils/paymentDescription';
@@ -106,10 +106,6 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   const effectiveTokenId = tokenIdentifier ?? (useUsdb ? stableBalance.tokenIdentifier! : undefined);
 
   // Derived data
-  // Allowlist the only stablecoins we support; everything else (HSUSD, PathUSD,
-  // USDC.e, DAI, …) is hidden. USDT0 is accepted but grouped under USDT.
-  const ALLOWED_ASSETS = ['USDC', 'USDT', 'USDT0'];
-  const isAllowedAsset = (asset: string) => ALLOWED_ASSETS.includes(asset.toUpperCase());
   // Group asset variants under a canonical display name (e.g. USDT0 → USDT)
   const ASSET_DISPLAY_GROUP: Record<string, string> = { 'USDT0': 'USDT' };
   const assetDisplayName = (asset: string) => ASSET_DISPLAY_GROUP[asset] ?? asset;
@@ -118,7 +114,6 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
 
   const uniqueAssets = useMemo(
     () => [...new Set(routes
-      .filter(r => isAllowedAsset(r.asset))
       .map(r => assetDisplayName(r.asset))
     )].sort(),
     [routes]
@@ -282,7 +277,6 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
 
         // Enter wizard — auto-skip steps with single option
         const assets = [...new Set(fetched
-          .filter(r => isAllowedAsset(r.asset))
           .map(r => assetDisplayName(r.asset))
         )].sort();
         if (assets.length === 0) {
@@ -555,10 +549,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-spark-text-secondary">Fee</span>
                             <span className="font-mono text-sm text-spark-text-primary">
-                              {!(pQuote as any).feeAsset
-                                ? <span className="inline-flex items-center">₿{formatWithSpaces(Number(pQuote.feeAmount))}</span>
-                                : `${formatCrossChainAmount(BigInt(pQuote.feeAmount), pq.route.decimals)} ${(pQuote as any).feeAsset}`
-                              }
+                              {formatCrossChainAmount(BigInt(pQuote.feeAmount), pq.route.decimals)} {pq.route.asset}
                             </span>
                           </div>
                         </div>
@@ -647,9 +638,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
               },
               {
                 label: 'Fee',
-                value: !(quote as any).feeAsset
-                  ? `₿${formatWithSpaces(Number(quote.feeAmount))}`
-                  : `${formatCrossChainAmount(BigInt(quote.feeAmount), confirmedRoute.decimals)} ${(quote as any).feeAsset}`,
+                value: `${formatCrossChainAmount(BigInt(quote.feeAmount), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
               },
             ]}
             className="mb-6"

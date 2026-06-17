@@ -131,6 +131,19 @@ const AmountStep: React.FC<AmountStepProps> = ({
       return;
     }
 
+    // Cross-chain funded from a token (USDB) balance: pass the amount in token
+    // base units + tokenIdentifier so the workflow uses it directly instead of
+    // round-tripping USD→sats→token (which loses ~sub-cent precision, e.g. $5 →
+    // 4 999 771). Only cross-chain (amountFirst); all other sends keep parseToSats.
+    if (amountFirst && isTokenMode && config && tokenIdentifier) {
+      onNext(
+        BigInt(Math.round(parseFloat(localAmount) * 10 ** config.decimals)),
+        feesIncluded,
+        tokenIdentifier,
+      );
+      return;
+    }
+
     // Safe to parse — validateAmount already confirmed the input is valid
     onNext(parseToSats(localAmount)!, feesIncluded);
   };

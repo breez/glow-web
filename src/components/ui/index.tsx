@@ -170,7 +170,9 @@ export const CollapsibleSection: React.FC<{
   isVisible: boolean;
   onToggle: () => void;
   children: ReactNode;
-}> = ({ label, isVisible, onToggle, children }) => (
+  /** Drop the bordered container so children render as a flush list. */
+  bare?: boolean;
+}> = ({ label, isVisible, onToggle, children, bare = false }) => (
   <div className="py-2">
     <button
       onClick={onToggle}
@@ -182,9 +184,13 @@ export const CollapsibleSection: React.FC<{
       </span>
     </button>
     {isVisible && (
-      <div className="mt-2 bg-spark-dark border border-spark-border rounded-xl p-3">
-        {children}
-      </div>
+      bare ? (
+        <div className="mt-2">{children}</div>
+      ) : (
+        <div className="mt-2 bg-spark-dark border border-spark-border rounded-xl p-3">
+          {children}
+        </div>
+      )
     )}
   </div>
 );
