@@ -1,5 +1,6 @@
 import type { TokenMetadata, FiatCurrency, Payment } from '@breeztech/breez-sdk-spark';
 import { toSats, type Sats } from '../types/sats';
+import { isCrossChainPayment } from './paymentDescription';
 
 export interface TokenDisplayConfig {
   symbol: string;
@@ -14,6 +15,43 @@ export interface TokenPaymentInfo {
   amount: bigint;
   fee: bigint;
   metadata: TokenMetadata;
+}
+
+/**
+ * Build a token-less display config for a pure fiat currency (e.g. "USD").
+ *
+ * Used by the cross-chain "Send USD" flow so a BTC-balance (non-stable) user
+ * can type a dollar amount without holding a USD token. There's no token here,
+ * so `decimals` equals `fractionSize` (the minor unit *is* the base unit). The
+ * USD amount is converted to sats client-side via `btcFiatRate` (the SDK build
+ * on this branch has no fiat-amount model), so only `symbol`/`fractionSize` are
+ * needed for input + display.
+ *
+ * Falls back to USD-like defaults ($, 2dp) when `fiatCurrencies` hasn't loaded.
+ */
+export function buildFiatDisplayConfig(
+  currencyId: string,
+  fiatCurrencies: FiatCurrency[]
+): TokenDisplayConfig {
+  const match = fiatCurrencies.find(c => c.id === currencyId);
+  if (match) {
+    return {
+      symbol: match.info.symbol?.grapheme || match.id,
+      symbolPosition: match.info.symbol?.rtl ? 'after' : 'before',
+      fractionSize: match.info.fractionSize,
+      decimals: match.info.fractionSize,
+      fiatCurrencyId: match.id,
+      fiatCurrencyName: match.info.name,
+    };
+  }
+  return {
+    symbol: currencyId === 'USD' ? '$' : currencyId,
+    symbolPosition: 'before',
+    fractionSize: 2,
+    decimals: 2,
+    fiatCurrencyId: currencyId,
+    fiatCurrencyName: null,
+  };
 }
 
 /**
@@ -181,18 +219,42 @@ export function getTokenAmountFromPayment(payment: Payment): TokenPaymentInfo | 
     // For sends: first conversion's input (e.g., USDB in [AMM, cross-chain])
     // For receives: last conversion's output (e.g., USDB in [cross-chain, AMM])
     const convs = payment.conversionDetails.conversions;
-    const side = payment.paymentType === 'send'
-      ? convs[0].from
-      : convs[convs.length - 1].to;
-    if (side && side.asset.ticker !== 'BTC') {
-      return {
-        amount: BigInt(side.amount),
-        fee: BigInt(side.fee),
-        metadata: {
-          ticker: side.asset.ticker,
-          decimals: side.asset.decimals,
-        } as TokenMetadata,
-      };
+    const isSend = payment.paymentType === 'send';
+    const primary = isSend ? convs[0].from : convs[convs.length - 1].to;
+    const sideToInfo = (side: typeof primary): TokenPaymentInfo => ({
+      amount: BigInt(side.amount),
+      fee: BigInt(side.fee),
+      metadata: {
+        ticker: side.asset.ticker,
+        decimals: side.asset.decimals,
+      } as TokenMetadata,
+    });
+
+    if (primary && primary.asset.ticker !== 'BTC') {
+      return sideToInfo(primary);
+    }
+
+    // Cross-chain send funded from a BTC balance: the spent side is BTC, but
+    // the user sent USD — surface the delivered stablecoin (e.g. USDC) so the
+    // amount reads in USD. Gated on cross-chain (orchestra/boltz) so AMM
+    // conversions like "Conversion to Bitcoin" keep showing sats.
+    //
+    // Show the gross, fees-INCLUDED value (delivered + fee) to match the
+    // stable-balance "USD Transfer" headline, which is the amount debited from
+    // the USD balance (fees-inclusive). `to.amount` is the net delivered
+    // stablecoin; `to.fee` is the cross-chain fee on the same side.
+    if (isSend && isCrossChainPayment(payment)) {
+      const dest = convs[convs.length - 1].to;
+      if (dest && dest.asset.ticker !== 'BTC') {
+        return {
+          amount: BigInt(dest.amount) + BigInt(dest.fee),
+          fee: BigInt(dest.fee),
+          metadata: {
+            ticker: dest.asset.ticker,
+            decimals: dest.asset.decimals,
+          } as TokenMetadata,
+        };
+      }
     }
   }
 

@@ -33,8 +33,15 @@ export function useBalanceValidation(
   setIsTokenMode?: (value: boolean) => void,
   balanceSats?: number,
   tokenBalance?: bigint,
+  fiatOverride?: { config: TokenDisplayConfig; btcFiatRate: number },
 ): BalanceValidation {
-  const { displayConfig: config, btcFiatRate, isActive } = useStableBalance();
+  const stable = useStableBalance();
+  // Mirror useAmountInput: stable balance wins; otherwise a fiat override
+  // (cross-chain "Send USD") supplies the config + rate so a typed fiat amount
+  // can be validated against the BTC balance.
+  const config = stable.isActive ? stable.displayConfig : (fiatOverride?.config ?? null);
+  const btcFiatRate = stable.isActive ? stable.btcFiatRate : (fiatOverride?.btcFiatRate ?? 0);
+  const isActive = stable.isActive;
 
   const tokenBalanceSats = useMemo<number | null>(() => {
     if (!config || !hasPositiveTokenBalance(tokenBalance) || !hasValidRate(btcFiatRate)) return null;

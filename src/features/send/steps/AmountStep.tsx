@@ -6,12 +6,17 @@ import {
   TOKEN_QUICK_AMOUNTS,
   SATS_QUICK_AMOUNTS,
   formatQuickAmount,
+  buildFiatDisplayConfig,
 } from '../../../utils/tokenFormatting';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
 import { useAmountInput } from '../../../hooks/useAmountInput';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
 import { useHasPendingConversion } from '../../../contexts/WalletContext';
+import { useFiatData } from '../../../contexts/FiatDataContext';
 import { dismissKeyboard } from '../../../utils/keyboard';
+
+/** Cross-chain destinations are USD stablecoins (USDC/USDT) — amounts are USD. */
+const CROSS_CHAIN_FIAT_CURRENCY = 'USD';
 
 export interface AmountStepProps {
   paymentInput: string;
@@ -37,7 +42,20 @@ const AmountStep: React.FC<AmountStepProps> = ({
   onNext,
   amountFirst = false,
 }) => {
-  const input = useAmountInput({ initialAmount: amount, balanceSats, tokenBalance });
+  const { fiatCurrencies, fiatRates } = useFiatData();
+
+  // Cross-chain ("Send USD") denominates in USD even without a stable-balance
+  // token: build a fiat config from FiatData and let the user type dollars,
+  // converted to sats client-side via the BTC→USD rate and funded from BTC.
+  const fiatOverride = useMemo(() => {
+    if (!amountFirst) return undefined;
+    return {
+      config: buildFiatDisplayConfig(CROSS_CHAIN_FIAT_CURRENCY, fiatCurrencies),
+      btcFiatRate: fiatRates.find(r => r.coin === CROSS_CHAIN_FIAT_CURRENCY)?.value ?? 0,
+    };
+  }, [amountFirst, fiatCurrencies, fiatRates]);
+
+  const input = useAmountInput({ initialAmount: amount, balanceSats, tokenBalance, fiatOverride });
   const {
     amountInput: localAmount,
     setAmount,
@@ -55,7 +73,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
     tokenSendAllBelowThreshold,
   } = input;
 
-  const balance = useBalanceValidation(isTokenMode, setIsTokenMode, balanceSats, tokenBalance);
+  const balance = useBalanceValidation(isTokenMode, setIsTokenMode, balanceSats, tokenBalance, fiatOverride);
   const hasPendingConversion = useHasPendingConversion();
 
   const [feesIncluded, setFeesIncluded] = useState(false);
@@ -192,14 +210,15 @@ const AmountStep: React.FC<AmountStepProps> = ({
                 }
               }
             }}
-            placeholder={isTokenMode && tokenSymbol ? `Enter amount in ${tokenSymbol}` : 'Enter amount in satoshis'}
+            placeholder={amountFirst ? 'Enter amount in USD' : isTokenMode && tokenSymbol ? `Enter amount in ${tokenSymbol}` : 'Enter amount in satoshis'}
             className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed"
             disabled={isLoading}
             readOnly={isSendAll}
             min={isTokenMode ? undefined : 1}
             data-testid="amount-input"
           />
-          {isStableBalanceActive && tokenSymbol && (
+          {/* Cross-chain ("Send USD", amountFirst) is USD-only — no sats toggle. */}
+          {!amountFirst && isStableBalanceActive && tokenSymbol && (
             <CurrencySwitcher
               isTokenMode={isTokenMode}
               tokenSymbol={tokenSymbol}

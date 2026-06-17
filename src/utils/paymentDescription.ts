@@ -25,6 +25,10 @@ const getConversionInfo = (details?: PaymentDetails) => {
 const isCrossChain = (convInfo: ReturnType<typeof getConversionInfo>) =>
   convInfo?.type === 'orchestra' || convInfo?.type === 'boltz';
 
+/** Whether a payment is a cross-chain transfer (orchestra/boltz), not an AMM conversion. */
+export const isCrossChainPayment = (payment: Payment): boolean =>
+  isCrossChain(getConversionInfo(payment.details));
+
 /** Truncate text to maxLen characters, appending "..." if shortened */
 const truncate = (text: string, maxLen: number): string =>
   text.length > maxLen ? `${text.slice(0, maxLen)}…` : text;
