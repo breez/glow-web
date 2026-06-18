@@ -19,6 +19,11 @@ export interface FeeOptions {
 }
 
 export interface SendInput {
+  /** Exactly what the user pasted or scanned. Shown in the input field so it
+   *  survives back-navigation (e.g. a full `bitcoin:...?amount=&label=` URI). */
   rawInput: string;
+  /** The destination passed to prepareSendPayment. Same as rawInput for bare
+   *  inputs; for a BIP21 URI it's the unwrapped bare address/invoice. */
+  paymentRequest: string;
   parsedInput: InputType;
 }

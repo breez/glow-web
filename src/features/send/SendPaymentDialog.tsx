@@ -10,6 +10,7 @@ import SparkWorkflow from './workflows/SparkWorkflow';
 import LnurlWorkflow from './workflows/LnurlWorkflow';
 import LnurlAuthWorkflow from './workflows/LnurlAuthWorkflow';
 import AmountStep from './steps/AmountStep';
+import ConfirmStep from './steps/ConfirmStep';
 import ProcessingStep from './steps/ProcessingStep';
 import ResultStep from './steps/ResultStep';
 import ContactsSubView from './components/ContactsSubView';
@@ -69,6 +70,13 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     onClose();
   };
 
+  // Back to the input step from a step that surfaces a prepare/amount error;
+  // clear it so the stale message doesn't follow the user onto the input screen.
+  const backToInput = () => {
+    send.clearError();
+    send.setCurrentStep('input');
+  };
+
   const dialogTitle = send.currentStep === 'input'
     ? 'Send'
     : getPaymentMethodName(send.paymentInput);
@@ -82,6 +90,12 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
 
   const lnurlPayDetails = getLnurlPayRequestDetails(send.paymentInput);
   const lnurlAuthDetails = getLnurlAuthRequestDetails(send.paymentInput);
+
+  // Prepare can fail before producing a response (e.g. insufficient funds on a
+  // fixed-amount payment). With no response and no LNURL workflow to render, show
+  // the error on the confirm step with the send action disabled, rather than a
+  // blank step. Only read inside the workflow-step block below.
+  const prepareFailed = !send.prepareResponse && !lnurlPayDetails && !lnurlAuthDetails && !!send.error;
 
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={handleClose} showBackdrop>
@@ -147,7 +161,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 tokenBalance={send.tokenBalance}
                 isLoading={send.isLoading}
                 error={send.error}
-                onBack={() => send.setCurrentStep('input')}
+                onBack={backToInput}
                 onNext={send.onAmountNext}
               />
             )}
@@ -174,7 +188,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                     conversionEstimate={send.prepareResponse.conversionEstimate}
                     balanceSats={send.balanceSats}
                     tokenBalance={send.tokenBalance}
-                    onBack={() => send.setCurrentStep('amount')}
+                    onBack={() => send.setCurrentStep(send.amountFixed ? 'input' : 'amount')}
                     onSend={send.handleSend}
                   />
                 )}
@@ -214,6 +228,19 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                     onAuth={async (requestData) => {
                       return await wallet.lnurlAuth(requestData);
                     }}
+                  />
+                )}
+                {prepareFailed && (
+                  <ConfirmStep
+                    amountSats={/^\d+$/.test(send.amount) ? BigInt(send.amount) : null}
+                    feesSat={null}
+                    balanceSats={send.balanceSats}
+                    tokenBalance={send.tokenBalance}
+                    error={send.error}
+                    isLoading={false}
+                    disableConfirm
+                    onBack={backToInput}
+                    onConfirm={() => {}}
                   />
                 )}
               </>
