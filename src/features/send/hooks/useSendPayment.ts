@@ -178,9 +178,11 @@ export function useSendPayment(): UseSendPaymentReturn {
       } else if (isPayableAmountType) {
         setAmountFixed(false);
         setCurrentStep('amount');
-      } else if (effective.type === 'lnurlPay' || effective.type === 'lightningAddress') {
-        setCurrentStep('workflow');
-      } else if (effective.type === 'lnurlAuth') {
+      } else if (
+        effective.type === 'lnurlPay' ||
+        effective.type === 'lightningAddress' ||
+        effective.type === 'lnurlAuth'
+      ) {
         setCurrentStep('workflow');
       } else {
         setError('Invalid payment destination');

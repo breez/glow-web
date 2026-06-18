@@ -94,10 +94,8 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
   // Prepare can fail before producing a response (e.g. insufficient funds on a
   // fixed-amount payment). With no response and no LNURL workflow to render, show
   // the error on the confirm step with the send action disabled, rather than a
-  // blank step. `amount` holds the attempted sats for the fixed-amount path.
-  const prepareFailed =
-    send.currentStep === 'workflow' && !send.prepareResponse && !lnurlPayDetails && !lnurlAuthDetails && !!send.error;
-  const attemptedAmountSats = /^\d+$/.test(send.amount) ? BigInt(send.amount) : null;
+  // blank step. Only read inside the workflow-step block below.
+  const prepareFailed = !send.prepareResponse && !lnurlPayDetails && !lnurlAuthDetails && !!send.error;
 
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={handleClose} showBackdrop>
@@ -234,7 +232,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 )}
                 {prepareFailed && (
                   <ConfirmStep
-                    amountSats={attemptedAmountSats}
+                    amountSats={/^\d+$/.test(send.amount) ? BigInt(send.amount) : null}
                     feesSat={null}
                     balanceSats={send.balanceSats}
                     tokenBalance={send.tokenBalance}
