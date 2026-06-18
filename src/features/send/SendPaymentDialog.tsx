@@ -70,6 +70,13 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     onClose();
   };
 
+  // Back to the input step from a step that surfaces a prepare/amount error;
+  // clear it so the stale message doesn't follow the user onto the input screen.
+  const backToInput = () => {
+    send.clearError();
+    send.setCurrentStep('input');
+  };
+
   const dialogTitle = send.currentStep === 'input'
     ? 'Send'
     : getPaymentMethodName(send.paymentInput);
@@ -156,7 +163,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 tokenBalance={send.tokenBalance}
                 isLoading={send.isLoading}
                 error={send.error}
-                onBack={() => send.setCurrentStep('input')}
+                onBack={backToInput}
                 onNext={send.onAmountNext}
               />
             )}
@@ -234,7 +241,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                     error={send.error}
                     isLoading={false}
                     disableConfirm
-                    onBack={() => send.setCurrentStep('input')}
+                    onBack={backToInput}
                     onConfirm={() => {}}
                   />
                 )}
