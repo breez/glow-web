@@ -14,6 +14,7 @@ import { formatWithThinSpaces } from '../../../utils/formatNumber';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
 import { getProviderDisplayName } from '../../../utils/paymentDescription';
+import { truncateAddress, capitalizeFirst, formatCrossChainAmount, formatReceiveAmount } from '../../../utils/crossChainFormat';
 import { formatError } from '@/utils/formatError';
 import CryptoIcon from '../../../components/CryptoIcon';
 
@@ -34,33 +35,6 @@ interface ProviderQuote {
   response: PrepareSendPaymentResponse | null;
   error: string | null;
   loading: boolean;
-}
-
-function formatCrossChainAmount(amount: bigint, decimals: number): string {
-  const divisor = BigInt(10 ** decimals);
-  const whole = amount / divisor;
-  const frac = amount % divisor;
-  const fracStr = frac.toString().padStart(decimals, '0').replace(/0+$/, '');
-  return fracStr ? `${whole}.${fracStr}` : `${whole}`;
-}
-
-// Receive amounts are estimates ("~"), so 2 decimal places is enough.
-// Rounds to the nearest cent using integer math (no float precision loss).
-function formatReceiveAmount(amount: bigint, decimals: number): string {
-  if (decimals <= 2) return formatCrossChainAmount(amount, decimals);
-  const scale = 10n ** BigInt(decimals - 2);
-  const hundredths = (amount + scale / 2n) / scale;
-  return `${hundredths / 100n}.${(hundredths % 100n).toString().padStart(2, '0')}`;
-}
-
-function truncateAddress(addr: string, maxLen = 42): string {
-  if (addr.length <= maxLen) return addr;
-  const side = Math.floor((maxLen - 3) / 2);
-  return `${addr.slice(0, side)}...${addr.slice(-side)}`;
-}
-
-function capitalizeFirst(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function friendlyError(err: unknown): string {

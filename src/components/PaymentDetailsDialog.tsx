@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { Payment, ConversionSide, TokenMetadata } from '@breeztech/breez-sdk-spark';
 import {
   DialogHeader, PaymentInfoCard, PaymentInfoRow,
@@ -9,7 +9,8 @@ import { useStableBalance } from '../contexts/StableBalanceContext';
 import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig } from '../utils/tokenFormatting';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
-import { getPaymentDescription, getProviderDisplayName } from '../utils/paymentDescription';
+import { getPaymentDescription, getProviderDisplayName, isCrossChainPayment } from '../utils/paymentDescription';
+import { capitalizeFirst, getCrossChainDestination, formatReceiveAmount } from '../utils/crossChainFormat';
 
 interface PaymentDetailsDialogProps {
   optionalPayment: Payment | null;
@@ -31,6 +32,7 @@ const getDefaultVisibleFields = () => ({
   lnAddress: false,
   lnurlDomain: false,
   conversionDetails: false,
+  recipientAddress: false,
 });
 
 const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPayment, onClose }) => {
@@ -60,17 +62,6 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   const stableBalance = useStableBalance();
   const { fiatCurrencies } = useFiatData();
   const { findContactByAddress } = useContactsContext();
-
-  // TEMP DEBUG: dump raw cross-chain conversion data to diagnose the displayed
-  // "Sent Amount" units. Remove once the field source is confirmed.
-  useEffect(() => {
-    if (optionalPayment?.conversionDetails) {
-      // eslint-disable-next-line no-console
-      console.log('[PaymentDetails] conversionDetails =', JSON.stringify(optionalPayment.conversionDetails, null, 2));
-      // eslint-disable-next-line no-console
-      console.log('[PaymentDetails] conversionInfo =', JSON.stringify((optionalPayment.details as { conversionInfo?: unknown })?.conversionInfo ?? null, null, 2));
-    }
-  }, [optionalPayment]);
 
   if (!optionalPayment) return (
     <BottomSheetContainer isOpen={optionalPayment != null} onClose={onClose}>
@@ -119,6 +110,11 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
     ? (isAmountAdjusted ? `₿${formatWithSpaces(Number(payment.fees))}` : formatPaymentFee(BigInt(payment.fees)))
     : null;
 
+  // Cross-chain ("USD Transfer"): surface the destination (recipient address +
+  // chain/asset) the funds landed on, instead of leading with the internal
+  // BOLT11/spark source leg. Null for all non-cross-chain payments.
+  const dest = isCrossChainPayment(payment) ? getCrossChainDestination(payment) : null;
+
   return (
     <BottomSheetContainer isOpen={optionalPayment != null} onClose={onClose}>
       <BottomSheetCard>
@@ -143,7 +139,31 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               value={formatDateTime(payment.timestamp)}
             />
 
-            {payment.details?.type === 'lightning' && payment.details.description && (
+            {/* Cross-chain destination — what chain/asset it landed on + recipient */}
+            {dest?.deliveredAmount !== undefined && dest.assetDecimals !== undefined && dest.assetTicker && (
+              <PaymentInfoRow
+                label="Received Amount"
+                value={`~${formatReceiveAmount(dest.deliveredAmount, dest.assetDecimals)} ${dest.assetTicker}`}
+              />
+            )}
+            {dest?.chainName && (
+              <PaymentInfoRow
+                label="Network"
+                value={capitalizeFirst(dest.chainName)}
+              />
+            )}
+            {dest?.recipientAddress && (
+              <CollapsibleCodeField
+                label="Recipient Address"
+                value={dest.recipientAddress}
+                isVisible={visibleFields.recipientAddress}
+                onToggle={() => toggleField('recipientAddress')}
+                copyable
+              />
+            )}
+
+            {/* Description is noise for cross-chain (it's the internal BOLT11 leg) */}
+            {!dest && payment.details?.type === 'lightning' && payment.details.description && (
               payment.details.description.length > LONG_TEXT_THRESHOLD ? (
                 <CollapsibleCodeField
                   label="Description"
@@ -219,7 +239,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               />
             )}
 
-            {payment.details?.type === 'lightning' && payment.details.htlcDetails?.preimage && (
+            {!dest && payment.details?.type === 'lightning' && payment.details.htlcDetails?.preimage && (
               <CollapsibleCodeField
                 label="Payment Preimage"
                 value={payment.details.htlcDetails.preimage}
@@ -228,7 +248,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               />
             )}
 
-            {payment.details?.type === 'lightning' && payment.details.destinationPubkey && (
+            {!dest && payment.details?.type === 'lightning' && payment.details.destinationPubkey && (
               <CollapsibleCodeField
                 label="Destination Public Key"
                 value={payment.details.destinationPubkey}

@@ -201,27 +201,50 @@ export const CollapsibleCodeField: React.FC<{
   isVisible: boolean;
   onToggle: () => void;
   href?: string;
-}> = ({ label, value, isVisible, onToggle, href }) => (
-  <CollapsibleSection label={label} isVisible={isVisible} onToggle={onToggle}>
-    <div className="overflow-x-auto">
-      {href ? (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-mono text-xs break-all flex items-center gap-1 group"
-        >
-          <span className="text-spark-text-secondary">{value}</span>
-          <ExternalLinkIcon className="w-3.5 h-3.5 shrink-0 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" />
-        </a>
-      ) : (
-        <code className="text-spark-text-secondary font-mono text-xs break-all">
-          {value}
-        </code>
-      )}
-    </div>
-  </CollapsibleSection>
-);
+  /** Show a tap-to-copy button next to the value. */
+  copyable?: boolean;
+}> = ({ label, value, isVisible, onToggle, href, copyable }) => {
+  const [copied, setCopied] = React.useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <CollapsibleSection label={label} isVisible={isVisible} onToggle={onToggle}>
+      <div className="flex items-start gap-2">
+        <div className="overflow-x-auto flex-1 min-w-0">
+          {href ? (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-xs break-all flex items-center gap-1 group"
+            >
+              <span className="text-spark-text-secondary">{value}</span>
+              <ExternalLinkIcon className="w-3.5 h-3.5 shrink-0 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" />
+            </a>
+          ) : (
+            <code className="text-spark-text-secondary font-mono text-xs break-all">
+              {value}
+            </code>
+          )}
+        </div>
+        {copyable && !href && (
+          <button
+            onClick={handleCopy}
+            className="shrink-0 p-1 rounded-md hover:bg-white/5 transition-colors"
+            aria-label="Copy"
+          >
+            {copied
+              ? <CheckIcon size="sm" className="text-spark-success" />
+              : <CopyFilledIcon size="sm" className="text-spark-text-secondary" />}
+          </button>
+        )}
+      </div>
+    </CollapsibleSection>
+  );
+};
 
 // ============================================
 // TEXT COMPONENTS
