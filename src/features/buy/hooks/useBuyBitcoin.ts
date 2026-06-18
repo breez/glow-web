@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
+import { AppLauncher } from '@capacitor/app-launcher';
 import type { Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../../../contexts/WalletContext';
 import { usePlatform } from '../../../hooks/usePlatform';
@@ -174,7 +174,7 @@ export function useBuyBitcoin({
     // Mobile web: pre-open a blank tab synchronously in the tap gesture so
     // navigating it later doesn't trip popup blockers. Native must not do
     // this (or fall back to window.location.href): navigating the WebView
-    // to cash.app strands the user, so the URL goes to Browser.open instead.
+    // to cash.app strands the user.
     const isNative = Capacitor.isNativePlatform();
     const mobileTab = isMobile && !isNative ? window.open('', '_blank') : null;
 
@@ -182,7 +182,12 @@ export function useBuyBitcoin({
       const response = await sdk.buyBitcoin({ type: 'cashApp', amountSats: amountSatsForSdk });
       setGeneratedAmountSats(amountSats);
       if (isNative) {
-        await Browser.open({ url: response.url });
+        // AppLauncher bridges to UIApplication.open, the only iOS API that
+        // hands an https universal link (cash.app/launch/...) off to the
+        // Cash App app. Browser.open (SFSafariViewController) only loads the
+        // web page: iOS suppresses universal-link handoff on a programmatic
+        // in-app-browser load. Falls back to Safari if Cash App is absent.
+        await AppLauncher.openUrl({ url: response.url });
         onMobileRedirectComplete();
       } else if (isMobile) {
         // Navigate immediately: the cash.app universal link only bounces
