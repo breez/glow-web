@@ -175,10 +175,7 @@ export interface BreezSdkActions {
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
   fetchUnclaimedDeposits: () => Promise<void>;
   handleLogout: () => Promise<void>;
-  handleBuyBitcoin: (
-    provider: BuyBitcoinProvider,
-    closeAndWaitForLeave?: () => Promise<void>,
-  ) => Promise<void>;
+  handleBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
   clearError: () => void;
   dismissCelebration: () => void;
   subscribeToSdkEvents: (handler: SdkEventHandler) => SdkEventUnsubscribe;
@@ -829,10 +826,7 @@ export function useBreezSdk(
     }
   }, [connectWallet]);
 
-  const handleBuyBitcoin = useCallback(async (
-    provider: BuyBitcoinProvider,
-    closeAndWaitForLeave?: () => Promise<void>,
-  ) => {
+  const handleBuyBitcoin = useCallback(async (provider: BuyBitcoinProvider) => {
     if (!sdk) return;
     // CashApp requires an amount and is driven by the BuyBitcoinDialog amount step
     // (see useBuyBitcoin.generate), so this top-level handler only covers
@@ -853,9 +847,6 @@ export function useBreezSdk(
 
     try {
       const response = await sdk.buyBitcoin({ type: 'moonpay' });
-      // From the buy dialog: dismiss the sheet and let its leave
-      // transition finish before navigating (#213).
-      await closeAndWaitForLeave?.();
       if (isNative) {
         await Browser.open({ url: response.url });
       } else if (newTab) {
