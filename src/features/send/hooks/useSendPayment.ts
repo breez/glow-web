@@ -113,6 +113,13 @@ export function useSendPayment(): UseSendPaymentReturn {
 
     setIsLoading(true);
     setError(null);
+    // Re-evaluating a destination from scratch: drop the amount, fee choice, and
+    // prepare response from any previous attempt so a re-submitted input (e.g. the
+    // same URI with its amount removed) doesn't carry the old values forward.
+    setAmount('');
+    setFeesIncluded(false);
+    setAmountFixed(false);
+    setPrepareResponse(null);
 
     try {
       const parseResult = await wallet.parse(currentInput);
