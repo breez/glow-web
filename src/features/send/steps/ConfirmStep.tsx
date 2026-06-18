@@ -18,11 +18,14 @@ export interface ConfirmStepProps {
   tokenBalance?: bigint;
   error: string | null;
   isLoading: boolean;
+  /** Force the send action disabled regardless of the balance check, e.g. when
+   *  prepare failed and there is no response to send. */
+  disableConfirm?: boolean;
   onBack?: () => void;
   onConfirm: () => void;
 }
 
-const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncluded, conversionEstimate, balanceSats, tokenBalance, error, isLoading, onBack, onConfirm }) => {
+const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncluded, conversionEstimate, balanceSats, tokenBalance, error, isLoading, disableConfirm, onBack, onConfirm }) => {
   const stableBalance = useStableBalance();
   const isTokenMode = stableBalance.isActive && !!stableBalance.displayConfig && !!conversionEstimate;
   const balance = useBalanceValidation(isTokenMode, undefined, balanceSats, tokenBalance);
@@ -85,7 +88,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
         )}
         <PrimaryButton
           onClick={onConfirm}
-          disabled={isLoading || insufficientBalance}
+          disabled={isLoading || insufficientBalance || disableConfirm}
           className={onBack ? 'flex-1' : 'w-full'}
         >
           {isLoading ? (

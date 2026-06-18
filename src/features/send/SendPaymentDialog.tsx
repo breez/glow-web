@@ -10,6 +10,7 @@ import SparkWorkflow from './workflows/SparkWorkflow';
 import LnurlWorkflow from './workflows/LnurlWorkflow';
 import LnurlAuthWorkflow from './workflows/LnurlAuthWorkflow';
 import AmountStep from './steps/AmountStep';
+import ConfirmStep from './steps/ConfirmStep';
 import ProcessingStep from './steps/ProcessingStep';
 import ResultStep from './steps/ResultStep';
 import ContactsSubView from './components/ContactsSubView';
@@ -82,6 +83,14 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
 
   const lnurlPayDetails = getLnurlPayRequestDetails(send.paymentInput);
   const lnurlAuthDetails = getLnurlAuthRequestDetails(send.paymentInput);
+
+  // Prepare can fail before producing a response (e.g. insufficient funds on a
+  // fixed-amount payment). With no response and no LNURL workflow to render, show
+  // the error on the confirm step with the send action disabled, rather than a
+  // blank step. `amount` holds the attempted sats for the fixed-amount path.
+  const prepareFailed =
+    send.currentStep === 'workflow' && !send.prepareResponse && !lnurlPayDetails && !lnurlAuthDetails && !!send.error;
+  const attemptedAmountSats = /^\d+$/.test(send.amount) ? BigInt(send.amount) : null;
 
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={handleClose} showBackdrop>
@@ -214,6 +223,19 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                     onAuth={async (requestData) => {
                       return await wallet.lnurlAuth(requestData);
                     }}
+                  />
+                )}
+                {prepareFailed && (
+                  <ConfirmStep
+                    amountSats={attemptedAmountSats}
+                    feesSat={null}
+                    balanceSats={send.balanceSats}
+                    tokenBalance={send.tokenBalance}
+                    error={send.error}
+                    isLoading={false}
+                    disableConfirm
+                    onBack={() => send.setCurrentStep('input')}
+                    onConfirm={() => {}}
                   />
                 )}
               </>

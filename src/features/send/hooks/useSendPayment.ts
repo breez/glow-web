@@ -71,8 +71,9 @@ export function useSendPayment(): UseSendPaymentReturn {
     feePolicy?: FeePolicy,
     tokenIdentifier?: string,
     conversionOptions?: ConversionOptions,
-    // Step to return to if prepare fails. Defaults to the amount step, but the
-    // fixed-amount path skips amount entry, so it falls back to input instead.
+    // Step to return to if prepare fails. Defaults to the amount step; the
+    // fixed-amount path skips amount entry and passes 'workflow' so the error
+    // surfaces on the confirm step (with the send action disabled) instead.
     errorStep: SendStep = 'amount',
   ) => {
     if (amount <= 0n) {
@@ -94,6 +95,9 @@ export function useSendPayment(): UseSendPaymentReturn {
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to prepare payment', { error: formatError(err) });
       setError(`Failed to prepare payment ${err instanceof Error ? err.message : 'Unknown error'}`);
+      // Clear any stale response so the confirm step renders its prepare-failed
+      // fallback (error + disabled send) instead of an old success render.
+      setPrepareResponse(null);
       setCurrentStep(errorStep);
     } finally {
       setIsLoading(false);
@@ -163,7 +167,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       if (isPayableAmountType && fixedSats !== undefined) {
         setAmountFixed(true);
         setAmount(String(fixedSats));
-        await prepareSend(paymentRequest, BigInt(fixedSats), undefined, undefined, undefined, 'input');
+        await prepareSend(paymentRequest, BigInt(fixedSats), undefined, undefined, undefined, 'workflow');
       } else if (isPayableAmountType) {
         setAmountFixed(false);
         setCurrentStep('amount');
