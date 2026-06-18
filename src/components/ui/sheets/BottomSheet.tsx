@@ -111,12 +111,6 @@ export interface BottomSheetContainerProps {
   fullHeight?: boolean;
   /** Whether to show a backdrop overlay */
   showBackdrop?: boolean;
-  /**
-   * Fires once the close animation finishes (react-modal-sheet's
-   * onCloseEnd). Never fires while the page is hidden (animations are
-   * paused), so any wait on it must be bounded by a timeout.
-   */
-  afterLeave?: () => void;
 }
 
 export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
@@ -128,7 +122,6 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   maxHeightVh = 100,
   fullHeight = false,
   showBackdrop = false,
-  afterLeave,
 }) => {
   const sheetRef = useRef<SheetRef>(null);
   const [contentPx, setContentPx] = useState<number | null>(null);
@@ -396,7 +389,6 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       ref={sheetRef}
       isOpen={isOpen}
       onClose={dismiss}
-      onCloseEnd={afterLeave}
       onOpenEnd={() => {
         fullyOpen.current = true;
         // Settle the position in case the keyboard resized the WebView

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
+import { AppLauncher } from '@capacitor/app-launcher';
 import type { Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../../../contexts/WalletContext';
 import { usePlatform } from '../../../hooks/usePlatform';
@@ -29,12 +29,8 @@ export interface UseBuyBitcoinOptions {
   network?: Network;
   /** Called for providers that redirect externally (MoonPay). */
   onSelectRedirectProvider: (provider: BuyBitcoinProvider) => Promise<void>;
-  /**
-   * Closes the dialog and resolves once the sheet's leave transition
-   * finishes (bounded). Navigating away earlier restores a stuck
-   * backdrop on return (#213).
-   */
-  closeAndWaitForLeave: () => Promise<void>;
+  /** Called after a mobile/native Cash App redirect; the caller closes the dialog. */
+  onMobileRedirectComplete: () => void;
   /** Called when the displayed QR invoice is paid; the caller typically closes the dialog. */
   onInvoicePaid: () => void;
 }
@@ -71,7 +67,7 @@ export function useBuyBitcoin({
   isOpen,
   network,
   onSelectRedirectProvider,
-  closeAndWaitForLeave,
+  onMobileRedirectComplete,
   onInvoicePaid,
 }: UseBuyBitcoinOptions): UseBuyBitcoinReturn {
   const sdk = useWallet();
@@ -178,25 +174,32 @@ export function useBuyBitcoin({
     // Mobile web: pre-open a blank tab synchronously in the tap gesture so
     // navigating it later doesn't trip popup blockers. Native must not do
     // this (or fall back to window.location.href): navigating the WebView
-    // to cash.app strands the user, so the URL goes to Browser.open instead.
+    // to cash.app strands the user.
     const isNative = Capacitor.isNativePlatform();
     const mobileTab = isMobile && !isNative ? window.open('', '_blank') : null;
 
     try {
       const response = await sdk.buyBitcoin({ type: 'cashApp', amountSats: amountSatsForSdk });
       setGeneratedAmountSats(amountSats);
-      if (isNative || isMobile) {
-        // Close and wait out the sheet's leave transition before
-        // navigating (#213). Tab-handle navigation and Browser.open have
-        // no user-activation deadline, so deferring them is safe.
-        await closeAndWaitForLeave();
-        if (isNative) {
-          await Browser.open({ url: response.url });
-        } else if (mobileTab) {
+      if (isNative) {
+        // AppLauncher bridges to UIApplication.open, the only iOS API that
+        // hands an https universal link (cash.app/launch/...) off to the
+        // Cash App app. Browser.open (SFSafariViewController) only loads the
+        // web page: iOS suppresses universal-link handoff on a programmatic
+        // in-app-browser load. Falls back to Safari if Cash App is absent.
+        await AppLauncher.openUrl({ url: response.url });
+        onMobileRedirectComplete();
+      } else if (isMobile) {
+        // Navigate immediately: the cash.app universal link only bounces
+        // to the app inside the tap's user-activation window, so any await
+        // before this (e.g. a sheet-close animation) drops it to the web
+        // page.
+        if (mobileTab) {
           mobileTab.location.href = response.url;
         } else {
           window.location.href = response.url;
         }
+        onMobileRedirectComplete();
       } else {
         setCashAppUrl(response.url);
         setStep('qr');
@@ -208,7 +211,7 @@ export function useBuyBitcoin({
     } finally {
       setIsGenerating(false);
     }
-  }, [amountSats, isMobile, sdk, closeAndWaitForLeave]);
+  }, [amountSats, isMobile, sdk, onMobileRedirectComplete]);
 
   // Cash App URLs are `https://cash.app/launch/lightning/<bolt11>`. Extract the
   // invoice only while we're showing the QR so the bus subscription pauses

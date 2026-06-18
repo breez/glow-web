@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React from 'react';
 import {
   BottomSheetContainer,
   BottomSheetCard,
@@ -52,19 +52,10 @@ const cashAppHeaderIcon = (
   </div>
 );
 
-/**
- * Upper bound on waiting for the sheet's 200ms leave transition:
- * afterLeave never fires in a hidden page, so the wait must be bounded.
- */
-const SHEET_LEAVE_WAIT_MS = 400;
-
 interface BuyBitcoinDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onBuyBitcoin: (
-    provider: BuyBitcoinProvider,
-    closeAndWaitForLeave?: () => Promise<void>,
-  ) => Promise<void>;
+  onBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
   network?: Network;
 }
 
@@ -76,54 +67,21 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
 }) => {
   const { showToast } = useToast();
 
-  const pendingLeaveWaiters = useRef<Array<() => void>>([]);
-
-  const handleAfterLeave = useCallback(() => {
-    const waiters = pendingLeaveWaiters.current;
-    pendingLeaveWaiters.current = [];
-    waiters.forEach((resolve) => resolve());
-  }, []);
-
-  // Close the sheet and wait out its leave transition so a buy redirect
-  // never navigates mid-close (#213). Races afterLeave against a timeout;
-  // skipped when the page is already hidden (pre-opened tab in front),
-  // where BottomSheetContainer's self-heal repairs the state on return.
-  const closeAndWaitForLeave = useCallback(() => {
-    onClose();
-    if (document.visibilityState === 'hidden') return Promise.resolve();
-    return new Promise<void>((resolve) => {
-      let settled = false;
-      const settle = () => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve();
-      };
-      const timer = setTimeout(settle, SHEET_LEAVE_WAIT_MS);
-      pendingLeaveWaiters.current.push(settle);
-    });
-  }, [onClose]);
-
-  const handleRedirectProvider = useCallback(
-    (provider: BuyBitcoinProvider) => onBuyBitcoin(provider, closeAndWaitForLeave),
-    [onBuyBitcoin, closeAndWaitForLeave],
-  );
-
   const buy = useBuyBitcoin({
     isOpen,
     network,
-    onSelectRedirectProvider: handleRedirectProvider,
-    closeAndWaitForLeave,
+    onSelectRedirectProvider: onBuyBitcoin,
+    onMobileRedirectComplete: onClose,
     onInvoicePaid: onClose,
   });
 
+  const handleSelect = async (provider: BuyBitcoinProvider) => {
+    await buy.selectProvider(provider);
+    if (provider === 'moonpay') onClose();
+  };
+
   return (
-    <BottomSheetContainer
-      isOpen={isOpen}
-      onClose={onClose}
-      showBackdrop
-      afterLeave={handleAfterLeave}
-    >
+    <BottomSheetContainer isOpen={isOpen} onClose={onClose} showBackdrop>
       <BottomSheetCard>
         {buy.step === 'select' && (
           <>
@@ -139,7 +97,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                 return (
                   <button
                     key={provider}
-                    onClick={() => void buy.selectProvider(provider)}
+                    onClick={() => handleSelect(provider)}
                     disabled={buy.redirectingProvider !== null}
                     className="w-full flex items-center gap-4 p-4 rounded-2xl border border-spark-border hover:border-spark-primary/40 hover:bg-spark-primary/5 transition-all text-left disabled:opacity-50"
                   >
