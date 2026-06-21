@@ -9,6 +9,7 @@ import BitcoinWorkflow from './workflows/BitcoinWorkflow';
 import SparkWorkflow from './workflows/SparkWorkflow';
 import LnurlWorkflow from './workflows/LnurlWorkflow';
 import LnurlAuthWorkflow from './workflows/LnurlAuthWorkflow';
+import CrossChainWorkflow from './workflows/CrossChainWorkflow';
 import AmountStep from './steps/AmountStep';
 import ConfirmStep from './steps/ConfirmStep';
 import ProcessingStep from './steps/ProcessingStep';
@@ -20,6 +21,7 @@ import { formatError } from '@/utils/formatError';
 import { ArrowUpIcon } from '@/components/Icons';
 import { useSendPayment } from './hooks/useSendPayment';
 import { getPaymentMethodName, getLnurlPayRequestDetails, getLnurlAuthRequestDetails } from './utils';
+import { isCrossChainEnabled } from '@/services/settings';
 
 interface SendPaymentDialogProps {
   isOpen: boolean;
@@ -78,7 +80,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
   };
 
   const dialogTitle = send.currentStep === 'input'
-    ? 'Send'
+    ? (isCrossChainEnabled() ? 'Send BTC or USD' : 'Send BTC')
     : getPaymentMethodName(send.paymentInput);
 
   const recipientLabel = useMemo(() => {
@@ -163,6 +165,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 error={send.error}
                 onBack={backToInput}
                 onNext={send.onAmountNext}
+                amountFirst={send.paymentInput?.parsedInput.type === 'crossChainAddress'}
               />
             )}
 
@@ -241,6 +244,17 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                     disableConfirm
                     onBack={backToInput}
                     onConfirm={() => {}}
+                  />
+                )}
+                {send.paymentInput?.parsedInput.type === 'crossChainAddress' && (
+                  <CrossChainWorkflow
+                    addressDetails={send.paymentInput.parsedInput}
+                    amountSats={parseInt(send.amount) || 0}
+                    feesIncluded={send.feesIncluded}
+                    tokenIdentifier={send.tokenIdentifier}
+                    conversionOptions={send.conversionOptions}
+                    onBack={send.backToAmount}
+                    onRun={send.handleRun}
                   />
                 )}
               </>

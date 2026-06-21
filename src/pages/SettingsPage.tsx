@@ -79,6 +79,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     if (typeof cfg.preferSparkOverLightning === 'boolean') return cfg.preferSparkOverLightning;
     return false;
   });
+  const [crossChainEnabled, setCrossChainEnabled] = useState<boolean>(
+    () => getSettings().crossChainEnabled === true,
+  );
 
   const [sparkPrivateModeEnabled, setSparkPrivateModeEnabled] = useState<boolean>(true);
   const [isLoadingUserSettings, setIsLoadingUserSettings] = useState<boolean>(true);
@@ -137,6 +140,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         syncIntervalSecs: syncIntervalSecs !== '' ? Math.max(0, Math.floor(Number(syncIntervalSecs))) : undefined,
         lnurlDomain: lnurlDomain !== '' ? lnurlDomain : undefined,
         preferSparkOverLightning,
+        crossChainEnabled,
       };
       saveSettings(updated);
     }
@@ -332,6 +336,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 <Switch
                   checked={preferSparkOverLightning}
                   onChange={() => setPreferSparkOverLightning(!preferSparkOverLightning)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Cross-chain (Send USD) — in review */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <span className="font-display font-medium text-spark-text-primary block">Send USD</span>
+                  <span className="text-sm text-spark-text-muted">Enable sending to USDC/USDT addresses on other chains</span>
+                </div>
+                <Switch
+                  checked={crossChainEnabled}
+                  onChange={() => setCrossChainEnabled(!crossChainEnabled)}
                 />
               </div>
             </div>

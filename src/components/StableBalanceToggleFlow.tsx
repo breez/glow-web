@@ -103,7 +103,7 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
       setStep('estimating');
 
       const prepareResponse = await wallet.prepareSendPayment({
-        paymentRequest: sparkAddress,
+        paymentRequest: { type: 'input', input: sparkAddress },
         amount,
         tokenIdentifier: direction === 'toToken' ? USDB_TOKEN_IDENTIFIER : undefined,
         conversionOptions: { conversionType },

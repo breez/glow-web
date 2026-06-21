@@ -15,6 +15,15 @@ export interface UseAmountInputOptions {
   balanceSats?: number;
   /** User's token balance in base units. Required for the token-balance display helper. */
   tokenBalance?: bigint;
+  /**
+   * Fiat input config for flows that denominate in a fiat currency *without*
+   * holding a stable-balance token (e.g. cross-chain "Send USD" funded by BTC).
+   * Only takes effect when stable balance is inactive; when active, the
+   * stable-balance config wins. When present, the hook starts in fiat
+   * ("token") mode and uses this config/rate for parsing and display — the
+   * fiat amount is converted to sats via `btcFiatRate`.
+   */
+  fiatOverride?: { config: TokenDisplayConfig; btcFiatRate: number };
 }
 
 export interface UseAmountInputResult {
@@ -91,21 +100,27 @@ export interface UseAmountInputResult {
  * concerns — pass balances in here and use the returned helpers.
  */
 export function useAmountInput(options: UseAmountInputOptions = {}): UseAmountInputResult {
-  const { initialAmount = '', balanceSats, tokenBalance } = options;
+  const { initialAmount = '', balanceSats, tokenBalance, fiatOverride } = options;
   const stableBalance = useStableBalance();
-  const config = stableBalance.displayConfig;
-  const btcFiatRate = stableBalance.btcFiatRate;
 
-  const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive);
+  // When stable balance is off, a fiat override (e.g. cross-chain "Send USD")
+  // supplies the currency config + rate so the user can still denominate in
+  // fiat. Stable balance always wins when active.
+  const fiatOverrideActive = !stableBalance.isActive && !!fiatOverride;
+  const config = stableBalance.isActive ? stableBalance.displayConfig : (fiatOverride?.config ?? null);
+  const btcFiatRate = stableBalance.isActive ? stableBalance.btcFiatRate : (fiatOverride?.btcFiatRate ?? 0);
+
+  const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive || fiatOverrideActive);
   const [amountInput, setAmountInput] = useState(initialAmount);
 
   // Adjust-state-on-prop-change pattern (React docs): when stable
   // balance flips off mid-flow, drop token mode and clear the input
-  // so the no-longer-toggleable fiat value doesn't get stuck.
+  // so the no-longer-toggleable fiat value doesn't get stuck. Skipped when a
+  // fiat override is in play — fiat mode is intentional there, not stale.
   const [prevStableActive, setPrevStableActive] = useState(stableBalance.isActive);
   if (prevStableActive !== stableBalance.isActive) {
     setPrevStableActive(stableBalance.isActive);
-    if (!stableBalance.isActive && isTokenMode) {
+    if (!stableBalance.isActive && isTokenMode && !fiatOverride) {
       setIsTokenMode(false);
       setAmountInput('');
     }

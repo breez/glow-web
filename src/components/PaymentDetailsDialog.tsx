@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import type { Payment } from '@breeztech/breez-sdk-spark';
-import type { ConversionStep } from '@breeztech/breez-sdk-spark';
+import type { Payment, ConversionSide, TokenMetadata } from '@breeztech/breez-sdk-spark';
 import {
   DialogHeader, PaymentInfoCard, PaymentInfoRow,
   CollapsibleCodeField, CollapsibleSection, BottomSheetContainer, BottomSheetCard
@@ -10,7 +9,8 @@ import { useStableBalance } from '../contexts/StableBalanceContext';
 import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig } from '../utils/tokenFormatting';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
-import { getPaymentDescription } from '../utils/paymentDescription';
+import { getPaymentDescription, getProviderDisplayName, isCrossChainPayment } from '../utils/paymentDescription';
+import { capitalizeFirst, getCrossChainDestination, formatReceiveAmount } from '../utils/crossChainFormat';
 
 interface PaymentDetailsDialogProps {
   optionalPayment: Payment | null;
@@ -32,6 +32,7 @@ const getDefaultVisibleFields = () => ({
   lnAddress: false,
   lnurlDomain: false,
   conversionDetails: false,
+  recipientAddress: false,
 });
 
 const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPayment, onClose }) => {
@@ -71,13 +72,18 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   );
   const payment = optionalPayment!;
 
-  // Format a conversion step's amount or fee in its native unit
-  const formatStepValue = (step: ConversionStep, value: bigint, isFee?: boolean): string => {
-    if (step.method === 'token' && step.tokenMetadata) {
-      const config = stableBalance.displayConfig ?? buildTokenDisplayConfig(step.tokenMetadata, fiatCurrencies);
-      return formatTokenAmount(value, config, isFee ? { fullPrecision: true } : undefined);
+  // Format a conversion side's amount or fee in its native unit
+  // Note: side.amount and side.fee are strings from WASM (u128 serialized as string)
+  const formatSideValue = (side: ConversionSide, isFee?: boolean): string => {
+    const value = BigInt(isFee ? side.fee : side.amount);
+    if (side.asset.ticker === 'BTC') {
+      return `₿${formatWithSpaces(Number(value))}`;
     }
-    return `₿${formatWithSpaces(Number(value))}`;
+    const config = stableBalance.displayConfig ?? buildTokenDisplayConfig(
+      { ticker: side.asset.ticker, decimals: side.asset.decimals } as TokenMetadata,
+      fiatCurrencies,
+    );
+    return formatTokenAmount(value, config, isFee ? { fullPrecision: true } : undefined);
   };
 
   // Format a fee value in the payment's native denomination
@@ -91,7 +97,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
 
   // When the conversion amount was adjusted (min limit floor or dust prevention),
   // the token amount doesn't match the payment — show sats instead.
-  const isAmountAdjusted = !!payment.conversionDetails?.from?.amountAdjustment;
+  const isAmountAdjusted = payment.conversionDetails?.conversions?.some(c => !!c.amountAdjustment) ?? false;
   const tokenInfo = getTokenAmountFromPayment(payment);
   const tokenDisplayConfig = stableBalance.displayConfig
     ?? (tokenInfo ? buildTokenDisplayConfig(tokenInfo.metadata, fiatCurrencies) : null);
@@ -103,6 +109,11 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   const feeDisplay = payment.fees > 0
     ? (isAmountAdjusted ? `₿${formatWithSpaces(Number(payment.fees))}` : formatPaymentFee(BigInt(payment.fees)))
     : null;
+
+  // Cross-chain ("USD Transfer"): surface the destination (recipient address +
+  // chain/asset) the funds landed on, instead of leading with the internal
+  // BOLT11/spark source leg. Null for all non-cross-chain payments.
+  const dest = isCrossChainPayment(payment) ? getCrossChainDestination(payment) : null;
 
   return (
     <BottomSheetContainer isOpen={optionalPayment != null} onClose={onClose}>
@@ -128,7 +139,31 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               value={formatDateTime(payment.timestamp)}
             />
 
-            {payment.details?.type === 'lightning' && payment.details.description && (
+            {/* Cross-chain destination — what chain/asset it landed on + recipient */}
+            {dest?.deliveredAmount !== undefined && dest.assetDecimals !== undefined && dest.assetTicker && (
+              <PaymentInfoRow
+                label="Received Amount"
+                value={`~${formatReceiveAmount(dest.deliveredAmount, dest.assetDecimals)} ${dest.assetTicker}`}
+              />
+            )}
+            {dest?.chainName && (
+              <PaymentInfoRow
+                label="Network"
+                value={capitalizeFirst(dest.chainName)}
+              />
+            )}
+            {dest?.recipientAddress && (
+              <CollapsibleCodeField
+                label="Recipient Address"
+                value={dest.recipientAddress}
+                isVisible={visibleFields.recipientAddress}
+                onToggle={() => toggleField('recipientAddress')}
+                copyable
+              />
+            )}
+
+            {/* Description is noise for cross-chain (it's the internal BOLT11 leg) */}
+            {!dest && payment.details?.type === 'lightning' && payment.details.description && (
               payment.details.description.length > LONG_TEXT_THRESHOLD ? (
                 <CollapsibleCodeField
                   label="Description"
@@ -204,7 +239,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               />
             )}
 
-            {payment.details?.type === 'lightning' && payment.details.htlcDetails?.preimage && (
+            {!dest && payment.details?.type === 'lightning' && payment.details.htlcDetails?.preimage && (
               <CollapsibleCodeField
                 label="Payment Preimage"
                 value={payment.details.htlcDetails.preimage}
@@ -213,7 +248,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               />
             )}
 
-            {payment.details?.type === 'lightning' && payment.details.destinationPubkey && (
+            {!dest && payment.details?.type === 'lightning' && payment.details.destinationPubkey && (
               <CollapsibleCodeField
                 label="Destination Public Key"
                 value={payment.details.destinationPubkey}
@@ -276,55 +311,49 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
 
 
             {/* Conversion Details — shows original payment values */}
-            {payment.conversionDetails && (
+            {(() => {
+              const conversions = payment.conversionDetails?.conversions;
+              if (!conversions?.length) return null;
+              return (
               <CollapsibleSection
                 label="Conversion Details"
                 isVisible={visibleFields.conversionDetails}
                 onToggle={() => toggleField('conversionDetails')}
+                bare
               >
-                {payment.conversionDetails.from && (
-                  <PaymentInfoRow
-                    label="Initial Amount"
-                    value={formatStepValue(payment.conversionDetails.from, payment.conversionDetails.from.amount)}
-                  />
-                )}
-                {payment.conversionDetails.to && (
-                  <PaymentInfoRow
-                    label="Converted Amount"
-                    value={formatStepValue(payment.conversionDetails.to, payment.conversionDetails.to.amount)}
-                  />
-                )}
-                {(() => {
-                  // Find the fee from whichever step has it
-                  const fromStep = payment.conversionDetails!.from;
-                  const toStep = payment.conversionDetails!.to;
-                  const fee = fromStep?.fee != null && fromStep.fee > 0n ? fromStep.fee
-                    : (toStep?.fee != null && toStep.fee > 0n) ? toStep.fee
-                    : null;
-                  if (fee != null && fee > 0n) {
-                    // Always denominate using the token step when available
-                    const tokenStep = fromStep?.method === 'token' ? fromStep
-                      : toStep?.method === 'token' ? toStep
-                      : null;
-                    const feeFormatted = formatStepValue(tokenStep ?? fromStep ?? toStep!, fee, true);
-                    return <PaymentInfoRow label="Fee" value={feeFormatted} />;
-                  }
-                  // Fall back to conversionInfo.fee — denominated in the token side's units
-                  const conversionInfoFee = (payment.details?.type === 'spark' || payment.details?.type === 'token')
-                    ? payment.details.conversionInfo?.fee : undefined;
-                  if (!conversionInfoFee || conversionInfoFee === '0') return null;
-                  // Format using the token step metadata if available
-                  const tokenStep = fromStep?.method === 'token' ? fromStep
-                    : toStep?.method === 'token' ? toStep : null;
-                  const feeFormatted = tokenStep?.tokenMetadata
-                    ? formatTokenAmount(BigInt(conversionInfoFee),
-                        stableBalance.displayConfig ?? buildTokenDisplayConfig(tokenStep.tokenMetadata, fiatCurrencies),
-                        { fullPrecision: true })
-                    : formatPaymentFee(BigInt(conversionInfoFee));
-                  return <PaymentInfoRow label="Fee" value={feeFormatted} />;
-                })()}
+                <div className="space-y-3">
+                  {conversions.map((conv, i) => {
+                    const isCrossChain = conv.provider === 'orchestra' || conv.provider === 'boltz';
+                    const fromFee = BigInt(conv.from.fee);
+                    const toFee = BigInt(conv.to.fee);
+                    const feeSide = isCrossChain ? conv.to : (fromFee > 0n ? conv.from : conv.to);
+                    return (
+                      <div
+                        key={i}
+                        className="bg-spark-surface border border-spark-border/50 rounded-lg px-3"
+                      >
+                        <PaymentInfoRow
+                          label="Provider"
+                          value={getProviderDisplayName(conv.provider)}
+                        />
+                        <PaymentInfoRow
+                          label="Initial Amount"
+                          value={formatSideValue(conv.from)}
+                        />
+                        <PaymentInfoRow
+                          label="Converted Amount"
+                          value={formatSideValue(conv.to)}
+                        />
+                        {(fromFee > 0n || toFee > 0n) && (
+                          <PaymentInfoRow label="Fee" value={formatSideValue(feeSide, true)} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </CollapsibleSection>
-            )}
+              );
+            })()}
 
           </PaymentInfoCard>
         </div>

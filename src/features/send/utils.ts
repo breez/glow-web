@@ -16,6 +16,8 @@ export function getPaymentMethodName(input: SendInput | null): string {
       return 'Lightning Address';
     case 'lnurlAuth':
       return 'LNURL Auth';
+    case 'crossChainAddress':
+      return 'Send USD';
     default:
       return 'Payment';
   }
