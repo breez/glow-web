@@ -1159,25 +1159,28 @@ main {
   }
 }
 
+/* translateZ(0) keeps each star on its own GPU layer for the whole
+   animation so iOS Safari renders its box-shadow glow outside the logo
+   box instead of clipping it (see GlowLogo img for the same reason). */
 @keyframes twinkle-settle {
   0% {
     opacity: 0;
-    transform: scale(0);
+    transform: scale(0) translateZ(0);
   }
 
   25% {
     opacity: 1;
-    transform: scale(1.25);
+    transform: scale(1.25) translateZ(0);
   }
 
   45% {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translateZ(0);
   }
 
   100% {
     opacity: 0;
-    transform: scale(0.6);
+    transform: scale(0.6) translateZ(0);
   }
 }
 
