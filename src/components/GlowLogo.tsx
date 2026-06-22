@@ -53,6 +53,11 @@ const GlowLogo: React.FC<GlowLogoProps> = ({
         alt={alt}
         className={`w-full h-full object-contain ${imgClassName}`}
         onClick={onClick}
+        // translateZ(0) puts the drop-shadow on its own GPU layer so iOS
+        // Safari doesn't clip it to this box (overflow:visible is ignored
+        // for composited descendants when a blurred sibling forces the
+        // wrapper to composite).
+        style={{ transform: 'translateZ(0)' }}
       />
       {DOTS.map((dot, i) => (
         <span
