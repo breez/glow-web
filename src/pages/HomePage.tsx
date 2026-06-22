@@ -63,7 +63,12 @@ const HomePage: React.FC<HomePageProps> = ({
   }, []);
 
   return (
-    <div className="h-full w-full flex flex-col bg-spark-dark relative overflow-hidden">
+    <div className="h-full w-full flex flex-col bg-spark-dark relative">
+      {/* No `overflow-hidden` on this root: it makes iOS Safari clip the
+          logo's composited glow (drop-shadow filter + blurred halo +
+          box-shadow dots) to a rectangle. The background effects are
+          already clipped by their own inner wrapper, and html/body/#root
+          clip at the viewport, so the page still can't scroll. */}
       {/* Background layer - extends behind all safe areas. Uses
           spark-dark (matched by the system bars via STATUS_BAR_DARK
           and the native splash background) so the landing surface
