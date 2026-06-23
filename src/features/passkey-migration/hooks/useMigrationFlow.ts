@@ -47,7 +47,6 @@ export interface MigrationFlow {
   error: string | null;
   unclaimedCount: number;
   confirmedLabels: string[];
-  currentLabelIndex: number;
   primaryLabel: string;
   isInFlight: boolean;
   spinnerText: string;
@@ -622,7 +621,6 @@ export function useMigrationFlow({
     error,
     unclaimedCount,
     confirmedLabels,
-    currentLabelIndex,
     primaryLabel,
     isInFlight,
     spinnerText,
