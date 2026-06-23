@@ -18,6 +18,7 @@ import GeneratePage from './pages/GeneratePage';
 import GetRefundPage from './pages/GetRefundPage';
 import BackupPage from './pages/BackupPage';
 import PasskeyPage from './pages/PasskeyPage';
+import PasskeyMigrationModal, { type MigrationEntry, type MigrationOutcome } from './components/PasskeyMigrationModal';
 import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import BuyProvidersPage from './pages/BuyProvidersPage';
@@ -37,7 +38,7 @@ import { useIOSViewportFix } from './hooks/useIOSViewportFix';
 import { useStatusBarColor } from './hooks/useStatusBarColor';
 import { STATUS_BAR_LOADING } from './utils/statusBarManager';
 import { useBackButton } from './hooks/useBackButton';
-import type { Seed, Payment } from '@breeztech/breez-sdk-spark';
+import type { Seed, Payment, BreezSdk } from '@breeztech/breez-sdk-spark';
 
 type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState';
 
@@ -79,6 +80,11 @@ const AppContent: React.FC = () => {
   // cross-device QR picker on the first click of a fresh-user
   // onboarding. Read by PasskeyPage as the `skipDetection` prop.
   const [passkeySkipDetection, setPasskeySkipDetection] = useState(false);
+  // Passkey-RP migration modal state.
+  const [migrationModalOpen, setMigrationModalOpen] = useState(false);
+  const [migrationEntry, setMigrationEntry] = useState<MigrationEntry>('banner');
+  const migrationResolveRef = useRef<((outcome: MigrationOutcome) => void) | null>(null);
+  const hasAutoOpenedMigrationRef = useRef(false);
   const { showToast } = useToast();
   const formatPaymentAmountRef = useRef<((payment: Payment) => string) | undefined>(undefined);
 
@@ -117,6 +123,49 @@ const AppContent: React.FC = () => {
     setPasskeySdkConnected(false);
     setUserScreen('wallet');
   }, []);
+
+  // Auto-open the migration banner once per page load when a legacy-RP wallet
+  // connects and ROR migration is still pending.
+  useEffect(() => {
+    if (
+      sdk.isConnected
+      && sdk.needsPasskeyMigration
+      && !migrationModalOpen
+      && !hasAutoOpenedMigrationRef.current
+    ) {
+      hasAutoOpenedMigrationRef.current = true;
+      setMigrationEntry('banner');
+      setMigrationModalOpen(true);
+    }
+  }, [sdk.isConnected, sdk.needsPasskeyMigration, migrationModalOpen]);
+
+  // Opened from PasskeyPage when no ROR credential is found: the modal probes
+  // for a legacy passkey to migrate. Resolves 'proceed' (caller may create a
+  // fresh ROR passkey) or 'handled' (migration ran or the user cancelled).
+  const requestMigrationCheck = useCallback((): Promise<MigrationOutcome> => {
+    return new Promise<MigrationOutcome>((resolve) => {
+      migrationResolveRef.current = resolve;
+      setMigrationEntry('login');
+      setMigrationModalOpen(true);
+    });
+  }, []);
+
+  const handleMigrationClose = useCallback((outcome: MigrationOutcome) => {
+    setMigrationModalOpen(false);
+    const resolve = migrationResolveRef.current;
+    migrationResolveRef.current = null;
+    resolve?.(outcome);
+  }, []);
+
+  const handleMigrationSwitch = useCallback(async (newSdk: BreezSdk, label: string) => {
+    await sdk.adoptMigratedSdk(newSdk, label);
+    setMigrationModalOpen(false);
+    const resolve = migrationResolveRef.current;
+    migrationResolveRef.current = null;
+    resolve?.('handled');
+    setPasskeySdkConnected(false);
+    setUserScreen('wallet');
+  }, [sdk]);
 
   const handleLogout = async () => {
     setUserScreen('home');
@@ -321,6 +370,7 @@ const AppContent: React.FC = () => {
             onFlowComplete={handlePasskeyFlowComplete}
             consumeFreshInstallSignal={sdk.consumeFreshInstallSignal}
             skipDetection={passkeySkipDetection}
+            onRequestMigrationCheck={requestMigrationCheck}
           />
         );
 
@@ -503,6 +553,13 @@ const AppContent: React.FC = () => {
                 onClose={sdk.dismissCelebration}
               />
             )}
+            <PasskeyMigrationModal
+              isOpen={migrationModalOpen}
+              entry={migrationEntry}
+              activeLegacySdk={sdk.sdk}
+              onClose={handleMigrationClose}
+              onSwitchToNewWallet={handleMigrationSwitch}
+            />
             <InstallPrompt />
             <OfflineBanner />
           </StableBalanceProvider>

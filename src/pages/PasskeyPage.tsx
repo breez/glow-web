@@ -14,6 +14,8 @@ import {
   listLabels,
   saveLabel,
   setPasskeyMode,
+  isPasskeyMigrated,
+  setPasskeyMigrated,
   consumePendingSwitchFromCredentialId,
   recordRegisteredCredential,
   signInPinnedToActiveCredential,
@@ -25,6 +27,7 @@ import {
   PasskeyTimedOutError,
   createPasskeyTimestampLabel,
   supportsImmediateGet,
+  ROR_RP_ID,
 } from '@/services/passkeyPrfProvider';
 
 import { logger, LogCategory } from '@/services/logger';
@@ -71,6 +74,13 @@ interface PasskeyPageProps {
    * of `detecting` while the synced credential records propagate.
    */
   consumeFreshInstallSignal?: () => boolean;
+  /**
+   * Probe for a legacy-RP passkey to migrate when no credential is found
+   * under the (ROR) default RP ID. Resolves 'proceed' (no legacy passkey;
+   * caller may create a fresh wallet) or 'handled' (migration ran / cancelled
+   * and App took over).
+   */
+  onRequestMigrationCheck?: () => Promise<'proceed' | 'handled'>;
 }
 
 // 5s under the OS's ~60s WebAuthn inactivity ceiling: anything past
@@ -90,6 +100,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   onFlowComplete,
   skipDetection = false,
   consumeFreshInstallSignal,
+  onRequestMigrationCheck,
 }) => {
   // Post-AASA transition branches on `skipDetection`: straight to
   // 'creating' for the Create CTA, 'detecting' for Use Passkey.
@@ -127,6 +138,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   >(null);
 
   const onWalletRestoredRef = useLatest(onWalletRestored);
+  const onRequestMigrationCheckRef = useLatest(onRequestMigrationCheck);
   const onFlowCompleteRef = useLatest(onFlowComplete);
 
   const connectLabelRef = useRef<string | undefined>(undefined);
@@ -428,6 +440,24 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         //      retryable error, no Create offer.
         //   4. Anything else → generic error with retry + Create
         //      escape hatch.
+        // No passkey on this device. Under a configured ROR RP ID the user may
+        // still hold a legacy-RP passkey to migrate, so offer that before
+        // starting a brand-new wallet. 'handled' = migration ran or the user
+        // cancelled (App took over); 'proceed' = no legacy passkey, fall
+        // through to the normal new-user create flow (and don't re-prompt).
+        const looksLikeNewUser = isCredentialNotFound || (isCancelled && elapsedMs < FAST_FAIL_MAX_MS);
+        if (looksLikeNewUser && ROR_RP_ID && !isPasskeyMigrated()) {
+          const migrationCheck = onRequestMigrationCheckRef.current;
+          if (migrationCheck) {
+            logger.info(LogCategory.AUTH, 'No ROR credential on a new device; offering passkey-RP migration', { errorCode });
+            const outcome = await migrationCheck();
+            if (cancelled) return;
+            if (outcome === 'handled') return;
+            setPasskeyMigrated();
+          } else {
+            setPasskeyMigrated();
+          }
+        }
         if (isCredentialNotFound) {
           logger.info(LogCategory.AUTH, 'No existing passkey (deterministic), starting new user flow', { errorCode });
           setIsNewUser(true);
@@ -494,7 +524,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       // than the prior attempt's "Discovering labels…".
       setIsDiscoveringLabels(false);
     };
-  }, [phase]);
+  }, [phase, onRequestMigrationCheckRef]);
 
   // New user: transition phase that anchors the `renderCreating`
   // spinner. The SDK's `register` collapses create + derive +

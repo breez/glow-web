@@ -34,7 +34,12 @@ import {
   pinActivePasskeyCredentialId,
   signInPinnedToActiveCredential,
   setPendingSwitchFromCredentialId,
+  getPasskeyRpId,
+  setPasskeyRpId,
+  isMigrationInProgress,
+  isPasskeyMigrated,
 } from '../services/passkeyService';
+import { LEGACY_RP_ID, ROR_RP_ID, rpId as defaultRpId } from '../services/passkeyPrfProvider';
 import { secureStorage, deviceOnlyStorage, SecureStorageError } from '../services/secureStorage';
 
 
@@ -133,6 +138,12 @@ export interface BreezSdkState {
   error: string | null;
   hasRejectedDeposits: boolean;
   celebrationPayment: Payment | null;
+  /**
+   * True when the connected wallet is on the legacy RP ID while a distinct ROR
+   * RP ID is configured and migration hasn't been done/skipped. Drives the
+   * migration banner. Only ever true when ROR_RP_ID is configured.
+   */
+  needsPasskeyMigration: boolean;
   prfAvailable: boolean;
   hasPasskeyBefore: boolean;
   /**
@@ -176,7 +187,16 @@ export interface BreezSdkActions {
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
   fetchUnclaimedDeposits: () => Promise<void>;
   handleLogout: () => Promise<void>;
-  handleBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
+  /**
+   * Adopt the (already connected + synced) new SDK produced by the passkey-RP
+   * migration as the active wallet, keeping mnemonic / stable-ticker / network
+   * state since it is the same wallet from the user's view.
+   */
+  adoptMigratedSdk: (newSdk: BreezSdk, label: string) => Promise<void>;
+  handleBuyBitcoin: (
+    provider: BuyBitcoinProvider,
+    closeAndWaitForLeave?: () => Promise<void>,
+  ) => Promise<void>;
   clearError: () => void;
   dismissCelebration: () => void;
   subscribeToSdkEvents: (handler: SdkEventHandler) => SdkEventUnsubscribe;
@@ -239,6 +259,7 @@ export function useBreezSdk(
   const [config, setConfig] = useState<Config | null>(null);
   const [hasRejectedDeposits, setHasRejectedDeposits] = useState(false);
   const [celebrationPayment, setCelebrationPayment] = useState<Payment | null>(null);
+  const [needsPasskeyMigration, setNeedsPasskeyMigration] = useState(false);
   const [prfAvailable, setPrfAvailable] = useState(false);
   const [startupState, setStartupState] = useState<StartupState>('loading');
   const [isSecuringSeed, setIsSecuringSeed] = useState(false);
@@ -340,7 +361,7 @@ export function useBreezSdk(
           'conversionInfo' in event.payment.details &&
           event.payment.details.conversionInfo != null;
 
-        if (!hasConversionInfo && isReceived) {
+        if (!hasConversionInfo && isReceived && !isMigrationInProgress()) {
           setCelebrationPayment(event.payment);
         }
         // Send toast suppressed: ResultStep dialog already shows success
@@ -424,8 +445,18 @@ export function useBreezSdk(
       // passkey mode if secure storage is unavailable later
       // (KEY_INVALIDATED on biometric change).
       if (passkeyLabel != null) {
-        setPasskeyMode(passkeyLabel);
+        // Persist the RP ID this wallet was derived under so the next
+        // sign-in/resume targets the same one. Resume backfills the stored
+        // value before calling connectWallet; a fresh connect (no stored RP
+        // ID yet) records the default (ROR when configured, else legacy).
+        setPasskeyMode(passkeyLabel, getPasskeyRpId() ?? defaultRpId);
         markLabelUsed(passkeyLabel);
+        // Offer migration when this wallet is still on the legacy RP ID and a
+        // distinct ROR RP ID is configured and not yet migrated/skipped.
+        const onLegacyRp = (getPasskeyRpId() ?? LEGACY_RP_ID) === LEGACY_RP_ID;
+        setNeedsPasskeyMigration(
+          !!ROR_RP_ID && ROR_RP_ID !== LEGACY_RP_ID && !isPasskeyMigrated() && onLegacyRp,
+        );
       }
 
       // Write the seed to the right tier for this mode. Skip entirely
@@ -551,11 +582,59 @@ export function useBreezSdk(
     setError(null);
     setHasRejectedDeposits(false);
     setCelebrationPayment(null);
+    setNeedsPasskeyMigration(false);
     setIsLoading(false);
     setStartupState('no-wallet');
     clearNetworkOverride();
     showToast('success', 'Successfully logged out');
   }, [sdk, showToast]);
+
+  const adoptMigratedSdk = useCallback(async (newSdk: BreezSdk, label: string): Promise<void> => {
+    logger.info(LogCategory.AUTH, 'Adopting migrated SDK', { label });
+
+    // Disconnect the legacy SDK we were running. Unlike handleLogout this keeps
+    // mnemonic / stable-ticker / network state: from the user's view it is the
+    // same wallet, now under the ROR RP ID.
+    const oldSdk = sdk;
+    if (oldSdk) {
+      try {
+        await oldSdk.disconnect();
+      } catch (e) {
+        logger.warn(LogCategory.SDK, 'Old SDK disconnect failed during migration adoption', { error: formatError(e) });
+      }
+    }
+
+    // Take ownership of the already connected + synced new SDK. The migration
+    // modal recorded the ROR credential as active; here we set mode + RP ID so
+    // resume targets the new wallet.
+    setSdk(newSdk);
+    setPasskeyMode(label, ROR_RP_ID ?? defaultRpId);
+    markLabelUsed(label);
+    shownPaymentIdsRef.current.clear();
+    setCelebrationPayment(null);
+
+    try {
+      const [info, txns] = await Promise.all([
+        newSdk.getInfo({}),
+        newSdk.listPayments({ offset: 0, limit: 100 }),
+      ]);
+      setWalletInfo(info);
+      setTransactions(filterOngoingConversionPayments(txns.payments));
+    } catch (e) {
+      logger.error(LogCategory.SDK, 'Failed to load migrated wallet data', { error: formatError(e) });
+    }
+    setIsConnected(true);
+    setIsSyncing(false);
+    setNeedsPasskeyMigration(false);
+
+    try {
+      const result = await newSdk.listUnclaimedDeposits({});
+      setUnclaimedDeposits(result.deposits);
+      setHasRejectedDeposits(result.deposits.some(d => isDepositRejected(d.txid, d.vout)));
+    } catch (e) {
+      logger.warn(LogCategory.SDK, 'Failed to load deposits for migrated wallet', { error: formatError(e) });
+    }
+  }, [sdk]);
 
   const switchPasskeyLabel = useCallback(async (newLabel: string): Promise<void> => {
     setIsLoading(true);
@@ -572,7 +651,9 @@ export function useBreezSdk(
       // Switching label stays on the same passkey, so this pins to the
       // active credential rather than letting the OS picker derive the
       // new label under a different identity.
-      const result = await signInPinnedToActiveCredential(newLabel);
+      // Same passkey, same RP ID the active session uses (legacy for a
+      // not-yet-migrated user, ROR after migration).
+      const result = await signInPinnedToActiveCredential(newLabel, getPasskeyRpId() ?? LEGACY_RP_ID);
       wallet = result.wallet;
     } catch (e) {
       setIsLoading(false);
@@ -752,7 +833,11 @@ export function useBreezSdk(
       });
       try {
         const effectiveLabel = localStorage.getItem('passkeyLabel') ?? undefined;
-        const response = await signInPinnedToActiveCredential(effectiveLabel);
+        // Existing users derive under their stored RP ID, defaulting to
+        // legacy so enabling ROR can't orphan a pre-migration wallet.
+        const effectiveRpId = getPasskeyRpId() ?? LEGACY_RP_ID;
+        const response = await signInPinnedToActiveCredential(effectiveLabel, effectiveRpId);
+        if (!getPasskeyRpId()) setPasskeyRpId(effectiveRpId);
         await connectWallet(response.wallet.seed, false, response.wallet.label);
       } catch (e) {
         logger.error(LogCategory.AUTH, 'Web passkey retry failed', { error: formatError(e) });
@@ -1018,7 +1103,11 @@ export function useBreezSdk(
             // Falls back to the stored `passkeyLabel`; SDK accepts
             // `undefined` for "use whatever signIn negotiates".
             const effectiveLabel = localStorage.getItem('passkeyLabel') ?? undefined;
-            const result = await signInPinnedToActiveCredential(effectiveLabel);
+            // Existing users derive under their stored RP ID, defaulting to
+            // legacy so enabling ROR can't orphan a pre-migration wallet.
+            const effectiveRpId = getPasskeyRpId() ?? LEGACY_RP_ID;
+            const result = await signInPinnedToActiveCredential(effectiveLabel, effectiveRpId);
+            if (!getPasskeyRpId()) setPasskeyRpId(effectiveRpId);
             wallet = result.wallet;
           } catch (e) {
             logger.error(LogCategory.AUTH, 'Passkey authentication failed', { error: formatError(e) });
@@ -1127,6 +1216,7 @@ export function useBreezSdk(
     error,
     hasRejectedDeposits,
     celebrationPayment,
+    needsPasskeyMigration,
     prfAvailable,
     hasPasskeyBefore: hasPasskeyHistory(),
     isFreshInstallRestore: freshInstallRestore,
@@ -1137,6 +1227,7 @@ export function useBreezSdk(
     refreshWalletData,
     fetchUnclaimedDeposits,
     handleLogout,
+    adoptMigratedSdk,
     handleBuyBitcoin,
     clearError: () => setError(null),
     dismissCelebration: () => setCelebrationPayment(null),

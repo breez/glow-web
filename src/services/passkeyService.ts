@@ -55,6 +55,7 @@ const PASSKEY_PENDING_SWITCH_FROM_KEY = 'passkeyPendingSwitchFromCredentialId';
 const PASSKEY_FIRST_SEEN_KEY = 'passkeyFirstSeenAt';
 const PASSKEY_LAST_SEEN_KEY = 'passkeyLastSeenAt';
 const PASSKEY_LABEL_LAST_USED_PREFIX = 'passkeyLabelLastUsed:';
+const PASSKEY_RP_ID_KEY = 'passkeyRpId';
 
 // ---------- PasskeyApi ----------
 
@@ -339,10 +340,10 @@ class NativePasskey implements PasskeyApi {
 
 const browserRegistry = Capacitor.isNativePlatform() ? null : new LocalStorageCredentialRegistry();
 
-function buildBrowserPasskeyClient(opts: { userName?: string; userDisplayName?: string } = {}): PasskeyClient {
+function buildBrowserPasskeyClient(opts: { userName?: string; userDisplayName?: string; rpId?: string } = {}): PasskeyClient {
   const provider = new PasskeyProvider(
     {
-      rpId,
+      rpId: opts.rpId ?? rpId,
       rpName,
       userName: opts.userName,
       userDisplayName: opts.userDisplayName,
@@ -354,6 +355,20 @@ function buildBrowserPasskeyClient(opts: { userName?: string; userDisplayName?: 
     },
   );
   return new PasskeyClient(provider, import.meta.env.VITE_BREEZ_API_KEY);
+}
+
+/**
+ * Build a one-off web PasskeyClient scoped to a specific RP ID, for the
+ * passkey-RP migration flow (deriving the legacy wallet under LEGACY_RP_ID
+ * and the new wallet under ROR_RP_ID). Reuse the returned client across a
+ * label's sign-in + label-store so its Nostr identity is established once.
+ * Web only: native passkeys use the plugin's fixed RP ID.
+ */
+export function buildMigrationPasskeyClient(
+  scopedRpId: string,
+  opts: { userName?: string; userDisplayName?: string } = {},
+): PasskeyClient {
+  return buildBrowserPasskeyClient({ ...opts, rpId: scopedRpId });
 }
 
 class WebPasskey implements PasskeyApi {
@@ -520,12 +535,18 @@ export function recordSignedInCredential(credentialId: Uint8Array | undefined): 
  */
 export async function signInPinnedToActiveCredential(
   label?: string,
+  rpIdOverride?: string,
 ): Promise<SignInResponse> {
   const activeCredId = getActivePasskeyCredentialIdBytes();
-  const response = await getPasskey().signIn({
-    label,
-    allowCredentials: activeCredId ? [activeCredId] : [],
-  });
+  const allowCredentials = activeCredId ? [activeCredId] : [];
+  // Web only: derive against a specific RP ID (e.g. a legacy-RP user before
+  // migration, whose credential lives under LEGACY_RP_ID) via a one-off
+  // client, without disturbing the cached default-RP client. On native the
+  // RP ID is fixed by the plugin, so the override is ignored.
+  const useScoped = !Capacitor.isNativePlatform() && !!rpIdOverride && rpIdOverride !== rpId;
+  const response = useScoped
+    ? await buildBrowserPasskeyClient({ rpId: rpIdOverride }).signIn({ label, allowCredentials })
+    : await getPasskey().signIn({ label, allowCredentials });
   recordSignedInCredential(response.credential?.credentialId);
   return response;
 }
@@ -699,15 +720,96 @@ export function isPasskeyMode(): boolean {
   return localStorage.getItem(PASSKEY_LABEL_KEY) !== null;
 }
 
-export function setPasskeyMode(label?: string): void {
+export function setPasskeyMode(label?: string, rpId?: string): void {
   localStorage.setItem(PASSKEY_LABEL_KEY, label ?? 'Default');
   localStorage.setItem(PASSKEY_REGISTERED_KEY, '1');
+  if (rpId) setPasskeyRpId(rpId);
 }
 
 export function clearPasskeyMode(): void {
+  // Clears label + active credential only. passkeyRpId is device metadata
+  // that must survive logout so the correct RP ID is used on next sign-in.
   localStorage.removeItem(PASSKEY_LABEL_KEY);
   localStorage.removeItem('passkeyActiveCredentialId');
   invalidatePasskey();
+}
+
+// ---------- RP ID persistence (device metadata; survives logout) ----------
+
+/** The RP ID this device's passkey was created/derived under, or null. */
+export function getPasskeyRpId(): string | null {
+  return localStorage.getItem(PASSKEY_RP_ID_KEY);
+}
+
+/** Persist the RP ID used for this device's passkey. */
+export function setPasskeyRpId(rpId: string): void {
+  localStorage.setItem(PASSKEY_RP_ID_KEY, rpId);
+}
+
+/** Explicit reset of the stored RP ID (e.g. dev RP-ID switch in settings). */
+export function clearPasskeyRpId(): void {
+  localStorage.removeItem(PASSKEY_RP_ID_KEY);
+}
+
+// ---------- Passkey-RP migration state ----------
+
+// Module-level flag (not persisted): set while the migration modal runs a
+// sweep so useBreezSdk's paymentSucceeded handler suppresses the celebration
+// overlay for the internal sweep transfers.
+let migrationInProgress = false;
+export function setMigrationInProgress(active: boolean): void {
+  migrationInProgress = active;
+}
+export function isMigrationInProgress(): boolean {
+  return migrationInProgress;
+}
+
+const PASSKEY_MIGRATED_KEY = 'passkeyMigrated';
+const PASSKEY_MIGRATION_STARTED_KEY = 'passkeyMigrationStarted';
+
+/** True once the user has migrated to (or explicitly skipped) the ROR RP ID. */
+export function isPasskeyMigrated(): boolean {
+  return localStorage.getItem(PASSKEY_MIGRATED_KEY) === 'true';
+}
+
+/** Mark migration done (or skipped: same outcome, don't prompt again). */
+export function setPasskeyMigrated(): void {
+  localStorage.setItem(PASSKEY_MIGRATED_KEY, 'true');
+  logger.info(LogCategory.AUTH, 'Marked passkey as migrated');
+}
+
+// Set the first time a ROR passkey is created. On a retry after a partial
+// failure it signals "a ROR credential may already exist", so the flow probes
+// before creating a duplicate. Cleared once migration completes.
+export function isPasskeyMigrationStarted(): boolean {
+  return localStorage.getItem(PASSKEY_MIGRATION_STARTED_KEY) === 'true';
+}
+export function setPasskeyMigrationStarted(): void {
+  localStorage.setItem(PASSKEY_MIGRATION_STARTED_KEY, 'true');
+}
+export function clearPasskeyMigrationStarted(): void {
+  localStorage.removeItem(PASSKEY_MIGRATION_STARTED_KEY);
+}
+
+/**
+ * Record the newly-created ROR credential as active after a successful
+ * migration: pins it as active (so resume derives target it), stores its
+ * AAGUID / backupEligible / user.name metadata, and adds it to the
+ * ROR-namespaced browser registry so per-credential management lists it.
+ * Web only. Call this only once migration has fully succeeded, so a partial
+ * failure never leaves the active credential pointing at an unusable ROR cred.
+ */
+export function recordMigratedRorCredential(
+  cred: RegisterResponse['credential'],
+  userName: string | undefined,
+  rorRpId: string,
+): void {
+  recordRegisteredCredential(cred, userName);
+  if (!Capacitor.isNativePlatform() && cred && browserRegistry) {
+    browserRegistry.add(rorRpId, cred.credentialId).catch(() => {
+      /* registry add is best-effort; management UI tolerates a missing entry. */
+    });
+  }
 }
 
 /**
