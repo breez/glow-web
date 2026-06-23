@@ -64,6 +64,7 @@ export function pollWebViewport(): boolean {
       appliedKeyboardPx = keyboardPx;
       html.classList.add('keyboard-visible');
       html.style.setProperty('--keyboard-height', `${keyboardPx}px`);
+      html.style.setProperty('--sheet-kb-offset', `-${keyboardPx}px`);
     }
   } else if (keyboardVisible) {
     keyboardOffFrames += 1;
@@ -72,6 +73,7 @@ export function pollWebViewport(): boolean {
       appliedKeyboardPx = 0;
       html.classList.remove('keyboard-visible');
       html.style.setProperty('--keyboard-height', '0px');
+      html.style.setProperty('--sheet-kb-offset', '0px');
     }
   }
 

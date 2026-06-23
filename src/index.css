@@ -827,6 +827,19 @@ video::-webkit-media-controls-panel {
   background: var(--spark-border-light);
 }
 
+/* Web keyboard: lift the sheet above the soft keyboard.
+   --sheet-kb-offset is driven by the webViewportManager rAF poll.
+   !important overrides any inline transform from Framer Motion.
+   overflow:visible lets the container background extend past the root
+   clip boundary, covering the gap between the sheet and the keyboard
+   (iOS dvh/vh mismatch when the URL bar is visible). */
+.react-modal-sheet-root {
+  transform: translateY(var(--sheet-kb-offset, 0px)) !important;
+}
+html.keyboard-visible .react-modal-sheet-root {
+  overflow: visible !important;
+}
+
 .show-amount-panel-button {
   margin-bottom: 0.75em;
   cursor: pointer;
