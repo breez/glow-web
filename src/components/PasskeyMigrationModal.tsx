@@ -637,9 +637,17 @@ const PasskeyMigrationModal: React.FC<PasskeyMigrationModalProps> = ({
           const { username, description } = oldLn;
           logger.info(LogCategory.AUTH, 'Migration sweep-label: transferring lightning address', { label, username });
           try {
-            await old.deleteLightningAddress();
+            // Atomic, symmetric two-signature transfer: the old wallet (current
+            // owner) authorizes handing the username to the new wallet's
+            // identity pubkey, and the new wallet claims it. No window where the
+            // address is unregistered (unlike delete-then-register); the SDK
+            // also rejects a self-transfer, already guarded by the identity
+            // assertion above.
+            const authorization = await old.authorizeLightningAddressTransfer({
+              transfereePubkey: newInfo.identityPubkey,
+            });
             if (cancelled) return;
-            await newSdk.registerLightningAddress({ username, description });
+            await newSdk.claimLightningAddressTransfer({ authorization, description });
             logger.info(LogCategory.AUTH, 'Migration sweep-label: lightning address transferred', { label, username });
           } catch (e) {
             // Best-effort — do not block migration. Log loudly so username is recoverable from logs.
