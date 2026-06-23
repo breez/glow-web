@@ -193,10 +193,7 @@ export interface BreezSdkActions {
    * state since it is the same wallet from the user's view.
    */
   adoptMigratedSdk: (newSdk: BreezSdk, label: string) => Promise<void>;
-  handleBuyBitcoin: (
-    provider: BuyBitcoinProvider,
-    closeAndWaitForLeave?: () => Promise<void>,
-  ) => Promise<void>;
+  handleBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
   clearError: () => void;
   dismissCelebration: () => void;
   subscribeToSdkEvents: (handler: SdkEventHandler) => SdkEventUnsubscribe;
