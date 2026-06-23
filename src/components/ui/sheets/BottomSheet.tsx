@@ -384,6 +384,26 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     }
   }, [contentPx, isOpen, useContentSnap]);
 
+  // Chrome Android (HTTPS) sets overlaysContent = true via the
+  // VirtualKeyboard API, so the visual viewport never shrinks and the
+  // webViewportManager can't detect the keyboard. Drive the CSS var
+  // from the hook's state as well (uses the VK geometrychange event).
+  useEffect(() => {
+    if (IS_NATIVE || !isOpen) return;
+    const html = document.documentElement;
+    if (isKeyboardOpen && keyboardHeight > 0) {
+      html.style.setProperty('--sheet-kb-offset', `-${keyboardHeight}px`);
+      html.classList.add('keyboard-visible');
+    } else {
+      html.style.setProperty('--sheet-kb-offset', '0px');
+      html.classList.remove('keyboard-visible');
+    }
+    return () => {
+      html.style.setProperty('--sheet-kb-offset', '0px');
+      html.classList.remove('keyboard-visible');
+    };
+  }, [isOpen, isKeyboardOpen, keyboardHeight]);
+
   return (
     <Sheet
       ref={sheetRef}
