@@ -340,7 +340,7 @@ class NativePasskey implements PasskeyApi {
 
 const browserRegistry = Capacitor.isNativePlatform() ? null : new LocalStorageCredentialRegistry();
 
-function buildBrowserPasskeyClient(opts: { userName?: string; userDisplayName?: string; rpId?: string } = {}): PasskeyClient {
+export function buildBrowserPasskeyClient(opts: { userName?: string; userDisplayName?: string; rpId?: string } = {}): PasskeyClient {
   const provider = new PasskeyProvider(
     {
       rpId: opts.rpId ?? rpId,
@@ -355,20 +355,6 @@ function buildBrowserPasskeyClient(opts: { userName?: string; userDisplayName?: 
     },
   );
   return new PasskeyClient(provider, import.meta.env.VITE_BREEZ_API_KEY);
-}
-
-/**
- * Build a one-off web PasskeyClient scoped to a specific RP ID, for the
- * passkey-RP migration flow (deriving the legacy wallet under LEGACY_RP_ID
- * and the new wallet under ROR_RP_ID). Reuse the returned client across a
- * label's sign-in + label-store so its Nostr identity is established once.
- * Web only: native passkeys use the plugin's fixed RP ID.
- */
-export function buildMigrationPasskeyClient(
-  scopedRpId: string,
-  opts: { userName?: string; userDisplayName?: string } = {},
-): PasskeyClient {
-  return buildBrowserPasskeyClient({ ...opts, rpId: scopedRpId });
 }
 
 class WebPasskey implements PasskeyApi {
@@ -744,11 +730,6 @@ export function getPasskeyRpId(): string | null {
 /** Persist the RP ID used for this device's passkey. */
 export function setPasskeyRpId(rpId: string): void {
   localStorage.setItem(PASSKEY_RP_ID_KEY, rpId);
-}
-
-/** Explicit reset of the stored RP ID (e.g. dev RP-ID switch in settings). */
-export function clearPasskeyRpId(): void {
-  localStorage.removeItem(PASSKEY_RP_ID_KEY);
 }
 
 // ---------- Passkey-RP migration state ----------

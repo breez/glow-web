@@ -15,7 +15,6 @@ import {
   saveLabel,
   setPasskeyMode,
   isPasskeyMigrated,
-  setPasskeyMigrated,
   consumePendingSwitchFromCredentialId,
   recordRegisteredCredential,
   signInPinnedToActiveCredential,
@@ -139,6 +138,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
 
   const onWalletRestoredRef = useLatest(onWalletRestored);
   const onRequestMigrationCheckRef = useLatest(onRequestMigrationCheck);
+  const onBackRef = useLatest(onBack);
   const onFlowCompleteRef = useLatest(onFlowComplete);
 
   const connectLabelRef = useRef<string | undefined>(undefined);
@@ -440,22 +440,26 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         //      retryable error, no Create offer.
         //   4. Anything else → generic error with retry + Create
         //      escape hatch.
-        // No passkey on this device. Under a configured ROR RP ID the user may
-        // still hold a legacy-RP passkey to migrate, so offer that before
-        // starting a brand-new wallet. 'handled' = migration ran or the user
-        // cancelled (App took over); 'proceed' = no legacy passkey, fall
-        // through to the normal new-user create flow (and don't re-prompt).
-        const looksLikeNewUser = isCredentialNotFound || (isCancelled && elapsedMs < FAST_FAIL_MAX_MS);
-        if (looksLikeNewUser && ROR_RP_ID && !isPasskeyMigrated()) {
+        // No passkey on this device under the (ROR) default RP ID. The user may
+        // still hold a legacy-RP passkey to migrate, so offer that before any
+        // new-user create / generic-failure routing. Offered on web for ANY
+        // detect failure: web has no deterministic no-credential signal and
+        // dismissing the empty ROR picker is a slow cancel, so a narrower gate
+        // would leave fresh-browser legacy users unable to migrate. The
+        // migration modal is browser-only, so native (fixed RP ID) never
+        // reaches it. 'handled' = migration ran or the user cancelled (go back
+        // home, matching the original); 'proceed' = no legacy passkey (fall
+        // through to the routing below, and don't re-prompt).
+        if (!Capacitor.isNativePlatform() && ROR_RP_ID && !isPasskeyMigrated()) {
           const migrationCheck = onRequestMigrationCheckRef.current;
           if (migrationCheck) {
-            logger.info(LogCategory.AUTH, 'No ROR credential on a new device; offering passkey-RP migration', { errorCode });
+            logger.info(LogCategory.AUTH, 'Detect failed under ROR RP ID; offering passkey-RP migration', { errorCode });
             const outcome = await migrationCheck();
             if (cancelled) return;
-            if (outcome === 'handled') return;
-            setPasskeyMigrated();
-          } else {
-            setPasskeyMigrated();
+            if (outcome === 'handled') { onBackRef.current(); return; }
+            // 'proceed': the modal already marked migrated (skip / no-credential);
+            // fall through to the new-user / error routing below. Never mark
+            // migrated here: a transient failure must not strand a legacy wallet.
           }
         }
         if (isCredentialNotFound) {
@@ -524,7 +528,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       // than the prior attempt's "Discovering labels…".
       setIsDiscoveringLabels(false);
     };
-  }, [phase, onRequestMigrationCheckRef]);
+  }, [phase, onRequestMigrationCheckRef, onBackRef]);
 
   // New user: transition phase that anchors the `renderCreating`
   // spinner. The SDK's `register` collapses create + derive +

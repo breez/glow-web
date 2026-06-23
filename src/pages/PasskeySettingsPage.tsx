@@ -51,8 +51,7 @@ const PasskeySettingsPage: React.FC<PasskeySettingsPageProps> = ({
   // Dev-only RP-ID switch: only meaningful when a distinct ROR RP ID is
   // configured. Lets a tester sign in under the legacy vs ROR RP ID to
   // exercise the passkey-RP migration path.
-  const isDevMode = new URLSearchParams(window.location.search).get('dev') === 'true'
-    || localStorage.getItem('spark-dev-mode') === 'true';
+  const isDevMode = localStorage.getItem('spark-dev-mode') === 'true';
   const rorConfigured = !!ROR_RP_ID && ROR_RP_ID !== LEGACY_RP_ID;
   const [activeRpId, setActiveRpId] = useState<string>(getPasskeyRpId() ?? LEGACY_RP_ID);
   const rpIdOptions = [

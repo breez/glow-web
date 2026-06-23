@@ -18,7 +18,7 @@ import GeneratePage from './pages/GeneratePage';
 import GetRefundPage from './pages/GetRefundPage';
 import BackupPage from './pages/BackupPage';
 import PasskeyPage from './pages/PasskeyPage';
-import PasskeyMigrationModal, { type MigrationEntry, type MigrationOutcome } from './components/PasskeyMigrationModal';
+import type { MigrationEntry, MigrationOutcome } from './features/passkey-migration/types';
 import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import BuyProvidersPage from './pages/BuyProvidersPage';
@@ -32,6 +32,9 @@ const PasskeySettingsPage = lazy(() => import('./pages/PasskeySettingsPage'));
 const PasskeyManagementPage = lazy(() => import('./pages/PasskeyManagementPage'));
 const LabelsPage = lazy(() => import('./pages/LabelsPage'));
 const PasskeyLocalStatePage = lazy(() => import('./pages/PasskeyLocalStatePage'));
+// Code-split the rare legacy->ROR passkey migration: its modal + service load
+// only after the flow is first triggered (gated by migrationEverOpened below).
+const PasskeyMigrationModal = lazy(() => import('./features/passkey-migration/PasskeyMigrationModal'));
 import { ContactsProvider } from './contexts/ContactsContext';
 
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
@@ -82,6 +85,9 @@ const AppContent: React.FC = () => {
   const [passkeySkipDetection, setPasskeySkipDetection] = useState(false);
   // Passkey-RP migration modal state.
   const [migrationModalOpen, setMigrationModalOpen] = useState(false);
+  // Sticky: stays true after the first open so the lazy modal remains mounted
+  // (preserving its isOpen-gated cleanup) rather than unmounting on close.
+  const [migrationEverOpened, setMigrationEverOpened] = useState(false);
   const [migrationEntry, setMigrationEntry] = useState<MigrationEntry>('banner');
   const migrationResolveRef = useRef<((outcome: MigrationOutcome) => void) | null>(null);
   const hasAutoOpenedMigrationRef = useRef(false);
@@ -136,6 +142,7 @@ const AppContent: React.FC = () => {
       hasAutoOpenedMigrationRef.current = true;
       setMigrationEntry('banner');
       setMigrationModalOpen(true);
+      setMigrationEverOpened(true);
     }
   }, [sdk.isConnected, sdk.needsPasskeyMigration, migrationModalOpen]);
 
@@ -147,6 +154,7 @@ const AppContent: React.FC = () => {
       migrationResolveRef.current = resolve;
       setMigrationEntry('login');
       setMigrationModalOpen(true);
+      setMigrationEverOpened(true);
     });
   }, []);
 
@@ -157,14 +165,12 @@ const AppContent: React.FC = () => {
     resolve?.(outcome);
   }, []);
 
+  // Adopt the migrated SDK only; the modal stays open to show its Done step.
+  // Closing + navigation happen when the user clicks Done (handleMigrationClose):
+  // a login-entry flow navigates via PasskeyPage's onBack on the resolved
+  // outcome, and a banner flow is already on the wallet.
   const handleMigrationSwitch = useCallback(async (newSdk: BreezSdk, label: string) => {
     await sdk.adoptMigratedSdk(newSdk, label);
-    setMigrationModalOpen(false);
-    const resolve = migrationResolveRef.current;
-    migrationResolveRef.current = null;
-    resolve?.('handled');
-    setPasskeySdkConnected(false);
-    setUserScreen('wallet');
   }, [sdk]);
 
   const handleLogout = async () => {
@@ -553,13 +559,17 @@ const AppContent: React.FC = () => {
                 onClose={sdk.dismissCelebration}
               />
             )}
-            <PasskeyMigrationModal
-              isOpen={migrationModalOpen}
-              entry={migrationEntry}
-              activeLegacySdk={sdk.sdk}
-              onClose={handleMigrationClose}
-              onSwitchToNewWallet={handleMigrationSwitch}
-            />
+            {migrationEverOpened && (
+              <Suspense fallback={null}>
+                <PasskeyMigrationModal
+                  isOpen={migrationModalOpen}
+                  entry={migrationEntry}
+                  activeLegacySdk={sdk.sdk}
+                  onClose={handleMigrationClose}
+                  onSwitchToNewWallet={handleMigrationSwitch}
+                />
+              </Suspense>
+            )}
             <InstallPrompt />
             <OfflineBanner />
           </StableBalanceProvider>

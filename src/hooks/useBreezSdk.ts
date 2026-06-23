@@ -454,8 +454,10 @@ export function useBreezSdk(
         // Offer migration when this wallet is still on the legacy RP ID and a
         // distinct ROR RP ID is configured and not yet migrated/skipped.
         const onLegacyRp = (getPasskeyRpId() ?? LEGACY_RP_ID) === LEGACY_RP_ID;
+        // Migration is a web-only flow (the modal uses the browser passkey
+        // client); native keeps its fixed RP ID and never migrates.
         setNeedsPasskeyMigration(
-          !!ROR_RP_ID && ROR_RP_ID !== LEGACY_RP_ID && !isPasskeyMigrated() && onLegacyRp,
+          !Capacitor.isNativePlatform() && !!ROR_RP_ID && ROR_RP_ID !== LEGACY_RP_ID && !isPasskeyMigrated() && onLegacyRp,
         );
       }
 
