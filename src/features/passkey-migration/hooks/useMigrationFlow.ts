@@ -247,20 +247,22 @@ export function useMigrationFlow({
           if (cancelled) return;
           logger.info(LogCategory.AUTH, 'Migration check-deposits-all: processing label', { label });
 
-          let seed = seedCacheRef.current.get(label);
-          if (!seed) {
-            seed = await session.deriveLegacySeed(label);
-            if (cancelled) return;
-            seedCacheRef.current.set(label, seed);
-          }
-
-          // For banner + primary label, reuse the App-owned activeLegacySdk (same seed).
+          // For banner + primary label, reuse the App-owned activeLegacySdk: it
+          // already carries this seed, so skip the legacy derive entirely (it
+          // would be one unused passkey ceremony). Other labels and the login
+          // path derive + connect from the seed.
           let sdk: BreezSdk;
           let ownedByModal: boolean;
           if (entry === 'banner' && label === primaryLabelRef.current && activeLegacySdk) {
             sdk = activeLegacySdk;
             ownedByModal = false;
           } else {
+            let seed = seedCacheRef.current.get(label);
+            if (!seed) {
+              seed = await session.deriveLegacySeed(label);
+              if (cancelled) return;
+              seedCacheRef.current.set(label, seed);
+            }
             sdk = await connectForSeed(seed);
             if (cancelled) { sdk.disconnect().catch(() => {}); return; }
             ownedByModal = true;
@@ -388,15 +390,16 @@ export function useMigrationFlow({
       try {
         if (!ROR_RP_ID) throw new Error('ROR_RP_ID not configured');
 
-        const seed = seedCacheRef.current.get(label);
-        if (!seed) throw new Error(`No cached seed for label "${label}"`);
-
-        // 1. Connect the old SDK for this label.
+        // 1. Connect the old SDK for this label. The reused active legacy SDK
+        // (banner + primary) never derived a seed, so only the connect path
+        // needs a cached seed.
         if (entry === 'banner' && label === primaryLabelRef.current && activeLegacySdk) {
           oldSdk = activeLegacySdk;
           oldSdkOwnedByModal = false;
           logger.info(LogCategory.AUTH, 'Migration sweep-label: reusing active legacy SDK', { label });
         } else {
+          const seed = seedCacheRef.current.get(label);
+          if (!seed) throw new Error(`No cached seed for label "${label}"`);
           oldSdk = await connectForSeed(seed);
           if (cancelled) { oldSdk.disconnect().catch(() => {}); return; }
           oldSdkOwnedByModal = true;
