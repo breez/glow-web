@@ -607,6 +607,10 @@ export function useBreezSdk(
     // modal recorded the ROR credential as active; here we set mode + RP ID so
     // resume targets the new wallet.
     setSdk(newSdk);
+    // Login-entry migration never ran connectWallet on this hook, so `config`
+    // is still null; set it (as connectWallet does) or `config.network` stays
+    // undefined and the Buy list drops Cash App until reload.
+    setConfig(buildConnectConfig());
     setPasskeyMode(label, ROR_RP_ID ?? defaultRpId);
     markLabelUsed(label);
     shownPaymentIdsRef.current.clear();
