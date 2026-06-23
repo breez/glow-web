@@ -629,6 +629,9 @@ export function useBreezSdk(
     setIsConnected(true);
     setIsSyncing(false);
     setNeedsPasskeyMigration(false);
+    // Match connectWallet's terminal state so any startup/loading gate clears.
+    setStartupState('connected');
+    setIsLoading(false);
 
     try {
       const result = await newSdk.listUnclaimedDeposits({});
