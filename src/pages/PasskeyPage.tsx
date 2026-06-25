@@ -307,19 +307,12 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           || errorMessage.includes('empty allowCredentials');
         const elapsedMs = Date.now() - detectStartMs;
         const FAST_FAIL_MAX_MS = 300;
-        // Per-platform fast-fail dispatch (no UI rendered = OS
-        // deterministically has no matching cred). Android raises
-        // NoCredentialException (reliable on its own). iOS conflates
-        // no-cred and cancel into USER_CANCELLED so elapsed time is
-        // the only disambiguator. Web is not dispatched here: its
-        // NotAllowedError classification is unreliable, so the immediate
-        // branch below handles its silent probe via `signInResolved`.
-        const platform = Capacitor.isNativePlatform() ? Capacitor.getPlatform() : 'web';
-        let isFastFailNoCred = false;
-        if (elapsedMs < FAST_FAIL_MAX_MS) {
-          if (platform === 'android') isFastFailNoCred = isCredentialNotFound;
-          else if (platform === 'ios') isFastFailNoCred = isCancelled;
-        }
+        // Native fast-fail no-credential: the SDK's native core
+        // (PasskeyAssertionCore) times the ceremony itself and types a
+        // no-UI no-credential as CredentialNotFound on iOS and Android, so
+        // trust that over glow's coarser elapsed. Web is handled above by
+        // the immediate branch (`signInResolved`); its modal path below.
+        const isFastFailNoCred = Capacitor.isNativePlatform() && isCredentialNotFound;
         // Web immediate-mediation probe is silent: no picker is shown for
         // the no-credential case. If the signIn itself failed (not a later
         // listLabels) and it wasn't a timeout, route without trusting the
