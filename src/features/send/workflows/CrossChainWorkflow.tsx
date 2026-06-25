@@ -44,6 +44,26 @@ function friendlyError(err: unknown): string {
   return 'Failed to get quote.';
 }
 
+// Group asset variants under a canonical display name (e.g. USDT0 → USDT)
+const ASSET_DISPLAY_GROUP: Record<string, string> = { 'USDT0': 'USDT' };
+const assetDisplayName = (asset: string) => ASSET_DISPLAY_GROUP[asset] ?? asset;
+const assetMatchesGroup = (routeAsset: string, group: string) =>
+  assetDisplayName(routeAsset) === group;
+
+// Normalize chain name for grouping. Strips common suffixes so e.g.
+// "Arbitrum" and "Arbitrum one", or "Polygon" and "Polygon POS" merge.
+const CHAIN_SUFFIXES = [' one', ' pos', ' mainnet', ' network'];
+function normalizeChainName(chain: string) {
+  let name = chain.toLowerCase();
+  for (const suffix of CHAIN_SUFFIXES) {
+    if (name.endsWith(suffix)) {
+      name = name.slice(0, -suffix.length);
+      break;
+    }
+  }
+  return name;
+}
+
 const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   addressDetails,
   amountSats,
@@ -80,32 +100,12 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   const effectiveTokenId = tokenIdentifier ?? (useUsdb ? stableBalance.tokenIdentifier! : undefined);
 
   // Derived data
-  // Group asset variants under a canonical display name (e.g. USDT0 → USDT)
-  const ASSET_DISPLAY_GROUP: Record<string, string> = { 'USDT0': 'USDT' };
-  const assetDisplayName = (asset: string) => ASSET_DISPLAY_GROUP[asset] ?? asset;
-  const assetMatchesGroup = (routeAsset: string, group: string) =>
-    assetDisplayName(routeAsset) === group;
-
   const uniqueAssets = useMemo(
     () => [...new Set(routes
       .map(r => assetDisplayName(r.asset))
     )].sort(),
     [routes]
   );
-
-  // Normalize chain name for grouping. Strips common suffixes so e.g.
-  // "Arbitrum" and "Arbitrum one", or "Polygon" and "Polygon POS" merge.
-  const CHAIN_SUFFIXES = [' one', ' pos', ' mainnet', ' network'];
-  const normalizeChainName = useCallback((chain: string) => {
-    let name = chain.toLowerCase();
-    for (const suffix of CHAIN_SUFFIXES) {
-      if (name.endsWith(suffix)) {
-        name = name.slice(0, -suffix.length);
-        break;
-      }
-    }
-    return name;
-  }, []);
 
   // Build chain group lookup: maps each raw chain name to its normalized form
   const buildGroupLookup = useCallback((allRoutes: CrossChainRoutePair[]) => {
@@ -117,7 +117,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       }
     }
     return { byChain };
-  }, [normalizeChainName]);
+  }, []);
 
   const groupLookup = useMemo(() => buildGroupLookup(routes), [routes, buildGroupLookup]);
 
@@ -125,7 +125,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   const chainGroupKey = useCallback((r: CrossChainRoutePair, lookup?: { byChain: Map<string, string> }) => {
     const l = lookup ?? groupLookup;
     return l.byChain.get(r.chain.toLowerCase()) ?? normalizeChainName(r.chain);
-  }, [groupLookup, normalizeChainName]);
+  }, [groupLookup]);
 
   const chainsForAsset = useMemo(() => {
     if (!selectedAsset) return [];
@@ -228,7 +228,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       prepareAllProviders(matching);
       setStep('provider');
     }
-  }, [prepareRoute, prepareAllProviders]);
+  }, [prepareRoute, prepareAllProviders, buildGroupLookup, chainGroupKey]);
 
   // Fetch routes on mount
   useEffect(() => {

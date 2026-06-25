@@ -203,6 +203,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     }
   }, [wallet, paymentInput?.rawInput, prepareSend]);
 
+  const parsedInputType = paymentInput?.parsedInput.type;
   const onAmountNext = useCallback(async (
     amount: bigint,
     includeFees?: boolean,
@@ -215,8 +216,8 @@ export function useSendPayment(): UseSendPaymentReturn {
     }
     setFeesIncluded(!!includeFees);
 
-    // Cross-chain: skip prepareSend — the workflow handles route selection + prepare
-    if (paymentInput?.parsedInput.type === 'crossChainAddress') {
+    // Cross-chain: skip prepareSend, the workflow handles route selection + prepare
+    if (parsedInputType === 'crossChainAddress') {
       setAmount(String(amount));
       setTokenIdentifier(tokenIdentifier ?? null);
       setConversionOptions(conversionOptions ?? null);
@@ -231,7 +232,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       tokenIdentifier,
       conversionOptions,
     );
-  }, [paymentInput?.paymentRequest, prepareSend]);
+  }, [paymentInput?.paymentRequest, parsedInputType, prepareSend]);
 
   const handleSend = useCallback(async (options?: SendPaymentOptions) => {
     if (!prepareResponse) return;

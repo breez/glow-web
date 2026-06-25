@@ -511,6 +511,9 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     if (phase !== 'creating' || error) return;
     connectLabelRef.current = 'Default';
     connectActionRef.current = 'setup';
+    // Intentional transient: render the 'creating' spinner frame once, then
+    // advance the state machine into the SDK ceremony.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPhase('connecting');
   }, [phase, error]);
 
