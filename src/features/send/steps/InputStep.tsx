@@ -9,6 +9,8 @@ import { isCrossChainEnabled } from '@/services/settings';
 import { ClipboardIcon, QrCodeIcon, SpinnerIcon, ContactsIcon, CloseIcon } from '@/components/Icons';
 import type { Contact } from '@breeztech/breez-sdk-spark';
 import { dismissKeyboard } from '../../../utils/keyboard';
+import { Capacitor } from '@capacitor/core';
+import { Clipboard } from '@capacitor/clipboard';
 
 export interface InputStepProps {
   paymentInput: string;
@@ -40,16 +42,22 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handlePaste = async () => {
-    // Not all browsers support clipboard.readText() (e.g. Firefox
-    // Android), and Chrome can deny it. On any failure, fall back to
-    // focusing the field so the native paste menu is one tap away
-    // instead of nothing happening.
-    if (!navigator.clipboard?.readText) {
-      inputRef.current?.focus();
-      return;
-    }
     try {
-      const text = await navigator.clipboard.readText();
+      // Read via the native Clipboard plugin in the Capacitor app: the
+      // WebView's navigator.clipboard is blocked on Android and shows
+      // iOS's in-page paste pill. Native read goes through the OS paste
+      // flow, which honors the per-app "Paste from Other Apps" setting.
+      let text: string | null;
+      if (Capacitor.isNativePlatform()) {
+        text = (await Clipboard.read()).value ?? null;
+      } else if (navigator.clipboard?.readText) {
+        text = await navigator.clipboard.readText();
+      } else {
+        // Old Firefox / non-secure context: no readText(). Focus the
+        // field so the user can paste manually.
+        inputRef.current?.focus();
+        return;
+      }
       if (text?.trim()) {
         setLocalPaymentInput(text);
         setSelectedContact(null);
