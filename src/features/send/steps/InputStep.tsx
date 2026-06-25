@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { SimpleAlert } from '../../../components/AlertCard';
 import { PrimaryButton } from '../../../components/ui';
 import ContactAutocomplete from '../components/ContactAutocomplete';
@@ -37,8 +37,17 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
 
   const autocompleteContacts = useMemo(() => searchContacts(contacts, localPaymentInput), [contacts, localPaymentInput]);
 
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handlePaste = async () => {
+    // Not all browsers support clipboard.readText() (e.g. Firefox
+    // Android), and Chrome can deny it. On any failure, fall back to
+    // focusing the field so the native paste menu is one tap away
+    // instead of nothing happening.
+    if (!navigator.clipboard?.readText) {
+      inputRef.current?.focus();
+      return;
+    }
     try {
       const text = await navigator.clipboard.readText();
       if (text?.trim()) {
@@ -50,6 +59,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
       logger.error(LogCategory.UI, 'Failed to read clipboard contents', {
         error: err instanceof Error ? err.message : String(err),
       });
+      inputRef.current?.focus();
     }
   };
 
@@ -104,8 +114,22 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
           // desktop users who want to paste formatted content.
           <div className="relative h-full">
             <textarea
+              ref={inputRef}
               value={localPaymentInput}
               onChange={(e) => setLocalPaymentInput(e.target.value)}
+              onPaste={(e) => {
+                // A user-initiated paste fills the field but doesn't
+                // advance. Auto-advance so it matches the Paste button.
+                // This path also needs no readText(), so no iOS
+                // clipboard permission pill.
+                const text = e.clipboardData.getData('text');
+                if (text?.trim()) {
+                  e.preventDefault();
+                  setLocalPaymentInput(text);
+                  setSelectedContact(null);
+                  onContinue(text);
+                }
+              }}
               onFocus={() => setIsInputFocused(true)}
               onBlur={() => setTimeout(() => setIsInputFocused(false), 100)}
               onKeyDown={async (e) => {
