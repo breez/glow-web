@@ -394,8 +394,10 @@ class WebPasskey implements PasskeyApi {
     } catch (e) { rethrowWasmAsTyped(e); }
   }
 
-  signIn(request: SignInRequest): Promise<SignInResponse> {
-    return this.client().signIn(request);
+  async signIn(request: SignInRequest): Promise<SignInResponse> {
+    try {
+      return await this.client().signIn(request);
+    } catch (e) { rethrowWasmAsTyped(e); }
   }
 
   // No connectWithPasskey on web (left undefined).
@@ -520,11 +522,17 @@ export function recordSignedInCredential(credentialId: Uint8Array | undefined): 
  */
 export async function signInPinnedToActiveCredential(
   label?: string,
+  // Maps to WebAuthn `mediation: 'immediate'` on web: the assertion
+  // fast-fails (no sheet) when no local credential is present, so the
+  // silent discovery probe can fall through to create. Honored only
+  // where the browser advertises it (native fast-fails regardless).
+  preferImmediatelyAvailableCredentials?: boolean,
 ): Promise<SignInResponse> {
   const activeCredId = getActivePasskeyCredentialIdBytes();
   const response = await getPasskey().signIn({
     label,
     allowCredentials: activeCredId ? [activeCredId] : [],
+    preferImmediatelyAvailableCredentials,
   });
   recordSignedInCredential(response.credential?.credentialId);
   return response;

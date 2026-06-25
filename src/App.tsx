@@ -73,10 +73,10 @@ const AppContent: React.FC = () => {
   const [buyProvidersSource, setBuyProvidersSource] = useState<'wallet' | 'settings'>('wallet');
   const [passkeySdkConnected, setPasskeySdkConnected] = useState(false);
   // True when the user entered the passkey screen via the explicit
-  // "Create New Wallet" CTA on browsers without `immediateGet`. Skips
-  // PasskeyPage's discovery (`detecting`) phase so we don't trigger a
-  // cross-device QR picker on the first click of a fresh-user
-  // onboarding. Read by PasskeyPage as the `skipDetection` prop.
+  // "Create Passkey" CTA in the web two-CTA flow. Skips PasskeyPage's
+  // discovery (`detecting`) phase so we don't trigger a cross-device QR
+  // picker on the first click of a fresh-user onboarding. Read by
+  // PasskeyPage as the `skipDetection` prop.
   const [passkeySkipDetection, setPasskeySkipDetection] = useState(false);
   const { showToast } = useToast();
   const formatPaymentAmountRef = useRef<((payment: Payment) => string) | undefined>(undefined);

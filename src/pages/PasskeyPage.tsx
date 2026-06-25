@@ -25,6 +25,7 @@ import {
   PasskeyTimedOutError,
   createPasskeyTimestampLabel,
   supportsImmediateGet,
+  canSilentlyDetectPasskey,
 } from '@/services/passkeyPrfProvider';
 
 import { logger, LogCategory } from '@/services/logger';
@@ -226,12 +227,28 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     // UI rendered, so we route silently to create.
     const detectStartMs = Date.now();
     const run = async () => {
+      // Whether this probe ran with immediate mediation (single-CTA):
+      // native inherently, web only where `immediateGet` is advertised.
+      // Read in the catch to know a no-credential reject was a silent
+      // fast-fail (deterministic), not a dismissed picker.
+      let probeUsedImmediate = false;
+      // True once the silent signIn resolves, so the catch can tell a
+      // signIn failure (no usable credential) from a later listLabels
+      // failure (signed in fine, relay read failed) without depending on
+      // the error message surviving the WASM boundary.
+      let signInResolved = false;
       try {
         // Dual-salt assert 'Default' BEFORE listLabels so a user
         // whose label IS 'Default' completes restore in one prompt.
         // signIn (not register) avoids a stray label publish for
-        // returning users on non-default labels.
-        const speculativeResponse = await signInPinnedToActiveCredential('Default');
+        // returning users on non-default labels. The same umbrella that
+        // gates the single-CTA login drives immediate mediation, so the
+        // two-CTA "Use Existing Passkey" path (no immediateGet) keeps the
+        // picker the user asked for. Read it directly: the state may still
+        // be null on the render that kicks off this probe.
+        probeUsedImmediate = await canSilentlyDetectPasskey();
+        const speculativeResponse = await signInPinnedToActiveCredential('Default', probeUsedImmediate);
+        signInResolved = true;
         const speculative = speculativeResponse.wallet;
         if (cancelled) return;
         // PRF succeeded: clear any in-flight switch-from slot so a
@@ -294,13 +311,68 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         // deterministically has no matching cred). Android raises
         // NoCredentialException (reliable on its own). iOS conflates
         // no-cred and cancel into USER_CANCELLED so elapsed time is
-        // the only disambiguator. Web's NotAllowedError has no fast
-        // silent path; the slow-path branches below handle it.
+        // the only disambiguator. Web is not dispatched here: its
+        // NotAllowedError classification is unreliable, so the immediate
+        // branch below handles its silent probe via `signInResolved`.
         const platform = Capacitor.isNativePlatform() ? Capacitor.getPlatform() : 'web';
         let isFastFailNoCred = false;
         if (elapsedMs < FAST_FAIL_MAX_MS) {
           if (platform === 'android') isFastFailNoCred = isCredentialNotFound;
           else if (platform === 'ios') isFastFailNoCred = isCancelled;
+        }
+        // Web immediate-mediation probe is silent: no picker is shown for
+        // the no-credential case. If the signIn itself failed (not a later
+        // listLabels) and it wasn't a timeout, route without trusting the
+        // error message to survive the WASM boundary.
+        if (
+          !Capacitor.isNativePlatform()
+          && probeUsedImmediate
+          && !signInResolved
+          && !isLikelyTimeout(elapsedMs)
+        ) {
+          // A present credential is still surfaced with a cancelable UV
+          // prompt under immediate mediation, so a slow failure is more
+          // likely a dismissed prompt than a deletion. Trust the SDK's
+          // classification: it types a genuine no-credential (sub-250ms,
+          // no UI) as CredentialNotFound, which the web path now re-throws
+          // as typed.
+          const deterministicNoCred = isCredentialNotFound;
+          const restoreCredId = consumePendingSwitchFromCredentialId();
+          if (restoreCredId) {
+            // A label switch was in flight. Revert the pin (non-destructive)
+            // either way; only auto-remove the switch target's metadata on a
+            // deterministic no-credential. A dismissed prompt is
+            // indistinguishable from a deletion on web, so otherwise ask the
+            // user to confirm before removing anything (mirrors the legacy
+            // web switch guard below).
+            const failingCredId = localStorage.getItem('passkeyActiveCredentialId');
+            localStorage.setItem('passkeyActiveCredentialId', restoreCredId);
+            if (cancelled) return;
+            if (deterministicNoCred) {
+              if (failingCredId) await removeStaleCredential(failingCredId);
+              setError('That passkey is no longer on this device.');
+              setErrorKind('switch-recovery');
+              return;
+            }
+            setFailingSwitchCredId(failingCredId);
+            setConfirmedStaleRemoval(false);
+            setError('Could not sign in with that passkey. It may have been removed, or the prompt was cancelled.');
+            setErrorKind('switch-recovery');
+            return;
+          }
+          // No switch in flight: create. A cancelled UV prompt for a present
+          // cred lands in register's excludeCredentials -> AlreadyExists ->
+          // sign-in pivot, so creating is safe even on an ambiguous failure.
+          logger.info(LogCategory.AUTH, 'Immediate probe found no credential, creating', {
+            errorName,
+            errorCode,
+            elapsedMs,
+            isCredentialNotFound,
+            isCancelled,
+          });
+          setIsNewUser(true);
+          setPhase('creating');
+          return;
         }
         if (hasPasskeyHistory()) {
           if (isFastFailNoCred) {

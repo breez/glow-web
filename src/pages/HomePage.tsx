@@ -4,7 +4,7 @@ import GlowLogo from '@/components/GlowLogo';
 import { safeAreaTop, safeAreaBottom } from '@/utils/safeAreaInsets';
 import { useStatusBarColor } from '@/hooks/useStatusBarColor';
 import { STATUS_BAR_DARK } from '@/utils/statusBarManager';
-import { supportsImmediateGet } from '@/services/passkeyPrfProvider';
+import { canSilentlyDetectPasskey } from '@/services/passkeyPrfProvider';
 
 interface HomePageProps {
   onRestoreWallet: () => void;
@@ -18,10 +18,9 @@ interface HomePageProps {
   onUsePasskey: () => void;
   /**
    * Routes directly to the create flow, skipping discovery. Tripped by
-   * the "Create New Wallet" CTA on browsers without
-   * `immediateGet` support, where an unconditional discovery probe
-   * would otherwise show a cross-device QR sheet on the first click
-   * for users who genuinely have no passkeys.
+   * the "Create Passkey" CTA in the web two-CTA flow, where an
+   * unconditional discovery probe would otherwise show a cross-device QR
+   * sheet on the first click for users who genuinely have no passkeys.
    */
   onCreatePasskey: () => void;
   prfAvailable: boolean;
@@ -40,13 +39,12 @@ const HomePage: React.FC<HomePageProps> = ({
 
   const [showMnemonicFlow, setShowMnemonicFlow] = useState(false);
   const [starsAnimating, setStarsAnimating] = useState(false);
-  // Tri-state: null while the capability probe is in-flight, then true
-  // / false once `getClientCapabilities()` resolves. Default is `null`
-  // (loading) so we don't flash the wrong button set on first paint.
-  // After resolution, `false` is the assumption for any browser that
-  // doesn't advertise `immediateGet` (most current browsers including
-  // mobile Safari and mobile Chrome without the experiment flag).
-  const [immediateGetSupported, setImmediateGetSupported] = useState<boolean | null>(null);
+  // Single CTA when the device can silently detect a passkey: native
+  // inherently, web only where `immediateGet` is advertised. Tri-state:
+  // null while the (async) capability probe is in flight, so we don't
+  // flash the wrong button set on first paint, then true / false.
+  const [canSilentlyDetect, setCanSilentlyDetect] = useState<boolean | null>(null);
+  const singleCta = canSilentlyDetect === true;
   const { handleTap: handleLogoTap } = useSecretTap(5, 2000, false, () => setShowMnemonicFlow(v => !v));
 
   useEffect(() => {
@@ -56,8 +54,8 @@ const HomePage: React.FC<HomePageProps> = ({
 
   useEffect(() => {
     let cancelled = false;
-    supportsImmediateGet().then((supported) => {
-      if (!cancelled) setImmediateGetSupported(supported);
+    canSilentlyDetectPasskey().then((supported) => {
+      if (!cancelled) setCanSilentlyDetect(supported);
     });
     return () => { cancelled = true; };
   }, []);
@@ -146,12 +144,11 @@ const HomePage: React.FC<HomePageProps> = ({
         {/* CTA Buttons */}
         <div className="w-full max-w-xs space-y-4 min-h-44">
           {prfAvailable && !showMnemonicFlow ? (
-            immediateGetSupported === true ? (
+            singleCta ? (
               <>
-                {/* Single CTA when `immediateGet` is advertised
-                    (Chrome with the experiment flag, native via
-                    preferImmediatelyAvailableCredentials). The probe
-                    runs with `mediation: 'immediate'` and silently
+                {/* Single CTA when discovery can run silently: native
+                    (OS honors preferImmediatelyAvailableCredentials) or
+                    web where `immediateGet` is advertised. The probe
                     no-UIs when no credential is available, so a fresh
                     user falls through to create without seeing a
                     sheet. */}
@@ -172,7 +169,7 @@ const HomePage: React.FC<HomePageProps> = ({
               </>
             ) : (
               <>
-                {/* Two-CTA fallback for browsers without `immediateGet`.
+                {/* Two-CTA flow for web browsers without `immediateGet`.
                     Modern Chromium (desktop + mobile) opens the cross-
                     device QR / security-key picker for empty-
                     allowCredentials get() regardless of `hints` /
