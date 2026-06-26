@@ -285,6 +285,10 @@ export function createMigrationSession(): MigrationSession {
   // deriveRorSeed reuses it instead of running a second ceremony for that label.
   let rorPrimarySeed: Seed | undefined;
   let rorPrimaryLabel: string | undefined;
+  // Win B: the label-discovery signIn already derives its (default) label's
+  // legacy seed; cache it so deriveLegacySeed reuses it for that label.
+  let legacyDiscoverySeed: Seed | undefined;
+  let legacyDiscoveryLabel: string | undefined;
 
   const getLegacyClient = () => (legacyClient ??= buildBrowserPasskeyClient({ rpId: LEGACY_RP_ID }));
   const getRorClient = () => (rorClient ??= buildBrowserPasskeyClient({ rpId: ROR_RP_ID as string }));
@@ -309,10 +313,14 @@ export function createMigrationSession(): MigrationSession {
 
   return {
     async enumerateLabels(storedLabel) {
-      const { labels } = await legacySignIn();
-      return orderLabelsForMigration(labels.length > 0 ? labels : [storedLabel], storedLabel);
+      const resp = await legacySignIn();
+      legacyDiscoverySeed = resp.wallet.seed;
+      legacyDiscoveryLabel = resp.wallet.label;
+      return orderLabelsForMigration(resp.labels.length > 0 ? resp.labels : [storedLabel], storedLabel);
     },
     async deriveLegacySeed(label) {
+      // Reuse the discovery signIn's seed for its label (Win B); deterministic.
+      if (label === legacyDiscoveryLabel && legacyDiscoverySeed) return legacyDiscoverySeed;
       return (await legacySignIn(label)).wallet.seed;
     },
     async probeRorCredential() {
