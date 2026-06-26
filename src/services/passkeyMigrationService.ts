@@ -320,7 +320,13 @@ export function createMigrationSession(): MigrationSession {
     },
     async deriveLegacySeed(label) {
       // Reuse the discovery signIn's seed for its label (Win B); deterministic.
-      if (label === legacyDiscoveryLabel && legacyDiscoverySeed) return legacyDiscoverySeed;
+      // Hand it off once, then drop the session's copy so it does not linger.
+      if (label === legacyDiscoveryLabel && legacyDiscoverySeed) {
+        const seed = legacyDiscoverySeed;
+        legacyDiscoverySeed = undefined;
+        legacyDiscoveryLabel = undefined;
+        return seed;
+      }
       return (await legacySignIn(label)).wallet.seed;
     },
     async probeRorCredential() {
@@ -344,8 +350,14 @@ export function createMigrationSession(): MigrationSession {
     },
     async deriveRorSeed(label) {
       // Reuse register's already-derived seed for the primary label (Win A).
-      // Deterministic: same passkey + label always yields the same seed.
-      if (label === rorPrimaryLabel && rorPrimarySeed) return rorPrimarySeed;
+      // Deterministic: same passkey + label always yields the same seed. Hand it
+      // off once, then drop the session's copy so it does not linger.
+      if (label === rorPrimaryLabel && rorPrimarySeed) {
+        const seed = rorPrimarySeed;
+        rorPrimarySeed = undefined;
+        rorPrimaryLabel = undefined;
+        return seed;
+      }
       return (await rorSignIn(label)).wallet.seed;
     },
     async storeRorLabel(label) {

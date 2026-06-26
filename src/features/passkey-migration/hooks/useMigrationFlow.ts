@@ -462,6 +462,11 @@ export function useMigrationFlow({
         }
         oldSdkRef.current = null;
 
+        // Drop this label's cached legacy seed now that it is fully swept, so the
+        // seed material does not linger in memory for the rest of the migration.
+        // A retry re-derives it (one prompt on that rare path).
+        seedCacheRef.current.delete(label);
+
         logger.info(LogCategory.AUTH, 'Migration sweep-label: label complete', { label, isLast });
 
         // 8. Advance or finish.
