@@ -18,7 +18,7 @@ import {
 } from '@breeztech/breez-sdk-spark';
 import { buildConnectConfig } from '@/hooks/buildConnectConfig';
 import { logger, LogCategory } from './logger';
-import { buildBrowserPasskeyClient, recordMigratedRorCredential } from './passkeyService';
+import { buildBrowserPasskeyClient, recordMigratedRorCredential, getActivePasskeyCredentialIdBytes } from './passkeyService';
 import { LEGACY_RP_ID, ROR_RP_ID, createPasskeyTimestampLabel, PasskeyCredentialNotFoundError } from './passkeyPrfProvider';
 import { formatError } from '../utils/formatError';
 
@@ -274,9 +274,17 @@ export function createMigrationSession(): MigrationSession {
   const userName = `Glow · ${createPasskeyTimestampLabel()}`;
   let legacyClient: PasskeyClient | null = null;
   let rorClient: PasskeyClient | null = null;
-  let legacyCredId: Uint8Array | undefined;
+  // Pin every legacy ceremony (including label discovery) to the active passkey,
+  // else the first signIn's picker lets a multi-passkey user drift to a different
+  // wallet and migrate the wrong one. Null (fresh-browser login, no active cred)
+  // falls back to the picker, which is the right way to choose the passkey there.
+  let legacyCredId: Uint8Array | undefined = getActivePasskeyCredentialIdBytes() ?? undefined;
   let rorCredId: Uint8Array | undefined;
   let rorCredential: RegisterResponse['credential'] = undefined;
+  // Win A: register already derives the primary label's ROR seed; cache it so
+  // deriveRorSeed reuses it instead of running a second ceremony for that label.
+  let rorPrimarySeed: Seed | undefined;
+  let rorPrimaryLabel: string | undefined;
 
   const getLegacyClient = () => (legacyClient ??= buildBrowserPasskeyClient({ rpId: LEGACY_RP_ID }));
   const getRorClient = () => (rorClient ??= buildBrowserPasskeyClient({ rpId: ROR_RP_ID as string }));
@@ -323,8 +331,13 @@ export function createMigrationSession(): MigrationSession {
       rorClient = registerClient;
       rorCredential = registration.credential;
       if (registration.credential?.credentialId) rorCredId = registration.credential.credentialId;
+      rorPrimarySeed = registration.wallet.seed;
+      rorPrimaryLabel = primaryLabel;
     },
     async deriveRorSeed(label) {
+      // Reuse register's already-derived seed for the primary label (Win A).
+      // Deterministic: same passkey + label always yields the same seed.
+      if (label === rorPrimaryLabel && rorPrimarySeed) return rorPrimarySeed;
       return (await rorSignIn(label)).wallet.seed;
     },
     async storeRorLabel(label) {
