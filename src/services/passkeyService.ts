@@ -453,7 +453,10 @@ export function recordRegisteredCredential(
   cred: RegisterResponse['credential'],
   userName: string | undefined,
 ): void {
-  if (!cred) return;
+  // Reject empty bytes too: a zero-length id would pass the null check and
+  // write an empty active-credential pin (read back as null), silently
+  // unpinning the wallet.
+  if (!cred || !cred.credentialId || cred.credentialId.length === 0) return;
   const credentialIdB64 = bytesToBase64(cred.credentialId);
   if (userName) setCredentialUserName(credentialIdB64, userName);
   localStorage.setItem('passkeyActiveCredentialId', credentialIdB64);
