@@ -370,6 +370,16 @@ class WebPasskey implements PasskeyApi {
     this.cached = null;
   }
 
+  /**
+   * Retain an externally-built client (scoped to the session RP ID) as the
+   * cached one, so labels()/store reuse its primed, pinned Nostr identity
+   * instead of a cold default-RP client that would re-derive it unpinned
+   * (which surfaces the all-passkeys OS picker).
+   */
+  adoptClient(client: PasskeyClient): void {
+    this.cached = client;
+  }
+
   checkAvailability(): Promise<PasskeyAvailability> {
     return this.client().checkAvailability();
   }
@@ -529,13 +539,21 @@ export async function signInPinnedToActiveCredential(
   const activeCredId = getActivePasskeyCredentialIdBytes();
   const allowCredentials = activeCredId ? [activeCredId] : [];
   // Web only: derive against a specific RP ID (e.g. a legacy-RP user before
-  // migration, whose credential lives under LEGACY_RP_ID) via a one-off
-  // client, without disturbing the cached default-RP client. On native the
-  // RP ID is fixed by the plugin, so the override is ignored.
+  // migration, whose credential lives under LEGACY_RP_ID). On native the RP ID
+  // is fixed by the plugin, so the override is ignored.
   const useScoped = !Capacitor.isNativePlatform() && !!rpIdOverride && rpIdOverride !== rpId;
-  const response = useScoped
-    ? await buildBrowserPasskeyClient({ rpId: rpIdOverride }).signIn({ label, allowCredentials })
-    : await getPasskey().signIn({ label, allowCredentials });
+  let response: SignInResponse;
+  if (useScoped) {
+    // Sign in on a client scoped to the session RP, then retain it as the
+    // cached client. signIn primes the Nostr identity, so a later labels()/store
+    // is a cache hit rather than a cold, unpinned re-derive (the OS picker).
+    const client = buildBrowserPasskeyClient({ rpId: rpIdOverride });
+    response = await client.signIn({ label, allowCredentials });
+    const api = getPasskey();
+    if (api instanceof WebPasskey) api.adoptClient(client);
+  } else {
+    response = await getPasskey().signIn({ label, allowCredentials });
+  }
   recordSignedInCredential(response.credential?.credentialId);
   return response;
 }
