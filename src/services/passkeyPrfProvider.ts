@@ -78,8 +78,16 @@ export async function signalUnknownCredentials(credentialIdsBase64: string[]): P
  * `getClientCapabilities('public-key')`. Returns false on browsers
  * that don't surface the capability API.
  */
+/**
+ * Temporarily forced off: the immediateGet / immediate-mediation path
+ * isn't wired through the SDK yet, so collapse every caller to the
+ * two-CTA discovery flow. Flip back to re-enable once the SDK supports it.
+ */
+const IMMEDIATE_GET_ENABLED = false;
+
 let cachedImmediateGet: boolean | null | undefined;
 export async function supportsImmediateGet(): Promise<boolean> {
+  if (!IMMEDIATE_GET_ENABLED) return false;
   if (native) return true;
   if (cachedImmediateGet === true) return true;
   if (cachedImmediateGet === false || cachedImmediateGet === null) return false;
