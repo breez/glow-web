@@ -290,18 +290,12 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           || errorMessage.includes('empty allowCredentials');
         const elapsedMs = Date.now() - detectStartMs;
         const FAST_FAIL_MAX_MS = 300;
-        // Per-platform fast-fail dispatch (no UI rendered = OS
-        // deterministically has no matching cred). Android raises
-        // NoCredentialException (reliable on its own). iOS conflates
-        // no-cred and cancel into USER_CANCELLED so elapsed time is
-        // the only disambiguator. Web's NotAllowedError has no fast
-        // silent path; the slow-path branches below handle it.
-        const platform = Capacitor.isNativePlatform() ? Capacitor.getPlatform() : 'web';
-        let isFastFailNoCred = false;
-        if (elapsedMs < FAST_FAIL_MAX_MS) {
-          if (platform === 'android') isFastFailNoCred = isCredentialNotFound;
-          else if (platform === 'ios') isFastFailNoCred = isCancelled;
-        }
+        // Native fast-fail no-credential: the SDK's native core
+        // (PasskeyAssertionCore) times the ceremony itself and types a
+        // no-UI no-credential as CredentialNotFound on iOS and Android, so
+        // trust that over glow's coarser elapsed. Web's NotAllowedError has
+        // no fast silent path; the slow-path branches below handle it.
+        const isFastFailNoCred = Capacitor.isNativePlatform() && isCredentialNotFound;
         if (hasPasskeyHistory()) {
           if (isFastFailNoCred) {
             if (detectingFailCountRef.current === 0 && isFreshInstallRef.current) {
