@@ -18,7 +18,7 @@ import {
 } from '@breeztech/breez-sdk-spark';
 import { buildConnectConfig } from '@/hooks/buildConnectConfig';
 import { logger, LogCategory } from './logger';
-import { buildBrowserPasskeyClient, recordMigratedRorCredential, getActivePasskeyCredentialIdBytes } from './passkeyService';
+import { buildBrowserPasskeyClient, recordMigratedRorCredential, getActivePasskeyCredentialIdBytes, adoptSessionPasskeyClient } from './passkeyService';
 import { LEGACY_RP_ID, ROR_RP_ID, createPasskeyTimestampLabel, PasskeyCredentialNotFoundError } from './passkeyPrfProvider';
 import { formatError } from '../utils/formatError';
 
@@ -355,6 +355,10 @@ export function createMigrationSession(): MigrationSession {
       if (rorCredential && ROR_RP_ID) {
         recordMigratedRorCredential(rorCredential, userName, ROR_RP_ID);
       }
+      // Hand the primed, pinned ROR client to the app session so post-migration
+      // labels()/store reuse its warm Nostr identity instead of re-deriving on
+      // the stale legacy client (which would surface the all-passkeys picker).
+      adoptSessionPasskeyClient(getRorClient());
     },
   };
 }

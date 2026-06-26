@@ -443,6 +443,17 @@ export function invalidatePasskey(): void {
   cached = null;
 }
 
+/**
+ * Adopt an already-primed, RP-scoped client as the session's passkey client
+ * (web only). Used after migration: the new ROR client has its Nostr identity
+ * derived + pinned, so handing it off keeps post-migration labels()/store as
+ * cache hits instead of a cold re-derive on the stale legacy client.
+ */
+export function adoptSessionPasskeyClient(client: PasskeyClient): void {
+  const api = getPasskey();
+  if (api instanceof WebPasskey) api.adoptClient(client);
+}
+
 // ---------- host-side helpers ----------
 
 /**
