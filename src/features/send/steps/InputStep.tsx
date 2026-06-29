@@ -5,7 +5,6 @@ import ContactAutocomplete from '../components/ContactAutocomplete';
 import { useContactsContext } from '../../../contexts/ContactsContext';
 import { searchContacts } from '../../../hooks/useContacts';
 import { logger, LogCategory } from '@/services/logger';
-import { isCrossChainEnabled } from '@/services/settings';
 import { ClipboardIcon, QrCodeIcon, SpinnerIcon, ContactsIcon, CloseIcon } from '@/components/Icons';
 import type { Contact } from '@breeztech/breez-sdk-spark';
 import { dismissKeyboard } from '../../../utils/keyboard';
@@ -160,9 +159,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
-              placeholder={isCrossChainEnabled()
-                ? 'lnbc... / bc1... / sp1... / user@domain.com / contact / USDC or USDT address'
-                : 'lnbc... / bc1... / sp1... / user@domain.com / contact'}
+              placeholder='lnbc... / bc1... / sp1... / user@domain.com / contact / USDC or USDT address'
               className="w-full h-full p-4 bg-spark-dark text-spark-text-primary placeholder-spark-text-muted focus:ring-0 resize-none font-mono text-sm border outline-hidden transition-all rounded-xl border-spark-border focus:border-spark-primary"
               disabled={isLoading}
               data-testid="payment-input"

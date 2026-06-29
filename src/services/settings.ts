@@ -96,6 +96,10 @@ export function saveSettings(settings: UserSettings): void {
   setCachedItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
+/**
+ * Stored cross-chain flag. Send is always enabled regardless; this remains the
+ * persisted toggle reserved for gating cross-chain receive.
+ */
 export function isCrossChainEnabled(): boolean {
   return getSettings().crossChainEnabled === true;
 }
