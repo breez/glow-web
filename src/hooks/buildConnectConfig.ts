@@ -22,13 +22,11 @@ export function buildConnectConfig(overrideNetwork?: Network): Config {
   config.stableBalanceConfig = {
     tokens: [{ label: USDB_TICKER, tokenIdentifier: USDB_TOKEN_IDENTIFIER }],
   };
+  config.crossChainConfig = {};
 
   // Apply persisted user settings to config
   try {
     const s = getSettings();
-    if (s.crossChainEnabled) {
-      config.crossChainConfig = {};
-    }
     if (s.depositMaxFee) {
       config.maxDepositClaimFee = s.depositMaxFee;
     }

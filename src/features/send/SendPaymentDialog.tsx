@@ -21,7 +21,6 @@ import { formatError } from '@/utils/formatError';
 import { ArrowUpIcon } from '@/components/Icons';
 import { useSendPayment } from './hooks/useSendPayment';
 import { getPaymentMethodName, getLnurlPayRequestDetails, getLnurlAuthRequestDetails } from './utils';
-import { isCrossChainEnabled } from '@/services/settings';
 
 interface SendPaymentDialogProps {
   isOpen: boolean;
@@ -80,7 +79,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
   };
 
   const dialogTitle = send.currentStep === 'input'
-    ? (isCrossChainEnabled() ? 'Send BTC or USD' : 'Send BTC')
+    ? 'Send BTC or USD'
     : getPaymentMethodName(send.paymentInput);
 
   const recipientLabel = useMemo(() => {
