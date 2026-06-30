@@ -402,7 +402,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
 
       {/* Step 3: Chain selection */}
       {step === 'chain' && (
-        <div className="flex flex-col" style={{ maxHeight: '60vh' }}>
+        <div className="flex flex-col">
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400 shrink-0">
               {error}
