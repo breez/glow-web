@@ -12,6 +12,18 @@ export function capitalizeFirst(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+// Pretty display names for chains whose raw SDK identifier isn't presentable.
+// Keyed on the SDK's raw lowercased chain name, matching CHAIN_NAME_OVERRIDES
+// in CryptoIcon.tsx. Anything not listed falls back to capitalizeFirst.
+const CHAIN_DISPLAY_NAMES: Record<string, string> = {
+  bsc: 'BNB Smart Chain',
+};
+
+/** Human-friendly chain name for display (e.g. "bsc" → "BNB Smart Chain"). */
+export function formatChainName(chain: string): string {
+  return CHAIN_DISPLAY_NAMES[chain.toLowerCase()] ?? capitalizeFirst(chain);
+}
+
 /** Format a base-unit amount in its asset's full precision (trailing zeros trimmed). */
 export function formatCrossChainAmount(amount: bigint, decimals: number): string {
   const divisor = BigInt(10 ** decimals);

@@ -10,7 +10,7 @@ import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig }
 import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
 import { getPaymentDescription, getProviderDisplayName, isCrossChainPayment } from '../utils/paymentDescription';
-import { capitalizeFirst, getCrossChainDestination, formatReceiveAmount } from '../utils/crossChainFormat';
+import { formatChainName, getCrossChainDestination, formatReceiveAmount } from '../utils/crossChainFormat';
 
 interface PaymentDetailsDialogProps {
   optionalPayment: Payment | null;
@@ -149,7 +149,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
             {dest?.chainName && (
               <PaymentInfoRow
                 label="Network"
-                value={capitalizeFirst(dest.chainName)}
+                value={formatChainName(dest.chainName)}
               />
             )}
             {dest?.recipientAddress && (
