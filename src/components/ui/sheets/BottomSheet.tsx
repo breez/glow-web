@@ -87,6 +87,14 @@ const ContentMeasureContext = createContext<(px: number | null) => void>(
  */
 const KeyboardClearanceContext = createContext(0);
 
+/**
+ * True while the sheet is at its full (top) snap. Content reads this to
+ * grow into the extra height when expanded (e.g. a capped list area that
+ * should fill the screen once dragged to full).
+ */
+const SheetFullSnapContext = createContext(false);
+export const useSheetFullSnap = () => useContext(SheetFullSnapContext);
+
 // On native the WebView itself resizes with the keyboard (Android
 // adjustResize, iOS resize: 'native'), so the library's keyboard
 // machinery must stay off: its VirtualKeyboard API path flips
@@ -128,6 +136,15 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   const currentSnap = useRef(1);
   const fullyOpen = useRef(false);
   const [snapIndex, setSnapIndex] = useState(1);
+
+  // Freeze the measured content height while the user holds the sheet at
+  // the full snap: content that grows to fill the expanded sheet would
+  // otherwise push contentPx past the near-full collapse and flip the
+  // snap ladder, fighting its own expansion.
+  const reportContentPx = useCallback((px: number | null) => {
+    if (currentSnap.current === 2 && px !== null) return;
+    setContentPx(px);
+  }, []);
 
   // Manual keyboard mode (avoidKeyboard is off below): the hook keeps
   // --keyboard-inset-height up to date and we pad the content scroller
@@ -492,9 +509,11 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
           } as React.CSSProperties
         }
       >
-        <ContentMeasureContext.Provider value={setContentPx}>
+        <ContentMeasureContext.Provider value={reportContentPx}>
           <KeyboardClearanceContext.Provider value={clearancePx}>
-            {children}
+            <SheetFullSnapContext.Provider value={isFullSnap}>
+              {children}
+            </SheetFullSnapContext.Provider>
           </KeyboardClearanceContext.Provider>
         </ContentMeasureContext.Provider>
       </Sheet.Container>
