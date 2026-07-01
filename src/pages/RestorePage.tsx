@@ -3,6 +3,7 @@ import PageLayout from '../components/layout/PageLayout';
 import { PrimaryButton } from '../components/ui';
 import { SimpleAlert } from '../components/AlertCard';
 import { UploadIcon } from '../components/Icons';
+import { useScreenCaptureProtection } from '@/utils/screenSecurity';
 
 interface RestorePageProps {
   onConnect: (mnemonic: string) => Promise<void>;
@@ -19,6 +20,10 @@ const RestorePage: React.FC<RestorePageProps> = ({
 }) => {
   const [mnemonic, setMnemonic] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+
+  // The user types their existing recovery phrase here: block capture
+  // for the whole screen. Generate (fresh phrase) deliberately does not.
+  useScreenCaptureProtection(true);
 
   const handleSubmit = async () => {
     const cleaned = mnemonic.trim().replace(/\s+/g, ' ');

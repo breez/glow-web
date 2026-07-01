@@ -3,6 +3,7 @@ import { WalletProvider, WalletInfoProvider, WalletStatusProvider } from './cont
 import LoadingSpinner from './components/LoadingSpinner';
 import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
 import InstallPrompt from './components/InstallPrompt';
+import OfflineBanner from './components/OfflineBanner';
 import StagingGate from './components/StagingGate';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
@@ -503,6 +504,7 @@ const AppContent: React.FC = () => {
               />
             )}
             <InstallPrompt />
+            <OfflineBanner />
           </StableBalanceProvider>
         </FiatDataProvider>
         </WalletStatusProvider>

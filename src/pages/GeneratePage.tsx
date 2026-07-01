@@ -6,6 +6,7 @@ import PageLayout from '../components/layout/PageLayout';
 import { AlertCard } from '../components/AlertCard';
 import { CheckIcon, CopyIcon, KeyIcon } from '../components/Icons';
 import { logger, LogCategory } from '@/services/logger';
+import { copyToClipboard } from '@/utils/clipboard';
 
 interface GeneratePageProps {
   onMnemonicConfirmed: (mnemonic: string) => void;
@@ -41,7 +42,7 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
   }, []);
 
   const handleCopyToClipboard = () => {
-    navigator.clipboard.writeText(mnemonic)
+    copyToClipboard(mnemonic)
       .then(() => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 2000);

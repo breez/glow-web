@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { PrimaryButton, ErrorMessageBox } from '../../../components/ui';
 import { CloseIcon } from '../../../components/Icons';
 import GlowLogo from '../../../components/GlowLogo';
+import { hapticLight } from '@/utils/haptics';
 
 export interface ResultStepProps {
   result: 'success' | 'failure';
@@ -17,6 +18,7 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
 
   useEffect(() => {
     if (isSuccess) {
+      void hapticLight();
       const timer = setTimeout(() => setStarsAnimating(true), 300);
       return () => clearTimeout(timer);
     }

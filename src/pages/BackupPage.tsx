@@ -7,6 +7,8 @@ import {
 } from '@/services/passkeyService';
 import { deviceOnlyStorage, secureStorage, getBiometryLabel } from '@/services/secureStorage';
 import { logger, LogCategory } from '@/services/logger';
+import { copyToClipboard } from '@/utils/clipboard';
+import { useScreenCaptureProtection } from '@/utils/screenSecurity';
 
 interface BackupPageProps {
   onBack: () => void;
@@ -18,6 +20,10 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
   const [isRevealed, setIsRevealed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Block screen capture the whole time the existing seed is loaded in
+  // the DOM (not just while visually revealed). Cleared on unmount.
+  useScreenCaptureProtection(!!mnemonic);
 
   const isPasskey = isPasskeyMode();
 
@@ -133,7 +139,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
   const handleCopy = async () => {
     if (!mnemonic) return;
     try {
-      await navigator.clipboard.writeText(mnemonic);
+      await copyToClipboard(mnemonic);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (e) {

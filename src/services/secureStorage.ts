@@ -30,6 +30,7 @@
 
 import type { Seed } from '@breeztech/breez-sdk-spark';
 import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 import { logger, LogCategory } from './logger';
 
 // ============================================
@@ -93,22 +94,25 @@ function getNativeVault(): NativeVaultPlugin {
 // ============================================
 
 /**
- * localStorage key used as a fresh-install marker. Set the first time the
- * native impl successfully runs its init pass; never cleared by the app.
+ * Fresh-install marker. Set the first time the native impl successfully
+ * runs its init pass; never cleared by the app. Read + written through
+ * `readDurableMarker` / `writeDurableMarker` (Preferences, with a
+ * localStorage mirror), NOT the secure store.
  *
- * Why localStorage and not the secure store: localStorage IS wiped on app
- * reinstall on iOS (and Android), but the iOS Keychain is NOT. So the
- * absence of this marker on a native build is a reliable signal that we
- * are running for the first time on this install — even if there are
- * stale Keychain entries left over from a previous install of the same
- * bundle ID. The init pass below uses this signal to wipe any orphan
- * entries before any read.
+ * Why not the secure store: the marker MUST clear on app reinstall so a
+ * fresh install is detected and stale Keychain entries (which survive
+ * reinstall on iOS) get wiped before any read. Preferences clears on
+ * uninstall like localStorage did, but unlike localStorage it is not
+ * evicted by WebView storage pressure — a dropped marker would otherwise
+ * masquerade as a reinstall and wipe a live wallet's vault. See
+ * `readDurableMarker`.
  */
 const INSTALL_MARKER_KEY = 'glow.secureStorageInitialized';
 
 /**
- * localStorage key that marks "this install has already run the F3
- * migration". F3 changed the on-disk format for biometric-bound crypto:
+ * Marks "this install has already run the F3 migration" (durable, via
+ * `readDurableMarker` / `writeDurableMarker`). F3 changed the on-disk
+ * format for biometric-bound crypto:
  *
  *   - iOS: Keychain items are now protected by a `SecAccessControl`
  *     with `.biometryCurrentSet`, not just a plain accessibility flag.
@@ -412,6 +416,52 @@ async function runSharedInitialization(): Promise<void> {
 }
 
 /**
+ * Durable read of a persistence marker.
+ *
+ * These markers gate a seed-vault wipe on the "fresh install" path, so
+ * their durability is load-bearing: they lived in localStorage, but a
+ * native WebView can evict localStorage under storage pressure while the
+ * Keychain vault survives. A dropped marker then masquerades as a
+ * reinstall and wipes a live wallet. Preferences is native UserDefaults
+ * / SharedPreferences, which a WebView storage eviction does NOT clear
+ * (and which still clears on app uninstall, preserving the intended
+ * reinstall-reset). Reads fall back to a legacy localStorage value
+ * written by pre-Preferences builds and migrate it forward.
+ */
+async function readDurableMarker(key: string): Promise<string | null> {
+  try {
+    const { value } = await Preferences.get({ key });
+    if (value != null) return value;
+  } catch {
+    /* Preferences unavailable — fall through to the localStorage copy. */
+  }
+  const legacy =
+    typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+  if (legacy != null) {
+    await writeDurableMarker(key, legacy);
+  }
+  return legacy;
+}
+
+/**
+ * Writes the marker to Preferences (durable) and mirrors it to
+ * localStorage so a downgrade to a pre-Preferences build still sees it
+ * and skips a redundant re-wipe.
+ */
+async function writeDurableMarker(key: string, value: string): Promise<void> {
+  try {
+    await Preferences.set({ key, value });
+  } catch {
+    /* best-effort */
+  }
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(key, value);
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
  * iOS does NOT wipe Keychain entries when an app is reinstalled — they
  * survive across installs of the same bundle ID. Android Keystore keys
  * + the plugin's SharedPreferences-backed ciphertext both DO wipe on
@@ -432,8 +482,7 @@ async function runSharedInitialization(): Promise<void> {
  */
 async function cleanupStaleEntriesOnFreshInstall(): Promise<void> {
   try {
-    if (typeof localStorage === 'undefined') return;
-    if (localStorage.getItem(INSTALL_MARKER_KEY)) return;
+    if (await readDurableMarker(INSTALL_MARKER_KEY)) return;
 
     // Clear both tiers. A user who previously installed in non-passkey
     // mode could have a device-only entry surviving the reinstall on
@@ -452,15 +501,15 @@ async function cleanupStaleEntriesOnFreshInstall(): Promise<void> {
     logger.info(LogCategory.AUTH, 'Initialized secure storage on fresh install');
 
     const now = new Date().toISOString();
-    localStorage.setItem(INSTALL_MARKER_KEY, now);
+    await writeDurableMarker(INSTALL_MARKER_KEY, now);
     // A fresh install has no F2 state to migrate from, so mark the
     // F3 migration as already-done. This keeps the migration path
     // strictly for "user upgraded from an F2 build" and makes the
     // `migrateToF3IfNeeded` log line meaningful.
-    localStorage.setItem(F3_MIGRATION_MARKER_KEY, now);
+    await writeDurableMarker(F3_MIGRATION_MARKER_KEY, now);
   } catch {
-    // Best-effort — swallow any localStorage / plugin errors so the
-    // wallet still attempts to start up.
+    // Best-effort — swallow any storage / plugin errors so the wallet
+    // still attempts to start up.
   }
 }
 
@@ -487,8 +536,7 @@ async function cleanupStaleEntriesOnFreshInstall(): Promise<void> {
  */
 async function migrateToF3IfNeeded(): Promise<void> {
   try {
-    if (typeof localStorage === 'undefined') return;
-    if (localStorage.getItem(F3_MIGRATION_MARKER_KEY)) return;
+    if (await readDurableMarker(F3_MIGRATION_MARKER_KEY)) return;
 
     try {
       await getNativeVault().clearSeed();
@@ -496,10 +544,10 @@ async function migrateToF3IfNeeded(): Promise<void> {
     } catch {
       // Best-effort — never block downstream operations on the migration.
     }
-    localStorage.setItem(F3_MIGRATION_MARKER_KEY, new Date().toISOString());
+    await writeDurableMarker(F3_MIGRATION_MARKER_KEY, new Date().toISOString());
   } catch {
-    // Best-effort — swallow any localStorage / plugin errors so the
-    // wallet still attempts to start up.
+    // Best-effort — swallow any storage / plugin errors so the wallet
+    // still attempts to start up.
   }
 }
 
