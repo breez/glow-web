@@ -406,7 +406,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
           (the sheet is content-sized, no off-screen partial snap). The cap
           grows when the sheet is dragged to full so the list fills it. */}
       {step === 'chain' && (
-        <div className="flex flex-col" style={{ maxHeight: isSheetFull ? '85vh' : '60vh' }}>
+        <div className="flex flex-col" style={{ maxHeight: isSheetFull ? '85dvh' : '60dvh' }}>
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400 shrink-0">
               {error}
