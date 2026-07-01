@@ -243,6 +243,19 @@ import { MyIcon } from '../components/Icons';
 
 **Note:** Animated SVGs internal to a single component (e.g., `LoadingSpinner`, `ProcessingStep`) can stay in that component. The rule applies to reusable icons — always define them in `Icons.tsx`.
 
+## Bottom Sheets
+
+`BottomSheetContainer` / `BottomSheetCard` (`src/components/ui/sheets/BottomSheet.tsx`) wrap react-modal-sheet, which **snaps by translating a full-height sheet, not resizing it**. So at a partial (compact) snap the sheet's bottom sits below the viewport: `position: sticky bottom-0` and `position: fixed` are off-screen there (a `sticky top-0` header still works, and `fixed` is trapped by the sheet's transform anyway).
+
+**Scrollable content with a title/actions that must stay visible** (e.g. the cross-chain network picker in `CrossChainWorkflow.tsx`): don't let content overflow into a partial snap. Bound it so the sheet is content-sized and fully on screen, no sticky needed:
+
+- Cap the scroll area (`flex-1 min-h-0 overflow-y-auto`); keep the title/actions as `shrink-0` siblings above/below it.
+- Size the cap in **`dvh`, not `vh`**. `vh` is the largest (URL-bar-hidden) viewport, so a `vh` cap overflows the visible sheet on real mobile (fine on desktop + device simulator, which is the trap).
+- Add **`overscroll-y-none`** and **`touch-pan-y`** to the inner scroller, or on iOS it chains its scroll into / races the sheet's drag (the sheet's own scroller sets these; a nested one doesn't inherit them). `touch-pan-y` means the sheet no longer drags from the list, only from the handle/header/footer.
+- To grow the area when the sheet is dragged to full, read **`useSheetFullSnap()`** and raise the cap; a freeze guard in the container stops the growing content from flipping the snap ladder.
+
+The funded send/cross-chain flow isn't reachable locally; debug sheet layout with a throwaway `?sheettest` harness in `main.tsx` + browser measurement.
+
 ## Logging Practices
 
 The app uses a structured logging service (`src/services/logger.ts`) following OWASP guidelines.
