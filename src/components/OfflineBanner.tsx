@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { safeAreaTop } from '../utils/safeAreaInsets';
 
 /**
  * Offline indicator: a compact centered pill pinned below the status
@@ -14,9 +15,13 @@ const OfflineBanner: React.FC = () => {
   if (isOnline) return null;
 
   return createPortal(
+    // Align the pill's top edge with the app bar Buy button: the header
+    // row is h-14 (56px) with the h-9 (36px) button centered, so the
+    // button top sits 10px below the safe-area top. Uses safeAreaTop
+    // because env(safe-area-inset-top) is unreliable on the Android WebView.
     <div
       className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex justify-center"
-      style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}
+      style={{ paddingTop: `calc(${safeAreaTop} + 10px)` }}
     >
       <div
         role="status"
