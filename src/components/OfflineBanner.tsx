@@ -26,7 +26,7 @@ const OfflineBanner: React.FC = () => {
       <div
         role="status"
         aria-live="polite"
-        className="flex items-center gap-1.5 rounded-full border border-spark-border bg-spark-surface px-3 py-1 text-xs font-medium text-spark-text-secondary shadow-glass-lg"
+        className="flex items-center gap-1.5 rounded-full border border-white/10 bg-spark-surface px-3 py-1 text-xs font-medium text-spark-text-secondary shadow-glass-lg"
       >
         <span className="h-1.5 w-1.5 rounded-full bg-spark-error" />
         No internet connection
