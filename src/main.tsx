@@ -7,6 +7,7 @@ import './index.css';
 import { logger, LogCategory } from '@/services/logger';
 import { initWebViewportManager } from '@/utils/webViewportManager';
 import { installUserAgentStrippingFetch } from '@/utils/stripUserAgentFetch';
+import { logStartupDeviceInfo } from '@/utils/deviceInfo';
 import initBreezSDK from '@breeztech/breez-sdk-spark';
 
 // Strip the SDK's custom User-Agent from outgoing requests before the SDK
@@ -178,6 +179,8 @@ export async function hideSplash(): Promise<void> {
 async function init() {
   try {
     logger.info(LogCategory.UI, 'Initializing application');
+    // Startup debugging breadcrumb: what hardware / OS / build this ran on.
+    void logStartupDeviceInfo();
     // Initialize WASM module
     logger.info(LogCategory.SDK, 'Initializing WASM module');
     await initBreezSDK();

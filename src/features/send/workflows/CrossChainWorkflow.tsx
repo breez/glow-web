@@ -12,6 +12,7 @@ import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
 import { useWallet } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { formatWithThinSpaces } from '../../../utils/formatNumber';
+import { copyToClipboard } from '../../../utils/clipboard';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
 import { getProviderDisplayName } from '../../../utils/paymentDescription';
@@ -447,7 +448,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigator.clipboard.writeText(r.contractAddress!);
+                            void copyToClipboard(r.contractAddress!);
                             setCopiedAddress(key);
                             setTimeout(() => setCopiedAddress(null), 2000);
                           }}

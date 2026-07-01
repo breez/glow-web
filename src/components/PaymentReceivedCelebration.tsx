@@ -5,6 +5,7 @@ import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig } from '../utils/tokenFormatting';
 import GlowLogo from './GlowLogo';
+import { hapticLight } from '@/utils/haptics';
 
 interface PaymentReceivedCelebrationProps {
   payment: Payment;
@@ -20,6 +21,7 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
   useEffect(() => {
     // Trigger entrance animation
     requestAnimationFrame(() => setIsVisible(true));
+    void hapticLight();
 
     // Start dot animation after the logo settles in
     const starTimer = setTimeout(() => setStarsAnimating(true), 500);

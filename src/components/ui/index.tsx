@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { logger, LogCategory } from '@/services/logger';
+import { copyToClipboard } from '@/utils/clipboard';
 import {
   CloseIcon,
   ChevronDownIcon,
@@ -206,9 +207,16 @@ export const CollapsibleCodeField: React.FC<{
 }> = ({ label, value, isVisible, onToggle, href, copyable }) => {
   const [copied, setCopied] = React.useState(false);
   const handleCopy = () => {
-    navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    copyToClipboard(value)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(err => {
+        logger.error(LogCategory.UI, 'Failed to copy to clipboard', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
   };
   return (
     <CollapsibleSection label={label} isVisible={isVisible} onToggle={onToggle}>
@@ -278,7 +286,7 @@ export const CopyableText: React.FC<{
 
   const handleCopy = () => {
     const textToUse = textToCopy || text;
-    navigator.clipboard.writeText(textToUse)
+    copyToClipboard(textToUse)
       .then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);

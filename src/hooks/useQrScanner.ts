@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import QrScanner from 'qr-scanner';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
+import { hapticLight } from '@/utils/haptics';
 
 export type FacingMode = 'environment' | 'user';
 
@@ -80,6 +81,7 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
           logger.debug(LogCategory.UI, 'QR code detected', {
             length: result.data.length,
           });
+          void hapticLight();
           onScan(result.data);
           stopScanning();
         },
