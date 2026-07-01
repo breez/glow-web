@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Network } from '@capacitor/network';
+import { logger, LogCategory } from '@/services/logger';
 
 /**
  * Tracks device connectivity via @capacitor/network. On native this is
@@ -23,6 +24,12 @@ export function useNetworkStatus(): boolean {
       });
 
     Network.addListener('networkStatusChange', status => {
+      // Logged so Share Logs shows whether the OS connectivity event
+      // actually fired (vs a banner-render issue) when debugging.
+      logger.info(LogCategory.UI, 'Network status change', {
+        connected: status.connected,
+        connectionType: status.connectionType,
+      });
       setIsOnline(status.connected);
     })
       .then(handle => {

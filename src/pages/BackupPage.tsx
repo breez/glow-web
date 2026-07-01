@@ -21,9 +21,11 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Block screen capture the whole time the existing seed is loaded in
-  // the DOM (not just while visually revealed). Cleared on unmount.
-  useScreenCaptureProtection(!!mnemonic);
+  // Block screen capture for the whole Backup screen, from mount, so
+  // protection is already active before the seed can render (the native
+  // toggle is async: gating on the loaded seed left a few unprotected
+  // frames on reveal). Generate deliberately does not protect.
+  useScreenCaptureProtection(true);
 
   const isPasskey = isPasskeyMode();
 
