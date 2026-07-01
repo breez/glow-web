@@ -413,7 +413,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
             </div>
           )}
           <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">Select Network for {selectedAsset}</label>
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-none space-y-2 pr-1">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-none touch-pan-y space-y-2 pr-1">
             {chainsForAsset.map(r => {
                 const key = chainGroupKey(r);
                 const isExpanded = expandedChain === key;
