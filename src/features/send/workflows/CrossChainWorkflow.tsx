@@ -6,6 +6,7 @@ import type {
   PrepareSendPaymentResponse,
 } from '@breeztech/breez-sdk-spark';
 import { PrimaryButton, SecondaryButton } from '../../../components/ui';
+import { useSheetFullSnap } from '../../../components/ui/sheets/BottomSheetCardContext';
 import { ChevronDownIcon, CopyFilledIcon, CheckIcon, SpinnerIcon } from '../../../components/Icons';
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
 import { useWallet } from '../../../contexts/WalletContext';
@@ -74,6 +75,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   onRun,
 }) => {
   const wallet = useWallet();
+  const isSheetFull = useSheetFullSnap();
   const stableBalance = useStableBalance();
   const [step, setStep] = useState<WorkflowStep>('loading');
   const [routes, setRoutes] = useState<CrossChainRoutePair[]>([]);
@@ -400,18 +402,20 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
         </div>
       )}
 
-      {/* Step 3: Chain selection */}
+      {/* Step 3: Chain selection. Bounded list area so the title, the
+          internally-scrolling list, and the actions all stay on-screen
+          (the sheet is content-sized, no off-screen partial snap). The cap
+          grows when the sheet is dragged to full so the list fills it. */}
       {step === 'chain' && (
-        <div className="flex flex-col">
+        <div className="flex flex-col" style={{ maxHeight: isSheetFull ? '85dvh' : '60dvh' }}>
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400 shrink-0">
               {error}
             </div>
           )}
-          <div className="mb-4 min-h-0 flex flex-col">
-            <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">Select Network for {selectedAsset}</label>
-            <div className="space-y-2 overflow-y-auto min-h-0 pr-1">
-              {chainsForAsset.map(r => {
+          <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">Select Network for {selectedAsset}</label>
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-none touch-pan-y space-y-2 pr-1">
+            {chainsForAsset.map(r => {
                 const key = chainGroupKey(r);
                 const isExpanded = expandedChain === key;
                 const isCopied = copiedAddress === key;
@@ -459,7 +463,6 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                   </div>
                 );
               })}
-            </div>
           </div>
           <div className="flex gap-3 shrink-0 pt-2">
             <SecondaryButton onClick={goBackFromChain} className="flex-1">

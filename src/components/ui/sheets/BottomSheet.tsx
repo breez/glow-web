@@ -16,7 +16,7 @@ import { Keyboard } from '@capacitor/keyboard';
 import { useStatusBarColor } from '../../../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE } from '../../../utils/statusBarManager';
 import { useBackButton } from '../../../hooks/useBackButton';
-import { BottomSheetCardContext } from './BottomSheetCardContext';
+import { BottomSheetCardContext, SheetFullSnapContext } from './BottomSheetCardContext';
 
 /**
  * Bottom sheet adapter over react-modal-sheet.
@@ -128,6 +128,15 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   const currentSnap = useRef(1);
   const fullyOpen = useRef(false);
   const [snapIndex, setSnapIndex] = useState(1);
+
+  // Freeze the measured content height while the user holds the sheet at
+  // the full snap: content that grows to fill the expanded sheet would
+  // otherwise push contentPx past the near-full collapse and flip the
+  // snap ladder, fighting its own expansion.
+  const reportContentPx = useCallback((px: number | null) => {
+    if (currentSnap.current === 2 && px !== null) return;
+    setContentPx(px);
+  }, []);
 
   // Manual keyboard mode (avoidKeyboard is off below): the hook keeps
   // --keyboard-inset-height up to date and we pad the content scroller
@@ -492,9 +501,11 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
           } as React.CSSProperties
         }
       >
-        <ContentMeasureContext.Provider value={setContentPx}>
+        <ContentMeasureContext.Provider value={reportContentPx}>
           <KeyboardClearanceContext.Provider value={clearancePx}>
-            {children}
+            <SheetFullSnapContext.Provider value={isFullSnap}>
+              {children}
+            </SheetFullSnapContext.Provider>
           </KeyboardClearanceContext.Provider>
         </ContentMeasureContext.Provider>
       </Sheet.Container>
