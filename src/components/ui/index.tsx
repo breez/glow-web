@@ -44,7 +44,7 @@ export {
 export type { FormInputProps, FormTextareaProps } from './forms';
 
 // Bottom Sheets
-export { BottomSheetContainer, BottomSheetCard, useSheetFullSnap } from './sheets/BottomSheet';
+export { BottomSheetContainer, BottomSheetCard } from './sheets/BottomSheet';
 export type { BottomSheetMaxWidth, BottomSheetContainerProps, BottomSheetCardProps } from './sheets/BottomSheet';
 
 // Loading

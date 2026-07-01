@@ -16,7 +16,7 @@ import { Keyboard } from '@capacitor/keyboard';
 import { useStatusBarColor } from '../../../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE } from '../../../utils/statusBarManager';
 import { useBackButton } from '../../../hooks/useBackButton';
-import { BottomSheetCardContext } from './BottomSheetCardContext';
+import { BottomSheetCardContext, SheetFullSnapContext } from './BottomSheetCardContext';
 
 /**
  * Bottom sheet adapter over react-modal-sheet.
@@ -86,14 +86,6 @@ const ContentMeasureContext = createContext<(px: number | null) => void>(
  * autofill pills.
  */
 const KeyboardClearanceContext = createContext(0);
-
-/**
- * True while the sheet is at its full (top) snap. Content reads this to
- * grow into the extra height when expanded (e.g. a capped list area that
- * should fill the screen once dragged to full).
- */
-const SheetFullSnapContext = createContext(false);
-export const useSheetFullSnap = () => useContext(SheetFullSnapContext);
 
 // On native the WebView itself resizes with the keyboard (Android
 // adjustResize, iOS resize: 'native'), so the library's keyboard

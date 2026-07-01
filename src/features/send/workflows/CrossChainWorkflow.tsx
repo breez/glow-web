@@ -5,7 +5,8 @@ import type {
   CrossChainRoutePair,
   PrepareSendPaymentResponse,
 } from '@breeztech/breez-sdk-spark';
-import { PrimaryButton, SecondaryButton, useSheetFullSnap } from '../../../components/ui';
+import { PrimaryButton, SecondaryButton } from '../../../components/ui';
+import { useSheetFullSnap } from '../../../components/ui/sheets/BottomSheetCardContext';
 import { ChevronDownIcon, CopyFilledIcon, CheckIcon, SpinnerIcon } from '../../../components/Icons';
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
 import { useWallet } from '../../../contexts/WalletContext';
