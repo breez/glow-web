@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import SlideInPage from '../components/layout/SlideInPage';
 import {
   ChevronRightIcon,
@@ -6,6 +6,8 @@ import {
   WalletIcon,
   TrashIcon,
 } from '../components/Icons';
+import { LEGACY_RP_ID, ROR_RP_ID } from '../services/passkeyPrfProvider';
+import { getPasskeyRpId, setPasskeyRpId } from '../services/passkeyService';
 
 interface PasskeySettingsPageProps {
   onBack: () => void;
@@ -46,6 +48,17 @@ const PasskeySettingsPage: React.FC<PasskeySettingsPageProps> = ({
     },
   ];
 
+  // Dev-only RP-ID switch: only meaningful when a distinct ROR RP ID is
+  // configured. Lets a tester sign in under the legacy vs ROR RP ID to
+  // exercise the passkey-RP migration path.
+  const isDevMode = localStorage.getItem('spark-dev-mode') === 'true';
+  const rorConfigured = !!ROR_RP_ID && ROR_RP_ID !== LEGACY_RP_ID;
+  const [activeRpId, setActiveRpId] = useState<string>(getPasskeyRpId() ?? LEGACY_RP_ID);
+  const rpIdOptions = [
+    { label: 'Legacy', value: LEGACY_RP_ID },
+    { label: 'ROR', value: ROR_RP_ID ?? LEGACY_RP_ID },
+  ];
+
   return (
     <SlideInPage title="Passkey & Labels" closeStyle="back" onClose={onBack} slideFrom="right">
       <div className="p-4 space-y-2">
@@ -73,6 +86,40 @@ const PasskeySettingsPage: React.FC<PasskeySettingsPageProps> = ({
           </button>
         ))}
       </div>
+
+      {isDevMode && rorConfigured && (
+        <div className="p-4 pt-0">
+          <div className="p-4 bg-spark-dark border border-spark-border rounded-2xl space-y-3">
+            <div className="font-display font-semibold text-spark-text-primary">
+              Passkey RP ID <span className="text-spark-primary">(dev)</span>
+            </div>
+            <p className="text-sm text-spark-text-muted">
+              Which Relying Party ID this device signs in under. Switching re-derives a
+              different wallet on the next sign-in, so only change it to test migration.
+            </p>
+            <div className="flex gap-2">
+              {rpIdOptions.map((opt) => {
+                const selected = activeRpId === opt.value;
+                return (
+                  <button
+                    key={opt.label}
+                    type="button"
+                    onClick={() => { setPasskeyRpId(opt.value); setActiveRpId(opt.value); }}
+                    className={`flex-1 px-3 py-2 rounded-xl text-sm border transition-colors ${
+                      selected
+                        ? 'border-spark-primary bg-spark-primary/10 text-spark-text-primary'
+                        : 'border-spark-border text-spark-text-muted hover:border-spark-border-light'
+                    }`}
+                  >
+                    {opt.label}
+                    <span className="block text-[11px] opacity-60 truncate">{opt.value}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </SlideInPage>
   );
 };

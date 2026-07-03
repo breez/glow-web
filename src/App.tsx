@@ -18,6 +18,7 @@ import GeneratePage from './pages/GeneratePage';
 import GetRefundPage from './pages/GetRefundPage';
 import BackupPage from './pages/BackupPage';
 import PasskeyPage from './pages/PasskeyPage';
+import type { MigrationEntry, MigrationOutcome } from './features/passkey-migration/types';
 import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import BuyProvidersPage from './pages/BuyProvidersPage';
@@ -31,13 +32,16 @@ const PasskeySettingsPage = lazy(() => import('./pages/PasskeySettingsPage'));
 const PasskeyManagementPage = lazy(() => import('./pages/PasskeyManagementPage'));
 const LabelsPage = lazy(() => import('./pages/LabelsPage'));
 const PasskeyLocalStatePage = lazy(() => import('./pages/PasskeyLocalStatePage'));
+// Code-split the rare legacy->ROR passkey migration: its modal + service load
+// only after the flow is first triggered (gated by migrationEverOpened below).
+const PasskeyMigrationModal = lazy(() => import('./features/passkey-migration/PasskeyMigrationModal'));
 import { ContactsProvider } from './contexts/ContactsContext';
 
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
 import { useStatusBarColor } from './hooks/useStatusBarColor';
 import { STATUS_BAR_LOADING } from './utils/statusBarManager';
 import { useBackButton } from './hooks/useBackButton';
-import type { Seed, Payment } from '@breeztech/breez-sdk-spark';
+import type { Seed, Payment, BreezSdk } from '@breeztech/breez-sdk-spark';
 
 type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState';
 
@@ -79,6 +83,14 @@ const AppContent: React.FC = () => {
   // cross-device QR picker on the first click of a fresh-user
   // onboarding. Read by PasskeyPage as the `skipDetection` prop.
   const [passkeySkipDetection, setPasskeySkipDetection] = useState(false);
+  // Passkey-RP migration modal state.
+  const [migrationModalOpen, setMigrationModalOpen] = useState(false);
+  // Sticky: stays true after the first open so the lazy modal remains mounted
+  // (preserving its isOpen-gated cleanup) rather than unmounting on close.
+  const [migrationEverOpened, setMigrationEverOpened] = useState(false);
+  const [migrationEntry, setMigrationEntry] = useState<MigrationEntry>('banner');
+  const migrationResolveRef = useRef<((outcome: MigrationOutcome) => void) | null>(null);
+  const hasAutoOpenedMigrationRef = useRef(false);
   const { showToast } = useToast();
   const formatPaymentAmountRef = useRef<((payment: Payment) => string) | undefined>(undefined);
 
@@ -117,6 +129,49 @@ const AppContent: React.FC = () => {
     setPasskeySdkConnected(false);
     setUserScreen('wallet');
   }, []);
+
+  // Auto-open the migration banner once per page load when a legacy-RP wallet
+  // connects and ROR migration is still pending.
+  useEffect(() => {
+    if (
+      sdk.isConnected
+      && sdk.needsPasskeyMigration
+      && !migrationModalOpen
+      && !hasAutoOpenedMigrationRef.current
+    ) {
+      hasAutoOpenedMigrationRef.current = true;
+      setMigrationEntry('banner');
+      setMigrationModalOpen(true);
+      setMigrationEverOpened(true);
+    }
+  }, [sdk.isConnected, sdk.needsPasskeyMigration, migrationModalOpen]);
+
+  // Opened from PasskeyPage when no ROR credential is found: the modal probes
+  // for a legacy passkey to migrate. Resolves 'proceed' (caller may create a
+  // fresh ROR passkey) or 'handled' (migration ran or the user cancelled).
+  const requestMigrationCheck = useCallback((): Promise<MigrationOutcome> => {
+    return new Promise<MigrationOutcome>((resolve) => {
+      migrationResolveRef.current = resolve;
+      setMigrationEntry('login');
+      setMigrationModalOpen(true);
+      setMigrationEverOpened(true);
+    });
+  }, []);
+
+  const handleMigrationClose = useCallback((outcome: MigrationOutcome) => {
+    setMigrationModalOpen(false);
+    const resolve = migrationResolveRef.current;
+    migrationResolveRef.current = null;
+    resolve?.(outcome);
+  }, []);
+
+  // Adopt the migrated SDK only; the modal stays open to show its Done step.
+  // Closing + navigation happen when the user clicks Done (handleMigrationClose):
+  // a login-entry flow navigates via PasskeyPage's onBack on the resolved
+  // outcome, and a banner flow is already on the wallet.
+  const handleMigrationSwitch = useCallback(async (newSdk: BreezSdk, label: string) => {
+    await sdk.adoptMigratedSdk(newSdk, label);
+  }, [sdk]);
 
   const handleLogout = async () => {
     setUserScreen('home');
@@ -321,6 +376,7 @@ const AppContent: React.FC = () => {
             onFlowComplete={handlePasskeyFlowComplete}
             consumeFreshInstallSignal={sdk.consumeFreshInstallSignal}
             skipDetection={passkeySkipDetection}
+            onRequestMigrationCheck={requestMigrationCheck}
           />
         );
 
@@ -502,6 +558,17 @@ const AppContent: React.FC = () => {
                 payment={sdk.celebrationPayment}
                 onClose={sdk.dismissCelebration}
               />
+            )}
+            {migrationEverOpened && (
+              <Suspense fallback={null}>
+                <PasskeyMigrationModal
+                  isOpen={migrationModalOpen}
+                  entry={migrationEntry}
+                  activeLegacySdk={sdk.sdk}
+                  onClose={handleMigrationClose}
+                  onSwitchToNewWallet={handleMigrationSwitch}
+                />
+              </Suspense>
             )}
             <InstallPrompt />
             <OfflineBanner />

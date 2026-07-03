@@ -20,12 +20,30 @@ export type { DomainAssociation } from '@breeztech/breez-sdk-spark/passkey-prf-p
 
 const native = Capacitor.isNativePlatform();
 
-export const rpId = (import.meta.env.VITE_PASSKEY_RP_ID as string | undefined)
-  ?? (native ? 'keys.breez.technology' : window.location.hostname);
+/**
+ * RP ID used by all existing (legacy) passkeys: the hostname at creation
+ * time on web (a fixed value on native). Credentials are cryptographically
+ * bound to their RP ID, so legacy passkeys stay discoverable only under it.
+ */
+export const LEGACY_RP_ID = native ? 'keys.breez.technology' : window.location.hostname;
+
+/**
+ * ROR-based RP ID from env, set when the deployment has Related Origin
+ * Requests configured. When present, new web passkeys are created under it
+ * and existing LEGACY_RP_ID users are offered an in-app migration so the
+ * change of RP ID does not orphan their wallet.
+ */
+export const ROR_RP_ID: string | undefined =
+  (import.meta.env.VITE_PASSKEY_RP_ID as string | undefined) || undefined;
+
+/** Default RP ID for normal operation: ROR when configured, else legacy. */
+export const rpId = ROR_RP_ID ?? LEGACY_RP_ID;
 export const rpName = 'Glow';
 
 logger.info(LogCategory.AUTH, 'Passkey config', {
   rpId,
+  legacyRpId: LEGACY_RP_ID,
+  rorRpId: ROR_RP_ID ?? 'not configured',
   platform: native ? 'native' : 'browser',
 });
 
