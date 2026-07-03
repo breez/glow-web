@@ -13,9 +13,7 @@ import {
   isMigrationInProgress,
   setMigrationInProgress,
   setPasskeyMigrated,
-  isPasskeyMigrationStarted,
-  setPasskeyMigrationStarted,
-  clearPasskeyMigrationStarted,
+  clearMigrationRorCredentialId,
 } from '@/services/passkeyService';
 import { ROR_RP_ID } from '@/services/passkeyPrfProvider';
 import {
@@ -319,28 +317,31 @@ export function useMigrationFlow({
       try {
         if (!ROR_RP_ID) throw new Error('ROR_RP_ID not configured');
 
-        // Resume-safety: only probe for an existing ROR credential if a prior
-        // attempt may have created one. First attempts skip the probe so the
-        // user does not see a pointless "Use a saved passkey" prompt to cancel.
-        let alreadyHaveRorCredential = false;
-        if (isPasskeyMigrationStarted()) {
-          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: prior attempt detected, probing for existing ROR credential');
+        // Resume-safety: a persisted ROR credential id means a prior attempt
+        // already created the passkey (possibly after moving some funds). We
+        // MUST reuse that exact credential: creating a second one derives a
+        // different wallet and would strand the already-swept funds in an
+        // orphaned one. So probe pinned to it, and if the probe fails surface a
+        // retryable error rather than falling through to create a duplicate. A
+        // first attempt (nothing recorded) creates directly, skipping a
+        // pointless "Use a saved passkey" prompt.
+        if (session.hasPriorRorCredential()) {
+          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: prior ROR credential recorded, reusing it');
           try {
             await session.probeRorCredential();
-            alreadyHaveRorCredential = true;
-            logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: existing ROR credential detected, skipping create');
           } catch (e) {
-            logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: no existing ROR credential despite prior attempt', {
-              reason: formatError(e),
+            if (cancelled) return;
+            logger.error(LogCategory.AUTH, 'Migration derive-new-passkey: recorded ROR credential unreachable', {
+              error: formatError(e),
             });
+            setError('We could not access the passkey from your previous attempt. Please try the passkey prompt again.');
+            setPhase('error');
+            return;
           }
           if (cancelled) return;
+          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: existing ROR credential confirmed, skipping create');
         } else {
-          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: first attempt, creating ROR passkey directly');
-        }
-
-        if (!alreadyHaveRorCredential) {
-          setPasskeyMigrationStarted();
+          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: no prior ROR credential, creating one');
           await session.createRorCredential(primaryLabelRef.current);
           if (cancelled) return;
           logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: passkey created on ROR');
@@ -517,7 +518,7 @@ export function useMigrationFlow({
         // credential at an unusable ROR cred).
         session.commitRorCredential();
         setPasskeyMigrated();
-        clearPasskeyMigrationStarted();
+        clearMigrationRorCredentialId();
         logger.info(LogCategory.AUTH, 'Migration switch: handing off primary new SDK to useBreezSdk', {
           label: primaryLabelRef.current,
         });

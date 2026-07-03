@@ -778,7 +778,7 @@ export function isMigrationInProgress(): boolean {
 }
 
 const PASSKEY_MIGRATED_KEY = 'passkeyMigrated';
-const PASSKEY_MIGRATION_STARTED_KEY = 'passkeyMigrationStarted';
+const PASSKEY_MIGRATION_ROR_CRED_KEY = 'passkeyMigrationRorCredentialId';
 
 /** True once the user has migrated to (or explicitly skipped) the ROR RP ID. */
 export function isPasskeyMigrated(): boolean {
@@ -791,17 +791,27 @@ export function setPasskeyMigrated(): void {
   logger.info(LogCategory.AUTH, 'Marked passkey as migrated');
 }
 
-// Set the first time a ROR passkey is created. On a retry after a partial
-// failure it signals "a ROR credential may already exist", so the flow probes
-// before creating a duplicate. Cleared once migration completes.
-export function isPasskeyMigrationStarted(): boolean {
-  return localStorage.getItem(PASSKEY_MIGRATION_STARTED_KEY) === 'true';
+// The ROR credential id created mid-migration, persisted (base64) the moment
+// register succeeds. Its presence is the precise "a ROR passkey already exists"
+// signal: on resume the flow pins the probe to it (re-finding the exact passkey
+// instead of the OS picker) and must never create a second one, since a
+// duplicate derives a different wallet and would strand already-swept funds.
+// Cleared once migration completes.
+export function setMigrationRorCredentialId(credentialId: Uint8Array): void {
+  if (credentialId.length === 0) return;
+  localStorage.setItem(PASSKEY_MIGRATION_ROR_CRED_KEY, bytesToBase64(credentialId));
 }
-export function setPasskeyMigrationStarted(): void {
-  localStorage.setItem(PASSKEY_MIGRATION_STARTED_KEY, 'true');
+export function getMigrationRorCredentialIdBytes(): Uint8Array | null {
+  const b64 = localStorage.getItem(PASSKEY_MIGRATION_ROR_CRED_KEY);
+  if (!b64) return null;
+  try {
+    return base64ToBytes(b64);
+  } catch {
+    return null;
+  }
 }
-export function clearPasskeyMigrationStarted(): void {
-  localStorage.removeItem(PASSKEY_MIGRATION_STARTED_KEY);
+export function clearMigrationRorCredentialId(): void {
+  localStorage.removeItem(PASSKEY_MIGRATION_ROR_CRED_KEY);
 }
 
 /**

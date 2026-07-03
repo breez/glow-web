@@ -18,7 +18,7 @@ import {
 } from '@breeztech/breez-sdk-spark';
 import { buildConnectConfig } from '@/hooks/buildConnectConfig';
 import { logger, LogCategory } from './logger';
-import { buildBrowserPasskeyClient, recordMigratedRorCredential, getActivePasskeyCredentialIdBytes, adoptSessionPasskeyClient } from './passkeyService';
+import { buildBrowserPasskeyClient, recordMigratedRorCredential, getActivePasskeyCredentialIdBytes, adoptSessionPasskeyClient, setMigrationRorCredentialId, getMigrationRorCredentialIdBytes } from './passkeyService';
 import { LEGACY_RP_ID, ROR_RP_ID, createPasskeyTimestampLabel, PasskeyCredentialNotFoundError } from './passkeyPrfProvider';
 import { formatError } from '../utils/formatError';
 
@@ -257,7 +257,14 @@ export interface MigrationSession {
   enumerateLabels(storedLabel: string): Promise<string[]>;
   /** Derive the legacy wallet seed for a label. */
   deriveLegacySeed(label: string): Promise<Seed>;
-  /** Probe for an existing ROR credential (resume-safety): captures it, or throws if none. */
+  /**
+   * True when a prior attempt already created (and persisted) the ROR passkey.
+   * The flow must then reuse it via `probeRorCredential` and never create a
+   * second one: a duplicate derives a different wallet and would strand funds
+   * already swept in the first attempt.
+   */
+  hasPriorRorCredential(): boolean;
+  /** Probe for the recorded ROR credential (resume-safety): captures it, or throws if unreachable. */
   probeRorCredential(): Promise<void>;
   /** Create the single shared ROR passkey (registered under `primaryLabel`). */
   createRorCredential(primaryLabel: string): Promise<void>;
@@ -279,7 +286,10 @@ export function createMigrationSession(): MigrationSession {
   // wallet and migrate the wrong one. Null (fresh-browser login, no active cred)
   // falls back to the picker, which is the right way to choose the passkey there.
   let legacyCredId: Uint8Array | undefined = getActivePasskeyCredentialIdBytes() ?? undefined;
-  let rorCredId: Uint8Array | undefined;
+  // A prior attempt's ROR credential id (persisted at create time), if any.
+  // Seeding rorCredId with it pins the resume probe to that exact passkey.
+  const priorRorCredId = getMigrationRorCredentialIdBytes() ?? undefined;
+  let rorCredId: Uint8Array | undefined = priorRorCredId;
   let rorCredential: RegisterResponse['credential'] = undefined;
   // Win A: register already derives the primary label's ROR seed; cache it so
   // deriveRorSeed reuses it instead of running a second ceremony for that label.
@@ -312,6 +322,9 @@ export function createMigrationSession(): MigrationSession {
   }
 
   return {
+    hasPriorRorCredential() {
+      return priorRorCredId !== undefined;
+    },
     async enumerateLabels(storedLabel) {
       const resp = await legacySignIn();
       legacyDiscoverySeed = resp.wallet.seed;
@@ -344,7 +357,13 @@ export function createMigrationSession(): MigrationSession {
       const registration = await registerClient.register({ label: primaryLabel, excludeCredentials: [] });
       rorClient = registerClient;
       rorCredential = registration.credential;
-      if (registration.credential?.credentialId) rorCredId = registration.credential.credentialId;
+      if (registration.credential?.credentialId) {
+        rorCredId = registration.credential.credentialId;
+        // Persist immediately: a crash/close after this point (even after some
+        // funds move) must resume onto THIS passkey via a pinned probe, never
+        // create a duplicate wallet.
+        setMigrationRorCredentialId(registration.credential.credentialId);
+      }
       rorPrimarySeed = registration.wallet.seed;
       rorPrimaryLabel = primaryLabel;
     },

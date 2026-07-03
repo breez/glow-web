@@ -4,7 +4,9 @@ import {
   assertDifferentWallet,
   isNoCredentialError,
   migrateContacts,
+  createMigrationSession,
 } from './passkeyMigrationService';
+import { setMigrationRorCredentialId, clearMigrationRorCredentialId } from './passkeyService';
 import type { BreezSdk, Contact, GetInfoResponse } from '@breeztech/breez-sdk-spark';
 
 const infoWithPubkey = (identityPubkey: string): GetInfoResponse =>
@@ -108,5 +110,20 @@ describe('migrateContacts', () => {
 
     await expect(migrateContacts(from, to, 'Default')).resolves.toBeUndefined();
     expect(to.addContact).not.toHaveBeenCalled();
+  });
+});
+
+describe('createMigrationSession.hasPriorRorCredential', () => {
+  it('is false with nothing recorded, true once a ROR credential is persisted', () => {
+    clearMigrationRorCredentialId();
+    expect(createMigrationSession().hasPriorRorCredential()).toBe(false);
+
+    // Persisting a credential id (as createRorCredential does) makes any later
+    // session resume onto it instead of creating a duplicate.
+    setMigrationRorCredentialId(new Uint8Array([1, 2, 3]));
+    expect(createMigrationSession().hasPriorRorCredential()).toBe(true);
+
+    clearMigrationRorCredentialId();
+    expect(createMigrationSession().hasPriorRorCredential()).toBe(false);
   });
 });
