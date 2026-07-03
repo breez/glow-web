@@ -147,21 +147,23 @@ export async function sweepBalances(
  * No window where the address is unregistered (unlike delete-then-register);
  * the SDK also rejects a self-transfer (already guarded upstream by the
  * identity assertion). Best-effort: a failure is logged loudly (so the username
- * is recoverable) but never blocks the migration.
+ * is recoverable) but never blocks the migration. Returns true only when there
+ * was an address to move and the transfer threw, so the caller can warn that
+ * incoming Lightning payments may still land in the old wallet.
  */
 export async function transferLightningAddress(
   from: BreezSdk,
   to: BreezSdk,
   transfereePubkey: string,
   label: string,
-): Promise<void> {
+): Promise<boolean> {
   let currentAddress: Awaited<ReturnType<BreezSdk['getLightningAddress']>> = undefined;
   try {
     currentAddress = await from.getLightningAddress();
   } catch (e) {
     logger.warn(LogCategory.AUTH, 'Migration: getLightningAddress failed', { label, error: formatError(e) });
   }
-  if (!currentAddress) return;
+  if (!currentAddress) return false;
 
   const { username, description } = currentAddress;
   logger.info(LogCategory.AUTH, 'Migration: transferring lightning address', { label, username });
@@ -169,12 +171,14 @@ export async function transferLightningAddress(
     const authorization = await from.authorizeLightningAddressTransfer({ transfereePubkey });
     await to.claimLightningAddressTransfer({ authorization, description });
     logger.info(LogCategory.AUTH, 'Migration: lightning address transferred', { label, username });
+    return false;
   } catch (e) {
     logger.error(LogCategory.AUTH, 'Migration: lightning address transfer failed', {
       label,
       username,
       error: formatError(e),
     });
+    return true;
   }
 }
 

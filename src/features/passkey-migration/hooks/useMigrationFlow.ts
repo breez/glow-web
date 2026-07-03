@@ -48,6 +48,8 @@ export interface MigrationFlow {
   primaryLabel: string;
   isInFlight: boolean;
   spinnerText: string;
+  /** At least one label's Lightning address could not be moved (funds are fine). */
+  lnAddressTransferFailed: boolean;
   // actions
   startFromBanner: () => void;
   checkForOldPasskey: () => void;
@@ -75,6 +77,9 @@ export function useMigrationFlow({
   // Primary label (from localStorage `passkeyLabel` at open time); state so the
   // confirm-labels UI can mark "(current)" without reading a ref during render.
   const [primaryLabel, setPrimaryLabel] = useState('Default');
+  // Set if any label's Lightning-address transfer fails; surfaces a Done-screen
+  // notice (funds still moved, but incoming LN may land in the old wallet).
+  const [lnAddressTransferFailed, setLnAddressTransferFailed] = useState(false);
 
   // Ordered labels to migrate (primary last); populated in probe / enumerate-labels.
   const labelsToMigrateRef = useRef<string[]>([]);
@@ -114,6 +119,7 @@ export function useMigrationFlow({
     setUnclaimedCount(0);
     setConfirmedLabels([]);
     setCurrentLabelIndex(0);
+    setLnAddressTransferFailed(false);
     labelsToMigrateRef.current = [];
     seedCacheRef.current = new Map();
     oldSdkRef.current = null;
@@ -441,8 +447,9 @@ export function useMigrationFlow({
         // 5. Sweep sats + tokens, transfer the Lightning address, migrate contacts.
         await sweepBalances(oldSdk, newSdk, oldInfo, label);
         if (cancelled) return;
-        await transferLightningAddress(oldSdk, newSdk, newInfo.identityPubkey, label);
+        const lnTransferFailed = await transferLightningAddress(oldSdk, newSdk, newInfo.identityPubkey, label);
         if (cancelled) return;
+        if (lnTransferFailed) setLnAddressTransferFailed(true);
         await migrateContacts(oldSdk, newSdk, label);
         if (cancelled) return;
 
@@ -630,6 +637,7 @@ export function useMigrationFlow({
     primaryLabel,
     isInFlight,
     spinnerText,
+    lnAddressTransferFailed,
     startFromBanner,
     checkForOldPasskey,
     skipNoOldPasskey,

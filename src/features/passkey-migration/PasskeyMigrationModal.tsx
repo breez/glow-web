@@ -75,7 +75,9 @@ const PasskeyMigrationModal: React.FC<PasskeyMigrationModalProps> = (props) => {
           <BlockedDepositsStep count={flow.unclaimedCount} onOpenDeposits={flow.openUnclaimedDeposits} />
         )}
 
-        {flow.phase === 'done' && <DoneStep onDone={flow.done} />}
+        {flow.phase === 'done' && (
+          <DoneStep onDone={flow.done} lnAddressTransferFailed={flow.lnAddressTransferFailed} />
+        )}
 
         {flow.phase === 'error' && (
           <ErrorStep error={flow.error} onRetry={flow.retry} onCancel={flow.cancel} />

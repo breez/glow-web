@@ -5,9 +5,10 @@ import {
   isNoCredentialError,
   migrateContacts,
   createMigrationSession,
+  transferLightningAddress,
 } from './passkeyMigrationService';
 import { setMigrationRorCredentialId, clearMigrationRorCredentialId } from './passkeyService';
-import type { BreezSdk, Contact, GetInfoResponse } from '@breeztech/breez-sdk-spark';
+import type { BreezSdk, Contact, GetInfoResponse, LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 
 const infoWithPubkey = (identityPubkey: string): GetInfoResponse =>
   ({
@@ -110,6 +111,39 @@ describe('migrateContacts', () => {
 
     await expect(migrateContacts(from, to, 'Default')).resolves.toBeUndefined();
     expect(to.addContact).not.toHaveBeenCalled();
+  });
+});
+
+describe('transferLightningAddress', () => {
+  const lnInfo = { username: 'alice', description: 'desc', lightningAddress: 'alice@x' } as LightningAddressInfo;
+
+  it('returns false when there is no address to move', async () => {
+    const from = { getLightningAddress: vi.fn().mockResolvedValue(undefined) } as unknown as BreezSdk;
+    const to = { claimLightningAddressTransfer: vi.fn() } as unknown as BreezSdk;
+
+    expect(await transferLightningAddress(from, to, 'pk', 'Default')).toBe(false);
+    expect(to.claimLightningAddressTransfer).not.toHaveBeenCalled();
+  });
+
+  it('returns false on a successful transfer', async () => {
+    const from = {
+      getLightningAddress: vi.fn().mockResolvedValue(lnInfo),
+      authorizeLightningAddressTransfer: vi.fn().mockResolvedValue({ username: 'alice', pubkey: 'p', signature: 's' }),
+    } as unknown as BreezSdk;
+    const to = { claimLightningAddressTransfer: vi.fn().mockResolvedValue(lnInfo) } as unknown as BreezSdk;
+
+    expect(await transferLightningAddress(from, to, 'pk', 'Default')).toBe(false);
+    expect(to.claimLightningAddressTransfer).toHaveBeenCalled();
+  });
+
+  it('returns true when the address exists but the transfer throws', async () => {
+    const from = {
+      getLightningAddress: vi.fn().mockResolvedValue(lnInfo),
+      authorizeLightningAddressTransfer: vi.fn().mockRejectedValue(new Error('boom')),
+    } as unknown as BreezSdk;
+    const to = { claimLightningAddressTransfer: vi.fn() } as unknown as BreezSdk;
+
+    expect(await transferLightningAddress(from, to, 'pk', 'Default')).toBe(true);
   });
 });
 
