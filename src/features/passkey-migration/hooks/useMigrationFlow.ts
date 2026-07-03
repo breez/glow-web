@@ -520,28 +520,34 @@ export function useMigrationFlow({
           await applyStableTicker(primaryNew, activeStableLabelRef.current);
         }
 
-        // Pin the new ROR credential as active now that migration succeeded
-        // (deferred to here so a mid-migration failure never points the active
-        // credential at an unusable ROR cred).
-        session.commitRorCredential();
-        setPasskeyMigrated();
-        clearMigrationRorCredentialId();
         logger.info(LogCategory.AUTH, 'Migration switch: handing off primary new SDK to useBreezSdk', {
           label: primaryLabelRef.current,
         });
 
         // Ownership transfers: do NOT disconnect from here.
         await onSwitchRef.current(primaryNew, primaryLabelRef.current);
-        if (cancelled) return;
         primaryNewSdkRef.current = null;
+
+        // Commit the ROR credential + mark migrated only after adopt succeeds.
+        // commitRorCredential pins the ROR credential as active, so deferring it
+        // (and the flags) past the hand-off means an adopt failure leaves the
+        // active credential + RP on legacy and the banner armed: the ROR wallet
+        // already holds the funds, so a re-run sweeps nothing and just retries
+        // the switch, instead of stranding the user on the empty legacy wallet
+        // with migration suppressed. Run past the cancel guard: once adopt
+        // succeeded the persisted state must match it even if we unmounted.
+        session.commitRorCredential();
+        setPasskeyMigrated();
+        clearMigrationRorCredentialId();
         logger.info(LogCategory.AUTH, 'Migration switch: complete');
+        if (cancelled) return;
         // Stay open on the success step. The adopt handler only swaps the SDK;
         // Done (handleMigrationClose) closes the modal and lands on the wallet.
         setPhase('done');
       } catch (e) {
         if (cancelled) return;
         logger.error(LogCategory.AUTH, 'Migration switch: failed', { error: formatError(e) });
-        setError('Migration succeeded but we could not reconnect. Please refresh.');
+        setError('We could not finish switching to your new passkey. Your funds are safe. Please retry.');
         setPhase('error');
       }
     })();

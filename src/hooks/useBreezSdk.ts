@@ -603,9 +603,9 @@ export function useBreezSdk(
       }
     }
 
-    // Take ownership of the already connected + synced new SDK. The migration
-    // modal recorded the ROR credential as active; here we set mode + RP ID so
-    // resume targets the new wallet.
+    // Take ownership of the already connected + synced new SDK. Here we set mode
+    // + RP ID so resume targets the new wallet; the migration flow pins the ROR
+    // credential as active right after this hand-off returns.
     setSdk(newSdk);
     // Login-entry migration never ran connectWallet on this hook, so `config`
     // is still null; set it (as connectWallet does) or `config.network` stays
