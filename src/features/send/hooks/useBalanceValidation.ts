@@ -37,8 +37,8 @@ export function useBalanceValidation(
 ): BalanceValidation {
   const stable = useStableBalance();
   // Mirror useAmountInput: stable balance wins; otherwise a fiat override
-  // (cross-chain "Send USD") supplies the config + rate so a typed fiat amount
-  // can be validated against the BTC balance.
+  // (USD toggle, cross-chain "Send USD") supplies the config + rate so a
+  // typed fiat amount can be validated against the BTC balance.
   const config = stable.isActive ? stable.displayConfig : (fiatOverride?.config ?? null);
   const btcFiatRate = stable.isActive ? stable.btcFiatRate : (fiatOverride?.btcFiatRate ?? 0);
   const isActive = stable.isActive;

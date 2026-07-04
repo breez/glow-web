@@ -20,8 +20,9 @@ export interface TokenPaymentInfo {
 /**
  * Build a token-less display config for a pure fiat currency (e.g. "USD").
  *
- * Used by the cross-chain "Send USD" flow so a BTC-balance (non-stable) user
- * can type a dollar amount without holding a USD token. There's no token here,
+ * Used for fiat entry without a stable-balance token (the USD toggle on BTC
+ * sends, cross-chain "Send USD") so a BTC-balance user can type a dollar
+ * amount without holding a USD token. There's no token here,
  * so `decimals` equals `fractionSize` (the minor unit *is* the base unit). The
  * USD amount is converted to sats client-side via `btcFiatRate` (the SDK build
  * on this branch has no fiat-amount model), so only `symbol`/`fractionSize` are

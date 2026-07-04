@@ -10,7 +10,7 @@ import {
   formatQuickAmount,
 } from '../../../utils/tokenFormatting';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
-import { useAmountInput } from '../../../hooks/useAmountInput';
+import { useAmountInput, useUsdFiatOverride } from '../../../hooks/useAmountInput';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
 import { useHasPendingConversion } from '../../../contexts/WalletContext';
 
@@ -26,7 +26,10 @@ interface LnurlWorkflowProps {
 }
 
 const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, balanceSats, tokenBalance, onBack, onRun, onPrepare, onPay }) => {
-  const input = useAmountInput({ balanceSats, tokenBalance });
+  // USD as a secondary entry option on BTC sends (#253): starts in sats,
+  // toggleable to USD, converted to sats client-side.
+  const fiatOverride = useUsdFiatOverride();
+  const input = useAmountInput({ balanceSats, tokenBalance, fiatOverride });
   const {
     amountInput: amount,
     setAmount,
@@ -43,7 +46,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     tokenSendAllBelowThreshold,
   } = input;
 
-  const balance = useBalanceValidation(isTokenMode, setIsTokenMode, balanceSats, tokenBalance);
+  const balance = useBalanceValidation(isTokenMode, setIsTokenMode, balanceSats, tokenBalance, fiatOverride);
   const hasPendingConversion = useHasPendingConversion();
 
   const [step, setStep] = useState<PaymentStep>('amount');
@@ -175,8 +178,10 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     // Safe to parse — validateAmount already confirmed the input is valid
     const sats = balance.parseInputToSats(amount)!;
 
-    // LNURL range constraints (sats mode only — token mode is validated by the SDK)
-    if (!isTokenMode) {
+    // LNURL range constraints. Skipped for stable-balance token mode: the SDK
+    // validates there, and conversion may adjust the amount. USD-toggle mode
+    // (token mode without stable balance) computes exact sats, so check it.
+    if (!isTokenMode || !isStableBalanceActive) {
       if (minSats && sats < minSats) {
         setError(`Amount must be at least ₿${minSats.toLocaleString()}`);
         return;
@@ -286,7 +291,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
             min={isTokenMode ? undefined : minSats}
             max={isTokenMode ? undefined : maxSats}
           />
-          {isStableBalanceActive && tokenSymbol && (
+          {tokenSymbol && (
             <CurrencySwitcher
               isTokenMode={isTokenMode}
               tokenSymbol={tokenSymbol}
