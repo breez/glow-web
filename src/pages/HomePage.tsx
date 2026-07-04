@@ -76,18 +76,18 @@ const HomePage: React.FC<HomePageProps> = ({
       <div
         className="absolute inset-0 bg-spark-dark pointer-events-none"
         style={{
-          top: 'calc(-1 * env(safe-area-inset-top, 0px))',
-          bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
-          left: 'calc(-1 * env(safe-area-inset-left, 0px))',
-          right: 'calc(-1 * env(safe-area-inset-right, 0px))'
+          top: 'calc(-1 * var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))',
+          bottom: 'calc(-1 * var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))',
+          left: 'calc(-1 * var(--safe-area-inset-left, env(safe-area-inset-left, 0px)))',
+          right: 'calc(-1 * var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))'
         }}
       />
       {/* Animated background effects - extends behind safe areas */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{
-        top: 'calc(-1 * env(safe-area-inset-top, 0px))',
-        bottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
-        left: 'calc(-1 * env(safe-area-inset-left, 0px))',
-        right: 'calc(-1 * env(safe-area-inset-right, 0px))'
+        top: 'calc(-1 * var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))',
+        bottom: 'calc(-1 * var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))',
+        left: 'calc(-1 * var(--safe-area-inset-left, env(safe-area-inset-left, 0px)))',
+        right: 'calc(-1 * var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))'
       }}>
         {/* Central glow */}
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px]">

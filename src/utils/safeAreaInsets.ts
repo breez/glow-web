@@ -18,13 +18,19 @@ import { Capacitor } from '@capacitor/core';
  *
  * On WebView >= 140 (Android 15/16 edge-to-edge), Capacitor's SystemBars
  * switches to a "passthrough" inset mode: native applies NO system-bar
- * padding and the web layer is expected to consume `env(safe-area-inset-*)`
- * itself. The fixed 0.5rem is not enough there and content renders under
- * the status bar (breez/glow-app#87). On those WebViews `env()` is
- * synchronous and reports 0 when the WebView is not overlapped by system
- * bars, so `max(env(), 0.5rem)` is safe on non-edge-to-edge devices too;
- * the phantom-env quirk above only existed on older WebViews, which keep
- * the fixed-gap path.
+ * padding and the web layer must consume the insets itself, otherwise
+ * content renders under the status bar (breez/glow-app#87). But raw
+ * `env(safe-area-inset-*)` is NOT a reliable carrier there: measured on
+ * an Android 16 emulator (WebView 141, viewport-fit=cover, WebView drawn
+ * edge-to-edge and receiving a 54px top inset), `env()` still computes
+ * to 0px; in practice it only reflects display cutouts. Capacitor knows
+ * this, which is why SystemBars injects the real values as
+ * `--safe-area-inset-*` custom properties on :root (Android 15+, i.e.
+ * every OS version where passthrough padding loss actually occurs). So
+ * the passthrough path consumes the Capacitor variable first and falls
+ * back to `env()` (Android 14 + new WebView, where native still pads or
+ * nothing is injected), with a 0.5rem floor either way. Bonus: Capacitor
+ * zeroes the injected bottom inset while the keyboard is visible.
  *
  * On iOS the safe-area insets work correctly and are necessary for the
  * notch / Dynamic Island; on the desktop / PWA web path they resolve
@@ -49,13 +55,13 @@ const isPassthroughInsets = webViewMajorVersion >= 140;
  *
  *   style={{ paddingTop: safeAreaTop }}
  *
- * - Android native, WebView >= 140: max(env(safe-area-inset-top, 0px), 0.5rem)
+ * - Android native, WebView >= 140: max(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)), 0.5rem)
  * - Android native, older WebView : 0.5rem (fixed gap below the opaque status bar)
  * - iOS / web                     : env(safe-area-inset-top, 0px)
  */
 export const safeAreaTop = isAndroidNative
   ? isPassthroughInsets
-    ? 'max(env(safe-area-inset-top, 0px), 0.5rem)'
+    ? 'max(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)), 0.5rem)'
     : '0.5rem'
   : 'env(safe-area-inset-top, 0px)';
 
@@ -65,6 +71,6 @@ export const safeAreaTop = isAndroidNative
  */
 export const safeAreaBottom = isAndroidNative
   ? isPassthroughInsets
-    ? 'max(env(safe-area-inset-bottom, 0px), 0.5rem)'
+    ? 'max(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)), 0.5rem)'
     : '0.5rem'
   : 'env(safe-area-inset-bottom, 0px)';

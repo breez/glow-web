@@ -223,7 +223,10 @@ html.keyboard-visible .hide-on-keyboard {
    returned to after cancelling an edit, keeps its full padding even
    while the global keyboard-visible class lingers. */
 .bottom-sheet-content-pad {
-  padding-bottom: calc(1em + env(safe-area-inset-bottom, 0px));
+  /* Android passthrough insets: Capacitor injects the real value as
+     --safe-area-inset-bottom because env() stays 0 there; env() is the
+     iOS / web fallback. See src/utils/safeAreaInsets.ts. */
+  padding-bottom: calc(1em + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
 }
 html.keyboard-visible .bottom-sheet-content-pad:focus-within {
   padding-bottom: 1em;
@@ -624,7 +627,7 @@ video::-webkit-media-controls-panel {
   border-top: 1px solid var(--spark-border);
   gap: 0.625rem;
   padding: 0.75rem 1rem;
-  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(0.75rem + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
 }
 
 /* ============================================
