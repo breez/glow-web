@@ -8,6 +8,7 @@ import {
   tokenAmountDisplaysAsZero,
   type TokenDisplayConfig,
 } from '../utils/tokenFormatting';
+import { normalizeDecimalInput } from '../utils/decimalInput';
 import type { Sats } from '../types/sats';
 
 export interface FiatOverride {
@@ -158,7 +159,7 @@ export function useAmountInput(options: UseAmountInputOptions = {}): UseAmountIn
   const setAmount = useCallback(
     (value: string) => {
       if (isTokenMode && config) {
-        const sanitized = sanitizeTokenInput(value, config.fractionSize);
+        const sanitized = sanitizeTokenInput(normalizeDecimalInput(value), config.fractionSize);
         if (sanitized !== null) setAmountInput(sanitized);
       } else {
         setAmountInput(value.replace(/[^0-9]/g, ''));
