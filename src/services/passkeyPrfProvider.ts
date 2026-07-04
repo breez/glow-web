@@ -97,16 +97,22 @@ export async function signalUnknownCredentials(credentialIdsBase64: string[]): P
  * that don't surface the capability API.
  */
 /**
- * Temporarily forced off: the immediateGet / immediate-mediation path
- * isn't wired through the SDK yet, so collapse every caller to the
+ * Browser-only kill switch: the immediateGet / immediate-mediation path
+ * isn't wired through the SDK yet, so browser callers collapse to the
  * two-CTA discovery flow. Flip back to re-enable once the SDK supports it.
+ *
+ * This switch must not gate native: there the provider does its own
+ * deterministic credential lookup and never depends on the WebAuthn
+ * immediateGet capability, so the native check below runs first. When
+ * PR #246 put this check before the native early-return, it silently
+ * disabled the unified welcome flow in native builds through 0.1.0.
  */
 const IMMEDIATE_GET_ENABLED = false;
 
 let cachedImmediateGet: boolean | null | undefined;
 export async function supportsImmediateGet(): Promise<boolean> {
-  if (!IMMEDIATE_GET_ENABLED) return false;
   if (native) return true;
+  if (!IMMEDIATE_GET_ENABLED) return false;
   if (cachedImmediateGet === true) return true;
   if (cachedImmediateGet === false || cachedImmediateGet === null) return false;
   try {
