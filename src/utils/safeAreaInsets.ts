@@ -34,7 +34,13 @@ import { Capacitor } from '@capacitor/core';
  *
  * On iOS the safe-area insets work correctly and are necessary for the
  * notch / Dynamic Island; on the desktop / PWA web path they resolve
- * to 0 through the CSS fallback.
+ * to 0 through the CSS fallback. Every path reads the
+ * `--safe-area-inset-*` custom property first and falls back to
+ * `env()`: the variable is written by Capacitor's SystemBars on
+ * Android native and by webViewportManager in iOS standalone web
+ * apps (which zeroes the bottom inset when the OS already reserves
+ * the home-indicator strip outside the layout viewport); everywhere
+ * else it is undefined and `env()` behavior is unchanged.
  */
 const isAndroidNative =
   typeof window !== 'undefined' &&
@@ -57,13 +63,13 @@ const isPassthroughInsets = webViewMajorVersion >= 140;
  *
  * - Android native, WebView >= 140: max(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)), 0.5rem)
  * - Android native, older WebView : 0.5rem (fixed gap below the opaque status bar)
- * - iOS / web                     : env(safe-area-inset-top, 0px)
+ * - iOS / web                     : var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
  */
 export const safeAreaTop = isAndroidNative
   ? isPassthroughInsets
     ? 'max(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)), 0.5rem)'
     : '0.5rem'
-  : 'env(safe-area-inset-top, 0px)';
+  : 'var(--safe-area-inset-top, env(safe-area-inset-top, 0px))';
 
 /**
  * CSS value for bottom padding that clears the home indicator /
@@ -73,4 +79,4 @@ export const safeAreaBottom = isAndroidNative
   ? isPassthroughInsets
     ? 'max(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)), 0.5rem)'
     : '0.5rem'
-  : 'env(safe-area-inset-bottom, 0px)';
+  : 'var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))';

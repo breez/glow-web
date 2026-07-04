@@ -30,6 +30,39 @@ const KEYBOARD_OFF_FRAMES = 18;
 
 const EDITABLE_SELECTOR = 'input, textarea, [contenteditable="true"]';
 
+/**
+ * iOS home-screen web apps (navigator.standalone) lay the page out in
+ * a viewport that stops above the home-indicator strip: 100dvh, the
+ * containing block, and #root all end there, and the strip below is
+ * painted by the canvas background alone; no content can render in
+ * it. Meanwhile the bottom bar still pads itself by
+ * env(safe-area-inset-bottom) INSIDE that short viewport, so the
+ * wallet footer showed a void-colored OS strip below the bar plus the
+ * bar's own duplicate inset padding above it.
+ *
+ * When a bottom gap is measurable, hand the clearance job to the OS
+ * strip: zero --safe-area-inset-bottom (every safe-area consumer
+ * reads the var first and falls back to env) and mark <html> so
+ * index.css paints the canvas in the bottom-bar glass composite. On
+ * iOS versions whose standalone viewport reaches the physical bottom
+ * the gap measures 0 and nothing activates; the code never runs
+ * outside iOS standalone (navigator.standalone is iOS-only).
+ */
+const IOS_STANDALONE_GAP_MAX_PX = 80;
+
+function applyIosStandaloneBottomGap(): void {
+  const html = document.documentElement;
+  const portrait = window.matchMedia('(orientation: portrait)').matches;
+  const gap = Math.round(window.screen.height - html.clientHeight);
+  const active = portrait && gap > 0 && gap <= IOS_STANDALONE_GAP_MAX_PX;
+  html.classList.toggle('ios-standalone-bottom-gap', active);
+  if (active) {
+    html.style.setProperty('--safe-area-inset-bottom', '0px');
+  } else {
+    html.style.removeProperty('--safe-area-inset-bottom');
+  }
+}
+
 let rafId: number | null = null;
 let idleFrames = 0;
 let appliedPageTop = 0;
@@ -112,6 +145,10 @@ function wake(): void {
  */
 export function initWebViewportManager(): void {
   if (Capacitor.isNativePlatform()) return;
+  if ((navigator as { standalone?: boolean }).standalone === true) {
+    applyIosStandaloneBottomGap();
+    window.addEventListener('resize', applyIosStandaloneBottomGap);
+  }
   document.addEventListener('focusin', wake);
   window.visualViewport?.addEventListener('resize', wake);
   window.visualViewport?.addEventListener('scroll', wake);

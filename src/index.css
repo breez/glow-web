@@ -205,6 +205,18 @@ body {
   flex-direction: column;
 }
 
+/* iOS standalone (home-screen) web app: the layout viewport ends above
+   the home-indicator strip and only the canvas background paints
+   there. webViewportManager adds this class when it measures that gap
+   (and zeroes --safe-area-inset-bottom so bottom bars don't stack a
+   duplicate inset on top of the OS strip). Paint the canvas in the
+   bottom-bar glass composite (#13131d, the same value as the native
+   system bars and the PWA theme_color) so the strip reads as part of
+   the footer instead of a void-colored band. */
+html.ios-standalone-bottom-gap {
+  background: #13131d;
+}
+
 /* Collapse non-essential rows while the soft keyboard is up so tall
    bottom-sheet forms fit above it without inner scrolling. The
    `keyboard-visible` class on <html> comes from main.tsx (native,
