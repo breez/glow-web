@@ -1,12 +1,40 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useStableBalance } from '../contexts/StableBalanceContext';
+import { useFiatData } from '../contexts/FiatDataContext';
 import {
+  buildFiatDisplayConfig,
   parseAmountToSats,
   sanitizeTokenInput,
   tokenAmountDisplaysAsZero,
   type TokenDisplayConfig,
 } from '../utils/tokenFormatting';
 import type { Sats } from '../types/sats';
+
+export interface FiatOverride {
+  config: TokenDisplayConfig;
+  btcFiatRate: number;
+  /** Start the input in fiat mode (USD-denominated flows like cross-chain)
+   *  instead of sats with fiat as a toggleable secondary option. */
+  startInFiat: boolean;
+}
+
+/**
+ * USD fiat override for amount inputs, built from live fiat data. Lets a
+ * BTC-balance user type dollars: the amount is converted to sats client-side.
+ *
+ * Returns undefined while the USD rate hasn't loaded, so callers offer no
+ * fiat entry that can't parse. Exception: `startInFiat` flows (cross-chain
+ * "Send USD") are USD-denominated by design and must not fall back to sats
+ * entry, so they keep the config even before the rate arrives.
+ */
+export function useUsdFiatOverride(startInFiat = false): FiatOverride | undefined {
+  const { fiatCurrencies, fiatRates } = useFiatData();
+  return useMemo(() => {
+    const btcFiatRate = fiatRates.find(r => r.coin === 'USD')?.value ?? 0;
+    if (!startInFiat && btcFiatRate <= 0) return undefined;
+    return { config: buildFiatDisplayConfig('USD', fiatCurrencies), btcFiatRate, startInFiat };
+  }, [startInFiat, fiatCurrencies, fiatRates]);
+}
 
 export interface UseAmountInputOptions {
   /** Pre-fill the input on mount (e.g. when re-opening a dialog with a value). */
@@ -17,13 +45,13 @@ export interface UseAmountInputOptions {
   tokenBalance?: bigint;
   /**
    * Fiat input config for flows that denominate in a fiat currency *without*
-   * holding a stable-balance token (e.g. cross-chain "Send USD" funded by BTC).
-   * Only takes effect when stable balance is inactive; when active, the
-   * stable-balance config wins. When present, the hook starts in fiat
-   * ("token") mode and uses this config/rate for parsing and display — the
-   * fiat amount is converted to sats via `btcFiatRate`.
+   * holding a stable-balance token (a BTC send with the USD toggle, or
+   * cross-chain "Send USD"). Only takes effect when stable balance is
+   * inactive; when active, the stable-balance config wins. When present, the
+   * hook uses this config/rate for fiat-mode parsing and display: the fiat
+   * amount is converted to sats via `btcFiatRate`. See `useUsdFiatOverride`.
    */
-  fiatOverride?: { config: TokenDisplayConfig; btcFiatRate: number };
+  fiatOverride?: FiatOverride;
 }
 
 export interface UseAmountInputResult {
@@ -103,14 +131,15 @@ export function useAmountInput(options: UseAmountInputOptions = {}): UseAmountIn
   const { initialAmount = '', balanceSats, tokenBalance, fiatOverride } = options;
   const stableBalance = useStableBalance();
 
-  // When stable balance is off, a fiat override (e.g. cross-chain "Send USD")
-  // supplies the currency config + rate so the user can still denominate in
-  // fiat. Stable balance always wins when active.
-  const fiatOverrideActive = !stableBalance.isActive && !!fiatOverride;
+  // When stable balance is off, a fiat override (USD toggle, cross-chain
+  // "Send USD") supplies the currency config + rate so the user can still
+  // denominate in fiat. Stable balance always wins when active.
   const config = stableBalance.isActive ? stableBalance.displayConfig : (fiatOverride?.config ?? null);
   const btcFiatRate = stableBalance.isActive ? stableBalance.btcFiatRate : (fiatOverride?.btcFiatRate ?? 0);
 
-  const [isTokenMode, setIsTokenMode] = useState(stableBalance.isActive || fiatOverrideActive);
+  const [isTokenMode, setIsTokenMode] = useState(
+    stableBalance.isActive || (fiatOverride?.startInFiat ?? false),
+  );
   const [amountInput, setAmountInput] = useState(initialAmount);
 
   // Adjust-state-on-prop-change pattern (React docs): when stable

@@ -6,17 +6,12 @@ import {
   TOKEN_QUICK_AMOUNTS,
   SATS_QUICK_AMOUNTS,
   formatQuickAmount,
-  buildFiatDisplayConfig,
 } from '../../../utils/tokenFormatting';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
-import { useAmountInput } from '../../../hooks/useAmountInput';
+import { useAmountInput, useUsdFiatOverride } from '../../../hooks/useAmountInput';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
 import { useHasPendingConversion } from '../../../contexts/WalletContext';
-import { useFiatData } from '../../../contexts/FiatDataContext';
 import { dismissKeyboard } from '../../../utils/keyboard';
-
-/** Cross-chain destinations are USD stablecoins (USDC/USDT) — amounts are USD. */
-const CROSS_CHAIN_FIAT_CURRENCY = 'USD';
 
 export interface AmountStepProps {
   paymentInput: string;
@@ -42,18 +37,10 @@ const AmountStep: React.FC<AmountStepProps> = ({
   onNext,
   amountFirst = false,
 }) => {
-  const { fiatCurrencies, fiatRates } = useFiatData();
-
-  // Cross-chain ("Send USD") denominates in USD even without a stable-balance
-  // token: build a fiat config from FiatData and let the user type dollars,
-  // converted to sats client-side via the BTC→USD rate and funded from BTC.
-  const fiatOverride = useMemo(() => {
-    if (!amountFirst) return undefined;
-    return {
-      config: buildFiatDisplayConfig(CROSS_CHAIN_FIAT_CURRENCY, fiatCurrencies),
-      btcFiatRate: fiatRates.find(r => r.coin === CROSS_CHAIN_FIAT_CURRENCY)?.value ?? 0,
-    };
-  }, [amountFirst, fiatCurrencies, fiatRates]);
+  // USD entry without a stable-balance token, funded from BTC. Cross-chain
+  // ("Send USD", amountFirst) starts in USD; plain BTC sends start in sats
+  // with USD as a toggleable secondary option (#253).
+  const fiatOverride = useUsdFiatOverride(amountFirst);
 
   const input = useAmountInput({ initialAmount: amount, balanceSats, tokenBalance, fiatOverride });
   const {
@@ -63,7 +50,6 @@ const AmountStep: React.FC<AmountStepProps> = ({
     isTokenMode,
     setIsTokenMode,
     toggleDenomination,
-    isStableBalanceActive,
     tokenIdentifier,
     tokenSymbol,
     config,
@@ -217,8 +203,8 @@ const AmountStep: React.FC<AmountStepProps> = ({
             min={isTokenMode ? undefined : 1}
             data-testid="amount-input"
           />
-          {/* Cross-chain ("Send USD", amountFirst) is USD-only — no sats toggle. */}
-          {!amountFirst && isStableBalanceActive && tokenSymbol && (
+          {/* Cross-chain ("Send USD", amountFirst) is USD-only: no sats toggle. */}
+          {!amountFirst && tokenSymbol && (
             <CurrencySwitcher
               isTokenMode={isTokenMode}
               tokenSymbol={tokenSymbol}
