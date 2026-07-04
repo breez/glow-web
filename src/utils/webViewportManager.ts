@@ -31,7 +31,7 @@ const KEYBOARD_OFF_FRAMES = 18;
 const EDITABLE_SELECTOR = 'input, textarea, [contenteditable="true"]';
 
 /**
- * iOS home-screen web apps (navigator.standalone) lay the page out in
+ * iOS home-screen web apps and native iOS apps lay the page out in
  * a viewport that stops above the home-indicator strip: 100dvh, the
  * containing block, and #root all end there, and the strip below is
  * painted by the canvas background alone; no content can render in
@@ -44,9 +44,8 @@ const EDITABLE_SELECTOR = 'input, textarea, [contenteditable="true"]';
  * strip: zero --safe-area-inset-bottom (every safe-area consumer
  * reads the var first and falls back to env) and mark <html> so
  * index.css paints the canvas in the bottom-bar glass composite. On
- * iOS versions whose standalone viewport reaches the physical bottom
- * the gap measures 0 and nothing activates; the code never runs
- * outside iOS standalone (navigator.standalone is iOS-only).
+ * iOS versions whose viewport reaches the physical bottom the gap
+ * measures 0 and nothing activates.
  */
 const IOS_STANDALONE_GAP_MAX_PX = 80;
 
@@ -138,19 +137,32 @@ function wake(): void {
 }
 
 /**
- * Start the manager (web only; no-op on native, where adjustResize
- * resizes the WebView and no panning exists). The listeners only wake
- * the poll loop; all state changes flow through pollWebViewport so
- * event-less changes are caught while the loop is awake.
+ * Start the manager. On web platforms, manages keyboard panning and
+ * viewport tracking. On native iOS, applies the home-indicator bottom-gap
+ * fix (same logic as PWA standalone). Android native is skipped entirely
+ * since adjustResize resizes the WebView instead of panning.
  */
 export function initWebViewportManager(): void {
-  if (Capacitor.isNativePlatform()) return;
-  if ((navigator as { standalone?: boolean }).standalone === true) {
+  const isNative = Capacitor.isNativePlatform();
+  const iOSNative = isNative && Capacitor.getPlatform() === 'ios';
+  const isWeb = !isNative;
+
+  // iOS (native and PWA standalone) applies the bottom-gap fix to clear
+  // the home indicator from double-padding the footer. On iOS native,
+  // this runs unconditionally; on PWA, only if navigator.standalone.
+  const shouldApplyIosBottomGap =
+    iOSNative || ((navigator as { standalone?: boolean }).standalone === true);
+
+  if (shouldApplyIosBottomGap) {
     applyIosStandaloneBottomGap();
     window.addEventListener('resize', applyIosStandaloneBottomGap);
   }
-  document.addEventListener('focusin', wake);
-  window.visualViewport?.addEventListener('resize', wake);
-  window.visualViewport?.addEventListener('scroll', wake);
-  wake();
+
+  // Web keyboard management and viewport polling (no-op on Android native).
+  if (isWeb) {
+    document.addEventListener('focusin', wake);
+    window.visualViewport?.addEventListener('resize', wake);
+    window.visualViewport?.addEventListener('scroll', wake);
+    wake();
+  }
 }
