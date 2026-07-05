@@ -11,10 +11,18 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Glow" />
   <meta name="mobile-web-app-capable" content="yes" />
+  <!-- Glow is dark-only. Declaring the color scheme stops Chrome from
+       adapting standalone PWA chrome to the system theme: without it,
+       Light mode renders a white navigation bar and Dark mode swaps
+       theme-color for Chrome's own near-black. -->
+  <meta name="color-scheme" content="dark" />
   <!-- #13131d = spark-surface at 80% composited over the void canvas:
        the same value the native app pins its system bars to (main.tsx),
-       so PWA system bars blend with the header / bottom-bar glass. -->
+       so PWA system bars blend with the header / bottom-bar glass. The
+       media-qualified pair pins the same color in both system themes. -->
   <meta name="theme-color" content="#13131d" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#13131d" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#13131d" />
   <meta name="msapplication-TileColor" content="#0a0a0f" />
   <meta name="msapplication-tap-highlight" content="no" />
   
@@ -41,6 +49,7 @@
   <link rel="icon" type="image/png" href="/icons/Glow_favicon.png" />
   <link rel="apple-touch-icon" href="/icons/Glow-icon-maskable-192.png" />
   <link rel="mask-icon" href="/icons/Glow-icon-maskable-192.png" color="#0a0a0f" />
+
   
   <!-- Manifest -->
   <link rel="manifest" href="/manifest.json" />
