@@ -3,22 +3,25 @@ import type { ProcessingPhase } from '../hooks/useSendPayment';
 
 export interface ProcessingStepProps {
   /** Operation type to customize messaging (default: 'payment') */
-  operationType?: 'payment' | 'auth';
+  operationType?: 'payment' | 'auth' | 'withdraw';
   /** Processing phase for conversion payments */
   processingPhase?: ProcessingPhase;
 }
 
 const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'payment', processingPhase = 'sending' }) => {
   const isAuth = operationType === 'auth';
+  const isWithdraw = operationType === 'withdraw';
   const isConverting = processingPhase === 'converting';
 
   const getTitle = () => {
     if (isAuth) return 'Authenticating...';
+    if (isWithdraw) return 'Waiting for payment...';
     if (isConverting) return 'Converting...';
     return 'Sending...';
   };
   const getDescription = () => {
     if (isAuth) return 'Please wait while we verify your identity...';
+    if (isWithdraw) return 'Completing the transfer. This can take a moment...';
     if (isConverting) return 'Please wait while we convert the amount...';
     return 'Please wait while we process your transaction...';
   };

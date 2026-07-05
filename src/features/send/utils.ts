@@ -1,5 +1,5 @@
 import type { SendInput } from '@/types/domain';
-import type { LnurlPayRequestDetails, LnurlAuthRequestDetails } from '@breeztech/breez-sdk-spark';
+import type { LnurlPayRequestDetails, LnurlAuthRequestDetails, LnurlWithdrawRequestDetails } from '@breeztech/breez-sdk-spark';
 
 export function getPaymentMethodName(input: SendInput | null): string {
   if (!input) return '';
@@ -16,6 +16,9 @@ export function getPaymentMethodName(input: SendInput | null): string {
       return 'Lightning Address';
     case 'lnurlAuth':
       return 'LNURL Auth';
+    case 'lnurlWithdraw':
+      // Withdraw pulls funds into this wallet, so the dialog reads as a receive.
+      return 'Receive';
     case 'crossChainAddress':
       return 'Send USD';
     default:
@@ -35,6 +38,13 @@ export function getLnurlPayRequestDetails(input: SendInput | null): LnurlPayRequ
 
 export function getLnurlAuthRequestDetails(input: SendInput | null): LnurlAuthRequestDetails | null {
   if (input && input.parsedInput.type === 'lnurlAuth') {
+    return input.parsedInput;
+  }
+  return null;
+}
+
+export function getLnurlWithdrawRequestDetails(input: SendInput | null): LnurlWithdrawRequestDetails | null {
+  if (input && input.parsedInput.type === 'lnurlWithdraw') {
     return input.parsedInput;
   }
   return null;

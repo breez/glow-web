@@ -188,7 +188,8 @@ export function useSendPayment(): UseSendPaymentReturn {
       } else if (
         effective.type === 'lnurlPay' ||
         effective.type === 'lightningAddress' ||
-        effective.type === 'lnurlAuth'
+        effective.type === 'lnurlAuth' ||
+        effective.type === 'lnurlWithdraw'
       ) {
         setCurrentStep('workflow');
       } else {

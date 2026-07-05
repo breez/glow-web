@@ -9,6 +9,7 @@ import BitcoinWorkflow from './workflows/BitcoinWorkflow';
 import SparkWorkflow from './workflows/SparkWorkflow';
 import LnurlWorkflow from './workflows/LnurlWorkflow';
 import LnurlAuthWorkflow from './workflows/LnurlAuthWorkflow';
+import LnurlWithdrawWorkflow from './workflows/LnurlWithdrawWorkflow';
 import CrossChainWorkflow from './workflows/CrossChainWorkflow';
 import AmountStep from './steps/AmountStep';
 import ConfirmStep from './steps/ConfirmStep';
@@ -18,9 +19,9 @@ import ContactsSubView from './components/ContactsSubView';
 import { PrepareLnurlPayRequest } from '@breeztech/breez-sdk-spark';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
-import { ArrowUpIcon } from '@/components/Icons';
+import { ArrowUpIcon, ArrowDownIcon } from '@/components/Icons';
 import { useSendPayment } from './hooks/useSendPayment';
-import { getPaymentMethodName, getLnurlPayRequestDetails, getLnurlAuthRequestDetails } from './utils';
+import { getPaymentMethodName, getLnurlPayRequestDetails, getLnurlAuthRequestDetails, getLnurlWithdrawRequestDetails } from './utils';
 
 interface SendPaymentDialogProps {
   isOpen: boolean;
@@ -91,12 +92,13 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
 
   const lnurlPayDetails = getLnurlPayRequestDetails(send.paymentInput);
   const lnurlAuthDetails = getLnurlAuthRequestDetails(send.paymentInput);
+  const lnurlWithdrawDetails = getLnurlWithdrawRequestDetails(send.paymentInput);
 
   // Prepare can fail before producing a response (e.g. insufficient funds on a
   // fixed-amount payment). With no response and no LNURL workflow to render, show
   // the error on the confirm step with the send action disabled, rather than a
   // blank step. Only read inside the workflow-step block below.
-  const prepareFailed = !send.prepareResponse && !lnurlPayDetails && !lnurlAuthDetails && !!send.error;
+  const prepareFailed = !send.prepareResponse && !lnurlPayDetails && !lnurlAuthDetails && !lnurlWithdrawDetails && !!send.error;
 
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={handleClose} showBackdrop>
@@ -132,7 +134,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
             <DialogHeader
               title={dialogTitle}
               onClose={handleClose}
-              icon={<ArrowUpIcon />}
+              icon={send.paymentInput?.parsedInput.type === 'lnurlWithdraw' ? <ArrowDownIcon /> : <ArrowUpIcon />}
             />
 
             {send.currentStep === 'input' && (
@@ -230,6 +232,16 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                     onAuth={async (requestData) => {
                       return await wallet.lnurlAuth(requestData);
                     }}
+                  />
+                )}
+                {lnurlWithdrawDetails && (
+                  <LnurlWithdrawWorkflow
+                    parsed={lnurlWithdrawDetails}
+                    onBack={() => send.setCurrentStep('input')}
+                    onWithdraw={(amountSats) =>
+                      wallet.lnurlWithdraw({ amountSats, withdrawRequest: lnurlWithdrawDetails })
+                    }
+                    onDone={handleClose}
                   />
                 )}
                 {prepareFailed && (
