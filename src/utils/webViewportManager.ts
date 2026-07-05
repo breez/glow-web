@@ -40,26 +40,141 @@ const EDITABLE_SELECTOR = 'input, textarea, [contenteditable="true"]';
  * wallet footer showed a void-colored OS strip below the bar plus the
  * bar's own duplicate inset padding above it.
  *
- * When a bottom gap is measurable, hand the clearance job to the OS
- * strip: zero --safe-area-inset-bottom (every safe-area consumer
- * reads the var first and falls back to env) and mark <html> so
- * index.css paints the canvas in the bottom-bar glass composite. On
- * iOS versions whose viewport reaches the physical bottom the gap
- * measures 0 and nothing activates.
+ * iOS flaps between two window layouts across launch / resume / theme
+ * change, usually without firing resize: a full-bleed viewport (the
+ * page reaches the physical bottom) and a short viewport (the layout
+ * viewport ends above the home-indicator strip; only the canvas
+ * background paints there). Worse, env(safe-area-inset-bottom) is not
+ * trustworthy in either state: it can report 0 in the full-bleed
+ * layout, which would leave the bottom bar with no clearance at all.
+ *
+ * Policy: pad for the success mode, always.
+ *
+ *   --safe-area-inset-bottom = the device's home-indicator inset,
+ *   unconditionally, on iOS native / standalone.
+ *
+ * The short-viewport state is a broken OS state regardless of what we
+ * do (the black band below the shortened window is the system root
+ * window; no web pixel can paint it), so layout is not adapted to it.
+ * kickViewportRelayout() tries to escape it; until that lands the UI
+ * shows the band plus normal padding, and the full-bleed success mode
+ * is always rendered correctly, even when env() misreports 0 there.
+ *
+ * The inset is LATCHED once per device from whichever source first
+ * reveals it (a nonzero env() reading, or the viewport gap the broken
+ * state itself exposes; both equal the indicator inset) and persisted
+ * so every later launch starts calibrated. Devices without a home
+ * indicator never observe a nonzero source and latch 0. The
+ * ios-standalone-bottom-gap class (index.css paints the canvas and
+ * the bar in the same solid composite) stays static as well.
  */
 const IOS_STANDALONE_GAP_MAX_PX = 80;
+const IOS_BOTTOM_INSET_STORE_KEY = 'glow-ios-bottom-inset';
 
-function applyIosStandaloneBottomGap(): void {
-  const html = document.documentElement;
-  const portrait = window.matchMedia('(orientation: portrait)').matches;
-  const gap = Math.round(window.screen.height - html.clientHeight);
-  const active = portrait && gap > 0 && gap <= IOS_STANDALONE_GAP_MAX_PX;
-  html.classList.toggle('ios-standalone-bottom-gap', active);
-  if (active) {
-    html.style.setProperty('--safe-area-inset-bottom', '0px');
-  } else {
-    html.style.removeProperty('--safe-area-inset-bottom');
+let iosBottomGapEnabled = false;
+let latchedBottomInsetPx = 0;
+let lastAppliedInsetVar = '';
+
+/** Probe what env(safe-area-inset-bottom) currently resolves to. */
+function readEnvBottomPx(): number {
+  if (!document.body) return 0;
+  const probe = document.createElement('div');
+  probe.style.cssText =
+    'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom, 0px)';
+  document.body.appendChild(probe);
+  const px = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+  probe.remove();
+  return px;
+}
+
+function latchBottomInset(candidatePx: number): void {
+  const px = Math.round(candidatePx);
+  if (px > latchedBottomInsetPx && px <= IOS_STANDALONE_GAP_MAX_PX) {
+    latchedBottomInsetPx = px;
+    try {
+      localStorage.setItem(IOS_BOTTOM_INSET_STORE_KEY, String(px));
+    } catch {
+      /* storage unavailable (private mode): stays session-latched */
+    }
   }
+}
+
+function measureBottomGapPx(): number {
+  const raw = Math.round(
+    window.screen.height - document.documentElement.clientHeight
+  );
+  return raw > 0 && raw <= IOS_STANDALONE_GAP_MAX_PX ? raw : 0;
+}
+
+function applyIosBottomInset(): void {
+  const html = document.documentElement;
+  // screen.height is portrait-major on iOS; the gap arithmetic is only
+  // meaningful in portrait. The app is portrait-designed; freeze the
+  // last value in landscape rather than computing garbage.
+  if (!window.matchMedia('(orientation: portrait)').matches) return;
+  latchBottomInset(measureBottomGapPx());
+  const value = `${latchedBottomInsetPx}px`;
+  if (value !== lastAppliedInsetVar) {
+    lastAppliedInsetVar = value;
+    html.style.setProperty('--safe-area-inset-bottom', value);
+  }
+}
+
+/**
+ * The short-viewport state after a resume is (at least partly) a
+ * WebKit failure to restore the standalone window geometry; the band
+ * under the shortened window is the system root window, which no web
+ * pixel can paint. Toggling viewport-fit off and back on forces
+ * WebKit to recompute the window geometry, which restores the
+ * full-bleed layout when the short state is that bug rather than
+ * legitimate layout. Rate-limited; when the short state is legitimate
+ * the toggle changes nothing and the inset invariant still holds.
+ */
+let lastViewportKickMs = 0;
+
+function kickViewportRelayout(): void {
+  const now = Date.now();
+  if (now - lastViewportKickMs < 2000) return;
+  lastViewportKickMs = now;
+  const meta = document.querySelector<HTMLMetaElement>(
+    'meta[name="viewport"]'
+  );
+  const content = meta?.getAttribute('content');
+  if (!meta || !content || !content.includes('viewport-fit=cover')) return;
+  meta.setAttribute(
+    'content',
+    content.replace(/,?\s*viewport-fit=cover/, '')
+  );
+  requestAnimationFrame(() => {
+    meta.setAttribute('content', content);
+    requestAnimationFrame(applyIosBottomInset);
+    window.setTimeout(applyIosBottomInset, 250);
+  });
+}
+
+/**
+ * Re-measure now and again after the viewport settles. iOS applies
+ * resume / theme-change / rotation geometry lazily and often without
+ * firing resize, so a single synchronous read can see a stale
+ * clientHeight; the extra frame + 250ms taps catch the settled value.
+ * Event-time is also when the env() probe runs (too costly per frame).
+ */
+function refreshIosBottomGap(): void {
+  latchBottomInset(readEnvBottomPx());
+  applyIosBottomInset();
+  requestAnimationFrame(applyIosBottomInset);
+  window.setTimeout(() => {
+    applyIosBottomInset();
+    // Still short after the settle window while visible: likely the
+    // resume geometry bug; try to talk WebKit into full-bleed again.
+    if (
+      document.visibilityState === 'visible' &&
+      window.matchMedia('(orientation: portrait)').matches &&
+      measureBottomGapPx() > 0
+    ) {
+      kickViewportRelayout();
+    }
+  }, 250);
 }
 
 let rafId: number | null = null;
@@ -86,6 +201,10 @@ export function pollWebViewport(): boolean {
       root.style.transform =
         pageTop !== 0 ? `translateY(${pageTop}px)` : '';
     }
+  }
+
+  if (iosBottomGapEnabled) {
+    applyIosBottomInset();
   }
 
   const keyboardPx = Math.round(html.clientHeight - height);
@@ -154,8 +273,28 @@ export function initWebViewportManager(): void {
     iOSNative || ((navigator as { standalone?: boolean }).standalone === true);
 
   if (shouldApplyIosBottomGap) {
-    applyIosStandaloneBottomGap();
-    window.addEventListener('resize', applyIosStandaloneBottomGap);
+    iosBottomGapEnabled = true;
+    try {
+      latchedBottomInsetPx =
+        Number(localStorage.getItem(IOS_BOTTOM_INSET_STORE_KEY)) || 0;
+    } catch {
+      /* storage unavailable: latch during this session instead */
+    }
+    // Static canvas paint: correct whether or not a gap is currently
+    // measurable (covered by content when there is none).
+    document.documentElement.classList.add('ios-standalone-bottom-gap');
+    refreshIosBottomGap();
+    // iOS re-lays the window on resume, theme change, and rotation,
+    // frequently without a resize event; listen to every signal that
+    // correlates with those transitions. The web poll loop re-checks
+    // per frame as well; on native (no loop) these are the only hooks.
+    window.addEventListener('resize', refreshIosBottomGap);
+    window.addEventListener('pageshow', refreshIosBottomGap);
+    window.addEventListener('focus', refreshIosBottomGap);
+    document.addEventListener('visibilitychange', refreshIosBottomGap);
+    window
+      .matchMedia('(prefers-color-scheme: dark)')
+      .addEventListener('change', refreshIosBottomGap);
   }
 
   // Web keyboard management and viewport polling (no-op on Android native).
