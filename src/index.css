@@ -135,6 +135,12 @@
    ============================================ */
 
 :root {
+  /* Dark-only app: pins UA-rendered surfaces (form controls,
+     scrollbars, autofill) to the dark palette and, together with the
+     color-scheme meta in index.html, stops Chrome from theming
+     standalone PWA system bars per the OS Light/Dark setting. */
+  color-scheme: dark;
+
   /* ========================================
      PRIMARY ACCENT - Change this one line!
      ======================================== */
@@ -205,6 +211,32 @@ body {
   flex-direction: column;
 }
 
+/* iOS native / standalone web app: the layout viewport can end above
+   the home-indicator strip and only the canvas background paints
+   there. webViewportManager adds this class statically on iOS (the
+   measured part is the --safe-area-inset-bottom zeroing, so bottom
+   bars don't stack a duplicate inset on top of the OS strip; the
+   color must never depend on a measurement that iOS can silently
+   invalidate on resume / theme change). Paint the canvas in the
+   bottom-bar glass composite (#13131d, the same value as the native
+   system bars and the PWA theme_color) so the strip reads as part of
+   the footer instead of a void-colored band. When no gap exists the
+   canvas is covered by content and this rule is invisible. */
+html.ios-standalone-bottom-gap {
+  background: #13131d;
+}
+
+/* The OS strip is flat canvas; a translucent blurred bar above it can
+   never match it pixel-for-pixel (glass samples the content behind).
+   Make the bar solid in this mode so bar and strip are identical by
+   construction, in both the full-viewport (launch) and short-viewport
+   (resume) states. Glass is preserved on every other platform. */
+html.ios-standalone-bottom-gap .bottom-bar {
+  background: #13131d;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 /* Collapse non-essential rows while the soft keyboard is up so tall
    bottom-sheet forms fit above it without inner scrolling. The
    `keyboard-visible` class on <html> comes from main.tsx (native,
@@ -223,7 +255,10 @@ html.keyboard-visible .hide-on-keyboard {
    returned to after cancelling an edit, keeps its full padding even
    while the global keyboard-visible class lingers. */
 .bottom-sheet-content-pad {
-  padding-bottom: calc(1em + env(safe-area-inset-bottom, 0px));
+  /* Android passthrough insets: Capacitor injects the real value as
+     --safe-area-inset-bottom because env() stays 0 there; env() is the
+     iOS / web fallback. See src/utils/safeAreaInsets.ts. */
+  padding-bottom: calc(1em + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
 }
 html.keyboard-visible .bottom-sheet-content-pad:focus-within {
   padding-bottom: 1em;
@@ -624,7 +659,7 @@ video::-webkit-media-controls-panel {
   border-top: 1px solid var(--spark-border);
   gap: 0.625rem;
   padding: 0.75rem 1rem;
-  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(0.75rem + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
 }
 
 /* ============================================

@@ -100,8 +100,8 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
       <div
         className="h-full w-full bg-spark-surface flex flex-col"
         style={{
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          paddingTop: 'var(--safe-area-inset-top, env(safe-area-inset-top, 0px))',
+          paddingBottom: 'var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))',
         }}
       >
         {/* Camera area: the video feed is constrained to a square

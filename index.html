@@ -11,7 +11,18 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Glow" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#0a0a0f" />
+  <!-- Glow is dark-only. Declaring the color scheme stops Chrome from
+       adapting standalone PWA chrome to the system theme: without it,
+       Light mode renders a white navigation bar and Dark mode swaps
+       theme-color for Chrome's own near-black. -->
+  <meta name="color-scheme" content="dark" />
+  <!-- #13131d = spark-surface at 80% composited over the void canvas:
+       the same value the native app pins its system bars to (main.tsx),
+       so PWA system bars blend with the header / bottom-bar glass. The
+       media-qualified pair pins the same color in both system themes. -->
+  <meta name="theme-color" content="#13131d" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#13131d" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#13131d" />
   <meta name="msapplication-TileColor" content="#0a0a0f" />
   <meta name="msapplication-tap-highlight" content="no" />
   
@@ -38,6 +49,27 @@
   <link rel="icon" type="image/png" href="/icons/Glow_favicon.png" />
   <link rel="apple-touch-icon" href="/icons/Glow-icon-maskable-192.png" />
   <link rel="mask-icon" href="/icons/Glow-icon-maskable-192.png" color="#0a0a0f" />
+  <!-- iOS standalone launch images. Without these iOS shows a blank
+       scheme-colored frame (a black flash on this app) before first
+       paint; background_color in the manifest is ignored. Canvas is
+       #0f0f18 (spark-dark) so startup image, #splash spinner page,
+       and the welcome page all share one canvas color; logo at 37% of
+       device width to match the native splash. iOS requires an exact
+       device-size + DPR + orientation match per image (portrait-only
+       set; the app is portrait-designed). -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/apple-splash/apple-splash-320x568@2.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/apple-splash/apple-splash-375x667@2.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/apple-splash/apple-splash-375x812@3.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/apple-splash/apple-splash-390x844@3.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/apple-splash/apple-splash-393x852@3.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/apple-splash/apple-splash-402x874@3.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/apple-splash/apple-splash-414x736@3.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/apple-splash/apple-splash-414x896@2.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/apple-splash/apple-splash-414x896@3.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/apple-splash/apple-splash-428x926@3.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/apple-splash/apple-splash-430x932@3.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/apple-splash/apple-splash-440x956@3.png" />
+
   
   <!-- Manifest -->
   <link rel="manifest" href="/manifest.json" />
@@ -54,7 +86,7 @@
     /* Prevent pull-to-refresh on iOS */
     html, body {
       overscroll-behavior-y: none;
-      background: #151520;
+      background: #0f0f18; /* spark-dark: same canvas as the welcome page */
     }
 
     /* Initial splash screen. Fade-out is driven by the Web Animations
@@ -64,7 +96,7 @@
     #splash {
       position: fixed;
       inset: 0;
-      background: #151520;
+      background: #0f0f18;
       display: flex;
       align-items: center;
       justify-content: center;

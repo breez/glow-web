@@ -5,10 +5,13 @@
   "start_url": "/",
   "id": "/",
   "display": "standalone",
-  "background_color": "#0a0a0f",
-  "theme_color": "#0a0a0f",
+  "background_color": "#0f0f18",
+  "theme_color": "#13131d",
   "orientation": "portrait-primary",
-  "categories": ["finance", "utilities"],
+  "categories": [
+    "finance",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "/icons/Glow-icon-192.png",
