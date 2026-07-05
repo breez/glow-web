@@ -37,10 +37,10 @@ import { Capacitor } from '@capacitor/core';
  * to 0 through the CSS fallback. Every path reads the
  * `--safe-area-inset-*` custom property first and falls back to
  * `env()`: the variable is written by Capacitor's SystemBars on
- * Android native and by webViewportManager in iOS standalone web
- * apps (which zeroes the bottom inset when the OS already reserves
- * the home-indicator strip outside the layout viewport); everywhere
- * else it is undefined and `env()` behavior is unchanged.
+ * Android native and by webViewportManager on iOS native / standalone
+ * (as max(latched inset, env()), so it can only raise the bottom
+ * inset, never hide a live env() value); everywhere else it is
+ * undefined and `env()` behavior is unchanged.
  */
 const isAndroidNative =
   typeof window !== 'undefined' &&
