@@ -50,8 +50,14 @@ const EDITABLE_SELECTOR = 'input, textarea, [contenteditable="true"]';
  *
  * Policy: pad for the success mode, always.
  *
- *   --safe-area-inset-bottom = the device's home-indicator inset,
- *   unconditionally, on iOS native / standalone.
+ *   --safe-area-inset-bottom = max(latched inset, live env()), set
+ *   unconditionally on iOS native / standalone. The env() term is the
+ *   floor: once the var is set at all, it hides env() from every
+ *   var(--x, env(...)) consumer, so a fixed not-yet-latched 0px would
+ *   shadow a valid env() reading. On a fresh install WKWebView often
+ *   populates env() only after every boot-time probe has run (WASM
+ *   init hogs the main thread past the settle window), which made the
+ *   bottom padding a per-launch coin flip until something latched.
  *
  * The short-viewport state is a broken OS state regardless of what we
  * do (the black band below the shortened window is the system root
@@ -113,7 +119,8 @@ function applyIosBottomInset(): void {
   // last value in landscape rather than computing garbage.
   if (!window.matchMedia('(orientation: portrait)').matches) return;
   latchBottomInset(measureBottomGapPx());
-  const value = `${latchedBottomInsetPx}px`;
+  // env() floor: an unlatched 0 must never shadow a live env() value.
+  const value = `max(${latchedBottomInsetPx}px, env(safe-area-inset-bottom, 0px))`;
   if (value !== lastAppliedInsetVar) {
     lastAppliedInsetVar = value;
     html.style.setProperty('--safe-area-inset-bottom', value);
