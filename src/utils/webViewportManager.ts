@@ -136,6 +136,11 @@ function kickViewportRelayout(): void {
   const now = Date.now();
   if (now - lastViewportKickMs < 2000) return;
   lastViewportKickMs = now;
+  // Cheapest nudges first: clear any pan WebKit restored along with
+  // the stale geometry, and force a synchronous reflow so everything
+  // below negotiates against a settled layout.
+  window.scrollTo(0, 0);
+  void document.documentElement.offsetHeight;
   const meta = document.querySelector<HTMLMetaElement>(
     'meta[name="viewport"]'
   );
@@ -147,7 +152,16 @@ function kickViewportRelayout(): void {
   );
   requestAnimationFrame(() => {
     meta.setAttribute('content', content);
-    requestAnimationFrame(applyIosBottomInset);
+    // Some WebKit builds only re-lay the window when the root's own
+    // geometry actually changes: grow #root by 1px for one frame.
+    const root = document.getElementById('root');
+    if (root) {
+      root.style.minHeight = 'calc(100dvh + 1px)';
+      requestAnimationFrame(() => {
+        root.style.minHeight = '';
+        applyIosBottomInset();
+      });
+    }
     window.setTimeout(applyIosBottomInset, 250);
   });
 }
