@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#13131d" media="(prefers-color-scheme: dark)" />
+  <meta name="robots" content="index, follow" />
+  <title>Privacy Policy — Glow</title>
+  <meta name="description" content="What data Glow handles and where it goes." />
+  <link rel="icon" href="/icons/Glow_favicon.png" />
+  <style>
+    :root {
+      --void: #ffffff;
+      --surface: #f5f3ef;
+      --border: #e6e2da;
+      --text: #16161c;
+      --text-secondary: rgba(0, 0, 0, 0.68);
+      --text-muted: rgba(0, 0, 0, 0.42);
+      /* Blue reads as a link and clears WCAG AA on white (6.5:1); the
+         gold family tops out at ~4.2:1 there. Dark mode keeps the gold. */
+      --primary: #20609f;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --void: #0a0a0f;
+        --surface: #151520;
+        --border: #252535;
+        --text: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.7);
+        --text-muted: rgba(255, 255, 255, 0.4);
+        --primary: #d4a574;
+      }
+
+      /* Glow's atmospheric background (from .main-wrapper in index.css):
+         layered radial gradients over the void, fixed so it fills the page. */
+      body {
+        background:
+          radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.15), transparent),
+          radial-gradient(ellipse 60% 40% at 100% 0%, rgba(247, 147, 26, 0.08), transparent),
+          radial-gradient(ellipse 60% 40% at 0% 100%, rgba(0, 212, 255, 0.06), transparent),
+          var(--void);
+        background-attachment: fixed;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--void);
+      color: var(--text-secondary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.65;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 1.25rem 5rem;
+    }
+
+    h1 {
+      color: var(--text);
+      font-size: 2rem;
+      line-height: 1.2;
+      margin: 0 0 0.5rem;
+    }
+
+    h2 {
+      color: var(--text);
+      font-size: 1.25rem;
+      margin: 2.5rem 0 0.75rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .effective-date {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin: 0 0 2rem;
+    }
+
+    p { margin: 0 0 1rem; }
+
+    ul {
+      margin: 0 0 1rem;
+      padding-left: 1.25rem;
+    }
+
+    li { margin: 0 0 0.6rem; }
+
+    strong { color: var(--text); }
+
+    a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    a:hover { text-decoration: underline; }
+
+    code {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.35em;
+      font-size: 0.9em;
+      color: var(--text);
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>Glow Privacy Policy</h1>
+    <p class="effective-date"><strong>Effective date: July 6, 2026</strong></p>
+
+    <p>Glow is a non-custodial Bitcoin app made by Breez, available at
+      <a href="https://glow-app.co">glow-app.co</a> and as a native app for iOS and Android. This policy explains what
+      data Glow handles and where it goes.</p>
+
+    <h2>1. What we don't collect</h2>
+    <ul>
+      <li><strong>No accounts.</strong> There is no registration, login, email, phone number, or password.</li>
+      <li><strong>No identity verification.</strong> Glow never asks for your name, documents, or any KYC information.</li>
+      <li><strong>No analytics or tracking.</strong> Glow contains no analytics SDKs, tracking pixels, advertising
+        identifiers, or fingerprinting.</li>
+      <li><strong>No remote logging.</strong> Diagnostic logs stay on your device with sensitive values redacted, and are
+        shared only if you choose to export and send them to us.</li>
+    </ul>
+
+    <h2>2. Data that leaves your device</h2>
+    <p>To move funds, some data necessarily travels over the network:</p>
+    <ul>
+      <li><strong>Payment data.</strong> Payments are executed through the Breez SDK, which may communicate with Spark or
+        other providers (e.g. swap services like Boltz or Flashnet) to create invoices, execute transfers, and fetch fiat
+        exchange rates. This traffic may include payment details (amounts, invoices, addresses) and, like any internet
+        traffic, your IP address. On-chain Bitcoin transactions are, by design, recorded permanently on the public
+        blockchain.</li>
+      <li><strong>Lightning address.</strong> To receive payments at an address like <code>you@breez.tips</code>, the app
+        registers your chosen (or randomly generated) username with the Lightning address server (configurable in
+        settings). This username is public: anyone who knows it can look it up to pay you. Don't use a username you
+        consider private.</li>
+    </ul>
+
+    <h2>3. Buying Bitcoin through partners</h2>
+    <p>If you choose to buy Bitcoin, Glow redirects you to a third-party provider such as MoonPay or Cash App. These are
+      independent services with their own privacy policies, and they may require identity verification (KYC). Glow does
+      not send them any of your personal information; whatever you provide to them is between you and the provider.</p>
+
+    <h2>4. Data retention and deletion</h2>
+    <ul>
+      <li><strong>On-device data</strong> (settings, contacts, logs) is under your control. Clear the app's data or
+        uninstall the app to delete it.</li>
+      <li><strong>Lightning address usernames</strong> remain registered on the Lightning address server so that your
+        address keeps working. You can replace your username at any time from the app, which deregisters the old one.</li>
+    </ul>
+
+    <h2>5. Changes to this policy</h2>
+    <p>If we change this policy, we will update it here with a new effective date.</p>
+
+    <h2>6. Contact</h2>
+    <p>Questions about privacy in Glow? Contact Breez at
+      <a href="mailto:contact@breez.technology">contact@breez.technology</a> or open an issue at
+      <a href="https://github.com/breez/glow-web">github.com/breez/glow-web</a>.</p>
+  </main>
+</body>
+
+</html>
