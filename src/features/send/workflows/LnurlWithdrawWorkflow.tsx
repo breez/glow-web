@@ -47,14 +47,22 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
     }
   }, [parsed]);
 
-  const amountNum = parseInt(amount, 10) || 0;
-  const outOfRange = amountNum > 0 && (amountNum < minSats || amountNum > maxSats);
-  const validAmount = !unserviceable && (isFixed || (amountNum > 0 && !outOfRange));
-  const inlineError = !isFixed && !unserviceable && outOfRange
-    ? amountNum < minSats
-      ? `Amount must be at least ₿${formatWithSpaces(minSats)}`
-      : `Amount must be at most ₿${formatWithSpaces(maxSats)}`
-    : null;
+  // Validate the input as-is rather than coercing it: a non-integer like "5.5"
+  // or "1e5" is rejected, never parsed into a different value than shown, so what
+  // the field displays is exactly what gets withdrawn.
+  const isInteger = /^\d+$/.test(amount);
+  const amountNum = isInteger ? parseInt(amount, 10) : NaN;
+  const outOfRange = isInteger && (amountNum < minSats || amountNum > maxSats);
+  const validAmount = !unserviceable && (isFixed || (isInteger && !outOfRange));
+  const inlineError = isFixed || unserviceable || amount === ''
+    ? null
+    : !isInteger
+      ? 'Enter a whole number of sats'
+      : amountNum < minSats
+        ? `Amount must be at least ₿${formatWithSpaces(minSats)}`
+        : amountNum > maxSats
+          ? `Amount must be at most ₿${formatWithSpaces(maxSats)}`
+          : null;
 
   // Reached only with a valid, in-range amount: the Receive button is disabled
   // otherwise. The SDK waits up to completionTimeoutSecs for settlement, so the
@@ -99,7 +107,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
           </label>
           {!isFixed && !unserviceable && (
             <span className="text-xs text-spark-text-secondary">
-              {formatWithSpaces(minSats)} – {formatWithSpaces(maxSats)} sats
+              {formatWithSpaces(minSats)} to {formatWithSpaces(maxSats)} sats
             </span>
           )}
         </div>
