@@ -4,8 +4,12 @@ import { FormError, PrimaryButton, SecondaryButton } from '../../../components/u
 import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
 import { formatWithSpaces } from '../../../utils/formatNumber';
-import { useInvoicePaid } from '../../../hooks/useInvoicePaid';
 import ProcessingStep from '../steps/ProcessingStep';
+
+// Seconds the SDK waits for the withdrawal to settle before returning. The SDK
+// bounds the wait, so the await resolves with the outcome (a settled payment or
+// not) and the spinner can't hang.
+export const LNURL_WITHDRAW_COMPLETION_TIMEOUT_SECS = 60;
 
 interface LnurlWithdrawWorkflowProps {
   parsed: LnurlWithdrawRequestDetails;
@@ -19,29 +23,20 @@ interface LnurlWithdrawWorkflowProps {
 }
 
 const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, onBack, onWithdraw, onDone }) => {
-  // LNURL bounds are in msat; withdraw amounts are whole sats. Floor the ceiling
-  // and round the floor up so any chosen amount stays inside the server's msat
-  // window. A sub-1-sat ceiling (maxWithdrawable < 1000 msat) can't be serviced
-  // by a sat-denominated wallet, so surface that rather than rounding up to 1 and
-  // sending an over-max request the callback would reject. `minSats` clamps to
-  // `maxSats` so a sub-sat-wide range collapses to a single fixed amount.
+  // LNURL bounds are in msat; this wallet receives whole sats. Round the floor up
+  // and the ceiling down so any chosen amount stays inside the server's msat
+  // window, and require at least 1 sat. If no whole sat fits that window (a
+  // sub-1-sat ceiling, or a range narrower than a sat that straddles a boundary),
+  // maxSats < minSats and the link is unserviceable.
   const maxSats = useMemo(() => Math.floor(parsed.maxWithdrawable / 1000), [parsed]);
-  const unserviceable = maxSats < 1;
-  const minSats = useMemo(
-    () => Math.min(Math.ceil(parsed.minWithdrawable / 1000), Math.max(maxSats, 1)),
-    [parsed, maxSats],
-  );
+  const minSats = useMemo(() => Math.max(1, Math.ceil(parsed.minWithdrawable / 1000)), [parsed]);
+  const unserviceable = maxSats < minSats;
   const isFixed = !unserviceable && minSats === maxSats;
 
   // Editable amounts default to the max (withdraw everything available).
   const [amount, setAmount] = useState<string>(String(maxSats));
   const [error, setError] = useState<string | null>(null);
   const [isWaiting, setIsWaiting] = useState(false);
-  const [invoice, setInvoice] = useState<string | null>(null);
-
-  // Backstop for when lnurlWithdraw resolves before settlement: close once the
-  // created invoice is paid. Inert until `invoice` is set.
-  useInvoicePaid(invoice, onDone);
 
   const description = parsed.defaultDescription?.trim();
   const sourceHost = useMemo(() => {
@@ -61,25 +56,22 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
       : `Amount must be at most ₿${formatWithSpaces(maxSats)}`
     : null;
 
+  // Reached only with a valid, in-range amount: the Receive button is disabled
+  // otherwise. The SDK waits up to completionTimeoutSecs for settlement, so the
+  // await resolves with the outcome and the spinner can't hang.
   const onReceive = async () => {
-    if (unserviceable) return;
     const sats = isFixed ? maxSats : amountNum;
-    if (sats < minSats || sats > maxSats) {
-      setError(`Amount must be between ₿${formatWithSpaces(minSats)} and ₿${formatWithSpaces(maxSats)}`);
-      return;
-    }
-
     setError(null);
     setIsWaiting(true);
     try {
       const resp = await onWithdraw(sats);
-      // Settled during the call: done. Otherwise keep waiting for the
-      // invoice-paid event on the invoice the SDK just posted.
       if (resp.payment) {
         onDone();
         return;
       }
-      setInvoice(resp.paymentRequest);
+      // Completion window elapsed without settlement.
+      setError('The payment did not arrive in time. Please try again.');
+      setIsWaiting(false);
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'LNURL withdraw failed', { error: formatError(err) });
       setError(`Withdraw failed: ${formatError(err)}`);
@@ -114,7 +106,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
 
         {unserviceable ? (
           <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-secondary text-sm text-center">
-            This withdraw link is below the ₿1 minimum this wallet can receive.
+            This withdraw link has no valid amount this wallet can receive.
           </div>
         ) : isFixed ? (
           <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary flex items-center justify-center text-2xl font-semibold">

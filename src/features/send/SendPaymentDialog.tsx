@@ -9,7 +9,7 @@ import BitcoinWorkflow from './workflows/BitcoinWorkflow';
 import SparkWorkflow from './workflows/SparkWorkflow';
 import LnurlWorkflow from './workflows/LnurlWorkflow';
 import LnurlAuthWorkflow from './workflows/LnurlAuthWorkflow';
-import LnurlWithdrawWorkflow from './workflows/LnurlWithdrawWorkflow';
+import LnurlWithdrawWorkflow, { LNURL_WITHDRAW_COMPLETION_TIMEOUT_SECS } from './workflows/LnurlWithdrawWorkflow';
 import CrossChainWorkflow from './workflows/CrossChainWorkflow';
 import AmountStep from './steps/AmountStep';
 import ConfirmStep from './steps/ConfirmStep';
@@ -134,7 +134,10 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
             <DialogHeader
               title={dialogTitle}
               onClose={handleClose}
-              icon={send.paymentInput?.parsedInput.type === 'lnurlWithdraw' ? <ArrowDownIcon /> : <ArrowUpIcon />}
+              // The input step is always the send entry point, so it keeps the send
+              // icon even when a scanned lnurl-withdraw is still in paymentInput (e.g.
+              // after Back). Only the withdraw workflow step flips to the receive icon.
+              icon={send.currentStep !== 'input' && send.paymentInput?.parsedInput.type === 'lnurlWithdraw' ? <ArrowDownIcon /> : <ArrowUpIcon />}
             />
 
             {send.currentStep === 'input' && (
@@ -239,7 +242,11 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                     parsed={lnurlWithdrawDetails}
                     onBack={() => send.setCurrentStep('input')}
                     onWithdraw={(amountSats) =>
-                      wallet.lnurlWithdraw({ amountSats, withdrawRequest: lnurlWithdrawDetails })
+                      wallet.lnurlWithdraw({
+                        amountSats,
+                        withdrawRequest: lnurlWithdrawDetails,
+                        completionTimeoutSecs: LNURL_WITHDRAW_COMPLETION_TIMEOUT_SECS,
+                      })
                     }
                     onDone={handleClose}
                   />
