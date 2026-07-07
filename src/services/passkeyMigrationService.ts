@@ -161,7 +161,8 @@ export async function transferLightningAddress(
   try {
     currentAddress = await from.getLightningAddress();
   } catch (e) {
-    logger.warn(LogCategory.AUTH, 'Migration: getLightningAddress failed', { label, error: formatError(e) });
+    logger.warn(LogCategory.AUTH, 'Migration: failed to fetch LN address; skipping transfer', { label, error: formatError(e) });
+    return false;
   }
   if (!currentAddress) return false;
 
