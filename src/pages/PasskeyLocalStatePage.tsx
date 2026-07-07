@@ -200,7 +200,7 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack, o
       <ConfirmDialog
         isOpen={confirm === 'resetMigration'}
         title="Reset migration state?"
-        message="Dev only. Re-arms the passkey-RP migration: clears the migrated flag, reverts to the legacy RP, and drops any in-flight migration passkey. Glow signs you out; sign in with your legacy passkey to run the migration again."
+        message="Resets the passkey migration by clearing the migration flag, reverting to the legacy RP, and removing any in-progress migration passkey. Glow will sign you out. Sign in with your legacy passkey to run the migration again."
         confirmLabel="Reset"
         cancelLabel="Cancel"
         variant="warning"
