@@ -23,7 +23,7 @@ import {
 } from '@breeztech/breez-sdk-spark/passkey-prf-provider';
 import { Capacitor } from '@capacitor/core';
 import { LocalStorageCredentialRegistry } from './localStorageCredentialRegistry';
-import { rpId, rpName, signalUnknownCredentials } from './passkeyPrfProvider';
+import { rpId, rpName, signalUnknownCredentials, LEGACY_RP_ID } from './passkeyPrfProvider';
 import { logger, LogCategory } from './logger';
 import {
   clearAllCredentialMeta,
@@ -821,6 +821,22 @@ export function isPasskeyMigrated(): boolean {
 export function setPasskeyMigrated(): void {
   localStorage.setItem(PASSKEY_MIGRATED_KEY, 'true');
   logger.info(LogCategory.AUTH, 'Marked passkey as migrated');
+}
+
+/**
+ * Dev/test only: re-arm the passkey-RP migration. Drops the migrated flag,
+ * reverts to the legacy RP (so the next sign-in is on the legacy wallet and
+ * `onLegacyRp` holds), and clears any in-flight migration credential so a
+ * re-run creates a fresh shared passkey instead of resuming onto an old one.
+ */
+export function resetPasskeyMigrationState(): void {
+  localStorage.removeItem(PASSKEY_MIGRATED_KEY);
+  // Pin the RP back to legacy explicitly. Removing the key falls back to the
+  // module default (the shared RP when configured), which would leave the next
+  // sign-in on the new RP instead of the legacy wallet.
+  setPasskeyRpId(LEGACY_RP_ID);
+  clearMigrationSharedCredentialId();
+  logger.warn(LogCategory.AUTH, 'Reset passkey migration state (dev)');
 }
 
 // The shared credential id created mid-migration, persisted (base64) the moment
