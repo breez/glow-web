@@ -141,15 +141,16 @@ export async function sweepBalances(
 }
 
 /**
- * Move the Lightning address from `from` to `to` using the SDK's atomic,
- * symmetric two-signature transfer: the current owner authorizes handing the
- * username to the new wallet's identity pubkey, then the new wallet claims it.
- * No window where the address is unregistered (unlike delete-then-register);
- * the SDK also rejects a self-transfer (already guarded upstream by the
- * identity assertion). Best-effort: a failure is logged loudly (so the username
- * is recoverable) but never blocks the migration. Returns true only when there
- * was an address to move and the transfer threw, so the caller can warn that
- * incoming Lightning payments may still land in the old wallet.
+ * Moves the Lightning address from `from` to `to` using the SDK's atomic,
+ * symmetric two-signature transfer. The current owner authorizes the transfer
+ * to the new wallet's identity pubkey, then the new wallet claims it. This
+ * avoids the unregister-then-register window and the SDK rejects self-transfers.
+ *
+ * Best effort: failures are logged but never block the migration. If the
+ * current Lightning address can't be determined, the transfer is skipped.
+ * Returns `true` only when a transfer was attempted and failed, allowing the
+ * caller to warn that incoming Lightning payments may still arrive at the
+ * original address.
  */
 export async function transferLightningAddress(
   from: BreezSdk,
@@ -161,7 +162,8 @@ export async function transferLightningAddress(
   try {
     currentAddress = await from.getLightningAddress();
   } catch (e) {
-    logger.warn(LogCategory.AUTH, 'Migration: getLightningAddress failed', { label, error: formatError(e) });
+    logger.warn(LogCategory.AUTH, 'Migration: failed to fetch lightning address; skipping transfer', { label, error: formatError(e) });
+    return false;
   }
   if (!currentAddress) return false;
 
