@@ -23,6 +23,9 @@ const ExplainStep: React.FC<ExplainStepProps> = ({ entry, onContinue, onSecondar
         choose <em>Skip</em> to continue.
       </p>
     )}
+    <p className="text-xs text-spark-text-muted mb-4">
+      Your funds are transferred in a single transaction. Your payment history won't carry over.
+    </p>
     <div className="flex flex-col gap-3">
       <PrimaryButton onClick={onContinue}>Continue</PrimaryButton>
       <SecondaryButton onClick={onSecondary}>{entry === 'banner' ? 'Not now' : 'Skip'}</SecondaryButton>
