@@ -168,13 +168,10 @@ export async function transferLightningAddress(
   transfereePubkey: string,
   label: string,
 ): Promise<boolean> {
-  let currentAddress: Awaited<ReturnType<BreezSdk['getLightningAddress']>> = undefined;
-  try {
-    currentAddress = await from.getLightningAddress();
-  } catch (e) {
+  const currentAddress = await from.getLightningAddress().catch((e) => {
     logger.warn(LogCategory.AUTH, 'Migration: failed to fetch lightning address; skipping transfer', { label, error: formatError(e) });
-    return false;
-  }
+    return undefined;
+  });
   if (!currentAddress) return false;
 
   const { username, description } = currentAddress;
