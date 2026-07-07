@@ -503,6 +503,10 @@ export function useBreezSdk(
       ]);
       setWalletInfo(info);
       setTransactions(filterOngoingConversionPayments(txns.payments));
+      logger.info(LogCategory.SDK, 'Connected wallet identity', {
+        identityPubkey: info.identityPubkey,
+        label: passkeyLabel ?? null,
+      });
 
       setIsConnected(true);
       setStartupState('connected');
