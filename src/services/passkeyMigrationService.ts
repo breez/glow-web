@@ -391,19 +391,9 @@ export function createMigrationSession(): MigrationSession {
         throw new SharedSeedVerificationError('platform did not report the created credential id');
       }
       sharedCredId = registration.credential.credentialId;
-      // Persist now so an interrupted run resumes onto THIS passkey (pinned probe),
-      // never a duplicate.
+      // Persist now so an interrupted run resumes onto THIS passkey.
       setMigrationSharedCredentialId(registration.credential.credentialId);
-      // Pin the destination derive to the created credential: register()'s own
-      // derive is unpinned and can bind to another resident passkey, so ignore
-      // its returned seed in favor of this pinned one.
-      const pinned = await sharedSignIn(primaryLabel);
-      if (!seedsMatch(pinned.wallet.seed, registration.wallet.seed)) {
-        logger.warn(LogCategory.AUTH, 'Migration: register-returned seed differs from the pinned derive; using the pinned wallet', {
-          label: primaryLabel,
-        });
-      }
-      sharedPrimarySeed = pinned.wallet.seed;
+      sharedPrimarySeed = registration.wallet.seed;
       sharedPrimaryLabel = primaryLabel;
     },
     async deriveSharedSeed(label) {

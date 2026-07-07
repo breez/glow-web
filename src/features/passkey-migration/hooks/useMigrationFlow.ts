@@ -92,6 +92,10 @@ export function useMigrationFlow({
   // Cached legacy seeds per label, populated by check-deposits-all and reused by
   // sweep-label so we do not re-prompt for the same label.
   const seedCacheRef = useRef<Map<string, Seed>>(new Map());
+  // Cached new-passkey seeds per label, derived up front in derive-new-passkey so
+  // the sweep runs without prompts. In-memory only; each entry is dropped as its
+  // label is swept, and the whole map is cleared on close.
+  const newSeedCacheRef = useRef<Map<string, Seed>>(new Map());
   // SDKs live during the current phase that may need cleanup.
   const oldSdkRef = useRef<BreezSdk | null>(null);
   const newSdkRef = useRef<BreezSdk | null>(null);
@@ -129,6 +133,7 @@ export function useMigrationFlow({
     setCanStartOver(false);
     labelsToMigrateRef.current = [];
     seedCacheRef.current = new Map();
+    newSeedCacheRef.current = new Map();
     oldSdkRef.current = null;
     newSdkRef.current = null;
     primaryNewSdkRef.current = null;
@@ -178,6 +183,7 @@ export function useMigrationFlow({
       // do NOT disconnect it here. Just drop our reference.
       primaryNewSdkRef.current = null;
       seedCacheRef.current = new Map();
+      newSeedCacheRef.current = new Map();
     }
   }, [isOpen, activeLegacySdk]);
 
@@ -364,6 +370,18 @@ export function useMigrationFlow({
           logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: passkey created on the shared RP');
         }
 
+        // Derive every label's new-passkey seed now, while the user is set up to
+        // authenticate with the new passkey, so the sweep runs without prompts.
+        // The primary label reuses register's seed (no ceremony); the rest prompt
+        // here. Seeds are held in memory only, dropped as each label is swept.
+        for (const label of labelsToMigrateRef.current) {
+          if (cancelled) return;
+          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: deriving new seed on the shared RP', { label });
+          const seed = await session.deriveSharedSeed(label);
+          if (cancelled) return;
+          newSeedCacheRef.current.set(label, seed);
+        }
+
         setCurrentLabelIndex(0);
         setPhase('sweep-label');
       } catch (e) {
@@ -423,10 +441,10 @@ export function useMigrationFlow({
         }
         oldSdkRef.current = oldSdk;
 
-        // 2. Derive the new seed for this label on the shared RP, then connect the new SDK.
-        logger.info(LogCategory.AUTH, 'Migration sweep-label: deriving new seed on the shared RP', { label });
-        const newSeed = await session.deriveSharedSeed(label);
-        if (cancelled) return;
+        // 2. Connect the new SDK from the seed derived up front in
+        // derive-new-passkey, so the sweep fires no prompt.
+        const newSeed = newSeedCacheRef.current.get(label);
+        if (!newSeed) throw new Error(`No cached new-passkey seed for label "${label}"`);
 
         newSdk = await connectForSeed(newSeed);
         if (cancelled) { newSdk.disconnect().catch(() => {}); return; }
@@ -481,10 +499,11 @@ export function useMigrationFlow({
         }
         oldSdkRef.current = null;
 
-        // Drop this label's cached legacy seed now that it is fully swept, so the
-        // seed material does not linger in memory for the rest of the migration.
-        // A retry re-derives it (one prompt on that rare path).
+        // Drop this label's cached seeds now that it is fully swept, so the seed
+        // material does not linger in memory for the rest of the migration.
+        // A retry re-derives them (prompts on that rare path).
         seedCacheRef.current.delete(label);
+        newSeedCacheRef.current.delete(label);
 
         logger.info(LogCategory.AUTH, 'Migration sweep-label: label complete', { label, isLast });
 
@@ -653,14 +672,13 @@ export function useMigrationFlow({
     switch (phase) {
       case 'probe': return 'Checking for passkey...';
       case 'enumerate-labels': return 'Reading your labels...';
-      case 'check-deposits-all': return 'Checking your wallets...';
-      case 'derive-new-passkey': return 'Creating new passkey...';
+      case 'check-deposits-all': return 'Verifying your wallets...';
+      case 'derive-new-passkey': return 'Setting up your new passkey...';
       case 'sweep-label': {
-        const label = confirmedLabels[currentLabelIndex] ?? '';
         if (confirmedLabels.length > 1) {
-          return `Migrating "${label}" (${currentLabelIndex + 1} of ${confirmedLabels.length})...`;
+          return `Moving your funds (${currentLabelIndex + 1} of ${confirmedLabels.length})...`;
         }
-        return `Migrating "${label}"...`;
+        return 'Moving your funds...';
       }
       case 'switch': return 'Finishing up...';
       default: return '';

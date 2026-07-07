@@ -189,51 +189,42 @@ describe('createMigrationSession.createSharedCredential', () => {
     return client;
   };
 
-  it('derives the destination seed pinned to the created credential and reuses it for the primary label', async () => {
+  it('uses register\'s (already-pinned) seed for the primary label, no extra ceremony', async () => {
     clearMigrationSharedCredentialId();
     const client = mockClient(seedOf('a b c'), seedOf('a b c'));
 
     const session = createMigrationSession();
     await session.createSharedCredential('Default');
 
-    // The destination derive is pinned to the just-created credential.
-    expect(client.signIn).toHaveBeenCalledTimes(1);
-    expect(client.signIn).toHaveBeenCalledWith({ label: 'Default', allowCredentials: [credId] });
-    // The pinned seed is handed off without another ceremony.
+    // register() pins its own internal derive, so create does no verification signIn.
+    expect(client.signIn).not.toHaveBeenCalled();
+    // The primary label's seed is register's, handed off without a ceremony.
     expect(await session.deriveSharedSeed('Default')).toEqual(seedOf('a b c'));
-    expect(client.signIn).toHaveBeenCalledTimes(1);
+    expect(client.signIn).not.toHaveBeenCalled();
     clearMigrationSharedCredentialId();
   });
 
-  it('sweeps toward the PINNED wallet, not register\'s unpinned result, when they differ', async () => {
+  it('derives a non-primary label via a signIn pinned to the created credential', async () => {
     clearMigrationSharedCredentialId();
     const client = mockClient(seedOf('a b c'), seedOf('x y z'));
 
     const session = createMigrationSession();
     await session.createSharedCredential('Default');
 
-    // Sweep toward the pinned derive ('x y z'), not register's unpinned 'a b c'.
-    expect(client.signIn).toHaveBeenCalledWith({ label: 'Default', allowCredentials: [credId] });
-    expect(await session.deriveSharedSeed('Default')).toEqual(seedOf('x y z'));
+    // A label other than the primary derives its seed via a pinned signIn.
+    expect(await session.deriveSharedSeed('Other')).toEqual(seedOf('x y z'));
+    expect(client.signIn).toHaveBeenCalledWith({ label: 'Other', allowCredentials: [credId] });
     clearMigrationSharedCredentialId();
   });
 
-  it('reports a prior credential live after the destination prompt is cancelled, so a retry probes instead of duplicating', async () => {
+  it('persists the created credential so a retry probes it instead of duplicating', async () => {
     clearMigrationSharedCredentialId();
-    const client = {
-      register: vi.fn().mockResolvedValue({
-        wallet: { seed: seedOf('a b c'), label: 'Default' },
-        labels: [],
-        credential: { credentialId: credId },
-      }),
-      signIn: vi.fn().mockRejectedValue(new Error('user cancelled')),
-    };
-    vi.mocked(buildBrowserPasskeyClient).mockReturnValue(client as unknown as PasskeyClient);
+    mockClient(seedOf('a b c'), seedOf('a b c'));
 
     const session = createMigrationSession();
-    await expect(session.createSharedCredential('Default')).rejects.toThrow();
-    // sharedCredId was set + persisted before the pinned prompt, so the SAME session
-    // routes a retry to the probe branch rather than registering a second passkey.
+    await session.createSharedCredential('Default');
+    // hasPriorSharedCredential reads live state, so the same session (or a
+    // resumed one) routes a retry to the probe branch, never a second passkey.
     expect(session.hasPriorSharedCredential()).toBe(true);
     clearMigrationSharedCredentialId();
   });
