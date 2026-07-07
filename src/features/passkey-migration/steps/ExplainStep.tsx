@@ -13,14 +13,13 @@ const ExplainStep: React.FC<ExplainStepProps> = ({ entry, onContinue, onSecondar
   <>
     {entry === 'banner' ? (
       <p className="text-sm text-spark-text-secondary mb-4">
-        Your passkey needs to be updated. We'll create a new passkey and move your funds over
-        automatically. You'll be asked to authenticate a few times along the way.
+        We'll create a new passkey and automatically transfer your funds. 
+        You'll be asked to verify your identity a few times during the process.
       </p>
     ) : (
       <p className="text-sm text-spark-text-secondary mb-4">
-        Your passkey might need to be updated. If you created a passkey with a previous version of
-        Glow, we'll move your funds over to a new one automatically. If this is your first time,
-        choose <em>Skip</em> to continue.
+        If you created your passkey with an earlier version of Glow, we'll create a new one and transfer your funds automatically. 
+        If this is your first time using Glow, choose <em>Skip</em> to continue.
       </p>
     )}
     <p className="text-xs text-spark-text-muted mb-4">

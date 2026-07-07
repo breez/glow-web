@@ -11,12 +11,12 @@ interface DoneStepProps {
 const DoneStep: React.FC<DoneStepProps> = ({ onDone, lnAddressTransferFailed }) => (
   <>
     <p className="text-sm text-spark-text-secondary mb-4 text-center">
-      Your funds were moved to the new passkey.
+      Your funds have been moved to your new passkey.
     </p>
     {lnAddressTransferFailed && (
       <p className="text-xs text-spark-warning mb-4 text-center">
-        Your Lightning address couldn't be moved. Payments sent to it may still
-        arrive in your old wallet until you move it.
+        Your Lightning address couldn't be transferred. 
+        Payments sent to it will continue to arrive in your old wallet until the transfer is complete.
       </p>
     )}
     <div className="flex flex-col gap-3">
