@@ -6,9 +6,16 @@ import {
   migrateContacts,
   createMigrationSession,
   transferLightningAddress,
+  seedsMatch,
+  RorSeedVerificationError,
 } from './passkeyMigrationService';
-import { setMigrationRorCredentialId, clearMigrationRorCredentialId } from './passkeyService';
-import type { BreezSdk, Contact, GetInfoResponse, LightningAddressInfo } from '@breeztech/breez-sdk-spark';
+import { setMigrationRorCredentialId, clearMigrationRorCredentialId, buildBrowserPasskeyClient } from './passkeyService';
+import type { BreezSdk, Contact, GetInfoResponse, LightningAddressInfo, PasskeyClient, Seed } from '@breeztech/breez-sdk-spark';
+
+vi.mock('./passkeyService', async (importActual) => {
+  const actual = await importActual<typeof import('./passkeyService')>();
+  return { ...actual, buildBrowserPasskeyClient: vi.fn() };
+});
 
 const infoWithPubkey = (identityPubkey: string): GetInfoResponse =>
   ({
@@ -144,6 +151,101 @@ describe('transferLightningAddress', () => {
     const to = { claimLightningAddressTransfer: vi.fn() } as unknown as BreezSdk;
 
     expect(await transferLightningAddress(from, to, 'pk', 'Default')).toBe(true);
+  });
+});
+
+describe('seedsMatch', () => {
+  const seed = (mnemonic: string, passphrase?: string): Seed => ({ type: 'mnemonic', mnemonic, passphrase });
+
+  it('matches identical mnemonics and rejects different ones', () => {
+    expect(seedsMatch(seed('a b c'), seed('a b c'))).toBe(true);
+    expect(seedsMatch(seed('a b c'), seed('x y z'))).toBe(false);
+  });
+
+  it('treats a differing passphrase as a different seed', () => {
+    expect(seedsMatch(seed('a b c', 'p'), seed('a b c'))).toBe(false);
+    expect(seedsMatch(seed('a b c', 'p'), seed('a b c', 'p'))).toBe(true);
+  });
+});
+
+describe('createMigrationSession.createRorCredential', () => {
+  const seedOf = (mnemonic: string): Seed => ({ type: 'mnemonic', mnemonic });
+  const credId = new Uint8Array([9, 9, 9]);
+
+  const mockClient = (registerSeed: Seed, signInSeed: Seed, credentialId: Uint8Array | null = credId) => {
+    const client = {
+      register: vi.fn().mockResolvedValue({
+        wallet: { seed: registerSeed, label: 'Default' },
+        labels: [],
+        credential: credentialId ? { credentialId } : undefined,
+      }),
+      signIn: vi.fn().mockResolvedValue({
+        wallet: { seed: signInSeed, label: 'Default' },
+        labels: [],
+        credential: { credentialId },
+      }),
+    };
+    vi.mocked(buildBrowserPasskeyClient).mockReturnValue(client as unknown as PasskeyClient);
+    return client;
+  };
+
+  it('derives the destination seed pinned to the created credential and reuses it for the primary label', async () => {
+    clearMigrationRorCredentialId();
+    const client = mockClient(seedOf('a b c'), seedOf('a b c'));
+
+    const session = createMigrationSession();
+    await session.createRorCredential('Default');
+
+    // The destination derive is pinned to the just-created credential.
+    expect(client.signIn).toHaveBeenCalledTimes(1);
+    expect(client.signIn).toHaveBeenCalledWith({ label: 'Default', allowCredentials: [credId] });
+    // The pinned seed is handed off without another ceremony.
+    expect(await session.deriveRorSeed('Default')).toEqual(seedOf('a b c'));
+    expect(client.signIn).toHaveBeenCalledTimes(1);
+    clearMigrationRorCredentialId();
+  });
+
+  it('sweeps toward the PINNED wallet, not register\'s unpinned result, when they differ', async () => {
+    clearMigrationRorCredentialId();
+    const client = mockClient(seedOf('a b c'), seedOf('x y z'));
+
+    const session = createMigrationSession();
+    await session.createRorCredential('Default');
+
+    // Sweep toward the pinned derive ('x y z'), not register's unpinned 'a b c'.
+    expect(client.signIn).toHaveBeenCalledWith({ label: 'Default', allowCredentials: [credId] });
+    expect(await session.deriveRorSeed('Default')).toEqual(seedOf('x y z'));
+    clearMigrationRorCredentialId();
+  });
+
+  it('reports a prior credential live after the destination prompt is cancelled, so a retry probes instead of duplicating', async () => {
+    clearMigrationRorCredentialId();
+    const client = {
+      register: vi.fn().mockResolvedValue({
+        wallet: { seed: seedOf('a b c'), label: 'Default' },
+        labels: [],
+        credential: { credentialId: credId },
+      }),
+      signIn: vi.fn().mockRejectedValue(new Error('user cancelled')),
+    };
+    vi.mocked(buildBrowserPasskeyClient).mockReturnValue(client as unknown as PasskeyClient);
+
+    const session = createMigrationSession();
+    await expect(session.createRorCredential('Default')).rejects.toThrow();
+    // rorCredId was set + persisted before the pinned prompt, so the SAME session
+    // routes a retry to the probe branch rather than registering a second passkey.
+    expect(session.hasPriorRorCredential()).toBe(true);
+    clearMigrationRorCredentialId();
+  });
+
+  it('refuses to proceed when the platform reports no credential id', async () => {
+    clearMigrationRorCredentialId();
+    const client = mockClient(seedOf('a b c'), seedOf('a b c'), null);
+
+    await expect(createMigrationSession().createRorCredential('Default'))
+      .rejects.toBeInstanceOf(RorSeedVerificationError);
+    expect(client.signIn).not.toHaveBeenCalled();
+    clearMigrationRorCredentialId();
   });
 });
 
