@@ -289,9 +289,10 @@ export function createMigrationSession(): MigrationSession {
   let rorClient: PasskeyClient | null = null;
   // Pin every legacy ceremony (including label discovery) to the active passkey,
   // else the first signIn's picker lets a multi-passkey user drift to a different
-  // wallet and migrate the wrong one. Null (fresh-browser login, no active cred)
+  // wallet and migrate the wrong one. Null (fresh-browser login, no active cred,
+  // or a pin recorded under the ROR RP that can never match a legacy ceremony)
   // falls back to the picker, which is the right way to choose the passkey there.
-  let legacyCredId: Uint8Array | undefined = getActivePasskeyCredentialIdBytes() ?? undefined;
+  let legacyCredId: Uint8Array | undefined = getActivePasskeyCredentialIdBytes(LEGACY_RP_ID) ?? undefined;
   // A prior attempt's ROR credential id (persisted at create time), if any.
   // Seeding rorCredId with it pins the resume probe to that exact passkey.
   const priorRorCredId = getMigrationRorCredentialIdBytes() ?? undefined;

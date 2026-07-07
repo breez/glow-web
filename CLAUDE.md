@@ -169,6 +169,7 @@ Device-level keys (`passkeyService.ts`):
 - `passkeyRegistered`: this device has ever successfully used a passkey
 - `passkeyLabel`: active wallet label for the current passkey session
 - `passkeyActiveCredentialId`: the cred we last signed in with; passed back as `allowCredentials` to pin the next derive
+- `passkeyActiveCredentialRpId`: the RP ID that cred lives under; a ceremony targeting a different RP treats the pin as absent (a cross-RP pin never matches and dead-ends the OS sheet)
 - `passkeyFirstSeenAt` / `passkeyLastSeenAt`: device-level timestamps for the first / most recent PRF ceremony
 - `passkeyPendingSwitchFromCredentialId`: the cred we were signed in with before a switch attempt, used by the switch-recovery branch in `PasskeyPage`
 - `passkeyAaguid:<credId>` / `passkeyBackupEligible:<credId>`: provider AAGUID + BE flag captured at create time, drives the provider icon + sync indicator in the management page

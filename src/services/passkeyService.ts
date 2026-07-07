@@ -56,6 +56,7 @@ const PASSKEY_FIRST_SEEN_KEY = 'passkeyFirstSeenAt';
 const PASSKEY_LAST_SEEN_KEY = 'passkeyLastSeenAt';
 const PASSKEY_LABEL_LAST_USED_PREFIX = 'passkeyLabelLastUsed:';
 const PASSKEY_RP_ID_KEY = 'passkeyRpId';
+const PASSKEY_ACTIVE_CRED_RP_KEY = 'passkeyActiveCredentialRpId';
 
 // ---------- PasskeyApi ----------
 
@@ -392,6 +393,10 @@ class WebPasskey implements PasskeyApi {
       userName: request.userName,
       userDisplayName: request.userDisplayName,
     });
+    logger.info(LogCategory.AUTH, 'Passkey register ceremony', {
+      rpId,
+      label: request.label ?? null,
+    });
     try {
       const response = await oneShot.register({
         label: request.label,
@@ -481,6 +486,8 @@ export function recordRegisteredCredential(
   const credentialIdB64 = bytesToBase64(cred.credentialId);
   if (userName) setCredentialUserName(credentialIdB64, userName);
   localStorage.setItem('passkeyActiveCredentialId', credentialIdB64);
+  localStorage.setItem(PASSKEY_ACTIVE_CRED_RP_KEY, rpId);
+  setPasskeyRpId(rpId);
   logger.info(LogCategory.AUTH, 'Passkey credential registered', {
     credentialId: credentialIdB64,
     rpId,
@@ -514,9 +521,11 @@ export function recordRegisteredCredential(
  * the OS picker can't substitute a sibling credential for the same
  * RP and derive a different wallet's seed.
  */
-export function getActivePasskeyCredentialIdBytes(): Uint8Array | null {
+export function getActivePasskeyCredentialIdBytes(forRpId?: string): Uint8Array | null {
   const b64 = localStorage.getItem('passkeyActiveCredentialId');
   if (!b64) return null;
+  const pinRpId = localStorage.getItem(PASSKEY_ACTIVE_CRED_RP_KEY);
+  if (forRpId && pinRpId && pinRpId !== forRpId) return null;
   try {
     return base64ToBytes(b64);
   } catch {
@@ -528,10 +537,14 @@ export function getActivePasskeyCredentialIdBytes(): Uint8Array | null {
  * Pin this cred as active (so subsequent derives constrain
  * `allowCredentials`) and stamp its last-used timestamp.
  */
-export function recordSignedInCredential(credentialId: Uint8Array | undefined): void {
+export function recordSignedInCredential(
+  credentialId: Uint8Array | undefined,
+  ceremonyRpId: string = rpId,
+): void {
   if (!credentialId) return;
   const b64 = bytesToBase64(credentialId);
   localStorage.setItem('passkeyActiveCredentialId', b64);
+  localStorage.setItem(PASSKEY_ACTIVE_CRED_RP_KEY, ceremonyRpId);
   markCredentialUsed(b64);
   markPasskeyUsed();
 }
@@ -551,18 +564,24 @@ export async function signInPinnedToActiveCredential(
   label?: string,
   rpIdOverride?: string,
 ): Promise<SignInResponse> {
-  const activeCredId = getActivePasskeyCredentialIdBytes();
+  const effectiveRpId = rpIdOverride ?? getPasskeyRpId() ?? rpId;
+  const activeCredId = getActivePasskeyCredentialIdBytes(effectiveRpId);
   const allowCredentials = activeCredId ? [activeCredId] : [];
+  logger.info(LogCategory.AUTH, 'Passkey sign-in ceremony', {
+    rpId: effectiveRpId,
+    pinned: !!activeCredId,
+    label: label ?? null,
+  });
   // Web only: derive against a specific RP ID (e.g. a legacy-RP user before
   // migration, whose credential lives under LEGACY_RP_ID). On native the RP ID
   // is fixed by the plugin, so the override is ignored.
-  const useScoped = !Capacitor.isNativePlatform() && !!rpIdOverride && rpIdOverride !== rpId;
+  const useScoped = !Capacitor.isNativePlatform() && effectiveRpId !== rpId;
   let response: SignInResponse;
   if (useScoped) {
     // Sign in on a client scoped to the session RP, then retain it as the
     // cached client. signIn primes the Nostr identity, so a later labels()/store
     // is a cache hit rather than a cold, unpinned re-derive (the OS picker).
-    const client = buildBrowserPasskeyClient({ rpId: rpIdOverride });
+    const client = buildBrowserPasskeyClient({ rpId: effectiveRpId });
     response = await client.signIn({ label, allowCredentials });
     const api = getPasskey();
     if (api instanceof WebPasskey) api.adoptClient(client);
@@ -570,13 +589,13 @@ export async function signInPinnedToActiveCredential(
     response = await getPasskey().signIn({ label, allowCredentials });
   }
   logger.info(LogCategory.AUTH, 'Passkey sign-in ceremony completed', {
-    rpId: rpIdOverride ?? rpId,
+    rpId: effectiveRpId,
     credentialId: response.credential?.credentialId
       ? bytesToBase64(response.credential.credentialId)
       : null,
     label: response.wallet.label,
   });
-  recordSignedInCredential(response.credential?.credentialId);
+  recordSignedInCredential(response.credential?.credentialId, effectiveRpId);
   return response;
 }
 
@@ -726,6 +745,7 @@ export async function clearPasskeyHistory(): Promise<void> {
   }
   localStorage.removeItem(PASSKEY_REGISTERED_KEY);
   localStorage.removeItem('passkeyActiveCredentialId');
+  localStorage.removeItem(PASSKEY_ACTIVE_CRED_RP_KEY);
   localStorage.removeItem(PASSKEY_FIRST_SEEN_KEY);
   localStorage.removeItem(PASSKEY_LAST_SEEN_KEY);
   clearAllLabelLastUsed();
@@ -760,6 +780,7 @@ export function clearPasskeyMode(): void {
   // that must survive logout so the correct RP ID is used on next sign-in.
   localStorage.removeItem(PASSKEY_LABEL_KEY);
   localStorage.removeItem('passkeyActiveCredentialId');
+  localStorage.removeItem(PASSKEY_ACTIVE_CRED_RP_KEY);
   invalidatePasskey();
 }
 
@@ -852,6 +873,7 @@ export function recordMigratedRorCredential(
  */
 export function pinActivePasskeyCredentialId(credentialId: string): void {
   localStorage.setItem('passkeyActiveCredentialId', credentialId);
+  localStorage.setItem(PASSKEY_ACTIVE_CRED_RP_KEY, rpId);
   localStorage.removeItem(PASSKEY_LABEL_KEY);
   unhideCredential(credentialId);
   invalidatePasskey();
