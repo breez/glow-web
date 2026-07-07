@@ -481,6 +481,10 @@ export function recordRegisteredCredential(
   const credentialIdB64 = bytesToBase64(cred.credentialId);
   if (userName) setCredentialUserName(credentialIdB64, userName);
   localStorage.setItem('passkeyActiveCredentialId', credentialIdB64);
+  logger.info(LogCategory.AUTH, 'Passkey credential registered', {
+    credentialId: credentialIdB64,
+    rpId,
+  });
   const aaguidBytes = cred.aaguid;
   if (aaguidBytes) {
     localStorage.setItem(
@@ -565,6 +569,13 @@ export async function signInPinnedToActiveCredential(
   } else {
     response = await getPasskey().signIn({ label, allowCredentials });
   }
+  logger.info(LogCategory.AUTH, 'Passkey sign-in ceremony completed', {
+    rpId: rpIdOverride ?? rpId,
+    credentialId: response.credential?.credentialId
+      ? bytesToBase64(response.credential.credentialId)
+      : null,
+    label: response.wallet.label,
+  });
   recordSignedInCredential(response.credential?.credentialId);
   return response;
 }
