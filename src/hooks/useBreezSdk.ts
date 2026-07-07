@@ -627,6 +627,10 @@ export function useBreezSdk(
       ]);
       setWalletInfo(info);
       setTransactions(filterOngoingConversionPayments(txns.payments));
+      logger.info(LogCategory.SDK, 'Connected wallet identity', {
+        identityPubkey: info.identityPubkey,
+        label,
+      });
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to load migrated wallet data', { error: formatError(e) });
     }
