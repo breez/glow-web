@@ -7,9 +7,9 @@ import {
   createMigrationSession,
   transferLightningAddress,
   seedsMatch,
-  RorSeedVerificationError,
+  SharedSeedVerificationError,
 } from './passkeyMigrationService';
-import { setMigrationRorCredentialId, clearMigrationRorCredentialId, buildBrowserPasskeyClient } from './passkeyService';
+import { setMigrationSharedCredentialId, clearMigrationSharedCredentialId, buildBrowserPasskeyClient } from './passkeyService';
 import type { BreezSdk, Contact, GetInfoResponse, LightningAddressInfo, PasskeyClient, Seed } from '@breeztech/breez-sdk-spark';
 
 vi.mock('./passkeyService', async (importActual) => {
@@ -168,7 +168,7 @@ describe('seedsMatch', () => {
   });
 });
 
-describe('createMigrationSession.createRorCredential', () => {
+describe('createMigrationSession.createSharedCredential', () => {
   const seedOf = (mnemonic: string): Seed => ({ type: 'mnemonic', mnemonic });
   const credId = new Uint8Array([9, 9, 9]);
 
@@ -189,77 +189,68 @@ describe('createMigrationSession.createRorCredential', () => {
     return client;
   };
 
-  it('derives the destination seed pinned to the created credential and reuses it for the primary label', async () => {
-    clearMigrationRorCredentialId();
+  it('uses register\'s (already-pinned) seed for the primary label, no extra ceremony', async () => {
+    clearMigrationSharedCredentialId();
     const client = mockClient(seedOf('a b c'), seedOf('a b c'));
 
     const session = createMigrationSession();
-    await session.createRorCredential('Default');
+    await session.createSharedCredential('Default');
 
-    // The destination derive is pinned to the just-created credential.
-    expect(client.signIn).toHaveBeenCalledTimes(1);
-    expect(client.signIn).toHaveBeenCalledWith({ label: 'Default', allowCredentials: [credId] });
-    // The pinned seed is handed off without another ceremony.
-    expect(await session.deriveRorSeed('Default')).toEqual(seedOf('a b c'));
-    expect(client.signIn).toHaveBeenCalledTimes(1);
-    clearMigrationRorCredentialId();
+    // register() pins its own internal derive, so create does no verification signIn.
+    expect(client.signIn).not.toHaveBeenCalled();
+    // The primary label's seed is register's, handed off without a ceremony.
+    expect(await session.deriveSharedSeed('Default')).toEqual(seedOf('a b c'));
+    expect(client.signIn).not.toHaveBeenCalled();
+    clearMigrationSharedCredentialId();
   });
 
-  it('sweeps toward the PINNED wallet, not register\'s unpinned result, when they differ', async () => {
-    clearMigrationRorCredentialId();
+  it('derives a non-primary label via a signIn pinned to the created credential', async () => {
+    clearMigrationSharedCredentialId();
     const client = mockClient(seedOf('a b c'), seedOf('x y z'));
 
     const session = createMigrationSession();
-    await session.createRorCredential('Default');
+    await session.createSharedCredential('Default');
 
-    // Sweep toward the pinned derive ('x y z'), not register's unpinned 'a b c'.
-    expect(client.signIn).toHaveBeenCalledWith({ label: 'Default', allowCredentials: [credId] });
-    expect(await session.deriveRorSeed('Default')).toEqual(seedOf('x y z'));
-    clearMigrationRorCredentialId();
+    // A label other than the primary derives its seed via a pinned signIn.
+    expect(await session.deriveSharedSeed('Other')).toEqual(seedOf('x y z'));
+    expect(client.signIn).toHaveBeenCalledWith({ label: 'Other', allowCredentials: [credId] });
+    clearMigrationSharedCredentialId();
   });
 
-  it('reports a prior credential live after the destination prompt is cancelled, so a retry probes instead of duplicating', async () => {
-    clearMigrationRorCredentialId();
-    const client = {
-      register: vi.fn().mockResolvedValue({
-        wallet: { seed: seedOf('a b c'), label: 'Default' },
-        labels: [],
-        credential: { credentialId: credId },
-      }),
-      signIn: vi.fn().mockRejectedValue(new Error('user cancelled')),
-    };
-    vi.mocked(buildBrowserPasskeyClient).mockReturnValue(client as unknown as PasskeyClient);
+  it('persists the created credential so a retry probes it instead of duplicating', async () => {
+    clearMigrationSharedCredentialId();
+    mockClient(seedOf('a b c'), seedOf('a b c'));
 
     const session = createMigrationSession();
-    await expect(session.createRorCredential('Default')).rejects.toThrow();
-    // rorCredId was set + persisted before the pinned prompt, so the SAME session
-    // routes a retry to the probe branch rather than registering a second passkey.
-    expect(session.hasPriorRorCredential()).toBe(true);
-    clearMigrationRorCredentialId();
+    await session.createSharedCredential('Default');
+    // hasPriorSharedCredential reads live state, so the same session (or a
+    // resumed one) routes a retry to the probe branch, never a second passkey.
+    expect(session.hasPriorSharedCredential()).toBe(true);
+    clearMigrationSharedCredentialId();
   });
 
   it('refuses to proceed when the platform reports no credential id', async () => {
-    clearMigrationRorCredentialId();
+    clearMigrationSharedCredentialId();
     const client = mockClient(seedOf('a b c'), seedOf('a b c'), null);
 
-    await expect(createMigrationSession().createRorCredential('Default'))
-      .rejects.toBeInstanceOf(RorSeedVerificationError);
+    await expect(createMigrationSession().createSharedCredential('Default'))
+      .rejects.toBeInstanceOf(SharedSeedVerificationError);
     expect(client.signIn).not.toHaveBeenCalled();
-    clearMigrationRorCredentialId();
+    clearMigrationSharedCredentialId();
   });
 });
 
-describe('createMigrationSession.hasPriorRorCredential', () => {
-  it('is false with nothing recorded, true once a ROR credential is persisted', () => {
-    clearMigrationRorCredentialId();
-    expect(createMigrationSession().hasPriorRorCredential()).toBe(false);
+describe('createMigrationSession.hasPriorSharedCredential', () => {
+  it('is false with nothing recorded, true once a shared credential is persisted', () => {
+    clearMigrationSharedCredentialId();
+    expect(createMigrationSession().hasPriorSharedCredential()).toBe(false);
 
-    // Persisting a credential id (as createRorCredential does) makes any later
+    // Persisting a credential id (as createSharedCredential does) makes any later
     // session resume onto it instead of creating a duplicate.
-    setMigrationRorCredentialId(new Uint8Array([1, 2, 3]));
-    expect(createMigrationSession().hasPriorRorCredential()).toBe(true);
+    setMigrationSharedCredentialId(new Uint8Array([1, 2, 3]));
+    expect(createMigrationSession().hasPriorSharedCredential()).toBe(true);
 
-    clearMigrationRorCredentialId();
-    expect(createMigrationSession().hasPriorRorCredential()).toBe(false);
+    clearMigrationSharedCredentialId();
+    expect(createMigrationSession().hasPriorSharedCredential()).toBe(false);
   });
 });

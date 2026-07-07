@@ -13,9 +13,9 @@ import {
   isMigrationInProgress,
   setMigrationInProgress,
   setPasskeyMigrated,
-  clearMigrationRorCredentialId,
+  clearMigrationSharedCredentialId,
 } from '@/services/passkeyService';
-import { ROR_RP_ID } from '@/services/passkeyPrfProvider';
+import { SHARED_RP_ID } from '@/services/passkeyPrfProvider';
 import {
   createMigrationSession,
   connectForSeed,
@@ -50,6 +50,8 @@ export interface MigrationFlow {
   spinnerText: string;
   /** At least one label's Lightning address could not be moved (funds are fine). */
   lnAddressTransferFailed: boolean;
+  /** The recorded shared passkey is unreachable (e.g. deleted); offer a fresh start. */
+  canStartOver: boolean;
   // actions
   startFromBanner: () => void;
   checkForOldPasskey: () => void;
@@ -57,6 +59,7 @@ export interface MigrationFlow {
   confirmLabels: () => void;
   openUnclaimedDeposits: () => void;
   retry: () => void;
+  startOver: () => void;
   cancel: () => void;
   done: () => void;
 }
@@ -80,12 +83,19 @@ export function useMigrationFlow({
   // Set if any label's Lightning-address transfer fails; surfaces a Done-screen
   // notice (funds still moved, but incoming LN may land in the old wallet).
   const [lnAddressTransferFailed, setLnAddressTransferFailed] = useState(false);
+  // Set only when a recorded shared passkey can't be reached (e.g. the user deleted
+  // it): the error screen then offers a fresh start instead of a Retry dead-end.
+  const [canStartOver, setCanStartOver] = useState(false);
 
   // Ordered labels to migrate (primary last); populated in probe / enumerate-labels.
   const labelsToMigrateRef = useRef<string[]>([]);
   // Cached legacy seeds per label, populated by check-deposits-all and reused by
   // sweep-label so we do not re-prompt for the same label.
   const seedCacheRef = useRef<Map<string, Seed>>(new Map());
+  // Cached new-passkey seeds per label, derived up front in derive-new-passkey so
+  // the sweep runs without prompts. In-memory only; each entry is dropped as its
+  // label is swept, and the whole map is cleared on close.
+  const newSeedCacheRef = useRef<Map<string, Seed>>(new Map());
   // SDKs live during the current phase that may need cleanup.
   const oldSdkRef = useRef<BreezSdk | null>(null);
   const newSdkRef = useRef<BreezSdk | null>(null);
@@ -120,8 +130,10 @@ export function useMigrationFlow({
     setConfirmedLabels([]);
     setCurrentLabelIndex(0);
     setLnAddressTransferFailed(false);
+    setCanStartOver(false);
     labelsToMigrateRef.current = [];
     seedCacheRef.current = new Map();
+    newSeedCacheRef.current = new Map();
     oldSdkRef.current = null;
     newSdkRef.current = null;
     primaryNewSdkRef.current = null;
@@ -138,7 +150,7 @@ export function useMigrationFlow({
       entry,
       storedLabel,
       hasActiveLegacySdk: !!activeLegacySdk,
-      rorConfigured: !!ROR_RP_ID,
+      sharedRpConfigured: !!SHARED_RP_ID,
     });
 
     if (entry === 'banner' && !activeLegacySdk) {
@@ -171,6 +183,7 @@ export function useMigrationFlow({
       // do NOT disconnect it here. Just drop our reference.
       primaryNewSdkRef.current = null;
       seedCacheRef.current = new Map();
+      newSeedCacheRef.current = new Map();
     }
   }, [isOpen, activeLegacySdk]);
 
@@ -310,8 +323,8 @@ export function useMigrationFlow({
   }, [isOpen, phase, entry, activeLegacySdk]);
 
   // ============================================
-  // Phase: derive-new-passkey (one-time). Create the single ROR passkey all
-  // labels share. Per-label ROR derives happen inside sweep-label.
+  // Phase: derive-new-passkey (one-time). Create the single shared passkey all
+  // labels share. Per-label shared derives happen inside sweep-label.
   // ============================================
   useEffect(() => {
     if (!isOpen || phase !== 'derive-new-passkey') return;
@@ -321,9 +334,9 @@ export function useMigrationFlow({
 
     (async () => {
       try {
-        if (!ROR_RP_ID) throw new Error('ROR_RP_ID not configured');
+        if (!SHARED_RP_ID) throw new Error('SHARED_RP_ID not configured');
 
-        // Resume-safety: a persisted ROR credential id means a prior attempt
+        // Resume-safety: a persisted shared credential id means a prior attempt
         // already created the passkey (possibly after moving some funds). We
         // MUST reuse that exact credential: creating a second one derives a
         // different wallet and would strand the already-swept funds in an
@@ -331,26 +344,42 @@ export function useMigrationFlow({
         // retryable error rather than falling through to create a duplicate. A
         // first attempt (nothing recorded) creates directly, skipping a
         // pointless "Use a saved passkey" prompt.
-        if (session.hasPriorRorCredential()) {
-          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: prior ROR credential recorded, reusing it');
+        if (session.hasPriorSharedCredential()) {
+          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: prior shared credential recorded, reusing it');
           try {
-            await session.probeRorCredential();
+            await session.probeSharedCredential();
           } catch (e) {
             if (cancelled) return;
-            logger.error(LogCategory.AUTH, 'Migration derive-new-passkey: recorded ROR credential unreachable', {
+            logger.error(LogCategory.AUTH, 'Migration derive-new-passkey: recorded shared credential unreachable', {
               error: formatError(e),
             });
-            setError('We could not access the passkey from your previous attempt. Please try the passkey prompt again.');
+            setError(
+              "We couldn't reach the passkey from your previous attempt. If you dismissed the prompt, tap Retry. "
+              + 'If you deleted that passkey, choose Create a new passkey to start fresh.',
+            );
+            setCanStartOver(true);
             setPhase('error');
             return;
           }
           if (cancelled) return;
-          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: existing ROR credential confirmed, skipping create');
+          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: existing shared credential confirmed, skipping create');
         } else {
-          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: no prior ROR credential, creating one');
-          await session.createRorCredential(primaryLabelRef.current);
+          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: no prior shared credential, creating one');
+          await session.createSharedCredential(primaryLabelRef.current);
           if (cancelled) return;
-          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: passkey created on ROR');
+          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: passkey created on the shared RP');
+        }
+
+        // Derive every label's new-passkey seed now, while the user is set up to
+        // authenticate with the new passkey, so the sweep runs without prompts.
+        // The primary label reuses register's seed (no ceremony); the rest prompt
+        // here. Seeds are held in memory only, dropped as each label is swept.
+        for (const label of labelsToMigrateRef.current) {
+          if (cancelled) return;
+          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: deriving new seed on the shared RP', { label });
+          const seed = await session.deriveSharedSeed(label);
+          if (cancelled) return;
+          newSeedCacheRef.current.set(label, seed);
         }
 
         setCurrentLabelIndex(0);
@@ -394,7 +423,7 @@ export function useMigrationFlow({
       let newSdk: BreezSdk | null = null;
 
       try {
-        if (!ROR_RP_ID) throw new Error('ROR_RP_ID not configured');
+        if (!SHARED_RP_ID) throw new Error('SHARED_RP_ID not configured');
 
         // 1. Connect the old SDK for this label. The reused active legacy SDK
         // (banner + primary) never derived a seed, so only the connect path
@@ -412,10 +441,10 @@ export function useMigrationFlow({
         }
         oldSdkRef.current = oldSdk;
 
-        // 2. Derive the new seed for this label on ROR, then connect the new SDK.
-        logger.info(LogCategory.AUTH, 'Migration sweep-label: deriving new seed on ROR', { label });
-        const newSeed = await session.deriveRorSeed(label);
-        if (cancelled) return;
+        // 2. Connect the new SDK from the seed derived up front in
+        // derive-new-passkey, so the sweep fires no prompt.
+        const newSeed = newSeedCacheRef.current.get(label);
+        if (!newSeed) throw new Error(`No cached new-passkey seed for label "${label}"`);
 
         newSdk = await connectForSeed(newSeed);
         if (cancelled) { newSdk.disconnect().catch(() => {}); return; }
@@ -441,7 +470,7 @@ export function useMigrationFlow({
 
         // 4. Publish the label under the new passkey's Nostr identity.
         logger.info(LogCategory.AUTH, 'Migration sweep-label: saving label to new Nostr identity', { label });
-        await session.storeRorLabel(label);
+        await session.storeSharedLabel(label);
         if (cancelled) return;
 
         // 5. Sweep sats + tokens, transfer the Lightning address, migrate contacts.
@@ -470,10 +499,11 @@ export function useMigrationFlow({
         }
         oldSdkRef.current = null;
 
-        // Drop this label's cached legacy seed now that it is fully swept, so the
-        // seed material does not linger in memory for the rest of the migration.
-        // A retry re-derives it (one prompt on that rare path).
+        // Drop this label's cached seeds now that it is fully swept, so the seed
+        // material does not linger in memory for the rest of the migration.
+        // A retry re-derives them (prompts on that rare path).
         seedCacheRef.current.delete(label);
+        newSeedCacheRef.current.delete(label);
 
         logger.info(LogCategory.AUTH, 'Migration sweep-label: label complete', { label, isLast });
 
@@ -502,7 +532,7 @@ export function useMigrationFlow({
   }, [isOpen, phase, currentLabelIndex, entry, activeLegacySdk]);
 
   // ============================================
-  // Phase: switch. Apply the stable ticker, pin the ROR credential as active
+  // Phase: switch. Apply the stable ticker, pin the shared credential as active
   // (success only), then hand the primary new SDK to useBreezSdk.
   // ============================================
   useEffect(() => {
@@ -528,17 +558,17 @@ export function useMigrationFlow({
         await onSwitchRef.current(primaryNew, primaryLabelRef.current);
         primaryNewSdkRef.current = null;
 
-        // Commit the ROR credential + mark migrated only after adopt succeeds.
-        // commitRorCredential pins the ROR credential as active, so deferring it
+        // Commit the shared credential + mark migrated only after adopt succeeds.
+        // commitSharedCredential pins the shared credential as active, so deferring it
         // (and the flags) past the hand-off means an adopt failure leaves the
-        // active credential + RP on legacy and the banner armed: the ROR wallet
+        // active credential + RP on legacy and the banner armed: the shared wallet
         // already holds the funds, so a re-run sweeps nothing and just retries
         // the switch, instead of stranding the user on the empty legacy wallet
         // with migration suppressed. Run past the cancel guard: once adopt
         // succeeded the persisted state must match it even if we unmounted.
-        session.commitRorCredential();
+        session.commitSharedCredential();
         setPasskeyMigrated();
-        clearMigrationRorCredentialId();
+        clearMigrationSharedCredentialId();
         logger.info(LogCategory.AUTH, 'Migration switch: complete');
         if (cancelled) return;
         // Stay open on the success step. The adopt handler only swaps the SDK;
@@ -597,7 +627,11 @@ export function useMigrationFlow({
   const retry = useCallback(() => {
     logger.info(LogCategory.AUTH, 'Migration: user clicked Retry', { entry, labels: labelsToMigrateRef.current.length });
     setError(null);
+    setCanStartOver(false);
     setCurrentLabelIndex(0);
+    // A retry re-runs every label's transfer, so clear the prior run's warning:
+    // otherwise a transient read failure leaves a false notice after a clean retry.
+    setLnAddressTransferFailed(false);
     // Re-validate state before sweeping if we already have a label list;
     // otherwise restart from enumeration / explain.
     if (labelsToMigrateRef.current.length > 0) {
@@ -608,6 +642,23 @@ export function useMigrationFlow({
       setPhase('explain');
     }
   }, [entry]);
+
+  // Recovery for an unreachable recorded shared passkey (deleted by the user): drop
+  // the persisted credential and rebuild the session so derive-new-passkey takes
+  // the create branch instead of probing a passkey that no longer exists. Labels
+  // and legacy seeds were already cached by check-deposits-all, so re-entering at
+  // derive-new-passkey is safe; the sweep re-reads live balances, so any label a
+  // prior attempt already emptied simply moves nothing.
+  const startOver = useCallback(() => {
+    logger.warn(LogCategory.AUTH, 'Migration: discarding previous attempt, creating a new passkey');
+    clearMigrationSharedCredentialId();
+    sessionRef.current = createMigrationSession();
+    setError(null);
+    setCanStartOver(false);
+    setCurrentLabelIndex(0);
+    setLnAddressTransferFailed(false);
+    setPhase('derive-new-passkey');
+  }, []);
 
   const isInFlight =
     phase === 'probe' ||
@@ -621,14 +672,13 @@ export function useMigrationFlow({
     switch (phase) {
       case 'probe': return 'Checking for passkey...';
       case 'enumerate-labels': return 'Reading your labels...';
-      case 'check-deposits-all': return 'Checking your wallets...';
-      case 'derive-new-passkey': return 'Creating new passkey...';
+      case 'check-deposits-all': return 'Verifying your wallets...';
+      case 'derive-new-passkey': return 'Setting up your new passkey...';
       case 'sweep-label': {
-        const label = confirmedLabels[currentLabelIndex] ?? '';
         if (confirmedLabels.length > 1) {
-          return `Migrating "${label}" (${currentLabelIndex + 1} of ${confirmedLabels.length})...`;
+          return `Moving your funds (${currentLabelIndex + 1} of ${confirmedLabels.length})...`;
         }
-        return `Migrating "${label}"...`;
+        return 'Moving your funds...';
       }
       case 'switch': return 'Finishing up...';
       default: return '';
@@ -644,12 +694,14 @@ export function useMigrationFlow({
     isInFlight,
     spinnerText,
     lnAddressTransferFailed,
+    canStartOver,
     startFromBanner,
     checkForOldPasskey,
     skipNoOldPasskey,
     confirmLabels,
     openUnclaimedDeposits,
     retry,
+    startOver,
     cancel,
     done,
   };

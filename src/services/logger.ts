@@ -1,5 +1,5 @@
 /**
- * Unified logging service for Glow wallet.
+ * Unified logging service for Glow.
  *
  * Features:
  * - Single unified log stream for app and SDK logs
@@ -230,7 +230,7 @@ export const logger = {
 
   /** Export logs for bug reports */
   exportForBugReport: (): string => {
-    const header = `Glow Wallet Log Export\nGenerated: ${new Date().toISOString()}\nEntries: ${logBuffer.length}\n${'='.repeat(50)}\n\n`;
+    const header = `Glow Log Export\nGenerated: ${new Date().toISOString()}\nEntries: ${logBuffer.length}\n${'='.repeat(50)}\n\n`;
     return header + logger.getLogsAsString();
   },
 

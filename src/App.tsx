@@ -32,7 +32,7 @@ const PasskeySettingsPage = lazy(() => import('./pages/PasskeySettingsPage'));
 const PasskeyManagementPage = lazy(() => import('./pages/PasskeyManagementPage'));
 const LabelsPage = lazy(() => import('./pages/LabelsPage'));
 const PasskeyLocalStatePage = lazy(() => import('./pages/PasskeyLocalStatePage'));
-// Code-split the rare legacy->ROR passkey migration: its modal + service load
+// Code-split the rare legacy->shared passkey migration: its modal + service load
 // only after the flow is first triggered (gated by migrationEverOpened below).
 const PasskeyMigrationModal = lazy(() => import('./features/passkey-migration/PasskeyMigrationModal'));
 import { ContactsProvider } from './contexts/ContactsContext';
@@ -133,7 +133,7 @@ const AppContent: React.FC = () => {
   }, []);
 
   // Auto-open the migration banner once per page load when a legacy-RP wallet
-  // connects and ROR migration is still pending.
+  // connects and shared migration is still pending.
   useEffect(() => {
     if (!PASSKEY_MIGRATION_ENABLED) return;
 
@@ -150,9 +150,9 @@ const AppContent: React.FC = () => {
     }
   }, [sdk.isConnected, sdk.needsPasskeyMigration, migrationModalOpen]);
 
-  // Opened from PasskeyPage when no ROR credential is found: the modal probes
+  // Opened from PasskeyPage when no shared credential is found: the modal probes
   // for a legacy passkey to migrate. Resolves 'proceed' (caller may create a
-  // fresh ROR passkey) or 'handled' (migration ran or the user cancelled).
+  // fresh shared passkey) or 'handled' (migration ran or the user cancelled).
   const requestMigrationCheck = useCallback((): Promise<MigrationOutcome> => {
     if (!PASSKEY_MIGRATION_ENABLED) {
       return Promise.resolve('proceed');

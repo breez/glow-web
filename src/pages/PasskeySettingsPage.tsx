@@ -6,7 +6,7 @@ import {
   WalletIcon,
   TrashIcon,
 } from '../components/Icons';
-import { LEGACY_RP_ID, ROR_RP_ID } from '../services/passkeyPrfProvider';
+import { LEGACY_RP_ID, SHARED_RP_ID } from '../services/passkeyPrfProvider';
 import { getPasskeyRpId, setPasskeyRpId } from '../services/passkeyService';
 
 interface PasskeySettingsPageProps {
@@ -48,15 +48,15 @@ const PasskeySettingsPage: React.FC<PasskeySettingsPageProps> = ({
     },
   ];
 
-  // Dev-only RP-ID switch: only meaningful when a distinct ROR RP ID is
-  // configured. Lets a tester sign in under the legacy vs ROR RP ID to
+  // Dev-only RP-ID switch: only meaningful when a distinct shared RP ID is
+  // configured. Lets a tester sign in under the legacy vs shared RP ID to
   // exercise the passkey-RP migration path.
   const isDevMode = localStorage.getItem('spark-dev-mode') === 'true';
-  const rorConfigured = !!ROR_RP_ID && ROR_RP_ID !== LEGACY_RP_ID;
+  const sharedRpConfigured = !!SHARED_RP_ID && SHARED_RP_ID !== LEGACY_RP_ID;
   const [activeRpId, setActiveRpId] = useState<string>(getPasskeyRpId() ?? LEGACY_RP_ID);
   const rpIdOptions = [
     { label: 'Legacy', value: LEGACY_RP_ID },
-    { label: 'ROR', value: ROR_RP_ID ?? LEGACY_RP_ID },
+    { label: 'shared', value: SHARED_RP_ID ?? LEGACY_RP_ID },
   ];
 
   return (
@@ -87,7 +87,7 @@ const PasskeySettingsPage: React.FC<PasskeySettingsPageProps> = ({
         ))}
       </div>
 
-      {isDevMode && rorConfigured && (
+      {isDevMode && sharedRpConfigured && (
         <div className="p-4 pt-0">
           <div className="p-4 bg-spark-dark border border-spark-border rounded-2xl space-y-3">
             <div className="font-display font-semibold text-spark-text-primary">

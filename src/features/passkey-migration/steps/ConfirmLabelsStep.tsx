@@ -17,8 +17,9 @@ const ConfirmLabelsStep: React.FC<ConfirmLabelsStepProps> = ({
 }) => (
   <>
     <p className="text-sm text-spark-text-secondary mb-3">
-      We found {labels.length} wallet{labels.length === 1 ? '' : 's'} on your legacy passkey.
-      Each one will be migrated to a new passkey.
+      {labels.length === 1
+        ? "We'll migrate your label to your new passkey."
+        : `We'll migrate all ${labels.length} labels to your new passkey.`}
     </p>
     <div className="bg-spark-surface rounded-xl p-3 mb-3">
       <ul className="space-y-1">
@@ -34,8 +35,8 @@ const ConfirmLabelsStep: React.FC<ConfirmLabelsStepProps> = ({
       </ul>
     </div>
     <p className="text-xs text-spark-text-muted mb-4">
-      You'll be asked to authenticate several times, once per wallet for the legacy passkey, plus
-      a couple more for the new one. Please keep this window open until it's done.
+      You'll be asked to verify your identity multiple times during the migration: once for each label being migrated,
+      then a few more times to create your new passkey. Please keep this window open until the migration is complete.
     </p>
     <div className="flex flex-col gap-3">
       <PrimaryButton onClick={onContinue}>Continue</PrimaryButton>

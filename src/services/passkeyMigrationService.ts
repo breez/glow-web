@@ -18,8 +18,8 @@ import {
 } from '@breeztech/breez-sdk-spark';
 import { buildConnectConfig } from '@/hooks/buildConnectConfig';
 import { logger, LogCategory } from './logger';
-import { buildBrowserPasskeyClient, recordMigratedRorCredential, getActivePasskeyCredentialIdBytes, adoptSessionPasskeyClient, setMigrationRorCredentialId, getMigrationRorCredentialIdBytes, bytesToBase64 } from './passkeyService';
-import { LEGACY_RP_ID, ROR_RP_ID, createPasskeyTimestampLabel, PasskeyCredentialNotFoundError } from './passkeyPrfProvider';
+import { buildBrowserPasskeyClient, recordMigratedSharedCredential, getActivePasskeyCredentialIdBytes, adoptSessionPasskeyClient, setMigrationSharedCredentialId, getMigrationSharedCredentialIdBytes, bytesToBase64 } from './passkeyService';
+import { LEGACY_RP_ID, SHARED_RP_ID, createPasskeyTimestampLabel, PasskeyCredentialNotFoundError } from './passkeyPrfProvider';
 import { formatError } from '../utils/formatError';
 
 const STORAGE_DIR = 'spark-wallet-example';
@@ -43,7 +43,7 @@ export function orderLabelsForMigration(labels: string[], storedLabel: string): 
 }
 
 /** No credential id from the platform: can't pin the destination derive or resume onto it. */
-export class RorSeedVerificationError extends Error {}
+export class SharedSeedVerificationError extends Error {}
 
 export function seedsMatch(a: Seed, b: Seed): boolean {
   if (a.type === 'mnemonic' && b.type === 'mnemonic') {
@@ -259,10 +259,10 @@ export async function applyStableTicker(sdk: BreezSdk, ticker: string): Promise<
 // ============================================
 
 /**
- * Encapsulates the rpId-scoped legacy + ROR passkey clients and credential
+ * Encapsulates the rpId-scoped legacy + shared passkey clients and credential
  * pinning for one migration run. A WebAuthn ceremony only matches credentials
  * registered under its RP ID, so the LEGACY-scoped client derives the legacy
- * wallet and the ROR-scoped client the new one. Pinned `allowCredentials`
+ * wallet and the shared-scoped client the new one. Pinned `allowCredentials`
  * additionally guards a device holding more than one credential under an RP ID.
  */
 export interface MigrationSession {
@@ -271,51 +271,51 @@ export interface MigrationSession {
   /** Derive the legacy wallet seed for a label. */
   deriveLegacySeed(label: string): Promise<Seed>;
   /**
-   * True when a prior attempt already created (and persisted) the ROR passkey.
-   * The flow must then reuse it via `probeRorCredential` and never create a
+   * True when a prior attempt already created (and persisted) the shared passkey.
+   * The flow must then reuse it via `probeSharedCredential` and never create a
    * second one: a duplicate derives a different wallet and would strand funds
    * already swept in the first attempt.
    */
-  hasPriorRorCredential(): boolean;
-  /** Probe for the recorded ROR credential (resume-safety): captures it, or throws if unreachable. */
-  probeRorCredential(): Promise<void>;
-  /** Create the single shared ROR passkey (registered under `primaryLabel`). */
-  createRorCredential(primaryLabel: string): Promise<void>;
-  /** Derive the new (ROR) wallet seed for a label. */
-  deriveRorSeed(label: string): Promise<Seed>;
-  /** Publish a label under the new ROR Nostr identity. */
-  storeRorLabel(label: string): Promise<void>;
-  /** Pin the new ROR credential as active + record its metadata. Call only on success. */
-  commitRorCredential(): void;
+  hasPriorSharedCredential(): boolean;
+  /** Probe for the recorded shared credential (resume-safety): captures it, or throws if unreachable. */
+  probeSharedCredential(): Promise<void>;
+  /** Create the single shared shared passkey (registered under `primaryLabel`). */
+  createSharedCredential(primaryLabel: string): Promise<void>;
+  /** Derive the new (shared) wallet seed for a label. */
+  deriveSharedSeed(label: string): Promise<Seed>;
+  /** Publish a label under the new shared Nostr identity. */
+  storeSharedLabel(label: string): Promise<void>;
+  /** Pin the new shared credential as active + record its metadata. Call only on success. */
+  commitSharedCredential(): void;
 }
 
 export function createMigrationSession(): MigrationSession {
-  // Rotating user.name for the ROR register (Apple Passwords dedupes by it).
+  // Rotating user.name for the shared register (Apple Passwords dedupes by it).
   const userName = `Glow · ${createPasskeyTimestampLabel()}`;
   let legacyClient: PasskeyClient | null = null;
-  let rorClient: PasskeyClient | null = null;
+  let sharedClient: PasskeyClient | null = null;
   // Pin every legacy ceremony (including label discovery) to the active passkey,
   // else the first signIn's picker lets a multi-passkey user drift to a different
   // wallet and migrate the wrong one. Null (fresh-browser login, no active cred,
-  // or a pin recorded under the ROR RP that can never match a legacy ceremony)
+  // or a pin recorded under the shared RP that can never match a legacy ceremony)
   // falls back to the picker, which is the right way to choose the passkey there.
   let legacyCredId: Uint8Array | undefined = getActivePasskeyCredentialIdBytes(LEGACY_RP_ID) ?? undefined;
-  // A prior attempt's ROR credential id (persisted at create time), if any.
-  // Seeding rorCredId with it pins the resume probe to that exact passkey.
-  const priorRorCredId = getMigrationRorCredentialIdBytes() ?? undefined;
-  let rorCredId: Uint8Array | undefined = priorRorCredId;
-  let rorCredential: RegisterResponse['credential'] = undefined;
-  // The primary label's pinned ROR seed, cached so deriveRorSeed reuses it
+  // A prior attempt's shared credential id (persisted at create time), if any.
+  // Seeding sharedCredId with it pins the resume probe to that exact passkey.
+  const priorSharedCredId = getMigrationSharedCredentialIdBytes() ?? undefined;
+  let sharedCredId: Uint8Array | undefined = priorSharedCredId;
+  let sharedCredential: RegisterResponse['credential'] = undefined;
+  // The primary label's pinned shared seed, cached so deriveSharedSeed reuses it
   // instead of running another ceremony for that label.
-  let rorPrimarySeed: Seed | undefined;
-  let rorPrimaryLabel: string | undefined;
+  let sharedPrimarySeed: Seed | undefined;
+  let sharedPrimaryLabel: string | undefined;
   // The default label's legacy seed from label discovery, cached so
   // deriveLegacySeed reuses it for that label.
   let legacyDiscoverySeed: Seed | undefined;
   let legacyDiscoveryLabel: string | undefined;
 
   const getLegacyClient = () => (legacyClient ??= buildBrowserPasskeyClient({ rpId: LEGACY_RP_ID }));
-  const getRorClient = () => (rorClient ??= buildBrowserPasskeyClient({ rpId: ROR_RP_ID as string }));
+  const getSharedClient = () => (sharedClient ??= buildBrowserPasskeyClient({ rpId: SHARED_RP_ID as string }));
 
   function logCeremony(event: string, rpId: string, pinned: boolean, credentialId: Uint8Array | undefined, label?: string) {
     logger.info(LogCategory.AUTH, event, {
@@ -337,20 +337,20 @@ export function createMigrationSession(): MigrationSession {
     return resp;
   }
 
-  async function rorSignIn(label?: string) {
-    const pinned = !!rorCredId;
-    const resp = await getRorClient().signIn({
+  async function sharedSignIn(label?: string) {
+    const pinned = !!sharedCredId;
+    const resp = await getSharedClient().signIn({
       label,
-      allowCredentials: rorCredId ? [rorCredId] : [],
+      allowCredentials: sharedCredId ? [sharedCredId] : [],
     });
-    if (resp.credential?.credentialId) rorCredId = resp.credential.credentialId;
-    logCeremony('Migration: ROR ceremony completed', ROR_RP_ID as string, pinned, resp.credential?.credentialId, label);
+    if (resp.credential?.credentialId) sharedCredId = resp.credential.credentialId;
+    logCeremony('Migration: shared ceremony completed', SHARED_RP_ID as string, pinned, resp.credential?.credentialId, label);
     return resp;
   }
 
   return {
-    hasPriorRorCredential() {
-      return rorCredId !== undefined || getMigrationRorCredentialIdBytes() != null;
+    hasPriorSharedCredential() {
+      return sharedCredId !== undefined || getMigrationSharedCredentialIdBytes() != null;
     },
     async enumerateLabels(storedLabel) {
       const resp = await legacySignIn();
@@ -370,65 +370,55 @@ export function createMigrationSession(): MigrationSession {
       }
       return (await legacySignIn(label)).wallet.seed;
     },
-    async probeRorCredential() {
-      const probe = await rorSignIn();
-      rorCredential ??= probe.credential;
+    async probeSharedCredential() {
+      const probe = await sharedSignIn();
+      sharedCredential ??= probe.credential;
     },
-    async createRorCredential(primaryLabel) {
-      // Fresh client carrying the rotating user.name; retained as the ROR client
+    async createSharedCredential(primaryLabel) {
+      // Fresh client carrying the rotating user.name; retained as the shared client
       // so later per-label derives reuse the new Nostr identity.
       const registerClient = buildBrowserPasskeyClient({
-        rpId: ROR_RP_ID as string,
+        rpId: SHARED_RP_ID as string,
         userName,
         userDisplayName: userName,
       });
       const registration = await registerClient.register({ label: primaryLabel, excludeCredentials: [] });
-      rorClient = registerClient;
-      rorCredential = registration.credential;
-      logCeremony('Migration: ROR passkey created', ROR_RP_ID as string, false, registration.credential?.credentialId, primaryLabel);
+      sharedClient = registerClient;
+      sharedCredential = registration.credential;
+      logCeremony('Migration: shared passkey created', SHARED_RP_ID as string, false, registration.credential?.credentialId, primaryLabel);
       if (!registration.credential?.credentialId) {
         // No credential id: can't pin the destination derive; refuse before any sweep.
-        throw new RorSeedVerificationError('platform did not report the created credential id');
+        throw new SharedSeedVerificationError('platform did not report the created credential id');
       }
-      rorCredId = registration.credential.credentialId;
-      // Persist now so an interrupted run resumes onto THIS passkey (pinned probe),
-      // never a duplicate.
-      setMigrationRorCredentialId(registration.credential.credentialId);
-      // Pin the destination derive to the created credential: register()'s own
-      // derive is unpinned and can bind to another resident passkey, so ignore
-      // its returned seed in favor of this pinned one.
-      const pinned = await rorSignIn(primaryLabel);
-      if (!seedsMatch(pinned.wallet.seed, registration.wallet.seed)) {
-        logger.warn(LogCategory.AUTH, 'Migration: register-returned seed differs from the pinned derive; using the pinned wallet', {
-          label: primaryLabel,
-        });
-      }
-      rorPrimarySeed = pinned.wallet.seed;
-      rorPrimaryLabel = primaryLabel;
+      sharedCredId = registration.credential.credentialId;
+      // Persist now so an interrupted run resumes onto THIS passkey.
+      setMigrationSharedCredentialId(registration.credential.credentialId);
+      sharedPrimarySeed = registration.wallet.seed;
+      sharedPrimaryLabel = primaryLabel;
     },
-    async deriveRorSeed(label) {
+    async deriveSharedSeed(label) {
       // Reuse the pinned primary seed; hand off once, then drop the session's
       // copy so it does not linger.
-      if (label === rorPrimaryLabel && rorPrimarySeed) {
-        const seed = rorPrimarySeed;
-        rorPrimarySeed = undefined;
-        rorPrimaryLabel = undefined;
+      if (label === sharedPrimaryLabel && sharedPrimarySeed) {
+        const seed = sharedPrimarySeed;
+        sharedPrimarySeed = undefined;
+        sharedPrimaryLabel = undefined;
         logger.info(LogCategory.AUTH, 'Migration: reusing cached primary seed (no ceremony)', { label });
         return seed;
       }
-      return (await rorSignIn(label)).wallet.seed;
+      return (await sharedSignIn(label)).wallet.seed;
     },
-    async storeRorLabel(label) {
-      await getRorClient().labels().store(label);
+    async storeSharedLabel(label) {
+      await getSharedClient().labels().store(label);
     },
-    commitRorCredential() {
-      if (rorCredential && ROR_RP_ID) {
-        recordMigratedRorCredential(rorCredential, userName, ROR_RP_ID);
+    commitSharedCredential() {
+      if (sharedCredential && SHARED_RP_ID) {
+        recordMigratedSharedCredential(sharedCredential, userName, SHARED_RP_ID);
       }
-      // Hand the primed, pinned ROR client to the app session so post-migration
+      // Hand the primed, pinned shared client to the app session so post-migration
       // labels()/store reuse its warm Nostr identity instead of re-deriving on
       // the stale legacy client (which would surface the all-passkeys picker).
-      adoptSessionPasskeyClient(getRorClient());
+      adoptSessionPasskeyClient(getSharedClient());
     },
   };
 }

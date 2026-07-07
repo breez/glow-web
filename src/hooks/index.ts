@@ -1,4 +1,4 @@
-// Custom hooks for the Glow wallet app
+// Custom hooks for the Glow app
 
 export { useAnimatedNumber } from './useAnimatedNumber';
 

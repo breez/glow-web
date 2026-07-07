@@ -26,7 +26,7 @@ import {
   PasskeyTimedOutError,
   createPasskeyTimestampLabel,
   supportsImmediateGet,
-  ROR_RP_ID,
+  SHARED_RP_ID,
 } from '@/services/passkeyPrfProvider';
 
 import { logger, LogCategory } from '@/services/logger';
@@ -75,7 +75,7 @@ interface PasskeyPageProps {
   consumeFreshInstallSignal?: () => boolean;
   /**
    * Probe for a legacy-RP passkey to migrate when no credential is found
-   * under the (ROR) default RP ID. Resolves 'proceed' (no legacy passkey;
+   * under the (shared) default RP ID. Resolves 'proceed' (no legacy passkey;
    * caller may create a fresh wallet) or 'handled' (migration ran / cancelled
    * and App took over).
    */
@@ -440,20 +440,20 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         //      retryable error, no Create offer.
         //   4. Anything else → generic error with retry + Create
         //      escape hatch.
-        // No passkey on this device under the (ROR) default RP ID. The user may
+        // No passkey on this device under the (shared) default RP ID. The user may
         // still hold a legacy-RP passkey to migrate, so offer that before any
         // new-user create / generic-failure routing. Offered on web for ANY
         // detect failure: web has no deterministic no-credential signal and
-        // dismissing the empty ROR picker is a slow cancel, so a narrower gate
+        // dismissing the empty shared picker is a slow cancel, so a narrower gate
         // would leave fresh-browser legacy users unable to migrate. The
         // migration modal is browser-only, so native (fixed RP ID) never
         // reaches it. 'handled' = migration ran or the user cancelled (go back
         // home, matching the original); 'proceed' = no legacy passkey (fall
         // through to the routing below, and don't re-prompt).
-        if (!Capacitor.isNativePlatform() && ROR_RP_ID && !isPasskeyMigrated()) {
+        if (!Capacitor.isNativePlatform() && SHARED_RP_ID && !isPasskeyMigrated()) {
           const migrationCheck = onRequestMigrationCheckRef.current;
           if (migrationCheck) {
-            logger.info(LogCategory.AUTH, 'Detect failed under ROR RP ID; offering passkey-RP migration', { errorCode });
+            logger.info(LogCategory.AUTH, 'Detect failed under shared RP ID; offering passkey-RP migration', { errorCode });
             const outcome = await migrationCheck();
             if (cancelled) return;
             if (outcome === 'handled') { onBackRef.current(); return; }

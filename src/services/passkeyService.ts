@@ -450,7 +450,7 @@ export function invalidatePasskey(): void {
 
 /**
  * Adopt an already-primed, RP-scoped client as the session's passkey client
- * (web only). Used after migration: the new ROR client has its Nostr identity
+ * (web only). Used after migration: the new shared client has its Nostr identity
  * derived + pinned, so handing it off keeps post-migration labels()/store as
  * cache hits instead of a cold re-derive on the stale legacy client.
  */
@@ -810,9 +810,9 @@ export function isMigrationInProgress(): boolean {
 }
 
 const PASSKEY_MIGRATED_KEY = 'passkeyMigrated';
-const PASSKEY_MIGRATION_ROR_CRED_KEY = 'passkeyMigrationRorCredentialId';
+const PASSKEY_MIGRATION_SHARED_CRED_KEY = 'passkeyMigrationSharedCredentialId';
 
-/** True once the user has migrated to (or explicitly skipped) the ROR RP ID. */
+/** True once the user has migrated to (or explicitly skipped) the shared RP ID. */
 export function isPasskeyMigrated(): boolean {
   return localStorage.getItem(PASSKEY_MIGRATED_KEY) === 'true';
 }
@@ -823,18 +823,18 @@ export function setPasskeyMigrated(): void {
   logger.info(LogCategory.AUTH, 'Marked passkey as migrated');
 }
 
-// The ROR credential id created mid-migration, persisted (base64) the moment
-// register succeeds. Its presence is the precise "a ROR passkey already exists"
+// The shared credential id created mid-migration, persisted (base64) the moment
+// register succeeds. Its presence is the precise "a shared passkey already exists"
 // signal: on resume the flow pins the probe to it (re-finding the exact passkey
 // instead of the OS picker) and must never create a second one, since a
 // duplicate derives a different wallet and would strand already-swept funds.
 // Cleared once migration completes.
-export function setMigrationRorCredentialId(credentialId: Uint8Array): void {
+export function setMigrationSharedCredentialId(credentialId: Uint8Array): void {
   if (credentialId.length === 0) return;
-  localStorage.setItem(PASSKEY_MIGRATION_ROR_CRED_KEY, bytesToBase64(credentialId));
+  localStorage.setItem(PASSKEY_MIGRATION_SHARED_CRED_KEY, bytesToBase64(credentialId));
 }
-export function getMigrationRorCredentialIdBytes(): Uint8Array | null {
-  const b64 = localStorage.getItem(PASSKEY_MIGRATION_ROR_CRED_KEY);
+export function getMigrationSharedCredentialIdBytes(): Uint8Array | null {
+  const b64 = localStorage.getItem(PASSKEY_MIGRATION_SHARED_CRED_KEY);
   if (!b64) return null;
   try {
     return base64ToBytes(b64);
@@ -842,26 +842,26 @@ export function getMigrationRorCredentialIdBytes(): Uint8Array | null {
     return null;
   }
 }
-export function clearMigrationRorCredentialId(): void {
-  localStorage.removeItem(PASSKEY_MIGRATION_ROR_CRED_KEY);
+export function clearMigrationSharedCredentialId(): void {
+  localStorage.removeItem(PASSKEY_MIGRATION_SHARED_CRED_KEY);
 }
 
 /**
- * Record the newly-created ROR credential as active after a successful
+ * Record the newly-created shared credential as active after a successful
  * migration: pins it as active (so resume derives target it), stores its
  * AAGUID / backupEligible / user.name metadata, and adds it to the
- * ROR-namespaced browser registry so per-credential management lists it.
+ * shared-namespaced browser registry so per-credential management lists it.
  * Web only. Call this only once migration has fully succeeded, so a partial
- * failure never leaves the active credential pointing at an unusable ROR cred.
+ * failure never leaves the active credential pointing at an unusable shared cred.
  */
-export function recordMigratedRorCredential(
+export function recordMigratedSharedCredential(
   cred: RegisterResponse['credential'],
   userName: string | undefined,
-  rorRpId: string,
+  sharedRpId: string,
 ): void {
   recordRegisteredCredential(cred, userName);
   if (!Capacitor.isNativePlatform() && cred && browserRegistry) {
-    browserRegistry.add(rorRpId, cred.credentialId).catch(() => {
+    browserRegistry.add(sharedRpId, cred.credentialId).catch(() => {
       /* registry add is best-effort; management UI tolerates a missing entry. */
     });
   }

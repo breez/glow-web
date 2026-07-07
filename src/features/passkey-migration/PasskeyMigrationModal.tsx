@@ -48,7 +48,9 @@ const PasskeyMigrationModal: React.FC<PasskeyMigrationModalProps> = (props) => {
             </div>
           </div>
           <h2 className="font-display text-lg font-bold text-spark-text-primary">
-            {entry === 'login' ? 'Check passkey' : 'Upgrade passkey'}
+            {flow.phase === 'done'
+              ? 'Upgrade complete'
+              : entry === 'login' ? 'Check passkey' : 'Upgrade passkey'}
           </h2>
         </div>
 
@@ -80,7 +82,12 @@ const PasskeyMigrationModal: React.FC<PasskeyMigrationModalProps> = (props) => {
         )}
 
         {flow.phase === 'error' && (
-          <ErrorStep error={flow.error} onRetry={flow.retry} onCancel={flow.cancel} />
+          <ErrorStep
+            error={flow.error}
+            onRetry={flow.retry}
+            onCancel={flow.cancel}
+            onStartOver={flow.canStartOver ? flow.startOver : undefined}
+          />
         )}
       </DialogCard>
     </DialogContainer>

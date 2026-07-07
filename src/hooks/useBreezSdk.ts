@@ -39,7 +39,7 @@ import {
   isMigrationInProgress,
   isPasskeyMigrated,
 } from '../services/passkeyService';
-import { LEGACY_RP_ID, ROR_RP_ID, rpId as defaultRpId } from '../services/passkeyPrfProvider';
+import { LEGACY_RP_ID, SHARED_RP_ID, rpId as defaultRpId } from '../services/passkeyPrfProvider';
 import { secureStorage, deviceOnlyStorage, SecureStorageError } from '../services/secureStorage';
 
 
@@ -139,9 +139,9 @@ export interface BreezSdkState {
   hasRejectedDeposits: boolean;
   celebrationPayment: Payment | null;
   /**
-   * True when the connected wallet is on the legacy RP ID while a distinct ROR
+   * True when the connected wallet is on the legacy RP ID while a distinct shared
    * RP ID is configured and migration hasn't been done/skipped. Drives the
-   * migration banner. Only ever true when ROR_RP_ID is configured.
+   * migration banner. Only ever true when SHARED_RP_ID is configured.
    */
   needsPasskeyMigration: boolean;
   prfAvailable: boolean;
@@ -445,16 +445,16 @@ export function useBreezSdk(
         // Persist the RP ID this wallet was derived under so the next
         // sign-in/resume targets the same one. Resume backfills the stored
         // value before calling connectWallet; a fresh connect (no stored RP
-        // ID yet) records the default (ROR when configured, else legacy).
+        // ID yet) records the default (shared when configured, else legacy).
         setPasskeyMode(passkeyLabel, getPasskeyRpId() ?? defaultRpId);
         markLabelUsed(passkeyLabel);
         // Offer migration when this wallet is still on the legacy RP ID and a
-        // distinct ROR RP ID is configured and not yet migrated/skipped.
+        // distinct shared RP ID is configured and not yet migrated/skipped.
         const onLegacyRp = (getPasskeyRpId() ?? LEGACY_RP_ID) === LEGACY_RP_ID;
         // Migration is a web-only flow (the modal uses the browser passkey
         // client); native keeps its fixed RP ID and never migrates.
         setNeedsPasskeyMigration(
-          !Capacitor.isNativePlatform() && !!ROR_RP_ID && ROR_RP_ID !== LEGACY_RP_ID && !isPasskeyMigrated() && onLegacyRp,
+          !Capacitor.isNativePlatform() && !!SHARED_RP_ID && SHARED_RP_ID !== LEGACY_RP_ID && !isPasskeyMigrated() && onLegacyRp,
         );
       }
 
@@ -597,7 +597,7 @@ export function useBreezSdk(
 
     // Disconnect the legacy SDK we were running. Unlike handleLogout this keeps
     // mnemonic / stable-ticker / network state: from the user's view it is the
-    // same wallet, now under the ROR RP ID.
+    // same wallet, now under the shared RP ID.
     const oldSdk = sdk;
     if (oldSdk) {
       try {
@@ -608,14 +608,14 @@ export function useBreezSdk(
     }
 
     // Take ownership of the already connected + synced new SDK. Here we set mode
-    // + RP ID so resume targets the new wallet; the migration flow pins the ROR
+    // + RP ID so resume targets the new wallet; the migration flow pins the shared
     // credential as active right after this hand-off returns.
     setSdk(newSdk);
     // Login-entry migration never ran connectWallet on this hook, so `config`
     // is still null; set it (as connectWallet does) or `config.network` stays
     // undefined and the Buy list drops Cash App until reload.
     setConfig(buildConnectConfig());
-    setPasskeyMode(label, ROR_RP_ID ?? defaultRpId);
+    setPasskeyMode(label, SHARED_RP_ID ?? defaultRpId);
     markLabelUsed(label);
     shownPaymentIdsRef.current.clear();
     setCelebrationPayment(null);
@@ -666,7 +666,7 @@ export function useBreezSdk(
       // active credential rather than letting the OS picker derive the
       // new label under a different identity.
       // Same passkey, same RP ID the active session uses (legacy for a
-      // not-yet-migrated user, ROR after migration).
+      // not-yet-migrated user, shared after migration).
       const result = await signInPinnedToActiveCredential(newLabel, getPasskeyRpId() ?? LEGACY_RP_ID);
       wallet = result.wallet;
     } catch (e) {
@@ -848,7 +848,7 @@ export function useBreezSdk(
       try {
         const effectiveLabel = localStorage.getItem('passkeyLabel') ?? undefined;
         // Existing users derive under their stored RP ID, defaulting to
-        // legacy so enabling ROR can't orphan a pre-migration wallet.
+        // legacy so enabling the shared RP can't orphan a pre-migration wallet.
         const effectiveRpId = getPasskeyRpId() ?? LEGACY_RP_ID;
         const response = await signInPinnedToActiveCredential(effectiveLabel, effectiveRpId);
         if (!getPasskeyRpId()) setPasskeyRpId(effectiveRpId);
@@ -1118,7 +1118,7 @@ export function useBreezSdk(
             // `undefined` for "use whatever signIn negotiates".
             const effectiveLabel = localStorage.getItem('passkeyLabel') ?? undefined;
             // Existing users derive under their stored RP ID, defaulting to
-            // legacy so enabling ROR can't orphan a pre-migration wallet.
+            // legacy so enabling the shared RP can't orphan a pre-migration wallet.
             const effectiveRpId = getPasskeyRpId() ?? LEGACY_RP_ID;
             const result = await signInPinnedToActiveCredential(effectiveLabel, effectiveRpId);
             if (!getPasskeyRpId()) setPasskeyRpId(effectiveRpId);
