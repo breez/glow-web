@@ -448,8 +448,8 @@ export function useMigrationFlow({
         await sweepBalances(oldSdk, newSdk, oldInfo, label);
         if (cancelled) return;
         const lnTransferFailed = await transferLightningAddress(oldSdk, newSdk, newInfo.identityPubkey, label);
-        if (cancelled) return;
         if (lnTransferFailed) setLnAddressTransferFailed(true);
+        if (cancelled) return;
         await migrateContacts(oldSdk, newSdk, label);
         if (cancelled) return;
 
