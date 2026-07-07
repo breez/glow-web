@@ -13,9 +13,9 @@ import {
   isMigrationInProgress,
   setMigrationInProgress,
   setPasskeyMigrated,
-  clearMigrationRorCredentialId,
+  clearMigrationSharedCredentialId,
 } from '@/services/passkeyService';
-import { ROR_RP_ID } from '@/services/passkeyPrfProvider';
+import { SHARED_RP_ID } from '@/services/passkeyPrfProvider';
 import {
   createMigrationSession,
   connectForSeed,
@@ -50,7 +50,7 @@ export interface MigrationFlow {
   spinnerText: string;
   /** At least one label's Lightning address could not be moved (funds are fine). */
   lnAddressTransferFailed: boolean;
-  /** The recorded ROR passkey is unreachable (e.g. deleted); offer a fresh start. */
+  /** The recorded shared passkey is unreachable (e.g. deleted); offer a fresh start. */
   canStartOver: boolean;
   // actions
   startFromBanner: () => void;
@@ -83,7 +83,7 @@ export function useMigrationFlow({
   // Set if any label's Lightning-address transfer fails; surfaces a Done-screen
   // notice (funds still moved, but incoming LN may land in the old wallet).
   const [lnAddressTransferFailed, setLnAddressTransferFailed] = useState(false);
-  // Set only when a recorded ROR passkey can't be reached (e.g. the user deleted
+  // Set only when a recorded shared passkey can't be reached (e.g. the user deleted
   // it): the error screen then offers a fresh start instead of a Retry dead-end.
   const [canStartOver, setCanStartOver] = useState(false);
 
@@ -145,7 +145,7 @@ export function useMigrationFlow({
       entry,
       storedLabel,
       hasActiveLegacySdk: !!activeLegacySdk,
-      rorConfigured: !!ROR_RP_ID,
+      sharedRpConfigured: !!SHARED_RP_ID,
     });
 
     if (entry === 'banner' && !activeLegacySdk) {
@@ -317,8 +317,8 @@ export function useMigrationFlow({
   }, [isOpen, phase, entry, activeLegacySdk]);
 
   // ============================================
-  // Phase: derive-new-passkey (one-time). Create the single ROR passkey all
-  // labels share. Per-label ROR derives happen inside sweep-label.
+  // Phase: derive-new-passkey (one-time). Create the single shared passkey all
+  // labels share. Per-label shared derives happen inside sweep-label.
   // ============================================
   useEffect(() => {
     if (!isOpen || phase !== 'derive-new-passkey') return;
@@ -328,9 +328,9 @@ export function useMigrationFlow({
 
     (async () => {
       try {
-        if (!ROR_RP_ID) throw new Error('ROR_RP_ID not configured');
+        if (!SHARED_RP_ID) throw new Error('SHARED_RP_ID not configured');
 
-        // Resume-safety: a persisted ROR credential id means a prior attempt
+        // Resume-safety: a persisted shared credential id means a prior attempt
         // already created the passkey (possibly after moving some funds). We
         // MUST reuse that exact credential: creating a second one derives a
         // different wallet and would strand the already-swept funds in an
@@ -338,13 +338,13 @@ export function useMigrationFlow({
         // retryable error rather than falling through to create a duplicate. A
         // first attempt (nothing recorded) creates directly, skipping a
         // pointless "Use a saved passkey" prompt.
-        if (session.hasPriorRorCredential()) {
-          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: prior ROR credential recorded, reusing it');
+        if (session.hasPriorSharedCredential()) {
+          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: prior shared credential recorded, reusing it');
           try {
-            await session.probeRorCredential();
+            await session.probeSharedCredential();
           } catch (e) {
             if (cancelled) return;
-            logger.error(LogCategory.AUTH, 'Migration derive-new-passkey: recorded ROR credential unreachable', {
+            logger.error(LogCategory.AUTH, 'Migration derive-new-passkey: recorded shared credential unreachable', {
               error: formatError(e),
             });
             setError(
@@ -356,12 +356,12 @@ export function useMigrationFlow({
             return;
           }
           if (cancelled) return;
-          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: existing ROR credential confirmed, skipping create');
+          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: existing shared credential confirmed, skipping create');
         } else {
-          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: no prior ROR credential, creating one');
-          await session.createRorCredential(primaryLabelRef.current);
+          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: no prior shared credential, creating one');
+          await session.createSharedCredential(primaryLabelRef.current);
           if (cancelled) return;
-          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: passkey created on ROR');
+          logger.info(LogCategory.AUTH, 'Migration derive-new-passkey: passkey created on the shared RP');
         }
 
         setCurrentLabelIndex(0);
@@ -405,7 +405,7 @@ export function useMigrationFlow({
       let newSdk: BreezSdk | null = null;
 
       try {
-        if (!ROR_RP_ID) throw new Error('ROR_RP_ID not configured');
+        if (!SHARED_RP_ID) throw new Error('SHARED_RP_ID not configured');
 
         // 1. Connect the old SDK for this label. The reused active legacy SDK
         // (banner + primary) never derived a seed, so only the connect path
@@ -423,9 +423,9 @@ export function useMigrationFlow({
         }
         oldSdkRef.current = oldSdk;
 
-        // 2. Derive the new seed for this label on ROR, then connect the new SDK.
-        logger.info(LogCategory.AUTH, 'Migration sweep-label: deriving new seed on ROR', { label });
-        const newSeed = await session.deriveRorSeed(label);
+        // 2. Derive the new seed for this label on the shared RP, then connect the new SDK.
+        logger.info(LogCategory.AUTH, 'Migration sweep-label: deriving new seed on the shared RP', { label });
+        const newSeed = await session.deriveSharedSeed(label);
         if (cancelled) return;
 
         newSdk = await connectForSeed(newSeed);
@@ -452,7 +452,7 @@ export function useMigrationFlow({
 
         // 4. Publish the label under the new passkey's Nostr identity.
         logger.info(LogCategory.AUTH, 'Migration sweep-label: saving label to new Nostr identity', { label });
-        await session.storeRorLabel(label);
+        await session.storeSharedLabel(label);
         if (cancelled) return;
 
         // 5. Sweep sats + tokens, transfer the Lightning address, migrate contacts.
@@ -513,7 +513,7 @@ export function useMigrationFlow({
   }, [isOpen, phase, currentLabelIndex, entry, activeLegacySdk]);
 
   // ============================================
-  // Phase: switch. Apply the stable ticker, pin the ROR credential as active
+  // Phase: switch. Apply the stable ticker, pin the shared credential as active
   // (success only), then hand the primary new SDK to useBreezSdk.
   // ============================================
   useEffect(() => {
@@ -539,17 +539,17 @@ export function useMigrationFlow({
         await onSwitchRef.current(primaryNew, primaryLabelRef.current);
         primaryNewSdkRef.current = null;
 
-        // Commit the ROR credential + mark migrated only after adopt succeeds.
-        // commitRorCredential pins the ROR credential as active, so deferring it
+        // Commit the shared credential + mark migrated only after adopt succeeds.
+        // commitSharedCredential pins the shared credential as active, so deferring it
         // (and the flags) past the hand-off means an adopt failure leaves the
-        // active credential + RP on legacy and the banner armed: the ROR wallet
+        // active credential + RP on legacy and the banner armed: the shared wallet
         // already holds the funds, so a re-run sweeps nothing and just retries
         // the switch, instead of stranding the user on the empty legacy wallet
         // with migration suppressed. Run past the cancel guard: once adopt
         // succeeded the persisted state must match it even if we unmounted.
-        session.commitRorCredential();
+        session.commitSharedCredential();
         setPasskeyMigrated();
-        clearMigrationRorCredentialId();
+        clearMigrationSharedCredentialId();
         logger.info(LogCategory.AUTH, 'Migration switch: complete');
         if (cancelled) return;
         // Stay open on the success step. The adopt handler only swaps the SDK;
@@ -624,7 +624,7 @@ export function useMigrationFlow({
     }
   }, [entry]);
 
-  // Recovery for an unreachable recorded ROR passkey (deleted by the user): drop
+  // Recovery for an unreachable recorded shared passkey (deleted by the user): drop
   // the persisted credential and rebuild the session so derive-new-passkey takes
   // the create branch instead of probing a passkey that no longer exists. Labels
   // and legacy seeds were already cached by check-deposits-all, so re-entering at
@@ -632,7 +632,7 @@ export function useMigrationFlow({
   // prior attempt already emptied simply moves nothing.
   const startOver = useCallback(() => {
     logger.warn(LogCategory.AUTH, 'Migration: discarding previous attempt, creating a new passkey');
-    clearMigrationRorCredentialId();
+    clearMigrationSharedCredentialId();
     sessionRef.current = createMigrationSession();
     setError(null);
     setCanStartOver(false);

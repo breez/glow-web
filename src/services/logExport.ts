@@ -15,7 +15,7 @@ export const getAllLogsAsZip = async (): Promise<Blob> => {
   const nowTimestamp = Math.floor(now.getTime() / 1000);
 
   const currentSessionHeader = [
-    `Glow Wallet Log Export`,
+    `Glow Log Export`,
     `Session: Current`,
     `Generated: ${now.toISOString()}`,
     '='.repeat(60),
@@ -30,7 +30,7 @@ export const getAllLogsAsZip = async (): Promise<Blob> => {
         const sessionTimestamp = Math.floor(new Date(session.startedAt).getTime() / 1000);
         const filename = `${sessionTimestamp}_glow_session.txt`;
         const sessionHeader = [
-          `Glow Wallet Log Export`,
+          `Glow Log Export`,
           `Session ID: ${session.id}`,
           `Started: ${session.startedAt}`,
           session.endedAt ? `Ended: ${session.endedAt}` : 'Status: Active',
@@ -170,7 +170,7 @@ const shareFileNative = async (blob: Blob, filename: string): Promise<void> => {
     directory: Directory.Cache,
   });
   await Share.share({
-    title: 'Glow Wallet Logs',
+    title: 'Glow Logs',
     url: uri,
     dialogTitle: 'Share logs',
   });
@@ -203,7 +203,7 @@ export const shareOrDownloadLogs = async (): Promise<void> => {
     const file = new File([blob], filename, { type: 'application/zip' });
     if (navigator.canShare({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: 'Glow Wallet Logs' });
+        await navigator.share({ files: [file], title: 'Glow Logs' });
         return;
       } catch (e) {
         if ((e as Error).name === 'AbortError') return;
