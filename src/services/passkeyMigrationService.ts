@@ -42,6 +42,16 @@ export function orderLabelsForMigration(labels: string[], storedLabel: string): 
   return [...others, primary];
 }
 
+/** No credential id from the platform: can't pin the destination derive or resume onto it. */
+export class RorSeedVerificationError extends Error {}
+
+export function seedsMatch(a: Seed, b: Seed): boolean {
+  if (a.type === 'mnemonic' && b.type === 'mnemonic') {
+    return a.mnemonic === b.mnemonic && (a.passphrase ?? '') === (b.passphrase ?? '');
+  }
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 /** Refuse to migrate a wallet onto itself (a same-identity transfer is a no-op self-send). */
 export function assertDifferentWallet(
   oldInfo: GetInfoResponse,
@@ -298,12 +308,12 @@ export function createMigrationSession(): MigrationSession {
   const priorRorCredId = getMigrationRorCredentialIdBytes() ?? undefined;
   let rorCredId: Uint8Array | undefined = priorRorCredId;
   let rorCredential: RegisterResponse['credential'] = undefined;
-  // Win A: register already derives the primary label's ROR seed; cache it so
-  // deriveRorSeed reuses it instead of running a second ceremony for that label.
+  // The primary label's pinned ROR seed, cached so deriveRorSeed reuses it
+  // instead of running another ceremony for that label.
   let rorPrimarySeed: Seed | undefined;
   let rorPrimaryLabel: string | undefined;
-  // Win B: the label-discovery signIn already derives its (default) label's
-  // legacy seed; cache it so deriveLegacySeed reuses it for that label.
+  // The default label's legacy seed from label discovery, cached so
+  // deriveLegacySeed reuses it for that label.
   let legacyDiscoverySeed: Seed | undefined;
   let legacyDiscoveryLabel: string | undefined;
 
@@ -343,7 +353,7 @@ export function createMigrationSession(): MigrationSession {
 
   return {
     hasPriorRorCredential() {
-      return priorRorCredId !== undefined;
+      return rorCredId !== undefined || getMigrationRorCredentialIdBytes() != null;
     },
     async enumerateLabels(storedLabel) {
       const resp = await legacySignIn();
@@ -352,8 +362,8 @@ export function createMigrationSession(): MigrationSession {
       return orderLabelsForMigration(resp.labels.length > 0 ? resp.labels : [storedLabel], storedLabel);
     },
     async deriveLegacySeed(label) {
-      // Reuse the discovery signIn's seed for its label (Win B); deterministic.
-      // Hand it off once, then drop the session's copy so it does not linger.
+      // Reuse the discovery signIn's seed for its label; hand it off once,
+      // then drop the session's copy so it does not linger.
       if (label === legacyDiscoveryLabel && legacyDiscoverySeed) {
         const seed = legacyDiscoverySeed;
         legacyDiscoverySeed = undefined;
@@ -379,25 +389,34 @@ export function createMigrationSession(): MigrationSession {
       rorClient = registerClient;
       rorCredential = registration.credential;
       logCeremony('Migration: ROR passkey created', ROR_RP_ID as string, false, registration.credential?.credentialId, primaryLabel);
-      if (registration.credential?.credentialId) {
-        rorCredId = registration.credential.credentialId;
-        // Persist immediately: a crash/close after this point (even after some
-        // funds move) must resume onto THIS passkey via a pinned probe, never
-        // create a duplicate wallet.
-        setMigrationRorCredentialId(registration.credential.credentialId);
+      if (!registration.credential?.credentialId) {
+        // No credential id: can't pin the destination derive; refuse before any sweep.
+        throw new RorSeedVerificationError('platform did not report the created credential id');
       }
-      rorPrimarySeed = registration.wallet.seed;
+      rorCredId = registration.credential.credentialId;
+      // Persist now so an interrupted run resumes onto THIS passkey (pinned probe),
+      // never a duplicate.
+      setMigrationRorCredentialId(registration.credential.credentialId);
+      // Pin the destination derive to the created credential: register()'s own
+      // derive is unpinned and can bind to another resident passkey, so ignore
+      // its returned seed in favor of this pinned one.
+      const pinned = await rorSignIn(primaryLabel);
+      if (!seedsMatch(pinned.wallet.seed, registration.wallet.seed)) {
+        logger.warn(LogCategory.AUTH, 'Migration: register-returned seed differs from the pinned derive; using the pinned wallet', {
+          label: primaryLabel,
+        });
+      }
+      rorPrimarySeed = pinned.wallet.seed;
       rorPrimaryLabel = primaryLabel;
     },
     async deriveRorSeed(label) {
-      // Reuse register's already-derived seed for the primary label (Win A).
-      // Deterministic: same passkey + label always yields the same seed. Hand it
-      // off once, then drop the session's copy so it does not linger.
+      // Reuse the pinned primary seed; hand off once, then drop the session's
+      // copy so it does not linger.
       if (label === rorPrimaryLabel && rorPrimarySeed) {
         const seed = rorPrimarySeed;
         rorPrimarySeed = undefined;
         rorPrimaryLabel = undefined;
-        logger.info(LogCategory.AUTH, 'Migration: reusing register-derived ROR seed (no ceremony)', { label });
+        logger.info(LogCategory.AUTH, 'Migration: reusing cached primary seed (no ceremony)', { label });
         return seed;
       }
       return (await rorSignIn(label)).wallet.seed;
