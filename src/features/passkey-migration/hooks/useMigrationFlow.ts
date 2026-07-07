@@ -29,7 +29,7 @@ import {
   type MigrationSession,
 } from '@/services/passkeyMigrationService';
 import { formatError } from '@/utils/formatError';
-import type { MigrationEntry, MigrationOutcome, MigrationPhase } from '../types';
+import type { LnAddressFailure, MigrationEntry, MigrationOutcome, MigrationPhase } from '../types';
 
 export interface UseMigrationFlowArgs {
   isOpen: boolean;
@@ -49,7 +49,7 @@ export interface MigrationFlow {
   isInFlight: boolean;
   spinnerText: string;
   /** Labels whose Lightning address could not be moved (funds are fine). */
-  lnAddressFailedLabels: string[];
+  lnAddressFailures: LnAddressFailure[];
   /** The recorded shared passkey is unreachable (e.g. deleted); offer a fresh start. */
   canStartOver: boolean;
   // actions
@@ -82,7 +82,7 @@ export function useMigrationFlow({
   const [primaryLabel, setPrimaryLabel] = useState('Default');
   // Set if any label's Lightning-address transfer fails; surfaces a Done-screen
   // notice (funds still moved, but incoming LN may land in the old wallet).
-  const [lnAddressFailedLabels, setLnAddressFailedLabels] = useState<string[]>([]);
+  const [lnAddressFailures, setLnAddressFailures] = useState<LnAddressFailure[]>([]);
   // Current sub-step of the silent sweep, so a long move reads as progress
   // (connect + sync sits under 'funds', then the address, then contacts).
   const [sweepDetail, setSweepDetail] = useState<'funds' | 'Lightning address' | 'contacts'>('funds');
@@ -132,7 +132,7 @@ export function useMigrationFlow({
     setUnclaimedCount(0);
     setConfirmedLabels([]);
     setCurrentLabelIndex(0);
-    setLnAddressFailedLabels([]);
+    setLnAddressFailures([]);
     setCanStartOver(false);
     labelsToMigrateRef.current = [];
     seedCacheRef.current = new Map();
@@ -483,8 +483,8 @@ export function useMigrationFlow({
         await sweepBalances(oldSdk, newSdk, oldInfo, label);
         if (cancelled) return;
         setSweepDetail('Lightning address');
-        const lnTransferFailed = await transferLightningAddress(oldSdk, newSdk, newInfo.identityPubkey, label);
-        if (lnTransferFailed) setLnAddressFailedLabels((prev) => [...prev, label]);
+        const failedAddress = await transferLightningAddress(oldSdk, newSdk, newInfo.identityPubkey, label);
+        if (failedAddress) setLnAddressFailures((prev) => [...prev, { label, address: failedAddress }]);
         if (cancelled) return;
         setSweepDetail('contacts');
         await migrateContacts(oldSdk, newSdk, label);
@@ -639,7 +639,7 @@ export function useMigrationFlow({
     setCurrentLabelIndex(0);
     // A retry re-runs every label's transfer, so clear the prior run's warning:
     // otherwise a transient read failure leaves a false notice after a clean retry.
-    setLnAddressFailedLabels([]);
+    setLnAddressFailures([]);
     // Re-validate state before sweeping if we already have a label list;
     // otherwise restart from enumeration / explain.
     if (labelsToMigrateRef.current.length > 0) {
@@ -664,7 +664,7 @@ export function useMigrationFlow({
     setError(null);
     setCanStartOver(false);
     setCurrentLabelIndex(0);
-    setLnAddressFailedLabels([]);
+    setLnAddressFailures([]);
     setPhase('derive-new-passkey');
   }, []);
 
@@ -701,7 +701,7 @@ export function useMigrationFlow({
     primaryLabel,
     isInFlight,
     spinnerText,
-    lnAddressFailedLabels,
+    lnAddressFailures,
     canStartOver,
     startFromBanner,
     checkForOldPasskey,

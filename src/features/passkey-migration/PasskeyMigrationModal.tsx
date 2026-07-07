@@ -78,7 +78,7 @@ const PasskeyMigrationModal: React.FC<PasskeyMigrationModalProps> = (props) => {
         )}
 
         {flow.phase === 'done' && (
-          <DoneStep onDone={flow.done} lnAddressFailedLabels={flow.lnAddressFailedLabels} />
+          <DoneStep onDone={flow.done} lnAddressFailures={flow.lnAddressFailures} />
         )}
 
         {flow.phase === 'error' && (
