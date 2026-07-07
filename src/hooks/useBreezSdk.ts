@@ -435,7 +435,7 @@ export function useBreezSdk(
       setSdk(connectedSdk);
 
       logger.sdkInitialized();
-      logger.authSuccess(seed.type);
+      logger.authSuccess(passkeyLabel != null ? 'passkey' : seed.type);
       logger.info(LogCategory.SDK, 'Wallet connected successfully');
 
       // Non-sensitive marker so the legacy path can still detect
@@ -524,7 +524,7 @@ export function useBreezSdk(
     } catch (e) {
       const errorMsg = formatError(e);
       logger.error(LogCategory.SDK, 'Error connecting wallet', { error: errorMsg });
-      logger.authFailure(seed.type, errorMsg);
+      logger.authFailure(passkeyLabel != null ? 'passkey' : seed.type, errorMsg);
 
       // If SDK connected but a subsequent step failed, disconnect to avoid leaked instance
       if (connectedSdk) {
