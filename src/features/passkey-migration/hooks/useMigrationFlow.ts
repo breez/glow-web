@@ -48,8 +48,8 @@ export interface MigrationFlow {
   primaryLabel: string;
   isInFlight: boolean;
   spinnerText: string;
-  /** At least one label's Lightning address could not be moved (funds are fine). */
-  lnAddressTransferFailed: boolean;
+  /** Labels whose Lightning address could not be moved (funds are fine). */
+  lnAddressFailedLabels: string[];
   /** The recorded shared passkey is unreachable (e.g. deleted); offer a fresh start. */
   canStartOver: boolean;
   // actions
@@ -82,7 +82,10 @@ export function useMigrationFlow({
   const [primaryLabel, setPrimaryLabel] = useState('Default');
   // Set if any label's Lightning-address transfer fails; surfaces a Done-screen
   // notice (funds still moved, but incoming LN may land in the old wallet).
-  const [lnAddressTransferFailed, setLnAddressTransferFailed] = useState(false);
+  const [lnAddressFailedLabels, setLnAddressFailedLabels] = useState<string[]>([]);
+  // Current sub-step of the silent sweep, so a long move reads as progress
+  // (connect + sync sits under 'funds', then the address, then contacts).
+  const [sweepDetail, setSweepDetail] = useState<'funds' | 'Lightning address' | 'contacts'>('funds');
   // Set only when a recorded shared passkey can't be reached (e.g. the user deleted
   // it): the error screen then offers a fresh start instead of a Retry dead-end.
   const [canStartOver, setCanStartOver] = useState(false);
@@ -129,7 +132,7 @@ export function useMigrationFlow({
     setUnclaimedCount(0);
     setConfirmedLabels([]);
     setCurrentLabelIndex(0);
-    setLnAddressTransferFailed(false);
+    setLnAddressFailedLabels([]);
     setCanStartOver(false);
     labelsToMigrateRef.current = [];
     seedCacheRef.current = new Map();
@@ -417,6 +420,9 @@ export function useMigrationFlow({
       const isLast = index === labels.length - 1;
 
       logger.info(LogCategory.AUTH, 'Migration sweep-label: starting', { label, index, total: labels.length, isLast });
+      // Connect + sync + balance sweep all read as "funds"; the address and
+      // contacts get their own sub-step below.
+      setSweepDetail('funds');
 
       let oldSdk: BreezSdk | null = null;
       let oldSdkOwnedByModal = false;
@@ -476,9 +482,11 @@ export function useMigrationFlow({
         // 5. Sweep sats + tokens, transfer the Lightning address, migrate contacts.
         await sweepBalances(oldSdk, newSdk, oldInfo, label);
         if (cancelled) return;
+        setSweepDetail('Lightning address');
         const lnTransferFailed = await transferLightningAddress(oldSdk, newSdk, newInfo.identityPubkey, label);
-        if (lnTransferFailed) setLnAddressTransferFailed(true);
+        if (lnTransferFailed) setLnAddressFailedLabels((prev) => [...prev, label]);
         if (cancelled) return;
+        setSweepDetail('contacts');
         await migrateContacts(oldSdk, newSdk, label);
         if (cancelled) return;
 
@@ -631,7 +639,7 @@ export function useMigrationFlow({
     setCurrentLabelIndex(0);
     // A retry re-runs every label's transfer, so clear the prior run's warning:
     // otherwise a transient read failure leaves a false notice after a clean retry.
-    setLnAddressTransferFailed(false);
+    setLnAddressFailedLabels([]);
     // Re-validate state before sweeping if we already have a label list;
     // otherwise restart from enumeration / explain.
     if (labelsToMigrateRef.current.length > 0) {
@@ -656,7 +664,7 @@ export function useMigrationFlow({
     setError(null);
     setCanStartOver(false);
     setCurrentLabelIndex(0);
-    setLnAddressTransferFailed(false);
+    setLnAddressFailedLabels([]);
     setPhase('derive-new-passkey');
   }, []);
 
@@ -676,9 +684,9 @@ export function useMigrationFlow({
       case 'derive-new-passkey': return 'Setting up your new passkey...';
       case 'sweep-label': {
         if (confirmedLabels.length > 1) {
-          return `Moving your funds (${currentLabelIndex + 1} of ${confirmedLabels.length})...`;
+          return `Moving your ${sweepDetail} (${currentLabelIndex + 1} of ${confirmedLabels.length})...`;
         }
-        return 'Moving your funds...';
+        return `Moving your ${sweepDetail}...`;
       }
       case 'switch': return 'Finishing up...';
       default: return '';
@@ -693,7 +701,7 @@ export function useMigrationFlow({
     primaryLabel,
     isInFlight,
     spinnerText,
-    lnAddressTransferFailed,
+    lnAddressFailedLabels,
     canStartOver,
     startFromBanner,
     checkForOldPasskey,
