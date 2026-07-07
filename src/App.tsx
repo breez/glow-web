@@ -43,6 +43,8 @@ import { STATUS_BAR_LOADING } from './utils/statusBarManager';
 import { useBackButton } from './hooks/useBackButton';
 import type { Seed, Payment, BreezSdk } from '@breeztech/breez-sdk-spark';
 
+const PASSKEY_MIGRATION_ENABLED = false;
+
 type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState';
 
 // Full-screen dim spinner shown while sdk.isLoading is true (logout in
@@ -133,6 +135,8 @@ const AppContent: React.FC = () => {
   // Auto-open the migration banner once per page load when a legacy-RP wallet
   // connects and ROR migration is still pending.
   useEffect(() => {
+    if (!PASSKEY_MIGRATION_ENABLED) return;
+
     if (
       sdk.isConnected
       && sdk.needsPasskeyMigration
@@ -150,6 +154,10 @@ const AppContent: React.FC = () => {
   // for a legacy passkey to migrate. Resolves 'proceed' (caller may create a
   // fresh ROR passkey) or 'handled' (migration ran or the user cancelled).
   const requestMigrationCheck = useCallback((): Promise<MigrationOutcome> => {
+    if (!PASSKEY_MIGRATION_ENABLED) {
+      return Promise.resolve('proceed');
+    }
+
     return new Promise<MigrationOutcome>((resolve) => {
       migrationResolveRef.current = resolve;
       setMigrationEntry('login');
@@ -547,33 +555,33 @@ const AppContent: React.FC = () => {
     <WalletProvider client={sdk.sdk} isConnected={sdk.isConnected} subscribeToSdkEvents={sdk.subscribeToSdkEvents}>
       <WalletInfoProvider walletInfo={sdk.walletInfo}>
         <WalletStatusProvider hasPendingConversion={sdk.hasPendingConversion}>
-        <FiatDataProvider>
-          <StableBalanceProvider>
-            <StableBalanceFormatterBridge formatterRef={formatPaymentAmountRef} />
-            <ContactsProvider>
-              {renderCurrentScreen()}
-            </ContactsProvider>
-            {sdk.celebrationPayment !== null && (
-              <PaymentReceivedCelebration
-                payment={sdk.celebrationPayment}
-                onClose={sdk.dismissCelebration}
-              />
-            )}
-            {migrationEverOpened && (
-              <Suspense fallback={null}>
-                <PasskeyMigrationModal
-                  isOpen={migrationModalOpen}
-                  entry={migrationEntry}
-                  activeLegacySdk={sdk.sdk}
-                  onClose={handleMigrationClose}
-                  onSwitchToNewWallet={handleMigrationSwitch}
+          <FiatDataProvider>
+            <StableBalanceProvider>
+              <StableBalanceFormatterBridge formatterRef={formatPaymentAmountRef} />
+              <ContactsProvider>
+                {renderCurrentScreen()}
+              </ContactsProvider>
+              {sdk.celebrationPayment !== null && (
+                <PaymentReceivedCelebration
+                  payment={sdk.celebrationPayment}
+                  onClose={sdk.dismissCelebration}
                 />
-              </Suspense>
-            )}
-            <InstallPrompt />
-            <OfflineBanner />
-          </StableBalanceProvider>
-        </FiatDataProvider>
+              )}
+              {migrationEverOpened && (
+                <Suspense fallback={null}>
+                  <PasskeyMigrationModal
+                    isOpen={migrationModalOpen}
+                    entry={migrationEntry}
+                    activeLegacySdk={sdk.sdk}
+                    onClose={handleMigrationClose}
+                    onSwitchToNewWallet={handleMigrationSwitch}
+                  />
+                </Suspense>
+              )}
+              <InstallPrompt />
+              <OfflineBanner />
+            </StableBalanceProvider>
+          </FiatDataProvider>
         </WalletStatusProvider>
       </WalletInfoProvider>
     </WalletProvider>
