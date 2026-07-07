@@ -80,7 +80,12 @@ const PasskeyMigrationModal: React.FC<PasskeyMigrationModalProps> = (props) => {
         )}
 
         {flow.phase === 'error' && (
-          <ErrorStep error={flow.error} onRetry={flow.retry} onCancel={flow.cancel} />
+          <ErrorStep
+            error={flow.error}
+            onRetry={flow.retry}
+            onCancel={flow.cancel}
+            onStartOver={flow.canStartOver ? flow.startOver : undefined}
+          />
         )}
       </DialogCard>
     </DialogContainer>

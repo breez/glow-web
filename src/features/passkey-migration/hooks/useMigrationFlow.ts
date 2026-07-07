@@ -50,6 +50,8 @@ export interface MigrationFlow {
   spinnerText: string;
   /** At least one label's Lightning address could not be moved (funds are fine). */
   lnAddressTransferFailed: boolean;
+  /** The recorded ROR passkey is unreachable (e.g. deleted); offer a fresh start. */
+  canStartOver: boolean;
   // actions
   startFromBanner: () => void;
   checkForOldPasskey: () => void;
@@ -57,6 +59,7 @@ export interface MigrationFlow {
   confirmLabels: () => void;
   openUnclaimedDeposits: () => void;
   retry: () => void;
+  startOver: () => void;
   cancel: () => void;
   done: () => void;
 }
@@ -80,6 +83,9 @@ export function useMigrationFlow({
   // Set if any label's Lightning-address transfer fails; surfaces a Done-screen
   // notice (funds still moved, but incoming LN may land in the old wallet).
   const [lnAddressTransferFailed, setLnAddressTransferFailed] = useState(false);
+  // Set only when a recorded ROR passkey can't be reached (e.g. the user deleted
+  // it): the error screen then offers a fresh start instead of a Retry dead-end.
+  const [canStartOver, setCanStartOver] = useState(false);
 
   // Ordered labels to migrate (primary last); populated in probe / enumerate-labels.
   const labelsToMigrateRef = useRef<string[]>([]);
@@ -120,6 +126,7 @@ export function useMigrationFlow({
     setConfirmedLabels([]);
     setCurrentLabelIndex(0);
     setLnAddressTransferFailed(false);
+    setCanStartOver(false);
     labelsToMigrateRef.current = [];
     seedCacheRef.current = new Map();
     oldSdkRef.current = null;
@@ -340,7 +347,11 @@ export function useMigrationFlow({
             logger.error(LogCategory.AUTH, 'Migration derive-new-passkey: recorded ROR credential unreachable', {
               error: formatError(e),
             });
-            setError('We could not access the passkey from your previous attempt. Please try the passkey prompt again.');
+            setError(
+              "We couldn't reach the passkey from your previous attempt. If you dismissed the prompt, tap Retry. "
+              + 'If you deleted that passkey, choose Create a new passkey to start fresh.',
+            );
+            setCanStartOver(true);
             setPhase('error');
             return;
           }
@@ -597,7 +608,11 @@ export function useMigrationFlow({
   const retry = useCallback(() => {
     logger.info(LogCategory.AUTH, 'Migration: user clicked Retry', { entry, labels: labelsToMigrateRef.current.length });
     setError(null);
+    setCanStartOver(false);
     setCurrentLabelIndex(0);
+    // A retry re-runs every label's transfer, so clear the prior run's warning:
+    // otherwise a transient read failure leaves a false notice after a clean retry.
+    setLnAddressTransferFailed(false);
     // Re-validate state before sweeping if we already have a label list;
     // otherwise restart from enumeration / explain.
     if (labelsToMigrateRef.current.length > 0) {
@@ -608,6 +623,23 @@ export function useMigrationFlow({
       setPhase('explain');
     }
   }, [entry]);
+
+  // Recovery for an unreachable recorded ROR passkey (deleted by the user): drop
+  // the persisted credential and rebuild the session so derive-new-passkey takes
+  // the create branch instead of probing a passkey that no longer exists. Labels
+  // and legacy seeds were already cached by check-deposits-all, so re-entering at
+  // derive-new-passkey is safe; the sweep re-reads live balances, so any label a
+  // prior attempt already emptied simply moves nothing.
+  const startOver = useCallback(() => {
+    logger.warn(LogCategory.AUTH, 'Migration: discarding previous attempt, creating a new passkey');
+    clearMigrationRorCredentialId();
+    sessionRef.current = createMigrationSession();
+    setError(null);
+    setCanStartOver(false);
+    setCurrentLabelIndex(0);
+    setLnAddressTransferFailed(false);
+    setPhase('derive-new-passkey');
+  }, []);
 
   const isInFlight =
     phase === 'probe' ||
@@ -644,12 +676,14 @@ export function useMigrationFlow({
     isInFlight,
     spinnerText,
     lnAddressTransferFailed,
+    canStartOver,
     startFromBanner,
     checkForOldPasskey,
     skipNoOldPasskey,
     confirmLabels,
     openUnclaimedDeposits,
     retry,
+    startOver,
     cancel,
     done,
   };
