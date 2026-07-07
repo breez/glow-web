@@ -18,7 +18,7 @@ import {
 } from '@breeztech/breez-sdk-spark';
 import { buildConnectConfig } from '@/hooks/buildConnectConfig';
 import { logger, LogCategory } from './logger';
-import { buildBrowserPasskeyClient, recordMigratedRorCredential, getActivePasskeyCredentialIdBytes, adoptSessionPasskeyClient, setMigrationRorCredentialId, getMigrationRorCredentialIdBytes } from './passkeyService';
+import { buildBrowserPasskeyClient, recordMigratedRorCredential, getActivePasskeyCredentialIdBytes, adoptSessionPasskeyClient, setMigrationRorCredentialId, getMigrationRorCredentialIdBytes, bytesToBase64 } from './passkeyService';
 import { LEGACY_RP_ID, ROR_RP_ID, createPasskeyTimestampLabel, PasskeyCredentialNotFoundError } from './passkeyPrfProvider';
 import { formatError } from '../utils/formatError';
 
@@ -307,21 +307,34 @@ export function createMigrationSession(): MigrationSession {
   const getLegacyClient = () => (legacyClient ??= buildBrowserPasskeyClient({ rpId: LEGACY_RP_ID }));
   const getRorClient = () => (rorClient ??= buildBrowserPasskeyClient({ rpId: ROR_RP_ID as string }));
 
+  function logCeremony(event: string, rpId: string, pinned: boolean, credentialId: Uint8Array | undefined, label?: string) {
+    logger.info(LogCategory.AUTH, event, {
+      rpId,
+      pinned,
+      credentialId: credentialId ? bytesToBase64(credentialId) : null,
+      label: label ?? null,
+    });
+  }
+
   async function legacySignIn(label?: string) {
+    const pinned = !!legacyCredId;
     const resp = await getLegacyClient().signIn({
       label,
       allowCredentials: legacyCredId ? [legacyCredId] : [],
     });
     if (resp.credential?.credentialId) legacyCredId = resp.credential.credentialId;
+    logCeremony('Migration: legacy ceremony completed', LEGACY_RP_ID, pinned, resp.credential?.credentialId, label);
     return resp;
   }
 
   async function rorSignIn(label?: string) {
+    const pinned = !!rorCredId;
     const resp = await getRorClient().signIn({
       label,
       allowCredentials: rorCredId ? [rorCredId] : [],
     });
     if (resp.credential?.credentialId) rorCredId = resp.credential.credentialId;
+    logCeremony('Migration: ROR ceremony completed', ROR_RP_ID as string, pinned, resp.credential?.credentialId, label);
     return resp;
   }
 
@@ -342,6 +355,7 @@ export function createMigrationSession(): MigrationSession {
         const seed = legacyDiscoverySeed;
         legacyDiscoverySeed = undefined;
         legacyDiscoveryLabel = undefined;
+        logger.info(LogCategory.AUTH, 'Migration: reusing discovery-derived legacy seed (no ceremony)', { label });
         return seed;
       }
       return (await legacySignIn(label)).wallet.seed;
@@ -361,6 +375,7 @@ export function createMigrationSession(): MigrationSession {
       const registration = await registerClient.register({ label: primaryLabel, excludeCredentials: [] });
       rorClient = registerClient;
       rorCredential = registration.credential;
+      logCeremony('Migration: ROR passkey created', ROR_RP_ID as string, false, registration.credential?.credentialId, primaryLabel);
       if (registration.credential?.credentialId) {
         rorCredId = registration.credential.credentialId;
         // Persist immediately: a crash/close after this point (even after some
@@ -379,6 +394,7 @@ export function createMigrationSession(): MigrationSession {
         const seed = rorPrimarySeed;
         rorPrimarySeed = undefined;
         rorPrimaryLabel = undefined;
+        logger.info(LogCategory.AUTH, 'Migration: reusing register-derived ROR seed (no ceremony)', { label });
         return seed;
       }
       return (await rorSignIn(label)).wallet.seed;

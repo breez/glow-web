@@ -98,7 +98,7 @@ export interface PasskeyApi {
 
 // ---------- byte helpers ----------
 
-function bytesToBase64(bytes: Uint8Array): string {
+export function bytesToBase64(bytes: Uint8Array): string {
   let s = '';
   for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
   return btoa(s);
