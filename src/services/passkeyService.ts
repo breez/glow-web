@@ -565,11 +565,15 @@ export async function signInPinnedToActiveCredential(
   rpIdOverride?: string,
 ): Promise<SignInResponse> {
   const effectiveRpId = rpIdOverride ?? getPasskeyRpId() ?? rpId;
-  const activeCredId = getActivePasskeyCredentialIdBytes(effectiveRpId);
-  const allowCredentials = activeCredId ? [activeCredId] : [];
+  // Same-RP pin first. On a cross-RP switch (the active pin is for the other RP)
+  // fall back to the migrated counterpart credential for this RP, so the OS goes
+  // straight to it instead of listing every passkey. Null on both => OS picker.
+  const pinCredId = getActivePasskeyCredentialIdBytes(effectiveRpId)
+    ?? getMigrationCounterpartCredentialIdBytes(effectiveRpId);
+  const allowCredentials = pinCredId ? [pinCredId] : [];
   logger.info(LogCategory.AUTH, 'Passkey sign-in ceremony', {
     rpId: effectiveRpId,
-    pinned: !!activeCredId,
+    pinned: !!pinCredId,
     label: label ?? null,
   });
   // Web only: derive against a specific RP ID (e.g. a legacy-RP user before
@@ -860,6 +864,81 @@ export function getMigrationSharedCredentialIdBytes(): Uint8Array | null {
 }
 export function clearMigrationSharedCredentialId(): void {
   localStorage.removeItem(PASSKEY_MIGRATION_SHARED_CRED_KEY);
+}
+
+// ---------- Migration credential pairs (device metadata; survives logout) ----------
+
+// Maps a migrated source (legacy) credential to the shared credential it migrated
+// to, so a later RP switch can pin `allowCredentials` straight to the counterpart
+// instead of surfacing the full passkey picker. One entry per source credential
+// (re-migrating the same passkey overwrites its destination with the latest);
+// distinct passkeys accumulate. Persisted so it survives logout.
+const PASSKEY_MIGRATION_CRED_PAIRS_KEY = 'passkeyMigrationCredentialPairs';
+type MigrationCredentialPair = { oldRpId: string; oldCredId: string; newRpId: string; newCredId: string };
+// ponytail: bound the list; a device migrates a handful of passkeys, not hundreds.
+const MAX_MIGRATION_CRED_PAIRS = 50;
+
+function safeBase64ToBytes(b64: string): Uint8Array | null {
+  try {
+    return base64ToBytes(b64);
+  } catch {
+    return null;
+  }
+}
+
+function readMigrationCredentialPairs(): MigrationCredentialPair[] {
+  const raw = localStorage.getItem(PASSKEY_MIGRATION_CRED_PAIRS_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Remember that `oldCredId` (under `oldRpId`) migrated to `newCredId` (under
+ * `newRpId`). Upserts by source credential: re-migrating the same passkey keeps
+ * only the latest destination; other passkeys accumulate.
+ */
+export function recordMigrationCredentialPair(
+  oldRpId: string,
+  oldCredId: string,
+  newRpId: string,
+  newCredId: string,
+): void {
+  if (!oldCredId || !newCredId || oldRpId === newRpId) return;
+  const pairs = readMigrationCredentialPairs().filter((p) => p.oldCredId !== oldCredId);
+  pairs.push({ oldRpId, oldCredId, newRpId, newCredId });
+  localStorage.setItem(
+    PASSKEY_MIGRATION_CRED_PAIRS_KEY,
+    JSON.stringify(pairs.slice(-MAX_MIGRATION_CRED_PAIRS)),
+  );
+}
+
+/**
+ * Given the credential currently signed in with, return the migrated counterpart
+ * credential that lives under `targetRpId` (bytes for `allowCredentials`), or null
+ * when no pair matches (an unmigrated passkey, or a first-ever switch to that RP).
+ */
+export function getMigrationCounterpartCredentialIdBytes(targetRpId: string): Uint8Array | null {
+  const activeCredId = localStorage.getItem('passkeyActiveCredentialId');
+  const activeRpId = localStorage.getItem(PASSKEY_ACTIVE_CRED_RP_KEY);
+  if (!activeCredId || !activeRpId) return null;
+  for (const p of readMigrationCredentialPairs()) {
+    if (p.oldCredId === activeCredId && p.oldRpId === activeRpId && p.newRpId === targetRpId) {
+      return safeBase64ToBytes(p.newCredId);
+    }
+    if (p.newCredId === activeCredId && p.newRpId === activeRpId && p.oldRpId === targetRpId) {
+      return safeBase64ToBytes(p.oldCredId);
+    }
+  }
+  return null;
+}
+
+export function clearMigrationCredentialPairs(): void {
+  localStorage.removeItem(PASSKEY_MIGRATION_CRED_PAIRS_KEY);
 }
 
 /**
