@@ -43,7 +43,7 @@ import { STATUS_BAR_LOADING } from './utils/statusBarManager';
 import { useBackButton } from './hooks/useBackButton';
 import type { Seed, Payment, BreezSdk } from '@breeztech/breez-sdk-spark';
 
-const PASSKEY_MIGRATION_ENABLED = false;
+const PASSKEY_MIGRATION_ENABLED = true;
 
 type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState';
 
