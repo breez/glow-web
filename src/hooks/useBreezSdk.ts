@@ -214,6 +214,8 @@ export interface BreezSdkActions {
    * Throws on PRF cancel / network failure / SDK error.
    */
   switchPasskeyLabel: (newLabel: string) => Promise<void>;
+  /** Dev tool: re-derive the current label under `newRpId` and reconnect immediately. */
+  switchPasskeyRp: (newRpId: string) => Promise<void>;
   /**
    * Pin a different passkey credential for the next sign-in and clear
    * the active SDK session + label so the caller can route through
@@ -650,25 +652,25 @@ export function useBreezSdk(
     }
   }, [sdk]);
 
-  const switchPasskeyLabel = useCallback(async (newLabel: string): Promise<void> => {
+  // Swap the connected wallet: invalidate the cached passkey, derive a new
+  // wallet via PRF (a cancel here leaves the current wallet untouched), then
+  // disconnect, clear per-wallet state, reconnect and rehydrate. `rpId` is
+  // passed only for an RP switch (persisted before connect so a resume derives
+  // under it); a label switch leaves the RP unchanged. `what` names the switch
+  // in error/log copy.
+  const reconnectWithDerivedWallet = useCallback(async (
+    derive: () => Promise<{ seed: Seed; label: string }>,
+    what: string,
+    rpId?: string,
+  ): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
-    // Drop the cached Passkey so the new label gets a fresh Nostr
-    // OnceCell. Without this, the SDK reuses the prior label's
-    // identity in cached state.
     invalidatePasskey();
 
-    // PRF first so a cancel here leaves the active wallet untouched.
     let wallet;
     try {
-      // Switching label stays on the same passkey, so this pins to the
-      // active credential rather than letting the OS picker derive the
-      // new label under a different identity.
-      // Same passkey, same RP ID the active session uses (legacy for a
-      // not-yet-migrated user, shared after migration).
-      const result = await signInPinnedToActiveCredential(newLabel, getPasskeyRpId() ?? LEGACY_RP_ID);
-      wallet = result.wallet;
+      wallet = await derive();
     } catch (e) {
       setIsLoading(false);
       throw e;
@@ -678,7 +680,7 @@ export function useBreezSdk(
       try {
         await sdk.disconnect();
       } catch (e) {
-        logger.warn(LogCategory.SDK, 'SDK disconnect failed during label switch', {
+        logger.warn(LogCategory.SDK, `SDK disconnect failed during ${what} switch`, {
           error: formatError(e),
         });
       }
@@ -703,6 +705,9 @@ export function useBreezSdk(
       }
     }
 
+    // Persist the target RP before connect so a resume/relaunch derives under it.
+    if (rpId) setPasskeyRpId(rpId);
+
     let connectedSdk: BreezSdk | undefined;
     try {
       const cfg = buildConnectConfig();
@@ -714,7 +719,7 @@ export function useBreezSdk(
         storageDir: 'spark-wallet-example',
       });
       setSdk(connectedSdk);
-      setPasskeyMode(wallet.label);
+      setPasskeyMode(wallet.label, rpId);
 
       if (secureStorage.isSupported()) {
         try {
@@ -738,24 +743,49 @@ export function useBreezSdk(
         setUnclaimedDeposits(result.deposits);
         setHasRejectedDeposits(result.deposits.some(d => isDepositRejected(d.txid, d.vout)));
       } catch (e) {
-        logger.warn(LogCategory.SDK, 'Deposit fetch failed after label switch', {
+        logger.warn(LogCategory.SDK, `Deposit fetch failed after ${what} switch`, {
           error: formatError(e),
         });
       }
     } catch (e) {
       const errorMsg = formatError(e);
-      logger.error(LogCategory.SDK, 'Failed to connect after label switch', { error: errorMsg });
+      logger.error(LogCategory.SDK, `Failed to connect after ${what} switch`, { error: errorMsg });
       if (connectedSdk) {
         try { await connectedSdk.disconnect(); } catch { /* best-effort */ }
         setSdk(null);
       }
-      setError('Failed to switch label. Please try again.');
+      setError(`Failed to switch ${what}. Please try again.`);
       throw e;
     } finally {
       setIsSyncing(false);
       setIsLoading(false);
     }
   }, [sdk]);
+
+  const switchPasskeyLabel = useCallback((newLabel: string): Promise<void> => {
+    // Same passkey, same RP the active session uses (legacy for a not-yet-migrated
+    // user, shared after migration). Pin to the active credential so the OS doesn't
+    // derive the new label under a different identity.
+    return reconnectWithDerivedWallet(
+      () => signInPinnedToActiveCredential(newLabel, getPasskeyRpId() ?? LEGACY_RP_ID).then(r => r.wallet),
+      'label',
+    );
+  }, [reconnectWithDerivedWallet]);
+
+  // Dev tool: switch the active passkey between the legacy and shared RP and
+  // reconnect immediately, instead of only writing the RP id and waiting for the
+  // next sign-in. Keeps the current label and re-derives it under the target RP.
+  const switchPasskeyRp = useCallback((newRpId: string): Promise<void> => {
+    if ((getPasskeyRpId() ?? LEGACY_RP_ID) === newRpId) return Promise.resolve();
+    // The #264 per-RP pin won't match a different RP, so the derive falls back to
+    // the OS picker, surfacing the credential that lives under the target RP.
+    const currentLabel = localStorage.getItem('passkeyLabel') ?? undefined;
+    return reconnectWithDerivedWallet(
+      () => signInPinnedToActiveCredential(currentLabel, newRpId).then(r => r.wallet),
+      'passkey RP',
+      newRpId,
+    );
+  }, [reconnectWithDerivedWallet]);
 
   const prepareSwitchPasskeyCredential = useCallback(async (
     newCredId: string,
@@ -1253,6 +1283,7 @@ export function useBreezSdk(
     },
     retryUnlock,
     switchPasskeyLabel,
+    switchPasskeyRp,
     prepareSwitchPasskeyCredential,
   };
 }
