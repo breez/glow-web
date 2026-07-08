@@ -349,6 +349,10 @@ const AppContent: React.FC = () => {
         onOpenPasskey={() => setUserScreen('passkeyManagement')}
         onOpenLabels={() => setUserScreen('labels')}
         onOpenLocalState={() => setUserScreen('passkeyLocalState')}
+        onSwitchRp={async (rpId) => {
+          await sdk.switchPasskeyRp(rpId);
+          setUserScreen('wallet');
+        }}
       />
     );
 

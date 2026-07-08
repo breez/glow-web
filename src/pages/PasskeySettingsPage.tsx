@@ -7,13 +7,15 @@ import {
   TrashIcon,
 } from '../components/Icons';
 import { LEGACY_RP_ID, SHARED_RP_ID } from '../services/passkeyPrfProvider';
-import { getPasskeyRpId, setPasskeyRpId } from '../services/passkeyService';
+import { getPasskeyRpId } from '../services/passkeyService';
 
 interface PasskeySettingsPageProps {
   onBack: () => void;
   onOpenPasskey: () => void;
   onOpenLabels: () => void;
   onOpenLocalState: () => void;
+  /** Dev tool: re-derive under the chosen RP and reconnect immediately. */
+  onSwitchRp: (rpId: string) => Promise<void>;
 }
 
 const PasskeySettingsPage: React.FC<PasskeySettingsPageProps> = ({
@@ -21,6 +23,7 @@ const PasskeySettingsPage: React.FC<PasskeySettingsPageProps> = ({
   onOpenPasskey,
   onOpenLabels,
   onOpenLocalState,
+  onSwitchRp,
 }) => {
   const items: Array<{
     icon: React.ReactNode;
@@ -53,7 +56,8 @@ const PasskeySettingsPage: React.FC<PasskeySettingsPageProps> = ({
   // exercise the passkey-RP migration path.
   const isDevMode = localStorage.getItem('spark-dev-mode') === 'true';
   const sharedRpConfigured = !!SHARED_RP_ID && SHARED_RP_ID !== LEGACY_RP_ID;
-  const [activeRpId, setActiveRpId] = useState<string>(getPasskeyRpId() ?? LEGACY_RP_ID);
+  const [activeRpId] = useState<string>(getPasskeyRpId() ?? LEGACY_RP_ID);
+  const [switchingRp, setSwitchingRp] = useState<string | null>(null);
   const rpIdOptions = [
     { label: 'Legacy', value: LEGACY_RP_ID },
     { label: 'Shared', value: SHARED_RP_ID ?? LEGACY_RP_ID },
@@ -94,8 +98,8 @@ const PasskeySettingsPage: React.FC<PasskeySettingsPageProps> = ({
               Passkey RP ID <span className="text-spark-primary">(dev)</span>
             </div>
             <p className="text-sm text-spark-text-muted">
-              Which Relying Party ID this device signs in under. Switching re-derives a
-              different wallet on the next sign-in, so only change it to test migration.
+              Which Relying Party ID this device signs in under. Switching re-derives the
+              wallet under the chosen RP and reconnects right away, so only change it to test migration.
             </p>
             <div className="flex gap-2">
               {rpIdOptions.map((opt) => {
@@ -104,14 +108,25 @@ const PasskeySettingsPage: React.FC<PasskeySettingsPageProps> = ({
                   <button
                     key={opt.label}
                     type="button"
-                    onClick={() => { setPasskeyRpId(opt.value); setActiveRpId(opt.value); }}
-                    className={`flex-1 px-3 py-2 rounded-xl text-sm border transition-colors ${
+                    disabled={!!switchingRp}
+                    onClick={async () => {
+                      if (switchingRp || selected) return;
+                      setSwitchingRp(opt.value);
+                      try {
+                        await onSwitchRp(opt.value);
+                      } catch {
+                        // Cancelled or failed: stay here, RP unchanged.
+                      } finally {
+                        setSwitchingRp(null);
+                      }
+                    }}
+                    className={`flex-1 px-3 py-2 rounded-xl text-sm border transition-colors disabled:opacity-60 ${
                       selected
                         ? 'border-spark-primary bg-spark-primary/10 text-spark-text-primary'
                         : 'border-spark-border text-spark-text-muted hover:border-spark-border-light'
                     }`}
                   >
-                    {opt.label}
+                    {switchingRp === opt.value ? 'Switching…' : opt.label}
                     <span className="block text-[11px] opacity-60 truncate">{opt.value}</span>
                   </button>
                 );
