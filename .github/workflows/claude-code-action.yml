@@ -20,6 +20,9 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           label_trigger: "sdk-upgrade"
+          # The SDK Update Check app files the upgrade issues, so its bot
+          # actor must be allowed to trigger this workflow.
+          allowed_bots: "spark-sdk-update-check"
           prompt: |
             Follow the instructions in the issue body to upgrade the SDK.
             Check the release notes at https://github.com/breez/spark-sdk/releases for breaking changes between the current and target versions.
