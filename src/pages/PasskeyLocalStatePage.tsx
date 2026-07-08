@@ -9,6 +9,7 @@ import {
   clearAllCredentialMeta,
   clearAllHiddenCredentials,
   clearAllCredentialAaguids,
+  clearMigrationCredentialPairs,
   resetPasskeyMigrationState,
 } from '../services/passkeyService';
 import { useToast } from '@/contexts/ToastContext';
@@ -102,6 +103,7 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack, o
     clearAllLabelLastUsed();
     clearAllCredentialMeta();
     clearAllHiddenCredentials();
+    clearMigrationCredentialPairs();
     // AAGUIDs intentionally kept: they're only captured at create
     // time and not recoverable on sign-in. Wiping them would lose
     // provider name/icon for any credential that still exists on the

@@ -18,7 +18,7 @@ import {
 } from '@breeztech/breez-sdk-spark';
 import { buildConnectConfig } from '@/hooks/buildConnectConfig';
 import { logger, LogCategory } from './logger';
-import { buildBrowserPasskeyClient, recordMigratedSharedCredential, getActivePasskeyCredentialIdBytes, adoptSessionPasskeyClient, setMigrationSharedCredentialId, getMigrationSharedCredentialIdBytes, bytesToBase64 } from './passkeyService';
+import { buildBrowserPasskeyClient, recordMigratedSharedCredential, recordMigrationCredentialPair, getActivePasskeyCredentialIdBytes, adoptSessionPasskeyClient, setMigrationSharedCredentialId, getMigrationSharedCredentialIdBytes, bytesToBase64 } from './passkeyService';
 import { LEGACY_RP_ID, SHARED_RP_ID, createPasskeyTimestampLabel, PasskeyCredentialNotFoundError } from './passkeyPrfProvider';
 import { formatError } from '../utils/formatError';
 
@@ -413,6 +413,17 @@ export function createMigrationSession(): MigrationSession {
     },
     commitSharedCredential() {
       if (sharedCredential && SHARED_RP_ID) {
+        // Pair the legacy source passkey with this shared destination so a later
+        // RP switch pins straight to the counterpart. Keyed by the legacy cred:
+        // re-migrating the same passkey (after a reset) overrides its old pair.
+        if (legacyCredId && sharedCredential.credentialId) {
+          recordMigrationCredentialPair(
+            LEGACY_RP_ID,
+            bytesToBase64(legacyCredId),
+            SHARED_RP_ID,
+            bytesToBase64(sharedCredential.credentialId),
+          );
+        }
         recordMigratedSharedCredential(sharedCredential, userName, SHARED_RP_ID);
       }
       // Hand the primed, pinned shared client to the app session so post-migration
