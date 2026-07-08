@@ -183,6 +183,7 @@ const AppContent: React.FC = () => {
 
   const handleLogout = async () => {
     setUserScreen('home');
+    hasAutoOpenedMigrationRef.current = false;
     await sdk.handleLogout();
   };
 
