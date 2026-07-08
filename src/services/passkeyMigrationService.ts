@@ -33,7 +33,10 @@ const STORAGE_DIR = 'spark-wallet-example';
  * `passkeyLabel`, or 'Default' as a fallback) is migrated LAST. Other labels
  * keep relative order. The last-migrated new SDK is the one the session adopts.
  */
-export function orderLabelsForMigration(labels: string[], storedLabel: string): string[] {
+export function orderLabelsForMigration(rawLabels: string[], storedLabel: string): string[] {
+  // Collapse byte-identical duplicates so a label (one wallet) is never swept
+  // twice; distinct strings are distinct wallets and are kept.
+  const labels = [...new Set(rawLabels)];
   if (labels.length === 0) return [];
   let primary: string | undefined = labels.find((l) => l === storedLabel);
   if (!primary) primary = labels.find((l) => l === 'Default');

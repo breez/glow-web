@@ -980,7 +980,11 @@ export function hasPasskeyHistory(): boolean {
 
 export async function listLabels(): Promise<string[]> {
   logger.info(LogCategory.AUTH, 'Listing labels from nostr relays');
-  return getPasskey().labels().list();
+  // Collapse byte-identical duplicates: partial relay coverage can return the
+  // same label event twice, which would list one label (one wallet) twice.
+  // Distinct strings (incl. case/whitespace variants) are different wallets and
+  // are kept as-is.
+  return [...new Set(await getPasskey().labels().list())];
 }
 
 export async function saveLabel(label: string): Promise<void> {
