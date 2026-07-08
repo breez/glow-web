@@ -56,6 +56,15 @@ describe('orderLabelsForMigration', () => {
   it('prefers the stored label over Default when both are present', () => {
     expect(orderLabelsForMigration(['a', 'Default', 'b'], 'a')).toEqual(['Default', 'b', 'a']);
   });
+
+  it('collapses byte-identical duplicates so no label is swept twice', () => {
+    expect(orderLabelsForMigration(['a', 'a', 'b', 'Default'], 'Default')).toEqual(['a', 'b', 'Default']);
+    expect(orderLabelsForMigration(['Default', 'Default'], 'Default')).toEqual(['Default']);
+  });
+
+  it('keeps case/whitespace variants as distinct labels', () => {
+    expect(orderLabelsForMigration(['a', 'A', 'a '], 'a')).toEqual(['A', 'a ', 'a']);
+  });
 });
 
 describe('assertDifferentWallet', () => {
