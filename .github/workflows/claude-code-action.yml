@@ -26,4 +26,4 @@ jobs:
           prompt: |
             Follow the instructions in the issue body to upgrade the SDK.
             Check the release notes at https://github.com/breez/spark-sdk/releases for breaking changes between the current and target versions.
-            Create a PR with the changes when done.
+            Create a PR with the changes when done. Reuse the issue title as the PR title and create the PR with the run-e2e label, so the E2E suite runs on it.
