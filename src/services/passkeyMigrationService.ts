@@ -158,36 +158,36 @@ export async function sweepBalances(
  *
  * Best effort: failures are logged but never block the migration. If the
  * current Lightning address can't be determined, the transfer is skipped.
- * Returns `true` only when a transfer was attempted and failed, allowing the
- * caller to warn that incoming Lightning payments may still arrive at the
- * original address.
+ * Returns the failed Lightning address only when a transfer was attempted and
+ * failed, so the caller can tell the user which address still routes to the
+ * old wallet; otherwise `null`.
  */
 export async function transferLightningAddress(
   from: BreezSdk,
   to: BreezSdk,
   transfereePubkey: string,
   label: string,
-): Promise<boolean> {
+): Promise<string | null> {
   const currentAddress = await from.getLightningAddress().catch((e) => {
     logger.warn(LogCategory.AUTH, 'Migration: failed to fetch lightning address; skipping transfer', { label, error: formatError(e) });
     return undefined;
   });
-  if (!currentAddress) return false;
+  if (!currentAddress) return null;
 
-  const { username, description } = currentAddress;
+  const { username, description, lightningAddress } = currentAddress;
   logger.info(LogCategory.AUTH, 'Migration: transferring lightning address', { label, username });
   try {
     const authorization = await from.authorizeLightningAddressTransfer({ transfereePubkey });
     await to.claimLightningAddressTransfer({ authorization, description });
     logger.info(LogCategory.AUTH, 'Migration: lightning address transferred', { label, username });
-    return false;
+    return null;
   } catch (e) {
     logger.error(LogCategory.AUTH, 'Migration: lightning address transfer failed', {
       label,
       username,
       error: formatError(e),
     });
-    return true;
+    return lightningAddress;
   }
 }
 

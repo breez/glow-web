@@ -1,6 +1,9 @@
 /** Where the migration modal was opened from. */
 export type MigrationEntry = 'banner' | 'login';
 
+/** A label whose Lightning address couldn't be moved, with the address that still routes to the old wallet. */
+export type LnAddressFailure = { label: string; address: string };
+
 /** Outcome reported back to the caller when the modal closes. */
 export type MigrationOutcome =
   /** No old passkey found / user skipped. Caller may proceed with a fresh shared passkey. */
