@@ -56,7 +56,7 @@ const PasskeySettingsPage: React.FC<PasskeySettingsPageProps> = ({
   const [activeRpId, setActiveRpId] = useState<string>(getPasskeyRpId() ?? LEGACY_RP_ID);
   const rpIdOptions = [
     { label: 'Legacy', value: LEGACY_RP_ID },
-    { label: 'shared', value: SHARED_RP_ID ?? LEGACY_RP_ID },
+    { label: 'Shared', value: SHARED_RP_ID ?? LEGACY_RP_ID },
   ];
 
   return (

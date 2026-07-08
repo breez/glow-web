@@ -9,6 +9,7 @@ import {
   clearAllCredentialMeta,
   clearAllHiddenCredentials,
   clearAllCredentialAaguids,
+  resetPasskeyMigrationState,
 } from '../services/passkeyService';
 import { useToast } from '@/contexts/ToastContext';
 import { logger, LogCategory } from '@/services/logger';
@@ -26,7 +27,7 @@ interface PasskeyLocalStatePageProps {
   onCompleted: () => void;
 }
 
-type ConfirmKind = 'forget' | 'wipe' | 'aaguids' | null;
+type ConfirmKind = 'forget' | 'wipe' | 'aaguids' | 'resetMigration' | null;
 
 // `passkeyHome` is where the OS keeps the passkey itself. `systemDelete`
 // is the surface users navigate to remove it. The credential IDs Glow
@@ -129,10 +130,18 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack, o
     setConfirm(null);
   };
 
+  const handleResetMigration = () => {
+    resetPasskeyMigrationState();
+    showToast('success', 'Migration state reset');
+    setConfirm(null);
+    onCompleted();
+  };
+
   const items: Array<{ kind: ConfirmKind; title: string }> = [
     { kind: 'forget', title: 'Forget history' },
     { kind: 'wipe', title: 'Wipe tracked passkeys' },
     { kind: 'aaguids', title: 'Clear provider info' },
+    { kind: 'resetMigration', title: 'Reset migration state' },
   ];
 
   return (
@@ -185,6 +194,17 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack, o
         cancelLabel="Cancel"
         variant="danger"
         onConfirm={handleClearAaguids}
+        onCancel={() => setConfirm(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={confirm === 'resetMigration'}
+        title="Reset migration state?"
+        message="Resets the passkey migration by clearing the migration flag, reverting to the legacy RP, and removing any in-progress migration passkey. Glow will sign you out. Sign in with your legacy passkey to run the migration again."
+        confirmLabel="Reset"
+        cancelLabel="Cancel"
+        variant="warning"
+        onConfirm={handleResetMigration}
         onCancel={() => setConfirm(null)}
       />
     </SlideInPage>
