@@ -14,6 +14,7 @@ import {
   setMigrationInProgress,
   setPasskeyMigrated,
   clearMigrationSharedCredentialId,
+  listLabels,
 } from '@/services/passkeyService';
 import { SHARED_RP_ID } from '@/services/passkeyPrfProvider';
 import {
@@ -26,6 +27,7 @@ import {
   applyStableTicker,
   assertDifferentWallet,
   isNoCredentialError,
+  orderLabelsForMigration,
   type MigrationSession,
 } from '@/services/passkeyMigrationService';
 import { formatError } from '@/utils/formatError';
@@ -212,7 +214,28 @@ export function useMigrationFlow({
     (async () => {
       try {
         logger.info(LogCategory.AUTH, 'Migration: listing labels on legacy', { phase });
-        const ordered = await session.enumerateLabels(primaryLabelRef.current);
+        // Banner start: login already primed the warm legacy passkey client, so
+        // list labels through it (a Nostr query, no ceremony) instead of a second
+        // legacy prompt. activeLegacySdk covers the primary wallet, so the
+        // discovery ceremony's seed would go unused anyway. Login entry (probe)
+        // still needs the ceremony; fall back to it if the warm list fails.
+        let ordered: string[];
+        if (phase === 'enumerate-labels' && activeLegacySdk) {
+          try {
+            const listed = await listLabels();
+            ordered = orderLabelsForMigration(
+              listed.length > 0 ? listed : [primaryLabelRef.current],
+              primaryLabelRef.current,
+            );
+          } catch (listErr) {
+            logger.warn(LogCategory.AUTH, 'Migration: warm label list failed, using a legacy ceremony', {
+              error: formatError(listErr),
+            });
+            ordered = await session.enumerateLabels(primaryLabelRef.current);
+          }
+        } else {
+          ordered = await session.enumerateLabels(primaryLabelRef.current);
+        }
         if (cancelled) return;
         logger.info(LogCategory.AUTH, 'Migration: legacy labels listed', { phase, labelCount: ordered.length });
         labelsToMigrateRef.current = ordered;
@@ -239,7 +262,7 @@ export function useMigrationFlow({
     })();
 
     return () => { cancelled = true; };
-  }, [isOpen, phase]);
+  }, [isOpen, phase, activeLegacySdk]);
 
   // ============================================
   // Phase: check-deposits-all. Per label: derive seed (cached), connect, sync,
