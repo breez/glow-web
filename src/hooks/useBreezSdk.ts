@@ -462,13 +462,15 @@ export function useBreezSdk(
 
       // Write the seed to the right tier for this mode. Skip entirely
       // when the seed was just retrieved from secure storage. Storage
-      // tiers: passkey native => biometric-bound `secureStorage`,
-      // non-passkey native => `deviceOnlyStorage` (no biometric gate),
-      // web passkey => no cache, web non-passkey => plaintext fallback.
-      // Failures are non-fatal: the wallet is already connected, and
-      // the storage layer emits its own typed breadcrumb.
+      // tiers: native => `deviceOnlyStorage` by default (silent launch),
+      // or biometric-bound `secureStorage` when the user opted into
+      // biometric unlock in Security settings (the occupied tier is the
+      // setting, see secureStorage.ts). Web passkey => no cache, web
+      // non-passkey => plaintext fallback. Failures are non-fatal: the
+      // wallet is already connected, and the storage layer emits its
+      // own typed breadcrumb.
       if (source !== 'secureStorage') {
-        if (passkeyLabel != null && secureStorage.isSupported()) {
+        if (secureStorage.isSupported() && (await secureStorage.hasStoredSeed())) {
           // Defer the loading-copy flip so a fast Keystore write
           // doesn't flash the "Setting up biometric unlock…" label.
           const labelDeferMs = 250;
@@ -1047,32 +1049,17 @@ export function useBreezSdk(
       // (A) Legacy plaintext-mnemonic migration (native only).
       await migrateLegacyMnemonicIfNeeded();
 
-      // (B) 0.0.3 regression recovery: that release wrote every seed
-      //     into the biometric-bound tier, including non-passkey users.
-      //     Wipe the orphan silently so they re-onboard via mnemonic
-      //     into the right tier. `clearSeed` is unauthenticated.
-      if (
-        secureStorage.isSupported()
-        && !isPasskeyMode()
-        && (await secureStorage.hasStoredSeed())
-      ) {
-        logger.warn(
-          LogCategory.AUTH,
-          'Clearing orphaned biometric-bound seed from 0.0.3 regression',
-        );
-        await secureStorage.clearSeed().catch(() => { /* best-effort */ });
-      }
-
-      // (C) Passkey biometric unlock. Order matters so the OS prompt
-      //     lands over a fully-painted UnlockingPage, not a black
-      //     splash: flushSync commits the route change before
-      //     hideSplash() awaits the WAAPI fade on the compositor, then
-      //     retryUnlock fires. CSS-transition-based fades janked the
-      //     main thread on Android WebView; WAAPI sidesteps that.
+      // (B) Biometric unlock (opt-in via Security settings; a seed in
+      //     the biometric-bound tier means the user enabled it, for any
+      //     wallet mode). Order matters so the OS prompt lands over a
+      //     fully-painted UnlockingPage, not a black splash: flushSync
+      //     commits the route change before hideSplash() awaits the
+      //     WAAPI fade on the compositor, then retryUnlock fires.
+      //     CSS-transition-based fades janked the main thread on
+      //     Android WebView; WAAPI sidesteps that.
       let useLegacy = true;
       if (
-        isPasskeyMode()
-        && secureStorage.isSupported()
+        secureStorage.isSupported()
         && (await secureStorage.hasStoredSeed())
       ) {
         logger.info(LogCategory.AUTH, 'unlock:start');
@@ -1094,7 +1081,7 @@ export function useBreezSdk(
         deviceOnlyStorage.isSupported()
         && (await deviceOnlyStorage.hasStoredSeed())
       ) {
-        // (D) Non-passkey native silent reconnect. Plain decrypt, no
+        // (C) Native default silent reconnect. Plain decrypt, no
         //     biometric prompt. `source: 'secureStorage'` skips the
         //     redundant re-write.
         useLegacy = false;
@@ -1112,7 +1099,7 @@ export function useBreezSdk(
         }
       }
 
-      // (E) Legacy flow: web, or native with no stored seed.
+      // (D) Legacy flow: web, or native with no stored seed.
       if (useLegacy) {
         if (isPasskeyMode()) {
           // Passkey mode always re-derives via PRF on launch.

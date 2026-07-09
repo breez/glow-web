@@ -830,8 +830,9 @@ function createDeviceOnlyStorage(): SecureStorage {
 /**
  * Module-level singletons.
  *
- * `secureStorage` — biometric-bound tier (passkey users).
- * `deviceOnlyStorage` — encrypted at rest, no biometric gate (non-passkey users).
+ * `secureStorage` — biometric-bound tier (users who enabled biometric
+ * unlock in Security settings).
+ * `deviceOnlyStorage` — encrypted at rest, no biometric gate (the default).
  *
  * Both resolve to `NoopSecureStorage` on non-native hosts.
  *
@@ -840,3 +841,53 @@ function createDeviceOnlyStorage(): SecureStorage {
  */
 export const secureStorage: SecureStorage = createSecureStorage();
 export const deviceOnlyStorage: SecureStorage = createDeviceOnlyStorage();
+
+// ============================================
+// Biometric unlock setting (native only)
+// ============================================
+
+/**
+ * Biometric unlock is an opt-in user setting. The setting has no flag of
+ * its own: which tier holds the seed IS the setting. Seed in the
+ * biometric-bound tier => enabled (launch shows the OS biometric prompt);
+ * seed in the device-only tier => disabled (silent launch, the default).
+ *
+ * Toggling moves the seed between tiers. The new tier is written before
+ * the old one is cleared so a crash mid-move can only leave the seed in
+ * both tiers, never in neither; startup checks the biometric tier first,
+ * so "both" resolves to enabled.
+ */
+export async function isBiometricUnlockEnabled(): Promise<boolean> {
+  if (!secureStorage.isSupported()) return false;
+  return secureStorage.hasStoredSeed();
+}
+
+/**
+ * Move the seed device-only -> biometric-bound. On Android the Keystore
+ * encrypt itself shows the biometric prompt; on iOS the Keychain write is
+ * silent, so the `checkBiometry` gate is the only guard against enabling
+ * with no enrolled biometrics (which would make the item unreadable).
+ */
+export async function enableBiometricUnlock(): Promise<void> {
+  const biometry = await getNativeVault().checkBiometry();
+  if (!biometry.available) {
+    throw new SecureStorageError(
+      'BIOMETRIC_UNAVAILABLE',
+      'Biometric authentication is not available on this device.',
+    );
+  }
+  const seed = await deviceOnlyStorage.retrieveSeed();
+  await secureStorage.storeSeed(seed);
+  await deviceOnlyStorage.clearSeed();
+}
+
+/**
+ * Move the seed biometric-bound -> device-only. The `retrieveSeed` read
+ * triggers the OS biometric prompt, which doubles as the user confirming
+ * the downgrade.
+ */
+export async function disableBiometricUnlock(): Promise<void> {
+  const seed = await secureStorage.retrieveSeed();
+  await deviceOnlyStorage.storeSeed(seed);
+  await secureStorage.clearSeed();
+}
