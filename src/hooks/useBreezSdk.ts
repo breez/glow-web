@@ -41,6 +41,7 @@ import {
 } from '../services/passkeyService';
 import { LEGACY_RP_ID, SHARED_RP_ID, rpId as defaultRpId } from '../services/passkeyPrfProvider';
 import { secureStorage, deviceOnlyStorage, SecureStorageError } from '../services/secureStorage';
+import { clearPin, isAppLockSupported } from '../services/appLock';
 
 
 // ============================================
@@ -157,14 +158,6 @@ export interface BreezSdkState {
    */
   isFreshInstallRestore: boolean;
   startupState: StartupState;
-  /**
-   * True while `secureStorage.storeSeed` is in flight during
-   * onboarding so the UI can swap "Starting Glow…" for "Setting up
-   * biometric unlock…", explaining the second biometric prompt right
-   * after the passkey ceremony. Only set by `connectWallet`'s
-   * onboarding path; the retrieve path has its own loading copy.
-   */
-  isSecuringSeed: boolean;
 }
 
 export type SdkEventHandler = (event: SdkEvent) => void;
@@ -261,7 +254,6 @@ export function useBreezSdk(
   const [needsPasskeyMigration, setNeedsPasskeyMigration] = useState(false);
   const [prfAvailable, setPrfAvailable] = useState(false);
   const [startupState, setStartupState] = useState<StartupState>('loading');
-  const [isSecuringSeed, setIsSecuringSeed] = useState(false);
 
   // Refs
   const isInitialLoadRef = useRef(true);
@@ -460,34 +452,14 @@ export function useBreezSdk(
         );
       }
 
-      // Write the seed to the right tier for this mode. Skip entirely
-      // when the seed was just retrieved from secure storage. Storage
-      // tiers: native => `deviceOnlyStorage` by default (silent launch),
-      // or biometric-bound `secureStorage` when the user opted into
-      // biometric unlock in Security settings (the occupied tier is the
-      // setting, see secureStorage.ts). Web passkey => no cache, web
-      // non-passkey => plaintext fallback. Failures are non-fatal: the
-      // wallet is already connected, and the storage layer emits its
-      // own typed breadcrumb.
+      // Persist the seed. Skip entirely when it was just retrieved from
+      // the native vault. Native => device-only tier, always (silent
+      // launch; PIN/biometric gating is app-level, see appLock.ts).
+      // Web passkey => no cache, web non-passkey => plaintext fallback.
+      // Failures are non-fatal: the wallet is already connected, and
+      // the storage layer emits its own typed breadcrumb.
       if (source !== 'secureStorage') {
-        if (secureStorage.isSupported() && (await secureStorage.hasStoredSeed())) {
-          // Defer the loading-copy flip so a fast Keystore write
-          // doesn't flash the "Setting up biometric unlock…" label.
-          const labelDeferMs = 250;
-          let flipped = false;
-          const flipTimer = setTimeout(() => {
-            flipped = true;
-            setIsSecuringSeed(true);
-          }, labelDeferMs);
-          try {
-            await secureStorage.storeSeed(seed);
-          } catch {
-            // non-fatal; storage layer logged.
-          } finally {
-            clearTimeout(flipTimer);
-            if (flipped) setIsSecuringSeed(false);
-          }
-        } else if (deviceOnlyStorage.isSupported()) {
+        if (deviceOnlyStorage.isSupported()) {
           try {
             await deviceOnlyStorage.storeSeed(seed);
           } catch {
@@ -572,6 +544,11 @@ export function useBreezSdk(
     }
     if (deviceOnlyStorage.isSupported()) {
       try { await deviceOnlyStorage.clearSeed(); } catch { /* non-fatal */ }
+    }
+    // Drop the app lock with the wallet it protected, so onboarding
+    // for the next wallet doesn't start behind the old wallet's PIN.
+    if (isAppLockSupported()) {
+      try { await clearPin(); } catch { /* non-fatal */ }
     }
 
     // Always reset all state, even if disconnect threw.
@@ -902,6 +879,18 @@ export function useBreezSdk(
       const seed = await secureStorage.retrieveSeed();
       await connectWallet(seed, false, undefined, 'secureStorage');
       // connectWallet sets startupState='connected' on success.
+      // Legacy migration: pre-app-lock builds kept the seed
+      // biometric-bound. Move it to the device-only tier (this prompt
+      // was the last mandatory one; PIN/biometric gating is app-level
+      // now, see appLock.ts). Write-then-clear so a crash mid-move
+      // can only duplicate the seed, never lose it.
+      try {
+        await deviceOnlyStorage.storeSeed(seed);
+        await secureStorage.clearSeed();
+        logger.info(LogCategory.AUTH, 'Migrated biometric-bound seed to device-only tier');
+      } catch {
+        // Best-effort; the next successful unlock retries.
+      }
     } catch (e) {
       setIsLoading(false);
       if (e instanceof SecureStorageError) {
@@ -1049,9 +1038,10 @@ export function useBreezSdk(
       // (A) Legacy plaintext-mnemonic migration (native only).
       await migrateLegacyMnemonicIfNeeded();
 
-      // (B) Biometric unlock (opt-in via Security settings; a seed in
-      //     the biometric-bound tier means the user enabled it, for any
-      //     wallet mode). Order matters so the OS prompt lands over a
+      // (B) Legacy biometric-bound seed (pre-app-lock builds). One last
+      //     OS-prompted unlock, after which retryUnlock migrates the
+      //     seed to the device-only tier and this branch never runs
+      //     again. Order matters so the OS prompt lands over a
       //     fully-painted UnlockingPage, not a black splash: flushSync
       //     commits the route change before hideSplash() awaits the
       //     WAAPI fade on the compositor, then retryUnlock fires.
@@ -1252,7 +1242,6 @@ export function useBreezSdk(
     hasPasskeyBefore: hasPasskeyHistory(),
     isFreshInstallRestore: freshInstallRestore,
     startupState,
-    isSecuringSeed,
     // Actions
     connectWallet,
     refreshWalletData,

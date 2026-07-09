@@ -56,14 +56,6 @@ interface PasskeyPageProps {
   onWalletRestored: (seed: Seed, label: string) => void;
   onBack: () => void;
   sdkConnected?: boolean;
-  /**
-   * True while `secureStorage.storeSeed` is in flight during
-   * onboarding so the `initializing` phase can swap "Starting Glow…"
-   * for "Setting up biometric unlock…". iOS effectively never sees
-   * this (SecAccessControl gates retrieval only); Android's
-   * CryptoObject path blocks at the sensor and surfaces it.
-   */
-  isSecuringSeed?: boolean;
   onFlowComplete?: () => void;
   /** Skip discovery; start the create flow directly. */
   skipDetection?: boolean;
@@ -95,7 +87,6 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   onWalletRestored,
   onBack,
   sdkConnected,
-  isSecuringSeed,
   onFlowComplete,
   skipDetection = false,
   consumeFreshInstallSignal,
@@ -930,11 +921,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         if (error) return null;
         return renderSpinner('Starting Glow...');
       case 'initializing':
-        // `secureStorage.storeSeed` triggers a second biometric prompt
-        // to bind the seed; swap the label so it has visible context.
-        return renderSpinner(
-          isSecuringSeed ? 'Setting up biometric unlock...' : 'Starting Glow...',
-        );
+        return renderSpinner('Starting Glow...');
     }
   })();
 

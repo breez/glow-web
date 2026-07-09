@@ -8,13 +8,6 @@ import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs, exportDatabaseState } from '@/services/logExport';
 import { useSecretTap } from '@/hooks/useSecretTap';
-import {
-  secureStorage,
-  getBiometryLabel,
-  isBiometricUnlockEnabled,
-  enableBiometricUnlock,
-  disableBiometricUnlock,
-} from '@/services/secureStorage';
 
 const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
 
@@ -91,58 +84,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
   const [isDownloadingLogs, setIsDownloadingLogs] = useState<boolean>(false);
   const [isExportingDb, setIsExportingDb] = useState<boolean>(false);
-
-  // Biometric unlock (native only). `null` = still resolving which
-  // storage tier holds the seed; the switch renders disabled until then.
-  const [biometricUnlock, setBiometricUnlock] = useState<boolean | null>(null);
-  const [biometricBusy, setBiometricBusy] = useState<boolean>(false);
-  const [biometricError, setBiometricError] = useState<string | null>(null);
-  const [biometryLabel, setBiometryLabel] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!secureStorage.isSupported()) return;
-    let cancelled = false;
-    void Promise.all([isBiometricUnlockEnabled(), getBiometryLabel()]).then(
-      ([enabled, label]) => {
-        if (cancelled) return;
-        setBiometricUnlock(enabled);
-        setBiometryLabel(label);
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const handleToggleBiometricUnlock = async () => {
-    if (biometricUnlock === null || biometricBusy) return;
-    setBiometricBusy(true);
-    setBiometricError(null);
-    try {
-      if (biometricUnlock) {
-        await disableBiometricUnlock();
-        setBiometricUnlock(false);
-      } else {
-        await enableBiometricUnlock();
-        setBiometricUnlock(true);
-      }
-    } catch (e) {
-      logger.error(LogCategory.AUTH, 'Failed to toggle biometric unlock', {
-        error: e instanceof Error ? e.message : String(e),
-      });
-      // User cancelling the confirm prompt is not an error worth showing.
-      const code = (e as { code?: string }).code;
-      if (code !== 'USER_CANCELLED') {
-        setBiometricError(
-          code === 'BIOMETRIC_UNAVAILABLE' || code === 'BIOMETRIC_NOT_ENROLLED'
-            ? 'Biometric authentication is not set up on this device.'
-            : 'Could not update biometric unlock. Please try again.',
-        );
-      }
-    } finally {
-      setBiometricBusy(false);
-    }
-  };
 
   // Async SDK read for sparkPrivateModeEnabled. Stays in an effect
   // because it awaits a Promise; setState happens post-await.
@@ -277,38 +218,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               </button>
             </div>
           </div>
-
-          {/* Security (native only — web keeps its passkey-per-launch flow) */}
-          {secureStorage.isSupported() && (
-            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Security</h3>
-              <div className="flex items-center justify-between px-4 py-3 border border-spark-border rounded-xl">
-                <div className="flex items-center gap-3 min-w-0">
-                  <ShieldCheckIcon size="md" className="shrink-0 text-spark-text-secondary" />
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-spark-text-primary">
-                      Biometric unlock
-                    </div>
-                    <div className="text-xs text-spark-text-muted">
-                      {`Require ${biometryLabel ?? 'biometric authentication'} to open Glow`}
-                    </div>
-                  </div>
-                </div>
-                {biometricBusy ? (
-                  <LoadingSpinner size="small" />
-                ) : (
-                  <Switch
-                    checked={biometricUnlock === true}
-                    disabled={biometricUnlock === null}
-                    onChange={() => { void handleToggleBiometricUnlock(); }}
-                  />
-                )}
-              </div>
-              {biometricError && (
-                <p className="text-spark-error text-xs mt-2 px-1">{biometricError}</p>
-              )}
-            </div>
-          )}
 
           {/* Passkey & Labels */}
           {isDevMode && (

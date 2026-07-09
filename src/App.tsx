@@ -17,6 +17,9 @@ import RestorePage from './pages/RestorePage';
 import GeneratePage from './pages/GeneratePage';
 import GetRefundPage from './pages/GetRefundPage';
 import BackupPage from './pages/BackupPage';
+import SecurityPage from './pages/SecurityPage';
+import LockScreen from './components/LockScreen';
+import { useAppLock } from './hooks/useAppLock';
 import PasskeyPage from './pages/PasskeyPage';
 import type { MigrationEntry, MigrationOutcome } from './features/passkey-migration/types';
 import SettingsPage from './pages/SettingsPage';
@@ -45,7 +48,7 @@ import type { Seed, Payment, BreezSdk } from '@breeztech/breez-sdk-spark';
 
 const PASSKEY_MIGRATION_ENABLED = true;
 
-type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState';
+type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'security' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState';
 
 // Full-screen dim spinner shown while sdk.isLoading is true (logout in
 // progress, SDK reconnect, etc). Wrapped as its own component so the
@@ -99,6 +102,9 @@ const AppContent: React.FC = () => {
   useIOSViewportFix();
 
   const sdk = useBreezSdk(showToast);
+  // App lock overlays everything (including the unlock/backup screens)
+  // while locked; rendered last in the tree so it stacks on top.
+  const appLock = useAppLock();
 
   // SDK startup state takes precedence; otherwise the user's screen
   // wins, with one exception: an SDK auto-reconnect (saved mnemonic /
@@ -209,6 +215,7 @@ const AppContent: React.FC = () => {
     switch (currentScreen) {
       case 'settings':
       case 'backup':
+      case 'security':
       case 'getRefund':
         setUserScreen('wallet');
         return true;
@@ -319,6 +326,7 @@ const AppContent: React.FC = () => {
           }}
           onOpenSettings={() => setUserScreen('settings')}
           onOpenBackup={() => setUserScreen('backup')}
+          onOpenSecurity={() => setUserScreen('security')}
           onOpenBuyProviders={() => { setBuyProvidersSource('wallet'); setUserScreen('buyProviders'); }}
           onBuyBitcoin={sdk.handleBuyBitcoin}
           network={sdk.config?.network}
@@ -385,7 +393,6 @@ const AppContent: React.FC = () => {
               setUserScreen('home');
             }}
             sdkConnected={passkeySdkConnected}
-            isSecuringSeed={sdk.isSecuringSeed}
             onFlowComplete={handlePasskeyFlowComplete}
             consumeFreshInstallSignal={sdk.consumeFreshInstallSignal}
             skipDetection={passkeySkipDetection}
@@ -528,6 +535,14 @@ const AppContent: React.FC = () => {
           </>
         );
 
+      case 'security':
+        return (
+          <>
+            {renderWalletPage()}
+            <SecurityPage onBack={() => setUserScreen('wallet')} />
+          </>
+        );
+
       case 'restore':
         return (
           <RestorePage
@@ -585,6 +600,13 @@ const AppContent: React.FC = () => {
               )}
               <InstallPrompt />
               <OfflineBanner />
+              {appLock.locked && (
+                <LockScreen
+                  biometricGate={appLock.biometricGate}
+                  unlockWithPin={appLock.unlockWithPin}
+                  unlockWithBiometric={appLock.unlockWithBiometric}
+                />
+              )}
             </StableBalanceProvider>
           </FiatDataProvider>
         </WalletStatusProvider>

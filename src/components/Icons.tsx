@@ -127,6 +127,12 @@ export const FingerprintIcon: React.FC<IconProps> = ({ className = '', size = 'm
   </svg>
 );
 
+export const BackspaceIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) => (
+  <svg className={`${sizeClasses[size]} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM18 9l-6 6M12 9l6 6" />
+  </svg>
+);
+
 export const NostrKeyIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) => (
   <svg className={`${sizeClasses[size]} ${className}`} viewBox="0 0 64 64" fill="currentColor">
     <path d="M27.651 7.768c-2.558-2.549-6.713-2.521-9.262.036L1.895 24.355c-2.55 2.558-2.517 6.64.04 9.19l27.043 27.042c2.558 2.548 6.705 2.527 9.255-.03l8.038-8.038c-2.345 2.344-4.274.658-6.56-1.618l-4.483-4.483c-3.404 1.347-7.382.677-10.14-2.075l-3.416-3.416a1.151 1.151 0 0 1-.36-.854c0-.162.031-.322.093-.472.063-.15.16-.276.275-.39l1.933-1.933-4.209-4.209c-.659-.658-.766-1.72-.177-2.437a1.776 1.776 0 0 1 2.633-.13l4.266 4.263 2.89-2.89-4.22-4.208c-.659-.658-.766-1.719-.172-2.441a1.78 1.78 0 0 1 2.634-.13l4.283 4.254 1.815-1.815c.114-.115.226-.218.375-.28a1.227 1.227 0 0 1 1.343.266l3.422 3.415c2.723 2.718 3.435 6.674 2.162 10.052l4.484 4.484c2.286 2.276 4.199 3.976 6.543 1.632l10.143-10.143c-2.438 2.438-4.44.56-6.85-1.847L27.65 7.768Z" fillOpacity="0.85" />
