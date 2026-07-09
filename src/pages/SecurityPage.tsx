@@ -215,11 +215,12 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
       case 'options':
         return (
           <div className="bg-spark-dark border border-spark-border rounded-2xl p-4 space-y-2">
-            {/* Deactivate PIN */}
+            {/* Deactivate PIN (Misty pattern: an always-on switch whose
+                only action is turning protection off) */}
             <div className="flex items-center justify-between px-4 py-3 border border-spark-border rounded-xl">
               <div className="flex items-center gap-3">
                 <ShieldCheckIcon size="md" className="text-spark-text-secondary" />
-                <span className="text-sm font-medium text-spark-text-primary">PIN enabled</span>
+                <span className="text-sm font-medium text-spark-text-primary">Deactivate PIN</span>
               </div>
               <Switch checked={true} onChange={() => { void handleDeactivatePin(); }} />
             </div>
