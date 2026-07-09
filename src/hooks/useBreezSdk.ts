@@ -700,11 +700,13 @@ export function useBreezSdk(
       setSdk(connectedSdk);
       setPasskeyMode(wallet.label, rpId);
 
-      if (secureStorage.isSupported()) {
+      if (deviceOnlyStorage.isSupported()) {
         try {
-          await secureStorage.storeSeed(wallet.seed);
+          await deviceOnlyStorage.storeSeed(wallet.seed);
         } catch {
-          // In-memory seed keeps the session alive; relaunch re-prompts.
+          // In-memory seed keeps the session alive. The old label's
+          // cached seed may survive; next launch reconnects it and the
+          // user can switch again.
         }
       }
 
@@ -1038,6 +1040,24 @@ export function useBreezSdk(
       // (A) Legacy plaintext-mnemonic migration (native only).
       await migrateLegacyMnemonicIfNeeded();
 
+      // (B0) Stale bound-tier residue. A live seed one tier down (or a
+      //     saved mnemonic) means the bound-tier entry is a 0.0.3
+      //     orphan or a half-finished migration duplicate, not the
+      //     active wallet. Clear it so it can't hijack startup with a
+      //     biometric prompt for the wrong seed, or wipe a working
+      //     wallet via the KEY_INVALIDATED path below.
+      let staleBoundTierCleared = false;
+      if (secureStorage.isSupported() && (await secureStorage.hasStoredSeed())) {
+        const hasLiveSeedBelow =
+          (await deviceOnlyStorage.hasStoredSeed())
+          || (!isPasskeyMode() && getSavedMnemonic() != null);
+        if (hasLiveSeedBelow) {
+          await secureStorage.clearSeed().catch(() => { /* best-effort */ });
+          staleBoundTierCleared = true;
+          logger.warn(LogCategory.AUTH, 'Cleared stale biometric-bound seed');
+        }
+      }
+
       // (B) Legacy biometric-bound seed (pre-app-lock builds). One last
       //     OS-prompted unlock, after which retryUnlock migrates the
       //     seed to the device-only tier and this branch never runs
@@ -1049,7 +1069,8 @@ export function useBreezSdk(
       //     Android WebView; WAAPI sidesteps that.
       let useLegacy = true;
       if (
-        secureStorage.isSupported()
+        !staleBoundTierCleared
+        && secureStorage.isSupported()
         && (await secureStorage.hasStoredSeed())
       ) {
         logger.info(LogCategory.AUTH, 'unlock:start');

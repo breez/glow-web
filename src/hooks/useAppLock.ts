@@ -1,22 +1,29 @@
 /**
- * App-lock lifecycle (native only). Locked when a PIN is set and either
- * the app cold-starts or returns to the foreground after sitting in the
- * background past the auto-lock timeout (0 = lock on any background).
- * Settings are re-read at each lifecycle event, never cached, so a PIN
- * created or deactivated mid-session takes effect immediately.
+ * App-lock lifecycle (native only). Locked when a PIN is set and the
+ * app cold-starts or returns from the background past the auto-lock
+ * timeout (0 = lock the moment it backgrounds). Lock decisions use the
+ * synchronous appLock mirrors so no unlocked frame renders while a
+ * bridge read is in flight; the mount effect reconciles against the
+ * durable Preferences truth.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { App } from '@capacitor/app';
-import type { PluginListenerHandle } from '@capacitor/core';
 import {
-  getAutoLockSeconds,
+  clearPin,
+  getAutoLockSecondsSync,
   isAppLockSupported,
   isBiometricGateEnabled,
   isPinEnabled,
+  isPinEnabledSync,
   verifyPin,
 } from '@/services/appLock';
-import { authenticateBiometric } from '@/services/secureStorage';
+import {
+  authenticateBiometric,
+  deviceOnlyStorage,
+  secureStorage,
+} from '@/services/secureStorage';
+import { isPasskeyMode } from '@/services/passkeyService';
+import { logger, LogCategory } from '@/services/logger';
 
 export interface AppLockState {
   locked: boolean;
@@ -28,57 +35,81 @@ export interface AppLockState {
 }
 
 export function useAppLock(): AppLockState {
-  const [locked, setLocked] = useState(false);
+  // Synchronous first-render decision: a PIN user never paints an
+  // unlocked wallet frame on cold start.
+  const [locked, setLocked] = useState(() => isPinEnabledSync());
   const [biometricGate, setBiometricGate] = useState(false);
-  const backgroundedAtRef = useRef<number | null>(null);
+  const hiddenAtRef = useRef<number | null>(null);
 
-  // Cold start: lock immediately when a PIN is set.
+  // Reconcile the mirror against Preferences, load the gate flag, and
+  // drop a PIN that outlived its wallet (vault wiped by KEY_INVALIDATED
+  // or restore to a new device where Preferences survived but the
+  // Keychain entry didn't): a lock over onboarding would have no
+  // escape hatch, protecting nothing.
   useEffect(() => {
     if (!isAppLockSupported()) return;
     let cancelled = false;
     void (async () => {
       const [pin, gate] = await Promise.all([isPinEnabled(), isBiometricGateEnabled()]);
       if (cancelled) return;
+      if (!pin) {
+        setLocked(false);
+        return;
+      }
+      const [deviceSeed, legacySeed] = await Promise.all([
+        deviceOnlyStorage.hasStoredSeed().catch(() => false),
+        secureStorage.hasStoredSeed().catch(() => false),
+      ]);
+      if (cancelled) return;
+      const hasWallet =
+        deviceSeed || legacySeed || isPasskeyMode() || localStorage.getItem('walletMnemonic') != null;
+      if (!hasWallet) {
+        logger.warn(LogCategory.AUTH, 'appLock: clearing PIN with no wallet behind it');
+        await clearPin().catch(() => undefined);
+        if (!cancelled) setLocked(false);
+        return;
+      }
       setBiometricGate(gate);
-      if (pin) setLocked(true);
+      setLocked(true);
     })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // Background/foreground: stamp on exit, compare on return.
+  // Backgrounding signal: visibilitychange 'hidden', NOT @capacitor/app's
+  // appStateChange. On iOS the latter fires on willResignActive, which
+  // the Face ID sheet itself triggers, so with timeout 0 every OS prompt
+  // would relock the app the moment it closes. 'hidden' fires only on
+  // real backgrounding (iOS didEnterBackground / Android activity stop).
   useEffect(() => {
     if (!isAppLockSupported()) return;
-    let handle: PluginListenerHandle | null = null;
-    let cancelled = false;
-    void App.addListener('appStateChange', ({ isActive }) => {
-      if (!isActive) {
-        backgroundedAtRef.current = Date.now();
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        if (!isPinEnabledSync()) return;
+        if (getAutoLockSecondsSync() === 0) {
+          // 'Immediately' locks at background time so the OS
+          // task-switcher snapshot captures the lock screen, not the
+          // wallet.
+          setLocked(true);
+          void isBiometricGateEnabled().then(setBiometricGate);
+        } else {
+          hiddenAtRef.current = Date.now();
+        }
         return;
       }
-      const backgroundedAt = backgroundedAtRef.current;
-      backgroundedAtRef.current = null;
-      if (backgroundedAt == null) return;
-      void (async () => {
-        if (!(await isPinEnabled())) return;
-        const [timeoutSeconds, gate] = await Promise.all([
-          getAutoLockSeconds(),
-          isBiometricGateEnabled(),
-        ]);
-        if (Date.now() - backgroundedAt >= timeoutSeconds * 1000) {
-          setBiometricGate(gate);
-          setLocked(true);
-        }
-      })();
-    }).then((h) => {
-      if (cancelled) h.remove();
-      else handle = h;
-    });
-    return () => {
-      cancelled = true;
-      handle?.remove();
+      const hiddenAt = hiddenAtRef.current;
+      hiddenAtRef.current = null;
+      if (hiddenAt == null || !isPinEnabledSync()) return;
+      // Synchronous mirror reads: the lock commits before the resumed
+      // wallet frame can paint.
+      if (Date.now() - hiddenAt >= getAutoLockSecondsSync() * 1000) {
+        setLocked(true);
+        void isBiometricGateEnabled().then(setBiometricGate);
+      }
     };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
   const unlockWithPin = useCallback(async (pin: string) => {

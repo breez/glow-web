@@ -12,12 +12,17 @@ import { useBackButton } from '../hooks/useBackButton';
 
 interface LockScreenProps {
   biometricGate: boolean;
+  /** True while another OS auth ceremony is in flight underneath (the
+   *  legacy vault unlock): concurrent BiometricPrompt calls cancel each
+   *  other on Android, so the auto-fire waits until it clears. */
+  suppressAutoBiometric?: boolean;
   unlockWithPin: (pin: string) => Promise<boolean>;
   unlockWithBiometric: () => Promise<void>;
 }
 
 const LockScreen: React.FC<LockScreenProps> = ({
   biometricGate,
+  suppressAutoBiometric = false,
   unlockWithPin,
   unlockWithBiometric,
 }) => {
@@ -32,8 +37,8 @@ const LockScreen: React.FC<LockScreenProps> = ({
   }, [unlockWithBiometric]);
 
   useEffect(() => {
-    if (biometricGate) void tryBiometric();
-  }, [biometricGate, tryBiometric]);
+    if (biometricGate && !suppressAutoBiometric) void tryBiometric();
+  }, [biometricGate, suppressAutoBiometric, tryBiometric]);
 
   return (
     <div className="fixed inset-0 z-[100] bg-spark-surface flex flex-col">

@@ -603,6 +603,7 @@ const AppContent: React.FC = () => {
               {appLock.locked && (
                 <LockScreen
                   biometricGate={appLock.biometricGate}
+                  suppressAutoBiometric={currentScreen === 'unlocking' || currentScreen === 'unlock'}
                   unlockWithPin={appLock.unlockWithPin}
                   unlockWithBiometric={appLock.unlockWithBiometric}
                 />

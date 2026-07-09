@@ -53,9 +53,9 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
         }
       }
       if (cancelled) return;
-      // Biometric unlock enabled: the seed lives in the biometric-bound
-      // tier. Don't read it here (that would fire an OS prompt at page
-      // mount) — flag it so the reveal tile triggers the prompt on tap.
+      // Legacy biometric-bound seed (pre-migration install). Don't read
+      // it here (that would fire an OS prompt at page mount); flag it
+      // so the reveal tile triggers the prompt on tap.
       if (secureStorage.isSupported() && (await secureStorage.hasStoredSeed())) {
         if (!cancelled) setBiometricSeedPresent(true);
         return;
@@ -76,15 +76,23 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
   // from users who care about the distinction.
   const [passkeyAttemptFailed, setPasskeyAttemptFailed] = useState(false);
 
-  // Passkey mode: once the passkey attempt fails, probe which vault
-  // tier holds the cached seed so the fallback tile can say whether
-  // the reveal will prompt for biometrics or read silently.
+  // Passkey mode: once the passkey attempt fails, resolve which vault
+  // tier holds the cached seed. Drives the fallback tile's copy
+  // (biometric prompt vs silent read) and its very existence: with
+  // no cached seed in either tier the tile would be a dead button.
+  // null = still probing.
+  const [fallbackTier, setFallbackTier] = useState<'biometric' | 'device' | 'none' | null>(null);
   useEffect(() => {
     if (!isPasskey || !passkeyAttemptFailed || !secureStorage.isSupported()) return;
     let cancelled = false;
-    void secureStorage.hasStoredSeed().then((stored) => {
-      if (!cancelled) setBiometricSeedPresent(stored);
-    });
+    void (async () => {
+      const tier = (await secureStorage.hasStoredSeed().catch(() => false))
+        ? 'biometric' as const
+        : (await deviceOnlyStorage.hasStoredSeed().catch(() => false))
+          ? 'device' as const
+          : 'none' as const;
+      if (!cancelled) setFallbackTier(tier);
+    })();
     return () => { cancelled = true; };
   }, [isPasskey, passkeyAttemptFailed]);
 
@@ -133,26 +141,15 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
     }
   };
 
-  // Fallback path: read the cached seed from the native vault —
-  // biometric-bound tier when biometric unlock is enabled (OS prompt),
-  // device-only tier otherwise (silent). For passkey wallets this is
-  // only surfaced after the passkey path failed, so users with intact
-  // passkeys never bypass the passkey ceremony. Useful when the passkey
-  // was deleted from Settings -> Passwords: the cached seed survives
-  // there and can still be revealed.
-  const handleRevealWithBiometric = async () => {
+  // Fallback path: read the cached seed from the given vault tier
+  // (legacy biometric-bound prompts, device-only is silent). For
+  // passkey wallets this only surfaces after the passkey path failed,
+  // so intact passkeys never bypass the ceremony.
+  const revealFromVault = async (tier: 'biometric' | 'device') => {
     setIsLoading(true);
     setError(null);
     try {
-      const store = secureStorage.isSupported() && (await secureStorage.hasStoredSeed())
-        ? secureStorage
-        : deviceOnlyStorage.isSupported() && (await deviceOnlyStorage.hasStoredSeed())
-          ? deviceOnlyStorage
-          : null;
-      if (!store) {
-        setError('No recovery phrase available on this device');
-        return;
-      }
+      const store = tier === 'biometric' ? secureStorage : deviceOnlyStorage;
       const seed = await store.retrieveSeed();
       if (seed.type === 'mnemonic' && seed.mnemonic) {
         setMnemonic(seed.mnemonic);
@@ -245,7 +242,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
               tap triggers an OS prompt before revealing. */}
           {!isPasskey && !isRevealed && (mnemonic || biometricSeedPresent) && (
             <button
-              onClick={mnemonic ? () => setIsRevealed(true) : handleRevealWithBiometric}
+              onClick={mnemonic ? () => setIsRevealed(true) : () => { void revealFromVault('biometric'); }}
               disabled={isLoading}
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
@@ -287,9 +284,10 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
               "Requires passkey authentication" subtitle for "Requires
               {biometric}". The label-driven biometric naming matches
               the convention used elsewhere (UnlockPage). */}
-          {isPasskey && passkeyAttemptFailed && !isRevealed && !mnemonic && secureStorage.isSupported() && (
+          {isPasskey && passkeyAttemptFailed && !isRevealed && !mnemonic
+            && (fallbackTier === 'biometric' || fallbackTier === 'device') && (
             <button
-              onClick={handleRevealWithBiometric}
+              onClick={() => { void revealFromVault(fallbackTier); }}
               disabled={isLoading}
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
@@ -304,7 +302,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
                 {isLoading ? 'Authenticating...' : 'Tap to reveal phrase'}
               </span>
               <span className="text-sm text-spark-text-muted">
-                {!biometricSeedPresent
+                {fallbackTier === 'device'
                   ? 'Stored securely on this device'
                   : isLoading
                     ? `Complete ${biometryLabel ?? 'biometric'} authentication`
@@ -313,14 +311,12 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             </button>
           )}
 
-          {/* Web fallback (passkey mode, no native secure storage). On
-              web the seed is derived from the passkey PRF only: there
-              is no device-bound copy to read with biometrics. If the
-              passkey attempt failed, the recovery phrase cannot be
-              retrieved here. Mirror the "No Backup Found" tile used
-              for non-passkey mode so the user gets a clear dead-end
-              message instead of a button that always errors. */}
-          {isPasskey && passkeyAttemptFailed && !isRevealed && !mnemonic && !secureStorage.isSupported() && (
+          {/* Dead-end card (passkey mode): web has no cached copy at
+              all, and a native install can lack one too (persist
+              failed, vault cleared). Without it the fallback tile
+              would be a button that always errors. */}
+          {isPasskey && passkeyAttemptFailed && !isRevealed && !mnemonic
+            && (!secureStorage.isSupported() || fallbackTier === 'none') && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-8 text-center">
               <div className="w-16 h-16 rounded-2xl bg-spark-error/20 flex items-center justify-center mx-auto mb-4">
                 <WarningIcon size="xl" className="text-spark-error" />

@@ -831,9 +831,9 @@ function createDeviceOnlyStorage(): SecureStorage {
 /**
  * Module-level singletons.
  *
- * `secureStorage` — biometric-bound tier (users who enabled biometric
- * unlock in Security settings).
- * `deviceOnlyStorage` — encrypted at rest, no biometric gate (the default).
+ * `secureStorage`: biometric-bound tier (legacy installs only; migrated
+ * to device-only at first unlock).
+ * `deviceOnlyStorage`: encrypted at rest, no biometric gate (the default).
  *
  * Both resolve to `NoopSecureStorage` on non-native hosts.
  *
@@ -850,11 +850,9 @@ export const deviceOnlyStorage: SecureStorage = createDeviceOnlyStorage();
 /**
  * App-level biometric prompt, no vault involved. Backs the app-lock
  * layer (`services/appLock.ts`): lock screen and Security page gating.
- * The seed itself stays in the device-only tier so a PIN fallback can
- * still start the app — biometrics here gate the UI, not the crypto.
- *
- * Resolves on success; throws `SecureStorageError` (USER_CANCELLED /
- * BIOMETRIC_LOCKOUT / BIOMETRIC_UNAVAILABLE / ...) on failure.
+ * Gates the UI, not the crypto: the seed stays in the device-only tier
+ * so a PIN fallback can still start the app. Resolves on success;
+ * throws `SecureStorageError` (USER_CANCELLED, BIOMETRIC_LOCKOUT, ...).
  */
 export async function authenticateBiometric(reason: string): Promise<void> {
   try {

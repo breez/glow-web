@@ -16,6 +16,7 @@ function makePreferencesMock() {
 
 async function loadAppLock(native: boolean) {
   vi.resetModules();
+  localStorage.clear();
   vi.doMock('@capacitor/core', () => ({
     Capacitor: {
       isNativePlatform: () => native,
@@ -54,6 +55,15 @@ describe('appLock PIN', () => {
     expect(await appLock.verifyPin('123456')).toBe(true);
   });
 
+  it('mirrors the enabled flag for synchronous lock gating', async () => {
+    const appLock = await loadAppLock(true);
+    expect(appLock.isPinEnabledSync()).toBe(false);
+    await appLock.setPin('123456');
+    expect(appLock.isPinEnabledSync()).toBe(true);
+    await appLock.clearPin();
+    expect(appLock.isPinEnabledSync()).toBe(false);
+  });
+
   it('clearPin disables the PIN and the biometric gate with it', async () => {
     const appLock = await loadAppLock(true);
     await appLock.setPin('123456');
@@ -67,11 +77,13 @@ describe('appLock PIN', () => {
 });
 
 describe('appLock auto-lock timeout', () => {
-  it('defaults to 120s and roundtrips a chosen value', async () => {
+  it('defaults to 120s and roundtrips a chosen value, mirror included', async () => {
     const appLock = await loadAppLock(true);
     expect(await appLock.getAutoLockSeconds()).toBe(120);
+    expect(appLock.getAutoLockSecondsSync()).toBe(120);
     await appLock.setAutoLockSeconds(600);
     expect(await appLock.getAutoLockSeconds()).toBe(600);
+    expect(appLock.getAutoLockSecondsSync()).toBe(600);
   });
 
   it('formats every dropdown option', async () => {

@@ -1,6 +1,6 @@
 /**
- * PIN entry UI (native app lock) — Misty Breez's lock-screen pattern in
- * Glow's visual language: a row of masked digit dots above a 3×4
+ * PIN entry UI (native app lock): Misty Breez's lock-screen pattern in
+ * Glow's visual language, a row of masked digit dots above a 3x4
  * numeric pad. One component file for the dots, the pad, and the
  * self-contained entry flow so every consumer (create, change, gate,
  * lock screen) renders identically.
