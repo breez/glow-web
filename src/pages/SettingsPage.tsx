@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
-import { getSettings, saveSettings, UserSettings } from '../services/settings';
+import { getSettings, saveSettings, UserSettings, isBuyBitcoinAvailable } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
 import { CurrencyIcon, ChevronRightIcon, DownloadIcon, ShieldCheckIcon } from '../components/Icons';
@@ -205,17 +205,19 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 </div>
                 <ChevronRightIcon size="md" />
               </button>
-              <button
-                className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
-                type="button"
-                onClick={onOpenBuyProviders}
-              >
-                <div className="flex items-center gap-3">
-                  <CurrencyIcon size="md" />
-                  <span>Buy Bitcoin Providers</span>
-                </div>
-                <ChevronRightIcon size="md" />
-              </button>
+              {isBuyBitcoinAvailable() && (
+                <button
+                  className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
+                  type="button"
+                  onClick={onOpenBuyProviders}
+                >
+                  <div className="flex items-center gap-3">
+                    <CurrencyIcon size="md" />
+                    <span>Buy Bitcoin Providers</span>
+                  </div>
+                  <ChevronRightIcon size="md" />
+                </button>
+              )}
             </div>
           </div>
 
