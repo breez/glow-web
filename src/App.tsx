@@ -581,7 +581,11 @@ const AppContent: React.FC = () => {
               <ContactsProvider>
                 {renderCurrentScreen()}
               </ContactsProvider>
-              {sdk.celebrationPayment !== null && (
+              {/* Held back (not just covered) while locked: the
+                  celebration auto-dismisses on a timer, so mounting it
+                  behind the lock screen would burn it unseen. Deferring
+                  the mount plays it in full after unlock. */}
+              {sdk.celebrationPayment !== null && !appLock.locked && (
                 <PaymentReceivedCelebration
                   payment={sdk.celebrationPayment}
                   onClose={sdk.dismissCelebration}

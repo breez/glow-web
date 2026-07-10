@@ -74,6 +74,18 @@ describe('appLock PIN', () => {
     expect(await appLock.isBiometricGateEnabled()).toBe(false);
     expect(await appLock.verifyPin('123456')).toBe(false);
   });
+
+  it('mirrors the biometric gate flag for synchronous reads', async () => {
+    const appLock = await loadAppLock(true);
+    expect(appLock.isBiometricGateEnabledSync()).toBe(false);
+    await appLock.setBiometricGateEnabled(true);
+    expect(appLock.isBiometricGateEnabledSync()).toBe(true);
+    await appLock.setBiometricGateEnabled(false);
+    expect(appLock.isBiometricGateEnabledSync()).toBe(false);
+    await appLock.setBiometricGateEnabled(true);
+    await appLock.clearPin();
+    expect(appLock.isBiometricGateEnabledSync()).toBe(false);
+  });
 });
 
 describe('appLock auto-lock timeout', () => {

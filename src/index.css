@@ -67,6 +67,7 @@
   --animate-shimmer: shimmer 2s linear infinite;
   --animate-spin-slow: spin 3s linear infinite;
   --animate-bounce-subtle: bounce-subtle 2s ease-in-out infinite;
+  --animate-pin-shake: pin-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 
   --backdrop-blur-xs: 2px;
 
@@ -108,6 +109,14 @@
     50% {
       transform: translateY(-5px);
     }
+  }
+  /* Wrong-PIN feedback: the dots row shudders horizontally, iOS
+     passcode style. */
+  @keyframes pin-shake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-6px); }
+    40%, 60% { transform: translateX(6px); }
   }
 }
 

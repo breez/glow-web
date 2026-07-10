@@ -103,36 +103,18 @@
       z-index: 9999;
     }
     
-    /* Elegant spinner */
-    .splash-loader {
-      width: 32px;
-      height: 32px;
-      position: relative;
-    }
-    
-    .splash-loader::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      border: 2px solid transparent;
-      border-top-color: #d4a574;
-      border-right-color: rgba(212, 165, 116, 0.3);
-      animation: spin 1s cubic-bezier(0.5, 0.2, 0.5, 0.8) infinite;
-    }
-    
-    .splash-loader::after {
-      content: '';
-      position: absolute;
-      inset: 6px;
-      border-radius: 50%;
-      border: 1.5px solid transparent;
-      border-top-color: rgba(212, 165, 116, 0.6);
-      animation: spin 0.6s cubic-bezier(0.5, 0.2, 0.5, 0.8) infinite reverse;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    /* Glow logo, not a spinner: this page is the continuation of the
+       native splash (same canvas), so the launch reads as one splash
+       until the wallet is ready. Sign-of-life for the long tail comes
+       from the wallet page itself once it reveals.
+
+       33.6vw: measured from the iOS splash asset (logo bbox 918px of
+       2732px), which LaunchScreen renders aspect-fit as a screen-width
+       square — so the native logo is 33.6% of device width and this
+       must match or the handoff visibly resizes. */
+    .splash-logo {
+      width: 33.6vw;
+      max-width: 192px;
     }
   </style>
 </head>
@@ -140,7 +122,7 @@
 <body>
   <!-- Splash screen shown during initial load -->
   <div id="splash">
-    <div class="splash-loader"></div>
+    <img class="splash-logo" src="/assets/Glow_Logo.svg" alt="" />
   </div>
   
   <div id="root"></div>

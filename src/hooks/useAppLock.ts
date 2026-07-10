@@ -13,14 +13,15 @@ import {
   getAutoLockSecondsSync,
   isAppLockSupported,
   isBiometricGateEnabled,
+  isBiometricGateEnabledSync,
   isPinEnabled,
   isPinEnabledSync,
   verifyPin,
 } from '@/services/appLock';
 import {
-  authenticateBiometric,
   deviceOnlyStorage,
   secureStorage,
+  tryAuthenticateBiometric,
 } from '@/services/secureStorage';
 import { isPasskeyMode } from '@/services/passkeyService';
 import { logger, LogCategory } from '@/services/logger';
@@ -31,6 +32,8 @@ export interface AppLockState {
    *  OS prompt and offers a retry button; PIN stays as fallback. */
   biometricGate: boolean;
   unlockWithPin: (pin: string) => Promise<boolean>;
+  /** Never rejects: cancel / unavailable leaves the lock in place and
+   *  the PIN pad as fallback. */
   unlockWithBiometric: () => Promise<void>;
 }
 
@@ -38,7 +41,9 @@ export function useAppLock(): AppLockState {
   // Synchronous first-render decision: a PIN user never paints an
   // unlocked wallet frame on cold start.
   const [locked, setLocked] = useState(() => isPinEnabledSync());
-  const [biometricGate, setBiometricGate] = useState(false);
+  // Sync-seeded like `locked`: the lock screen must know at first paint
+  // whether to hold the PIN pad back for the biometric auto-prompt.
+  const [biometricGate, setBiometricGate] = useState(() => isBiometricGateEnabledSync());
   const hiddenAtRef = useRef<number | null>(null);
 
   // Reconcile the mirror against Preferences, load the gate flag, and
@@ -92,7 +97,7 @@ export function useAppLock(): AppLockState {
           // task-switcher snapshot captures the lock screen, not the
           // wallet.
           setLocked(true);
-          void isBiometricGateEnabled().then(setBiometricGate);
+          setBiometricGate(isBiometricGateEnabledSync());
         } else {
           hiddenAtRef.current = Date.now();
         }
@@ -119,8 +124,7 @@ export function useAppLock(): AppLockState {
   }, []);
 
   const unlockWithBiometric = useCallback(async () => {
-    await authenticateBiometric('Unlock Glow');
-    setLocked(false);
+    if (await tryAuthenticateBiometric('Unlock Glow')) setLocked(false);
   }, []);
 
   return { locked, biometricGate, unlockWithPin, unlockWithBiometric };

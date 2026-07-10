@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { WarningIcon, SpinnerIcon, EyeIcon, FingerprintIcon, PasskeyIcon } from '../components/Icons';
+import { WarningIcon, SpinnerIcon, EyeIcon, FaceIdIcon, FingerprintIcon, PasskeyIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
 import {
   isPasskeyMode,
   signInPinnedToActiveCredential,
 } from '@/services/passkeyService';
-import { deviceOnlyStorage, secureStorage, getBiometryLabel } from '@/services/secureStorage';
+import { deviceOnlyStorage, secureStorage, getBiometryInfo, BiometryInfo } from '@/services/secureStorage';
+import { isPinEnabled, isPinEnabledSync } from '@/services/appLock';
+import { PinGate } from '../components/PinEntry';
 import { logger, LogCategory } from '@/services/logger';
 import { copyToClipboard } from '@/utils/clipboard';
 import { useScreenCaptureProtection } from '@/utils/screenSecurity';
@@ -33,6 +35,23 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
   // (biometric unlock enabled in Security settings). Reveal requires
   // an OS biometric prompt instead of the silent device-only read.
   const [biometricSeedPresent, setBiometricSeedPresent] = useState(false);
+
+  // App-lock gate before the silent-tier reveal (Misty gates its
+  // mnemonics page behind the app lock). Only the device-only /
+  // localStorage path needs it: the passkey and biometric-tier paths
+  // already run their own OS auth ceremony on reveal. No PIN set =>
+  // plain tap, matching the "no login by default" decision.
+  // Seeded from the sync mirror so a tap before the async read lands
+  // can't slip past the gate; the Preferences read stays authoritative.
+  const [pinRequired, setPinRequired] = useState(isPinEnabledSync());
+  const [showPinGate, setShowPinGate] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void isPinEnabled().then((enabled) => {
+      if (!cancelled) setPinRequired(enabled);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (isPasskey) return;
@@ -96,16 +115,15 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
     return () => { cancelled = true; };
   }, [isPasskey, passkeyAttemptFailed]);
 
-  // Resolved at mount: 'Face ID', 'Touch ID', 'fingerprint', etc.
-  // Used to label the biometric fallback button so iOS users see
-  // "Reveal with Face ID" while Android fingerprint users see
-  // "Reveal with fingerprint", etc. Null on web or when no biometry
-  // is enrolled; the button label degrades gracefully to "Reveal".
-  const [biometryLabel, setBiometryLabel] = useState<string | null>(null);
+  // Resolved at mount: label ('Face ID', 'Touch ID', 'fingerprint'…)
+  // for the fallback tiles' copy, kind ('face' | 'fingerprint') for
+  // their icon. Null on web or when no biometry is enrolled; the copy
+  // degrades gracefully and the icon falls back to fingerprint.
+  const [biometry, setBiometry] = useState<BiometryInfo | null>(null);
   useEffect(() => {
     let cancelled = false;
-    getBiometryLabel().then((label) => {
-      if (!cancelled) setBiometryLabel(label);
+    getBiometryInfo().then((info) => {
+      if (!cancelled) setBiometry(info);
     });
     return () => { cancelled = true; };
   }, []);
@@ -193,8 +211,11 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
 
   return (
     <SlideInPage title="Backup" onClose={onBack} slideFrom="left">
-      <div className="p-4">
-        <div className="max-w-xl mx-auto w-full space-y-6">
+      {/* min-h-full + flexed chain so the PIN gate (the sole child
+          while it shows) can split the viewport 1/3 header / 2/3
+          input; the card views flow from the top as before. */}
+      <div className="p-4 min-h-full flex flex-col">
+        <div className="max-w-xl mx-auto w-full space-y-6 flex-1 flex flex-col">
           {/* Passkey info card */}
           {isPasskey && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-6">
@@ -237,12 +258,27 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             </button>
           )}
 
+          {/* App-lock gate (mnemonic mode): shown in place of the
+              reveal tile once it is tapped with a PIN set. */}
+          {!isPasskey && !isRevealed && showPinGate && (
+            <PinGate
+              reason="Reveal recovery phrase"
+              onUnlocked={() => {
+                setShowPinGate(false);
+                setIsRevealed(true);
+              }}
+            />
+          )}
+
           {/* Reveal button (mnemonic mode). When biometric unlock is
               enabled the seed is in the biometric-bound tier, so the
-              tap triggers an OS prompt before revealing. */}
-          {!isPasskey && !isRevealed && (mnemonic || biometricSeedPresent) && (
+              tap triggers an OS prompt before revealing. With the
+              app-lock PIN set, the tap opens the PIN gate instead. */}
+          {!isPasskey && !isRevealed && !showPinGate && (mnemonic || biometricSeedPresent) && (
             <button
-              onClick={mnemonic ? () => setIsRevealed(true) : () => { void revealFromVault('biometric'); }}
+              onClick={mnemonic
+                ? () => { (pinRequired ? setShowPinGate : setIsRevealed)(true); }
+                : () => { void revealFromVault('biometric'); }}
               disabled={isLoading}
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
@@ -251,6 +287,8 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
                   <SpinnerIcon size="xl" className="text-spark-primary" />
                 ) : mnemonic ? (
                   <EyeIcon size="xl" className="text-spark-primary" />
+                ) : biometry?.kind === 'face' ? (
+                  <FaceIdIcon size="xl" className="text-spark-primary" />
                 ) : (
                   <FingerprintIcon size="xl" className="text-spark-primary" />
                 )}
@@ -260,10 +298,10 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
               </span>
               <span className="text-sm text-spark-text-muted">
                 {mnemonic
-                  ? 'Make sure no one is watching'
+                  ? pinRequired ? 'Requires PIN' : 'Make sure no one is watching'
                   : isLoading
-                    ? `Complete ${biometryLabel ?? 'biometric'} authentication`
-                    : `Requires ${biometryLabel ?? 'biometric authentication'}`}
+                    ? `Complete ${biometry?.label ?? 'biometric'} authentication`
+                    : `Requires ${biometry?.label ?? 'biometric authentication'}`}
               </span>
             </button>
           )}
@@ -294,6 +332,8 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
               <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
                 {isLoading ? (
                   <SpinnerIcon size="xl" className="text-spark-primary" />
+                ) : biometry?.kind === 'face' && fallbackTier === 'biometric' ? (
+                  <FaceIdIcon size="xl" className="text-spark-primary" />
                 ) : (
                   <FingerprintIcon size="xl" className="text-spark-primary" />
                 )}
@@ -305,8 +345,8 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
                 {fallbackTier === 'device'
                   ? 'Stored securely on this device'
                   : isLoading
-                    ? `Complete ${biometryLabel ?? 'biometric'} authentication`
-                    : `Requires ${biometryLabel ?? 'biometric authentication'}`}
+                    ? `Complete ${biometry?.label ?? 'biometric'} authentication`
+                    : `Requires ${biometry?.label ?? 'biometric authentication'}`}
               </span>
             </button>
           )}

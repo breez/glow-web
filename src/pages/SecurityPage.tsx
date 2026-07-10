@@ -6,11 +6,11 @@
  * change PIN, enable <biometry>.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import SlideInPage from '../components/layout/SlideInPage';
-import { PinEntry } from '../components/PinEntry';
+import { PinEntry, PinGate, PinScreenLayout } from '../components/PinEntry';
 import { Switch, LoadingSpinner } from '../components/ui';
-import { ChevronRightIcon, FingerprintIcon, LockIcon, ShieldCheckIcon } from '../components/Icons';
+import { ChevronRightIcon, FaceIdIcon, FingerprintIcon, ShieldCheckIcon } from '../components/Icons';
 import {
   AUTO_LOCK_OPTIONS_SECONDS,
   formatAutoLockOption,
@@ -20,10 +20,14 @@ import {
   setBiometricGateEnabled,
   isPinEnabled,
   setPin,
-  verifyPin,
   clearPin,
 } from '@/services/appLock';
-import { authenticateBiometric, getBiometryLabel } from '@/services/secureStorage';
+import {
+  authenticateBiometric,
+  getBiometryStatus,
+  recoverBiometryWithPasscode,
+  BiometryInfo,
+} from '@/services/secureStorage';
 import { logger, LogCategory } from '@/services/logger';
 
 type View =
@@ -42,52 +46,36 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
   const [view, setView] = useState<View>('loading');
   const [autoLock, setAutoLock] = useState<number>(120);
   const [biometricGate, setBiometricGate] = useState(false);
-  const [biometryLabel, setBiometryLabel] = useState<string | null>(null);
+  const [biometry, setBiometry] = useState<BiometryInfo | null>(null);
+  // iOS biometry lockout: recoverable via passcode, so the options view
+  // shows a recovery row instead of silently dropping the biometric one.
+  const [biometryLockedOut, setBiometryLockedOut] = useState(false);
   const [optionsError, setOptionsError] = useState<string | null>(null);
 
   // Two-step PIN flow state (shared by create + change).
   const [pinStep, setPinStep] = useState<'enter' | 'verify'>('enter');
   const firstPinRef = useRef<string | null>(null);
 
-  // Auto-fire the biometric gate only once per page entry; the pad's
-  // fingerprint button re-fires it manually after a cancel.
-  const bioFiredRef = useRef(false);
-
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const [pin, gate, seconds, label] = await Promise.all([
+      const [pin, gate, seconds, biometryStatus] = await Promise.all([
         isPinEnabled(),
         isBiometricGateEnabled(),
         getAutoLockSeconds(),
-        getBiometryLabel(),
+        getBiometryStatus(),
       ]);
       if (cancelled) return;
       setBiometricGate(gate);
       setAutoLock(seconds);
-      setBiometryLabel(label);
+      setBiometry(biometryStatus.info);
+      setBiometryLockedOut(biometryStatus.lockedOut);
       setView(pin ? 'gate' : 'no-pin');
     })();
     return () => {
       cancelled = true;
     };
   }, []);
-
-  const runBiometricGate = useCallback(async () => {
-    try {
-      await authenticateBiometric('Unlock Security settings');
-      setView('options');
-    } catch {
-      // Cancelled or unavailable: the PIN pad stays as fallback.
-    }
-  }, []);
-
-  useEffect(() => {
-    if (view === 'gate' && biometricGate && !bioFiredRef.current) {
-      bioFiredRef.current = true;
-      void runBiometricGate();
-    }
-  }, [view, biometricGate, runBiometricGate]);
 
   // Mismatch feedback lives here, not in PinEntry: the step flip back
   // to 'enter' remounts PinEntry (key={pinStep}) and would eat it.
@@ -134,7 +122,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
     try {
       // Confirm the user can actually pass the prompt before enabling,
       // mirroring Misty's enable flow.
-      await authenticateBiometric(`Enable ${biometryLabel ?? 'biometric'} unlock`);
+      await authenticateBiometric(`Enable ${biometry?.label ?? 'biometric'} unlock`);
       await setBiometricGateEnabled(true);
       setBiometricGate(true);
     } catch (e) {
@@ -142,6 +130,23 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
       logger.warn(LogCategory.AUTH, 'Enable biometric gate failed', { code });
       if (code !== 'USER_CANCELLED') {
         setOptionsError('Biometric authentication is not available. Check your device settings.');
+      }
+    }
+  };
+
+  const handleRecoverBiometry = async () => {
+    setOptionsError(null);
+    try {
+      // Passcode-allowed prompt: succeeding clears the OS lockout.
+      await recoverBiometryWithPasscode('Re-enable biometric unlock');
+      const status = await getBiometryStatus();
+      setBiometry(status.info);
+      setBiometryLockedOut(status.lockedOut);
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      logger.warn(LogCategory.AUTH, 'Biometry lockout recovery failed', { code });
+      if (code !== 'USER_CANCELLED') {
+        setOptionsError('Could not unlock biometrics. Check your device settings.');
       }
     }
   };
@@ -156,30 +161,12 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
         );
 
       case 'gate':
-        return (
-          <div className="pt-8 space-y-8">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
-                <LockIcon size="xl" className="text-spark-primary" />
-              </div>
-              <p className="text-sm text-spark-text-secondary">Enter your PIN to continue</p>
-            </div>
-            <PinEntry
-              onSubmit={async (pin) => {
-                if (await verifyPin(pin)) {
-                  setView('options');
-                  return null;
-                }
-                return 'Incorrect PIN';
-              }}
-              onBiometric={biometricGate ? () => { void runBiometricGate(); } : undefined}
-            />
-          </div>
-        );
+        return <PinGate reason="Unlock Security settings" onUnlocked={() => setView('options')} />;
 
       case 'no-pin':
         return (
           <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+            <h3 className="font-display font-semibold text-spark-text-primary mb-3">App Lock</h3>
             <button
               className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
               type="button"
@@ -202,19 +189,22 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
             ? isChange ? 'Enter your new PIN' : 'Choose a PIN'
             : isChange ? 'Confirm your new PIN' : 'Confirm your PIN';
         return (
-          <div className="pt-8 space-y-8">
-            <p className="text-center text-sm text-spark-text-secondary">{title}</p>
-            {flowError && (
-              <p className="text-center text-sm text-spark-error">{flowError}</p>
-            )}
-            <PinEntry key={pinStep} onSubmit={handlePinFlowSubmit} />
-          </div>
+          <PinScreenLayout
+            className="pt-8 pb-14"
+            prompt={<p className="text-center text-sm text-spark-text-secondary">{title}</p>}
+          >
+            {/* Mismatch feedback rides in PinEntry's own reserved error
+                line (persistentError) so this screen keeps the exact
+                shape of the gate / lock screens. */}
+            <PinEntry key={pinStep} onSubmit={handlePinFlowSubmit} persistentError={flowError} />
+          </PinScreenLayout>
         );
       }
 
       case 'options':
         return (
           <div className="bg-spark-dark border border-spark-border rounded-2xl p-4 space-y-2">
+            <h3 className="font-display font-semibold text-spark-text-primary mb-3">App Lock</h3>
             {/* Deactivate PIN (Misty pattern: an always-on switch whose
                 only action is turning protection off) */}
             <div className="flex items-center justify-between px-4 py-3 border border-spark-border rounded-xl">
@@ -256,13 +246,38 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
               <ChevronRightIcon size="md" />
             </button>
 
+            {/* Biometry locked out (iOS: too many failed matches).
+                Shown in place of the enable row so the feature doesn't
+                silently vanish; passing the passcode prompt clears the
+                OS lockout and restores the normal toggle. */}
+            {biometry == null && biometryLockedOut && (
+              <button
+                className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
+                type="button"
+                onClick={() => { void handleRecoverBiometry(); }}
+              >
+                <div className="flex items-center gap-3 text-left">
+                  <FingerprintIcon size="md" />
+                  <div>
+                    <span className="block text-spark-text-primary">Biometric unlock is locked</span>
+                    <span className="block text-xs text-spark-text-muted">
+                      Too many failed attempts. Tap to unlock with your passcode.
+                    </span>
+                  </div>
+                </div>
+                <ChevronRightIcon size="md" />
+              </button>
+            )}
+
             {/* Enable biometrics (only when the device has them) */}
-            {biometryLabel != null && (
+            {biometry != null && (
               <div className="flex items-center justify-between px-4 py-3 border border-spark-border rounded-xl">
                 <div className="flex items-center gap-3">
-                  <FingerprintIcon size="md" className="text-spark-text-secondary" />
+                  {biometry.kind === 'face'
+                    ? <FaceIdIcon size="md" className="text-spark-text-secondary" />
+                    : <FingerprintIcon size="md" className="text-spark-text-secondary" />}
                   <span className="text-sm font-medium text-spark-text-primary">
-                    {`Enable ${biometryLabel}`}
+                    {`Enable ${biometry.label}`}
                   </span>
                 </div>
                 <Switch checked={biometricGate} onChange={() => { void handleToggleBiometric(); }} />
@@ -279,8 +294,12 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
 
   return (
     <SlideInPage title="Security" onClose={onBack} slideFrom="left">
-      <div className="p-4">
-        <div className="max-w-xl mx-auto w-full">{renderBody()}</div>
+      {/* min-h-full + flexed chain so the PIN views (gate, create,
+          change) can split the viewport 1/3 header / 2/3 input; the
+          list views just flow from the top as before. p-4 keeps the
+          padding uniform on all sides. */}
+      <div className="p-4 min-h-full flex flex-col">
+        <div className="max-w-xl mx-auto w-full flex-1 flex flex-col">{renderBody()}</div>
       </div>
     </SlideInPage>
   );

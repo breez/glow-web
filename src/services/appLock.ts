@@ -16,6 +16,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
+import { bytesToHex, hexToBytes } from '../utils/hex';
 import { logger, LogCategory } from './logger';
 
 /** Salt + hash in ONE record: a two-key layout could be torn by a
@@ -27,6 +28,7 @@ const BIOMETRIC_KEY = 'glow.appLock.biometricEnabled';
  *  never the PIN record). */
 const PIN_MIRROR_KEY = 'glow.appLock.pinEnabledMirror';
 const AUTO_LOCK_MIRROR_KEY = 'glow.appLock.autoLockSecondsMirror';
+const BIOMETRIC_MIRROR_KEY = 'glow.appLock.biometricEnabledMirror';
 
 export const PIN_LENGTH = 6;
 
@@ -59,18 +61,6 @@ function mirrorGet(key: string): string | null {
 // PIN hashing
 // ============================================
 
-function toHex(bytes: Uint8Array): string {
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function fromHex(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes;
-}
-
 async function derivePinHash(pin: string, salt: Uint8Array): Promise<string> {
   const key = await crypto.subtle.importKey(
     'raw',
@@ -89,7 +79,7 @@ async function derivePinHash(pin: string, salt: Uint8Array): Promise<string> {
     key,
     256,
   );
-  return toHex(new Uint8Array(bits));
+  return bytesToHex(new Uint8Array(bits));
 }
 
 // ============================================
@@ -127,7 +117,7 @@ export function isPinEnabledSync(): boolean {
 /** Create or replace the PIN. Caller is responsible for the verify step. */
 export async function setPin(pin: string): Promise<void> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  const record: PinRecord = { v: 1, salt: toHex(salt), hash: await derivePinHash(pin, salt) };
+  const record: PinRecord = { v: 1, salt: bytesToHex(salt), hash: await derivePinHash(pin, salt) };
   await Preferences.set({ key: PIN_RECORD_KEY, value: JSON.stringify(record) });
   mirrorSet(PIN_MIRROR_KEY, 'true');
   logger.info(LogCategory.AUTH, 'appLock: PIN set');
@@ -136,7 +126,7 @@ export async function setPin(pin: string): Promise<void> {
 export async function verifyPin(pin: string): Promise<boolean> {
   const record = await readPinRecord();
   if (record == null) return false;
-  return (await derivePinHash(pin, fromHex(record.salt))) === record.hash;
+  return (await derivePinHash(pin, hexToBytes(record.salt))) === record.hash;
 }
 
 /** Deactivate PIN protection. Also disables the biometric gate: it is
@@ -145,6 +135,7 @@ export async function clearPin(): Promise<void> {
   await Preferences.remove({ key: PIN_RECORD_KEY });
   await Preferences.remove({ key: BIOMETRIC_KEY });
   mirrorSet(PIN_MIRROR_KEY, null);
+  mirrorSet(BIOMETRIC_MIRROR_KEY, null);
   logger.info(LogCategory.AUTH, 'appLock: PIN cleared');
 }
 
@@ -186,7 +177,19 @@ export function formatAutoLockOption(seconds: number): string {
 export async function isBiometricGateEnabled(): Promise<boolean> {
   if (!isAppLockSupported()) return false;
   const { value } = await Preferences.get({ key: BIOMETRIC_KEY });
-  return value === 'true';
+  const enabled = value === 'true';
+  // Backfill the mirror for installs that enabled the gate before the
+  // mirror existed (and self-heal an evicted one).
+  mirrorSet(BIOMETRIC_MIRROR_KEY, enabled ? 'true' : null);
+  return enabled;
+}
+
+/** Mirror-backed synchronous read so lock UIs can decide "pad or
+ *  biometric first" at first render, with no pad flash while the
+ *  Preferences read is in flight. A lost mirror degrades to showing
+ *  the pad; the async read reconciles. */
+export function isBiometricGateEnabledSync(): boolean {
+  return isAppLockSupported() && mirrorGet(BIOMETRIC_MIRROR_KEY) === 'true';
 }
 
 export async function setBiometricGateEnabled(enabled: boolean): Promise<void> {
@@ -195,5 +198,6 @@ export async function setBiometricGateEnabled(enabled: boolean): Promise<void> {
   } else {
     await Preferences.remove({ key: BIOMETRIC_KEY });
   }
+  mirrorSet(BIOMETRIC_MIRROR_KEY, enabled ? 'true' : null);
   logger.info(LogCategory.AUTH, `appLock: biometric gate ${enabled ? 'enabled' : 'disabled'}`);
 }
