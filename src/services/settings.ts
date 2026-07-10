@@ -1,7 +1,19 @@
 import { MaxFee } from "@breeztech/breez-sdk-spark/web";
 import type { Network } from "@breeztech/breez-sdk-spark";
+import { Capacitor } from "@capacitor/core";
 /** Provider identifiers matching the SDK's BuyBitcoinRequest tagged union */
 export type BuyBitcoinProvider = 'moonpay' | 'cashApp';
+
+/**
+ * Buy Bitcoin is hidden in the native iOS app: App Review Guideline 3.1.5(iii)
+ * treats third-party purchase links as exchange services requiring licensing
+ * evidence. Web and Android are unaffected. TestFlight-only iOS builds may
+ * re-enable it via VITE_IOS_ENABLE_BUY=true; never ship a flagged build to
+ * App Store review.
+ */
+export function isBuyBitcoinAvailable(): boolean {
+  return Capacitor.getPlatform() !== 'ios' || import.meta.env.VITE_IOS_ENABLE_BUY === 'true';
+}
 
 /** Filter out providers unavailable on the current network (e.g. CashApp is mainnet-only) */
 export function filterProvidersByNetwork(providers: BuyBitcoinProvider[], network?: Network): BuyBitcoinProvider[] {

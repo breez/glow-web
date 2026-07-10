@@ -17,7 +17,7 @@ import { useLatest } from '../hooks/useLatest';
 import UnclaimedDepositDetailsPage from './UnclaimedDepositDetailsPage';
 import SaveContactDialog from '../features/send/components/SaveContactDialog';
 import BuyBitcoinDialog from '../features/buy/BuyBitcoinDialog';
-import { getBuyProviderSettings, filterProvidersByNetwork } from '../services/settings';
+import { getBuyProviderSettings, filterProvidersByNetwork, isBuyBitcoinAvailable } from '../services/settings';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';
 import { STATUS_BAR_WALLET_GLASS } from '../utils/statusBarManager';
 
@@ -226,7 +226,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
           walletInfo={walletInfo}
           scrollProgress={scrollProgress}
           onOpenMenu={() => setIsMenuOpen(true)}
-          onOpenBuyBitcoin={() => {
+          onOpenBuyBitcoin={!isBuyBitcoinAvailable() ? undefined : () => {
             if (enabledBuyProviders.length === 0) {
               onOpenBuyProviders();
             } else if (enabledBuyProviders.length === 1 && enabledBuyProviders[0] === 'moonpay') {
