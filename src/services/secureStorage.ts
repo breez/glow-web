@@ -47,7 +47,17 @@ import { logger, LogCategory } from './logger';
  * `capacitor-passkey-prf`.
  */
 interface NativeVaultPlugin {
-  checkBiometry(): Promise<{ available: boolean; biometryType: string }>;
+  checkBiometry(): Promise<{
+    available: boolean;
+    biometryType: string;
+    /** Raw platform reason when `available` is false (diagnostic). */
+    unavailabilityReason?: string;
+    /** Mapped SecureStorageErrorCode when `available` is false. */
+    unavailabilityCode?: string;
+  }>;
+  authenticate(options?: { reason?: string }): Promise<void>;
+  /** Biometrics-or-passcode prompt (iOS); clears biometry lockout. */
+  authenticateDeviceOwner(options?: { reason?: string }): Promise<void>;
   hasStoredSeed(): Promise<{ stored: boolean }>;
   storeSeed(options: { seed: string }): Promise<void>;
   retrieveSeed(): Promise<{ seed: string }>;
@@ -778,40 +788,97 @@ class NoopSecureStorage implements SecureStorage {
 }
 
 // ============================================
-// Biometry label helper (rewritten to use NativeVault)
+// Biometry info helper (rewritten to use NativeVault)
 // ============================================
 
+/** Icon family for the device's biometry; `iris` maps to `face` (a
+ *  dedicated glyph isn't worth it for Samsung's retired iris sensor). */
+export type BiometryKind = 'face' | 'fingerprint';
+
+export interface BiometryInfo {
+  /** User-facing name, e.g. "Face ID", "Touch ID", "fingerprint". */
+  label: string;
+  kind: BiometryKind;
+}
+
+export interface BiometryStatus {
+  /** Label + icon kind, null when biometry can't currently run. */
+  info: BiometryInfo | null;
+  /** iOS: biometry is disabled until the device passcode is entered
+   *  (too many failed matches). Recoverable in-app via
+   *  `recoverBiometryWithPasscode`. */
+  lockedOut: boolean;
+}
+
 /**
- * Returns a user-facing label for the device's current biometry type, e.g.
- * `"Face ID"`, `"Touch ID"`, `"fingerprint"`. Returns `null` on web or if
- * no biometry is enrolled / available. Used by the Unlock page to set the
- * retry-button label.
+ * Full biometry capability status: label + icon kind when available,
+ * plus a structured lockout flag so UIs can offer recovery instead of
+ * silently hiding their biometric controls.
  *
  * Calls `NativeVault.checkBiometry()` directly — no more TLA workaround
  * is needed because the in-house plugin does not transitively import
  * `@capacitor/app`, so vite-plugin-top-level-await never wraps anything.
  */
-export async function getBiometryLabel(): Promise<string | null> {
-  if (!Capacitor.isNativePlatform()) return null;
+export async function getBiometryStatus(): Promise<BiometryStatus> {
+  if (!Capacitor.isNativePlatform()) return { info: null, lockedOut: false };
   try {
     const result = await getNativeVault().checkBiometry();
-    if (!result.available) return null;
+    if (!result.available) {
+      // Lands in the Share Logs ring buffer: the only way to tell
+      // lockout / permission-denied / not-enrolled apart when the
+      // biometric UI silently disappears.
+      logger.warn(LogCategory.AUTH, 'checkBiometry: unavailable', {
+        biometryType: result.biometryType,
+        reason: result.unavailabilityReason ?? 'unspecified',
+      });
+      return { info: null, lockedOut: result.unavailabilityCode === 'BIOMETRIC_LOCKOUT' };
+    }
     switch (result.biometryType) {
       case 'faceId':
-        return 'Face ID';
+        return { info: { label: 'Face ID', kind: 'face' }, lockedOut: false };
       case 'touchId':
-        return 'Touch ID';
+        return { info: { label: 'Touch ID', kind: 'fingerprint' }, lockedOut: false };
       case 'fingerprint':
-        return 'fingerprint';
+        return { info: { label: 'fingerprint', kind: 'fingerprint' }, lockedOut: false };
       case 'face':
-        return 'face';
+        return { info: { label: 'face', kind: 'face' }, lockedOut: false };
       case 'iris':
-        return 'iris scan';
+        return { info: { label: 'iris scan', kind: 'face' }, lockedOut: false };
       default:
-        return null;
+        logger.warn(LogCategory.AUTH, 'checkBiometry: unrecognized biometryType', {
+          biometryType: result.biometryType,
+        });
+        return { info: null, lockedOut: false };
     }
-  } catch {
-    return null;
+  } catch (e) {
+    logger.warn(LogCategory.AUTH, 'checkBiometry: call failed', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+    return { info: null, lockedOut: false };
+  }
+}
+
+/** `getBiometryStatus().info` for callers that only need label + icon. */
+export async function getBiometryInfo(): Promise<BiometryInfo | null> {
+  return (await getBiometryStatus()).info;
+}
+
+/**
+ * Biometrics-or-passcode prompt (iOS `deviceOwnerAuthentication`).
+ * Succeeding via passcode clears a biometry lockout system-wide, so
+ * this is the in-app recovery for BIOMETRIC_LOCKOUT. Resolves on
+ * success; throws `SecureStorageError` (USER_CANCELLED, ...).
+ */
+export async function recoverBiometryWithPasscode(reason: string): Promise<void> {
+  try {
+    await getNativeVault().authenticateDeviceOwner({ reason });
+  } catch (err) {
+    const code = mapNativeVaultErrorCode(err);
+    logSecureStorageFailure('authenticateDeviceOwner', code);
+    throw new SecureStorageError(
+      code,
+      err instanceof Error ? err.message : 'Device authentication failed',
+    );
   }
 }
 
@@ -830,8 +897,9 @@ function createDeviceOnlyStorage(): SecureStorage {
 /**
  * Module-level singletons.
  *
- * `secureStorage` — biometric-bound tier (passkey users).
- * `deviceOnlyStorage` — encrypted at rest, no biometric gate (non-passkey users).
+ * `secureStorage`: biometric-bound tier (legacy installs only; migrated
+ * to device-only at first unlock).
+ * `deviceOnlyStorage`: encrypted at rest, no biometric gate (the default).
  *
  * Both resolve to `NoopSecureStorage` on non-native hosts.
  *
@@ -840,3 +908,41 @@ function createDeviceOnlyStorage(): SecureStorage {
  */
 export const secureStorage: SecureStorage = createSecureStorage();
 export const deviceOnlyStorage: SecureStorage = createDeviceOnlyStorage();
+
+// ============================================
+// Standalone biometric gate (native only)
+// ============================================
+
+/**
+ * App-level biometric prompt, no vault involved. Backs the app-lock
+ * layer (`services/appLock.ts`): lock screen and Security page gating.
+ * Gates the UI, not the crypto: the seed stays in the device-only tier
+ * so a PIN fallback can still start the app. Resolves on success;
+ * throws `SecureStorageError` (USER_CANCELLED, BIOMETRIC_LOCKOUT, ...).
+ */
+export async function authenticateBiometric(reason: string): Promise<void> {
+  try {
+    await getNativeVault().authenticate({ reason });
+  } catch (err) {
+    const code = mapNativeVaultErrorCode(err);
+    logSecureStorageFailure('authenticate', code);
+    throw new SecureStorageError(
+      code,
+      err instanceof Error ? err.message : 'Biometric authentication failed',
+    );
+  }
+}
+
+/**
+ * `authenticateBiometric` for gates with a PIN fallback: cancel /
+ * unavailable resolves `false` instead of throwing, since the pad
+ * stays on screen either way.
+ */
+export async function tryAuthenticateBiometric(reason: string): Promise<boolean> {
+  try {
+    await authenticateBiometric(reason);
+    return true;
+  } catch {
+    return false;
+  }
+}

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { WarningIcon, SpinnerIcon, EyeIcon, FingerprintIcon, PasskeyIcon } from '../components/Icons';
+import { WarningIcon, SpinnerIcon, EyeIcon, FaceIdIcon, FingerprintIcon, PasskeyIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
 import {
   isPasskeyMode,
   signInPinnedToActiveCredential,
 } from '@/services/passkeyService';
-import { deviceOnlyStorage, secureStorage, getBiometryLabel } from '@/services/secureStorage';
+import { deviceOnlyStorage, secureStorage, getBiometryInfo, BiometryInfo } from '@/services/secureStorage';
+import { isPinEnabled, isPinEnabledSync } from '@/services/appLock';
+import { PinGate } from '../components/PinEntry';
 import { logger, LogCategory } from '@/services/logger';
 import { copyToClipboard } from '@/utils/clipboard';
 import { useScreenCaptureProtection } from '@/utils/screenSecurity';
@@ -29,6 +31,28 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
 
   const isPasskey = isPasskeyMode();
 
+  // Non-passkey wallet whose seed sits in the biometric-bound tier
+  // (biometric unlock enabled in Security settings). Reveal requires
+  // an OS biometric prompt instead of the silent device-only read.
+  const [biometricSeedPresent, setBiometricSeedPresent] = useState(false);
+
+  // App-lock gate before the silent-tier reveal (Misty gates its
+  // mnemonics page behind the app lock). Only the device-only /
+  // localStorage path needs it: the passkey and biometric-tier paths
+  // already run their own OS auth ceremony on reveal. No PIN set =>
+  // plain tap, matching the "no login by default" decision.
+  // Seeded from the sync mirror so a tap before the async read lands
+  // can't slip past the gate; the Preferences read stays authoritative.
+  const [pinRequired, setPinRequired] = useState(isPinEnabledSync());
+  const [showPinGate, setShowPinGate] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void isPinEnabled().then((enabled) => {
+      if (!cancelled) setPinRequired(enabled);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     if (isPasskey) return;
     let cancelled = false;
@@ -48,6 +72,14 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
         }
       }
       if (cancelled) return;
+      // Legacy biometric-bound seed (pre-migration install). Don't read
+      // it here (that would fire an OS prompt at page mount); flag it
+      // so the reveal tile triggers the prompt on tap.
+      if (secureStorage.isSupported() && (await secureStorage.hasStoredSeed())) {
+        if (!cancelled) setBiometricSeedPresent(true);
+        return;
+      }
+      if (cancelled) return;
       setMnemonic(localStorage.getItem('walletMnemonic'));
     })();
     return () => {
@@ -63,16 +95,35 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
   // from users who care about the distinction.
   const [passkeyAttemptFailed, setPasskeyAttemptFailed] = useState(false);
 
-  // Resolved at mount: 'Face ID', 'Touch ID', 'fingerprint', etc.
-  // Used to label the biometric fallback button so iOS users see
-  // "Reveal with Face ID" while Android fingerprint users see
-  // "Reveal with fingerprint", etc. Null on web or when no biometry
-  // is enrolled; the button label degrades gracefully to "Reveal".
-  const [biometryLabel, setBiometryLabel] = useState<string | null>(null);
+  // Passkey mode: once the passkey attempt fails, resolve which vault
+  // tier holds the cached seed. Drives the fallback tile's copy
+  // (biometric prompt vs silent read) and its very existence: with
+  // no cached seed in either tier the tile would be a dead button.
+  // null = still probing.
+  const [fallbackTier, setFallbackTier] = useState<'biometric' | 'device' | 'none' | null>(null);
+  useEffect(() => {
+    if (!isPasskey || !passkeyAttemptFailed || !secureStorage.isSupported()) return;
+    let cancelled = false;
+    void (async () => {
+      const tier = (await secureStorage.hasStoredSeed().catch(() => false))
+        ? 'biometric' as const
+        : (await deviceOnlyStorage.hasStoredSeed().catch(() => false))
+          ? 'device' as const
+          : 'none' as const;
+      if (!cancelled) setFallbackTier(tier);
+    })();
+    return () => { cancelled = true; };
+  }, [isPasskey, passkeyAttemptFailed]);
+
+  // Resolved at mount: label ('Face ID', 'Touch ID', 'fingerprint'…)
+  // for the fallback tiles' copy, kind ('face' | 'fingerprint') for
+  // their icon. Null on web or when no biometry is enrolled; the copy
+  // degrades gracefully and the icon falls back to fingerprint.
+  const [biometry, setBiometry] = useState<BiometryInfo | null>(null);
   useEffect(() => {
     let cancelled = false;
-    getBiometryLabel().then((label) => {
-      if (!cancelled) setBiometryLabel(label);
+    getBiometryInfo().then((info) => {
+      if (!cancelled) setBiometry(info);
     });
     return () => { cancelled = true; };
   }, []);
@@ -108,20 +159,16 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
     }
   };
 
-  // Fallback path: read the seed directly from biometric-bound
-  // secureStorage. Only surfaced after the passkey path failed, so
-  // users with intact passkeys never bypass the passkey ceremony.
-  // Useful when the passkey was deleted from Settings -> Passwords:
-  // the cached seed survives there and can be revealed via Face ID.
-  const handleRevealWithBiometric = async () => {
+  // Fallback path: read the cached seed from the given vault tier
+  // (legacy biometric-bound prompts, device-only is silent). For
+  // passkey wallets this only surfaces after the passkey path failed,
+  // so intact passkeys never bypass the ceremony.
+  const revealFromVault = async (tier: 'biometric' | 'device') => {
     setIsLoading(true);
     setError(null);
     try {
-      if (!secureStorage.isSupported() || !(await secureStorage.hasStoredSeed())) {
-        setError('No recovery phrase available on this device');
-        return;
-      }
-      const seed = await secureStorage.retrieveSeed();
+      const store = tier === 'biometric' ? secureStorage : deviceOnlyStorage;
+      const seed = await store.retrieveSeed();
       if (seed.type === 'mnemonic' && seed.mnemonic) {
         setMnemonic(seed.mnemonic);
         setIsRevealed(true);
@@ -164,8 +211,11 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
 
   return (
     <SlideInPage title="Backup" onClose={onBack} slideFrom="left">
-      <div className="p-4">
-        <div className="max-w-xl mx-auto w-full space-y-6">
+      {/* min-h-full + flexed chain so the PIN gate (the sole child
+          while it shows) can split the viewport 1/3 header / 2/3
+          input; the card views flow from the top as before. */}
+      <div className="p-4 min-h-full flex flex-col">
+        <div className="max-w-xl mx-auto w-full space-y-6 flex-1 flex flex-col">
           {/* Passkey info card */}
           {isPasskey && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-6">
@@ -208,17 +258,51 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             </button>
           )}
 
-          {/* Reveal button (mnemonic mode) */}
-          {!isPasskey && !isRevealed && mnemonic && (
+          {/* App-lock gate (mnemonic mode): shown in place of the
+              reveal tile once it is tapped with a PIN set. */}
+          {!isPasskey && !isRevealed && showPinGate && (
+            <PinGate
+              reason="Reveal recovery phrase"
+              onUnlocked={() => {
+                setShowPinGate(false);
+                setIsRevealed(true);
+              }}
+            />
+          )}
+
+          {/* Reveal button (mnemonic mode). When biometric unlock is
+              enabled the seed is in the biometric-bound tier, so the
+              tap triggers an OS prompt before revealing. With the
+              app-lock PIN set, the tap opens the PIN gate instead. */}
+          {!isPasskey && !isRevealed && !showPinGate && (mnemonic || biometricSeedPresent) && (
             <button
-              onClick={() => setIsRevealed(true)}
-              className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors"
+              onClick={mnemonic
+                ? () => { (pinRequired ? setShowPinGate : setIsRevealed)(true); }
+                : () => { void revealFromVault('biometric'); }}
+              disabled={isLoading}
+              className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
               <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
-                <EyeIcon size="xl" className="text-spark-primary" />
+                {isLoading ? (
+                  <SpinnerIcon size="xl" className="text-spark-primary" />
+                ) : mnemonic ? (
+                  <EyeIcon size="xl" className="text-spark-primary" />
+                ) : biometry?.kind === 'face' ? (
+                  <FaceIdIcon size="xl" className="text-spark-primary" />
+                ) : (
+                  <FingerprintIcon size="xl" className="text-spark-primary" />
+                )}
               </div>
-              <span className="font-display font-semibold text-spark-text-primary">Tap to reveal phrase</span>
-              <span className="text-sm text-spark-text-muted">Make sure no one is watching</span>
+              <span className="font-display font-semibold text-spark-text-primary">
+                {isLoading ? 'Authenticating...' : 'Tap to reveal phrase'}
+              </span>
+              <span className="text-sm text-spark-text-muted">
+                {mnemonic
+                  ? pinRequired ? 'Requires PIN' : 'Make sure no one is watching'
+                  : isLoading
+                    ? `Complete ${biometry?.label ?? 'biometric'} authentication`
+                    : `Requires ${biometry?.label ?? 'biometric authentication'}`}
+              </span>
             </button>
           )}
 
@@ -238,15 +322,18 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
               "Requires passkey authentication" subtitle for "Requires
               {biometric}". The label-driven biometric naming matches
               the convention used elsewhere (UnlockPage). */}
-          {isPasskey && passkeyAttemptFailed && !isRevealed && !mnemonic && secureStorage.isSupported() && (
+          {isPasskey && passkeyAttemptFailed && !isRevealed && !mnemonic
+            && (fallbackTier === 'biometric' || fallbackTier === 'device') && (
             <button
-              onClick={handleRevealWithBiometric}
+              onClick={() => { void revealFromVault(fallbackTier); }}
               disabled={isLoading}
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
               <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
                 {isLoading ? (
                   <SpinnerIcon size="xl" className="text-spark-primary" />
+                ) : biometry?.kind === 'face' && fallbackTier === 'biometric' ? (
+                  <FaceIdIcon size="xl" className="text-spark-primary" />
                 ) : (
                   <FingerprintIcon size="xl" className="text-spark-primary" />
                 )}
@@ -255,21 +342,21 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
                 {isLoading ? 'Authenticating...' : 'Tap to reveal phrase'}
               </span>
               <span className="text-sm text-spark-text-muted">
-                {isLoading
-                  ? `Complete ${biometryLabel ?? 'biometric'} authentication`
-                  : `Requires ${biometryLabel ?? 'biometric authentication'}`}
+                {fallbackTier === 'device'
+                  ? 'Stored securely on this device'
+                  : isLoading
+                    ? `Complete ${biometry?.label ?? 'biometric'} authentication`
+                    : `Requires ${biometry?.label ?? 'biometric authentication'}`}
               </span>
             </button>
           )}
 
-          {/* Web fallback (passkey mode, no native secure storage). On
-              web the seed is derived from the passkey PRF only: there
-              is no device-bound copy to read with biometrics. If the
-              passkey attempt failed, the recovery phrase cannot be
-              retrieved here. Mirror the "No Backup Found" tile used
-              for non-passkey mode so the user gets a clear dead-end
-              message instead of a button that always errors. */}
-          {isPasskey && passkeyAttemptFailed && !isRevealed && !mnemonic && !secureStorage.isSupported() && (
+          {/* Dead-end card (passkey mode): web has no cached copy at
+              all, and a native install can lack one too (persist
+              failed, vault cleared). Without it the fallback tile
+              would be a button that always errors. */}
+          {isPasskey && passkeyAttemptFailed && !isRevealed && !mnemonic
+            && (!secureStorage.isSupported() || fallbackTier === 'none') && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-8 text-center">
               <div className="w-16 h-16 rounded-2xl bg-spark-error/20 flex items-center justify-center mx-auto mb-4">
                 <WarningIcon size="xl" className="text-spark-error" />
@@ -327,7 +414,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
           )}
 
           {/* No backup found (mnemonic mode only) */}
-          {!isPasskey && !mnemonic && (
+          {!isPasskey && !mnemonic && !biometricSeedPresent && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-8 text-center">
               <div className="w-16 h-16 rounded-2xl bg-spark-error/20 flex items-center justify-center mx-auto mb-4">
                 <WarningIcon size="xl" className="text-spark-error" />

@@ -17,9 +17,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { PrimaryButton, SecondaryButton } from '../components/ui';
-import { FingerprintIcon, PasskeyIcon } from '../components/Icons';
+import { FaceIdIcon, FingerprintIcon, PasskeyIcon } from '../components/Icons';
 import { AlertCard } from '../components/AlertCard';
-import { getBiometryLabel, secureStorage } from '../services/secureStorage';
+import { getBiometryInfo, BiometryInfo, secureStorage } from '../services/secureStorage';
 
 interface UnlockPageProps {
   isLoading: boolean;
@@ -37,13 +37,13 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
   // Web hosts use passkey terminology; native uses biometric.
   const isWebPasskey = !secureStorage.isSupported();
 
-  const [biometryLabel, setBiometryLabel] = useState<string | null>(null);
+  const [biometry, setBiometry] = useState<BiometryInfo | null>(null);
 
   useEffect(() => {
     if (isWebPasskey) return;
     let cancelled = false;
-    getBiometryLabel().then((label) => {
-      if (!cancelled) setBiometryLabel(label);
+    getBiometryInfo().then((info) => {
+      if (!cancelled) setBiometry(info);
     });
     return () => {
       cancelled = true;
@@ -52,11 +52,13 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
 
   const unlockLabel = isWebPasskey
     ? 'Unlock with passkey'
-    : biometryLabel ? `Unlock with ${biometryLabel}` : 'Unlock';
+    : biometry ? `Unlock with ${biometry.label}` : 'Unlock';
   const unlockDescription = isWebPasskey
     ? 'Your wallet is locked. Unlock with your passkey to continue.'
     : 'Your wallet is locked. Unlock with your biometric to continue.';
-  const UnlockIcon = isWebPasskey ? PasskeyIcon : FingerprintIcon;
+  const UnlockIcon = isWebPasskey
+    ? PasskeyIcon
+    : biometry?.kind === 'face' ? FaceIdIcon : FingerprintIcon;
 
   return (
     <div className="min-h-dvh h-dvh w-full flex flex-col bg-spark-surface relative">
