@@ -79,6 +79,10 @@ const AppContent: React.FC = () => {
   // 'unlocking', auto-'wallet' on reconnect) are layered in by
   // `currentScreen` below.
   const [userScreen, setUserScreen] = useState<Screen>('home');
+  // Where the open BackupPage was launched from: the side menu (web) or
+  // the Security & Backup page (native). Drives its back target and
+  // whether SecurityPage stays mounted beneath it.
+  const [backupSource, setBackupSource] = useState<'menu' | 'security'>('menu');
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
   const [buyProvidersSource, setBuyProvidersSource] = useState<'wallet' | 'settings'>('wallet');
   const [passkeySdkConnected, setPasskeySdkConnected] = useState(false);
@@ -325,7 +329,7 @@ const AppContent: React.FC = () => {
             setUserScreen('getRefund');
           }}
           onOpenSettings={() => setUserScreen('settings')}
-          onOpenBackup={() => setUserScreen('backup')}
+          onOpenBackup={() => { setBackupSource('menu'); setUserScreen('backup'); }}
           onOpenSecurity={() => setUserScreen('security')}
           onOpenBuyProviders={() => { setBuyProvidersSource('wallet'); setUserScreen('buyProviders'); }}
           onBuyBitcoin={sdk.handleBuyBitcoin}
@@ -527,21 +531,35 @@ const AppContent: React.FC = () => {
           </>
         );
 
+      // Security & Backup share one branch so SecurityPage stays
+      // mounted (gate passed, options state intact) underneath an
+      // opened BackupPage — returning from Backup must not re-run the
+      // PIN/biometric gate. On web, Backup opens directly from the
+      // menu and SecurityPage never mounts.
       case 'backup':
+      case 'security': {
+        const backupFromSecurity = backupSource === 'security';
         return (
           <>
             {renderWalletPage()}
-            <BackupPage onBack={() => setUserScreen('wallet')} />
+            {(currentScreen === 'security' || backupFromSecurity) && (
+              <SecurityPage
+                onBack={() => setUserScreen('wallet')}
+                onOpenBackup={() => {
+                  setBackupSource('security');
+                  setUserScreen('backup');
+                }}
+              />
+            )}
+            {currentScreen === 'backup' && (
+              <BackupPage
+                closeStyle={backupFromSecurity ? 'back' : 'close'}
+                onBack={() => setUserScreen(backupFromSecurity ? 'security' : 'wallet')}
+              />
+            )}
           </>
         );
-
-      case 'security':
-        return (
-          <>
-            {renderWalletPage()}
-            <SecurityPage onBack={() => setUserScreen('wallet')} />
-          </>
-        );
+      }
 
       case 'restore':
         return (
