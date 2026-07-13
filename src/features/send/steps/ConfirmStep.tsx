@@ -90,6 +90,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
           onClick={onConfirm}
           disabled={isLoading || insufficientBalance || disableConfirm}
           className={onBack ? 'flex-1' : 'w-full'}
+          data-testid="send-confirm-button"
         >
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">

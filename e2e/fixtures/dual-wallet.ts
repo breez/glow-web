@@ -365,7 +365,7 @@ export async function sendPayment(
     }
 
     // Confirm send
-    const sendConfirmButton = page.getByRole('button', { name: /confirm.*send|send.*confirm/i });
+    const sendConfirmButton = page.getByTestId('send-confirm-button');
     await sendConfirmButton.waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
     await sendConfirmButton.click();
 
