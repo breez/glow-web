@@ -27,3 +27,7 @@ jobs:
             Follow the instructions in the issue body to upgrade the SDK.
             Check the release notes at https://github.com/breez/spark-sdk/releases for breaking changes between the current and target versions.
             Create a PR with the changes when done. Reuse the issue title as the PR title and create the PR with the run-e2e label, so the E2E suite runs on it.
+          # The upgrade needs npm/tsc/tests plus git push and gh pr create;
+          # without this allowlist every one of those is permission-denied.
+          claude_args: |
+            --allowedTools "Bash(npm:*),Bash(npx:*),Bash(git:*),Bash(gh:*),Bash(rm:*),Bash(ls:*),Bash(cat:*)"
