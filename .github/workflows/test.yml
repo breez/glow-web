@@ -97,6 +97,9 @@ jobs:
     env:
       RUN_FULL_E2E: "${{ ((github.event_name == 'release') || (github.event_name == 'workflow_dispatch' && inputs.run_full_e2e) || contains(github.event.pull_request.labels.*.name, 'run-full-e2e')) && '1' || '' }}"
       HAS_TEST_SECRETS: "${{ secrets.TEST_WALLET_A_MNEMONIC != '' && '1' || '' }}"
+      # Without an API key the SDK's connect() hangs indefinitely (no error),
+      # which times out every wallet test. The dev server inherits this env.
+      VITE_BREEZ_API_KEY: ${{ secrets.VITE_BREEZ_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
