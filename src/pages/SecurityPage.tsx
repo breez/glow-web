@@ -1,9 +1,10 @@
 /**
- * SecurityPage (native only): Misty Breez's Security settings minus the
- * backup options. No PIN set => a single "Create PIN" row. PIN set =>
+ * Security & Backup page (native only), Misty Breez's model: the
+ * recovery phrase entry and the app-lock settings live behind one
+ * gate. No PIN set => Backup row + a "Create PIN" row. PIN set =>
  * the page opens behind an auth gate (biometrics first when enabled,
- * PIN pad as fallback) and offers: deactivate PIN, auto-lock timeout,
- * change PIN, enable <biometry>.
+ * PIN pad as fallback) and offers: Backup, deactivate PIN, auto-lock
+ * timeout, change PIN, enable <biometry>.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -40,9 +41,12 @@ type View =
 
 interface SecurityPageProps {
   onBack: () => void;
+  /** Opens the Backup page. Rendered only past the gate, so the
+   *  recovery phrase inherits the page-entry app-lock (Misty model). */
+  onOpenBackup: () => void;
 }
 
-const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
+const SecurityPage: React.FC<SecurityPageProps> = ({ onBack, onOpenBackup }) => {
   const [view, setView] = useState<View>('loading');
   const [autoLock, setAutoLock] = useState<number>(120);
   const [biometricGate, setBiometricGate] = useState(false);
@@ -152,6 +156,22 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
   };
 
   const renderBody = () => {
+    // Shared by the no-pin and options views: the recovery phrase entry
+    // lives here so it inherits the page-entry gate when a PIN is set.
+    const backupCard = (
+      <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+        <h3 className="font-display font-semibold text-spark-text-primary mb-3">Backup</h3>
+        <button
+          className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
+          type="button"
+          onClick={onOpenBackup}
+        >
+          <span>Show Recovery Phrase</span>
+          <ChevronRightIcon size="md" />
+        </button>
+      </div>
+    );
+
     switch (view) {
       case 'loading':
         return (
@@ -165,19 +185,22 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
 
       case 'no-pin':
         return (
-          <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-            <h3 className="font-display font-semibold text-spark-text-primary mb-3">App Lock</h3>
-            <button
-              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
-              type="button"
-              onClick={() => startPinFlow('create-pin')}
-            >
-              <div className="flex items-center gap-3">
-                <ShieldCheckIcon size="md" />
-                <span>Create PIN</span>
-              </div>
-              <ChevronRightIcon size="md" />
-            </button>
+          <div className="space-y-4">
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <h3 className="font-display font-semibold text-spark-text-primary mb-3">App Lock</h3>
+              <button
+                className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
+                type="button"
+                onClick={() => startPinFlow('create-pin')}
+              >
+                <div className="flex items-center gap-3">
+                  <ShieldCheckIcon size="md" />
+                  <span>Create PIN</span>
+                </div>
+                <ChevronRightIcon size="md" />
+              </button>
+            </div>
+            {backupCard}
           </div>
         );
 
@@ -203,7 +226,8 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
 
       case 'options':
         return (
-          <div className="bg-spark-dark border border-spark-border rounded-2xl p-4 space-y-2">
+          <div className="space-y-4">
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4 space-y-2">
             <h3 className="font-display font-semibold text-spark-text-primary mb-3">App Lock</h3>
             {/* Deactivate PIN (Misty pattern: an always-on switch whose
                 only action is turning protection off) */}
@@ -217,7 +241,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
 
             {/* Lock automatically */}
             <div className="flex items-center justify-between gap-3 px-4 py-3 border border-spark-border rounded-xl">
-              <span className="text-sm font-medium text-spark-text-primary">Lock automatically</span>
+              <span className="text-sm font-medium text-spark-text-primary">Lock Automatically</span>
               <select
                 value={autoLock}
                 onChange={(e) => {
@@ -259,7 +283,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
                 <div className="flex items-center gap-3 text-left">
                   <FingerprintIcon size="md" />
                   <div>
-                    <span className="block text-spark-text-primary">Biometric unlock is locked</span>
+                    <span className="block text-spark-text-primary">Biometric Unlock Locked</span>
                     <span className="block text-xs text-spark-text-muted">
                       Too many failed attempts. Tap to unlock with your passcode.
                     </span>
@@ -277,7 +301,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
                     ? <FaceIdIcon size="md" className="text-spark-text-secondary" />
                     : <FingerprintIcon size="md" className="text-spark-text-secondary" />}
                   <span className="text-sm font-medium text-spark-text-primary">
-                    {`Enable ${biometry.label}`}
+                    {`Enable ${biometry.label.replace(/\b\w/g, (c) => c.toUpperCase())}`}
                   </span>
                 </div>
                 <Switch checked={biometricGate} onChange={() => { void handleToggleBiometric(); }} />
@@ -287,13 +311,15 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
             {optionsError && (
               <p className="text-spark-error text-xs px-1 pt-1">{optionsError}</p>
             )}
+            </div>
+            {backupCard}
           </div>
         );
     }
   };
 
   return (
-    <SlideInPage title="Security" onClose={onBack} slideFrom="left">
+    <SlideInPage title="Security & Backup" onClose={onBack} slideFrom="left">
       {/* min-h-full + flexed chain so the PIN views (gate, create,
           change) can split the viewport 1/3 header / 2/3 input; the
           list views just flow from the top as before. p-4 keeps the

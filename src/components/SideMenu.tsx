@@ -125,18 +125,18 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
       onClick: () => closeDrawerThen(onOpenRefund),
       highlight: true
     }] : []),
-    {
+    // Native folds Backup into a single Security & Backup page (Misty
+    // parity), so the recovery phrase sits behind the same app-lock
+    // gate. The PWA has no app lock and keeps a top-level Backup.
+    ...(isAppLockSupported() ? [{
+      icon: <LockIcon />,
+      label: 'Security & Backup',
+      onClick: () => closeDrawerThen(onOpenSecurity)
+    }] : [{
       icon: <BackupIcon />,
       label: 'Backup',
       onClick: () => closeDrawerThen(onOpenBackup)
-    },
-    // Security (app lock) is native-only; the PWA keeps its
-    // passkey-per-launch flow and has nothing to configure here.
-    ...(isAppLockSupported() ? [{
-      icon: <LockIcon />,
-      label: 'Security',
-      onClick: () => closeDrawerThen(onOpenSecurity)
-    }] : []),
+    }]),
     {
       icon: <SettingsIcon />,
       label: 'Settings',

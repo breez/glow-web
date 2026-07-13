@@ -6,17 +6,17 @@ import {
   signInPinnedToActiveCredential,
 } from '@/services/passkeyService';
 import { deviceOnlyStorage, secureStorage, getBiometryInfo, BiometryInfo } from '@/services/secureStorage';
-import { isPinEnabled, isPinEnabledSync } from '@/services/appLock';
-import { PinGate } from '../components/PinEntry';
 import { logger, LogCategory } from '@/services/logger';
 import { copyToClipboard } from '@/utils/clipboard';
 import { useScreenCaptureProtection } from '@/utils/screenSecurity';
 
 interface BackupPageProps {
   onBack: () => void;
+  /** 'back' when opened from the Security & Backup page (native). */
+  closeStyle?: 'close' | 'back';
 }
 
-const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
+const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' }) => {
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
@@ -35,23 +35,6 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
   // (biometric unlock enabled in Security settings). Reveal requires
   // an OS biometric prompt instead of the silent device-only read.
   const [biometricSeedPresent, setBiometricSeedPresent] = useState(false);
-
-  // App-lock gate before the silent-tier reveal (Misty gates its
-  // mnemonics page behind the app lock). Only the device-only /
-  // localStorage path needs it: the passkey and biometric-tier paths
-  // already run their own OS auth ceremony on reveal. No PIN set =>
-  // plain tap, matching the "no login by default" decision.
-  // Seeded from the sync mirror so a tap before the async read lands
-  // can't slip past the gate; the Preferences read stays authoritative.
-  const [pinRequired, setPinRequired] = useState(isPinEnabledSync());
-  const [showPinGate, setShowPinGate] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    void isPinEnabled().then((enabled) => {
-      if (!cancelled) setPinRequired(enabled);
-    });
-    return () => { cancelled = true; };
-  }, []);
 
   useEffect(() => {
     if (isPasskey) return;
@@ -210,7 +193,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
   const words = mnemonic ? mnemonic.split(' ') : [];
 
   return (
-    <SlideInPage title="Backup" onClose={onBack} slideFrom="left">
+    <SlideInPage title="Backup" onClose={onBack} slideFrom="left" closeStyle={closeStyle}>
       {/* min-h-full + flexed chain so the PIN gate (the sole child
           while it shows) can split the viewport 1/3 header / 2/3
           input; the card views flow from the top as before. */}
@@ -258,26 +241,15 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
             </button>
           )}
 
-          {/* App-lock gate (mnemonic mode): shown in place of the
-              reveal tile once it is tapped with a PIN set. */}
-          {!isPasskey && !isRevealed && showPinGate && (
-            <PinGate
-              reason="Reveal recovery phrase"
-              onUnlocked={() => {
-                setShowPinGate(false);
-                setIsRevealed(true);
-              }}
-            />
-          )}
-
           {/* Reveal button (mnemonic mode). When biometric unlock is
               enabled the seed is in the biometric-bound tier, so the
-              tap triggers an OS prompt before revealing. With the
-              app-lock PIN set, the tap opens the PIN gate instead. */}
-          {!isPasskey && !isRevealed && !showPinGate && (mnemonic || biometricSeedPresent) && (
+              tap triggers an OS prompt before revealing. App-lock
+              protection happens at page entry: on native the only way
+              here is through the gated Security & Backup page. */}
+          {!isPasskey && !isRevealed && (mnemonic || biometricSeedPresent) && (
             <button
               onClick={mnemonic
-                ? () => { (pinRequired ? setShowPinGate : setIsRevealed)(true); }
+                ? () => setIsRevealed(true)
                 : () => { void revealFromVault('biometric'); }}
               disabled={isLoading}
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
@@ -298,7 +270,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack }) => {
               </span>
               <span className="text-sm text-spark-text-muted">
                 {mnemonic
-                  ? pinRequired ? 'Requires PIN' : 'Make sure no one is watching'
+                  ? 'Make sure no one is watching'
                   : isLoading
                     ? `Complete ${biometry?.label ?? 'biometric'} authentication`
                     : `Requires ${biometry?.label ?? 'biometric authentication'}`}
