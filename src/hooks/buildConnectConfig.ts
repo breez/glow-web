@@ -22,7 +22,11 @@ export function buildConnectConfig(overrideNetwork?: Network): Config {
   config.stableBalanceConfig = {
     tokens: [{ label: USDB_TICKER, tokenIdentifier: USDB_TOKEN_IDENTIFIER }],
   };
-  config.crossChainConfig = {};
+  // Cross-chain sends are mainnet-only: the SDK rejects the config on any
+  // other network at connect time, which aborts the whole connection.
+  if (network === 'mainnet') {
+    config.crossChainConfig = {};
+  }
 
   // Apply persisted user settings to config
   try {
