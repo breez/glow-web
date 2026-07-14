@@ -24,7 +24,7 @@ export const PinDots: React.FC<{ filled: number; error?: boolean }> = ({ filled,
         className={`w-5 h-5 rounded-full border-2 transition-colors ${
           i < filled
             ? error
-              ? 'border-spark-error bg-spark-error/60'
+              ? 'border-spark-primary bg-spark-primary/60'
               : 'border-spark-primary bg-spark-primary'
             : 'border-spark-border-light bg-transparent'
         }`}
@@ -171,7 +171,7 @@ export const PinEntry: React.FC<{
       {/* NBSP placeholder, not a plain space: whitespace-only text
           collapses to a zero-height line box and the row grows 4px
           when real text lands (measured), shifting everything above. */}
-      <p className={`text-center text-sm ${shownError ? 'text-spark-error' : 'text-transparent'}`}>
+      <p className={`text-center text-sm ${shownError ? 'text-spark-primary' : 'text-transparent'}`}>
         {shownError ?? '\u00A0'}
       </p>
       <PinPad

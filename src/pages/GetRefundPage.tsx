@@ -417,15 +417,15 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                 />
 
                 {refundError && (
-                  <div className="bg-spark-warning/10 border border-spark-warning/30 rounded-2xl p-4">
+                  <div className="bg-spark-warn-surface border border-spark-warn-border rounded-2xl p-4">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-xl bg-spark-warning/20 flex items-center justify-center shrink-0">
-                        <WarningIcon size="md" className="text-spark-warning" />
+                      <div className="w-10 h-10 rounded-xl bg-spark-primary/20 flex items-center justify-center shrink-0">
+                        <WarningIcon size="md" className="text-spark-primary" />
                       </div>
-                      <h3 className="font-display font-bold text-spark-warning">Refund Failed</h3>
+                      <h3 className="font-display font-bold text-spark-warn-title">Refund Failed</h3>
                     </div>
                     <div className="pl-[52px]">
-                      <p className="text-spark-error text-sm">{refundError}</p>
+                      <p className="text-spark-warn-text text-sm">{refundError}</p>
                     </div>
                   </div>
                 )}
@@ -470,13 +470,13 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                     </>
                   ) : (
                     <>
-                      <div className="w-16 h-16 rounded-full bg-spark-error/20 flex items-center justify-center mx-auto mb-4">
-                        <CloseIcon size="xl" className="text-spark-error" />
+                      <div className="w-16 h-16 rounded-full bg-spark-primary/20 flex items-center justify-center mx-auto mb-4">
+                        <CloseIcon size="xl" className="text-spark-primary" />
                       </div>
                       <h3 className="font-display font-semibold text-spark-text-primary text-lg mb-2">
                         Refund Failed
                       </h3>
-                      <p className="text-spark-error text-sm">
+                      <p className="text-spark-primary text-sm">
                         {refundError || 'An error occurred while processing your refund.'}
                       </p>
                     </>

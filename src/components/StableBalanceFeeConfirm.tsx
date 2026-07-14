@@ -76,7 +76,7 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
           )}
 
           {error && (
-            <p className="text-sm text-red-400 mb-4">{error}</p>
+            <p className="text-sm text-spark-primary mb-4">{error}</p>
           )}
 
           <div className="flex gap-3">

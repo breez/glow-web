@@ -120,7 +120,7 @@ export const DialogHeader: React.FC<{
     <button
       onClick={onClose}
       aria-label="Close"
-      className="absolute right-0 top-1/2 -translate-y-1/2 py-2 pl-2 pr-6 -mr-6 text-spark-text-muted hover:text-spark-error transition-colors rounded-lg hover:bg-white/5"
+      className="absolute right-0 top-1/2 -translate-y-1/2 py-2 pl-2 pr-6 -mr-6 text-spark-text-muted hover:text-spark-primary-light transition-colors rounded-lg hover:bg-white/5"
     >
       <CloseIcon />
     </button>
@@ -385,16 +385,16 @@ export const Alert: React.FC<{
 }> = ({ type, children, className = "" }) => {
   const styles = {
     info: 'bg-spark-electric/10 border-spark-electric/30 text-spark-electric-light',
-    warning: 'bg-spark-warning/10 border-spark-warning/30 text-spark-warning',
+    warning: 'bg-spark-warn-surface border-spark-warn-border text-spark-warn-text',
     success: 'bg-spark-success/10 border-spark-success/30 text-spark-success',
-    error: 'bg-spark-error/10 border-spark-error/30 text-spark-error',
+    error: 'bg-spark-warn-surface border-spark-warn-border text-spark-warn-text',
   };
 
   const icons = {
     info: <InfoIcon className="shrink-0" />,
-    warning: <WarningIcon className="shrink-0" />,
+    warning: <WarningIcon className="shrink-0 text-spark-primary" />,
     success: <CheckCircleIcon className="shrink-0" />,
-    error: <ErrorIcon className="shrink-0" size="md" />,
+    error: <ErrorIcon className="shrink-0 text-spark-primary" size="md" />,
   };
 
   return (
@@ -451,15 +451,15 @@ export const ErrorMessageBox: React.FC<{
   }
 
   return (
-    <div className={`bg-spark-error/10 border border-spark-error/30 rounded-2xl p-4 ${className}`}>
+    <div className={`bg-spark-warn-surface border border-spark-warn-border rounded-2xl p-4 ${className}`}>
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 rounded-xl bg-spark-error/20 flex items-center justify-center shrink-0">
-          <AlertTriangleIcon className="text-spark-error" />
+        <div className="w-10 h-10 rounded-xl bg-spark-primary/20 flex items-center justify-center shrink-0">
+          <AlertTriangleIcon className="text-spark-primary" />
         </div>
-        <h3 className="font-display font-bold text-spark-error">{title}</h3>
+        <h3 className="font-display font-bold text-spark-warn-title">{title}</h3>
       </div>
       <div className="pl-[52px]">
-        <p className="text-spark-text-secondary text-sm">{mainMessage}</p>
+        <p className="text-spark-warn-text text-sm">{mainMessage}</p>
         {stackTrace && (
           <div className="mt-3 bg-spark-dark/50 border border-spark-border rounded-xl p-3 max-h-32 overflow-auto">
             <code className="text-xs text-spark-text-muted font-mono whitespace-pre-wrap break-all">
@@ -565,7 +565,7 @@ export const ConfirmDialog: React.FC<{
     if (!isOpen) return null;
 
     const confirmButtonStyles = {
-      danger: 'bg-spark-error hover:bg-spark-error/80 text-white',
+      danger: 'bg-spark-destructive hover:bg-spark-destructive-hover text-white',
       warning: 'bg-spark-warning hover:bg-spark-warning/80 text-spark-dark',
       default: 'bg-spark-primary hover:bg-spark-primary-light text-white',
     };

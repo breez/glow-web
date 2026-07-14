@@ -65,7 +65,7 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({
       case 'error':
         return {
           icon: <CloseIcon />,
-          bg: 'bg-spark-error',
+          bg: 'bg-spark-primary',
           progressBg: 'bg-white/30',
           textClass: 'text-white',
           detailClass: 'text-white/80',

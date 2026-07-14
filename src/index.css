@@ -17,6 +17,12 @@
   --color-spark-success: #10b981;
   --color-spark-error: #ef4444;
   --color-spark-warning: var(--spark-primary);
+  --color-spark-destructive: var(--spark-destructive);
+  --color-spark-destructive-hover: var(--spark-destructive-hover);
+  --color-spark-warn-border: var(--spark-warn-border);
+  --color-spark-warn-surface: var(--spark-warn-surface);
+  --color-spark-warn-title: var(--spark-warn-title);
+  --color-spark-warn-text: var(--spark-warn-text);
   --color-spark-text-primary: #ffffff;
   --color-spark-text-secondary: rgba(255, 255, 255, 0.7);
   --color-spark-text-muted: rgba(255, 255, 255, 0.4);
@@ -174,6 +180,16 @@
   --spark-success: #10b981;
   --spark-error: #ef4444;
   --spark-warning: #d4a574;
+
+  /* Destructive actions (logout, delete): calm blue, not alarm red */
+  --spark-destructive: #5c82a9;
+  --spark-destructive-hover: #8ca7c2;
+
+  /* Warning / error boxes: warm amber on dark teal */
+  --spark-warn-border: #8a7154;
+  --spark-warn-surface: #182226;
+  --spark-warn-title: #e8d3ba;
+  --spark-warn-text: #d5cec5;
 
   /* Text */
   --spark-text-primary: #ffffff;

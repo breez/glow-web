@@ -282,8 +282,8 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               into the fallback card below, so this only renders for
               non-passkey edge cases. */}
           {error && !isPasskey && (
-            <div className="bg-spark-error/10 border border-spark-error/30 rounded-xl p-4 text-center">
-              <p className="text-spark-error text-sm">{error}</p>
+            <div className="bg-spark-warn-surface border border-spark-warn-border rounded-xl p-4 text-center">
+              <p className="text-spark-warn-text text-sm">{error}</p>
             </div>
           )}
 
@@ -330,8 +330,8 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
           {isPasskey && passkeyAttemptFailed && !isRevealed && !mnemonic
             && (!secureStorage.isSupported() || fallbackTier === 'none') && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-8 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-spark-error/20 flex items-center justify-center mx-auto mb-4">
-                <WarningIcon size="xl" className="text-spark-error" />
+              <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center mx-auto mb-4">
+                <WarningIcon size="xl" className="text-spark-primary" />
               </div>
               <h3 className="font-display font-semibold text-spark-text-primary mb-2">Passkey Unavailable</h3>
               <p className="text-spark-text-muted text-sm">
@@ -388,8 +388,8 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
           {/* No backup found (mnemonic mode only) */}
           {!isPasskey && !mnemonic && !biometricSeedPresent && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-8 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-spark-error/20 flex items-center justify-center mx-auto mb-4">
-                <WarningIcon size="xl" className="text-spark-error" />
+              <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center mx-auto mb-4">
+                <WarningIcon size="xl" className="text-spark-primary" />
               </div>
               <h3 className="font-display font-semibold text-spark-text-primary mb-2">No Backup Found</h3>
               <p className="text-spark-text-muted text-sm">

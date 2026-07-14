@@ -236,7 +236,13 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
               </a>
             </div>
 
-            {/* Logout Confirmation Dialog */}
+            {/* Logout Confirmation Dialog.
+                Scrim is intentionally light (bg-black/50, blur-sm): this
+                dialog is nested inside the drawer, whose own bg-black/60 +
+                blur-sm scrim is already behind it. A standalone-weight
+                bg-black/85 would stack on top and read as ~94% black with
+                doubled blur; bg-black/50 over the drawer lands at the ~80%
+                a normal dialog shows. */}
             <Transition show={showLogoutConfirm} as="div" className="fixed inset-0 z-60">
               <TransitionChild
                 as="div"
@@ -246,7 +252,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                 leave="transition-opacity ease-in duration-100"
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
-                className="fixed inset-0 bg-black/85 backdrop-blur-md"
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm"
                 onClick={() => setShowLogoutConfirm(false)}
               />
               <div className="fixed inset-0 flex items-center justify-center p-4">
@@ -285,7 +291,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                     </button>
                     <button
                       onClick={handleConfirmLogout}
-                      className="flex-1 px-4 py-3 bg-spark-error text-white rounded-xl font-medium hover:bg-spark-error/90 transition-colors"
+                      className="flex-1 px-4 py-3 bg-spark-destructive text-white rounded-xl font-medium hover:bg-spark-destructive-hover transition-colors"
                     >
                       Logout
                     </button>
