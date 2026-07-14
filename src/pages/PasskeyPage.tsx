@@ -855,9 +855,9 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     );
   };
 
-  const renderSpinner = (text?: string) => (
+  const renderSpinner = (text?: string, subtext?: string) => (
     <div className="flex flex-col items-center justify-center py-16">
-      <LoadingSpinner text={text} />
+      <LoadingSpinner text={text} subtext={subtext} />
     </div>
   );
 
@@ -910,6 +910,20 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     </div>
   );
 
+  // The long onboarding phases (passkey ceremony + wallet setup, then
+  // connect) can run for tens of seconds on the current SDK. Surface an
+  // expectation-setting hint a few seconds in so the spinner doesn't read
+  // as a hang. Self-correcting: once setup is fast, the phase ends before
+  // the timer fires and the hint never shows.
+  const [showWaitHint, setShowWaitHint] = useState(false);
+  useEffect(() => {
+    if (phase !== 'connecting' && phase !== 'initializing') return;
+    const id = setTimeout(() => setShowWaitHint(true), 6000);
+    return () => clearTimeout(id);
+  }, [phase]);
+  // Only ever rendered in the long phases below, so it needs no reset.
+  const waitHint = showWaitHint ? 'This can take up to a minute' : undefined;
+
   const content = (() => {
     switch (phase) {
       case 'aasa-checking': return renderSpinner('Verifying app domain...');
@@ -918,16 +932,16 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         ? null
         : renderSpinner(isDiscoveringLabels ? 'Discovering labels...' : 'Detecting passkey...');
       case 'review': return error ? null : renderReview();
-      case 'creating': return error ? null : renderSpinner('Initializing passkey...');
+      case 'creating': return error ? null : renderSpinner('Creating your passkey...');
       case 'new-storing':
         if (error) return null;
         return renderSpinner('Saving label...');
       case 'auth-pick': return renderAuthPick();
       case 'connecting':
         if (error) return null;
-        return renderSpinner('Starting Glow...');
+        return renderSpinner('Setting up Glow...', waitHint);
       case 'initializing':
-        return renderSpinner('Starting Glow...');
+        return renderSpinner('Almost ready...', waitHint);
     }
   })();
 
