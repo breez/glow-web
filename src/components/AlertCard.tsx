@@ -39,9 +39,9 @@ const variantStyles: Record<AlertVariant, {
     title: 'text-spark-success',
   },
   error: {
-    container: 'bg-spark-error/10 border-spark-error/30',
-    iconBg: 'bg-spark-error/20',
-    title: 'text-spark-error',
+    container: 'bg-spark-primary/10 border-spark-primary/30',
+    iconBg: 'bg-spark-primary/20',
+    title: 'text-spark-primary-light',
   },
 };
 
@@ -49,7 +49,7 @@ const defaultIcons: Record<AlertVariant, ReactNode> = {
   info: <InfoIcon size="md" className="text-spark-electric" />,
   warning: <WarningIcon size="md" className="text-spark-warning" />,
   success: <CheckCircleIcon size="md" className="text-spark-success" />,
-  error: <ErrorIcon size="md" className="text-spark-error" />,
+  error: <ErrorIcon size="md" className="text-spark-primary-light" />,
 };
 
 export interface AlertCardProps {
@@ -112,14 +112,14 @@ export const SimpleAlert: React.FC<SimpleAlertProps> = ({
     info: 'text-spark-electric',
     warning: 'text-spark-warning',
     success: 'text-spark-success',
-    error: 'text-spark-error',
+    error: 'text-spark-primary-light',
   };
 
   const bgStyles: Record<AlertVariant, string> = {
     info: 'bg-spark-electric/10 border-spark-electric/30 text-spark-electric-light',
     warning: 'bg-spark-warning/10 border-spark-warning/30 text-spark-warning',
     success: 'bg-spark-success/10 border-spark-success/30 text-spark-success',
-    error: 'bg-spark-error/10 border-spark-error/30 text-spark-error',
+    error: 'bg-spark-primary/10 border-spark-primary/30 text-spark-primary-light',
   };
 
   const icons: Record<AlertVariant, ReactNode> = {

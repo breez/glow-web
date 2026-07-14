@@ -227,7 +227,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
                   </button>
                   <button
                     onClick={() => setDeletingContact(contact)}
-                    className="p-1.5 text-spark-text-muted hover:text-spark-error rounded-lg hover:bg-white/5 transition-colors"
+                    className="p-1.5 text-spark-text-muted hover:text-spark-primary-light rounded-lg hover:bg-white/5 transition-colors"
                     aria-label={`Delete ${contact.name}`}
                   >
                     <TrashIcon />

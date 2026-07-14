@@ -161,7 +161,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                 <h3 className="font-display font-bold text-spark-warning">Claim Failed</h3>
               </div>
               <div className="pl-[52px]">
-                <p className="text-spark-error text-sm">{claimError}</p>
+                <p className="text-spark-primary-light text-sm">{claimError}</p>
                 <p className="text-spark-primary text-sm mt-2">You can reject to process a refund instead.</p>
               </div>
             </div>

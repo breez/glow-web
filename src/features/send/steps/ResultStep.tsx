@@ -66,15 +66,15 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
       <div className="flex flex-col items-center justify-center py-4" data-testid="payment-failure">
         <div className="relative mb-6">
           {/* Error glow */}
-          <div className="absolute inset-0 w-20 h-20 rounded-full blur-xl bg-spark-error/30" />
+          <div className="absolute inset-0 w-20 h-20 rounded-full blur-xl bg-spark-primary/30" />
 
           {/* Error icon */}
-          <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-spark-error/20 border-2 border-spark-error">
-            <CloseIcon className="w-10 h-10 text-spark-error" />
+          <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-spark-primary/20 border-2 border-spark-primary">
+            <CloseIcon className="w-10 h-10 text-spark-primary-light" />
           </div>
         </div>
 
-        <h3 className="font-display text-2xl font-bold mb-2 text-spark-error">
+        <h3 className="font-display text-2xl font-bold mb-2 text-spark-primary-light">
           {getTitle()}
         </h3>
 

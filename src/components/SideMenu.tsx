@@ -285,7 +285,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                     </button>
                     <button
                       onClick={handleConfirmLogout}
-                      className="flex-1 px-4 py-3 bg-spark-error text-white rounded-xl font-medium hover:bg-spark-error/90 transition-colors"
+                      className="flex-1 px-4 py-3 bg-spark-primary text-white rounded-xl font-medium hover:bg-spark-primary/90 transition-colors"
                     >
                       Logout
                     </button>

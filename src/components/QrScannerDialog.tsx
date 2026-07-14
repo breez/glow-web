@@ -173,8 +173,8 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
             {!isScanning && !isInitializing && error && (
               <div className="absolute inset-0 flex items-center justify-center bg-spark-surface/80">
                 <div className="text-center text-white p-6 max-w-xs">
-                  <div className="w-16 h-16 rounded-full bg-spark-error/20 flex items-center justify-center mx-auto mb-4">
-                    <AlertTriangleIcon size="xl" className="text-spark-error" />
+                  <div className="w-16 h-16 rounded-full bg-spark-primary/20 flex items-center justify-center mx-auto mb-4">
+                    <AlertTriangleIcon size="xl" className="text-spark-primary-light" />
                   </div>
                   <p className="text-sm mb-2 font-medium">Camera not available</p>
                   <p className="text-xs text-spark-text-muted">{error}</p>
@@ -215,7 +215,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
 
           {/* Gallery error toast */}
           {galleryError && (
-            <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-spark-error/90 text-white text-sm px-4 py-2 rounded-lg backdrop-blur-sm z-30">
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-spark-primary/90 text-white text-sm px-4 py-2 rounded-lg backdrop-blur-sm z-30">
               {galleryError}
             </div>
           )}

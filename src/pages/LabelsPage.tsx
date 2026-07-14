@@ -283,7 +283,7 @@ const LabelsPage: React.FC<LabelsPageProps> = ({ onBack, onSwitchLabel }) => {
                     disabled={isSaving}
                   />
                   {isDuplicate && (
-                    <p className="text-spark-error text-xs">
+                    <p className="text-spark-primary-light text-xs">
                       A label with this name already exists.
                     </p>
                   )}

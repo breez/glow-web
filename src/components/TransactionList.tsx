@@ -152,7 +152,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
               <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-spark-warning animate-pulse" />
             )}
             {isFailed && (
-              <span className="shrink-0 px-1.5 py-0.5 rounded-sm bg-spark-error/15 text-spark-error text-[10px] font-medium uppercase">
+              <span className="shrink-0 px-1.5 py-0.5 rounded-sm bg-spark-primary/15 text-spark-primary-light text-[10px] font-medium uppercase">
                 Failed
               </span>
             )}
