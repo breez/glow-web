@@ -116,4 +116,30 @@ describe('logger', () => {
 
     expect(logger.getLogs()).toHaveLength(0);
   });
+
+  it('time() logs begin + end with elapsed ms and returns the value', async () => {
+    const result = await logger.time('[onboarding] step', async () => 42);
+
+    expect(result).toBe(42);
+    const logs = logger.getLogs();
+    expect(logs.map((l) => l.message)).toEqual([
+      '[onboarding] step.begin',
+      '[onboarding] step.end',
+    ]);
+    expect(logs[1].category).toBe('perf');
+    expect(typeof logs[1].context?.ms).toBe('number');
+  });
+
+  it('time() logs .error and rethrows on failure', async () => {
+    await expect(
+      logger.time('[onboarding] step', async () => {
+        throw new Error('boom');
+      }),
+    ).rejects.toThrow('boom');
+
+    const logs = logger.getLogs();
+    expect(logs[0].message).toBe('[onboarding] step.begin');
+    expect(logs[1].message).toBe('[onboarding] step.error');
+    expect(logs[1].level).toBe('WARN');
+  });
 });
