@@ -399,6 +399,7 @@ export function useBreezSdk(
     source: ConnectSeedSource = 'onboarding',
   ) => {
     let connectedSdk: BreezSdk | undefined;
+    const createStart = performance.now();
     try {
       logger.info(LogCategory.SDK, 'Initiating wallet connection', { restore });
       if (sdk) {
@@ -417,15 +418,18 @@ export function useBreezSdk(
       }
 
       initSdkLogging();
+      logger.info(LogCategory.PERF, '[onboarding] connect.begin', { restore, source });
 
       const cfg = buildConnectConfig();
       setConfig(cfg);
 
-      connectedSdk = await connect({
+      // connect() = Spark auth + initial wallet sync (no Nostr; the label
+      // publish was already kicked off, fire-and-forget, inside register()).
+      connectedSdk = await logger.time('[onboarding] sdk.connect', () => connect({
         config: cfg,
         seed,
         storageDir: 'spark-wallet-example',
-      });
+      }));
       setSdk(connectedSdk);
 
       logger.sdkInitialized();
@@ -481,13 +485,20 @@ export function useBreezSdk(
       setIsConnected(true);
       setStartupState('connected');
       setIsLoading(false);
+      // Total covers connect + persist; getInfo/history load in the
+      // background below. Add the earlier passkey.register/signIn time for
+      // the full button-tap-to-usable figure.
+      logger.info(LogCategory.PERF, '[onboarding] connect.total', {
+        ms: Math.round(performance.now() - createStart),
+      });
 
       void (async () => {
         try {
-          const [info, txns] = await Promise.all([
-            connectedSdk!.getInfo({}),
-            connectedSdk!.listPayments({ offset: 0, limit: 100 }),
-          ]);
+          const [info, txns] = await logger.time('[onboarding] sdk.getInfoAndPayments', () =>
+            Promise.all([
+              connectedSdk!.getInfo({}),
+              connectedSdk!.listPayments({ offset: 0, limit: 100 }),
+            ]));
           setWalletInfo(info);
           setTransactions(filterOngoingConversionPayments(txns.payments));
           logger.info(LogCategory.SDK, 'Connected wallet identity', {
@@ -1004,6 +1015,13 @@ export function useBreezSdk(
     document.body.setAttribute('data-lnurl-enabled', lnurlEnabled);
     return () => { document.body.setAttribute('data-lnurl-enabled', 'false'); };
   }, [config?.lnurlDomain]);
+
+  // Route SDK-internal logs to the ring buffer from app start (not just
+  // from connectWallet), so the passkey register / label-publish phase is
+  // captured in Share Logs. Idempotent, so connectWallet's call no-ops.
+  // Without this the ~30s register() is a black box in exported logs, and
+  // we can't split the WebAuthn ceremony from the Nostr label publish.
+  useEffect(() => { initSdkLogging(); }, []);
 
   // Check PRF availability on mount
   useEffect(() => {
