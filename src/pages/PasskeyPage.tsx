@@ -844,7 +844,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
                 autoFocus
               />
               {isDuplicate && (
-                <p className="text-red-400 text-xs mt-1">
+                <p className="text-spark-primary text-xs mt-1">
                   A label with this name already exists
                 </p>
               )}
@@ -870,8 +870,8 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     // flex parent and making the page horizontally scrollable on mobile.
     <div className="w-full min-w-0 max-w-xl mx-auto space-y-4 py-8">
       <div className="flex justify-center mb-6">
-        <div className="p-4 rounded-full bg-red-500/10">
-          <PasskeyIcon size="lg" className="text-red-500" />
+        <div className="p-4 rounded-full bg-spark-primary/10">
+          <PasskeyIcon size="lg" className="text-spark-primary-light" />
         </div>
       </div>
       <div className="text-center space-y-2">

@@ -365,7 +365,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       {step === 'asset' && (
         <div className="flex flex-col" style={{ maxHeight: '60vh' }}>
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400 shrink-0">
+            <div className="mb-4 p-3 bg-spark-warn-surface border border-spark-warn-border rounded-xl text-sm text-spark-warn-text shrink-0">
               {error}
             </div>
           )}
@@ -410,7 +410,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       {step === 'chain' && (
         <div className="flex flex-col" style={{ maxHeight: isSheetFull ? '85dvh' : '60dvh' }}>
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400 shrink-0">
+            <div className="mb-4 p-3 bg-spark-warn-surface border border-spark-warn-border rounded-xl text-sm text-spark-warn-text shrink-0">
               {error}
             </div>
           )}
@@ -484,9 +484,9 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       {step === 'provider' && (
         <div className="flex flex-col" style={{ maxHeight: '60vh' }}>
           {allProvidersFailed ? (
-            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-              <p className="text-sm font-medium text-spark-text-primary mb-1">Couldn’t get a quote</p>
-              <p className="text-sm text-spark-text-secondary">{providerFailureReason}</p>
+            <div className="mb-4 p-4 bg-spark-warn-surface border border-spark-warn-border rounded-xl">
+              <p className="text-sm font-medium text-spark-warn-title mb-1">Couldn’t get a quote</p>
+              <p className="text-sm text-spark-warn-text">{providerFailureReason}</p>
             </div>
           ) : (
             <div className="mb-4 min-h-0 flex flex-col">
@@ -623,7 +623,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
           />
 
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
+            <div className="mb-4 p-3 bg-spark-warn-surface border border-spark-warn-border rounded-xl text-sm text-spark-warn-text">
               {error}
             </div>
           )}

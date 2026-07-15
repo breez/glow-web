@@ -153,15 +153,15 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
 
           {/* Error message for failed automatic claim (non-fee error) */}
           {claimError && (
-            <div className="bg-spark-warning/10 border border-spark-warning/30 rounded-2xl p-4">
+            <div className="bg-spark-warn-surface border border-spark-warn-border rounded-2xl p-4">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-spark-warning/20 flex items-center justify-center shrink-0">
-                  <WarningIcon size="md" className="text-spark-warning" />
+                <div className="w-10 h-10 rounded-xl bg-spark-primary/20 flex items-center justify-center shrink-0">
+                  <WarningIcon size="md" className="text-spark-primary" />
                 </div>
-                <h3 className="font-display font-bold text-spark-warning">Claim Failed</h3>
+                <h3 className="font-display font-bold text-spark-warn-title">Claim Failed</h3>
               </div>
               <div className="pl-[52px]">
-                <p className="text-spark-error text-sm">{claimError}</p>
+                <p className="text-spark-warn-text text-sm">{claimError}</p>
                 <p className="text-spark-primary text-sm mt-2">You can reject to process a refund instead.</p>
               </div>
             </div>

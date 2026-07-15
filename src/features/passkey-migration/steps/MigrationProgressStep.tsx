@@ -26,9 +26,9 @@ const MigrationProgressStep: React.FC<MigrationProgressStepProps> = ({ text }) =
         </motion.p>
       </AnimatePresence>
     </div>
-    <div className="mt-3 flex items-center justify-center gap-2 text-xs text-amber-400/80">
+    <div className="mt-3 flex items-center justify-center gap-2 text-xs text-spark-primary">
       <AlertTriangleIcon size="xs" />
-      <span>Keep this window open</span>
+      <span className="text-spark-primary-light">Keep this window open</span>
     </div>
   </div>
 );

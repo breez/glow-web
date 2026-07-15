@@ -309,7 +309,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack, onOpenBackup }) => 
             )}
 
             {optionsError && (
-              <p className="text-spark-error text-xs px-1 pt-1">{optionsError}</p>
+              <p className="text-spark-primary text-xs px-1 pt-1">{optionsError}</p>
             )}
             </div>
             {backupCard}

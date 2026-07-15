@@ -22,34 +22,39 @@ const variantStyles: Record<AlertVariant, {
   container: string;
   iconBg: string;
   title: string;
+  body: string;
 }> = {
   info: {
     container: 'bg-spark-electric/10 border-spark-electric/30',
     iconBg: 'bg-spark-electric/20',
     title: 'text-spark-electric',
+    body: '',
   },
   warning: {
-    container: 'bg-spark-warning/10 border-spark-warning/30',
-    iconBg: 'bg-spark-warning/20',
-    title: 'text-spark-warning',
+    container: 'bg-spark-warn-surface border-spark-warn-border',
+    iconBg: 'bg-spark-primary/20',
+    title: 'text-spark-warn-title',
+    body: 'text-spark-warn-text',
   },
   success: {
     container: 'bg-spark-success/10 border-spark-success/30',
     iconBg: 'bg-spark-success/20',
     title: 'text-spark-success',
+    body: '',
   },
   error: {
-    container: 'bg-spark-error/10 border-spark-error/30',
-    iconBg: 'bg-spark-error/20',
-    title: 'text-spark-error',
+    container: 'bg-spark-warn-surface border-spark-warn-border',
+    iconBg: 'bg-spark-primary/20',
+    title: 'text-spark-warn-title',
+    body: 'text-spark-warn-text',
   },
 };
 
 const defaultIcons: Record<AlertVariant, ReactNode> = {
   info: <InfoIcon size="md" className="text-spark-electric" />,
-  warning: <WarningIcon size="md" className="text-spark-warning" />,
+  warning: <WarningIcon size="md" className="text-spark-primary" />,
   success: <CheckCircleIcon size="md" className="text-spark-success" />,
-  error: <ErrorIcon size="md" className="text-spark-error" />,
+  error: <ErrorIcon size="md" className="text-spark-primary" />,
 };
 
 export interface AlertCardProps {
@@ -85,7 +90,7 @@ export const AlertCard: React.FC<AlertCardProps> = ({
         )}
         <h3 className={`font-display font-bold ${styles.title}`}>{title}</h3>
       </div>
-      <div className="pl-[52px]">
+      <div className={`pl-[52px] ${styles.body}`}>
         {children}
       </div>
     </div>
@@ -110,16 +115,16 @@ export const SimpleAlert: React.FC<SimpleAlertProps> = ({
 }) => {
   const iconColors: Record<AlertVariant, string> = {
     info: 'text-spark-electric',
-    warning: 'text-spark-warning',
+    warning: 'text-spark-primary',
     success: 'text-spark-success',
-    error: 'text-spark-error',
+    error: 'text-spark-primary',
   };
 
   const bgStyles: Record<AlertVariant, string> = {
     info: 'bg-spark-electric/10 border-spark-electric/30 text-spark-electric-light',
-    warning: 'bg-spark-warning/10 border-spark-warning/30 text-spark-warning',
+    warning: 'bg-spark-warn-surface border-spark-warn-border text-spark-warn-text',
     success: 'bg-spark-success/10 border-spark-success/30 text-spark-success',
-    error: 'bg-spark-error/10 border-spark-error/30 text-spark-error',
+    error: 'bg-spark-warn-surface border-spark-warn-border text-spark-warn-text',
   };
 
   const icons: Record<AlertVariant, ReactNode> = {

@@ -209,7 +209,7 @@ async function init() {
     });
     void hideSplash();
     document.getElementById('root')!.innerHTML = `
-      <div style="color: #ef4444; padding: 20px; text-align: center; background: #0a0a0f; min-height: 100vh; display: flex; flex-direction: column; justify-content: center;">
+      <div style="color: #d4a574; padding: 20px; text-align: center; background: #0a0a0f; min-height: 100vh; display: flex; flex-direction: column; justify-content: center;">
         <h2>Failed to load application</h2>
         <p>There was an error starting Glow. Please refresh and try again.</p>
       </div>
