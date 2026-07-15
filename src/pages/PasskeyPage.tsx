@@ -597,16 +597,22 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           // refuses a second Glow passkey (one per device per RP). A
           // match raises PasskeyAlreadyExistsError, handled in the catch.
           const excludeCredentials = await getPasskey().credentials().get();
-          const response = await getPasskey().register({
-            label,
-            excludeCredentials,
-            userName,
-            userDisplayName: userName,
-          });
+          // register() = WebAuthn create + PRF derive + kind:1 label
+          // publish to Nostr. The label publish is awaited inside the SDK
+          // and stalls on dead relays; this timer isolates that cost from
+          // connect(). See useBreezSdk.connectWallet for the rest.
+          const response = await logger.time('[onboarding] passkey.register', () =>
+            getPasskey().register({
+              label,
+              excludeCredentials,
+              userName,
+              userDisplayName: userName,
+            }));
           recordRegisteredCredential(response.credential, userName);
           w = response.wallet;
         } else {
-          const response = await signInPinnedToActiveCredential(label);
+          const response = await logger.time('[onboarding] passkey.signIn', () =>
+            signInPinnedToActiveCredential(label));
           w = response.wallet;
         }
         if (cancelled) return;

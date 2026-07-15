@@ -40,6 +40,7 @@ export const LogCategory = {
   NETWORK: 'network',
   SESSION: 'session',
   VALIDATION: 'validation',
+  PERF: 'perf', // Timing breadcrumbs (e.g. wallet-create critical path)
 } as const;
 
 export type LogCategoryType = (typeof LogCategory)[keyof typeof LogCategory];
@@ -178,6 +179,27 @@ export const logger = {
 
   error: (category: string, message: string, context?: Record<string, unknown>) =>
     log('ERROR', category, message, context),
+
+  /**
+   * Time an awaited step, emitting `<label>.begin` then `<label>.end`
+   * (with elapsed `ms`) under the PERF category. Used to profile the
+   * wallet-creation critical path; SDK_INTERNAL breadcrumbs (routed via
+   * `initLogging`) interleave between begin/end, so a slow step's
+   * internal cause is visible in Share Logs. On throw, emits
+   * `<label>.error` with the elapsed time and rethrows.
+   */
+  time: async <T>(label: string, fn: () => Promise<T>): Promise<T> => {
+    const t0 = performance.now();
+    log('INFO', LogCategory.PERF, `${label}.begin`);
+    try {
+      const result = await fn();
+      log('INFO', LogCategory.PERF, `${label}.end`, { ms: Math.round(performance.now() - t0) });
+      return result;
+    } catch (e) {
+      log('WARN', LogCategory.PERF, `${label}.error`, { ms: Math.round(performance.now() - t0) });
+      throw e;
+    }
+  },
 
   // Security event helpers (OWASP logging guidelines)
   authSuccess: (method: string) =>
