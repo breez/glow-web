@@ -264,8 +264,8 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
 
         {/* Form fields take the natural content height */}
         <div className="space-y-4">
-          <div className="space-y-1.5">
-            <label htmlFor="subview-contact-name" className="text-sm text-spark-text-secondary font-medium">Name</label>
+          <div>
+            <label htmlFor="subview-contact-name" className="block text-spark-text-secondary text-sm font-medium mb-2">Name</label>
             <input
               id="subview-contact-name"
               value={formName}
@@ -289,8 +289,8 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
               className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
-          <div className="space-y-1.5">
-            <label htmlFor="subview-contact-address" className="text-sm text-spark-text-secondary font-medium">Lightning Address</label>
+          <div>
+            <label htmlFor="subview-contact-address" className="block text-spark-text-secondary text-sm font-medium mb-2">Lightning Address</label>
             <FormInput
               id="subview-contact-address"
               inputRef={addressInputRef}
