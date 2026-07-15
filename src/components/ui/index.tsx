@@ -565,7 +565,7 @@ export const ConfirmDialog: React.FC<{
     if (!isOpen) return null;
 
     const confirmButtonStyles = {
-      danger: 'bg-spark-destructive hover:bg-spark-destructive-hover text-white',
+      danger: 'bg-spark-primary hover:bg-spark-primary/80 text-white',
       warning: 'bg-spark-warning hover:bg-spark-warning/80 text-spark-dark',
       default: 'bg-spark-primary hover:bg-spark-primary-light text-white',
     };
