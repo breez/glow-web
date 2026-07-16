@@ -76,10 +76,17 @@
 
   <title>Glow</title>
 
-  <!-- Fonts - Plus Jakarta Sans for premium UI, JetBrains Mono for numbers -->
+  <!-- Fonts - Plus Jakarta Sans for premium UI, JetBrains Mono for numbers.
+       Loaded non-render-blocking (media=print, flipped to all on load) so the
+       first paint is not gated on the cross-origin font CSS round-trip; the
+       UI paints immediately in the system fallback and swaps in (display=swap).
+       noscript keeps it working with JS disabled. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  </noscript>
   
   <!-- Initial loading styles -->
   <style>
