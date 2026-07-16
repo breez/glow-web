@@ -8,7 +8,7 @@ import { logger, LogCategory } from '@/services/logger';
 import { initWebViewportManager } from '@/utils/webViewportManager';
 import { installUserAgentStrippingFetch } from '@/utils/stripUserAgentFetch';
 import { logStartupDeviceInfo } from '@/utils/deviceInfo';
-import initBreezSDK from '@breeztech/breez-sdk-spark';
+import { startSdkInit } from '@/services/sdkReady';
 
 // Strip the SDK's custom User-Agent from outgoing requests before the SDK
 // (or anything else) issues one. User-Agent is a forbidden fetch header
@@ -181,10 +181,12 @@ async function init() {
     logger.info(LogCategory.UI, 'Initializing application');
     // Startup debugging breadcrumb: what hardware / OS / build this ran on.
     void logStartupDeviceInfo();
-    // Initialize WASM module
-    logger.info(LogCategory.SDK, 'Initializing WASM module');
-    await initBreezSDK();
-    logger.info(LogCategory.SDK, 'WASM module initialized successfully');
+
+    // Kick off the ~11 MB SDK WASM compile in the BACKGROUND. We no longer
+    // await it before rendering: the welcome / onboarding screen does not
+    // touch the SDK, so blocking first paint on it just delayed cold start.
+    // Every SDK call site awaits sdkReady() instead (see services/sdkReady.ts).
+    startSdkInit();
 
     // Warm up the native KnownCredentialsStore so the iCloud-synced
     // Keychain (iOS) / Block Store (Android) read pays its first-touch

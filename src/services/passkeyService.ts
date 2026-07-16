@@ -22,6 +22,7 @@ import {
   PasskeyTimedOutError,
 } from '@breeztech/breez-sdk-spark/passkey-prf-provider';
 import { Capacitor } from '@capacitor/core';
+import { sdkReady } from './sdkReady';
 import { LocalStorageCredentialRegistry } from './localStorageCredentialRegistry';
 import { rpId, rpName, signalUnknownCredentials, LEGACY_RP_ID } from './passkeyPrfProvider';
 import { logger, LogCategory } from './logger';
@@ -381,11 +382,17 @@ class WebPasskey implements PasskeyApi {
     this.cached = client;
   }
 
-  checkAvailability(): Promise<PasskeyAvailability> {
+  async checkAvailability(): Promise<PasskeyAvailability> {
+    // Runs on mount via isPrfAvailable(). client() builds a PasskeyProvider,
+    // a WASM class, so wait for the module now that SDK boot is deferred.
+    await sdkReady();
     return this.client().checkAvailability();
   }
 
   async register(request: PasskeyRegisterRequest): Promise<RegisterResponse> {
+    // buildBrowserPasskeyClient constructs a WASM PasskeyProvider; wait for the
+    // module (a no-op once ready, which it usually is by the time a user taps).
+    await sdkReady();
     // Fresh client per create rotates user.name (Apple Passwords
     // dedupes by `(rpId, user.name)`) and re-evaluates the Nostr
     // identity, which is fine since register publishes the label.
@@ -410,7 +417,8 @@ class WebPasskey implements PasskeyApi {
     } catch (e) { rethrowWasmAsTyped(e); }
   }
 
-  signIn(request: SignInRequest): Promise<SignInResponse> {
+  async signIn(request: SignInRequest): Promise<SignInResponse> {
+    await sdkReady();
     return this.client().signIn(request);
   }
 
@@ -585,6 +593,9 @@ export async function signInPinnedToActiveCredential(
     // Sign in on a client scoped to the session RP, then retain it as the
     // cached client. signIn primes the Nostr identity, so a later labels()/store
     // is a cache hit rather than a cold, unpinned re-derive (the OS picker).
+    // buildBrowserPasskeyClient constructs a WASM PasskeyProvider, and this runs
+    // at mount for returning passkey users, so wait for the module first.
+    await sdkReady();
     const client = buildBrowserPasskeyClient({ rpId: effectiveRpId });
     response = await client.signIn({ label, allowCredentials });
     const api = getPasskey();
