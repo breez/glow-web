@@ -1,5 +1,5 @@
 // Glow Service Worker
-const CACHE_NAME = 'glow-v15';
+const CACHE_NAME = 'glow-v16';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -52,9 +52,33 @@ self.addEventListener('fetch', (event) => {
   if (!event.request.url.startsWith(self.location.origin)) return;
 
   // Skip API calls and WebSocket connections
-  if (event.request.url.includes('/api/') || 
+  if (event.request.url.includes('/api/') ||
       event.request.url.includes('wss://') ||
       event.request.url.includes('ws://')) {
+    return;
+  }
+
+  // Vite emits content-hashed, immutable files under /assets/ (the hash in the
+  // filename changes whenever the content changes). Serve those cache-first so a
+  // warm launch reads the ~11 MB wasm + JS bundle straight from cache instead of
+  // re-fetching over the network. index.html / navigations stay network-first
+  // (below) so a new deploy is always picked up. Non-hashed static assets
+  // (e.g. /assets/Glow_Logo.svg) don't match and keep the network-first path.
+  const path = new URL(event.request.url).pathname;
+  const isHashedAsset = /\/assets\/[^/]+-[A-Za-z0-9_-]{8,}\.(js|mjs|css|wasm|woff2?|ttf)$/.test(path);
+  if (isHashedAsset) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        });
+      })
+    );
     return;
   }
 
