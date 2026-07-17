@@ -12,6 +12,7 @@ import { initWebViewportManager } from '@/utils/webViewportManager';
 import { installUserAgentStrippingFetch } from '@/utils/stripUserAgentFetch';
 import { logStartupDeviceInfo } from '@/utils/deviceInfo';
 import { startSdkInit } from '@/services/sdkReady';
+import { prfAvailability } from '@/services/passkeyService';
 
 // Strip the SDK's custom User-Agent from outgoing requests before the SDK
 // (or anything else) issues one. User-Agent is a forbidden fetch header
@@ -203,11 +204,29 @@ async function fontsSettled(): Promise<void> {
   ]).catch(() => { /* never block the reveal on a font failure */ });
 }
 
+/**
+ * Hold the reveal until the passkey-availability check has settled.
+ *
+ * The welcome screen picks its onboarding flow from that check and defaults to
+ * the non-passkey one until it resolves, so revealing early flashes the wrong
+ * flow — and a first-time user could tap into mnemonic onboarding in that
+ * window. On native this is a quick bridge call. On web it goes through the
+ * SDK's PasskeyProvider and so waits on the WASM module; that is the deliberate
+ * cost of showing the right screen the first time. Bounded, like the fonts.
+ */
+async function passkeyCheckSettled(): Promise<void> {
+  await Promise.race([
+    prfAvailability(),
+    new Promise((resolve) => setTimeout(resolve, 2500)),
+  ]).catch(() => { /* never block the reveal on a failed check */ });
+}
+
 export async function hideSplash(): Promise<void> {
   const splash = document.getElementById('splash');
   if (!splash) return;
 
-  await fontsSettled();
+  // Both gates run concurrently: the reveal waits on the slower of the two.
+  await Promise.all([fontsSettled(), passkeyCheckSettled()]);
 
   const animation = splash.animate(
     [{ opacity: 1 }, { opacity: 0 }],

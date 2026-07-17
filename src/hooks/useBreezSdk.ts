@@ -24,7 +24,7 @@ import { isDepositRejected, clearRejectedDeposits } from '../services/depositSta
 import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, type BuyBitcoinProvider } from '../services/settings';
 import { hideSplash } from '../main';
 import {
-  isPrfAvailable,
+  prfAvailability,
   isPasskeyMode,
   setPasskeyMode,
   clearPasskeyMode,
@@ -1038,9 +1038,11 @@ export function useBreezSdk(
   // we can't split the WebAuthn ceremony from the Nostr label publish.
   useEffect(() => { void initSdkLogging(); }, []);
 
-  // Check PRF availability on mount
+  // Check PRF availability on mount. Shared promise: the splash waits on this
+  // same check before revealing, so the welcome screen is never shown with the
+  // wrong onboarding flow (prfAvailable defaults to false until it settles).
   useEffect(() => {
-    isPrfAvailable().then(setPrfAvailable).catch(() => setPrfAvailable(false));
+    prfAvailability().then(setPrfAvailable).catch(() => setPrfAvailable(false));
   }, []);
 
   // Set on the first launch after a fresh install (or cross-device

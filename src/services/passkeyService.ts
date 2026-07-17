@@ -770,6 +770,24 @@ export async function clearPasskeyHistory(): Promise<void> {
   invalidatePasskey();
 }
 
+let prfAvailablePromise: Promise<boolean> | null = null;
+
+/**
+ * Memoized isPrfAvailable().
+ *
+ * The welcome screen picks its onboarding flow from this, and defaults to the
+ * non-passkey one until it resolves. The splash waits on it (main.tsx) so a
+ * first-time user never sees the wrong flow flash past — or, worse, taps into
+ * mnemonic onboarding during that window. Shared so the check runs once and
+ * both callers observe the same result.
+ */
+export function prfAvailability(): Promise<boolean> {
+  if (!prfAvailablePromise) {
+    prfAvailablePromise = isPrfAvailable().catch(() => false);
+  }
+  return prfAvailablePromise;
+}
+
 /** Collapse the SDK's four availability variants to a single bool. */
 export async function isPrfAvailable(): Promise<boolean> {
   const ua = navigator.userAgent;
