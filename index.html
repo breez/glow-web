@@ -76,11 +76,12 @@
 
   <title>Glow</title>
 
-  <!-- Fonts - Plus Jakarta Sans for premium UI, JetBrains Mono for numbers -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  
+  <!-- Fonts (Plus Jakarta Sans for UI, JetBrains Mono for numbers) are
+       self-hosted and bundled via @fontsource, imported from src/index.css.
+       They used to load from fonts.googleapis.com here, which put a
+       third-party network round trip on the first-paint path of a native
+       app and broke first paint offline. -->
+
   <!-- Initial loading styles -->
   <style>
     /* Prevent pull-to-refresh on iOS */
@@ -128,19 +129,48 @@
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
   
-  <!-- Service Worker Registration -->
+  <!-- Service Worker Registration. Web only.
+       In the native shell the assets are already on-device and offline-capable,
+       so the service worker buys nothing: its "network" is just the local asset
+       server, yet it still intercepts every request and re-copies the JS bundle
+       and the multi-megabyte WASM into Cache Storage on every cold start. Skip
+       it there, and unregister (plus drop its caches) for installs that picked
+       one up from an earlier build. -->
   <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
+    (function () {
+      if (!('serviceWorker' in navigator)) return;
+
+      // The native bridge injects window.Capacitor before page scripts run.
+      var cap = window.Capacitor;
+      var isNative = !!(cap && (typeof cap.isNativePlatform === 'function'
+        ? cap.isNativePlatform()
+        : (cap.platform && cap.platform !== 'web')));
+
+      if (isNative) {
+        navigator.serviceWorker.getRegistrations()
+          .then(function (regs) { regs.forEach(function (r) { r.unregister(); }); })
+          .catch(function () { /* nothing registered — fine */ });
+        if (window.caches && caches.keys) {
+          caches.keys()
+            .then(function (keys) {
+              keys.filter(function (k) { return k.indexOf('glow-') === 0; })
+                .forEach(function (k) { caches.delete(k); });
+            })
+            .catch(function () { /* no cache storage — fine */ });
+        }
+        return;
+      }
+
+      window.addEventListener('load', function () {
         navigator.serviceWorker.register('/sw.js')
-          .then((registration) => {
+          .then(function (registration) {
             console.log('SW registered:', registration.scope);
           })
-          .catch((error) => {
+          .catch(function (error) {
             console.log('SW registration failed:', error);
           });
       });
-    }
+    })();
   </script>
 </body>
 

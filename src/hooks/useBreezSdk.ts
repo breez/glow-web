@@ -11,6 +11,7 @@ import type {
   Seed,
 } from '@breeztech/breez-sdk-spark';
 import { connect, initLogging } from '@breeztech/breez-sdk-spark';
+import { sdkReady } from '@/services/sdkReady';
 import { Capacitor } from '@capacitor/core';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { App } from '@capacitor/app';
@@ -23,7 +24,7 @@ import { isDepositRejected, clearRejectedDeposits } from '../services/depositSta
 import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, type BuyBitcoinProvider } from '../services/settings';
 import { hideSplash } from '../main';
 import {
-  isPrfAvailable,
+  prfAvailability,
   isPasskeyMode,
   setPasskeyMode,
   clearPasskeyMode,
@@ -64,10 +65,19 @@ function filterOngoingConversionPayments(payments: Payment[]): Payment[] {
 
 let sdkLoggerInitialized = false;
 
-function initSdkLogging() {
+async function initSdkLogging() {
   if (sdkLoggerInitialized) return;
   sdkLoggerInitialized = true;
-  initLogging({ log: (entry: LogEntry) => logSdkMessage(entry.level, entry.line) });
+  // initLogging is a WASM call; wait for the module. Runs on mount, so this
+  // must not assume the SDK is already initialized now that boot is deferred.
+  // The logging bridge is non-critical, so a failed SDK init is swallowed here
+  // (the connect path surfaces the real error to the user).
+  try {
+    await sdkReady();
+    initLogging({ log: (entry: LogEntry) => logSdkMessage(entry.level, entry.line) });
+  } catch {
+    /* SDK unavailable; skip the log bridge. */
+  }
 }
 
 // ============================================
@@ -417,9 +427,13 @@ export function useBreezSdk(
         return;
       }
 
-      initSdkLogging();
+      void initSdkLogging();
       logger.info(LogCategory.PERF, '[onboarding] connect.begin', { restore, source });
 
+      // WASM is initialized lazily now (services/sdkReady). connectWallet is the
+      // first guaranteed SDK use (buildConnectConfig -> defaultConfig, then
+      // connect), so wait for the module here. Usually already resolved.
+      await sdkReady();
       const cfg = buildConnectConfig();
       setConfig(cfg);
 
@@ -709,6 +723,7 @@ export function useBreezSdk(
 
     let connectedSdk: BreezSdk | undefined;
     try {
+      await sdkReady();
       const cfg = buildConnectConfig();
       setConfig(cfg);
 
@@ -1021,11 +1036,13 @@ export function useBreezSdk(
   // captured in Share Logs. Idempotent, so connectWallet's call no-ops.
   // Without this the ~30s register() is a black box in exported logs, and
   // we can't split the WebAuthn ceremony from the Nostr label publish.
-  useEffect(() => { initSdkLogging(); }, []);
+  useEffect(() => { void initSdkLogging(); }, []);
 
-  // Check PRF availability on mount
+  // Check PRF availability on mount. Shared promise: the splash waits on this
+  // same check before revealing, so the welcome screen is never shown with the
+  // wrong onboarding flow (prfAvailable defaults to false until it settles).
   useEffect(() => {
-    isPrfAvailable().then(setPrfAvailable).catch(() => setPrfAvailable(false));
+    prfAvailability().then(setPrfAvailable).catch(() => setPrfAvailable(false));
   }, []);
 
   // Set on the first launch after a fresh install (or cross-device
