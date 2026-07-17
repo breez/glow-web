@@ -33,8 +33,6 @@ interface WalletPageProps {
   hasRejectedDeposits: boolean;
   onOpenGetRefund: (source?: 'menu' | 'icon') => void;
   onOpenSettings: () => void;
-  onOpenBackup: () => void;
-  onOpenSecurity: () => void;
   onOpenBuyProviders: () => void;
   onBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
   network?: Network;
@@ -51,8 +49,6 @@ const WalletPage: React.FC<WalletPageProps> = ({
   hasRejectedDeposits,
   onOpenGetRefund,
   onOpenSettings,
-  onOpenBackup,
-  onOpenSecurity,
   onOpenBuyProviders,
   onBuyBitcoin,
   network,
@@ -365,8 +361,6 @@ const WalletPage: React.FC<WalletPageProps> = ({
         onClose={() => setIsMenuOpen(false)}
         onLogout={onLogout}
         onOpenSettings={onOpenSettings}
-        onOpenBackup={onOpenBackup}
-        onOpenSecurity={onOpenSecurity}
         onOpenRefund={() => onOpenGetRefund('menu')}
         hasRejectedDeposits={hasRejectedDeposits}
       />

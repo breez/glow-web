@@ -82,7 +82,7 @@ const AppContent: React.FC = () => {
   // Where the open BackupPage was launched from: the side menu (web) or
   // the Security & Backup page (native). Drives its back target and
   // whether SecurityPage stays mounted beneath it.
-  const [backupSource, setBackupSource] = useState<'menu' | 'security'>('menu');
+  const [backupSource, setBackupSource] = useState<'settings' | 'security'>('settings');
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
   const [buyProvidersSource, setBuyProvidersSource] = useState<'wallet' | 'settings'>('wallet');
   const [passkeySdkConnected, setPasskeySdkConnected] = useState(false);
@@ -218,11 +218,13 @@ const AppContent: React.FC = () => {
   useBackButton(useCallback(() => {
     switch (currentScreen) {
       case 'settings':
-      case 'backup':
-      case 'security':
       case 'getRefund':
         setUserScreen('wallet');
         return true;
+      case 'backup':
+        setUserScreen(backupSource === 'security' ? 'security' : 'settings');
+        return true;
+      case 'security':
       case 'fiatCurrencies':
       case 'passkeySettings':
         setUserScreen('settings');
@@ -252,7 +254,7 @@ const AppContent: React.FC = () => {
         // (same as pressing Home). Matches standard Android UX.
         return false;
     }
-  }, [currentScreen, buyProvidersSource]), true);
+  }, [currentScreen, buyProvidersSource, backupSource]), true);
 
   // Render screens
   const renderCurrentScreen = () => {
@@ -329,8 +331,6 @@ const AppContent: React.FC = () => {
             setUserScreen('getRefund');
           }}
           onOpenSettings={() => setUserScreen('settings')}
-          onOpenBackup={() => { setBackupSource('menu'); setUserScreen('backup'); }}
-          onOpenSecurity={() => setUserScreen('security')}
           onOpenBuyProviders={() => { setBuyProvidersSource('wallet'); setUserScreen('buyProviders'); }}
           onBuyBitcoin={sdk.handleBuyBitcoin}
           network={sdk.config?.network}
@@ -351,6 +351,8 @@ const AppContent: React.FC = () => {
         onOpenFiatCurrencies={() => setUserScreen('fiatCurrencies')}
         onOpenBuyProviders={() => { setBuyProvidersSource('settings'); setUserScreen('buyProviders'); }}
         onOpenPasskeySettings={() => setUserScreen('passkeySettings')}
+        onOpenSecurity={() => setUserScreen('security')}
+        onOpenBackup={() => { setBackupSource('settings'); setUserScreen('backup'); }}
       />
     );
 
@@ -534,17 +536,18 @@ const AppContent: React.FC = () => {
       // Security & Backup share one branch so SecurityPage stays
       // mounted (gate passed, options state intact) underneath an
       // opened BackupPage — returning from Backup must not re-run the
-      // PIN/biometric gate. On web, Backup opens directly from the
-      // menu and SecurityPage never mounts.
+      // PIN/biometric gate. On web, Backup opens directly from
+      // Settings and SecurityPage never mounts.
       case 'backup':
       case 'security': {
         const backupFromSecurity = backupSource === 'security';
         return (
           <>
             {renderWalletPage()}
+            {renderSettingsPage()}
             {(currentScreen === 'security' || backupFromSecurity) && (
               <SecurityPage
-                onBack={() => setUserScreen('wallet')}
+                onBack={() => setUserScreen('settings')}
                 onOpenBackup={() => {
                   setBackupSource('security');
                   setUserScreen('backup');
@@ -553,8 +556,8 @@ const AppContent: React.FC = () => {
             )}
             {currentScreen === 'backup' && (
               <BackupPage
-                closeStyle={backupFromSecurity ? 'back' : 'close'}
-                onBack={() => setUserScreen(backupFromSecurity ? 'security' : 'wallet')}
+                closeStyle="back"
+                onBack={() => setUserScreen(backupFromSecurity ? 'security' : 'settings')}
               />
             )}
           </>
