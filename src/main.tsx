@@ -1,5 +1,5 @@
 import ReactDOM from 'react-dom/client';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Keyboard } from '@capacitor/keyboard';
 import App from './App';
@@ -243,8 +243,36 @@ export async function hideSplash(): Promise<void> {
   }
 }
 
+// The native launch splash (@capacitor/splash-screen) is pinned up for a
+// fixed `launchShowDuration` (2s, capacitor.config.ts) before it auto-hides.
+// That floor is a holdover — the in-HTML `#splash` (same #0f0f18 bg + centred
+// logo) is already painted by the time this module runs, so we can hand the
+// native splash off to it as soon as the WebView is up instead of waiting out
+// the timer. This is the same native→DOM handoff that used to happen at the 2s
+// mark, just moved to first-paint, so it removes ~1.3s of fixed splash from a
+// cold start without introducing a new visual seam. Accessed via registerPlugin
+// (the plugin is a native-shell dependency, not bundled into the web build), so
+// on web the proxy call simply rejects and the catch swallows it. The
+// launchShowDuration auto-hide still stands as the fallback if JS never runs.
+const NativeSplashScreen = registerPlugin<{
+  hide(options?: { fadeOutDuration?: number }): Promise<void>;
+}>('SplashScreen');
+
+function handOffNativeSplash(): void {
+  if (!Capacitor.isNativePlatform()) return;
+  // One frame's grace so the DOM #splash is guaranteed painted before the
+  // native splash lifts off it (belt-and-braces; the module running already
+  // implies index.html parsed).
+  requestAnimationFrame(() => {
+    void NativeSplashScreen.hide({ fadeOutDuration: 200 }).catch(() => {
+      /* web (no native plugin) or already hidden — nothing to do */
+    });
+  });
+}
+
 async function init() {
   try {
+    handOffNativeSplash();
     logger.info(LogCategory.UI, 'Initializing application');
     // Startup debugging breadcrumb: what hardware / OS / build this ran on.
     void logStartupDeviceInfo();
