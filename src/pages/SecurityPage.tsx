@@ -187,7 +187,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack, onOpenBackup }) => 
         return (
           <div className="space-y-4">
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-              <h3 className="font-display font-semibold text-spark-text-primary mb-3">App Lock</h3>
+              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Lock Screen</h3>
               <button
                 className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
                 type="button"
@@ -228,7 +228,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack, onOpenBackup }) => 
         return (
           <div className="space-y-4">
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-4 space-y-2">
-            <h3 className="font-display font-semibold text-spark-text-primary mb-3">App Lock</h3>
+            <h3 className="font-display font-semibold text-spark-text-primary mb-3">Lock Screen</h3>
             {/* Deactivate PIN (Misty pattern: an always-on switch whose
                 only action is turning protection off) */}
             <div className="flex items-center justify-between px-4 py-3 border border-spark-border rounded-xl">

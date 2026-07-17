@@ -2,8 +2,7 @@ import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Transition, TransitionChild } from '@headlessui/react';
 import { isPasskeyMode } from '@/services/passkeyService';
-import { RefundIcon, BackupIcon, SettingsIcon, LogoutIcon, CloseIcon, AlertTriangleIcon, LockIcon } from './Icons';
-import { isAppLockSupported } from '@/services/appLock';
+import { RefundIcon, SettingsIcon, LogoutIcon, CloseIcon, AlertTriangleIcon } from './Icons';
 import { safeAreaTop, safeAreaBottom } from '../utils/safeAreaInsets';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE, STATUS_BAR_DIALOG_SCRIM } from '../utils/statusBarManager';
@@ -49,13 +48,11 @@ interface SideMenuProps {
   onClose: () => void;
   onLogout: () => void;
   onOpenSettings: () => void;
-  onOpenBackup: () => void;
-  onOpenSecurity: () => void;
   onOpenRefund?: () => void;
   hasRejectedDeposits?: boolean;
 }
 
-const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSettings, onOpenBackup, onOpenSecurity, onOpenRefund, hasRejectedDeposits = false }) => {
+const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSettings, onOpenRefund, hasRejectedDeposits = false }) => {
   // While the drawer is open, push the solid spark-surface tone over
   // the wallet page's glass tint so the status bar matches the drawer
   // panel's solid bg. Tied to isOpen so popping happens on close.
@@ -125,18 +122,6 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
       onClick: () => closeDrawerThen(onOpenRefund),
       highlight: true
     }] : []),
-    // Native folds Backup into a single Security & Backup page (Misty
-    // parity), so the recovery phrase sits behind the same app-lock
-    // gate. The PWA has no app lock and keeps a top-level Backup.
-    ...(isAppLockSupported() ? [{
-      icon: <LockIcon />,
-      label: 'Security & Backup',
-      onClick: () => closeDrawerThen(onOpenSecurity)
-    }] : [{
-      icon: <BackupIcon />,
-      label: 'Backup',
-      onClick: () => closeDrawerThen(onOpenBackup)
-    }]),
     {
       icon: <SettingsIcon />,
       label: 'Settings',
@@ -274,7 +259,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                   </div>
 
                   <h3 className="font-display text-lg font-semibold text-spark-text-primary text-center mb-2">
-                    Logout Warning
+                    Logout
                   </h3>
                   <p className="text-spark-text-secondary text-sm text-center mb-6">
                     {isPasskey

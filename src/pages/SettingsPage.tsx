@@ -4,6 +4,7 @@ import { getSettings, saveSettings, UserSettings, isBuyBitcoinAvailable } from '
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
 import { CurrencyIcon, ChevronRightIcon, DownloadIcon, ShieldCheckIcon } from '../components/Icons';
+import { isAppLockSupported } from '@/services/appLock';
 import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs, exportDatabaseState } from '@/services/logExport';
@@ -17,6 +18,8 @@ interface SettingsPageProps {
   onOpenFiatCurrencies: () => void;
   onOpenBuyProviders: () => void;
   onOpenPasskeySettings: () => void;
+  onOpenSecurity: () => void;
+  onOpenBackup: () => void;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({
@@ -25,6 +28,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onOpenFiatCurrencies,
   onOpenBuyProviders,
   onOpenPasskeySettings,
+  onOpenSecurity,
+  onOpenBackup,
 }) => {
   const wallet = useWallet();
   const {
@@ -189,6 +194,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           {/* Order: page nav, exports, reconnect, toggles, inputs.
               The "Save Changes" footer applies the toggles + inputs;
               everything above it commits on tap. */}
+
+          {/* Backup. Native routes through the Security & Backup page
+              (Misty parity) so the recovery phrase sits behind the
+              app-lock gate. The PWA has no app lock, so it opens
+              Backup directly. */}
+          <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+            <h3 className="font-display font-semibold text-spark-text-primary mb-3">Backup</h3>
+            <button
+              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
+              type="button"
+              onClick={isAppLockSupported() ? onOpenSecurity : onOpenBackup}
+            >
+              <span>Show Recovery Phrase</span>
+              <ChevronRightIcon size="md" />
+            </button>
+          </div>
 
           {/* Display */}
           <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
