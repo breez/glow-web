@@ -1,6 +1,7 @@
 import { MaxFee } from "@breeztech/breez-sdk-spark/web";
 import type { Network } from "@breeztech/breez-sdk-spark";
 import { Capacitor } from "@capacitor/core";
+import { Preferences } from "@capacitor/preferences";
 /** Provider identifiers matching the SDK's BuyBitcoinRequest tagged union */
 export type BuyBitcoinProvider = 'moonpay' | 'cashApp';
 
@@ -158,6 +159,38 @@ export function setCachedStableTicker(ticker: string | null): void {
     setCachedItem(STABLE_TICKER_KEY, ticker);
   } else {
     removeCachedItem(STABLE_TICKER_KEY);
+  }
+}
+
+/**
+ * Durable native mirror of the active stable ticker.
+ *
+ * The localStorage cache above is a same-partition value: on native it lives
+ * in the WebView storage that shares fate with the SDK's IndexedDB, so an app
+ * upgrade / cleared WebView data wipes both and the mode silently reverts to
+ * BTC. Preferences writes to the native tier (Android SharedPreferences / iOS
+ * UserDefaults, the same tier as the seed vault), which survives a WebView-
+ * storage wipe — so it's the recovery source when the SDK comes up empty.
+ * On web, Preferences falls back to localStorage (no durability gain, no harm).
+ */
+export async function getNativeStableTicker(): Promise<string | null> {
+  try {
+    const { value } = await Preferences.get({ key: STABLE_TICKER_KEY });
+    return value ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setNativeStableTicker(ticker: string | null): Promise<void> {
+  try {
+    if (ticker) {
+      await Preferences.set({ key: STABLE_TICKER_KEY, value: ticker });
+    } else {
+      await Preferences.remove({ key: STABLE_TICKER_KEY });
+    }
+  } catch {
+    // Best-effort: the localStorage cache still covers the non-wipe path.
   }
 }
 
