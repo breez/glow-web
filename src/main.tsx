@@ -3,6 +3,9 @@ import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Keyboard } from '@capacitor/keyboard';
 import App from './App';
+// Font faces are declared in index.css (pointing at @fontsource's woff2 files)
+// rather than importing @fontsource's own stylesheets, which hardcode
+// font-display: swap. See the comment there.
 import './index.css';
 import { logger, LogCategory } from '@/services/logger';
 import { initWebViewportManager } from '@/utils/webViewportManager';
@@ -157,9 +160,54 @@ initWebViewportManager();
  * Promise), and safe to call fire-and-forget from non-paint-sensitive
  * call sites that just want the splash gone.
  */
+/**
+ * Hold the reveal until the bundled font faces have loaded.
+ *
+ * The faces use `font-display: block` (see index.css), so text is invisible
+ * until its font is ready. Revealing first would expose a screen of empty text
+ * that pops in a moment later. The splash is already covering startup, so it
+ * covers this too and the app is revealed fully styled.
+ *
+ * By the time any caller hides the splash, React has already rendered behind
+ * it, so the fonts are in flight and `fonts.ready` waits for them. The race is
+ * a safety bound: a font that never resolves must not strand the splash
+ * forever. The fonts are local, so in practice this resolves in tens of ms.
+ */
+const BUNDLED_FACES = [
+  '300 1rem "Plus Jakarta Sans"',
+  '400 1rem "Plus Jakarta Sans"',
+  '500 1rem "Plus Jakarta Sans"',
+  '600 1rem "Plus Jakarta Sans"',
+  '700 1rem "Plus Jakarta Sans"',
+  '800 1rem "Plus Jakarta Sans"',
+  '400 1rem "JetBrains Mono"',
+  '500 1rem "JetBrains Mono"',
+  '600 1rem "JetBrains Mono"',
+];
+
+async function fontsSettled(): Promise<void> {
+  if (!document.fonts) return;
+  // Request every bundled face, not just the ones the first screen happens to
+  // use. Browsers load faces lazily, so JetBrains Mono (the balance) is not
+  // fetched by the welcome screen and would load later — blanking the balance
+  // for a moment when the home screen first paints, under font-display: block.
+  // These are local and small, so warming all of them costs tens of ms of
+  // splash that is already on screen.
+  const warm = Promise.all(
+    BUNDLED_FACES.map((f) => document.fonts.load(f).catch(() => undefined)),
+  ).then(() => document.fonts.ready);
+
+  await Promise.race([
+    warm,
+    new Promise((resolve) => setTimeout(resolve, 1500)),
+  ]).catch(() => { /* never block the reveal on a font failure */ });
+}
+
 export async function hideSplash(): Promise<void> {
   const splash = document.getElementById('splash');
   if (!splash) return;
+
+  await fontsSettled();
 
   const animation = splash.animate(
     [{ opacity: 1 }, { opacity: 0 }],
