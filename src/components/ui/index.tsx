@@ -539,6 +539,8 @@ export const ConfirmDialog: React.FC<{
   isOpen: boolean;
   title: string;
   message: string;
+  /** Optional content between the message and the buttons (e.g. a learn-more link). */
+  extra?: React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: 'danger' | 'warning' | 'default';
@@ -548,6 +550,7 @@ export const ConfirmDialog: React.FC<{
   isOpen,
   title,
   message,
+  extra,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   variant = 'default',
@@ -586,6 +589,7 @@ export const ConfirmDialog: React.FC<{
             <p className="text-sm text-spark-text-secondary whitespace-pre-line mb-6">
               {message}
             </p>
+            {extra && <div className="-mt-3 mb-6">{extra}</div>}
             <div className="flex gap-3">
               <button
                 onClick={onCancel}

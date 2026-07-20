@@ -3,8 +3,10 @@ import { ConfirmDialog, FormGroup, FormInput, LoadingSpinner, PrimaryButton, Swi
 import { getSettings, saveSettings, UserSettings, isBuyBitcoinAvailable } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
-import { CurrencyIcon, ChevronRightIcon, DownloadIcon, ShieldCheckIcon, TrashIcon } from '../components/Icons';
+import { CurrencyIcon, ChevronRightIcon, DownloadIcon, ShieldCheckIcon, TrashIcon, ExternalLinkIcon } from '../components/Icons';
 import { isPasskeyMode } from '@/services/passkeyService';
+import { ACCOUNT_DELETION_GUIDE_URL } from '@/services/accountDeletion';
+import { openExternalUrl } from '@/utils/externalLink';
 import { isAppLockSupported } from '@/services/appLock';
 import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
@@ -470,8 +472,18 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         isOpen={showDeleteConfirm}
         title="Delete Account?"
         message={isPasskeyMode()
-          ? 'This erases all Glow data from this device and signs you out. Your funds stay tied to your passkey: you\'ll need it, or a saved recovery phrase, to access them again.\n\nYour passkey itself is not deleted.'
-          : 'This erases all Glow data from this device, including your recovery phrase, and signs you out.\n\nMake sure you\'ve saved your recovery phrase: without it, any funds are lost forever.'}
+          ? "This permanently deletes all Glow data on this device, including your payment history and settings. You'll need your passkey to access your funds again."
+          : "This permanently deletes all Glow data on this device, including your payment history and settings. Make sure you've saved your recovery phrase: you'll need it to access your funds again."}
+        extra={
+          <button
+            type="button"
+            onClick={() => { void openExternalUrl(ACCOUNT_DELETION_GUIDE_URL); }}
+            className="mx-auto flex items-center gap-1 text-xs text-spark-text-muted underline hover:text-spark-text-secondary transition-colors"
+          >
+            Learn more about account deletion
+            <ExternalLinkIcon size="xs" />
+          </button>
+        }
         confirmLabel="Delete"
         variant="danger"
         onConfirm={() => {
