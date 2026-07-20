@@ -56,10 +56,35 @@
       font-size: 0.85rem;
     }
     a { color: #fbbf24; }
+    .back-bar {
+      display: none;
+      background: none;
+      border: 0;
+      color: #fbbf24;
+      font: 600 1rem inherit;
+      font-family: inherit;
+      padding: 0 0 20px;
+      cursor: pointer;
+    }
+    .standalone .back-bar { display: block; }
   </style>
 </head>
 <body>
+  <!-- Escape hatch when this page loads inside an installed PWA's own
+       window (in-scope navigation shows no browser chrome, so there is
+       no other way back). Hidden in normal tabs and in the app's
+       overlay iframe. -->
+  <script>
+    if (window.self === window.top
+        && (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true)) {
+      document.body.classList.add('standalone');
+    }
+  </script>
   <main>
+    <button type="button" class="back-bar"
+      onclick="if (history.length > 1) { history.back(); } else { location.href = '/'; }">
+      &larr; Back to Glow
+    </button>
     <h1>Deleting your Glow account</h1>
 
     <h2>Your passkey is the key to your funds</h2>
