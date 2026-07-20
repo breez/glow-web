@@ -191,6 +191,26 @@ Call `markPasskeyUsed()` after any successful PRF ceremony to update `passkeyLas
 - Production builds require npm-published SDK version
 - Type check: `npx tsc --noEmit`
 
+## Colors: no red
+
+The UI deliberately does not use red, even for destructive, warning, or
+error states. Use the primary color (`spark-primary`, an amber/tan
+`#d4a574`) instead. This was a deliberate rebrand (PR #287, "replace red
+UI with primary color").
+
+- `spark-warning` and `spark-error` both resolve to the amber palette,
+  not red: `--color-spark-warning: var(--spark-primary)`, and the
+  `spark-warn-*` tokens (`warn-surface`, `warn-border`, `warn-title`,
+  `warn-text`) are amber-toned. Use these for warning/danger surfaces.
+- `ConfirmDialog`'s `variant="danger"` renders as `bg-spark-primary`, not
+  red. `AlertCard`'s `warning` / `error` variants use the amber
+  `spark-warn-*` tokens.
+- The raw `#ef4444` red is still defined as `--spark-error` but is unused
+  in components; do not reach for it, `text-red-*` / `bg-red-*`, or any
+  hard-coded red hex.
+- Applies to standalone HTML in `public/` too (e.g. the account-deletion
+  guide): warning boxes use the amber accent, never red.
+
 ## Bitcoin Symbol (₿) in Amount Displays
 
 All sat amounts shown to the user include the ₿ symbol. Follow these conventions:

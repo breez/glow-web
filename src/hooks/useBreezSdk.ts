@@ -22,12 +22,14 @@ import { logger, LogCategory, logSdkMessage } from '../services/logger';
 import { formatError } from '../utils/formatError';
 import { isDepositRejected, clearRejectedDeposits } from '../services/depositState';
 import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, type BuyBitcoinProvider } from '../services/settings';
+import { wipeAllLocalData } from '../services/accountDeletion';
 import { hideSplash } from '../main';
 import {
   prfAvailability,
   isPasskeyMode,
   setPasskeyMode,
   clearPasskeyMode,
+  clearKnownCredentials,
   getKnownCredentialIdsBase64,
   hasPasskeyHistory,
   markLabelUsed,
@@ -189,6 +191,11 @@ export interface BreezSdkActions {
   ) => Promise<void>;
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
   fetchUnclaimedDeposits: () => Promise<void>;
+  /**
+   * Logs out and erases all on-device data: SDK databases, Preferences,
+   * localStorage, the device credential-id registry, and the in-memory
+   * log buffer. Signing back in is a fresh passkey discovery.
+   */
   handleLogout: () => Promise<void>;
   /**
    * Adopt the (already connected + synced) new SDK produced by the passkey-RP
@@ -584,6 +591,17 @@ export function useBreezSdk(
     if (isAppLockSupported()) {
       try { await clearPin(); } catch { /* non-fatal */ }
     }
+
+    // Logout erases everything on the device (the app's account-deletion
+    // model): the credential-id registry (native: passkey plugin's
+    // Keychain / Block Store, unreachable by a web storage wipe), all
+    // localStorage / Preferences / IndexedDB, and the in-memory log
+    // buffer. Runs after disconnect so the SDK's DB handles are closed.
+    // The registry clear is signal-free, so the passkey stays valid;
+    // signing back in is a fresh discovery (no pinned credential).
+    try { await clearKnownCredentials(); } catch { /* non-fatal */ }
+    await wipeAllLocalData();
+    logger.clear();
 
     // Always reset all state, even if disconnect threw.
     setSdk(null);

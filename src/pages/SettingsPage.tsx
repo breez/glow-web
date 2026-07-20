@@ -3,7 +3,9 @@ import { FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../
 import { getSettings, saveSettings, UserSettings, isBuyBitcoinAvailable } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
-import { CurrencyIcon, ChevronRightIcon, DownloadIcon, ShieldCheckIcon } from '../components/Icons';
+import { CurrencyIcon, ChevronRightIcon, DownloadIcon, ShieldCheckIcon, TrashIcon, ExternalLinkIcon } from '../components/Icons';
+import { ACCOUNT_DELETION_GUIDE_URL } from '@/services/accountDeletion';
+import { openExternalUrl } from '@/utils/externalLink';
 import { isAppLockSupported } from '@/services/appLock';
 import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
@@ -275,6 +277,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 <DownloadIcon size="md" />
               )}
               {isDownloadingLogs ? 'Preparing...' : 'Download Logs'}
+            </button>
+          </div>
+
+          {/* Account deletion (App Store 5.1.1(v)): opens the guide
+              explaining how to delete the account (logout wipes the
+              device) and remove the passkey. Reachable without dev
+              mode. */}
+          <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+            <h3 className="font-display font-semibold text-spark-text-primary mb-3">Account</h3>
+            <button
+              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-warning/40 rounded-xl text-spark-warning hover:bg-spark-warning/10 transition-colors"
+              type="button"
+              onClick={() => { void openExternalUrl(ACCOUNT_DELETION_GUIDE_URL); }}
+            >
+              <div className="flex items-center gap-3">
+                <TrashIcon size="md" />
+                <span>How to delete your account</span>
+              </div>
+              <ExternalLinkIcon size="sm" />
             </button>
           </div>
 

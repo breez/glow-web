@@ -19,6 +19,8 @@ import {
   BackIcon,
 } from '../Icons';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useStatusBarColor } from '../../hooks/useStatusBarColor';
+import { STATUS_BAR_DIALOG_SCRIM } from '../../utils/statusBarManager';
 
 // ============================================
 // RE-EXPORTS FROM MODULAR FILES
@@ -539,6 +541,8 @@ export const ConfirmDialog: React.FC<{
   isOpen: boolean;
   title: string;
   message: string;
+  /** Optional content between the message and the buttons (e.g. a learn-more link). */
+  extra?: React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: 'danger' | 'warning' | 'default';
@@ -548,6 +552,7 @@ export const ConfirmDialog: React.FC<{
   isOpen,
   title,
   message,
+  extra,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   variant = 'default',
@@ -561,6 +566,12 @@ export const ConfirmDialog: React.FC<{
     useBackButton(() => {
       onCancel();
     }, isOpen);
+
+    // Dim the system bars to the scrim tone while open so they match
+    // the backdrop (same treatment as the logout confirm in SideMenu).
+    // Before the early return: hook order must stay stable across
+    // isOpen flips.
+    useStatusBarColor(STATUS_BAR_DIALOG_SCRIM, isOpen);
 
     if (!isOpen) return null;
 
@@ -577,7 +588,7 @@ export const ConfirmDialog: React.FC<{
       // transform, which makes position:fixed resolve relative to that
       // transformed ancestor and shoves the dialog off-screen whenever
       // the sheet is snapped or keyboard-lifted.
-      <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-[70] p-4 transition-opacity duration-300">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 transition-opacity duration-300">
         <DialogCard maxWidth="sm">
           <div className="text-center">
             <h3 className="font-display text-lg font-bold text-spark-text-primary mb-3">
@@ -586,6 +597,7 @@ export const ConfirmDialog: React.FC<{
             <p className="text-sm text-spark-text-secondary whitespace-pre-line mb-6">
               {message}
             </p>
+            {extra && <div className="-mt-3 mb-6">{extra}</div>}
             <div className="flex gap-3">
               <button
                 onClick={onCancel}

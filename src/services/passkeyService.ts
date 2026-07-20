@@ -770,6 +770,26 @@ export async function clearPasskeyHistory(): Promise<void> {
   invalidatePasskey();
 }
 
+/**
+ * Forget every credential id known to this device without signaling
+ * the credential manager: account deletion wipes local state while the
+ * passkey itself stays valid for a later restore (unlike
+ * clearPasskeyHistory, which reacts to a passkey that is already gone
+ * and asks the manager to drop it too). On native this clears the
+ * plugin's Keychain / Block Store registry, which no web-side storage
+ * wipe can reach.
+ */
+export async function clearKnownCredentials(): Promise<void> {
+  try {
+    await getPasskey().credentials().clear();
+  } catch (e) {
+    logger.warn(LogCategory.AUTH, 'Failed to clear credential registry', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+  invalidatePasskey();
+}
+
 let prfAvailablePromise: Promise<boolean> | null = null;
 
 /**
