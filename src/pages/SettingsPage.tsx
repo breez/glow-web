@@ -293,7 +293,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             >
               <div className="flex items-center gap-3">
                 <TrashIcon size="md" />
-                <span>Delete Account</span>
+                <span>How to delete your account</span>
               </div>
               <ExternalLinkIcon size="sm" />
             </button>
