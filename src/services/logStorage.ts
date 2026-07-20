@@ -392,3 +392,14 @@ export async function clearAllSessions(): Promise<void> {
 export function isStorageAvailable(): boolean {
   return typeof indexedDB !== 'undefined';
 }
+
+/**
+ * Close the module-held database handle so account deletion can
+ * delete the database without hitting a `blocked` event. Later log
+ * calls reopen it transparently via openDatabase().
+ */
+export function closeLogDatabase(): void {
+  db?.close();
+  db = null;
+  currentSessionId = null;
+}

@@ -2,7 +2,9 @@ import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Transition, TransitionChild } from '@headlessui/react';
 import { isPasskeyMode } from '@/services/passkeyService';
-import { RefundIcon, SettingsIcon, LogoutIcon, CloseIcon, AlertTriangleIcon } from './Icons';
+import { RefundIcon, SettingsIcon, LogoutIcon, CloseIcon, AlertTriangleIcon, ExternalLinkIcon } from './Icons';
+import { ACCOUNT_DELETION_GUIDE_URL } from '@/services/accountDeletion';
+import { openExternalUrl } from '@/utils/externalLink';
 import { safeAreaTop, safeAreaBottom } from '../utils/safeAreaInsets';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE, STATUS_BAR_DIALOG_SCRIM } from '../utils/statusBarManager';
@@ -261,11 +263,19 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                   <h3 className="font-display text-lg font-semibold text-spark-text-primary text-center mb-2">
                     Logout
                   </h3>
-                  <p className="text-spark-text-secondary text-sm text-center mb-6">
+                  <p className="text-spark-text-secondary text-sm text-center mb-3">
                     {isPasskey
                       ? "You'll need to authenticate with the same passkey to access your funds again."
                       : "Make sure you've saved your recovery phrase before logging out. You'll need it to access your funds again."}
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => { void openExternalUrl(ACCOUNT_DELETION_GUIDE_URL); }}
+                    className="mx-auto mb-6 flex items-center gap-1 text-xs text-spark-text-muted underline hover:text-spark-text-secondary transition-colors"
+                  >
+                    How {isPasskey ? 'your passkey protects' : 'to keep access to'} your funds
+                    <ExternalLinkIcon size="xs" />
+                  </button>
 
                   <div className="flex gap-3">
                     <button

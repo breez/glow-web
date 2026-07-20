@@ -23,6 +23,9 @@ import { useAppLock } from './hooks/useAppLock';
 import PasskeyPage from './pages/PasskeyPage';
 import type { MigrationEntry, MigrationOutcome } from './features/passkey-migration/types';
 import SettingsPage from './pages/SettingsPage';
+import DeleteAccountPage from './pages/DeleteAccountPage';
+import AccountDeletedPage from './pages/AccountDeletedPage';
+import { isPasskeyMode } from './services/passkeyService';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import BuyProvidersPage from './pages/BuyProvidersPage';
 import UnlockPage from './pages/UnlockPage';
@@ -48,7 +51,7 @@ import type { Seed, Payment, BreezSdk } from '@breeztech/breez-sdk-spark';
 
 const PASSKEY_MIGRATION_ENABLED = true;
 
-type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'security' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState';
+type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'security' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState' | 'deleteAccount';
 
 // Full-screen dim spinner shown while sdk.isLoading is true (logout in
 // progress, SDK reconnect, etc). Wrapped as its own component so the
@@ -197,6 +200,30 @@ const AppContent: React.FC = () => {
     await sdk.handleLogout();
   };
 
+  // Account deletion. While phase !== 'idle', renderCurrentScreen
+  // early-returns the AccountDeletedPage overlay, replacing the whole
+  // screen tree BEFORE the SDK disconnects: a mounted SettingsPage
+  // would otherwise trip useWallet() on the transient null client
+  // (same hazard as onSwitchCredential below). Passkey mode is
+  // captured up front because the wipe clears the localStorage key
+  // isPasskeyMode() reads.
+  const [deletionPhase, setDeletionPhase] = useState<'idle' | 'deleting' | 'done'>('idle');
+  const [deletedPasskeyMode, setDeletedPasskeyMode] = useState(false);
+  const handleDeleteAccount = async () => {
+    setDeletedPasskeyMode(isPasskeyMode());
+    setDeletionPhase('deleting');
+    try {
+      await sdk.handleDeleteAccount();
+      setUserScreen('home');
+      hasAutoOpenedMigrationRef.current = false;
+      setDeletionPhase('done');
+    } catch (e) {
+      // Server-side release failed; nothing was wiped, user can retry.
+      setDeletionPhase('idle');
+      showToast('error', 'Could not delete account', e instanceof Error ? e.message : undefined);
+    }
+  };
+
   // Android hardware back button — screen navigation fallback at the
   // bottom of the back-button handler stack (utils/backButton.ts).
   // Open bottom sheets, drawers and confirm dialogs push their own
@@ -227,6 +254,7 @@ const AppContent: React.FC = () => {
       case 'security':
       case 'fiatCurrencies':
       case 'passkeySettings':
+      case 'deleteAccount':
         setUserScreen('settings');
         return true;
       case 'passkeyManagement':
@@ -258,6 +286,18 @@ const AppContent: React.FC = () => {
 
   // Render screens
   const renderCurrentScreen = () => {
+    // Deletion overlay wins over everything, including startup-state
+    // overlays: it must stay up while the SDK tears down beneath it.
+    if (deletionPhase !== 'idle') {
+      return (
+        <AccountDeletedPage
+          phase={deletionPhase}
+          wasPasskey={deletedPasskeyMode}
+          onDone={() => setDeletionPhase('idle')}
+        />
+      );
+    }
+
     // Startup-state overlays take precedence and are derived directly
     // from `sdk.startupState`. The `currentScreen` memo above already
     // maps these to 'unlocking' / 'unlock', but the explicit early
@@ -353,6 +393,7 @@ const AppContent: React.FC = () => {
         onOpenPasskeySettings={() => setUserScreen('passkeySettings')}
         onOpenSecurity={() => setUserScreen('security')}
         onOpenBackup={() => { setBackupSource('settings'); setUserScreen('backup'); }}
+        onOpenDeleteAccount={() => setUserScreen('deleteAccount')}
       />
     );
 
@@ -444,6 +485,20 @@ const AppContent: React.FC = () => {
             {renderWalletPage()}
             {renderSettingsPage()}
             <FiatCurrenciesPage onBack={() => setUserScreen('settings')} />
+          </>
+        );
+
+      case 'deleteAccount':
+        return (
+          <>
+            {renderWalletPage()}
+            {renderSettingsPage()}
+            <DeleteAccountPage
+              onBack={() => setUserScreen('settings')}
+              onDelete={() => { void handleDeleteAccount(); }}
+              onOpenSecurity={() => setUserScreen('security')}
+              onOpenBackup={() => { setBackupSource('settings'); setUserScreen('backup'); }}
+            />
           </>
         );
 
