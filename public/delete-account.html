@@ -23,9 +23,8 @@
       color: #fafafa;
       font-size: 1.7rem;
       line-height: 1.25;
-      margin-bottom: 8px;
+      margin-bottom: 32px;
     }
-    .subtitle { color: #a1a1aa; margin-bottom: 32px; }
     h2 {
       color: #fafafa;
       font-size: 1.15rem;
@@ -43,12 +42,6 @@
       padding: 16px 18px;
       margin: 14px 0;
     }
-    .warning {
-      background: rgba(245, 158, 11, 0.08);
-      border: 1px solid rgba(245, 158, 11, 0.45);
-    }
-    .warning h2, .warning strong { color: #fbbf24; }
-    .warning h2 { margin: 0 0 8px; }
     .danger {
       background: rgba(239, 68, 68, 0.08);
       border: 1px solid rgba(239, 68, 68, 0.5);
@@ -68,83 +61,59 @@
 <body>
   <main>
     <h1>Deleting your Glow account</h1>
-    <p class="subtitle">What account deletion covers, how your passkey relates to your funds, and how to remove the passkey itself.</p>
 
     <h2>Your passkey is the key to your funds</h2>
     <p>
-      Glow is self-custodial. Your funds are secured by keys that exist only on your side:
-      they are derived from your <strong>passkey</strong> (stored in iCloud Keychain, Google
-      Password Manager, or another password manager) or from your <strong>12-word recovery
-      phrase</strong>. Breez never holds your funds and cannot access or recover them.
-    </p>
-    <p>
-      That means your funds are not "in the app". As long as you have the passkey or the
-      recovery phrase, you can restore access on any device, even after deleting the app or
-      your account.
+      Glow is self-custodial: your funds are secured by keys derived from your
+      <strong>passkey</strong> (in iCloud Keychain, Google Password Manager, or another
+      password manager) or by your <strong>12-word recovery phrase</strong>. Breez never
+      holds them. As long as either one exists, you can restore everything on any device.
     </p>
 
     <h2>Deleting your account</h2>
-    <p>Your Glow account is anchored by your passkey. To delete your account:</p>
     <div class="card">
       <ol>
-        <li><strong>Save your recovery phrase first</strong> if your account holds funds (see the warning below)</li>
-        <li>In Glow, open the menu (top left), tap <strong>Settings</strong>, then <strong>Delete Account</strong>: this erases all Glow data from this device and signs you out</li>
-        <li>Delete the passkey from your password manager, using the steps below</li>
+        <li><strong>Save your recovery phrase first</strong> if you hold funds (see the warning below)</li>
+        <li>In Glow, open the menu, tap <strong>Settings</strong>, then <strong>Delete Account</strong>: this erases all Glow data on this device and signs you out</li>
+        <li>Delete the passkey from your password manager (steps below)</li>
       </ol>
     </div>
-    <p>
-      Deleting does <strong>not</strong> move or destroy your funds. And no app can delete
-      passkeys: only you can, in your device settings.
-    </p>
+    <p>Your funds are not moved or destroyed.</p>
 
     <div class="card danger">
-      <h2>Before deleting your passkey: save your recovery phrase</h2>
+      <h2>Save your recovery phrase before deleting your passkey</h2>
       <p>
-        If your account holds funds, the passkey and the recovery phrase are the
-        <strong>only two ways</strong> to ever access them again.
-        <strong>If you delete your passkey without a saved recovery phrase, your funds are
-        lost forever.</strong> No one, including Breez, can recover them.
+        The passkey and the recovery phrase are the <strong>only two ways</strong> to
+        access your funds. <strong>Delete the passkey without a saved phrase and your
+        funds are lost forever.</strong> No one, including Breez, can recover them.
       </p>
-      <p>
-        To save it, open Glow before deleting anything: <strong>Menu &gt; Settings &gt;
-        Backup &gt; Show Recovery Phrase</strong>. Write the 12 words down and store them
-        somewhere safe.
-      </p>
+      <p>To save it: Menu &gt; <strong>Settings &gt; Backup &gt; Show Recovery Phrase</strong>.</p>
     </div>
 
     <h2>Removing your passkey on iPhone and iPad</h2>
     <div class="card">
       <ol>
-        <li>Open the <strong>Passwords</strong> app (or Settings &gt; Passwords)</li>
-        <li>Search for <strong>breez</strong> (the passkey is listed under <em>keys.breez.technology</em>)</li>
+        <li>Open the <strong>Passwords</strong> app</li>
+        <li>Search for <strong>breez</strong></li>
         <li>Select the entry, tap <strong>Delete Passkey</strong>, and confirm</li>
       </ol>
-      <p>
-        Passkeys sync through iCloud Keychain: deleting one removes it from
-        <strong>all</strong> your Apple devices.
-      </p>
+      <p>Deleting syncs to all your Apple devices via iCloud Keychain.</p>
     </div>
 
     <h2>Removing your passkey on Android</h2>
     <div class="card">
       <ol>
-        <li>Open <strong>Google Password Manager</strong> (Settings &gt; Passwords &amp; accounts &gt; Google, or <em>passwordmanager.google.com</em>)</li>
-        <li>Search for <strong>breez</strong> (the passkey is listed under <em>keys.breez.technology</em>)</li>
+        <li>Open <strong>Google Password Manager</strong> (Settings &gt; Passwords &amp; accounts, or <em>passwordmanager.google.com</em>)</li>
+        <li>Search for <strong>breez</strong></li>
         <li>Select the entry, tap <strong>Delete</strong>, and confirm</li>
       </ol>
-      <p>
-        If you store passkeys in a different password manager (1Password, Bitwarden, and
-        similar), delete the entry there instead.
-      </p>
+      <p>Using 1Password, Bitwarden, or similar? Delete the entry there instead.</p>
     </div>
 
-    <div class="card warning">
-      <h2>Changed your mind?</h2>
-      <p>
-        As long as your passkey or recovery phrase still exists, nothing is lost: install
-        Glow again and restore with either one. Your funds and history come back.
-      </p>
-    </div>
+    <p>
+      Changed your mind? While your passkey or recovery phrase still exists, nothing is
+      lost: install Glow again and restore with either one.
+    </p>
 
     <p class="footer">
       Questions? Contact us at <a href="mailto:contact@breez.technology">contact@breez.technology</a>.
