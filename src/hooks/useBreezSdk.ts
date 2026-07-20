@@ -191,14 +191,12 @@ export interface BreezSdkActions {
   ) => Promise<void>;
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
   fetchUnclaimedDeposits: () => Promise<void>;
-  handleLogout: (opts?: { silent?: boolean }) => Promise<void>;
   /**
-   * Account deletion (App Store 5.1.1(v)): logs out, then wipes
-   * everything logout leaves behind: SDK databases, Preferences,
-   * remaining localStorage, the device credential-id registry, and the
-   * in-memory log buffer.
+   * Logs out and erases all on-device data: SDK databases, Preferences,
+   * localStorage, the device credential-id registry, and the in-memory
+   * log buffer. Signing back in is a fresh passkey discovery.
    */
-  handleDeleteAccount: () => Promise<void>;
+  handleLogout: () => Promise<void>;
   /**
    * Adopt the (already connected + synced) new SDK produced by the passkey-RP
    * migration as the active wallet, keeping mnemonic / stable-ticker / network
@@ -559,7 +557,7 @@ export function useBreezSdk(
     }
   }, [sdk, showToast]);
 
-  const handleLogout = useCallback(async (opts?: { silent?: boolean }) => {
+  const handleLogout = useCallback(async () => {
     setIsLoading(true);
 
     // Wipe reconnect signals first so a hung sdk.disconnect() can't
@@ -594,6 +592,17 @@ export function useBreezSdk(
       try { await clearPin(); } catch { /* non-fatal */ }
     }
 
+    // Logout erases everything on the device (the app's account-deletion
+    // model): the credential-id registry (native: passkey plugin's
+    // Keychain / Block Store, unreachable by a web storage wipe), all
+    // localStorage / Preferences / IndexedDB, and the in-memory log
+    // buffer. Runs after disconnect so the SDK's DB handles are closed.
+    // The registry clear is signal-free, so the passkey stays valid;
+    // signing back in is a fresh discovery (no pinned credential).
+    try { await clearKnownCredentials(); } catch { /* non-fatal */ }
+    await wipeAllLocalData();
+    logger.clear();
+
     // Always reset all state, even if disconnect threw.
     setSdk(null);
     setCachedStableTicker(null);
@@ -613,23 +622,8 @@ export function useBreezSdk(
     setIsLoading(false);
     setStartupState('no-wallet');
     clearNetworkOverride();
-    if (!opts?.silent) {
-      showToast('success', 'Successfully logged out');
-    }
+    showToast('success', 'Successfully logged out');
   }, [sdk, showToast]);
-
-  const handleDeleteAccount = useCallback(async () => {
-    await handleLogout({ silent: true });
-    // Forget the device credential-id registry too: on native it lives
-    // in the passkey plugin's Keychain / Block Store, which no web-side
-    // storage wipe can reach. Signal-free, so the passkey itself stays
-    // usable in the credential manager for a later restore.
-    await clearKnownCredentials();
-    await wipeAllLocalData();
-    // Drop the wiped account's log breadcrumbs from memory so a later
-    // persist can't re-seed the deleted glow-logs database with them.
-    logger.clear();
-  }, [handleLogout]);
 
   const adoptMigratedSdk = useCallback(async (newSdk: BreezSdk, label: string): Promise<void> => {
     logger.info(LogCategory.AUTH, 'Adopting migrated SDK', { label });
@@ -1336,7 +1330,6 @@ export function useBreezSdk(
     refreshWalletData,
     fetchUnclaimedDeposits,
     handleLogout,
-    handleDeleteAccount,
     adoptMigratedSdk,
     handleBuyBitcoin,
     clearError: () => setError(null),
