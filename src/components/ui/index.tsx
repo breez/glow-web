@@ -19,6 +19,8 @@ import {
   BackIcon,
 } from '../Icons';
 import { useBackButton } from '../../hooks/useBackButton';
+import { useStatusBarColor } from '../../hooks/useStatusBarColor';
+import { STATUS_BAR_DIALOG_SCRIM } from '../../utils/statusBarManager';
 
 // ============================================
 // RE-EXPORTS FROM MODULAR FILES
@@ -564,6 +566,12 @@ export const ConfirmDialog: React.FC<{
     useBackButton(() => {
       onCancel();
     }, isOpen);
+
+    // Dim the system bars to the scrim tone while open so they match
+    // the bg-black/85 backdrop (same treatment as the logout confirm
+    // in SideMenu). Before the early return: hook order must stay
+    // stable across isOpen flips.
+    useStatusBarColor(STATUS_BAR_DIALOG_SCRIM, isOpen);
 
     if (!isOpen) return null;
 
