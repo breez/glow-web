@@ -1,74 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#13131d" media="(prefers-color-scheme: dark)" />
+  <meta name="robots" content="index, follow" />
   <title>How to delete your Glow account</title>
-  <link rel="icon" type="image/svg+xml" href="/assets/Glow_Logo.svg" />
-  <link rel="icon" type="image/png" href="/icons/Glow_favicon.png" />
+  <meta name="description" content="How to delete your Glow account and remove your passkey." />
+  <link rel="icon" href="/icons/Glow_favicon.png" />
   <style>
     :root {
-      color-scheme: dark;
+      --void: #ffffff;
+      --surface: #f5f3ef;
+      --border: #e6e2da;
+      --text: #16161c;
+      --text-secondary: rgba(0, 0, 0, 0.68);
+      --text-muted: rgba(0, 0, 0, 0.42);
+      --primary: #20609f;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --void: #0a0a0f;
+        --surface: #151520;
+        --border: #252535;
+        --text: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.7);
+        --text-muted: rgba(255, 255, 255, 0.4);
+        --primary: #d4a574;
+      }
+
+      body {
+        background:
+          radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.15), transparent),
+          radial-gradient(ellipse 60% 40% at 100% 0%, rgba(247, 147, 26, 0.08), transparent),
+          radial-gradient(ellipse 60% 40% at 0% 100%, rgba(0, 212, 255, 0.06), transparent),
+          var(--void);
+        background-attachment: fixed;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
     body {
-      background: #0a0a0f;
-      color: #d4d4d8;
+      margin: 0;
+      background: var(--void);
+      color: var(--text-secondary);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.6;
-      padding: 32px 20px 64px;
+      line-height: 1.65;
+      -webkit-text-size-adjust: 100%;
     }
-    main { max-width: 640px; margin: 0 auto; }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 1.25rem 5rem;
+    }
+
     h1 {
-      color: #fafafa;
-      font-size: 1.7rem;
-      line-height: 1.25;
-      margin-bottom: 32px;
+      color: var(--text);
+      font-size: 2rem;
+      line-height: 1.2;
+      margin: 0 0 0.5rem;
     }
+
     h2 {
-      color: #fafafa;
-      font-size: 1.15rem;
-      margin: 32px 0 10px;
+      color: var(--text);
+      font-size: 1.25rem;
+      margin: 2.5rem 0 0.75rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
     }
-    p, li { font-size: 0.95rem; }
-    p + p { margin-top: 10px; }
-    ol, ul { padding-left: 22px; margin: 10px 0; }
-    li { margin: 6px 0; }
-    strong { color: #fafafa; }
-    .card {
-      background: #14141c;
-      border: 1px solid #26262f;
-      border-radius: 14px;
-      padding: 16px 18px;
-      margin: 14px 0;
+
+    p { margin: 0 0 1rem; }
+
+    ol, ul {
+      margin: 0 0 1rem;
+      padding-left: 1.25rem;
     }
-    .warning {
-      background: rgba(212, 165, 116, 0.08);
-      border: 1px solid rgba(212, 165, 116, 0.45);
+
+    li { margin: 0 0 0.6rem; }
+
+    strong { color: var(--text); }
+
+    a {
+      color: var(--primary);
+      text-decoration: none;
     }
-    .warning h2, .warning strong { color: #d4a574; }
-    .warning h2 { margin: 0 0 8px; }
-    .footer {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid #26262f;
-      color: #71717a;
-      font-size: 0.85rem;
-    }
-    a { color: #fbbf24; }
+
+    a:hover { text-decoration: underline; }
+
     .back-bar {
       display: none;
       background: none;
       border: 0;
-      color: #fbbf24;
-      font: 600 1rem inherit;
-      font-family: inherit;
-      padding: 0 0 20px;
+      color: var(--primary);
+      font: inherit;
+      font-weight: 600;
+      padding: 0 0 1.5rem;
       cursor: pointer;
     }
+
     .standalone .back-bar { display: block; }
   </style>
 </head>
+
 <body>
   <!-- Escape hatch when this page loads inside an installed PWA's own
        window (in-scope navigation shows no browser chrome, so there is
@@ -86,58 +125,46 @@
       &larr; Back to Glow
     </button>
     <h1>How to delete your Glow account</h1>
+    <p>Deleting your Glow account means clearing its data from your device and removing your
+      passkey. Here is how it works and how to do it.</p>
 
     <h2>Your passkey is the key to your funds</h2>
-    <p>
-      Glow is self-custodial: your funds are secured by keys derived from your
-      <strong>passkey</strong> (in iCloud Keychain, Google Password Manager, or another
-      password manager) or by your <strong>12-word recovery phrase</strong>. Breez never
-      holds them. As long as either one exists, you can restore access on any device.
-    </p>
+    <p>Glow is non-custodial: your funds are secured by keys derived from your passkey (in
+      iCloud Keychain, Google Password Manager, or another password manager) or by your
+      12-word recovery phrase. Breez never holds them. As long as either one exists, you can
+      restore access on any device.</p>
 
     <h2>Steps to delete your account</h2>
-    <div class="card">
-      <ol>
-        <li><strong>Save your recovery phrase first</strong> if you hold funds (see the warning below)</li>
-        <li>In Glow, open the menu and tap <strong>Logout</strong>: this erases all Glow data on this device and signs you out</li>
-        <li>Delete the passkey from your password manager (steps below)</li>
-      </ol>
-    </div>
-    <p>Your funds are not moved or destroyed.</p>
+    <ol>
+      <li>Save your recovery phrase first if you hold funds (see below).</li>
+      <li>In Glow, open the menu and tap Logout. This erases all Glow data on this device and
+        signs you out.</li>
+      <li>Delete the passkey from your password manager (steps below).</li>
+    </ol>
 
-    <div class="card warning">
-      <h2>Save your recovery phrase before deleting your passkey</h2>
-      <p>
-        The passkey and the recovery phrase are the <strong>only two ways</strong> to
-        access your funds. <strong>If you delete the passkey without saving your recovery
-        phrase, your funds will no longer be accessible</strong> to you or anyone, including
-        Breez.
-      </p>
-      <p>To save it: Menu &gt; <strong>Settings &gt; Backup &gt; Show Recovery Phrase</strong>.</p>
-    </div>
+    <h2>Save your recovery phrase before deleting your passkey</h2>
+    <p>The passkey and the recovery phrase are the only two ways to access your funds.</p>
+    <p>To save it: open the menu, then Settings &gt; Backup &gt; Show Recovery Phrase.</p>
 
     <h2>Removing your passkey on iPhone and iPad</h2>
-    <div class="card">
-      <ol>
-        <li>Open the <strong>Passwords</strong> app</li>
-        <li>Search for <strong>Glow</strong></li>
-        <li>Select the entry, tap <strong>Delete Passkey</strong>, and confirm</li>
-      </ol>
-      <p>Deleting syncs to all your Apple devices via iCloud Keychain.</p>
-    </div>
+    <ol>
+      <li>Open the Passwords app.</li>
+      <li>Search for Glow.</li>
+      <li>Select the entry, tap Delete Passkey, and confirm.</li>
+    </ol>
+    <p>Deleting syncs to all your Apple devices via iCloud Keychain.</p>
 
     <h2>Removing your passkey on Android</h2>
-    <div class="card">
-      <ol>
-        <li>Open <strong>Google Password Manager</strong> (Settings &gt; Passwords &amp; accounts, or <em>passwordmanager.google.com</em>)</li>
-        <li>Search for <strong>Glow</strong></li>
-        <li>Select the entry, tap <strong>Delete</strong>, and confirm</li>
-      </ol>
-    </div>
+    <ol>
+      <li>Open Google Password Manager (Settings &gt; Passwords &amp; accounts, or
+        <a href="https://passwordmanager.google.com">passwordmanager.google.com</a>).</li>
+      <li>Search for Glow.</li>
+      <li>Select the entry, tap Delete, and confirm.</li>
+    </ol>
 
-    <p class="footer">
-      Questions? Contact us at <a href="mailto:contact@breez.technology">contact@breez.technology</a>.
-    </p>
+    <h2>Questions?</h2>
+    <p>Contact Breez at <a href="mailto:contact@breez.technology">contact@breez.technology</a>.</p>
   </main>
 </body>
+
 </html>
