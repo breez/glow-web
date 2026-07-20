@@ -47,15 +47,20 @@ function openInAppOverlay(url: string): void {
   overlay.style.cssText =
     'position:fixed;inset:0;z-index:2147483647;background:#0a0a0f;display:flex;flex-direction:column;';
 
+  // App bar: surface background + bottom border, matching the app's
+  // slide-in page headers.
   const header = document.createElement('div');
   header.style.cssText =
-    'display:flex;justify-content:flex-end;padding:calc(env(safe-area-inset-top, 0px) + 4px) 8px 4px;';
+    'display:flex;justify-content:flex-end;align-items:center;background:#151520;'
+    + 'border-bottom:1px solid #252535;padding:calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px;';
 
+  // Boxed, neutral secondary button (no primary color).
   const done = document.createElement('button');
   done.type = 'button';
   done.textContent = 'Done';
   done.style.cssText =
-    'background:none;border:0;color:#fbbf24;font:600 16px -apple-system,sans-serif;padding:10px 14px;cursor:pointer;';
+    'background:none;border:1px solid #35354a;border-radius:10px;color:rgba(255,255,255,0.7);'
+    + 'font:600 14px -apple-system,sans-serif;padding:8px 18px;cursor:pointer;';
 
   // Scroll wrapper guards against legacy WebKit frame flattening
   // (iframes sized to their content); harmless where unsupported.

@@ -568,9 +568,9 @@ export const ConfirmDialog: React.FC<{
     }, isOpen);
 
     // Dim the system bars to the scrim tone while open so they match
-    // the bg-black/85 backdrop (same treatment as the logout confirm
-    // in SideMenu). Before the early return: hook order must stay
-    // stable across isOpen flips.
+    // the backdrop (same treatment as the logout confirm in SideMenu).
+    // Before the early return: hook order must stay stable across
+    // isOpen flips.
     useStatusBarColor(STATUS_BAR_DIALOG_SCRIM, isOpen);
 
     if (!isOpen) return null;
@@ -588,7 +588,7 @@ export const ConfirmDialog: React.FC<{
       // transform, which makes position:fixed resolve relative to that
       // transformed ancestor and shoves the dialog off-screen whenever
       // the sheet is snapped or keyboard-lifted.
-      <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-[70] p-4 transition-opacity duration-300">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 transition-opacity duration-300">
         <DialogCard maxWidth="sm">
           <div className="text-center">
             <h3 className="font-display text-lg font-bold text-spark-text-primary mb-3">
