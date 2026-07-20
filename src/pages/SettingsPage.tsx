@@ -472,8 +472,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         isOpen={showDeleteConfirm}
         title="Delete Account?"
         message={isPasskeyMode()
-          ? "This permanently deletes all Glow data on this device, including your payment history and settings. You'll need your passkey to access your funds again."
-          : "This permanently deletes all Glow data on this device, including your payment history and settings. Make sure you've saved your recovery phrase: you'll need it to access your funds again."}
+          ? "This permanently deletes all Glow data stored on this device. You'll need your passkey to access your funds again."
+          : "This permanently deletes all Glow data stored on this device. Make sure you've saved your recovery phrase: you'll need it to access your funds again."}
         extra={
           <button
             type="button"
