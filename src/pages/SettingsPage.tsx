@@ -474,16 +474,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         message={isPasskeyMode()
           ? "This permanently deletes all Glow data stored on this device. You'll need your passkey to access your funds again."
           : "This permanently deletes all Glow data stored on this device. Make sure you've saved your recovery phrase: you'll need it to access your funds again."}
-        extra={
+        extra={isPasskeyMode() ? (
           <button
             type="button"
             onClick={() => { void openExternalUrl(ACCOUNT_DELETION_GUIDE_URL); }}
             className="mx-auto flex items-center gap-1 text-xs text-spark-text-muted underline hover:text-spark-text-secondary transition-colors"
           >
-            Learn more about account deletion
+            How to remove your passkey
             <ExternalLinkIcon size="xs" />
           </button>
-        }
+        ) : undefined}
         confirmLabel="Delete"
         variant="danger"
         onConfirm={() => {

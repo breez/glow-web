@@ -263,19 +263,21 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                   <h3 className="font-display text-lg font-semibold text-spark-text-primary text-center mb-2">
                     Logout
                   </h3>
-                  <p className="text-spark-text-secondary text-sm text-center mb-3">
+                  <p className={`text-spark-text-secondary text-sm text-center ${isPasskey ? 'mb-3' : 'mb-6'}`}>
                     {isPasskey
                       ? "You'll need to authenticate with the same passkey to access your funds again."
                       : "Make sure you've saved your recovery phrase before logging out. You'll need it to access your funds again."}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => { void openExternalUrl(ACCOUNT_DELETION_GUIDE_URL); }}
-                    className="mx-auto mb-6 flex items-center gap-1 text-xs text-spark-text-muted underline hover:text-spark-text-secondary transition-colors"
-                  >
-                    How {isPasskey ? 'your passkey protects' : 'to keep access to'} your funds
-                    <ExternalLinkIcon size="xs" />
-                  </button>
+                  {isPasskey && (
+                    <button
+                      type="button"
+                      onClick={() => { void openExternalUrl(ACCOUNT_DELETION_GUIDE_URL); }}
+                      className="mx-auto mb-6 flex items-center gap-1 text-xs text-spark-text-muted underline hover:text-spark-text-secondary transition-colors"
+                    >
+                      How to remove your passkey
+                      <ExternalLinkIcon size="xs" />
+                    </button>
+                  )}
 
                   <div className="flex gap-3">
                     <button
