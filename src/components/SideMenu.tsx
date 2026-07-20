@@ -265,8 +265,8 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                   </h3>
                   <p className={`text-spark-text-secondary text-sm text-center ${isPasskey ? 'mb-3' : 'mb-6'}`}>
                     {isPasskey
-                      ? "You'll need to authenticate with the same passkey to access your funds again."
-                      : "Make sure you've saved your recovery phrase before logging out. You'll need it to access your funds again."}
+                      ? "Logging out deletes all Glow data stored on this device. You'll need your passkey to access your funds again."
+                      : "Logging out deletes all Glow data stored on this device. Make sure you've saved your recovery phrase: you'll need it to access your funds again."}
                   </p>
                   {isPasskey && (
                     <button
