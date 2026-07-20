@@ -23,9 +23,6 @@ import { useAppLock } from './hooks/useAppLock';
 import PasskeyPage from './pages/PasskeyPage';
 import type { MigrationEntry, MigrationOutcome } from './features/passkey-migration/types';
 import SettingsPage from './pages/SettingsPage';
-import DeleteAccountPage from './pages/DeleteAccountPage';
-import AccountDeletedPage from './pages/AccountDeletedPage';
-import { isPasskeyMode } from './services/passkeyService';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import BuyProvidersPage from './pages/BuyProvidersPage';
 import UnlockPage from './pages/UnlockPage';
@@ -51,7 +48,7 @@ import type { Seed, Payment, BreezSdk } from '@breeztech/breez-sdk-spark';
 
 const PASSKEY_MIGRATION_ENABLED = true;
 
-type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'security' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState' | 'deleteAccount';
+type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'security' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState';
 
 // Full-screen dim spinner shown while sdk.isLoading is true (logout in
 // progress, SDK reconnect, etc). Wrapped as its own component so the
@@ -82,14 +79,10 @@ const AppContent: React.FC = () => {
   // 'unlocking', auto-'wallet' on reconnect) are layered in by
   // `currentScreen` below.
   const [userScreen, setUserScreen] = useState<Screen>('home');
-  // Where the open BackupPage was launched from: Settings (web), the
-  // Security & Backup page (native), or the Delete Account flow.
-  // Drives its back target and whether SecurityPage stays mounted
-  // beneath it.
-  const [backupSource, setBackupSource] = useState<'settings' | 'security' | 'deleteAccount'>('settings');
-  // Same for SecurityPage, which fronts Backup on native: back from
-  // Security returns to wherever it was opened from.
-  const [securitySource, setSecuritySource] = useState<'settings' | 'deleteAccount'>('settings');
+  // Where the open BackupPage was launched from: the side menu (web) or
+  // the Security & Backup page (native). Drives its back target and
+  // whether SecurityPage stays mounted beneath it.
+  const [backupSource, setBackupSource] = useState<'settings' | 'security'>('settings');
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
   const [buyProvidersSource, setBuyProvidersSource] = useState<'wallet' | 'settings'>('wallet');
   const [passkeySdkConnected, setPasskeySdkConnected] = useState(false);
@@ -204,30 +197,6 @@ const AppContent: React.FC = () => {
     await sdk.handleLogout();
   };
 
-  // Account deletion. While phase !== 'idle', renderCurrentScreen
-  // early-returns the AccountDeletedPage overlay, replacing the whole
-  // screen tree BEFORE the SDK disconnects: a mounted SettingsPage
-  // would otherwise trip useWallet() on the transient null client
-  // (same hazard as onSwitchCredential below). Passkey mode is
-  // captured up front because the wipe clears the localStorage key
-  // isPasskeyMode() reads.
-  const [deletionPhase, setDeletionPhase] = useState<'idle' | 'deleting' | 'done'>('idle');
-  const [deletedPasskeyMode, setDeletedPasskeyMode] = useState(false);
-  const handleDeleteAccount = async () => {
-    setDeletedPasskeyMode(isPasskeyMode());
-    setDeletionPhase('deleting');
-    try {
-      await sdk.handleDeleteAccount();
-      setUserScreen('home');
-      hasAutoOpenedMigrationRef.current = false;
-      setDeletionPhase('done');
-    } catch (e) {
-      // Server-side release failed; nothing was wiped, user can retry.
-      setDeletionPhase('idle');
-      showToast('error', 'Could not delete account', e instanceof Error ? e.message : undefined);
-    }
-  };
-
   // Android hardware back button — screen navigation fallback at the
   // bottom of the back-button handler stack (utils/backButton.ts).
   // Open bottom sheets, drawers and confirm dialogs push their own
@@ -253,18 +222,11 @@ const AppContent: React.FC = () => {
         setUserScreen('wallet');
         return true;
       case 'backup':
-        setUserScreen(
-          backupSource === 'security' ? 'security'
-            : backupSource === 'deleteAccount' ? 'deleteAccount'
-              : 'settings',
-        );
+        setUserScreen(backupSource === 'security' ? 'security' : 'settings');
         return true;
       case 'security':
-        setUserScreen(securitySource === 'deleteAccount' ? 'deleteAccount' : 'settings');
-        return true;
       case 'fiatCurrencies':
       case 'passkeySettings':
-      case 'deleteAccount':
         setUserScreen('settings');
         return true;
       case 'passkeyManagement':
@@ -292,22 +254,10 @@ const AppContent: React.FC = () => {
         // (same as pressing Home). Matches standard Android UX.
         return false;
     }
-  }, [currentScreen, buyProvidersSource, backupSource, securitySource]), true);
+  }, [currentScreen, buyProvidersSource, backupSource]), true);
 
   // Render screens
   const renderCurrentScreen = () => {
-    // Deletion overlay wins over everything, including startup-state
-    // overlays: it must stay up while the SDK tears down beneath it.
-    if (deletionPhase !== 'idle') {
-      return (
-        <AccountDeletedPage
-          phase={deletionPhase}
-          wasPasskey={deletedPasskeyMode}
-          onDone={() => setDeletionPhase('idle')}
-        />
-      );
-    }
-
     // Startup-state overlays take precedence and are derived directly
     // from `sdk.startupState`. The `currentScreen` memo above already
     // maps these to 'unlocking' / 'unlock', but the explicit early
@@ -401,21 +351,8 @@ const AppContent: React.FC = () => {
         onOpenFiatCurrencies={() => setUserScreen('fiatCurrencies')}
         onOpenBuyProviders={() => { setBuyProvidersSource('settings'); setUserScreen('buyProviders'); }}
         onOpenPasskeySettings={() => setUserScreen('passkeySettings')}
-        onOpenSecurity={() => { setSecuritySource('settings'); setUserScreen('security'); }}
+        onOpenSecurity={() => setUserScreen('security')}
         onOpenBackup={() => { setBackupSource('settings'); setUserScreen('backup'); }}
-        onOpenDeleteAccount={() => setUserScreen('deleteAccount')}
-      />
-    );
-
-    // Backdrop beneath Security / Backup when they're opened from the
-    // delete flow, so their close animations reveal the Delete Account
-    // page they return to.
-    const renderDeleteAccountPage = () => (
-      <DeleteAccountPage
-        onBack={() => setUserScreen('settings')}
-        onDelete={() => { void handleDeleteAccount(); }}
-        onOpenSecurity={() => { setSecuritySource('deleteAccount'); setUserScreen('security'); }}
-        onOpenBackup={() => { setBackupSource('deleteAccount'); setUserScreen('backup'); }}
       />
     );
 
@@ -507,15 +444,6 @@ const AppContent: React.FC = () => {
             {renderWalletPage()}
             {renderSettingsPage()}
             <FiatCurrenciesPage onBack={() => setUserScreen('settings')} />
-          </>
-        );
-
-      case 'deleteAccount':
-        return (
-          <>
-            {renderWalletPage()}
-            {renderSettingsPage()}
-            {renderDeleteAccountPage()}
           </>
         );
 
@@ -613,21 +541,13 @@ const AppContent: React.FC = () => {
       case 'backup':
       case 'security': {
         const backupFromSecurity = backupSource === 'security';
-        // Which origin launched the currently visible chain: a chain
-        // running through Security follows securitySource; a direct
-        // Backup open follows backupSource. Deciding per-chain keeps a
-        // stale source from an earlier visit from leaking in.
-        const fromDeleteFlow = (currentScreen === 'security' || backupFromSecurity)
-          ? securitySource === 'deleteAccount'
-          : backupSource === 'deleteAccount';
         return (
           <>
             {renderWalletPage()}
             {renderSettingsPage()}
-            {fromDeleteFlow && renderDeleteAccountPage()}
             {(currentScreen === 'security' || backupFromSecurity) && (
               <SecurityPage
-                onBack={() => setUserScreen(securitySource === 'deleteAccount' ? 'deleteAccount' : 'settings')}
+                onBack={() => setUserScreen('settings')}
                 onOpenBackup={() => {
                   setBackupSource('security');
                   setUserScreen('backup');
@@ -637,11 +557,7 @@ const AppContent: React.FC = () => {
             {currentScreen === 'backup' && (
               <BackupPage
                 closeStyle="back"
-                onBack={() => setUserScreen(
-                  backupFromSecurity ? 'security'
-                    : backupSource === 'deleteAccount' ? 'deleteAccount'
-                      : 'settings',
-                )}
+                onBack={() => setUserScreen(backupFromSecurity ? 'security' : 'settings')}
               />
             )}
           </>

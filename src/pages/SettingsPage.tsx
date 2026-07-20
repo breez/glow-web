@@ -3,7 +3,9 @@ import { FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../
 import { getSettings, saveSettings, UserSettings, isBuyBitcoinAvailable } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
-import { CurrencyIcon, ChevronRightIcon, DownloadIcon, ShieldCheckIcon, TrashIcon } from '../components/Icons';
+import { CurrencyIcon, ChevronRightIcon, DownloadIcon, ShieldCheckIcon, TrashIcon, ExternalLinkIcon } from '../components/Icons';
+import { ACCOUNT_DELETION_GUIDE_URL } from '@/services/accountDeletion';
+import { openExternalUrl } from '@/utils/externalLink';
 import { isAppLockSupported } from '@/services/appLock';
 import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
@@ -20,7 +22,6 @@ interface SettingsPageProps {
   onOpenPasskeySettings: () => void;
   onOpenSecurity: () => void;
   onOpenBackup: () => void;
-  onOpenDeleteAccount: () => void;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({
@@ -31,7 +32,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onOpenPasskeySettings,
   onOpenSecurity,
   onOpenBackup,
-  onOpenDeleteAccount,
 }) => {
   const wallet = useWallet();
   const {
@@ -280,20 +280,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             </button>
           </div>
 
-          {/* Account deletion (App Store 5.1.1(v)): must be reachable
-              from account settings without dev mode. */}
+          {/* Account deletion (App Store 5.1.1(v)): links the hosted
+              guide covering passkey removal and the recovery phrase
+              warning. Reachable without dev mode. */}
           <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
             <h3 className="font-display font-semibold text-spark-text-primary mb-3">Account</h3>
             <button
               className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-warning/40 rounded-xl text-spark-warning hover:bg-spark-warning/10 transition-colors"
               type="button"
-              onClick={onOpenDeleteAccount}
+              onClick={() => { void openExternalUrl(ACCOUNT_DELETION_GUIDE_URL); }}
             >
               <div className="flex items-center gap-3">
                 <TrashIcon size="md" />
                 <span>Delete Account</span>
               </div>
-              <ChevronRightIcon size="md" />
+              <ExternalLinkIcon size="sm" />
             </button>
           </div>
 
