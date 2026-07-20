@@ -22,6 +22,7 @@ import { logger, LogCategory, logSdkMessage } from '../services/logger';
 import { formatError } from '../utils/formatError';
 import { isDepositRejected, clearRejectedDeposits } from '../services/depositState';
 import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, type BuyBitcoinProvider } from '../services/settings';
+import { wipeAllLocalData } from '../services/accountDeletion';
 import { hideSplash } from '../main';
 import {
   prfAvailability,
@@ -189,7 +190,13 @@ export interface BreezSdkActions {
   ) => Promise<void>;
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
   fetchUnclaimedDeposits: () => Promise<void>;
-  handleLogout: () => Promise<void>;
+  handleLogout: (opts?: { silent?: boolean }) => Promise<void>;
+  /**
+   * Account deletion (App Store 5.1.1(v)): logs out, then wipes the
+   * client-side storage logout leaves behind (SDK databases,
+   * Preferences, remaining localStorage).
+   */
+  handleDeleteAccount: () => Promise<void>;
   /**
    * Adopt the (already connected + synced) new SDK produced by the passkey-RP
    * migration as the active wallet, keeping mnemonic / stable-ticker / network
@@ -550,7 +557,7 @@ export function useBreezSdk(
     }
   }, [sdk, showToast]);
 
-  const handleLogout = useCallback(async () => {
+  const handleLogout = useCallback(async (opts?: { silent?: boolean }) => {
     setIsLoading(true);
 
     // Wipe reconnect signals first so a hung sdk.disconnect() can't
@@ -604,8 +611,15 @@ export function useBreezSdk(
     setIsLoading(false);
     setStartupState('no-wallet');
     clearNetworkOverride();
-    showToast('success', 'Successfully logged out');
+    if (!opts?.silent) {
+      showToast('success', 'Successfully logged out');
+    }
   }, [sdk, showToast]);
+
+  const handleDeleteAccount = useCallback(async () => {
+    await handleLogout({ silent: true });
+    await wipeAllLocalData();
+  }, [handleLogout]);
 
   const adoptMigratedSdk = useCallback(async (newSdk: BreezSdk, label: string): Promise<void> => {
     logger.info(LogCategory.AUTH, 'Adopting migrated SDK', { label });
@@ -1312,6 +1326,7 @@ export function useBreezSdk(
     refreshWalletData,
     fetchUnclaimedDeposits,
     handleLogout,
+    handleDeleteAccount,
     adoptMigratedSdk,
     handleBuyBitcoin,
     clearError: () => setError(null),

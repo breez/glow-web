@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
+import { ConfirmDialog, FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
 import { getSettings, saveSettings, UserSettings, isBuyBitcoinAvailable } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
-import { CurrencyIcon, ChevronRightIcon, DownloadIcon, ShieldCheckIcon, TrashIcon, ExternalLinkIcon } from '../components/Icons';
-import { ACCOUNT_DELETION_GUIDE_URL } from '@/services/accountDeletion';
-import { openExternalUrl } from '@/utils/externalLink';
+import { CurrencyIcon, ChevronRightIcon, DownloadIcon, ShieldCheckIcon, TrashIcon } from '../components/Icons';
+import { isPasskeyMode } from '@/services/passkeyService';
 import { isAppLockSupported } from '@/services/appLock';
 import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
@@ -22,6 +21,7 @@ interface SettingsPageProps {
   onOpenPasskeySettings: () => void;
   onOpenSecurity: () => void;
   onOpenBackup: () => void;
+  onDeleteAccount: () => void;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({
@@ -32,6 +32,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onOpenPasskeySettings,
   onOpenSecurity,
   onOpenBackup,
+  onDeleteAccount,
 }) => {
   const wallet = useWallet();
   const {
@@ -91,6 +92,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
   const [isDownloadingLogs, setIsDownloadingLogs] = useState<boolean>(false);
   const [isExportingDb, setIsExportingDb] = useState<boolean>(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
 
   // Async SDK read for sparkPrivateModeEnabled. Stays in an effect
   // because it awaits a Promise; setState happens post-await.
@@ -280,21 +282,18 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             </button>
           </div>
 
-          {/* Account deletion (App Store 5.1.1(v)): links the hosted
-              guide covering passkey removal and the recovery phrase
-              warning. Reachable without dev mode. */}
+          {/* Account deletion (App Store 5.1.1(v)): erases the data
+              logout leaves behind and signs out. Reachable without
+              dev mode. */}
           <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
             <h3 className="font-display font-semibold text-spark-text-primary mb-3">Account</h3>
             <button
-              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-warning/40 rounded-xl text-spark-warning hover:bg-spark-warning/10 transition-colors"
+              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium border border-spark-warning/40 rounded-xl text-spark-warning hover:bg-spark-warning/10 transition-colors"
               type="button"
-              onClick={() => { void openExternalUrl(ACCOUNT_DELETION_GUIDE_URL); }}
+              onClick={() => setShowDeleteConfirm(true)}
             >
-              <div className="flex items-center gap-3">
-                <TrashIcon size="md" />
-                <span>Delete Account</span>
-              </div>
-              <ExternalLinkIcon size="sm" />
+              <TrashIcon size="md" />
+              <span>Delete Account</span>
             </button>
           </div>
 
@@ -466,6 +465,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Account?"
+        message={isPasskeyMode()
+          ? 'This erases all Glow data from this device and signs you out. Your funds stay tied to your passkey: you\'ll need it, or a saved recovery phrase, to access them again.\n\nYour passkey itself is not deleted.'
+          : 'This erases all Glow data from this device, including your recovery phrase, and signs you out.\n\nMake sure you\'ve saved your recovery phrase: without it, any funds are lost forever.'}
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          onDeleteAccount();
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </SlideInPage>
   );
 };

@@ -23,6 +23,8 @@ import { useAppLock } from './hooks/useAppLock';
 import PasskeyPage from './pages/PasskeyPage';
 import type { MigrationEntry, MigrationOutcome } from './features/passkey-migration/types';
 import SettingsPage from './pages/SettingsPage';
+import AccountDeletedPage from './pages/AccountDeletedPage';
+import { isPasskeyMode } from './services/passkeyService';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import BuyProvidersPage from './pages/BuyProvidersPage';
 import UnlockPage from './pages/UnlockPage';
@@ -197,6 +199,29 @@ const AppContent: React.FC = () => {
     await sdk.handleLogout();
   };
 
+  // Account deletion. While phase !== 'idle', renderCurrentScreen
+  // early-returns the AccountDeletedPage overlay, replacing the whole
+  // screen tree BEFORE the SDK disconnects: a mounted SettingsPage
+  // would otherwise trip useWallet() on the transient null client
+  // (same hazard as onSwitchCredential below). Passkey mode is
+  // captured up front because the wipe clears the localStorage key
+  // isPasskeyMode() reads.
+  const [deletionPhase, setDeletionPhase] = useState<'idle' | 'deleting' | 'done'>('idle');
+  const [deletedPasskeyMode, setDeletedPasskeyMode] = useState(false);
+  const handleDeleteAccount = async () => {
+    setDeletedPasskeyMode(isPasskeyMode());
+    setDeletionPhase('deleting');
+    try {
+      await sdk.handleDeleteAccount();
+      setUserScreen('home');
+      hasAutoOpenedMigrationRef.current = false;
+      setDeletionPhase('done');
+    } catch (e) {
+      setDeletionPhase('idle');
+      showToast('error', 'Could not delete account', e instanceof Error ? e.message : undefined);
+    }
+  };
+
   // Android hardware back button — screen navigation fallback at the
   // bottom of the back-button handler stack (utils/backButton.ts).
   // Open bottom sheets, drawers and confirm dialogs push their own
@@ -258,6 +283,18 @@ const AppContent: React.FC = () => {
 
   // Render screens
   const renderCurrentScreen = () => {
+    // Deletion overlay wins over everything, including startup-state
+    // overlays: it must stay up while the SDK tears down beneath it.
+    if (deletionPhase !== 'idle') {
+      return (
+        <AccountDeletedPage
+          phase={deletionPhase}
+          wasPasskey={deletedPasskeyMode}
+          onDone={() => setDeletionPhase('idle')}
+        />
+      );
+    }
+
     // Startup-state overlays take precedence and are derived directly
     // from `sdk.startupState`. The `currentScreen` memo above already
     // maps these to 'unlocking' / 'unlock', but the explicit early
@@ -353,6 +390,7 @@ const AppContent: React.FC = () => {
         onOpenPasskeySettings={() => setUserScreen('passkeySettings')}
         onOpenSecurity={() => setUserScreen('security')}
         onOpenBackup={() => { setBackupSource('settings'); setUserScreen('backup'); }}
+        onDeleteAccount={() => { void handleDeleteAccount(); }}
       />
     );
 
