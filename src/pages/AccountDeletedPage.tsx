@@ -1,10 +1,10 @@
 import React from 'react';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { AlertCard } from '../components/AlertCard';
 import { PrimaryButton } from '../components/ui';
 import { CheckCircleIcon, ExternalLinkIcon } from '../components/Icons';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';
 import { STATUS_BAR_LOADING } from '../utils/statusBarManager';
+import { safeAreaBottom } from '../utils/safeAreaInsets';
 import { ACCOUNT_DELETION_GUIDE_URL } from '@/services/accountDeletion';
 import { openExternalUrl } from '@/utils/externalLink';
 
@@ -37,43 +37,36 @@ const AccountDeletedPage: React.FC<AccountDeletedPageProps> = ({ phase, wasPassk
   }
 
   return (
-    <div className="absolute inset-0 bg-spark-void z-50 flex items-center justify-center p-6 overflow-y-auto">
-      <div className="w-full max-w-sm space-y-5 text-center">
-        <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-full bg-spark-success/15 flex items-center justify-center">
-            <CheckCircleIcon size="xl" className="text-spark-success" />
+    <div
+      className="absolute inset-0 bg-spark-void z-50 flex flex-col px-6 pt-6"
+      style={{ paddingBottom: `calc(${safeAreaBottom} + 16px)` }}
+    >
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-full max-w-sm space-y-4 text-center">
+          <div className="flex justify-center">
+            <div className="w-16 h-16 rounded-full bg-spark-success/15 flex items-center justify-center">
+              <CheckCircleIcon size="xl" className="text-spark-success" />
+            </div>
           </div>
-        </div>
-        <h1 className="font-display text-2xl font-bold text-spark-text-primary">
-          Account Deleted
-        </h1>
-        <p className="text-spark-text-secondary text-sm">
-          You have been signed out and all Glow data on this device has been erased.
-        </p>
-
-        {wasPasskey ? (
-          <AlertCard variant="warning" title="Your passkey still exists">
-            <p className="text-left">
-              If your account held funds, keep the passkey (or a saved recovery phrase) to
-              restore access. To remove the passkey as well, delete it from your password
-              manager.
-            </p>
+          <h1 className="font-display text-2xl font-bold text-spark-text-primary">
+            Account Deleted
+          </h1>
+          <p className="text-spark-text-secondary text-sm">
+            You have been signed out and all Glow data on this device has been erased.
+          </p>
+          {wasPasskey && (
             <button
               type="button"
-              className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium underline"
+              className="mx-auto flex items-center gap-1 text-sm text-spark-text-muted underline hover:text-spark-text-secondary transition-colors"
               onClick={() => { void openExternalUrl(ACCOUNT_DELETION_GUIDE_URL); }}
             >
               How to remove your passkey
               <ExternalLinkIcon size="xs" />
             </button>
-          </AlertCard>
-        ) : (
-          <p className="text-spark-text-muted text-sm">
-            If you saved your recovery phrase, you can restore your account with it at any
-            time.
-          </p>
-        )}
-
+          )}
+        </div>
+      </div>
+      <div className="w-full max-w-sm mx-auto shrink-0">
         <PrimaryButton className="w-full" onClick={onDone}>
           Done
         </PrimaryButton>
