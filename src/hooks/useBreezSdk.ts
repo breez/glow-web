@@ -29,6 +29,7 @@ import {
   isPasskeyMode,
   setPasskeyMode,
   clearPasskeyMode,
+  clearKnownCredentials,
   getKnownCredentialIdsBase64,
   hasPasskeyHistory,
   markLabelUsed,
@@ -192,9 +193,10 @@ export interface BreezSdkActions {
   fetchUnclaimedDeposits: () => Promise<void>;
   handleLogout: (opts?: { silent?: boolean }) => Promise<void>;
   /**
-   * Account deletion (App Store 5.1.1(v)): logs out, then wipes the
-   * client-side storage logout leaves behind (SDK databases,
-   * Preferences, remaining localStorage).
+   * Account deletion (App Store 5.1.1(v)): logs out, then wipes
+   * everything logout leaves behind: SDK databases, Preferences,
+   * remaining localStorage, the device credential-id registry, and the
+   * in-memory log buffer.
    */
   handleDeleteAccount: () => Promise<void>;
   /**
@@ -618,7 +620,15 @@ export function useBreezSdk(
 
   const handleDeleteAccount = useCallback(async () => {
     await handleLogout({ silent: true });
+    // Forget the device credential-id registry too: on native it lives
+    // in the passkey plugin's Keychain / Block Store, which no web-side
+    // storage wipe can reach. Signal-free, so the passkey itself stays
+    // usable in the credential manager for a later restore.
+    await clearKnownCredentials();
     await wipeAllLocalData();
+    // Drop the wiped account's log breadcrumbs from memory so a later
+    // persist can't re-seed the deleted glow-logs database with them.
+    logger.clear();
   }, [handleLogout]);
 
   const adoptMigratedSdk = useCallback(async (newSdk: BreezSdk, label: string): Promise<void> => {
