@@ -22,7 +22,6 @@ interface CollapsingWalletHeaderProps {
   onOpenBuyBitcoin?: () => void;
   isBuyLoading?: boolean;
   isSyncing?: boolean;
-  lastSyncedAt?: number | null;
   refreshWalletData?: () => Promise<void>;
   hasRejectedDeposits?: boolean;
   onOpenGetRefund?: () => void;
@@ -35,7 +34,6 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   onOpenBuyBitcoin,
   isBuyLoading,
   isSyncing,
-  lastSyncedAt,
   refreshWalletData,
   hasRejectedDeposits,
   onOpenGetRefund,
@@ -240,23 +238,6 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
     ? stableBalance.displayConfig.symbol
     : '₿';
 
-  // Coarse tick so the stale-data hint appears/ages without a re-render
-  // being triggered by anything else.
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(id);
-  }, []);
-  // A resumed iOS PWA can fail its resync silently, so past 3 minutes we
-  // say how old the data is instead of implying it is live.
-  const staleMins = lastSyncedAt != null ? Math.floor((now - lastSyncedAt) / 60_000) : null;
-  const staleLabel = staleMins != null && staleMins >= 3
-    ? staleMins >= 1440 ? `${Math.floor(staleMins / 1440)}d`
-      : staleMins >= 60 ? `${Math.floor(staleMins / 60)}h`
-        : `${staleMins}m`
-    : null;
-  const showStale = !isSyncing && staleLabel != null;
-
   if (!walletInfo) return null;
 
   const balanceSuffix = stableBalance.isActive ? 'USD' : 'sats';
@@ -351,15 +332,9 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-spark-primary animate-pulse" />
               Syncing
             </span>
-            {showStale && (
-              <span className="absolute text-spark-primary/80 text-xs font-display font-medium tracking-widest uppercase inline-flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-spark-primary animate-pulse" />
-                Updated {staleLabel} ago
-              </span>
-            )}
             <span
               className={`absolute text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase transition-opacity duration-300 ${
-                isSyncing || showStale ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                isSyncing ? 'opacity-0' : 'opacity-100'
               }`}
             >
               Balance

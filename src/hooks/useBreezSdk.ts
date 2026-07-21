@@ -151,8 +151,6 @@ export interface BreezSdkState {
   error: string | null;
   hasRejectedDeposits: boolean;
   celebrationPayment: Payment | null;
-  /** Epoch ms of the last known-fresh wallet data; null before the first sync. */
-  lastSyncedAt: number | null;
   /**
    * True when the connected wallet is on the legacy RP ID while a distinct shared
    * RP ID is configured and migration hasn't been done/skipped. Drives the
@@ -270,7 +268,6 @@ export function useBreezSdk(
   const [config, setConfig] = useState<Config | null>(null);
   const [hasRejectedDeposits, setHasRejectedDeposits] = useState(false);
   const [celebrationPayment, setCelebrationPayment] = useState<Payment | null>(null);
-  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [needsPasskeyMigration, setNeedsPasskeyMigration] = useState(false);
   const [prfAvailable, setPrfAvailable] = useState(false);
   const [startupState, setStartupState] = useState<StartupState>('loading');
@@ -354,7 +351,6 @@ export function useBreezSdk(
         setIsSyncing(false);
       }
       document.body.setAttribute('data-wallet-synced', 'true');
-      setLastSyncedAt(Date.now());
       refreshWalletData(false);
       fetchUnclaimedDeposits();
     } else if (event.type === 'paymentSucceeded') {
@@ -508,8 +504,6 @@ export function useBreezSdk(
       // background: the balance header waits for walletInfo (renders nothing
       // until then, never a stale zero) and isSyncing drives the indicator.
       setIsConnected(true);
-      // connect() already ran the initial wallet sync, so data is fresh here.
-      setLastSyncedAt(Date.now());
       setStartupState('connected');
       setIsLoading(false);
       // Total covers connect + persist; getInfo/history load in the
@@ -620,7 +614,6 @@ export function useBreezSdk(
     setWalletInfo(null);
     setTransactions([]);
     setUnclaimedDeposits([]);
-    setLastSyncedAt(null);
     setConfig(null);
     setError(null);
     setHasRejectedDeposits(false);
@@ -1309,7 +1302,6 @@ export function useBreezSdk(
         try {
           await s.syncWallet({});
           await Promise.all([refreshWalletData(false), fetchUnclaimedDeposits()]);
-          setLastSyncedAt(Date.now());
           return;
         } catch (e) {
           logger.warn(LogCategory.SDK, 'Foreground resync failed', { attempt, error: formatError(e) });
@@ -1372,7 +1364,6 @@ export function useBreezSdk(
     error,
     hasRejectedDeposits,
     celebrationPayment,
-    lastSyncedAt,
     needsPasskeyMigration,
     prfAvailable,
     hasPasskeyBefore: hasPasskeyHistory(),

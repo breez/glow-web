@@ -322,7 +322,6 @@ const AppContent: React.FC = () => {
           unclaimedDeposits={sdk.unclaimedDeposits}
           refreshWalletData={sdk.refreshWalletData}
           isSyncing={sdk.isSyncing}
-          lastSyncedAt={sdk.lastSyncedAt}
           error={sdk.error}
           onClearError={sdk.clearError}
           onLogout={handleLogout}
