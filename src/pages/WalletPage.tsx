@@ -27,6 +27,7 @@ interface WalletPageProps {
   unclaimedDeposits: DepositInfo[];
   refreshWalletData: (showLoading?: boolean) => Promise<void>;
   isSyncing: boolean;
+  lastSyncedAt: number | null;
   error: string | null;
   onClearError: () => void;
   onLogout: () => void;
@@ -45,6 +46,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   unclaimedDeposits,
   refreshWalletData,
   isSyncing,
+  lastSyncedAt,
   onLogout,
   hasRejectedDeposits,
   onOpenGetRefund,
@@ -237,6 +239,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
           }}
           isBuyLoading={isBuyLoading}
           isSyncing={isSyncing}
+          lastSyncedAt={lastSyncedAt}
           refreshWalletData={() => refreshWalletData(false)}
           hasRejectedDeposits={hasRejectedDeposits}
           onOpenGetRefund={() => onOpenGetRefund('icon')}

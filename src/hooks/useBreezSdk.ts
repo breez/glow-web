@@ -151,6 +151,8 @@ export interface BreezSdkState {
   error: string | null;
   hasRejectedDeposits: boolean;
   celebrationPayment: Payment | null;
+  /** Epoch ms of the last known-fresh wallet data; null before the first sync. */
+  lastSyncedAt: number | null;
   /**
    * True when the connected wallet is on the legacy RP ID while a distinct shared
    * RP ID is configured and migration hasn't been done/skipped. Drives the
@@ -268,6 +270,7 @@ export function useBreezSdk(
   const [config, setConfig] = useState<Config | null>(null);
   const [hasRejectedDeposits, setHasRejectedDeposits] = useState(false);
   const [celebrationPayment, setCelebrationPayment] = useState<Payment | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [needsPasskeyMigration, setNeedsPasskeyMigration] = useState(false);
   const [prfAvailable, setPrfAvailable] = useState(false);
   const [startupState, setStartupState] = useState<StartupState>('loading');
@@ -332,9 +335,9 @@ export function useBreezSdk(
       setUnclaimedDeposits(deposits);
       setHasRejectedDeposits(deposits.some(d => isDepositRejected(d.txid, d.vout)));
     } catch (e) {
+      // Keep the last known list: clearing on a transient failure (common
+      // on iOS PWA resume) hides a real pending deposit from the UI.
       logger.warn(LogCategory.SDK, 'Failed to fetch unclaimed deposits', { error: formatError(e) });
-      setUnclaimedDeposits([]);
-      setHasRejectedDeposits(false);
     }
   }, [sdkRef]);
 
@@ -351,6 +354,7 @@ export function useBreezSdk(
         setIsSyncing(false);
       }
       document.body.setAttribute('data-wallet-synced', 'true');
+      setLastSyncedAt(Date.now());
       refreshWalletData(false);
       fetchUnclaimedDeposits();
     } else if (event.type === 'paymentSucceeded') {
@@ -504,6 +508,8 @@ export function useBreezSdk(
       // background: the balance header waits for walletInfo (renders nothing
       // until then, never a stale zero) and isSyncing drives the indicator.
       setIsConnected(true);
+      // connect() already ran the initial wallet sync, so data is fresh here.
+      setLastSyncedAt(Date.now());
       setStartupState('connected');
       setIsLoading(false);
       // Total covers connect + persist; getInfo/history load in the
@@ -614,6 +620,7 @@ export function useBreezSdk(
     setWalletInfo(null);
     setTransactions([]);
     setUnclaimedDeposits([]);
+    setLastSyncedAt(null);
     setConfig(null);
     setError(null);
     setHasRejectedDeposits(false);
@@ -1282,6 +1289,51 @@ export function useBreezSdk(
     };
   }, [startupStateRef, retryUnlockRef]);
 
+  // Force a sync when the app returns to the foreground. iOS standalone
+  // PWAs resume a days-old page instead of reloading, and a failed
+  // background sync is silent (synced never fires), so without this the
+  // UI keeps showing cached data (support case: invisible on-chain deposit).
+  const resyncInFlightRef = useRef(false);
+  const foregroundResync = useCallback(async () => {
+    if (resyncInFlightRef.current) return;
+    resyncInFlightRef.current = true;
+    try {
+      // Two passes = one retry; the delay doubles as retry backoff.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        // 1.5s delay: on iOS 18+ WebKit, network requests started directly
+        // on visibilitychange fail with "TypeError: Load failed".
+        await new Promise(r => setTimeout(r, 1500));
+        if (document.visibilityState !== 'visible') return;
+        const s = sdkRef.current;
+        if (!s) return;
+        try {
+          await s.syncWallet({});
+          await Promise.all([refreshWalletData(false), fetchUnclaimedDeposits()]);
+          setLastSyncedAt(Date.now());
+          return;
+        } catch (e) {
+          logger.warn(LogCategory.SDK, 'Foreground resync failed', { attempt, error: formatError(e) });
+        }
+      }
+    } finally {
+      resyncInFlightRef.current = false;
+    }
+  }, [sdkRef, refreshWalletData, fetchUnclaimedDeposits]);
+
+  useEffect(() => {
+    if (!isConnected) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void foregroundResync();
+    };
+    // pageshow catches bfcache restores, which skip visibilitychange.
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', onVisible);
+    };
+  }, [isConnected, foregroundResync]);
+
   // Event listener lifecycle
   useEffect(() => {
     if (isConnected && sdk) {
@@ -1320,6 +1372,7 @@ export function useBreezSdk(
     error,
     hasRejectedDeposits,
     celebrationPayment,
+    lastSyncedAt,
     needsPasskeyMigration,
     prfAvailable,
     hasPasskeyBefore: hasPasskeyHistory(),
