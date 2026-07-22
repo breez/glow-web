@@ -498,37 +498,39 @@ export function useBreezSdk(
         }
       }
 
-      // Mark connected as soon as the SDK is ready, so the wallet screen
-      // shows immediately instead of waiting on the getInfo / listPayments
-      // round-trips. Balance, history and unclaimed deposits load in the
-      // background: the balance header waits for walletInfo (renders nothing
-      // until then, never a stale zero) and isSyncing drives the indicator.
+      // Load balance + history before the first wallet render. Both are
+      // local-database reads (connect() already ran the initial sync), so
+      // the cost is milliseconds, while rendering without them flashes
+      // the "No payments" empty state on every startup (#301). Failure
+      // falls through: the wallet is usable and the synced event refills.
+      // Matches adoptMigratedSdk / reconnectWithDerivedWallet ordering.
+      try {
+        const [info, txns] = await logger.time('[onboarding] sdk.getInfoAndPayments', () =>
+          Promise.all([
+            connectedSdk!.getInfo({}),
+            connectedSdk!.listPayments({ offset: 0, limit: 100 }),
+          ]));
+        setWalletInfo(info);
+        setTransactions(filterOngoingConversionPayments(txns.payments));
+        logger.info(LogCategory.SDK, 'Connected wallet identity', {
+          identityPubkey: info.identityPubkey,
+          label: passkeyLabel ?? null,
+        });
+      } catch (e) {
+        logger.warn(LogCategory.SDK, 'Initial wallet data load failed', { error: formatError(e) });
+      }
+
       setIsConnected(true);
       setStartupState('connected');
       setIsLoading(false);
-      // Total covers connect + persist; getInfo/history load in the
-      // background below. Add the earlier passkey.register/signIn time for
-      // the full button-tap-to-usable figure.
+      // Total covers connect + persist + the local reads above; deposits
+      // load in the background below. Add the earlier passkey.register/
+      // signIn time for the full button-tap-to-usable figure.
       logger.info(LogCategory.PERF, '[onboarding] connect.total', {
         ms: Math.round(performance.now() - createStart),
       });
 
       void (async () => {
-        try {
-          const [info, txns] = await logger.time('[onboarding] sdk.getInfoAndPayments', () =>
-            Promise.all([
-              connectedSdk!.getInfo({}),
-              connectedSdk!.listPayments({ offset: 0, limit: 100 }),
-            ]));
-          setWalletInfo(info);
-          setTransactions(filterOngoingConversionPayments(txns.payments));
-          logger.info(LogCategory.SDK, 'Connected wallet identity', {
-            identityPubkey: info.identityPubkey,
-            label: passkeyLabel ?? null,
-          });
-        } catch (e) {
-          logger.warn(LogCategory.SDK, 'Background wallet data load failed', { error: formatError(e) });
-        }
         try {
           const result = await connectedSdk!.listUnclaimedDeposits({});
           const deposits = result.deposits;
