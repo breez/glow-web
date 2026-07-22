@@ -332,21 +332,26 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-spark-primary animate-pulse" />
               Syncing
             </span>
+            {/* inline-flex + items-center keeps the suffix pill on the
+                same vertical axis as the BALANCE text (inline baseline
+                alignment sat the pill visibly lower, #300). */}
             <span
-              className={`absolute text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase transition-opacity duration-300 ${
+              className={`absolute inline-flex items-center text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase transition-opacity duration-300 ${
                 isSyncing ? 'opacity-0' : 'opacity-100'
               }`}
             >
               Balance
               <button
-                  type="button"
-                  onClick={handleSuffixTap}
-                  disabled={stableBalance.isToggling}
-                  className="inline-flex items-center cursor-pointer text-spark-text-muted/50 hover:text-spark-text-secondary transition-colors disabled:opacity-50 font-display text-xs font-medium tracking-widest uppercase"
-                >
-                  <span className="mx-1.5">·</span>
-                  <span className="px-1.5 py-0.5 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 transition-all">{balanceSuffix}</span>
-                </button>
+                type="button"
+                onClick={handleSuffixTap}
+                disabled={stableBalance.isToggling}
+                className="inline-flex items-center cursor-pointer transition-colors disabled:opacity-50 font-display text-xs font-medium tracking-widest uppercase"
+              >
+                <span className="mx-1.5">·</span>
+                {/* White foreground so the tappable suffix reads as a
+                    button rather than blending into the muted label. */}
+                <span className="px-1.5 py-0.5 rounded-full text-spark-text-primary bg-white/5 hover:bg-white/10 active:scale-95 transition-all">{balanceSuffix}</span>
+              </button>
             </span>
           </div>
 
