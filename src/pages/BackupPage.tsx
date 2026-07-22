@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { WarningIcon, SpinnerIcon, EyeIcon, FaceIdIcon, FingerprintIcon, PasskeyIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
+import { PinGate } from '../components/PinEntry';
+import { LoadingSpinner } from '../components/ui';
+import { isPinEnabled } from '@/services/appLock';
 import {
   isPasskeyMode,
   signInPinnedToActiveCredential,
@@ -12,7 +15,7 @@ import { useScreenCaptureProtection } from '@/utils/screenSecurity';
 
 interface BackupPageProps {
   onBack: () => void;
-  /** 'back' when opened from the Security & Backup page (native). */
+  /** 'back' when opened via drill-in nav from Settings. */
   closeStyle?: 'close' | 'back';
 }
 
@@ -22,6 +25,21 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
   const [isRevealed, setIsRevealed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // App-lock gate at page entry: Backup opens directly from Settings,
+  // so when a PIN is set the phrase must sit behind the same gate the
+  // Lock Screen settings use. 'checking' avoids a one-frame content
+  // flash while the async PIN read resolves.
+  const [gate, setGate] = useState<'checking' | 'locked' | 'open'>('checking');
+  useEffect(() => {
+    let cancelled = false;
+    void isPinEnabled().then((pin) => {
+      if (!cancelled) setGate(pin ? 'locked' : 'open');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Block screen capture for the whole Backup screen, from mount, so
   // protection is already active before the seed can render (the native
@@ -37,7 +55,9 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
   const [biometricSeedPresent, setBiometricSeedPresent] = useState(false);
 
   useEffect(() => {
-    if (isPasskey) return;
+    // Hold the silent seed read until the gate passes so the phrase
+    // never sits in memory behind a locked pad.
+    if (isPasskey || gate !== 'open') return;
     let cancelled = false;
     (async () => {
       if (deviceOnlyStorage.isSupported() && (await deviceOnlyStorage.hasStoredSeed())) {
@@ -68,7 +88,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
     return () => {
       cancelled = true;
     };
-  }, [isPasskey]);
+  }, [isPasskey, gate]);
 
   // Tracks whether passkey-based reveal failed once, so we can offer a
   // secureStorage fallback button in the error UI. We don't try
@@ -199,6 +219,18 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
           input; the card views flow from the top as before. */}
       <div className="p-4 min-h-full flex flex-col">
         <div className="max-w-xl mx-auto w-full space-y-6 flex-1 flex flex-col">
+          {gate === 'checking' && (
+            <div className="flex justify-center py-16">
+              <LoadingSpinner size="small" />
+            </div>
+          )}
+
+          {gate === 'locked' && (
+            <PinGate reason="Unlock Backup" onUnlocked={() => setGate('open')} />
+          )}
+
+          {gate === 'open' && (
+          <>
           {/* Passkey info card */}
           {isPasskey && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-6">
@@ -244,8 +276,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
           {/* Reveal button (mnemonic mode). When biometric unlock is
               enabled the seed is in the biometric-bound tier, so the
               tap triggers an OS prompt before revealing. App-lock
-              protection happens at page entry: on native the only way
-              here is through the gated Security & Backup page. */}
+              protection happens at page entry via the PIN gate above. */}
           {!isPasskey && !isRevealed && (mnemonic || biometricSeedPresent) && (
             <button
               onClick={mnemonic
@@ -396,6 +427,8 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
                 Could not find a recovery phrase for this wallet.
               </p>
             </div>
+          )}
+          </>
           )}
         </div>
       </div>

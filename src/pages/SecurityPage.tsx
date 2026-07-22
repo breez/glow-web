@@ -1,10 +1,9 @@
 /**
- * Security & Backup page (native only), Misty Breez's model: the
- * recovery phrase entry and the app-lock settings live behind one
- * gate. No PIN set => Backup row + a "Create PIN" row. PIN set =>
- * the page opens behind an auth gate (biometrics first when enabled,
- * PIN pad as fallback) and offers: Backup, deactivate PIN, auto-lock
- * timeout, change PIN, enable <biometry>.
+ * Lock Screen page (native only). No PIN set => a "Create PIN" row.
+ * PIN set => the page opens behind an auth gate (biometrics first
+ * when enabled, PIN pad as fallback) and offers: deactivate PIN,
+ * auto-lock timeout, change PIN, enable <biometry>. Backup lives as
+ * its own top-level Settings entry; BackupPage gates itself.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -41,12 +40,9 @@ type View =
 
 interface SecurityPageProps {
   onBack: () => void;
-  /** Opens the Backup page. Rendered only past the gate, so the
-   *  recovery phrase inherits the page-entry app-lock (Misty model). */
-  onOpenBackup: () => void;
 }
 
-const SecurityPage: React.FC<SecurityPageProps> = ({ onBack, onOpenBackup }) => {
+const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
   const [view, setView] = useState<View>('loading');
   const [autoLock, setAutoLock] = useState<number>(120);
   const [biometricGate, setBiometricGate] = useState(false);
@@ -156,22 +152,6 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack, onOpenBackup }) => 
   };
 
   const renderBody = () => {
-    // Shared by the no-pin and options views: the recovery phrase entry
-    // lives here so it inherits the page-entry gate when a PIN is set.
-    const backupCard = (
-      <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-        <h3 className="font-display font-semibold text-spark-text-primary mb-3">Backup</h3>
-        <button
-          className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
-          type="button"
-          onClick={onOpenBackup}
-        >
-          <span>Show Recovery Phrase</span>
-          <ChevronRightIcon size="md" />
-        </button>
-      </div>
-    );
-
     switch (view) {
       case 'loading':
         return (
@@ -181,13 +161,12 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack, onOpenBackup }) => 
         );
 
       case 'gate':
-        return <PinGate reason="Unlock Security settings" onUnlocked={() => setView('options')} />;
+        return <PinGate reason="Unlock Lock Screen settings" onUnlocked={() => setView('options')} />;
 
       case 'no-pin':
         return (
           <div className="space-y-4">
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Lock Screen</h3>
               <button
                 className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
                 type="button"
@@ -200,7 +179,6 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack, onOpenBackup }) => 
                 <ChevronRightIcon size="md" />
               </button>
             </div>
-            {backupCard}
           </div>
         );
 
@@ -228,7 +206,6 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack, onOpenBackup }) => 
         return (
           <div className="space-y-4">
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-4 space-y-2">
-            <h3 className="font-display font-semibold text-spark-text-primary mb-3">Lock Screen</h3>
             {/* Deactivate PIN (Misty pattern: an always-on switch whose
                 only action is turning protection off) */}
             <div className="flex items-center justify-between px-4 py-3 border border-spark-border rounded-xl">
@@ -312,14 +289,13 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack, onOpenBackup }) => 
               <p className="text-spark-primary text-xs px-1 pt-1">{optionsError}</p>
             )}
             </div>
-            {backupCard}
           </div>
         );
     }
   };
 
   return (
-    <SlideInPage title="Security & Backup" onClose={onBack} slideFrom="left">
+    <SlideInPage title="Lock Screen" onClose={onBack} slideFrom="left">
       {/* min-h-full + flexed chain so the PIN views (gate, create,
           change) can split the viewport 1/3 header / 2/3 input; the
           list views just flow from the top as before. p-4 keeps the
