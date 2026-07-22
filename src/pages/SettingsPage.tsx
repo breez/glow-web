@@ -256,7 +256,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 >
                   <div className="flex items-center gap-3">
                     <CurrencyIcon size="md" />
-                    <span>Buy Bitcoin Providers</span>
+                    <span>Buy Bitcoin</span>
                   </div>
                   <ChevronRightIcon size="md" />
                 </button>

@@ -80,7 +80,6 @@ const AppContent: React.FC = () => {
   // `currentScreen` below.
   const [userScreen, setUserScreen] = useState<Screen>('home');
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
-  const [buyProvidersSource, setBuyProvidersSource] = useState<'wallet' | 'settings'>('wallet');
   const [passkeySdkConnected, setPasskeySdkConnected] = useState(false);
   // True when the user entered the passkey screen via the explicit
   // "Create New Wallet" CTA on browsers without `immediateGet`. Skips
@@ -220,6 +219,7 @@ const AppContent: React.FC = () => {
       case 'backup':
       case 'security':
       case 'fiatCurrencies':
+      case 'buyProviders':
       case 'passkeySettings':
         setUserScreen('settings');
         return true;
@@ -227,9 +227,6 @@ const AppContent: React.FC = () => {
       case 'labels':
       case 'passkeyLocalState':
         setUserScreen('passkeySettings');
-        return true;
-      case 'buyProviders':
-        setUserScreen(buyProvidersSource === 'settings' ? 'settings' : 'wallet');
         return true;
       case 'restore':
       case 'generate':
@@ -248,7 +245,7 @@ const AppContent: React.FC = () => {
         // (same as pressing Home). Matches standard Android UX.
         return false;
     }
-  }, [currentScreen, buyProvidersSource]), true);
+  }, [currentScreen]), true);
 
   // Render screens
   const renderCurrentScreen = () => {
@@ -325,7 +322,6 @@ const AppContent: React.FC = () => {
             setUserScreen('getRefund');
           }}
           onOpenSettings={() => setUserScreen('settings')}
-          onOpenBuyProviders={() => { setBuyProvidersSource('wallet'); setUserScreen('buyProviders'); }}
           onBuyBitcoin={sdk.handleBuyBitcoin}
           network={sdk.config?.network}
           onDepositChanged={sdk.fetchUnclaimedDeposits}
@@ -343,7 +339,7 @@ const AppContent: React.FC = () => {
         onBack={() => setUserScreen('wallet')}
         config={sdk.config}
         onOpenFiatCurrencies={() => setUserScreen('fiatCurrencies')}
-        onOpenBuyProviders={() => { setBuyProvidersSource('settings'); setUserScreen('buyProviders'); }}
+        onOpenBuyProviders={() => setUserScreen('buyProviders')}
         onOpenPasskeySettings={() => setUserScreen('passkeySettings')}
         onOpenSecurity={() => setUserScreen('security')}
         onOpenBackup={() => setUserScreen('backup')}
@@ -512,16 +508,9 @@ const AppContent: React.FC = () => {
         return (
           <>
             {renderWalletPage()}
-            {buyProvidersSource === 'settings' && renderSettingsPage()}
+            {renderSettingsPage()}
             <BuyProvidersPage
-              onBack={() => setUserScreen(buyProvidersSource === 'settings' ? 'settings' : 'wallet')}
-              slideFrom={buyProvidersSource === 'settings' ? 'right' : 'up'}
-              // Wallet-sourced = modal-style presentation (slides up from
-              // the Buy button) → X close affordance in the header.
-              // Settings-sourced = drill-in nav (slides in from the
-              // right) → < back affordance. Matches iOS/Material
-              // conventions for modal vs. push navigation.
-              closeStyle={buyProvidersSource === 'settings' ? 'back' : 'close'}
+              onBack={() => setUserScreen('settings')}
               network={sdk.config?.network}
             />
           </>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import { useToast } from '../contexts/ToastContext';
 import { logger, LogCategory } from '@/services/logger';
@@ -33,7 +33,6 @@ interface WalletPageProps {
   hasRejectedDeposits: boolean;
   onOpenGetRefund: (source?: 'menu' | 'icon') => void;
   onOpenSettings: () => void;
-  onOpenBuyProviders: () => void;
   onBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
   network?: Network;
   onDepositChanged?: () => void;
@@ -49,7 +48,6 @@ const WalletPage: React.FC<WalletPageProps> = ({
   hasRejectedDeposits,
   onOpenGetRefund,
   onOpenSettings,
-  onOpenBuyProviders,
   onBuyBitcoin,
   network,
   onDepositChanged,
@@ -75,9 +73,10 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isBuyBitcoinOpen, setIsBuyBitcoinOpen] = useState(false);
   const [isBuyLoading, setIsBuyLoading] = useState(false);
-  // Re-read when menu closes (user may have changed providers in BuyProvidersPage)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const enabledBuyProviders = useMemo(() => filterProvidersByNetwork(getBuyProviderSettings(), network), [isMenuOpen, network]);
+  // Computed per render (cheap in-memory read) so the Buy button's
+  // visibility is fresh after any return from Settings; a memo keyed
+  // on menu state went stale when providers changed under an overlay.
+  const enabledBuyProviders = filterProvidersByNetwork(getBuyProviderSettings(), network);
   const [saveContactAddress, setSaveContactAddress] = useState<string | null>(null);
   // Bump these on each open so each dialog remounts and lazy-inits its
   // state, instead of relying on a reset-in-effect inside the dialog.
@@ -224,10 +223,10 @@ const WalletPage: React.FC<WalletPageProps> = ({
           walletInfo={walletInfo}
           scrollProgress={scrollProgress}
           onOpenMenu={() => setIsMenuOpen(true)}
-          onOpenBuyBitcoin={!isBuyBitcoinAvailable() ? undefined : () => {
-            if (enabledBuyProviders.length === 0) {
-              onOpenBuyProviders();
-            } else if (enabledBuyProviders.length === 1 && enabledBuyProviders[0] === 'moonpay') {
+          // Buy is hidden when no provider is enabled (Settings →
+          // Buy Bitcoin), not just when the platform disallows buying.
+          onOpenBuyBitcoin={!isBuyBitcoinAvailable() || enabledBuyProviders.length === 0 ? undefined : () => {
+            if (enabledBuyProviders.length === 1 && enabledBuyProviders[0] === 'moonpay') {
               // MoonPay can redirect directly; Cash App needs amount entry via the dialog.
               setIsBuyLoading(true);
               onBuyBitcoin(enabledBuyProviders[0]).finally(() => setIsBuyLoading(false));
