@@ -3,7 +3,7 @@ import { WarningIcon, SpinnerIcon, EyeIcon, FaceIdIcon, FingerprintIcon, Passkey
 import SlideInPage from '../components/layout/SlideInPage';
 import { PinGate } from '../components/PinEntry';
 import { LoadingSpinner } from '../components/ui';
-import { isPinEnabled } from '@/services/appLock';
+import { isAppLockSupported, isPinEnabled } from '@/services/appLock';
 import {
   isPasskeyMode,
   signInPinnedToActiveCredential,
@@ -29,9 +29,13 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
   // App-lock gate at page entry: Backup opens directly from Settings,
   // so when a PIN is set the phrase must sit behind the same gate the
   // Lock Screen settings use. 'checking' avoids a one-frame content
-  // flash while the async PIN read resolves.
-  const [gate, setGate] = useState<'checking' | 'locked' | 'open'>('checking');
+  // flash while the async PIN read resolves; web has no app lock, so
+  // it opens synchronously (no spinner flash).
+  const [gate, setGate] = useState<'checking' | 'locked' | 'open'>(
+    () => (isAppLockSupported() ? 'checking' : 'open'),
+  );
   useEffect(() => {
+    if (gate !== 'checking') return;
     let cancelled = false;
     void isPinEnabled().then((pin) => {
       if (!cancelled) setGate(pin ? 'locked' : 'open');
@@ -39,6 +43,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once at mount
   }, []);
 
   // Block screen capture for the whole Backup screen, from mount, so
