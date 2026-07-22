@@ -79,10 +79,6 @@ const AppContent: React.FC = () => {
   // 'unlocking', auto-'wallet' on reconnect) are layered in by
   // `currentScreen` below.
   const [userScreen, setUserScreen] = useState<Screen>('home');
-  // Where the open BackupPage was launched from: the side menu (web) or
-  // the Security & Backup page (native). Drives its back target and
-  // whether SecurityPage stays mounted beneath it.
-  const [backupSource, setBackupSource] = useState<'settings' | 'security'>('settings');
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
   const [passkeySdkConnected, setPasskeySdkConnected] = useState(false);
   // True when the user entered the passkey screen via the explicit
@@ -221,8 +217,6 @@ const AppContent: React.FC = () => {
         setUserScreen('wallet');
         return true;
       case 'backup':
-        setUserScreen(backupSource === 'security' ? 'security' : 'settings');
-        return true;
       case 'security':
       case 'fiatCurrencies':
       case 'buyProviders':
@@ -251,7 +245,7 @@ const AppContent: React.FC = () => {
         // (same as pressing Home). Matches standard Android UX.
         return false;
     }
-  }, [currentScreen, backupSource]), true);
+  }, [currentScreen]), true);
 
   // Render screens
   const renderCurrentScreen = () => {
@@ -348,7 +342,7 @@ const AppContent: React.FC = () => {
         onOpenBuyProviders={() => setUserScreen('buyProviders')}
         onOpenPasskeySettings={() => setUserScreen('passkeySettings')}
         onOpenSecurity={() => setUserScreen('security')}
-        onOpenBackup={() => { setBackupSource('settings'); setUserScreen('backup'); }}
+        onOpenBackup={() => setUserScreen('backup')}
       />
     );
 
@@ -522,36 +516,24 @@ const AppContent: React.FC = () => {
           </>
         );
 
-      // Security & Backup share one branch so SecurityPage stays
-      // mounted (gate passed, options state intact) underneath an
-      // opened BackupPage — returning from Backup must not re-run the
-      // PIN/biometric gate. On web, Backup opens directly from
-      // Settings and SecurityPage never mounts.
+      // Lock Screen and Backup are sibling drill-ins over Settings.
       case 'backup':
-      case 'security': {
-        const backupFromSecurity = backupSource === 'security';
+      case 'security':
         return (
           <>
             {renderWalletPage()}
             {renderSettingsPage()}
-            {(currentScreen === 'security' || backupFromSecurity) && (
-              <SecurityPage
-                onBack={() => setUserScreen('settings')}
-                onOpenBackup={() => {
-                  setBackupSource('security');
-                  setUserScreen('backup');
-                }}
-              />
+            {currentScreen === 'security' && (
+              <SecurityPage onBack={() => setUserScreen('settings')} />
             )}
             {currentScreen === 'backup' && (
               <BackupPage
                 closeStyle="back"
-                onBack={() => setUserScreen(backupFromSecurity ? 'security' : 'settings')}
+                onBack={() => setUserScreen('settings')}
               />
             )}
           </>
         );
-      }
 
       case 'restore':
         return (
