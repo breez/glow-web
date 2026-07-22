@@ -356,6 +356,13 @@ html.keyboard-visible .hide-on-keyboard {
      iOS / web fallback. See src/utils/safeAreaInsets.ts. */
   padding-bottom: calc(1em + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
 }
+/* In-browser web has no home-indicator inset (env() is 0, and the
+   painted strip only exists under ios-standalone-bottom-gap), so sheets
+   sat nearly flush at the screen bottom (#299). Floor the inset term;
+   platforms with a real inset keep it (max picks the larger). */
+html:not(.ios-standalone-bottom-gap) .bottom-sheet-content-pad {
+  padding-bottom: calc(1em + max(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)), 1em));
+}
 html.keyboard-visible .bottom-sheet-content-pad:focus-within {
   padding-bottom: 1em;
 }
