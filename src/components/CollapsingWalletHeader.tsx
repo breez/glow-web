@@ -22,7 +22,7 @@ interface CollapsingWalletHeaderProps {
   onOpenBuyBitcoin?: () => void;
   isBuyLoading?: boolean;
   isSyncing?: boolean;
-  refreshWalletData?: () => Promise<void>;
+  refreshWalletData?: () => Promise<boolean>;
   hasRejectedDeposits?: boolean;
   onOpenGetRefund?: () => void;
 }

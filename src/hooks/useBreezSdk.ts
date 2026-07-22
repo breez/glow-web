@@ -189,8 +189,9 @@ export interface BreezSdkActions {
     passkeyLabel?: string,
     source?: ConnectSeedSource,
   ) => Promise<void>;
-  refreshWalletData: (showLoading?: boolean) => Promise<void>;
-  fetchUnclaimedDeposits: () => Promise<void>;
+  /** Resolve false when the SDK read failed; both log internally and keep last-known state. */
+  refreshWalletData: (showLoading?: boolean) => Promise<boolean>;
+  fetchUnclaimedDeposits: () => Promise<boolean>;
   /**
    * Logs out and erases all on-device data: SDK databases, Preferences,
    * localStorage, the device credential-id registry, and the in-memory
@@ -306,7 +307,7 @@ export function useBreezSdk(
 
   const refreshWalletData = useCallback(async (showLoading = true) => {
     const s = sdkRef.current;
-    if (!s) return;
+    if (!s) return false;
     try {
       if (showLoading) setIsLoading(true);
       const [info, txns] = await Promise.all([
@@ -315,9 +316,11 @@ export function useBreezSdk(
       ]);
       setWalletInfo(info);
       setTransactions(filterOngoingConversionPayments(txns.payments));
+      return true;
     } catch (e) {
       logger.error(LogCategory.SDK, 'Error refreshing wallet data', { error: formatError(e) });
       setError('Failed to refresh wallet data.');
+      return false;
     } finally {
       if (showLoading) setIsLoading(false);
     }
@@ -325,16 +328,18 @@ export function useBreezSdk(
 
   const fetchUnclaimedDeposits = useCallback(async () => {
     const s = sdkRef.current;
-    if (!s) return;
+    if (!s) return false;
     try {
       const result = await s.listUnclaimedDeposits({});
       const deposits = result.deposits;
       setUnclaimedDeposits(deposits);
       setHasRejectedDeposits(deposits.some(d => isDepositRejected(d.txid, d.vout)));
+      return true;
     } catch (e) {
       // Keep the last known list: clearing on a transient failure (common
       // on iOS PWA resume) hides a real pending deposit from the UI.
       logger.warn(LogCategory.SDK, 'Failed to fetch unclaimed deposits', { error: formatError(e) });
+      return false;
     }
   }, [sdkRef]);
 
@@ -1282,10 +1287,11 @@ export function useBreezSdk(
     };
   }, [startupStateRef, retryUnlockRef]);
 
-  // Force a sync when the app returns to the foreground. iOS standalone
-  // PWAs resume a days-old page instead of reloading, and a failed
-  // background sync is silent (synced never fires), so without this the
-  // UI keeps showing cached data (support case: invisible on-chain deposit).
+  // Force a sync when the app returns to the foreground: any tab/window
+  // visibility return, not just PWA resume. The motivating case is iOS
+  // standalone PWAs, which resume a days-old page instead of reloading;
+  // a failed background sync is silent (synced never fires), so without
+  // this the UI keeps showing cached data.
   const resyncInFlightRef = useRef(false);
   const foregroundResync = useCallback(async () => {
     if (resyncInFlightRef.current) return;
@@ -1301,8 +1307,11 @@ export function useBreezSdk(
         if (!s) return;
         try {
           await s.syncWallet({});
-          await Promise.all([refreshWalletData(false), fetchUnclaimedDeposits()]);
-          return;
+          // The fetchers absorb their SDK errors and report them as
+          // `false`, so a failed read falls through to the retry pass
+          // the same way a syncWallet throw does.
+          const refreshed = await Promise.all([refreshWalletData(false), fetchUnclaimedDeposits()]);
+          if (refreshed.every(Boolean)) return;
         } catch (e) {
           logger.warn(LogCategory.SDK, 'Foreground resync failed', { attempt, error: formatError(e) });
         }
