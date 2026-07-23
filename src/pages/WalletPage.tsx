@@ -25,7 +25,7 @@ interface WalletPageProps {
   walletInfo: GetInfoResponse | null;
   transactions: Payment[];
   unclaimedDeposits: DepositInfo[];
-  refreshWalletData: (showLoading?: boolean) => Promise<void>;
+  refreshWalletData: (showLoading?: boolean) => Promise<boolean>;
   isSyncing: boolean;
   error: string | null;
   onClearError: () => void;
