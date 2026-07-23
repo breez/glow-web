@@ -166,8 +166,14 @@ interface NativePasskeyPlugin {
   }): Promise<{ wallet: NativePluginWalletJson; labels: string[]; credentialId: string | null }>;
   connectWithPasskey(opts: {
     label?: string;
+    allowCredentials?: string[];
     excludeCredentials?: string[];
-  }): Promise<{ wallet: NativePluginWalletJson; registeredCredential: NativePluginCredentialJson | null }>;
+  }): Promise<{
+    wallet: NativePluginWalletJson;
+    /** Absent on native shells that predate the labels bridge. */
+    labels?: string[];
+    registeredCredential: NativePluginCredentialJson | null;
+  }>;
   listLabels(): Promise<{ labels: string[] }>;
   storeLabel(opts: { label: string }): Promise<void>;
   getKnownCredentialIds(): Promise<{ credentialIds: string[] }>;
@@ -314,14 +320,13 @@ class NativePasskey implements PasskeyApi {
     try {
       const r = await this.plugin().connectWithPasskey({
         label: request.label,
+        allowCredentials: request.allowCredentials?.map(bytesToBase64),
         excludeCredentials: request.excludeCredentials?.map(bytesToBase64),
       });
       return {
         wallet: decodeWallet(r.wallet),
-        // The native plugin doesn't surface discovery labels or the
-        // signed-in credential yet (needs a plugin change); the web impl
-        // below does. connectWithPasskey is web-only in the detecting flow.
-        labels: [],
+        // Native shells that predate the labels bridge omit the field.
+        labels: r.labels ?? [],
         credential: r.registeredCredential ? decodeCredential(r.registeredCredential) : null,
       };
     } catch (e) { rethrowAsTyped(e); }
