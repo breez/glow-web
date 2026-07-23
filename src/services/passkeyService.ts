@@ -71,9 +71,16 @@ export interface PasskeyRegisterRequest extends RegisterRequest {
   userDisplayName?: string;
 }
 
-/** Mobile-only; SDK doesn't surface `connectWithPasskey` on web. */
+/**
+ * Single-CTA sign-in that falls through to register on a fresh device.
+ * On web, usable only where the browser supports immediate mediation
+ * (`checkAvailability().immediateMediationSupported`): a plain picker
+ * can't tell no-credential from cancel.
+ */
 export interface ConnectWithPasskeyRequest {
   label?: string;
+  /** Pin the sign-in to these creds so the OS can't substitute a sibling. */
+  allowCredentials?: Uint8Array[];
   excludeCredentials?: Uint8Array[];
   userName?: string;
   userDisplayName?: string;
@@ -81,14 +88,24 @@ export interface ConnectWithPasskeyRequest {
 
 export interface ConnectWithPasskeyResponse {
   wallet: Wallet;
-  registeredCredential: PasskeyCredential | null;
+  /** Returning user's published labels; empty for a freshly registered wallet. */
+  labels: string[];
+  /**
+   * The credential that signed in or was registered. `aaguid` is populated
+   * only on registration, so a non-null `aaguid` means this call registered.
+   */
+  credential: PasskeyCredential | null;
 }
 
 export interface PasskeyApi {
   checkAvailability(): Promise<PasskeyAvailability>;
   register(request: PasskeyRegisterRequest): Promise<RegisterResponse>;
   signIn(request: SignInRequest): Promise<SignInResponse>;
-  /** Native only. Undefined on web (WebAuthn collapses no-cred + cancel). */
+  /**
+   * Single-CTA flow: silent sign-in, label discovery, then a register
+   * fall-through for a new user, in one call. Defined on web and native; the
+   * detecting flow gates web use on immediate mediation.
+   */
   connectWithPasskey?(request: ConnectWithPasskeyRequest): Promise<ConnectWithPasskeyResponse>;
   labels(): { list(): Promise<string[]>; store(label: string): Promise<void> };
   credentials(): {
@@ -301,7 +318,11 @@ class NativePasskey implements PasskeyApi {
       });
       return {
         wallet: decodeWallet(r.wallet),
-        registeredCredential: r.registeredCredential ? decodeCredential(r.registeredCredential) : null,
+        // The native plugin doesn't surface discovery labels or the
+        // signed-in credential yet (needs a plugin change); the web impl
+        // below does. connectWithPasskey is web-only in the detecting flow.
+        labels: [],
+        credential: r.registeredCredential ? decodeCredential(r.registeredCredential) : null,
       };
     } catch (e) { rethrowAsTyped(e); }
   }
@@ -419,10 +440,47 @@ class WebPasskey implements PasskeyApi {
 
   async signIn(request: SignInRequest): Promise<SignInResponse> {
     await sdkReady();
-    return this.client().signIn(request);
+    try {
+      return await this.client().signIn(request);
+    } catch (e) { rethrowWasmAsTyped(e); }
   }
 
-  // No connectWithPasskey on web (left undefined).
+  async connectWithPasskey(request: ConnectWithPasskeyRequest): Promise<ConnectWithPasskeyResponse> {
+    // buildBrowserPasskeyClient constructs a WASM PasskeyProvider; wait for the
+    // module (a no-op once ready, which it usually is by the time a user taps).
+    await sdkReady();
+    // Fresh client per call rotates user.name on the register fallthrough,
+    // exactly like register(): connectWithPasskey's internal create() derives
+    // the WebAuthn identity from the provider, not the request.
+    const oneShot = buildBrowserPasskeyClient({
+      userName: request.userName,
+      userDisplayName: request.userDisplayName,
+    });
+    try {
+      const response = await oneShot.connectWithPasskey({
+        label: request.label,
+        allowCredentials: request.allowCredentials,
+        excludeCredentials: request.excludeCredentials,
+      });
+      // Adopt the one-shot as the session client: its Nostr identity cache
+      // is now primed by the sign-in/register, so a later signIn or
+      // labels().store reuses it instead of re-deriving (a surprise PRF
+      // prompt). Mirrors how the explicit flow's signIn primes this.client().
+      this.cached = oneShot;
+      // Record a freshly registered cred (aaguid set only on register) in
+      // the local store that backs credentials().get(); the SDK no longer
+      // tracks them.
+      const credentialId = response.credential?.credentialId;
+      if (credentialId && response.credential?.aaguid) {
+        await browserRegistry!.add(rpId, credentialId);
+      }
+      return {
+        wallet: response.wallet,
+        labels: response.labels,
+        credential: response.credential ?? null,
+      };
+    } catch (e) { rethrowWasmAsTyped(e); }
+  }
 
   labels() {
     const c = this.client();
@@ -571,6 +629,11 @@ export function recordSignedInCredential(
 export async function signInPinnedToActiveCredential(
   label?: string,
   rpIdOverride?: string,
+  // Maps to WebAuthn `mediation: 'immediate'` on web: the assertion
+  // fast-fails (no sheet) when no local credential is present, so the
+  // silent discovery probe can fall through to create. Honored only
+  // where the browser advertises it (native fast-fails regardless).
+  preferImmediatelyAvailableCredentials?: boolean,
 ): Promise<SignInResponse> {
   const effectiveRpId = rpIdOverride ?? getPasskeyRpId() ?? rpId;
   // Same-RP pin first. On a cross-RP switch (the active pin is for the other RP)
@@ -597,11 +660,11 @@ export async function signInPinnedToActiveCredential(
     // at mount for returning passkey users, so wait for the module first.
     await sdkReady();
     const client = buildBrowserPasskeyClient({ rpId: effectiveRpId });
-    response = await client.signIn({ label, allowCredentials });
+    response = await client.signIn({ label, allowCredentials, preferImmediatelyAvailableCredentials });
     const api = getPasskey();
     if (api instanceof WebPasskey) api.adoptClient(client);
   } else {
-    response = await getPasskey().signIn({ label, allowCredentials });
+    response = await getPasskey().signIn({ label, allowCredentials, preferImmediatelyAvailableCredentials });
   }
   logger.info(LogCategory.AUTH, 'Passkey sign-in ceremony completed', {
     rpId: effectiveRpId,

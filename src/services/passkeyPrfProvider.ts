@@ -89,30 +89,17 @@ export async function signalUnknownCredentials(credentialIdsBase64: string[]): P
 }
 
 /**
- * Cached `immediateGet` capability flag, set once per page session.
- * Native authenticators (iOS 18+, Android 9+) always honor
- * `preferImmediatelyAvailableCredentials`; the web equivalent is the
- * WebAuthn L3 immediate-mediation flag probed via
- * `getClientCapabilities('public-key')`. Returns false on browsers
- * that don't surface the capability API.
+ * Whether this browser honors WebAuthn immediate mediation
+ * (`mediation: 'immediate'`), probed once via
+ * `getClientCapabilities('public-key').immediateGet`. Web-only:
+ * `immediateGet` is a browser capability, so native short-circuits to
+ * false (its own fast-fail on `preferImmediatelyAvailableCredentials` is
+ * a separate mechanism). For the login-UX gate use
+ * `canSilentlyDetectPasskey`; pass this raw flag to web `signIn`.
  */
-/**
- * Browser-only kill switch: the immediateGet / immediate-mediation path
- * isn't wired through the SDK yet, so browser callers collapse to the
- * two-CTA discovery flow. Flip back to re-enable once the SDK supports it.
- *
- * This switch must not gate native: there the provider does its own
- * deterministic credential lookup and never depends on the WebAuthn
- * immediateGet capability, so the native check below runs first. When
- * PR #246 put this check before the native early-return, it silently
- * disabled the unified welcome flow in native builds through 0.1.0.
- */
-const IMMEDIATE_GET_ENABLED = false;
-
 let cachedImmediateGet: boolean | null | undefined;
 export async function supportsImmediateGet(): Promise<boolean> {
-  if (native) return true;
-  if (!IMMEDIATE_GET_ENABLED) return false;
+  if (native) return false;
   if (cachedImmediateGet === true) return true;
   if (cachedImmediateGet === false || cachedImmediateGet === null) return false;
   try {
@@ -129,4 +116,17 @@ export async function supportsImmediateGet(): Promise<boolean> {
     cachedImmediateGet = null;
   }
   return cachedImmediateGet === true;
+}
+
+/**
+ * Whether the device can silently detect an existing passkey (probe and
+ * fast-fail through to create without flashing a sheet). Gates the
+ * single-CTA "Get Started" login. Native does this inherently; web only
+ * where the browser advertises immediate mediation. Umbrella over the
+ * web-only `supportsImmediateGet` so neither has to lie about the other
+ * (this is true on native; that is not).
+ */
+export async function canSilentlyDetectPasskey(): Promise<boolean> {
+  if (native) return true;
+  return supportsImmediateGet();
 }
