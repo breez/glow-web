@@ -17,6 +17,8 @@ import {
   isPasskeyMigrated,
   consumePendingSwitchFromCredentialId,
   recordRegisteredCredential,
+  recordSignedInCredential,
+  getActivePasskeyCredentialIdBytes,
   signInPinnedToActiveCredential,
   removeStaleCredential,
 } from '@/services/passkeyService';
@@ -27,6 +29,7 @@ import {
   createPasskeyTimestampLabel,
   supportsImmediateGet,
   SHARED_RP_ID,
+  canSilentlyDetectPasskey,
 } from '@/services/passkeyPrfProvider';
 
 import { logger, LogCategory } from '@/services/logger';
@@ -230,27 +233,21 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     // UI rendered, so we route silently to create.
     const detectStartMs = Date.now();
     const run = async () => {
-      try {
-        // Dual-salt assert 'Default' BEFORE listLabels so a user
-        // whose label IS 'Default' completes restore in one prompt.
-        // signIn (not register) avoids a stray label publish for
-        // returning users on non-default labels.
-        const speculativeResponse = await signInPinnedToActiveCredential('Default');
-        const speculative = speculativeResponse.wallet;
-        if (cancelled) return;
-        // PRF succeeded: clear any in-flight switch-from slot so a
-        // later unrelated sign-in failure can't misfire recovery.
-        consumePendingSwitchFromCredentialId();
-        speculativeWalletRef.current = speculative;
-
-        setIsDiscoveringLabels(true);
-        const found = await listLabels();
-        if (cancelled) return;
-
+      // Shared routing once the wallet is derived and labels discovered,
+      // whether via connectWithPasskey (web single-CTA) or the explicit
+      // signIn + listLabels flow below. 0 labels => publish Default and use
+      // the speculative wallet; 1 => use it (Default) or derive that label;
+      // many => label picker.
+      const routeAfterDiscovery = async (found: string[], justRegistered = false) => {
         if (found.length === 0) {
           connectLabelRef.current = 'Default';
-          await saveLabel('Default');
-          if (cancelled) return;
+          // A fresh registration already published 'Default' (register's
+          // setup_wallet does); only a returning user who signed in with no
+          // labels needs to publish it here.
+          if (!justRegistered) {
+            await saveLabel('Default');
+            if (cancelled) return;
+          }
           connectActionRef.current = 'use-speculative';
           setPhase('connecting');
         } else if (found.length === 1) {
@@ -272,6 +269,116 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           setSelectedLabel(defaultIdx !== -1 ? sorted[defaultIdx] : sorted[0]);
           setPhase('auth-pick');
         }
+      };
+
+      // Native authenticators detect silently inherently; web only where
+      // immediate mediation is advertised. Narrowed to web by `immediate`
+      // below, which is what the explicit signIn probe uses.
+      const silentlyDetectable = await canSilentlyDetectPasskey();
+      if (cancelled) return;
+      // connectWithPasskey's single-CTA flow is web-only; native and
+      // non-immediate browsers fall to the explicit flow below.
+      const immediate = !Capacitor.isNativePlatform() && silentlyDetectable;
+
+      // Web single-CTA: connectWithPasskey collapses silent sign-in, label
+      // discovery, and the register fall-through into one call. Skip it when
+      // a label switch is pending (switch-recovery needs the pinned signIn)
+      // or on native / non-immediate browsers, which use the explicit flow.
+      const switchPending = !!localStorage.getItem('passkeyPendingSwitchFromCredentialId');
+      const api = getPasskey();
+      if (immediate && !switchPending && api.connectWithPasskey) {
+        try {
+          const activeCredId = getActivePasskeyCredentialIdBytes();
+          const known = await api.credentials().get();
+          if (cancelled) return;
+          // Rotate user.name so Apple Passwords doesn't dedupe a fresh
+          // registration against a sibling; pin the sign-in to the active
+          // cred so the OS can't substitute one that derives another wallet.
+          const userName = `Glow · ${createPasskeyTimestampLabel()}`;
+          // Timed like register/signIn below: the label discovery inside
+          // stalls on dead relays, and the timer isolates that from connect().
+          const response = await logger.time('[onboarding] passkey.connectWithPasskey', () =>
+            api.connectWithPasskey!({
+              allowCredentials: activeCredId ? [activeCredId] : undefined,
+              excludeCredentials: known,
+              userName,
+              userDisplayName: userName,
+            }));
+          if (cancelled) return;
+          consumePendingSwitchFromCredentialId();
+          speculativeWalletRef.current = response.wallet;
+          // aaguid is set only on registration, so a non-null one means the
+          // fall-through created a passkey: this is a new user.
+          const cred = response.credential;
+          if (cred?.aaguid) {
+            setIsNewUser(true);
+            recordRegisteredCredential(cred, userName);
+          } else if (cred?.credentialId) {
+            recordSignedInCredential(cred.credentialId);
+          }
+          await routeAfterDiscovery(response.labels, !!cred?.aaguid);
+        } catch (e) {
+          if (cancelled) return;
+          const errorName = e instanceof Error ? e.name : '';
+          const errorMessage = e instanceof Error ? e.message : '';
+          const isTimedOut = e instanceof PasskeyTimedOutError;
+          const isAlreadyExists = e instanceof PasskeyAlreadyExistsError;
+          const looksCancelled = /cancel{1,2}ed|cancellation/i.test(errorMessage);
+          const isCancelled = !isTimedOut
+            && (errorName === 'NotAllowedError' || errorName === 'AbortError' || looksCancelled);
+          const elapsedMs = Date.now() - detectStartMs;
+          logger.warn(LogCategory.AUTH, 'connectWithPasskey failed', {
+            errorName, isTimedOut, isAlreadyExists, isCancelled, elapsedMs,
+          });
+          if (isAlreadyExists) {
+            // The active cred is gone but another Glow passkey is present, so
+            // the register fall-through refused. Drop the stale pin: the
+            // retry's unpinned sign-in then picks the present cred.
+            localStorage.removeItem('passkeyActiveCredentialId');
+            setError('You already have a Glow passkey on this device. Try again to sign in.');
+            setErrorKind('sign-in-failed');
+            return;
+          }
+          setError(
+            isTimedOut || (isCancelled && isLikelyTimeout(elapsedMs))
+              ? 'Sign-in timed out. Please try again.'
+              : isCancelled
+                ? 'Passkey prompt cancelled. Please try again.'
+                : (friendlyPasskeyError(e) ?? 'Could not sign in with your passkey. Please try again.'),
+          );
+          setErrorKind('sign-in-failed');
+        }
+        return;
+      }
+
+      // Explicit flow: native, non-immediate browsers, or a pending switch.
+      // signIn 'Default' BEFORE listLabels so a user whose label IS 'Default'
+      // restores in one prompt; signIn (not register) avoids a stray label
+      // publish for returning users on non-default labels.
+      let probeUsedImmediate = false;
+      // True once the silent signIn resolves, so the catch can tell a signIn
+      // failure (no usable credential) from a later listLabels failure
+      // (signed in fine, relay read failed) without trusting the error
+      // message to survive the WASM boundary.
+      let signInResolved = false;
+      try {
+        // Web-only flag: native uses its own no-UI fast-fail, so don't ask it
+        // to prefer immediately-available credentials (keeps native detection
+        // identical to before this flow). `immediate` is false on native.
+        probeUsedImmediate = immediate;
+        const speculativeResponse = await signInPinnedToActiveCredential('Default', undefined, probeUsedImmediate);
+        signInResolved = true;
+        const speculative = speculativeResponse.wallet;
+        if (cancelled) return;
+        // PRF succeeded: clear any in-flight switch-from slot so a
+        // later unrelated sign-in failure can't misfire recovery.
+        consumePendingSwitchFromCredentialId();
+        speculativeWalletRef.current = speculative;
+
+        setIsDiscoveringLabels(true);
+        const found = await listLabels();
+        if (cancelled) return;
+        await routeAfterDiscovery(found);
       } catch (e) {
         if (cancelled) return;
         // SDK preserves typed PasskeyCredentialNotFoundError /
@@ -300,6 +407,60 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         // trust that over glow's coarser elapsed. Web's NotAllowedError has
         // no fast silent path; the slow-path branches below handle it.
         const isFastFailNoCred = Capacitor.isNativePlatform() && isCredentialNotFound;
+        // Web immediate-mediation probe is silent: no picker is shown for
+        // the no-credential case. If the signIn itself failed (not a later
+        // listLabels) and it wasn't a timeout, route without trusting the
+        // error message to survive the WASM boundary.
+        if (
+          !Capacitor.isNativePlatform()
+          && probeUsedImmediate
+          && !signInResolved
+          && !isLikelyTimeout(elapsedMs)
+        ) {
+          // A present credential is still surfaced with a cancelable UV
+          // prompt under immediate mediation, so a slow failure is more
+          // likely a dismissed prompt than a deletion. Trust the SDK's
+          // classification: it types a genuine no-credential (sub-250ms,
+          // no UI) as CredentialNotFound, which the web path now re-throws
+          // as typed.
+          const deterministicNoCred = isCredentialNotFound;
+          const restoreCredId = consumePendingSwitchFromCredentialId();
+          if (restoreCredId) {
+            // A label switch was in flight. Revert the pin (non-destructive)
+            // either way; only auto-remove the switch target's metadata on a
+            // deterministic no-credential. A dismissed prompt is
+            // indistinguishable from a deletion on web, so otherwise ask the
+            // user to confirm before removing anything (mirrors the legacy
+            // web switch guard below).
+            const failingCredId = localStorage.getItem('passkeyActiveCredentialId');
+            localStorage.setItem('passkeyActiveCredentialId', restoreCredId);
+            if (cancelled) return;
+            if (deterministicNoCred) {
+              if (failingCredId) await removeStaleCredential(failingCredId);
+              setError('That passkey is no longer on this device.');
+              setErrorKind('switch-recovery');
+              return;
+            }
+            setFailingSwitchCredId(failingCredId);
+            setConfirmedStaleRemoval(false);
+            setError('Could not sign in with that passkey. It may have been removed, or the prompt was cancelled.');
+            setErrorKind('switch-recovery');
+            return;
+          }
+          // No switch in flight: create. A cancelled UV prompt for a present
+          // cred lands in register's excludeCredentials -> AlreadyExists ->
+          // sign-in pivot, so creating is safe even on an ambiguous failure.
+          logger.info(LogCategory.AUTH, 'Immediate probe found no credential, creating', {
+            errorName,
+            errorCode,
+            elapsedMs,
+            isCredentialNotFound,
+            isCancelled,
+          });
+          setIsNewUser(true);
+          setPhase('creating');
+          return;
+        }
         if (hasPasskeyHistory()) {
           if (isFastFailNoCred) {
             if (detectingFailCountRef.current === 0 && isFreshInstallRef.current) {
