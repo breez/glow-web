@@ -7,6 +7,7 @@ import { CheckIcon, PlusIcon, WalletIcon } from '../components/Icons';
 import { listLabels, saveLabel, getLabelLastUsed } from '../services/passkeyService';
 import { useToast } from '@/contexts/ToastContext';
 import { logger, LogCategory } from '@/services/logger';
+import { friendlyPasskeyError } from '@/utils/passkeyErrorCopy';
 
 interface LabelsPageProps {
   onBack: () => void;
@@ -135,7 +136,7 @@ const LabelsPage: React.FC<LabelsPageProps> = ({ onBack, onSwitchLabel }) => {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       logger.error(LogCategory.AUTH, 'Failed to save label', { error: msg });
-      showToast('error', "Couldn't add label", msg);
+      showToast('error', "Couldn't add label", friendlyPasskeyError(e) ?? msg);
     } finally {
       setIsSaving(false);
     }
@@ -152,7 +153,7 @@ const LabelsPage: React.FC<LabelsPageProps> = ({ onBack, onSwitchLabel }) => {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       logger.warn(LogCategory.AUTH, 'Label switch failed', { error: msg });
-      showToast('error', "Couldn't switch label", msg);
+      showToast('error', "Couldn't switch label", friendlyPasskeyError(e) ?? msg);
       setIsSwitching(false);
     }
   };

@@ -31,6 +31,7 @@ import {
 
 import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs } from '@/services/logExport';
+import { friendlyPasskeyError } from '@/utils/passkeyErrorCopy';
 import { useLatest } from '../hooks/useLatest';
 
 /**
@@ -419,7 +420,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
               ? (isLikelyTimeout(elapsedMs)
                 ? 'Sign-in timed out. Please try again.'
                 : 'Sign-in cancelled. Please try again.')
-              : `Could not sign in with your passkey. ${underlying ? `[${underlying}]` : ''} Please try again.`,
+              : (friendlyPasskeyError(e) ?? 'Could not sign in with your passkey. Please try again.'),
           );
           setErrorKind('sign-in-failed');
           return;
@@ -684,7 +685,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         } else if (isCancelled) {
           setError('Sign-in cancelled. Please try again.');
         } else {
-          setError(`Failed to connect. ${underlying ? `[${underlying}]` : ''}`);
+          setError(friendlyPasskeyError(e) ?? 'Something went wrong. Please try again.');
         }
         setErrorKind('generic');
         logger.error(LogCategory.AUTH, 'Passkey wallet restore failed', {
