@@ -1306,12 +1306,23 @@ export function useBreezSdk(
         const s = sdkRef.current;
         if (!s) return;
         try {
-          await s.syncWallet({});
-          // The fetchers absorb their SDK errors and report them as
-          // `false`, so a failed read falls through to the retry pass
-          // the same way a syncWallet throw does.
-          const refreshed = await Promise.all([refreshWalletData(false), fetchUnclaimedDeposits()]);
-          if (refreshed.every(Boolean)) return;
+          // 30s cap so a hung SDK call cannot wedge resyncInFlightRef
+          // forever (the PWA page never reloads, so nothing else would
+          // clear it). The race releases the guard without cancelling
+          // the call; a zombie sync finishing late is harmless.
+          await Promise.race([
+            (async () => {
+              await s.syncWallet({});
+              // The fetchers absorb their SDK errors and report them as
+              // `false`, so a failed read retries the same way a
+              // syncWallet throw does.
+              const refreshed = await Promise.all([refreshWalletData(false), fetchUnclaimedDeposits()]);
+              if (!refreshed.every(Boolean)) throw new Error('refresh incomplete');
+            })(),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('foreground resync timeout')), 30000)),
+          ]);
+          return;
         } catch (e) {
           logger.warn(LogCategory.SDK, 'Foreground resync failed', { attempt, error: formatError(e) });
         }
