@@ -14,12 +14,20 @@ describe('friendlyPasskeyError', () => {
       'GENERIC_ERROR',
     );
     expect(friendlyPasskeyError(e)).toBe(
-      "Your device couldn't finish verifying your identity. Lock and unlock your device, then try again.",
+      'Google Password Manager could not verify your screen lock. Try again. If it keeps failing, set a different password manager as your passkey provider in Android settings.',
     );
   });
 
   it('maps a bare AUTHENTICATION_FAILED code regardless of message', () => {
     expect(friendlyPasskeyError(withCode('whatever', 'AUTHENTICATION_FAILED'))).toMatch(/verifying your identity/);
+  });
+
+  it('keeps the generic auth-failed copy when the provider is not GPM', () => {
+    const e = withCode(
+      'v1=breez_sdk_spark.PrfProviderException$AuthenticationFailed: v1=Bitwarden: something broke',
+      'GENERIC_ERROR',
+    );
+    expect(friendlyPasskeyError(e)).toMatch(/Lock and unlock your device/);
   });
 
   it('maps plain timeouts', () => {

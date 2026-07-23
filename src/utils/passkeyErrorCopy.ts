@@ -12,10 +12,17 @@ export function friendlyPasskeyError(e: unknown): string | null {
   if (code === 'PRF_NOT_SUPPORTED' || /PrfNotSupported/.test(raw)) {
     return "This device or password manager doesn't support the security feature Glow passkeys need.";
   }
-  // Covers Google Password Manager's device-unlock loop ending in
-  // "[15] Flow has timed out"; lock-and-unlock mirrors Android's own
-  // recovery hint for a stale screen-lock verification.
   if (code === 'AUTHENTICATION_FAILED' || /authentication[ _]?failed/i.test(raw)) {
+    // GPM brands its screen-lock verification failures ("Google Password
+    // Manager: [15] Flow has timed out"). On GrapheneOS (sandboxed Play)
+    // that verification loops forever, so steer toward another provider
+    // instead of a doomed retry. The brand check stands in for OS
+    // detection, which the WebView can't do.
+    if (/google password manager/i.test(raw)) {
+      return 'Google Password Manager could not verify your screen lock. Try again. If it keeps failing, set a different password manager as your passkey provider in Android settings.';
+    }
+    // Lock-and-unlock mirrors Android's own recovery hint for a stale
+    // screen-lock verification.
     return "Your device couldn't finish verifying your identity. Lock and unlock your device, then try again.";
   }
   if (/timed? ?out/i.test(raw)) {
