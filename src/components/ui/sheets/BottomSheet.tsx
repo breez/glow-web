@@ -590,10 +590,16 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
 
     // Track content growth/shrink after mount (error banners, lists
     // loading in) so the container can re-snap to the new height.
+    // border-box: the keyboard-visible :focus-within rule collapses
+    // this element's own bottom padding (the safe-area inset), which
+    // leaves the default content-box observation blind. Unobserved,
+    // the stale height held the sheet a padding's worth too high until
+    // the next re-render re-measured it, so the sheet visibly stepped
+    // down on the first keystroke instead of settling in one motion.
     useEffect(() => {
       if (!cardEl) return;
       const observer = new ResizeObserver(() => measure(cardEl));
-      observer.observe(cardEl);
+      observer.observe(cardEl, { box: 'border-box' });
       return () => {
         observer.disconnect();
         reportHeight(null);
