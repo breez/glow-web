@@ -53,10 +53,11 @@
        scheme-colored frame (a black flash on this app) before first
        paint; background_color in the manifest is ignored. Canvas is
        #0f0f18 (spark-dark) so startup image, #splash spinner page,
-       and the welcome page all share one canvas color; logo at 37% of
-       device width to match the native splash. iOS requires an exact
-       device-size + DPR + orientation match per image (portrait-only
-       set; the app is portrait-designed). -->
+       and the welcome page all share one canvas color; logo in the same
+       144pt box as .splash-logo so the handoff does not resize it. iOS
+       requires an exact device-size + DPR + orientation match per image
+       (portrait-only set; the app is portrait-designed). Regenerate with
+       scripts/generate-apple-splash.js. -->
   <link rel="apple-touch-startup-image" media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/apple-splash/apple-splash-320x568@2.png" />
   <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/apple-splash/apple-splash-375x667@2.png" />
   <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/apple-splash/apple-splash-375x812@3.png" />
@@ -109,13 +110,17 @@
        until the wallet is ready. Sign-of-life for the long tail comes
        from the wallet page itself once it reveals.
 
-       33.6vw: measured from the iOS splash asset (logo bbox 918px of
-       2732px), which LaunchScreen renders aspect-fit as a screen-width
-       square — so the native logo is 33.6% of device width and this
-       must match or the handoff visibly resizes. */
+       144px, not a vw fraction: the native splash marks are absolute
+       (Android 12+ specs its splash icon in dp, and the iOS launch
+       screen is pinned to the same box), so a viewport-relative size
+       here can only agree with them at one screen width and visibly
+       resizes the mark at the handoff everywhere else. Every logo on
+       the launch path is this same 144 box: LockScreen, PinEntry,
+       UnlockPage, UnlockingPage, HomePage. */
     .splash-logo {
-      width: 33.6vw;
-      max-width: 192px;
+      width: 144px;
+      height: 144px;
+      object-fit: contain;
     }
   </style>
 </head>

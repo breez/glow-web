@@ -45,7 +45,7 @@ const UnlockingPage: React.FC = () => {
           <img
             src="/assets/Glow_Logo.svg"
             alt="Glow"
-            className="w-28 h-28"
+            className="w-36 h-36 object-contain"
           />
 
           <div className="flex items-center justify-center gap-3 text-spark-text-secondary text-sm">

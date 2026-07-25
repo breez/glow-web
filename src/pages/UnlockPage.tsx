@@ -69,7 +69,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
             <img
               src="/assets/Glow_Logo.svg"
               alt="Glow"
-              className="w-36 h-36"
+              className="w-36 h-36 object-contain"
             />
             <h1 className="font-display text-2xl font-bold text-spark-text-primary">
               Welcome back

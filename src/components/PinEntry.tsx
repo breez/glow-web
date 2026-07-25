@@ -55,7 +55,7 @@ export const PinScreenLayout: React.FC<{
       {/* w-36 = 144px, matching the HomePage / UnlockPage logo. mb-10 =
           40dp logo-to-label; mb-6 matches PinEntry's internal space-y-6
           rhythm so the prompt reads as part of the group. */}
-      <img src="/assets/Glow_Logo.svg" alt="Glow" className="w-36 h-36 mx-auto mb-10" />
+      <img src="/assets/Glow_Logo.svg" alt="Glow" className="w-36 h-36 object-contain mx-auto mb-10" />
       {prompt && <div className="mb-6 text-center">{prompt}</div>}
       {children}
     </div>
