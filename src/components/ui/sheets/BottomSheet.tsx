@@ -283,9 +283,8 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
           duration: 0.2,
         });
       } else {
-        // Instant set tracks the keyboard frame-by-frame on Android and
-        // matches iOS's single-step WebView resize without a trailing
-        // tween.
+        // Instant set for corrections that must not read as motion
+        // (settling the position right as the open animation ends).
         sheet.y.set(targetY);
       }
     };
@@ -326,9 +325,14 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   usePreventScroll({ isDisabled: !isOpen });
 
   // NATIVE ONLY. The keyboard resizes the WebView (Android
-  // adjustResize, iOS resize: 'native'), shrinking the sheet root. Drive
-  // the sheet's y to match the new viewport bottom via the race-free
-  // reposition above on every resize (keyboard show/hide, rotation).
+  // adjustResize / IME padding, iOS resize: 'native'), shrinking the
+  // sheet root. Drive the sheet's y to match the new viewport bottom
+  // via the race-free reposition above on every resize (keyboard
+  // show/hide, rotation). Animated: when the resize changes the target
+  // at all (blur-driven hide before the willHide event lands,
+  // rotation), a tween reads as one motion; when a keyboard event
+  // already landed the same target, the dedupe makes this a no-op
+  // without disturbing a running tween.
   //
   // Web is deliberately excluded: there the keyboard OVERLAYS (only the
   // visual viewport shrinks, the root keeps its size), so moving the
@@ -337,7 +341,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   // reveal in BottomSheetCard.
   useEffect(() => {
     if (!IS_NATIVE || !isOpen || fullHeight) return;
-    const onResize = () => repositionRef.current(false);
+    const onResize = () => repositionRef.current(true);
     window.addEventListener('resize', onResize);
     window.visualViewport?.addEventListener('resize', onResize);
     return () => {
@@ -347,14 +351,17 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   }, [isOpen, fullHeight]);
 
   // NATIVE. Drive the re-position off the Keyboard plugin events, which
-  // fire reliably with the keyboard height on both platforms: willShow
-  // for a snappy lift, didHide for the drop. This is the only reliable
-  // signal: iOS resize:'native' defers its setFrame ~0.5s, and Android's
-  // back-button dismissal fires no resize, so a resize-only approach
-  // leaves the sheet stuck (open, or after back half-expanded with a
-  // keyboard-sized gap). A field switch fires willShow with the same
-  // height (deduped by lastReposTargetRef) and no didHide, so the sheet
-  // does not flap between fields.
+  // fire reliably with the keyboard height on both platforms. willShow
+  // and willHide fire at the START of the system keyboard animation, so
+  // the sheet's tween runs alongside the keyboard's own slide instead
+  // of after it. Plugin events are the only reliable signal: iOS
+  // resize:'native' defers its setFrame ~0.5s, and Android's
+  // back-button dismissal keeps the field focused (no blur, and on
+  // API <=34 no resize), so a resize-only approach leaves the sheet
+  // hanging at its lifted position until some later event. didHide
+  // stays as a safety net (deduped when willHide already landed the
+  // sheet). A field switch fires willShow with the same height (deduped
+  // by lastReposTargetRef), so the sheet does not flap between fields.
   useEffect(() => {
     if (!IS_NATIVE || !isOpen || fullHeight) {
       return;
@@ -367,6 +374,10 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     };
     void Keyboard.addListener('keyboardWillShow', (info) => {
       keyboardHeightRef.current = info.keyboardHeight;
+      repositionRef.current(true);
+    }).then(track);
+    void Keyboard.addListener('keyboardWillHide', () => {
+      keyboardHeightRef.current = 0;
       repositionRef.current(true);
     }).then(track);
     void Keyboard.addListener('keyboardDidHide', () => {
@@ -579,10 +590,16 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
 
     // Track content growth/shrink after mount (error banners, lists
     // loading in) so the container can re-snap to the new height.
+    // border-box: the keyboard-visible :focus-within rule collapses
+    // this element's own bottom padding (the safe-area inset), which
+    // leaves the default content-box observation blind. Unobserved,
+    // the stale height held the sheet a padding's worth too high until
+    // the next re-render re-measured it, so the sheet visibly stepped
+    // down on the first keystroke instead of settling in one motion.
     useEffect(() => {
       if (!cardEl) return;
       const observer = new ResizeObserver(() => measure(cardEl));
-      observer.observe(cardEl);
+      observer.observe(cardEl, { box: 'border-box' });
       return () => {
         observer.disconnect();
         reportHeight(null);
