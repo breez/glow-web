@@ -90,12 +90,12 @@ const LockScreen: React.FC<LockScreenProps> = ({
           </PinScreenLayout>
         </div>
       ) : (
-        // Biometric pending: replicate the splash exactly (33.6vw,
-        // measured from the native splash asset — see index.html's
-        // .splash-logo) so cold start -> Face ID reads as one
-        // continuous frame, no logo resize or jump.
+        // Biometric pending: replicate the splash exactly (the same 144
+        // box every launch-path logo uses, see index.html's .splash-logo)
+        // so cold start -> Face ID reads as one continuous frame, no logo
+        // resize or jump.
         <div className="flex-1 flex items-center justify-center">
-          <img src="/assets/Glow_Logo.svg" alt="Glow" className="w-[33.6vw] max-w-48" />
+          <img src="/assets/Glow_Logo.svg" alt="Glow" className="w-36 h-36 object-contain" />
         </div>
       )}
     </div>
