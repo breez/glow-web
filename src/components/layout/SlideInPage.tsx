@@ -130,10 +130,18 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
             </div>
           </header>
 
-          {/* Scrollable content */}
-          <div 
+          {/* Scrollable content. Pads for the bottom inset itself when
+              there is no footer: on Android 15+ the WebView is laid out
+              edge-to-edge under the navigation bar, so the last item in
+              a scrolled list otherwise ends up behind it (#129). With a
+              footer the footer owns that inset and padding here would
+              only add dead scroll space above it. */}
+          <div
             className="flex-1 overflow-y-auto min-h-0"
-            style={{ WebkitOverflowScrolling: 'touch' }}
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              paddingBottom: footer ? undefined : safeAreaBottom,
+            }}
           >
             {children}
           </div>
