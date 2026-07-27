@@ -4,7 +4,7 @@ import { safeAreaTop } from '../utils/safeAreaInsets';
 import { getFiatSettings } from '../services/settings';
 import { formatWithThinSpaces, formatWithSpaces } from '../utils/formatNumber';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
-import { MenuIcon, AlertTriangleIcon, CurrencyIcon, SpinnerIcon } from './Icons';
+import { MenuIcon, AlertTriangleIcon, CurrencyIcon, SpinnerIcon, SwapVerticalIcon } from './Icons';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { getTokenBalance, formatTokenAmount } from '../utils/tokenFormatting';
@@ -341,16 +341,23 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
               }`}
             >
               Balance
+              {/* Amber chip + swap glyph so the suffix reads as a
+                  currency-switch control, not part of the label (#300).
+                  Hover never fires on touch; active: is the mobile
+                  feedback path. Chip uses tighter tracking than the
+                  label so it stays compact and button-like. */}
               <button
                 type="button"
                 onClick={handleSuffixTap}
                 disabled={stableBalance.isToggling}
-                className="inline-flex items-center cursor-pointer transition-colors disabled:opacity-50 font-display text-xs font-medium tracking-widest uppercase"
+                aria-label={`Switch balance to ${stableBalance.isActive ? 'Bitcoin' : 'USD'}`}
+                className="group inline-flex items-center cursor-pointer transition-colors disabled:opacity-50 font-display text-xs font-medium uppercase"
               >
-                <span className="mx-1.5">·</span>
-                {/* White foreground so the tappable suffix reads as a
-                    button rather than blending into the muted label. */}
-                <span className="px-1.5 py-0.5 rounded-full text-spark-text-primary bg-white/5 hover:bg-white/10 active:scale-95 transition-all">{balanceSuffix}</span>
+                <span className="mx-1.5 tracking-widest">·</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full tracking-wide text-spark-text-primary bg-white/10 border border-white/25 hover:bg-white/15 active:bg-white/20 active:scale-95 transition-all">
+                  <SwapVerticalIcon size="xs" className="w-2.5 h-2.5 transition-transform duration-300 group-active:rotate-180" />
+                  {balanceSuffix}
+                </span>
               </button>
             </span>
           </div>
