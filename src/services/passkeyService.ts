@@ -876,13 +876,46 @@ export function prfAvailability(): Promise<boolean> {
   return prfAvailablePromise;
 }
 
+let availabilityPromise: Promise<PasskeyAvailability> | null = null;
+
+/**
+ * Memoized `checkAvailability()`.
+ *
+ * The probe used to run twice per sign-in: once behind the splash for
+ * the welcome screen's flow pick, then again on PasskeyPage mount. It
+ * is a first-touch SDK call (and the domain-association check on
+ * native), so the second run put real work between the user's tap and
+ * the WebAuthn call. Immediate mediation needs the tap's transient
+ * activation to still be live when it fires, and on a cold profile (a
+ * fresh private window) that second probe was enough to lose it: the
+ * first attempt failed and only Try Again worked.
+ *
+ * A `notAssociated` result is not cached: that one can come from a
+ * transient probe failure, and pinning it would make the error screen's
+ * retry pointless.
+ */
+export function passkeyAvailability(): Promise<PasskeyAvailability> {
+  if (!availabilityPromise) {
+    availabilityPromise = getPasskey().checkAvailability()
+      .then((availability) => {
+        if (availability.type === 'notAssociated') availabilityPromise = null;
+        return availability;
+      })
+      .catch((e) => {
+        availabilityPromise = null;
+        throw e;
+      });
+  }
+  return availabilityPromise;
+}
+
 /** Collapse the SDK's four availability variants to a single bool. */
 export async function isPrfAvailable(): Promise<boolean> {
   const ua = navigator.userAgent;
   // Firefox PRF support is still unreliable; gate off entirely.
   if (/Firefox\//i.test(ua) && !/Seamonkey\//i.test(ua)) return false;
 
-  const availability = await getPasskey().checkAvailability();
+  const availability = await passkeyAvailability();
   return availability.type !== 'prfUnsupported';
 }
 

@@ -38,6 +38,10 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
   const isWebPasskey = !secureStorage.isSupported();
 
   const [biometry, setBiometry] = useState<BiometryInfo | null>(null);
+  // Only pre-app-lock installs keep the seed behind a biometric. With
+  // nothing in that tier this page is a plain reconnect retry (the
+  // silent start failed), so it must not promise a Face ID prompt.
+  const [isBiometricTier, setIsBiometricTier] = useState(true);
 
   useEffect(() => {
     if (isWebPasskey) return;
@@ -45,6 +49,9 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
     getBiometryInfo().then((info) => {
       if (!cancelled) setBiometry(info);
     });
+    secureStorage.hasStoredSeed().then((stored) => {
+      if (!cancelled) setIsBiometricTier(stored);
+    }).catch(() => undefined);
     return () => {
       cancelled = true;
     };
@@ -52,10 +59,12 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
 
   const unlockLabel = isWebPasskey
     ? 'Unlock with passkey'
-    : biometry ? `Unlock with ${biometry.label}` : 'Unlock';
+    : !isBiometricTier ? 'Try Again'
+      : biometry ? `Unlock with ${biometry.label}` : 'Unlock';
   const unlockDescription = isWebPasskey
     ? 'Your wallet is locked. Unlock with your passkey to continue.'
-    : 'Your wallet is locked. Unlock with your biometric to continue.';
+    : !isBiometricTier ? 'Glow could not start up. Please try again.'
+      : 'Your wallet is locked. Unlock with your biometric to continue.';
   const UnlockIcon = isWebPasskey
     ? PasskeyIcon
     : biometry?.kind === 'face' ? FaceIdIcon : FingerprintIcon;
@@ -81,7 +90,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
 
           {/* Error banner */}
           {error && (
-            <AlertCard variant="error" title="Unlock failed">
+            <AlertCard variant="error" title={isBiometricTier ? 'Unlock failed' : 'Could not start'}>
               {error}
             </AlertCard>
           )}
@@ -92,7 +101,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
               disabled={isLoading}
               className="w-full flex items-center justify-center gap-2"
             >
-              <UnlockIcon size="md" />
+              {isBiometricTier && <UnlockIcon size="md" />}
               {unlockLabel}
             </PrimaryButton>
 
