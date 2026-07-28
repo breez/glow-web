@@ -45,6 +45,7 @@ import {
 import { LEGACY_RP_ID, SHARED_RP_ID, rpId as defaultRpId } from '../services/passkeyPrfProvider';
 import { secureStorage, deviceOnlyStorage, SecureStorageError } from '../services/secureStorage';
 import { clearPin, isAppLockSupported } from '../services/appLock';
+import { isDemoSeed, createDemoSdk } from '../services/demoMode';
 
 
 // ============================================
@@ -426,6 +427,26 @@ export function useBreezSdk(
       logger.info(LogCategory.SDK, 'Initiating wallet connection', { restore });
       if (sdk) {
         logger.debug(LogCategory.SDK, 'Wallet already connected; skipping');
+        return;
+      }
+
+      // App Store reviewer demo mode: the reserved phrase connects a fully local
+      // mock instead of the SDK, and is never persisted (relaunch => onboarding).
+      if (seed.type === 'mnemonic' && isDemoSeed(seed.mnemonic)) {
+        logger.info(LogCategory.SDK, 'Entering reviewer demo mode');
+        const demoSdk = createDemoSdk();
+        setSdk(demoSdk);
+        setConfig(buildConnectConfig());
+        const [info, txns] = await Promise.all([
+          demoSdk.getInfo({}),
+          demoSdk.listPayments({ offset: 0, limit: 100 }),
+        ]);
+        setWalletInfo(info);
+        setTransactions(txns.payments);
+        setIsConnected(true);
+        setStartupState('connected');
+        setIsSyncing(false);
+        setIsLoading(false);
         return;
       }
 
