@@ -10,7 +10,9 @@ import type {
   UserSettings,
   FiatCurrency,
   Rate,
+  TokenMetadata,
 } from '@breeztech/breez-sdk-spark';
+import { USDB_TOKEN_IDENTIFIER, USDB_TICKER } from '../constants/stableBalance';
 
 /**
  * App Store reviewer demo mode.
@@ -36,6 +38,24 @@ export function isDemoSeed(mnemonic: string): boolean {
 
 const nowSec = () => Math.floor(Date.now() / 1000);
 const DAY = 86_400;
+
+// USDB metadata for the stable-balance toggle. 6 decimals, ticker matches "USD"
+// so buildTokenDisplayConfig renders it as $ with a 2-digit fraction.
+const USDB_METADATA = {
+  identifier: USDB_TOKEN_IDENTIFIER,
+  issuerPublicKey: 'demo-issuer',
+  name: 'US Dollar',
+  ticker: USDB_TICKER,
+  decimals: 6,
+  maxSupply: '0',
+  isFreezable: false,
+  creationEntityPublicKey: null,
+} as unknown as TokenMetadata;
+
+// 1 BTC = $100k (matches the demo fiat rate) and USDB has 6 decimals, so
+// 1 sat = 1000 USDB base units. Flat $0.02 fee, purely cosmetic.
+const USDB_PER_SAT = 1_000n;
+const CONV_FEE_USDB = 20_000n;
 
 function mkPayment(
   paymentType: 'send' | 'receive',
@@ -63,13 +83,23 @@ function mkPayment(
  * is cast to `BreezSdk` since the full interface is far larger.
  */
 export function createDemoSdk(): BreezSdk {
-  let balanceSats = 39_650;
+  let balanceSats = 143_180;
+  // USDB starts at 0: the reviewer mints it by switching to stable mode, which
+  // avoids an intrusive "USD balance detected" auto-prompt on entry.
+  let usdbBase = 0n;
+  let stableLabel: string | null = null;
   const payments: Payment[] = [
-    mkPayment('send', 2_700, 3, 6 * 3600, 'lightning'),
-    mkPayment('send', 4_150, 2, 30 * 3600, 'spark'),
-    mkPayment('receive', 8_500, 0, 3 * DAY, 'lightning'),
-    mkPayment('send', 12_000, 5, 5 * DAY, 'lightning'),
-    mkPayment('receive', 50_000, 0, 8 * DAY, 'lightning'),
+    mkPayment('receive', 15_000, 0, 3 * 3600, 'lightning'),
+    mkPayment('send', 1_200, 1, 9 * 3600, 'lightning'),
+    mkPayment('send', 3_450, 2, 1 * DAY, 'lightning'),
+    mkPayment('receive', 25_000, 0, 2 * DAY, 'lightning'),
+    mkPayment('send', 8_900, 1, 3 * DAY, 'spark'),
+    mkPayment('send', 620, 1, 4 * DAY, 'lightning'),
+    mkPayment('receive', 50_000, 0, 6 * DAY, 'lightning'),
+    mkPayment('send', 12_400, 3, 9 * DAY, 'lightning'),
+    mkPayment('receive', 7_800, 0, 12 * DAY, 'spark'),
+    mkPayment('send', 45_000, 9, 16 * DAY, 'lightning'),
+    mkPayment('receive', 120_000, 0, 22 * DAY, 'lightning'),
   ];
 
   const listeners = new Map<string, (event: SdkEvent) => void>();
@@ -101,7 +131,13 @@ export function createDemoSdk(): BreezSdk {
 
     // Info & data
     getInfo: async (): Promise<GetInfoResponse> =>
-      ({ identityPubkey: 'demo-identity', balanceSats, tokenBalances: new Map() } as unknown as GetInfoResponse),
+      ({
+        identityPubkey: 'demo-identity',
+        balanceSats,
+        tokenBalances: new Map([
+          [USDB_TOKEN_IDENTIFIER, { balance: usdbBase, tokenMetadata: USDB_METADATA }],
+        ]),
+      } as unknown as GetInfoResponse),
     listPayments: async () => ({ payments: [...payments] }),
     getPayment: async ({ paymentId }: { paymentId: string }) => ({
       payment: payments.find(p => (p as unknown as { id: string }).id === paymentId) ?? payments[0],
@@ -129,12 +165,25 @@ export function createDemoSdk(): BreezSdk {
       return { type: 'sparkAddress', address: s } as unknown as InputType;
     },
 
-    // Send
-    prepareSendPayment: async ({ amount }: { amount?: bigint }): Promise<PrepareSendPaymentResponse> =>
+    // Send. The stable-balance toggle calls this with `conversionOptions`; return
+    // a conversionEstimate so the fee-confirm sheet shows a real figure.
+    prepareSendPayment: async (
+      { amount, conversionOptions }: { amount?: bigint; conversionOptions?: unknown },
+    ): Promise<PrepareSendPaymentResponse> =>
       ({
         paymentMethod: { type: 'sparkAddress', address: 'sp1demo', fee: '1' },
         amount: amount ?? 3_000n,
         feePolicy: 'default',
+        ...(conversionOptions
+          ? {
+              conversionEstimate: {
+                options: conversionOptions,
+                amountIn: amount ?? 0n,
+                amountOut: amount ?? 0n,
+                fee: CONV_FEE_USDB,
+              },
+            }
+          : {}),
       } as unknown as PrepareSendPaymentResponse),
     sendPayment: async (arg: unknown): Promise<SendPaymentResponse> => completeSend(arg),
 
@@ -168,10 +217,31 @@ export function createDemoSdk(): BreezSdk {
       ] as unknown as FiatCurrency[],
     }),
 
-    // Settings / tokens (no stable balance in demo)
-    getUserSettings: async () => ({} as UserSettings),
-    updateUserSettings: async () => undefined,
-    getTokensMetadata: async () => [],
+    // Stable balance. Toggling stores the label AND simulates the conversion, so
+    // the toggle flow's balance-increase poll resolves on its first tick instead
+    // of timing out. ponytail: full-balance convert each way, so repeated toggles
+    // compound the numbers. Fine for a single review pass.
+    getUserSettings: async () => ({ stableBalanceActiveLabel: stableLabel } as unknown as UserSettings),
+    updateUserSettings: async (
+      s: { stableBalanceActiveLabel?: { type: 'set' | 'unset'; label?: string } },
+    ) => {
+      const op = s?.stableBalanceActiveLabel;
+      if (op?.type === 'set') {
+        if (balanceSats > 0) {
+          usdbBase += BigInt(balanceSats) * USDB_PER_SAT - CONV_FEE_USDB;
+          balanceSats = 0;
+        }
+        stableLabel = op.label ?? USDB_TICKER;
+      } else if (op?.type === 'unset') {
+        if (usdbBase > 0n) {
+          balanceSats += Number(usdbBase / USDB_PER_SAT);
+          usdbBase = 0n;
+        }
+        stableLabel = null;
+      }
+      return undefined;
+    },
+    getTokensMetadata: async () => ({ tokensMetadata: [USDB_METADATA] }),
 
     // Events
     addEventListener: async (listener: { onEvent: (event: SdkEvent) => void }) => {
