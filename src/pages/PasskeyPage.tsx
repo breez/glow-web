@@ -21,6 +21,7 @@ import {
   getActivePasskeyCredentialIdBytes,
   signInPinnedToActiveCredential,
   removeStaleCredential,
+  passkeyAvailability,
 } from '@/services/passkeyService';
 import {
   PasskeyAlreadyExistsError,
@@ -183,7 +184,10 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     const run = async () => {
       let availability;
       try {
-        availability = await getPasskey().checkAvailability();
+        // Memoized: the welcome screen already warmed this behind the
+        // splash, so the tap lands on the WebAuthn call with the user
+        // activation still live (see passkeyAvailability).
+        availability = await passkeyAvailability();
       } catch (e) {
         // Documented to never throw; defensive fallback treats it as
         // a pass so the app doesn't hard-stop on a diagnostic check.
@@ -286,6 +290,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       // or on native / non-immediate browsers, which use the explicit flow.
       const switchPending = !!localStorage.getItem('passkeyPendingSwitchFromCredentialId');
       const api = getPasskey();
+      let ceremonyStartMs = 0;
       if (immediate && !switchPending && api.connectWithPasskey) {
         try {
           const activeCredId = getActivePasskeyCredentialIdBytes();
@@ -297,6 +302,11 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           const userName = `Glow · ${createPasskeyTimestampLabel()}`;
           // Timed like register/signIn below: the label discovery inside
           // stalls on dead relays, and the timer isolates that from connect().
+          // Ceremony-scoped clock. `detectStartMs` also covers the
+          // capability probes and client build ahead of it, which on a
+          // cold browser profile dwarf the call itself and make a
+          // "did the prompt actually run?" read impossible.
+          ceremonyStartMs = Date.now();
           const response = await logger.time('[onboarding] passkey.connectWithPasskey', () =>
             api.connectWithPasskey!({
               allowCredentials: activeCredId ? [activeCredId] : undefined,
@@ -328,7 +338,17 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             && (errorName === 'NotAllowedError' || errorName === 'AbortError' || looksCancelled);
           const elapsedMs = Date.now() - detectStartMs;
           logger.warn(LogCategory.AUTH, 'connectWithPasskey failed', {
-            errorName, isTimedOut, isAlreadyExists, isCancelled, elapsedMs,
+            errorName,
+            errorMessage,
+            isTimedOut,
+            isAlreadyExists,
+            isCancelled,
+            elapsedMs,
+            // Zero means we never reached the call; a handful of ms
+            // means it fast-failed with no prompt shown (no credential
+            // silently available, or the tap's activation had lapsed).
+            ceremonyMs: ceremonyStartMs ? Date.now() - ceremonyStartMs : 0,
+            setupMs: ceremonyStartMs ? ceremonyStartMs - detectStartMs : elapsedMs,
           });
           if (isAlreadyExists) {
             // The active cred is gone but another Glow passkey is present, so

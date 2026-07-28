@@ -493,7 +493,14 @@ export function useBreezSdk(
           try {
             await deviceOnlyStorage.storeSeed(seed);
           } catch {
-            // non-fatal; storage layer logged.
+            // Non-fatal for this session, but the next launch has
+            // nothing to reconnect from, so say so rather than letting
+            // it look like the app forgot the account on restart.
+            showToast(
+              'error',
+              'Could not save to this device',
+              'You may be asked to sign in again the next time you open Glow.',
+            );
           }
         } else if (passkeyLabel != null) {
           // Web passkey mode: never cache the PRF-derived seed.
@@ -937,6 +944,16 @@ export function useBreezSdk(
     setError(null);
     setIsLoading(true);
     try {
+      // Device-only is the default tier; the bound tier only exists on
+      // pre-app-lock installs. With nothing bound there is no biometric
+      // to retry, so this is a plain reconnect retry after a failed
+      // silent start.
+      if (!(await secureStorage.hasStoredSeed())) {
+        logger.info(LogCategory.AUTH, 'retryUnlock:deviceOnlyReconnect');
+        const seed = await deviceOnlyStorage.retrieveSeed();
+        await connectWallet(seed, false, undefined, 'secureStorage');
+        return;
+      }
       logger.info(LogCategory.AUTH, 'retryUnlock:callingRetrieveSeed');
       const seed = await secureStorage.retrieveSeed();
       await connectWallet(seed, false, undefined, 'secureStorage');
@@ -1185,6 +1202,17 @@ export function useBreezSdk(
             { error: formatError(e) },
           );
           setIsLoading(false);
+          // The seed is still in the vault unless the vault itself lost
+          // it, so anything else (connect threw, SDK init failed) must
+          // route to UnlockPage's retry. Falling through to 'no-wallet'
+          // showed the welcome screen after one transient failure and
+          // read as "the app forgot my account".
+          const vaultEmpty = e instanceof SecureStorageError
+            && (e.code === 'NO_STORED_SEED' || e.code === 'KEY_INVALIDATED');
+          if (!vaultEmpty) {
+            setError('Could not reconnect. Please try again.');
+            setStartupState('native-locked');
+          }
         }
       }
 
@@ -1202,7 +1230,9 @@ export function useBreezSdk(
           } catch (e) {
             logger.error(LogCategory.SDK, 'Failed to connect with saved mnemonic', { error: formatError(e) });
             setError('Failed to connect with saved mnemonic. Please try again.');
-            clearMnemonic();
+            // Deliberately keep the mnemonic: a failed connect is a
+            // network/SDK outcome, not proof the seed is bad, and
+            // clearing it here lost the only copy on the device.
             setIsLoading(false);
           }
         } else if (isPasskeyMode()) {
