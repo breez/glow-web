@@ -122,10 +122,12 @@ const AppContent: React.FC = () => {
     setUserScreen('wallet');
   };
 
-  // Navigate to wallet after passkey connect
-  const handlePasskeyConnect = async (seed: Seed, label: string) => {
+  // Navigate to wallet after passkey connect. A freshly registered passkey
+  // derives a never-used seed, so there is nothing to restore: gating on the
+  // sync would hide a balance we already know is zero.
+  const handlePasskeyConnect = async (seed: Seed, label: string, isNewWallet: boolean) => {
     try {
-      await sdk.connectWallet(seed, true, label);
+      await sdk.connectWallet(seed, !isNewWallet, label);
       setPasskeySdkConnected(true);
     } catch {
       // Stay on passkey screen — sdk.error will be set by useBreezSdk
@@ -383,7 +385,7 @@ const AppContent: React.FC = () => {
       case 'passkey':
         return (
           <PasskeyPage
-            onWalletRestored={handlePasskeyConnect}
+            onWalletReady={handlePasskeyConnect}
             onBack={() => {
               setPasskeySdkConnected(false);
               setUserScreen('home');
