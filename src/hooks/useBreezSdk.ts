@@ -1050,14 +1050,13 @@ export function useBreezSdk(
   // ----------------------------------------
 
   // Covers every connect path (onboarding, resume, label switch, migration
-  // adopt), which all land here once walletInfo is set.
+  // adopt), which all land here once the SDK instance is set.
   useEffect(() => {
-    const pubkey = walletInfo?.identityPubkey;
-    if (!sdk || !pubkey) return;
-    void ensureSparkPrivateMode(sdk, pubkey).catch((e) => {
+    if (!sdk) return;
+    void ensureSparkPrivateMode(sdk).catch((e) => {
       logger.warn(LogCategory.SDK, 'Failed to enable Spark private mode', { error: formatError(e) });
     });
-  }, [sdk, walletInfo?.identityPubkey]);
+  }, [sdk]);
 
   // LNURL domain body attribute
   useEffect(() => {

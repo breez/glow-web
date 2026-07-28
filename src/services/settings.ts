@@ -118,22 +118,21 @@ export function isCrossChainEnabled(): boolean {
 }
 
 /**
- * Turn on Spark private mode for this wallet, at most once.
+ * Hold every wallet in Spark private mode. Private mode is not optional in
+ * Glow, so this runs on every connect rather than one time.
  *
  * `Config.privateEnabledDefault` is applied only to storage the SDK has never
  * initialized, so wallets used before that default (or seeds restored from
- * another app) keep whatever they had. One shot per identity: a later opt-out
- * sticks. Rejects when the SDK call fails, leaving no marker so the next
- * connect retries.
+ * another app) keep whatever they had. Writes only when the setting is off,
+ * to keep repeat connects off the sync record.
  */
-export async function ensureSparkPrivateMode(
-  sdk: { updateUserSettings(request: { sparkPrivateModeEnabled: boolean }): Promise<unknown> },
-  identityPubkey: string,
-): Promise<void> {
-  const key = `sparkPrivateModeForced:${identityPubkey}`;
-  if (getCachedItem(key) === 'true') return;
+export async function ensureSparkPrivateMode(sdk: {
+  getUserSettings(): Promise<{ sparkPrivateModeEnabled: boolean }>;
+  updateUserSettings(request: { sparkPrivateModeEnabled: boolean }): Promise<unknown>;
+}): Promise<void> {
+  const current = await sdk.getUserSettings();
+  if (current.sparkPrivateModeEnabled) return;
   await sdk.updateUserSettings({ sparkPrivateModeEnabled: true });
-  setCachedItem(key, 'true');
 }
 
 export function getFiatSettings(): FiatSettings {

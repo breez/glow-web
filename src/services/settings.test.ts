@@ -1,58 +1,41 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { ensureSparkPrivateMode } from './settings';
 
-// settings.ts caches localStorage reads in a module-level Map, so each case
-// re-imports to start from an empty cache as well as empty storage.
-async function loadSettings() {
-  vi.resetModules();
-  localStorage.clear();
-  return import('./settings');
-}
-
-function makeSdk(fail = false) {
-  const calls: { sparkPrivateModeEnabled: boolean }[] = [];
+function makeSdk(sparkPrivateModeEnabled: boolean, failUpdate = false) {
+  const updates: { sparkPrivateModeEnabled: boolean }[] = [];
   return {
-    calls,
+    updates,
+    getUserSettings: async () => ({ sparkPrivateModeEnabled }),
     updateUserSettings: async (request: { sparkPrivateModeEnabled: boolean }) => {
-      calls.push(request);
-      if (fail) throw new Error('offline');
+      updates.push(request);
+      if (failUpdate) throw new Error('offline');
     },
   };
 }
 
 describe('ensureSparkPrivateMode', () => {
-  let settings: Awaited<ReturnType<typeof loadSettings>>;
-
-  beforeEach(async () => {
-    settings = await loadSettings();
+  it('turns private mode on when the wallet has it off', async () => {
+    const sdk = makeSdk(false);
+    await ensureSparkPrivateMode(sdk);
+    expect(sdk.updates).toEqual([{ sparkPrivateModeEnabled: true }]);
   });
 
-  it('enables private mode for a wallet that has never been forced', async () => {
-    const sdk = makeSdk();
-    await settings.ensureSparkPrivateMode(sdk, 'pubkey-a');
-    expect(sdk.calls).toEqual([{ sparkPrivateModeEnabled: true }]);
+  it('keeps private mode on when the user turns it off out of band', async () => {
+    const sdk = makeSdk(false);
+    await ensureSparkPrivateMode(sdk);
+    await ensureSparkPrivateMode(sdk);
+    expect(sdk.updates).toHaveLength(2);
   });
 
-  it('does not force again on a later connect, so an opt-out sticks', async () => {
-    const sdk = makeSdk();
-    await settings.ensureSparkPrivateMode(sdk, 'pubkey-a');
-    await settings.ensureSparkPrivateMode(sdk, 'pubkey-a');
-    expect(sdk.calls).toHaveLength(1);
+  it('writes nothing when private mode is already on', async () => {
+    const sdk = makeSdk(true);
+    await ensureSparkPrivateMode(sdk);
+    expect(sdk.updates).toEqual([]);
   });
 
-  it('forces each wallet on the device separately', async () => {
-    const sdk = makeSdk();
-    await settings.ensureSparkPrivateMode(sdk, 'pubkey-a');
-    await settings.ensureSparkPrivateMode(sdk, 'pubkey-b');
-    expect(sdk.calls).toHaveLength(2);
-  });
-
-  it('leaves no marker when the SDK call fails, so the next connect retries', async () => {
-    const failing = makeSdk(true);
-    await expect(settings.ensureSparkPrivateMode(failing, 'pubkey-a')).rejects.toThrow('offline');
-
-    const sdk = makeSdk();
-    await settings.ensureSparkPrivateMode(sdk, 'pubkey-a');
-    expect(sdk.calls).toEqual([{ sparkPrivateModeEnabled: true }]);
+  it('rejects when the SDK call fails, so the caller can log it', async () => {
+    const sdk = makeSdk(false, true);
+    await expect(ensureSparkPrivateMode(sdk)).rejects.toThrow('offline');
   });
 });
 
