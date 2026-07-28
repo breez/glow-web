@@ -69,10 +69,17 @@ if (Capacitor.isNativePlatform()) {
   // warning; we don't store the handle because main.tsx runs once at
   // startup and the listener lifetime is the app lifetime.
   let keyboardHideClassTimer: ReturnType<typeof setTimeout> | null = null;
+  let keyboardFreeInnerHeight: number | null = null;
   void Keyboard.addListener('keyboardWillShow', (info) => {
     if (keyboardHideClassTimer) {
       clearTimeout(keyboardHideClassTimer);
       keyboardHideClassTimer = null;
+    }
+    // Keyboard-free baseline for the stale-state check below. Only
+    // captured while the keyboard is down: a field switch fires
+    // willShow again with the viewport already shrunk.
+    if (!document.documentElement.classList.contains('keyboard-visible')) {
+      keyboardFreeInnerHeight = window.innerHeight;
     }
     document.documentElement.style.setProperty(
       '--keyboard-height',
@@ -134,6 +141,29 @@ if (Capacitor.isNativePlatform()) {
       document.documentElement.classList.remove('keyboard-visible');
     }, 250);
     logger.debug(LogCategory.UI, 'Keyboard will hide');
+  });
+
+  // Android fires no keyboard hide events when the app leaves the
+  // foreground with the keyboard up (Home, app switch): the var and
+  // class above then stay stale, and the next sheet mount seeds its
+  // keyboard-free height one keyboard too tall, parking the sheet
+  // below the viewport. The window does resize back to full height
+  // right away, so a keyboard-free-height resize while the class is
+  // still set IS the missed hide.
+  window.addEventListener('resize', () => {
+    if (
+      keyboardFreeInnerHeight !== null &&
+      window.innerHeight >= keyboardFreeInnerHeight &&
+      document.documentElement.classList.contains('keyboard-visible')
+    ) {
+      if (keyboardHideClassTimer) {
+        clearTimeout(keyboardHideClassTimer);
+        keyboardHideClassTimer = null;
+      }
+      document.documentElement.style.setProperty('--keyboard-height', '0px');
+      document.documentElement.classList.remove('keyboard-visible');
+      logger.debug(LogCategory.UI, 'Cleared stale keyboard state on resize');
+    }
   });
 }
 
