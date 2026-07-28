@@ -270,10 +270,15 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       const bottom = Math.max(0, stableViewportH - kb);
       // Index 2 (full) or the collapsed [0, 1] ladder rest at y 0 (top
       // of the keyboard). The content snap rests contentPx px above it.
-      const targetY =
+      const restY =
         !useContentSnap || idx >= 2
           ? 0
           : Math.max(0, bottom - (contentPx ?? bottom));
+      // A stale --keyboard-height (hide events missed while
+      // backgrounded) inflates stableViewportH and computes a rest
+      // below the live viewport; clamp so the sheet can never park
+      // fully off-screen.
+      const targetY = Math.min(restY, Math.max(0, window.innerHeight - 96));
       if (lastReposTargetRef.current === targetY) return;
       lastReposTargetRef.current = targetY;
       if (animated) {
