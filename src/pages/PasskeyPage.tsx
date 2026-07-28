@@ -58,7 +58,13 @@ type Phase =
   | 'initializing';
 
 interface PasskeyPageProps {
-  onWalletRestored: (seed: Seed, label: string) => void;
+  /**
+   * `isNewWallet` is true when this run minted the credential, whether via
+   * `register()` or connectWithPasskey's register fall-through. A brand-new
+   * credential means a never-before-derived seed, so the wallet is known-empty
+   * and the caller can skip the restoration sync gate.
+   */
+  onWalletReady: (seed: Seed, label: string, isNewWallet: boolean) => void;
   onBack: () => void;
   sdkConnected?: boolean;
   onFlowComplete?: () => void;
@@ -89,7 +95,7 @@ function isLikelyTimeout(elapsedMs: number): boolean {
 }
 
 const PasskeyPage: React.FC<PasskeyPageProps> = ({
-  onWalletRestored,
+  onWalletReady,
   onBack,
   sdkConnected,
   onFlowComplete,
@@ -132,7 +138,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     { source: string; reason: string } | null
   >(null);
 
-  const onWalletRestoredRef = useLatest(onWalletRestored);
+  const onWalletReadyRef = useLatest(onWalletReady);
   const onRequestMigrationCheckRef = useLatest(onRequestMigrationCheck);
   const onBackRef = useLatest(onBack);
   const onFlowCompleteRef = useLatest(onFlowComplete);
@@ -146,6 +152,12 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
    */
   const connectActionRef = useRef<'setup' | 'derive-only' | 'use-speculative'>('derive-only');
   const speculativeWalletRef = useRef<Wallet | null>(null);
+  /**
+   * True when the ceremony that produced the speculative wallet also minted the
+   * credential, i.e. connectWithPasskey took its register fall-through. Marks
+   * the seed as never-derived even though the action is 'use-speculative'.
+   */
+  const mintedCredentialRef = useRef(false);
 
   // First-failure-only silent retry budget. Only fires when this
   // PasskeyPage opened during the post-fresh-install window where
@@ -223,6 +235,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   useEffect(() => {
     if (phase !== 'detecting') return;
     let cancelled = false;
+    mintedCredentialRef.current = false;
 
     // A missing credential surfaces as CredentialNotFound from the
     // SDK; the discovery flow below catches it and routes to create.
@@ -322,6 +335,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           const cred = response.credential;
           if (cred?.aaguid) {
             setIsNewUser(true);
+            mintedCredentialRef.current = true;
             recordRegisteredCredential(cred, userName);
           } else if (cred?.credentialId) {
             recordSignedInCredential(cred.credentialId);
@@ -816,7 +830,11 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         }
 
         setPhase('initializing');
-        onWalletRestoredRef.current(w.seed, w.label);
+        onWalletReadyRef.current(
+          w.seed,
+          w.label,
+          action === 'setup' || mintedCredentialRef.current,
+        );
       } catch (e) {
         if (cancelled) return;
         const action = connectActionRef.current;
@@ -880,7 +898,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
 
     run();
     return () => { cancelled = true; };
-  }, [phase, error, onWalletRestoredRef]);
+  }, [phase, error, onWalletReadyRef]);
 
   /** Clear error to re-trigger the current phase's effect. */
   const handleRetry = () => {
