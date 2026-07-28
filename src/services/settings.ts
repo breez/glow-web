@@ -117,6 +117,25 @@ export function isCrossChainEnabled(): boolean {
   return getSettings().crossChainEnabled === true;
 }
 
+/**
+ * Turn on Spark private mode for this wallet, at most once.
+ *
+ * `Config.privateEnabledDefault` is applied only to storage the SDK has never
+ * initialized, so wallets used before that default (or seeds restored from
+ * another app) keep whatever they had. One shot per identity: a later opt-out
+ * sticks. Rejects when the SDK call fails, leaving no marker so the next
+ * connect retries.
+ */
+export async function ensureSparkPrivateMode(
+  sdk: { updateUserSettings(request: { sparkPrivateModeEnabled: boolean }): Promise<unknown> },
+  identityPubkey: string,
+): Promise<void> {
+  const key = `sparkPrivateModeForced:${identityPubkey}`;
+  if (getCachedItem(key) === 'true') return;
+  await sdk.updateUserSettings({ sparkPrivateModeEnabled: true });
+  setCachedItem(key, 'true');
+}
+
 export function getFiatSettings(): FiatSettings {
   try {
     const raw = getCachedItem(FIAT_SETTINGS_KEY);

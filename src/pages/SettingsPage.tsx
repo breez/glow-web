@@ -86,7 +86,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     if (typeof cfg.preferSparkOverLightning === 'boolean') return cfg.preferSparkOverLightning;
     return false;
   });
-  const [sparkPrivateModeEnabled, setSparkPrivateModeEnabled] = useState<boolean>(true);
+  // Seed from the connected config's default so the toggle renders the
+  // right position before the async SDK read lands.
+  const [sparkPrivateModeEnabled, setSparkPrivateModeEnabled] = useState<boolean>(
+    () => config?.privateEnabledDefault !== false,
+  );
   const [isLoadingUserSettings, setIsLoadingUserSettings] = useState<boolean>(true);
 
   const [isDownloadingLogs, setIsDownloadingLogs] = useState<boolean>(false);

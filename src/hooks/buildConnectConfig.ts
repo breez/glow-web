@@ -18,7 +18,6 @@ export function buildConnectConfig(overrideNetwork?: Network): Config {
   const network = (overrideNetwork ?? (urlParams.get('network') ?? 'mainnet')) as Network;
   const config: Config = defaultConfig(network);
   config.apiKey = breezApiKey;
-  config.privateEnabledDefault = false;
   config.stableBalanceConfig = {
     tokens: [{ label: USDB_TICKER, tokenIdentifier: USDB_TOKEN_IDENTIFIER }],
   };
