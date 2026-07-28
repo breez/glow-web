@@ -21,7 +21,7 @@ import { buildConnectConfig } from './buildConnectConfig';
 import { logger, LogCategory, logSdkMessage } from '../services/logger';
 import { formatError } from '../utils/formatError';
 import { isDepositRejected, clearRejectedDeposits } from '../services/depositState';
-import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, type BuyBitcoinProvider } from '../services/settings';
+import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, ensureSparkPrivateMode, type BuyBitcoinProvider } from '../services/settings';
 import { wipeAllLocalData } from '../services/accountDeletion';
 import { hideSplash } from '../main';
 import {
@@ -1048,6 +1048,15 @@ export function useBreezSdk(
   // ----------------------------------------
   // Effects
   // ----------------------------------------
+
+  // Covers every connect path (onboarding, resume, label switch, migration
+  // adopt), which all land here once the SDK instance is set.
+  useEffect(() => {
+    if (!sdk) return;
+    void ensureSparkPrivateMode(sdk).catch((e) => {
+      logger.warn(LogCategory.SDK, 'Failed to enable Spark private mode', { error: formatError(e) });
+    });
+  }, [sdk]);
 
   // LNURL domain body attribute
   useEffect(() => {

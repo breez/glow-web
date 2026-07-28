@@ -86,33 +86,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     if (typeof cfg.preferSparkOverLightning === 'boolean') return cfg.preferSparkOverLightning;
     return false;
   });
-  const [sparkPrivateModeEnabled, setSparkPrivateModeEnabled] = useState<boolean>(true);
-  const [isLoadingUserSettings, setIsLoadingUserSettings] = useState<boolean>(true);
-
   const [isDownloadingLogs, setIsDownloadingLogs] = useState<boolean>(false);
   const [isExportingDb, setIsExportingDb] = useState<boolean>(false);
-
-  // Async SDK read for sparkPrivateModeEnabled. Stays in an effect
-  // because it awaits a Promise; setState happens post-await.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const us = await wallet.getUserSettings();
-        if (cancelled) return;
-        setSparkPrivateModeEnabled(us.sparkPrivateModeEnabled !== false);
-      } catch (e) {
-        logger.warn(LogCategory.SDK, 'Failed to load user settings from SDK', {
-          error: e instanceof Error ? e.message : String(e),
-        });
-      } finally {
-        if (!cancelled) setIsLoadingUserSettings(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [wallet]);
 
   // Persist dev mode to localStorage when toggled via secret tap
   useEffect(() => {
@@ -145,13 +120,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         preferSparkOverLightning,
       };
       saveSettings(updated);
-    }
-    try {
-      await wallet.updateUserSettings({ sparkPrivateModeEnabled });
-    } catch (e) {
-      logger.warn(LogCategory.SDK, 'Failed to update SDK user settings', {
-        error: e instanceof Error ? e.message : String(e),
-      });
     }
     window.location.reload();
   };
@@ -360,27 +328,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               <p className="text-xs text-spark-text-muted mt-2">
                 Changing network will reload the app and reconnect.
               </p>
-            </div>
-          )}
-
-          {/* Privacy */}
-          {isDevMode && (
-            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <h3 className="font-display font-semibold text-spark-text-primary">Privacy</h3>
-                {isLoadingUserSettings && <LoadingSpinner size="small" />}
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <span className="font-display font-medium text-spark-text-primary block">Private Mode</span>
-                  <span className="text-sm text-spark-text-muted">Hide your address from public explorers (not suitable for zaps)</span>
-                </div>
-                <Switch
-                  checked={sparkPrivateModeEnabled}
-                  onChange={() => setSparkPrivateModeEnabled(!sparkPrivateModeEnabled)}
-                  disabled={isLoadingUserSettings}
-                />
-              </div>
             </div>
           )}
 
