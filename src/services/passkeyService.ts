@@ -301,7 +301,12 @@ class NativePasskey implements PasskeyApi {
       const r = await this.plugin().signIn({
         label: request.label,
         allowCredentials: request.allowCredentials?.map(bytesToBase64),
-        preferImmediatelyAvailableCredentials: request.preferImmediatelyAvailableCredentials,
+        // Always true on native: it suppresses the cross-device sheet so a
+        // device with no passkey fast-fails as CREDENTIAL_NOT_FOUND and the
+        // caller can route to create. The caller's flag is the web
+        // immediate-mediation capability, which is false on native, and
+        // forwarding it re-opens the picker on a device with nothing to pick.
+        preferImmediatelyAvailableCredentials: true,
       });
       return {
         wallet: decodeWallet(r.wallet),

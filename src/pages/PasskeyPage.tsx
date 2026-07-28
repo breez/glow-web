@@ -653,21 +653,22 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         }
         if (isCancelled) {
           // Native fast-fail no-creds was already routed silently.
-          // A slow cancel means the user has a passkey and dismissed
-          // the picker, so we refuse to offer Create. Web can't
+          // A slow cancel means the user probably has a passkey and
+          // dismissed the picker, so Create is demoted to a secondary
+          // action in the footer rather than the default. Web can't
           // distinguish no-creds from a hybrid-sheet dismiss (Chrome's
           // `uiMode: 'immediate'` surfaces the QR sheet whenever a
           // hybrid-paired device exists), so the web branch lets the
           // render decide via the two-CTA gate.
           if (Capacitor.isNativePlatform()) {
-            logger.info(LogCategory.AUTH, 'User dismissed passkey sheet (native); refusing to offer Create', {
+            logger.info(LogCategory.AUTH, 'User dismissed passkey sheet (native)', {
               errorCode,
               elapsedMs,
             });
             setError(
               isLikelyTimeout(elapsedMs)
                 ? 'Sign-in timed out. Please try again.'
-                : 'Sign-in cancelled. Please pick your passkey to continue.',
+                : 'Sign-in cancelled. Pick your passkey to continue, or create a new one.',
             );
             setErrorKind('sign-in-cancelled');
           } else {
@@ -1147,8 +1148,11 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       );
     }
 
-    // Slow cancel on detecting: user dismissed a sheet (they have a
-    // passkey). Offering Create would lure a duplicate, so retry only.
+    // Slow cancel on detecting: user dismissed a sheet, so they probably
+    // have a passkey and Try Again stays the primary action. Create is
+    // offered as a secondary escape (this branch only fires for a device
+    // with no passkey history), or a first-timer whose OS still put a
+    // sheet in front of them has no way forward at all.
     // Bouncing through aasa-checking re-fires the detecting effect
     // (which only depends on [phase]).
     if (error && phase === 'detecting' && errorKind === 'sign-in-cancelled') {
@@ -1161,6 +1165,14 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           }}>
             Try Again
           </PrimaryButton>
+          <SecondaryButton className="w-full" onClick={() => {
+            setError(null);
+            setErrorKind(null);
+            setIsNewUser(true);
+            setPhase('creating');
+          }}>
+            Create Passkey
+          </SecondaryButton>
         </div>
       );
     }
