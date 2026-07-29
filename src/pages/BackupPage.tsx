@@ -59,18 +59,28 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
   // an OS biometric prompt instead of the silent device-only read.
   const [biometricSeedPresent, setBiometricSeedPresent] = useState(false);
 
+  // Set when the phrase came from the device-only vault rather than a
+  // passkey ceremony, so Hide doesn't drop a seed that costs nothing to
+  // read back.
+  const [seedFromVault, setSeedFromVault] = useState(false);
+
   useEffect(() => {
     // Hold the silent seed read until the gate passes so the phrase
     // never sits in memory behind a locked pad.
-    if (isPasskey || gate !== 'open') return;
+    if (gate !== 'open') return;
     let cancelled = false;
     (async () => {
+      // The device-only tier carries no auth binding, so once the gate
+      // has passed there is nothing left to authenticate against: read
+      // it for passkey accounts too rather than charging a ceremony for
+      // a phrase the OS already hands over.
       if (deviceOnlyStorage.isSupported() && (await deviceOnlyStorage.hasStoredSeed())) {
         try {
           const seed = await deviceOnlyStorage.retrieveSeed();
           if (cancelled) return;
           if (seed.type === 'mnemonic') {
             setMnemonic(seed.mnemonic);
+            setSeedFromVault(true);
             return;
           }
         } catch (e) {
@@ -79,7 +89,9 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
           });
         }
       }
-      if (cancelled) return;
+      // Remaining tiers are mnemonic-only: a passkey account with no
+      // device-only copy falls through to the ceremony below.
+      if (cancelled || isPasskey) return;
       // Legacy biometric-bound seed (pre-migration install). Don't read
       // it here (that would fire an OS prompt at page mount); flag it
       // so the reveal tile triggers the prompt on tap.
@@ -96,11 +108,11 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
   }, [isPasskey, gate]);
 
   // Tracks whether passkey-based reveal failed once, so we can offer a
-  // secureStorage fallback button in the error UI. We don't try
-  // secureStorage automatically: the happy path is "passkey is the
-  // source of truth", and we want to honor that whenever it's
-  // available. Auto-fallback would mask passkey deletion / corruption
-  // from users who care about the distinction.
+  // secureStorage fallback button in the error UI. Only reached when no
+  // device-only copy exists (web, or a native install whose persist
+  // failed): the biometric-bound tier still stays behind an explicit
+  // tap, so a deleted or corrupt passkey surfaces instead of being
+  // silently papered over.
   const [passkeyAttemptFailed, setPasskeyAttemptFailed] = useState(false);
 
   // Passkey mode: once the passkey attempt fails, resolve which vault
@@ -208,7 +220,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
 
   const handleHide = () => {
     setIsRevealed(false);
-    if (isPasskey) {
+    if (isPasskey && !seedFromVault) {
       setMnemonic(null);
       setPasskeyAttemptFailed(false);
       setError(null);
@@ -278,11 +290,12 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
             </button>
           )}
 
-          {/* Reveal button (mnemonic mode). When biometric unlock is
-              enabled the seed is in the biometric-bound tier, so the
-              tap triggers an OS prompt before revealing. App-lock
-              protection happens at page entry via the PIN gate above. */}
-          {!isPasskey && !isRevealed && (mnemonic || biometricSeedPresent) && (
+          {/* Reveal button for an already-loaded phrase, whichever auth
+              mode the account uses. A legacy biometric-bound seed has
+              not been read yet, so that tap triggers an OS prompt
+              first. App-lock protection happens at page entry via the
+              PIN gate above. */}
+          {!isRevealed && (mnemonic || (!isPasskey && biometricSeedPresent)) && (
             <button
               onClick={mnemonic
                 ? () => setIsRevealed(true)
