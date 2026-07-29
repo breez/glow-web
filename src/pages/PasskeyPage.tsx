@@ -876,15 +876,12 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             setErrorKind('already-exists');
             return;
           }
-          // register() creates the credential, then immediately asserts
-          // against it to evaluate PRF. Google Password Manager can take
-          // a moment to index the new credential, so that assertion can
-          // report no credential for one that now exists. Retrying
-          // register would mint a second, orphaned passkey, so pivot to
-          // sign-in the way the already-exists path does.
-          if (e instanceof PasskeyCredentialNotFoundError
-            || errorCode === 'CREDENTIAL_NOT_FOUND'
-            || /CredentialNotFound|No credentials available/i.test(errMsg)) {
+          // register() creates the credential, then asserts against it to
+          // evaluate PRF. When that assertion outruns the credential
+          // manager's indexing it reports no credential for one that now
+          // exists. Retrying register would mint a second, orphaned
+          // passkey, so pivot to sign-in the way already-exists does.
+          if (e instanceof PasskeyCredentialNotFoundError || errorCode === 'CREDENTIAL_NOT_FOUND') {
             logger.warn(LogCategory.AUTH, 'Register could not assert the new credential, pivoting to sign-in', {
               errorCode,
               elapsedMs,
