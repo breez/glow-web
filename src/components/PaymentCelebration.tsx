@@ -7,12 +7,15 @@ import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig }
 import GlowLogo from './GlowLogo';
 import { hapticLight } from '@/utils/haptics';
 
-interface PaymentReceivedCelebrationProps {
+interface PaymentCelebrationProps {
   payment: Payment;
   onClose: () => void;
 }
 
-const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({ payment, onClose }) => {
+const PaymentCelebration: React.FC<PaymentCelebrationProps> = ({ payment, onClose }) => {
+  // Sends only reach here when the send sheet was dismissed mid-payment,
+  // so this is the only report the user gets of the outcome.
+  const isSent = payment.paymentType === 'send';
   const stableBalance = useStableBalance();
   const { fiatCurrencies } = useFiatData();
   const [isVisible, setIsVisible] = useState(false);
@@ -87,7 +90,7 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
 
         {/* Title */}
         <h2 className="text-2xl font-display font-bold text-spark-text-primary mb-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-          Payment Received
+          {isSent ? 'Payment Sent' : 'Payment Received'}
         </h2>
 
         {/* Amount with brand glow */}
@@ -95,7 +98,7 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
           <div className="absolute inset-0 blur-2xl rounded-full" style={{ background: 'rgba(212,165,116,0.35)' }} />
           {displayText ? (
             <span className="relative text-5xl font-display font-bold text-spark-primary">
-              +{(() => {
+              {isSent ? '-' : '+'}{(() => {
                 const match = displayText.match(/^([^\d-]+)(.*)/);
                 if (match) return <><span className="text-3xl opacity-70">{match[1]}</span>{match[2]}</>;
                 return displayText;
@@ -103,6 +106,7 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
             </span>
           ) : (
             <span className="relative inline-flex items-center gap-1 text-5xl font-mono font-bold text-spark-primary">
+              {isSent && '-'}
               <span className="text-3xl opacity-70">₿</span>
               {formatSatsAmount(Number(payment.amount))}
             </span>
@@ -119,4 +123,4 @@ const PaymentReceivedCelebration: React.FC<PaymentReceivedCelebrationProps> = ({
   );
 };
 
-export default PaymentReceivedCelebration;
+export default PaymentCelebration;

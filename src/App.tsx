@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy } from 'react';
 import { WalletProvider, WalletInfoProvider, WalletStatusProvider } from './contexts/WalletContext';
 import LoadingSpinner from './components/LoadingSpinner';
-import PaymentReceivedCelebration from './components/PaymentReceivedCelebration';
+import PaymentCelebration from './components/PaymentCelebration';
 import InstallPrompt from './components/InstallPrompt';
 import OfflineBanner from './components/OfflineBanner';
 import StagingGate from './components/StagingGate';
@@ -580,7 +580,7 @@ const AppContent: React.FC = () => {
                   behind the lock screen would burn it unseen. Deferring
                   the mount plays it in full after unlock. */}
               {sdk.celebrationPayment !== null && !appLock.locked && (
-                <PaymentReceivedCelebration
+                <PaymentCelebration
                   payment={sdk.celebrationPayment}
                   onClose={sdk.dismissCelebration}
                 />

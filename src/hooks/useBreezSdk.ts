@@ -44,6 +44,7 @@ import {
 } from '../services/passkeyService';
 import { LEGACY_RP_ID, SHARED_RP_ID, rpId as defaultRpId } from '../services/passkeyPrfProvider';
 import { secureStorage, deviceOnlyStorage, SecureStorageError, resetSecureStorageInit } from '../services/secureStorage';
+import { isSendSheetOpen } from '../features/send/sendSheetVisibility';
 import { clearPin, isAppLockSupported } from '../services/appLock';
 
 
@@ -377,7 +378,14 @@ export function useBreezSdk(
         if (!hasConversionInfo && isReceived && !isMigrationInProgress()) {
           setCelebrationPayment(event.payment);
         }
-        // Send toast suppressed: ResultStep dialog already shows success
+        // A send normally reports itself through the sheet's ResultStep, so
+        // nothing fires here. But the sheet is dismissible mid-payment and
+        // the SDK call outlives it, and an unreported SUCCESS is the
+        // dangerous direction: the user assumes it failed and sends again.
+        // Reuse the same celebration when the sheet is no longer on screen.
+        if (!hasConversionInfo && !isReceived && !isSendSheetOpen() && !isMigrationInProgress()) {
+          setCelebrationPayment(event.payment);
+        }
       }
       refreshWalletData(false);
     } else if (event.type === 'paymentPending') {
@@ -388,6 +396,11 @@ export function useBreezSdk(
       logger.info(LogCategory.PAYMENT, 'Payment failed event received', {
         payment: JSON.parse(JSON.stringify(event.payment)),
       });
+      // Same reasoning as the send celebration above: with the sheet gone
+      // there is nothing else to tell the user the payment did not go out.
+      if (event.payment.paymentType === 'send' && !isSendSheetOpen()) {
+        showToastRef.current('error', 'Payment Failed', 'The payment did not go through. Your funds were not sent.');
+      }
     } else if (event.type === 'claimedDeposits') {
       logger.info(LogCategory.PAYMENT, 'Deposits claimed', { count: event.claimedDeposits.length });
       showToastRef.current('success', 'Deposits Claimed Successfully', `${event.claimedDeposits.length} deposits were claimed`);
