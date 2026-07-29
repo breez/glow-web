@@ -92,11 +92,18 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     && feesIncluded;
 
   const description = useMemo(() => {
-    const metadataArr = JSON.parse(parsed.metadataStr);
-    for (let i = 0; i < metadataArr.length; i++) {
-      if (metadataArr[i][0] === "text/plain") {
-        return metadataArr[i][1];
+    // metadataStr comes from a third-party LNURL-pay host, so it is
+    // untrusted: an unguarded parse here throws during render, which
+    // takes the whole tree down rather than failing this one payment.
+    try {
+      const metadataArr: unknown = JSON.parse(parsed.metadataStr);
+      if (Array.isArray(metadataArr)) {
+        for (const entry of metadataArr) {
+          if (Array.isArray(entry) && entry[0] === 'text/plain') return entry[1];
+        }
       }
+    } catch {
+      // Fall through to the URL.
     }
     return parsed.url;
   }, [parsed]);
