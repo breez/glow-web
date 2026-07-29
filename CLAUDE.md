@@ -94,7 +94,7 @@ grep "methodName" ~/Documents/GitHub/spark-sdk/packages/wasm/bundler/breez_sdk_s
 
 | Branch | SDK Source | Deployment |
 |--------|------------|------------|
-| `main` | npm release | breez-glow.vercel.app (prod) |
+| `main` | npm release | glow-app.co (prod) |
 | `staging` | npm pre-release | breez-glow-staging.vercel.app |
 | feature branches | `npm link` local | Local dev |
 
