@@ -89,6 +89,10 @@ const EditingForm: React.FC<EditingFormProps> = ({
             }}
             enterKeyHint="done"
             inputMode="text"
+            // A textarea (not an input) to keep Android's autofill bar away,
+            // so it soft-wraps a long username onto a second row. wrap="off"
+            // makes it scroll horizontally like a single-line field (#328).
+            wrap="off"
             autoCapitalize="none"
             autoCorrect="off"
             autoComplete="off"
