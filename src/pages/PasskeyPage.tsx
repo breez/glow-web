@@ -536,14 +536,25 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
               setErrorKind('switch-recovery');
               return;
             }
-            logger.warn(LogCategory.AUTH, 'Fast no-cred on returning user, treating as Settings deletion', {
+            logger.warn(LogCategory.AUTH, 'Fast no-cred after retry, treating as deletion', {
               errorCode,
               isCredentialNotFound,
               isCancelled,
               elapsedMs,
+              isFreshInstall: isFreshInstallRef.current,
             });
             await clearPasskeyHistory();
             if (cancelled) return;
+            if (isFreshInstallRef.current) {
+              // `passkeyRegistered` was adopted from the synced credential
+              // registry at startup, not from real history on this device,
+              // and the credential it named is already deleted. The wipe
+              // above just dropped that claim, so this is a new user: route
+              // like one instead of reporting a sign-in that never happened.
+              setIsNewUser(true);
+              setPhase('creating');
+              return;
+            }
             setError(
               'Your Glow passkey is no longer on this device. You can create a new one.',
             );
