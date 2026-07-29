@@ -4,12 +4,18 @@
  * once automatically and stays retriable from the pad's fingerprint
  * button. PIN always works as fallback. Hardware back is absorbed so
  * Android can't pop the lock.
+ *
+ * The lock covers every screen including Backup, and the PIN has no
+ * reset, so the "Forgot your PIN?" escape is the only alternative to
+ * reinstalling. It erases all local data, so it is confirm-gated.
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { PinEntry, PinScreenLayout } from './PinEntry';
 import { getBiometryInfo, BiometryKind } from '../services/secureStorage';
 import { useBackButton } from '../hooks/useBackButton';
+import { ConfirmDialog } from './ui';
+import { isPasskeyMode } from '@/services/passkeyService';
 
 interface LockScreenProps {
   biometricGate: boolean;
@@ -19,6 +25,10 @@ interface LockScreenProps {
   suppressAutoBiometric?: boolean;
   unlockWithPin: (pin: string) => Promise<boolean>;
   unlockWithBiometric: () => Promise<void>;
+  /** Erase-everything escape for a forgotten PIN. The PIN is not
+   *  recoverable and the lock covers the whole app (including Backup),
+   *  so without this the only way out is reinstalling. */
+  onForgotPin: () => Promise<void>;
 }
 
 const LockScreen: React.FC<LockScreenProps> = ({
@@ -26,8 +36,12 @@ const LockScreen: React.FC<LockScreenProps> = ({
   suppressAutoBiometric = false,
   unlockWithPin,
   unlockWithBiometric,
+  onForgotPin,
 }) => {
   useBackButton(useCallback(() => true, []), true);
+
+  const [showForgotConfirm, setShowForgotConfirm] = useState(false);
+  const isPasskey = isPasskeyMode();
 
   // With the biometric gate on, the pad stays hidden until the OS
   // prompt settles: it only appears when the user cancels or biometrics
@@ -88,6 +102,14 @@ const LockScreen: React.FC<LockScreenProps> = ({
               biometryKind={biometryKind}
             />
           </PinScreenLayout>
+
+          <button
+            type="button"
+            onClick={() => setShowForgotConfirm(true)}
+            className="mx-auto mt-6 shrink-0 text-sm text-spark-text-muted underline hover:text-spark-text-secondary transition-colors"
+          >
+            Forgot your PIN?
+          </button>
         </div>
       ) : (
         // Biometric pending: replicate the splash exactly (the same 144
@@ -98,6 +120,20 @@ const LockScreen: React.FC<LockScreenProps> = ({
           <img src="/assets/Glow_Logo.svg" alt="Glow" className="w-36 h-36 object-contain" />
         </div>
       )}
+
+      {/* Above this overlay's own z-[100000]: the dialog portals to body. */}
+      <ConfirmDialog
+        isOpen={showForgotConfirm}
+        variant="danger"
+        zClassName="z-[100001]"
+        title="Forgot your PIN?"
+        message={isPasskey
+          ? "The PIN can't be recovered. The only way back in is to erase all Glow data on this device and sign in again with your passkey."
+          : "The PIN can't be recovered. The only way back in is to erase all Glow data on this device and restore from your recovery phrase. Make sure you have it saved."}
+        confirmLabel="Erase"
+        onConfirm={() => { setShowForgotConfirm(false); void onForgotPin(); }}
+        onCancel={() => setShowForgotConfirm(false)}
+      />
     </div>
   );
 };

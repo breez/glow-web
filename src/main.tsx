@@ -3,6 +3,7 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Keyboard } from '@capacitor/keyboard';
 import App from './App';
+import AppErrorBoundary from './components/AppErrorBoundary';
 // Font faces are declared in index.css (pointing at @fontsource's woff2 files)
 // rather than importing @fontsource's own stylesheets, which hardcode
 // font-display: swap. See the comment there.
@@ -324,8 +325,12 @@ async function init() {
     }
 
     // Render the app - splash stays visible until App signals it's ready
+    // The splash is torn down below, so an uncaught render throw would
+    // leave a flat black screen with no reload affordance on native.
     ReactDOM.createRoot(document.getElementById('root')!).render(
-      <App />
+      <AppErrorBoundary>
+        <App />
+      </AppErrorBoundary>
     );
     logger.info(LogCategory.UI, 'Application initialized successfully');
 

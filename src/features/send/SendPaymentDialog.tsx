@@ -16,6 +16,7 @@ import ConfirmStep from './steps/ConfirmStep';
 import ProcessingStep from './steps/ProcessingStep';
 import ResultStep from './steps/ResultStep';
 import ContactsSubView from './components/ContactsSubView';
+import { setSendSheetOpen } from './sendSheetVisibility';
 import { PrepareLnurlPayRequest } from '@breeztech/breez-sdk-spark';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
@@ -37,6 +38,14 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
   const { findContactByAddress } = useContactsContext();
   const [showContactsView, setShowContactsView] = useState(false);
   const [selectedContactAddress, setSelectedContactAddress] = useState<string | null>(null);
+
+  // Publish sheet visibility so the SDK event handler knows whether this
+  // sheet is still around to report the payment outcome (it is dismissible
+  // mid-send). Mount/unmount, because the parent keys a fresh mount per open.
+  useEffect(() => {
+    setSendSheetOpen(true);
+    return () => setSendSheetOpen(false);
+  }, []);
 
   // Parent (WalletPage) bumps `sendDialogSession` on every open and passes
   // it as `key`, so each open is a fresh mount: hooks re-init, useState

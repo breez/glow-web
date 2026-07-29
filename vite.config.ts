@@ -37,7 +37,10 @@ export default defineConfig(({ mode }) => {
       target: 'esnext',
       outDir: 'dist',
       assetsDir: 'assets',
-      sourcemap: true,
+      // Dev only. A production map ships the full unminified source of the
+      // seed, app-lock and passkey services inside the IPA / AAB, readable
+      // by unzipping the store binary.
+      sourcemap: mode !== 'production',
       chunkSizeWarningLimit: 1700,
     },
     optimizeDeps: {

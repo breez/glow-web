@@ -35,6 +35,10 @@ export interface AppLockState {
   /** Never rejects: cancel / unavailable leaves the lock in place and
    *  the PIN pad as fallback. */
   unlockWithBiometric: () => Promise<void>;
+  /** Drop the lock without verifying anything. Only for the forgotten-PIN
+   *  escape, which erases the account the PIN was protecting: clearing the
+   *  PIN alone would leave this overlay mounted with nothing behind it. */
+  unlockAfterWipe: () => void;
 }
 
 export function useAppLock(): AppLockState {
@@ -127,5 +131,7 @@ export function useAppLock(): AppLockState {
     if (await tryAuthenticateBiometric('Unlock Glow')) setLocked(false);
   }, []);
 
-  return { locked, biometricGate, unlockWithPin, unlockWithBiometric };
+  const unlockAfterWipe = useCallback(() => setLocked(false), []);
+
+  return { locked, biometricGate, unlockWithPin, unlockWithBiometric, unlockAfterWipe };
 }

@@ -43,7 +43,8 @@ import {
   isPasskeyMigrated,
 } from '../services/passkeyService';
 import { LEGACY_RP_ID, SHARED_RP_ID, rpId as defaultRpId } from '../services/passkeyPrfProvider';
-import { secureStorage, deviceOnlyStorage, SecureStorageError } from '../services/secureStorage';
+import { secureStorage, deviceOnlyStorage, SecureStorageError, resetSecureStorageInit } from '../services/secureStorage';
+import { isSendSheetOpen } from '../features/send/sendSheetVisibility';
 import { clearPin, isAppLockSupported } from '../services/appLock';
 
 
@@ -377,7 +378,14 @@ export function useBreezSdk(
         if (!hasConversionInfo && isReceived && !isMigrationInProgress()) {
           setCelebrationPayment(event.payment);
         }
-        // Send toast suppressed: ResultStep dialog already shows success
+        // A send normally reports itself through the sheet's ResultStep, so
+        // nothing fires here. But the sheet is dismissible mid-payment and
+        // the SDK call outlives it, and an unreported SUCCESS is the
+        // dangerous direction: the user assumes it failed and sends again.
+        // Reuse the same celebration when the sheet is no longer on screen.
+        if (!hasConversionInfo && !isReceived && !isSendSheetOpen() && !isMigrationInProgress()) {
+          setCelebrationPayment(event.payment);
+        }
       }
       refreshWalletData(false);
     } else if (event.type === 'paymentPending') {
@@ -388,6 +396,11 @@ export function useBreezSdk(
       logger.info(LogCategory.PAYMENT, 'Payment failed event received', {
         payment: JSON.parse(JSON.stringify(event.payment)),
       });
+      // Same reasoning as the send celebration above: with the sheet gone
+      // there is nothing else to tell the user the payment did not go out.
+      if (event.payment.paymentType === 'send' && !isSendSheetOpen()) {
+        showToastRef.current('error', 'Payment Failed', 'The payment did not go through. Your funds were not sent.');
+      }
     } else if (event.type === 'claimedDeposits') {
       logger.info(LogCategory.PAYMENT, 'Deposits claimed', { count: event.claimedDeposits.length });
       showToastRef.current('success', 'Deposits Claimed Successfully', `${event.claimedDeposits.length} deposits were claimed`);
@@ -615,6 +628,11 @@ export function useBreezSdk(
     // signing back in is a fresh discovery (no pinned credential).
     try { await clearKnownCredentials(); } catch { /* non-fatal */ }
     await wipeAllLocalData();
+    // The wipe took the vault's install markers with it. Without this the
+    // once-per-process init memo still reads "initialized", so a re-onboard
+    // in this same session persists a seed with no marker beside it, and the
+    // next cold start mistakes that for a reinstall and wipes it.
+    resetSecureStorageInit();
     logger.clear();
 
     // Always reset all state, even if disconnect threw.

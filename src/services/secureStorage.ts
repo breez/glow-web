@@ -414,6 +414,36 @@ function ensureSharedInitialized(): Promise<void> {
 }
 
 /**
+ * Drop the once-per-process memo so the next vault call re-runs the init
+ * pipeline. Logout wipes localStorage AND Preferences, which takes the
+ * install markers with it; without this reset the memo keeps reporting
+ * "already initialized", a seed stored by a same-session re-onboard gets
+ * no marker written beside it, and the NEXT cold start reads the missing
+ * marker as a reinstall and wipes a live vault. Call after any wipe that
+ * can clear the markers.
+ */
+export function resetSecureStorageInit(): void {
+  sharedInitPromise = null;
+}
+
+/**
+ * Record that this install owns a populated vault. Called after every
+ * successful store so a seed can never coexist with an absent marker:
+ * the markers gate a wipe, and a WebView storage eviction can drop them
+ * while the Keychain / Keystore entry survives (see `readDurableMarker`).
+ */
+async function markVaultInitialized(): Promise<void> {
+  try {
+    if (await readDurableMarker(INSTALL_MARKER_KEY)) return;
+    const now = new Date().toISOString();
+    await writeDurableMarker(INSTALL_MARKER_KEY, now);
+    await writeDurableMarker(F3_MIGRATION_MARKER_KEY, now);
+  } catch {
+    // Best-effort: a failed marker write must not fail the store itself.
+  }
+}
+
+/**
  * Sequential init pipeline. Order matters: the F3 migration must run
  * AFTER the fresh-install cleanup, so that on a fresh install we
  * only wipe once (via the install-marker path) and skip the F3 wipe
@@ -600,6 +630,7 @@ class NativeSecureStorage implements SecureStorage {
       // Storage policy (Keychain accessibility, Keystore key params) is
       // owned by the plugin's native side.
       await getNativeVault().storeSeed({ seed: JSON.stringify(blob) });
+      await markVaultInitialized();
       logSecureStorageSuccess('storeSeed');
     } catch (err) {
       const code = mapNativeVaultErrorCode(err);
@@ -716,6 +747,7 @@ class NativeDeviceOnlyStorage implements SecureStorage {
     };
     try {
       await getNativeVault().storeSeedDeviceOnly({ seed: JSON.stringify(blob) });
+      await markVaultInitialized();
       logSecureStorageSuccess('storeSeedDeviceOnly');
     } catch (err) {
       const code = mapNativeVaultErrorCode(err);
