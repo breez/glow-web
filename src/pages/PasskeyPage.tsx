@@ -851,6 +851,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         const action = connectActionRef.current;
         const underlying = e instanceof Error ? e.message : String(e);
         const elapsedMs = Date.now() - connectStartMs;
+        const errorCode = (e as { code?: string })?.code;
         // Setup-path 'already exists' anchors back to 'creating' to
         // hit the already-exists render branch. Android Chrome's
         // Credential Manager swallows InvalidStateError into a generic
@@ -875,13 +876,33 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             setErrorKind('already-exists');
             return;
           }
+          // register() creates the credential, then immediately asserts
+          // against it to evaluate PRF. Google Password Manager can take
+          // a moment to index the new credential, so that assertion can
+          // report no credential for one that now exists. Retrying
+          // register would mint a second, orphaned passkey, so pivot to
+          // sign-in the way the already-exists path does.
+          if (e instanceof PasskeyCredentialNotFoundError
+            || errorCode === 'CREDENTIAL_NOT_FOUND'
+            || /CredentialNotFound|No credentials available/i.test(errMsg)) {
+            logger.warn(LogCategory.AUTH, 'Register could not assert the new credential, pivoting to sign-in', {
+              errorCode,
+              elapsedMs,
+            });
+            localStorage.setItem('passkeyRegistered', '1');
+            setIsNewUser(false);
+            detectingFailCountRef.current = 0;
+            setPhase('creating');
+            setError('Your passkey was created but was not ready to use yet. Use it to sign in.');
+            setErrorKind('already-exists');
+            return;
+          }
         }
         // PasskeyTimedOutError covers the OS inactivity timeout
         // (~60s); cancel falls back to .code / .name / message
         // heuristics (no typed class).
         const errorName = e instanceof Error ? e.name : '';
         const errorMessage = e instanceof Error ? e.message : '';
-        const errorCode = (e as { code?: string })?.code;
         const messageLooksCancelled = /cancel{1,2}ed|cancellation/i.test(errorMessage);
         const isTimedOut = e instanceof PasskeyTimedOutError;
         const isCancelled = !isTimedOut && (
