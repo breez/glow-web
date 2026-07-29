@@ -26,7 +26,10 @@ const RestorePage: React.FC<RestorePageProps> = ({
   useScreenCaptureProtection(true);
 
   const handleSubmit = async () => {
-    const cleaned = mnemonic.trim().replace(/\s+/g, ' ');
+    // Lowercased because BIP39 wordlists are: a typed phrase arrives
+    // sentence-cased from the mobile keyboard and would be rejected as an
+    // unknown word. Pasting hides this, which is why it reads as fine.
+    const cleaned = mnemonic.trim().replace(/\s+/g, ' ').toLowerCase();
     const wordCount = cleaned.split(' ').length;
 
     if (wordCount !== 12 && wordCount !== 24) {
@@ -75,6 +78,12 @@ const RestorePage: React.FC<RestorePageProps> = ({
             onChange={(e) => setMnemonic(e.target.value)}
             className="w-full h-36 px-4 py-3 text-spark-text-primary bg-spark-dark border border-spark-border rounded-xl focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 resize-none font-mono text-sm"
             placeholder="word1 word2 word3 ..."
+            // A mobile keyboard otherwise sentence-cases and autocorrects
+            // BIP39 words into something the SDK rejects.
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
             data-testid="mnemonic-input"
           />
         </div>
