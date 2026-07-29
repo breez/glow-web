@@ -604,6 +604,10 @@ const AppContent: React.FC = () => {
                   suppressAutoBiometric={currentScreen === 'unlocking' || currentScreen === 'unlock'}
                   unlockWithPin={appLock.unlockWithPin}
                   unlockWithBiometric={appLock.unlockWithBiometric}
+                  onForgotPin={async () => {
+                    await handleLogout();
+                    appLock.unlockAfterWipe();
+                  }}
                 />
               )}
             </StableBalanceProvider>
