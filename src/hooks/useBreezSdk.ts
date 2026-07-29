@@ -43,7 +43,7 @@ import {
   isPasskeyMigrated,
 } from '../services/passkeyService';
 import { LEGACY_RP_ID, SHARED_RP_ID, rpId as defaultRpId } from '../services/passkeyPrfProvider';
-import { secureStorage, deviceOnlyStorage, SecureStorageError } from '../services/secureStorage';
+import { secureStorage, deviceOnlyStorage, SecureStorageError, resetSecureStorageInit } from '../services/secureStorage';
 import { clearPin, isAppLockSupported } from '../services/appLock';
 
 
@@ -615,6 +615,11 @@ export function useBreezSdk(
     // signing back in is a fresh discovery (no pinned credential).
     try { await clearKnownCredentials(); } catch { /* non-fatal */ }
     await wipeAllLocalData();
+    // The wipe took the vault's install markers with it. Without this the
+    // once-per-process init memo still reads "initialized", so a re-onboard
+    // in this same session persists a seed with no marker beside it, and the
+    // next cold start mistakes that for a reinstall and wipes it.
+    resetSecureStorageInit();
     logger.clear();
 
     // Always reset all state, even if disconnect threw.
