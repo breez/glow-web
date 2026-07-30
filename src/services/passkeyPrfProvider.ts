@@ -18,6 +18,21 @@ export {
 } from '@breeztech/breez-sdk-spark/passkey-prf-provider';
 export type { DomainAssociation } from '@breeztech/breez-sdk-spark/passkey-prf-provider';
 
+/**
+ * The passkey was created, then deriving from it failed. The SDK has no JS
+ * class for this: WASM collapses every error to a bare `Error`, so it is
+ * recognised by message and re-thrown as this type.
+ *
+ * Recover by signing in with the passkey that now exists. Registering again
+ * leaves it behind owning an account nothing points to.
+ */
+export class PasskeyCreatedNotDerivedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PasskeyCreatedNotDerivedError';
+  }
+}
+
 const native = Capacitor.isNativePlatform();
 
 /**
