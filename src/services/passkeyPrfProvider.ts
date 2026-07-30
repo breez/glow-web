@@ -104,42 +104,30 @@ export async function signalUnknownCredentials(credentialIdsBase64: string[]): P
 }
 
 /**
- * Whether this browser honors WebAuthn immediate mediation
- * (`mediation: 'immediate'`), probed once via
- * `getClientCapabilities('public-key').immediateGet`. Web-only:
- * `immediateGet` is a browser capability, so native short-circuits to
- * false (its own fast-fail on `preferImmediatelyAvailableCredentials` is
- * a separate mechanism). For the login-UX gate use
- * `canSilentlyDetectPasskey`; pass this raw flag to web `signIn`.
+ * Whether the web sign-in probe may use WebAuthn immediate mediation
+ * (`uiMode: 'immediate'`). Pinned off: it reports "no credential" both
+ * when there is none and when the user dismissed the prompt (browsers
+ * collapse the two so a site cannot enumerate passkey holders), and it
+ * reports none for a user who does hold one in Chrome/Arc incognito.
+ * Either way a returning user looks new, and the single-CTA flow answers
+ * that by registering a second passkey owning an unreachable account.
+ * Native is unaffected: `preferImmediatelyAvailableCredentials` is a
+ * separate mechanism with a typed no-credential result.
+ *
+ * ponytail: kept as a function with its call sites rather than inlining
+ * `false`, so re-enabling once browsers distinguish the two errors is a
+ * one-line change here.
  */
-let cachedImmediateGet: boolean | null | undefined;
 export async function supportsImmediateGet(): Promise<boolean> {
-  if (native) return false;
-  if (cachedImmediateGet === true) return true;
-  if (cachedImmediateGet === false || cachedImmediateGet === null) return false;
-  try {
-    if (typeof PublicKeyCredential === 'undefined'
-        || typeof (PublicKeyCredential as { getClientCapabilities?: unknown }).getClientCapabilities !== 'function') {
-      cachedImmediateGet = null;
-      return false;
-    }
-    const caps = await (PublicKeyCredential as unknown as {
-      getClientCapabilities: (kind: string) => Promise<{ immediateGet?: boolean }>;
-    }).getClientCapabilities('public-key');
-    cachedImmediateGet = caps?.immediateGet === true;
-  } catch {
-    cachedImmediateGet = null;
-  }
-  return cachedImmediateGet === true;
+  return false;
 }
 
 /**
  * Whether the device can silently detect an existing passkey (probe and
  * fast-fail through to create without flashing a sheet). Gates the
- * single-CTA "Get Started" login. Native does this inherently; web only
- * where the browser advertises immediate mediation. Umbrella over the
- * web-only `supportsImmediateGet` so neither has to lie about the other
- * (this is true on native; that is not).
+ * single-CTA "Get Started" login. Native does this inherently; web goes
+ * through `supportsImmediateGet`, which is off, so web always takes the
+ * explicit two-CTA flow.
  */
 export async function canSilentlyDetectPasskey(): Promise<boolean> {
   if (native) return true;
