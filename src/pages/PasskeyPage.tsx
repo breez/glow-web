@@ -25,6 +25,7 @@ import {
 } from '@/services/passkeyService';
 import {
   PasskeyAlreadyExistsError,
+  PasskeyCreatedNotDerivedError,
   PasskeyCredentialNotFoundError,
   PasskeyTimedOutError,
   createPasskeyTimestampLabel,
@@ -863,6 +864,19 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           const looksLikeAndroidDupRefusal = !Capacitor.isNativePlatform()
             && /credential manager/i.test(errMsg)
             && hasKnownCreds;
+          // The passkey exists from here on, so registering again would
+          // strand it. Reuse the already-exists recovery, whose CTA signs
+          // in with the credential rather than creating another.
+          if (e instanceof PasskeyCreatedNotDerivedError) {
+            logger.warn(LogCategory.AUTH, 'Passkey created but derive failed, pivoting to sign-in');
+            localStorage.setItem('passkeyRegistered', '1');
+            setIsNewUser(false);
+            detectingFailCountRef.current = 0;
+            setPhase('creating');
+            setError('Your passkey was created but was not ready to use yet. Use it to sign in.');
+            setErrorKind('already-exists');
+            return;
+          }
           if (e instanceof PasskeyAlreadyExistsError || looksLikeAndroidDupRefusal) {
             logger.info(LogCategory.AUTH, 'Register flow detected existing passkey, surfacing already-exists state', {
               heuristic: !(e instanceof PasskeyAlreadyExistsError),

@@ -21,6 +21,7 @@ import {
   PasskeyProvider,
   PasskeyTimedOutError,
 } from '@breeztech/breez-sdk-spark/passkey-prf-provider';
+import { PasskeyCreatedNotDerivedError } from './passkeyPrfProvider';
 import { Capacitor } from '@capacitor/core';
 import { sdkReady } from './sdkReady';
 import { LocalStorageCredentialRegistry } from './localStorageCredentialRegistry';
@@ -221,6 +222,7 @@ function rethrowAsTyped(e: unknown): never {
   const code = (e as { code?: string })?.code;
   const message = e instanceof Error ? e.message : String(e);
   switch (code) {
+    case 'CREATED_BUT_NOT_DERIVED': throw new PasskeyCreatedNotDerivedError(message);
     case 'CREDENTIAL_ALREADY_EXISTS': throw new PasskeyAlreadyExistsError(message);
     case 'CREDENTIAL_NOT_FOUND': throw new PasskeyCredentialNotFoundError(message);
     case 'USER_TIMED_OUT': throw new PasskeyTimedOutError(message);
@@ -245,6 +247,13 @@ function rethrowWasmAsTyped(e: unknown): never {
     throw e;
   }
   const message = e instanceof Error ? e.message : String(e);
+  // First: this variant's message embeds the underlying failure, so
+  // "…derivation failed: Authenticator timed out" matches the timeout test
+  // below and would be recovered with a retry that registers a second
+  // passkey. The prefix has to win.
+  if (/^Passkey created but derivation failed/i.test(message)) {
+    throw new PasskeyCreatedNotDerivedError(message);
+  }
   if (/Credential already exists/i.test(message)) throw new PasskeyAlreadyExistsError(message);
   if (/Credential not found/i.test(message)) throw new PasskeyCredentialNotFoundError(message);
   if (/Authenticator timed out/i.test(message)) throw new PasskeyTimedOutError(message);
