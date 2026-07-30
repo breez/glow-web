@@ -401,7 +401,13 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         // to prefer immediately-available credentials (keeps native detection
         // identical to before this flow). `immediate` is false on native.
         probeUsedImmediate = immediate;
-        const speculativeResponse = await signInPinnedToActiveCredential('Default', undefined, probeUsedImmediate);
+        // Ceremony-scoped clock, like register/signIn below. `detectStartMs`
+        // also covers the availability check and client build ahead of it,
+        // so the pair separates our own setup from the OS call: on Android
+        // the first Credential Manager query of a launch pays for provider
+        // discovery and domain verification before it can answer at all.
+        const speculativeResponse = await logger.time('[onboarding] passkey.detect', () =>
+          signInPinnedToActiveCredential('Default', undefined, probeUsedImmediate));
         signInResolved = true;
         const speculative = speculativeResponse.wallet;
         if (cancelled) return;
@@ -662,7 +668,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           }
         }
         if (isCredentialNotFound) {
-          logger.info(LogCategory.AUTH, 'No existing passkey (deterministic), starting new user flow', { errorCode });
+          logger.info(LogCategory.AUTH, 'No existing passkey (deterministic), starting new user flow', { errorCode, elapsedMs });
           setIsNewUser(true);
           setPhase('creating');
           return;
