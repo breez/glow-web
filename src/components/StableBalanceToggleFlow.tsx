@@ -199,8 +199,16 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
 
   const handleDisclaimerAccept = useCallback(() => {
     setStableDisclaimerAccepted();
+    // The restore prompt only turns the mode on. Sats that came back with the
+    // restore are left to the SDK, which auto-converts them once they clear its
+    // dynamic minimum: quoting a conversion here only ever offers to convert
+    // change that is too small to convert, and then fails.
+    if (restorePrompt) {
+      void stableBalance.toggleStableBalance(USDB_TICKER).then(onComplete);
+      return;
+    }
     startEstimation();
-  }, [startEstimation]);
+  }, [restorePrompt, stableBalance, onComplete, startEstimation]);
 
   const handleConfirm = useCallback(() => {
     executeToggle();
