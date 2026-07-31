@@ -70,9 +70,9 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
     : !isBiometricTier ? 'Try Again'
       : biometry ? `Unlock with ${biometry.label}` : 'Unlock';
   const unlockDescription = isWebPasskey
-    ? 'Your wallet is locked. Unlock with your passkey to continue.'
+    ? 'Glow is locked. Unlock with your passkey to continue.'
     : !isBiometricTier ? 'Glow could not start up. Please try again.'
-      : 'Your wallet is locked. Unlock with your biometric to continue.';
+      : 'Glow is locked. Unlock with your biometric to continue.';
   const UnlockIcon = isWebPasskey
     ? PasskeyIcon
     : biometry?.kind === 'face' ? FaceIdIcon : FingerprintIcon;
