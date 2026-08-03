@@ -7,6 +7,7 @@ import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
 import { CloseIcon, CheckIcon, WarningIcon, RadioCheckIcon } from '../components/Icons';
 import { isDepositRejected, removeRejectedDeposit } from '../services/depositState';
 import { SatAmount } from '../components/SatAmount';
+import { explorerTxUrl } from '../utils/explorer';
 import SlideInPage from '@/components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
 
@@ -191,18 +192,6 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     return selectedDeposit.amountSats - getSelectedFee();
   };
 
-  // Get mempool.space URL for a transaction
-  const getMempoolUrl = (txid: string) => {
-    // Check URL params for network
-    const urlParams = new URLSearchParams(window.location.search);
-    const network = urlParams.get('network') ?? 'mainnet';
-
-    if (network === 'testnet') {
-      return `https://mempool.space/testnet/tx/${txid}`;
-    }
-    return `https://mempool.space/tx/${txid}`;
-  };
-
   return (
     <SlideInPage title="Get Refund" onClose={onBack} slideFrom={animationDirection}>
       <div className="p-4">
@@ -259,7 +248,9 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                           value={dep.txid}
                           isVisible={expandedTxIds[txKey] || false}
                           onToggle={() => setExpandedTxIds(prev => ({ ...prev, [txKey]: !prev[txKey] }))}
-                          href={getMempoolUrl(dep.txid)}
+                          href={explorerTxUrl(dep.txid)}
+                          copyable
+                          shareable
                         />
 
                         {isRefunded && refundedTxId && (
@@ -268,7 +259,9 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                             value={refundedTxId}
                             isVisible={expandedTxIds[refundKey] || false}
                             onToggle={() => setExpandedTxIds(prev => ({ ...prev, [refundKey]: !prev[refundKey] }))}
-                            href={getMempoolUrl(refundedTxId)}
+                            href={explorerTxUrl(refundedTxId)}
+                            copyable
+                            shareable
                           />
                         )}
                       </div>
@@ -490,6 +483,9 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                       value={refundTxId}
                       isVisible={isTxIdVisible}
                       onToggle={() => setIsTxIdVisible(prev => !prev)}
+                      href={explorerTxUrl(refundTxId)}
+                      copyable
+                      shareable
                     />
                   </PaymentInfoCard>
                 )}

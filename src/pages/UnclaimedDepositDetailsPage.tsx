@@ -5,6 +5,7 @@ import { BottomSheetContainer, BottomSheetCard, DialogHeader, PrimaryButton, Sec
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
 import { SpinnerIcon, WarningIcon } from '../components/Icons';
 import { rejectDeposit, removeRejectedDeposit } from '../services/depositState';
+import { explorerTxUrl } from '../utils/explorer';
 import { logger, LogCategory } from '@/services/logger';
 
 interface UnclaimedDepositDetailsPageProps {
@@ -114,6 +115,9 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
               value={deposit.txid}
               isVisible={isTxIdVisible}
               onToggle={() => setIsTxIdVisible(prev => !prev)}
+              href={explorerTxUrl(deposit.txid)}
+              copyable
+              shareable
             />
           </PaymentInfoCard>
 
