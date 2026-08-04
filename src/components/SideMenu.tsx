@@ -11,6 +11,12 @@ import { STATUS_BAR_SURFACE, STATUS_BAR_DIALOG_SCRIM } from '../utils/statusBarM
 import { useBackButton } from '../hooks/useBackButton';
 import GlowLogo from './GlowLogo';
 
+// App Store Review Guidelines 5.1.1(i) requires the privacy policy to be
+// reachable from inside the app, not just from the store listing, and 1.5
+// requires a way to reach the developer. Both pages ship from public/.
+const PRIVACY_POLICY_URL = 'https://glow-app.co/privacy.html';
+const SUPPORT_URL = 'https://glow-app.co/support.html';
+
 // External-store measurement of the content-root's left offset, used
 // to anchor the drawer panel to the centered max-w-4xl column.
 // Module-level so identities are stable for useSyncExternalStore.
@@ -212,7 +218,27 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
             </nav>
 
             {/* Footer */}
-            <div className="pt-6 pb-6 border-t border-spark-border">
+            <div className="pt-6 pb-6 border-t border-spark-border space-y-2">
+              {/* Buttons rather than anchors: openExternalUrl keeps native
+                  in an in-app browser that returns to the drawer on Done,
+                  and same-origin pages in the PWA's own overlay. */}
+              <div className="flex items-center justify-center gap-2 text-xs text-spark-text-muted">
+                <button
+                  type="button"
+                  onClick={() => { void openExternalUrl(PRIVACY_POLICY_URL); }}
+                  className="hover:text-spark-text-secondary transition-colors"
+                >
+                  Privacy Policy
+                </button>
+                <span aria-hidden="true">&middot;</span>
+                <button
+                  type="button"
+                  onClick={() => { void openExternalUrl(SUPPORT_URL); }}
+                  className="hover:text-spark-text-secondary transition-colors"
+                >
+                  Support
+                </button>
+              </div>
               <a
                 href="https://breez.technology/sdk/"
                 target="_blank"
