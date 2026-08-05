@@ -7,12 +7,13 @@
  *
  * The lock covers every screen including Backup, and the PIN has no
  * reset, so the "Forgot your PIN?" escape is the only alternative to
- * reinstalling. It erases all local data, so it is confirm-gated.
+ * reinstalling. It erases all local data, so it is gated on a confirm
+ * plus a device-owner prompt.
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { PinEntry, PinScreenLayout } from './PinEntry';
-import { getBiometryInfo, BiometryKind } from '../services/secureStorage';
+import { confirmDeviceOwner, getBiometryInfo, BiometryKind } from '../services/secureStorage';
 import { useBackButton } from '../hooks/useBackButton';
 import { ConfirmDialog } from './ui';
 import { isPasskeyMode } from '@/services/passkeyService';
@@ -135,7 +136,16 @@ const LockScreen: React.FC<LockScreenProps> = ({
           ? "The PIN can't be recovered. The only way back in is to erase all Glow data on this device and sign in again with your passkey."
           : "The PIN can't be recovered. The only way back in is to erase all Glow data on this device and restore from your recovery phrase. Make sure you have it saved."}
         confirmLabel="Erase"
-        onConfirm={() => { setShowForgotConfirm(false); void onForgotPin(); }}
+        // The dialog stays up until the device-owner prompt passes, so a
+        // cancelled prompt reads as "nothing happened" rather than as a
+        // silently dropped erase.
+        onConfirm={() => {
+          void confirmDeviceOwner('Erase all Glow data').then((confirmed) => {
+            if (!confirmed) return;
+            setShowForgotConfirm(false);
+            void onForgotPin();
+          });
+        }}
         onCancel={() => setShowForgotConfirm(false)}
       />
     </div>
