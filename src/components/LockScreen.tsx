@@ -16,6 +16,7 @@ import { getBiometryInfo, BiometryKind } from '../services/secureStorage';
 import { useBackButton } from '../hooks/useBackButton';
 import { ConfirmDialog } from './ui';
 import { isPasskeyMode } from '@/services/passkeyService';
+import { pinAttemptMessage, type PinVerifyResult } from '@/services/appLock';
 
 interface LockScreenProps {
   biometricGate: boolean;
@@ -23,7 +24,7 @@ interface LockScreenProps {
    *  legacy vault unlock): concurrent BiometricPrompt calls cancel each
    *  other on Android, so the auto-fire waits until it clears. */
   suppressAutoBiometric?: boolean;
-  unlockWithPin: (pin: string) => Promise<boolean>;
+  unlockWithPin: (pin: string) => Promise<PinVerifyResult>;
   unlockWithBiometric: () => Promise<void>;
   /** Erase-everything escape for a forgotten PIN. The PIN is not
    *  recoverable and the lock covers the whole app (including Backup),
@@ -95,7 +96,10 @@ const LockScreen: React.FC<LockScreenProps> = ({
             }
           >
             <PinEntry
-              onSubmit={async (pin) => ((await unlockWithPin(pin)) ? null : 'Incorrect PIN')}
+              onSubmit={async (pin) => {
+                const result = await unlockWithPin(pin);
+                return result.ok ? null : pinAttemptMessage(result);
+              }}
               // Gate flag AND live availability, so a Face ID outage
               // (denied / locked out) never leaves a dead button.
               onBiometric={biometricGate && biometryKind ? () => { void tryBiometric(); } : undefined}

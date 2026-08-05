@@ -40,8 +40,8 @@ describe('appLock PIN', () => {
     expect(await appLock.isPinEnabled()).toBe(false);
     await appLock.setPin('123456');
     expect(await appLock.isPinEnabled()).toBe(true);
-    expect(await appLock.verifyPin('123456')).toBe(true);
-    expect(await appLock.verifyPin('654321')).toBe(false);
+    expect((await appLock.verifyPin('123456')).ok).toBe(true);
+    expect((await appLock.verifyPin('654321')).ok).toBe(false);
   });
 
   it('stores a salted hash, never the PIN, with a fresh salt per set', async () => {
@@ -52,7 +52,7 @@ describe('appLock PIN', () => {
     await appLock.setPin('123456');
     // Same PIN, rotated salt => different stored hash.
     expect([...appLock.store.values()].sort()).not.toEqual(firstValues.sort());
-    expect(await appLock.verifyPin('123456')).toBe(true);
+    expect((await appLock.verifyPin('123456')).ok).toBe(true);
   });
 
   it('mirrors the enabled flag for synchronous lock gating', async () => {
@@ -72,7 +72,7 @@ describe('appLock PIN', () => {
     await appLock.clearPin();
     expect(await appLock.isPinEnabled()).toBe(false);
     expect(await appLock.isBiometricGateEnabled()).toBe(false);
-    expect(await appLock.verifyPin('123456')).toBe(false);
+    expect((await appLock.verifyPin('123456')).ok).toBe(false);
   });
 
   it('mirrors the biometric gate flag for synchronous reads', async () => {
@@ -85,6 +85,45 @@ describe('appLock PIN', () => {
     await appLock.setBiometricGateEnabled(true);
     await appLock.clearPin();
     expect(appLock.isBiometricGateEnabledSync()).toBe(false);
+  });
+});
+
+describe('appLock failed-attempt backoff', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('locks out after the free attempts and clears on the correct PIN', async () => {
+    const appLock = await loadAppLock(true);
+    await appLock.setPin('123456');
+
+    // Five free tries: rejected, but nothing to wait for yet.
+    for (let i = 0; i < 5; i++) {
+      expect(await appLock.verifyPin('000000')).toMatchObject({ ok: false, lockedForMs: 0 });
+    }
+
+    vi.useFakeTimers();
+    expect((await appLock.verifyPin('000000')).lockedForMs).toBe(30_000);
+
+    // The wait covers every attempt, a correct PIN included: one that
+    // only applied to wrong entries would not bound the rate.
+    expect((await appLock.verifyPin('123456')).ok).toBe(false);
+
+    vi.advanceTimersByTime(30_000);
+    expect((await appLock.verifyPin('123456')).ok).toBe(true);
+
+    // Success resets the counter, so the next failure is free again.
+    expect((await appLock.verifyPin('000000')).lockedForMs).toBe(0);
+  });
+
+  it('caps a backwards clock at the longest scheduled wait', async () => {
+    const appLock = await loadAppLock(true);
+    await appLock.setPin('123456');
+    vi.useFakeTimers();
+    for (let i = 0; i < 6; i++) await appLock.verifyPin('000000');
+    // Device clock pushed a year back: still a bounded wait, not a brick.
+    vi.setSystemTime(Date.now() - 365 * 24 * 3600_000);
+    expect((await appLock.verifyPin('123456')).lockedForMs).toBe(3600_000);
   });
 });
 

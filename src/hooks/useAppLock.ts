@@ -18,6 +18,7 @@ import {
   isPinEnabledSync,
   verifyPin,
 } from '@/services/appLock';
+import type { PinVerifyResult } from '@/services/appLock';
 import {
   deviceOnlyStorage,
   secureStorage,
@@ -31,7 +32,8 @@ export interface AppLockState {
   /** True when the biometric gate is on: the lock screen auto-fires the
    *  OS prompt and offers a retry button; PIN stays as fallback. */
   biometricGate: boolean;
-  unlockWithPin: (pin: string) => Promise<boolean>;
+  /** Rate-limited: a rejected result carries the remaining backoff. */
+  unlockWithPin: (pin: string) => Promise<PinVerifyResult>;
   /** Never rejects: cancel / unavailable leaves the lock in place and
    *  the PIN pad as fallback. */
   unlockWithBiometric: () => Promise<void>;
@@ -122,9 +124,9 @@ export function useAppLock(): AppLockState {
   }, []);
 
   const unlockWithPin = useCallback(async (pin: string) => {
-    const ok = await verifyPin(pin);
-    if (ok) setLocked(false);
-    return ok;
+    const result = await verifyPin(pin);
+    if (result.ok) setLocked(false);
+    return result;
   }, []);
 
   const unlockWithBiometric = useCallback(async () => {
