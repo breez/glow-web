@@ -36,11 +36,21 @@ export class PasskeyCreatedNotDerivedError extends Error {
 const native = Capacitor.isNativePlatform();
 
 /**
+ * Native RP ID, overridable at build time so `.dev` builds target a dev RP.
+ * An RP-listed cert is a credential on that RP (the seed derives from a
+ * passkey PRF gated on package + cert), so dev and production builds do not
+ * share one. Defaults to production, so an unset dev build fails closed once
+ * dev certs are off the production RP.
+ */
+const NATIVE_RP_ID =
+  (import.meta.env.VITE_NATIVE_PASSKEY_RP_ID as string | undefined) || 'keys.breez.technology';
+
+/**
  * RP ID used by all existing (legacy) passkeys: the hostname at creation
  * time on web (a fixed value on native). Credentials are cryptographically
  * bound to their RP ID, so legacy passkeys stay discoverable only under it.
  */
-export const LEGACY_RP_ID = native ? 'keys.breez.technology' : window.location.hostname;
+export const LEGACY_RP_ID = native ? NATIVE_RP_ID : window.location.hostname;
 
 /**
  * shared-based RP ID from env, set when the deployment has Related Origin
@@ -60,6 +70,7 @@ logger.info(LogCategory.AUTH, 'Passkey config', {
   legacyRpId: LEGACY_RP_ID,
   sharedRpId: SHARED_RP_ID ?? 'not configured',
   platform: native ? 'native' : 'browser',
+  nativeRpOverridden: native && NATIVE_RP_ID !== 'keys.breez.technology',
 });
 
 /** Local-time, second precision, ASCII-only, e.g. `May 6, 2026 21:14:56`. */
