@@ -20,6 +20,7 @@ import { useLatest } from './useLatest';
 import { buildConnectConfig } from './buildConnectConfig';
 import { logger, LogCategory, logSdkMessage } from '../services/logger';
 import { formatError } from '../utils/formatError';
+import { isStandalonePwa, openExternalUrl } from '../utils/externalLink';
 import { isDepositRejected, clearRejectedDeposits } from '../services/depositState';
 import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, ensureSparkPrivateMode, isDevMode, type BuyBitcoinProvider } from '../services/settings';
 import { wipeAllLocalData } from '../services/accountDeletion';
@@ -1087,6 +1088,11 @@ export function useBreezSdk(
         await Browser.open({ url: response.url });
       } else if (newTab) {
         newTab.location.href = response.url;
+      } else if (isStandalonePwa()) {
+        // window.open returns null in an installed PWA, so this is the normal
+        // path there, not a blocked-popup edge: navigating the standalone
+        // window itself would leave no way back.
+        await openExternalUrl(response.url);
       } else {
         window.location.href = response.url;
       }

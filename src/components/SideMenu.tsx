@@ -217,6 +217,10 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                 href="https://breez.technology/sdk/"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  void openExternalUrl('https://breez.technology/sdk/');
+                }}
                 className="block text-xs text-spark-text-muted text-center hover:text-spark-text-secondary transition-colors"
               >
                 Powered by Breez SDK

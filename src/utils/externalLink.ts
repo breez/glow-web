@@ -31,7 +31,12 @@ export async function openExternalUrl(url: string): Promise<void> {
   anchor.remove();
 }
 
-const isStandalonePwa = (): boolean =>
+/**
+ * Installed-PWA display mode. A standalone window has no address bar and no
+ * back affordance, so navigating it away from the app strands the user until
+ * they relaunch.
+ */
+export const isStandalonePwa = (): boolean =>
   window.matchMedia?.('(display-mode: standalone)').matches
   || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
