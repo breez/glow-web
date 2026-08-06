@@ -4,6 +4,7 @@ import type { PaymentStep } from '../../../types/domain';
 import { PrimaryButton } from '../../../components/ui';
 import { RadioCheckIcon } from '../../../components/Icons';
 import ConfirmStep from '../steps/ConfirmStep';
+import { getSendDestination } from '../utils';
 
 interface BitcoinWorkflowProps {
   method: Extract<SendPaymentMethod, { type: 'bitcoinAddress' }>;
@@ -100,7 +101,7 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, f
 
       {/* Confirm */}
       {step === 'confirm' && (
-        <ConfirmStep amountSats={amountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} error={null} isLoading={false} onBack={onBack} onConfirm={handleSend} />
+        <ConfirmStep amountSats={amountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} destination={getSendDestination(method)} error={null} isLoading={false} onBack={onBack} onConfirm={handleSend} />
       )}
     </>
   );

@@ -1,5 +1,22 @@
 import type { SendInput } from '@/types/domain';
-import type { LnurlPayRequestDetails, LnurlAuthRequestDetails, LnurlWithdrawRequestDetails } from '@breeztech/breez-sdk-spark';
+import type { LnurlPayRequestDetails, LnurlAuthRequestDetails, LnurlWithdrawRequestDetails, SendPaymentMethod } from '@breeztech/breez-sdk-spark';
+
+/** Who a prepared payment pays, for the confirm step. Read from the prepare
+ *  response, not the raw input, so the row shows what the SDK resolved. */
+export function getSendDestination(method: SendPaymentMethod): { label: string; value: string } {
+  switch (method.type) {
+    case 'bitcoinAddress':
+      return { label: 'To address', value: method.address.address };
+    case 'sparkAddress':
+      return { label: 'To Spark address', value: method.address };
+    case 'sparkInvoice':
+      return { label: 'To Spark invoice', value: method.sparkInvoiceDetails.invoice };
+    case 'bolt11Invoice':
+      return { label: 'To invoice', value: method.invoiceDetails.invoice.bolt11 };
+    case 'crossChainAddress':
+      return { label: 'To address', value: method.recipientAddress };
+  }
+}
 
 export function getPaymentMethodName(input: SendInput | null): string {
   if (!input) return '';
