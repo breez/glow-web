@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import type { LnurlWithdrawRequestDetails, LnurlWithdrawResponse } from '@breeztech/breez-sdk-spark';
 import { FormError, PrimaryButton, SecondaryButton } from '../../../components/ui';
 import { logger, LogCategory } from '../../../services/logger';
@@ -38,6 +38,9 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
   const [amount, setAmount] = useState<string>(String(maxSats));
   const [error, setError] = useState<string | null>(null);
   const [isWaiting, setIsWaiting] = useState(false);
+  // Calls the SDK directly rather than through the send hook, so it needs its own
+  // latch: `isWaiting` swaps in the spinner only on the next render.
+  const withdrawingRef = useRef(false);
 
   const description = parsed.defaultDescription?.trim();
   const sourceHost = useMemo(() => {
@@ -69,6 +72,8 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
   // otherwise. The SDK waits up to completionTimeoutSecs for settlement, so the
   // await resolves with the outcome and the spinner can't hang.
   const onReceive = async () => {
+    if (withdrawingRef.current) return;
+    withdrawingRef.current = true;
     const sats = isFixed ? maxSats : amountNum;
     setError(null);
     setIsWaiting(true);
@@ -85,6 +90,8 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
       logger.error(LogCategory.PAYMENT, 'LNURL withdraw failed', { error: formatError(err) });
       setError(`Withdraw failed: ${formatError(err)}`);
       setIsWaiting(false);
+    } finally {
+      withdrawingRef.current = false;
     }
   };
 

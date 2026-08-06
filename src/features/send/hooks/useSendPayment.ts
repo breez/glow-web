@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import type { PrepareSendPaymentResponse, FeePolicy, SendPaymentOptions, SdkEvent, ConversionOptions } from '@breeztech/breez-sdk-spark';
 import type { SendInput } from '@/types/domain';
 import { useWallet, useWalletInfo } from '../../../contexts/WalletContext';
@@ -64,6 +64,11 @@ export function useSendPayment(): UseSendPaymentReturn {
   const [amountFixed, setAmountFixed] = useState(false);
   const [tokenIdentifier, setTokenIdentifier] = useState<string | null>(null);
   const [conversionOptions, setConversionOptions] = useState<ConversionOptions | null>(null);
+
+  // Every send workflow funnels through handleSend/handleRun, so one latch here
+  // covers all of them. It has to be a ref: `isLoading` only settles on the next
+  // render, which is too late to keep a repeat call out.
+  const inFlightRef = useRef(false);
 
   // Balance is read live from the wallet info context, which is auto-refreshed
   // by useBreezSdk on `synced`/`paymentSucceeded`/`claimedDeposits` events. We
@@ -250,7 +255,8 @@ export function useSendPayment(): UseSendPaymentReturn {
   }, [paymentInput?.paymentRequest, parsedInputType, prepareSend]);
 
   const handleSend = useCallback(async (options?: SendPaymentOptions) => {
-    if (!prepareResponse) return;
+    if (!prepareResponse || inFlightRef.current) return;
+    inFlightRef.current = true;
     const hasConversion = !!prepareResponse.conversionEstimate;
     logger.info(LogCategory.PAYMENT, 'handleSend called', {
       hasConversion,
@@ -294,6 +300,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setError(`Payment failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setPaymentResult('failure');
     } finally {
+      inFlightRef.current = false;
       if (listenerId) {
         wallet.removeEventListener(listenerId).catch(() => {});
       }
@@ -304,6 +311,8 @@ export function useSendPayment(): UseSendPaymentReturn {
   }, [wallet, prepareResponse]);
 
   const handleRun = useCallback(async (runner: () => Promise<void>, hasConversion?: boolean) => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setProcessingPhase(hasConversion ? 'converting' : 'sending');
     setCurrentStep('processing');
     setIsLoading(true);
@@ -342,6 +351,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setError(`Operation failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setPaymentResult('failure');
     } finally {
+      inFlightRef.current = false;
       if (listenerId) {
         wallet.removeEventListener(listenerId).catch(() => {});
       }
@@ -352,6 +362,7 @@ export function useSendPayment(): UseSendPaymentReturn {
   }, [wallet]);
 
   const reset = useCallback(() => {
+    inFlightRef.current = false;
     setCurrentStep('input');
     setAmount('');
     setPrepareResponse(null);

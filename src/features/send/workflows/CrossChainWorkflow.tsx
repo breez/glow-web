@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type {
   ConversionOptions,
   CrossChainAddressDetails,
@@ -92,6 +92,10 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   // Chain card expand/copy state
   const [expandedChain, setExpandedChain] = useState<string | null>(null);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+  // The ref is the actual guard; `isSending` only drives the button, and state
+  // does not reach it until the next render.
+  const [isSending, setIsSending] = useState(false);
+  const sendingRef = useRef(false);
 
   // Stable balance detection
   const useUsdb = stableBalance.isActive && !!stableBalance.tokenIdentifier && stableBalance.btcFiatRate > 0 && !!stableBalance.displayConfig;
@@ -312,10 +316,15 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   };
 
   const handleSend = () => {
-    if (!prepareResponse) return;
+    if (!prepareResponse || sendingRef.current) return;
+    sendingRef.current = true;
+    setIsSending(true);
     const response = prepareResponse;
     onRun(async () => {
       await wallet.sendPayment({ prepareResponse: response });
+    }).finally(() => {
+      sendingRef.current = false;
+      setIsSending(false);
     });
   };
 
@@ -629,7 +638,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
             <SecondaryButton onClick={goBackFromConfirm} className="flex-1">
               Back
             </SecondaryButton>
-            <PrimaryButton onClick={handleSend} className="flex-1" disabled={false}>
+            <PrimaryButton onClick={handleSend} className="flex-1" disabled={isSending}>
               Send
             </PrimaryButton>
           </div>
