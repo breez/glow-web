@@ -2,6 +2,14 @@
 <html lang="en">
 
 <head>
+  <!-- First element in <head>: a CSP meta only governs resources the parser
+       reaches after it. Carries the policy on the surfaces that have no
+       response headers of our own (iOS capacitor://localhost); on the hosted
+       PWA it coexists with the vercel.json header, which adds the
+       header-only directives (frame-ancestors, upgrade-insecure-requests).
+       Keep the shared directives byte-identical with vercel.json and
+       glow-app's capacitor.config.ts. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https: wss:; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; manifest-src 'self'" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   
@@ -134,49 +142,7 @@
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
   
-  <!-- Service Worker Registration. Web only.
-       In the native shell the assets are already on-device and offline-capable,
-       so the service worker buys nothing: its "network" is just the local asset
-       server, yet it still intercepts every request and re-copies the JS bundle
-       and the multi-megabyte WASM into Cache Storage on every cold start. Skip
-       it there, and unregister (plus drop its caches) for installs that picked
-       one up from an earlier build. -->
-  <script>
-    (function () {
-      if (!('serviceWorker' in navigator)) return;
-
-      // The native bridge injects window.Capacitor before page scripts run.
-      var cap = window.Capacitor;
-      var isNative = !!(cap && (typeof cap.isNativePlatform === 'function'
-        ? cap.isNativePlatform()
-        : (cap.platform && cap.platform !== 'web')));
-
-      if (isNative) {
-        navigator.serviceWorker.getRegistrations()
-          .then(function (regs) { regs.forEach(function (r) { r.unregister(); }); })
-          .catch(function () { /* nothing registered — fine */ });
-        if (window.caches && caches.keys) {
-          caches.keys()
-            .then(function (keys) {
-              keys.filter(function (k) { return k.indexOf('glow-') === 0; })
-                .forEach(function (k) { caches.delete(k); });
-            })
-            .catch(function () { /* no cache storage — fine */ });
-        }
-        return;
-      }
-
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('/sw.js')
-          .then(function (registration) {
-            console.log('SW registered:', registration.scope);
-          })
-          .catch(function (error) {
-            console.log('SW registration failed:', error);
-          });
-      });
-    })();
-  </script>
+  <script src="/sw-register.js" defer></script>
 </body>
 
 </html>
