@@ -256,6 +256,26 @@ export function clearNetworkOverride(): void {
   }
 }
 
+const DEV_MODE_KEY = 'spark-dev-mode';
+
+/**
+ * `?dev=true` in the URL, read once per page load. Deliberately never
+ * written to storage: a link would otherwise leave the dev surfaces
+ * (database export, network switch) on for the life of the install, with
+ * nothing on screen saying so. Only the settings tap toggle persists.
+ */
+const devModeFromUrl =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('dev') === 'true';
+
+export function isDevMode(): boolean {
+  return devModeFromUrl || localStorage.getItem(DEV_MODE_KEY) === 'true';
+}
+
+export function setDevMode(enabled: boolean): void {
+  localStorage.setItem(DEV_MODE_KEY, String(enabled));
+}
+
 /**
  * Check if console logging is enabled.
  * Controlled via VITE_CONSOLE_LOGGING env var when present; defaults to dev mode.

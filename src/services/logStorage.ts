@@ -1,11 +1,11 @@
 /**
- * Secure log storage service for persisting logs across sessions.
+ * Log storage for persisting logs across sessions: up to MAX_SESSIONS
+ * sessions in IndexedDB, one unified stream each, oldest pruned first.
  *
- * Features:
- * - Encrypts logs using AES-GCM with a derived key
- * - Stores up to MAX_SESSIONS sessions in IndexedDB
- * - Single unified log stream per session
- * - Automatic cleanup of oldest sessions when limit reached
+ * Logs are AES-GCM encrypted, but the key lives in the same database, so
+ * this only protects against a raw read of the storage files. Anything
+ * running in the origin decrypts at will: treat the store as readable by
+ * the device, and keep secrets out of the logs (see logger's scrubber).
  */
 
 const DB_NAME = 'glow-logs';
@@ -76,68 +76,66 @@ async function openDatabase(): Promise<IDBDatabase> {
   });
 }
 
+function storeEncryptionKey(database: IDBDatabase, key: CryptoKey): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(KEY_STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(KEY_STORE_NAME);
+    const request = store.put({ id: 'main', key });
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve();
+  });
+}
+
 /**
- * Get or create encryption key
- * Key is stored in IndexedDB and persists across sessions
+ * Get or create the encryption key, persisted across sessions.
+ *
+ * The key is non-extractable and stored as a `CryptoKey`: raw bytes in
+ * the record would hand a storage dump the ciphertext and the key to
+ * open it in one file.
  */
 async function getEncryptionKey(): Promise<CryptoKey> {
   if (encryptionKey) return encryptionKey;
 
   const database = await openDatabase();
 
-  // Try to load existing key
-  const existingKey = await new Promise<CryptoKey | null>((resolve, reject) => {
+  const stored = await new Promise<unknown>((resolve, reject) => {
     const transaction = database.transaction(KEY_STORE_NAME, 'readonly');
     const store = transaction.objectStore(KEY_STORE_NAME);
     const request = store.get('main');
 
     request.onerror = () => reject(request.error);
-    request.onsuccess = async () => {
-      if (request.result?.key) {
-        try {
-          const imported = await crypto.subtle.importKey(
-            'raw',
-            request.result.key,
-            { name: 'AES-GCM', length: 256 },
-            true,
-            ['encrypt', 'decrypt']
-          );
-          resolve(imported);
-        } catch {
-          resolve(null);
-        }
-      } else {
-        resolve(null);
-      }
-    };
+    request.onsuccess = () => resolve(request.result?.key ?? null);
   });
 
-  if (existingKey) {
-    encryptionKey = existingKey;
-    return existingKey;
+  if (stored instanceof CryptoKey) {
+    encryptionKey = stored;
+    return stored;
   }
 
-  // Generate new key
-  const newKey = await crypto.subtle.generateKey(
-    { name: 'AES-GCM', length: 256 },
-    true,
-    ['encrypt', 'decrypt']
-  );
+  // Records written before the key was non-extractable hold raw bytes.
+  // Import them (so existing sessions still decrypt) and overwrite the
+  // record with the CryptoKey, which drops the bytes from storage.
+  const migrated = stored
+    ? await crypto.subtle
+        .importKey('raw', stored as BufferSource, { name: 'AES-GCM', length: 256 }, false, [
+          'encrypt',
+          'decrypt',
+        ])
+        .catch(() => null)
+    : null;
 
-  // Export and store key
-  const exportedKey = await crypto.subtle.exportKey('raw', newKey);
+  const key =
+    migrated ??
+    (await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, [
+      'encrypt',
+      'decrypt',
+    ]));
 
-  await new Promise<void>((resolve, reject) => {
-    const transaction = database.transaction(KEY_STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(KEY_STORE_NAME);
-    const request = store.put({ id: 'main', key: exportedKey });
+  await storeEncryptionKey(database, key);
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-  });
-
-  encryptionKey = newKey;
-  return newKey;
+  encryptionKey = key;
+  return key;
 }
 
 /**
@@ -244,6 +242,15 @@ export async function startSession(): Promise<string> {
     request.onsuccess = () => resolve();
   });
 
+  return currentSessionId;
+}
+
+/**
+ * The session this page load writes to, or null before initSession.
+ * Unlike getCurrentSessionId this never starts one: reading the session
+ * for an export must not create a session as a side effect.
+ */
+export function peekCurrentSessionId(): string | null {
   return currentSessionId;
 }
 

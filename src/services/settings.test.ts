@@ -39,6 +39,30 @@ describe('ensureSparkPrivateMode', () => {
   });
 });
 
+describe('dev mode', () => {
+  // The URL flag is read once at module load, so each "page load" is a
+  // module reset with a fresh URL. localStorage survives, as on a device.
+  async function load(search = '') {
+    vi.resetModules();
+    window.history.replaceState({}, '', `/${search}`);
+    return import('./settings');
+  }
+
+  it('a ?dev=true link lasts for the page load only; the toggle persists', async () => {
+    localStorage.clear();
+
+    const linked = await load('?dev=true');
+    expect(linked.isDevMode()).toBe(true);
+    expect(localStorage.getItem('spark-dev-mode')).toBeNull();
+
+    const plain = await load();
+    expect(plain.isDevMode()).toBe(false);
+
+    plain.setDevMode(true);
+    expect((await load()).isDevMode()).toBe(true);
+  });
+});
+
 describe('buildConnectConfig', () => {
   it('connects with private mode enabled by default', async () => {
     vi.stubEnv('VITE_BREEZ_API_KEY', 'test-key');

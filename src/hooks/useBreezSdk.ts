@@ -21,7 +21,7 @@ import { buildConnectConfig } from './buildConnectConfig';
 import { logger, LogCategory, logSdkMessage } from '../services/logger';
 import { formatError } from '../utils/formatError';
 import { isDepositRejected, clearRejectedDeposits } from '../services/depositState';
-import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, ensureSparkPrivateMode, type BuyBitcoinProvider } from '../services/settings';
+import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, ensureSparkPrivateMode, isDevMode, type BuyBitcoinProvider } from '../services/settings';
 import { wipeAllLocalData } from '../services/accountDeletion';
 import { hideSplash } from '../main';
 import {
@@ -77,7 +77,17 @@ async function initSdkLogging() {
   // (the connect path surfaces the real error to the user).
   try {
     await sdkReady();
-    initLogging({ log: (entry: LogEntry) => logSdkMessage(entry.level, entry.line) });
+    // Capped at INFO by default: the SDK's own default keeps DEBUG on for
+    // its crates, and those lines dump request and response payloads into
+    // logs that are shareable from Settings and from the pre-auth passkey
+    // screen. Dev mode lifts the cap for the visit, so verbose logs can
+    // still be collected from a released build (`?dev=true`) when a report
+    // needs them. Undefined restores the SDK default.
+    const verbose = import.meta.env.DEV || isDevMode();
+    initLogging(
+      { log: (entry: LogEntry) => logSdkMessage(entry.level, entry.line) },
+      verbose ? undefined : 'info',
+    );
   } catch {
     /* SDK unavailable; skip the log bridge. */
   }
@@ -362,9 +372,13 @@ export function useBreezSdk(
     } else if (event.type === 'paymentSucceeded') {
       const paymentId = event.payment.id;
       const alreadyShown = shownPaymentIdsRef.current.has(paymentId);
+      // Identifiers only: the full payment carries the preimage and the
+      // bolt11, and these logs end up in user-shared archives.
       logger.debug(LogCategory.PAYMENT, 'Payment succeeded event received', {
         alreadyShown,
-        payment: JSON.parse(JSON.stringify(event.payment)),
+        paymentId,
+        paymentType: event.payment.paymentType,
+        method: event.payment.method,
       });
       if (!alreadyShown) {
         shownPaymentIdsRef.current.add(paymentId);
@@ -390,11 +404,15 @@ export function useBreezSdk(
       refreshWalletData(false);
     } else if (event.type === 'paymentPending') {
       logger.info(LogCategory.PAYMENT, 'Payment pending event received', {
-        payment: JSON.parse(JSON.stringify(event.payment)),
+        paymentId: event.payment.id,
+        paymentType: event.payment.paymentType,
+        method: event.payment.method,
       });
     } else if (event.type === 'paymentFailed') {
       logger.info(LogCategory.PAYMENT, 'Payment failed event received', {
-        payment: JSON.parse(JSON.stringify(event.payment)),
+        paymentId: event.payment.id,
+        paymentType: event.payment.paymentType,
+        method: event.payment.method,
       });
       // Same reasoning as the send celebration above: with the sheet gone
       // there is nothing else to tell the user the payment did not go out.
