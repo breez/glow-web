@@ -10,6 +10,7 @@ import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
 import { type TokenDisplayConfig } from '../../../utils/tokenFormatting';
 import { toSdkAmountNumber, type Sats } from '../../../types/sats';
+import { isStandalonePwa, openExternalUrl } from '../../../utils/externalLink';
 import {
   getBuyProviderSettings,
   filterProvidersByNetwork,
@@ -196,6 +197,11 @@ export function useBuyBitcoin({
         // page.
         if (mobileTab) {
           mobileTab.location.href = response.url;
+        } else if (isStandalonePwa()) {
+          // window.open returns null in an installed PWA, so this is the
+          // normal path there: navigating the standalone window itself
+          // would leave no way back.
+          await openExternalUrl(response.url);
         } else {
           window.location.href = response.url;
         }
