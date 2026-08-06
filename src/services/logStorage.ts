@@ -246,6 +246,15 @@ export async function startSession(): Promise<string> {
 }
 
 /**
+ * The session this page load writes to, or null before initSession.
+ * Unlike getCurrentSessionId this never starts one: reading the session
+ * for an export must not create a session as a side effect.
+ */
+export function peekCurrentSessionId(): string | null {
+  return currentSessionId;
+}
+
+/**
  * Get current session ID, starting a new session if needed
  */
 export async function getCurrentSessionId(): Promise<string> {

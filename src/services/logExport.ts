@@ -1,5 +1,5 @@
 import { logger, LogCategory, redactDeep } from './logger';
-import { getAllSessions, isStorageAvailable } from './logStorage';
+import { getAllSessions, isStorageAvailable, peekCurrentSessionId } from './logStorage';
 import JSZip from 'jszip';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
@@ -26,9 +26,19 @@ export const getAllLogsAsZip = async (): Promise<Blob> => {
   if (isStorageAvailable()) {
     try {
       const sessions = await getAllSessions();
-      for (const session of sessions) {
+      // The live session is already written above, in full. Its stored copy
+      // trails that by one persist interval, so exporting both leaves two
+      // near-identical files and the stale one on top. Skipped by id rather
+      // than by a missing end time: a session cut short by a crash also has
+      // no end time, and those are worth keeping.
+      const activeSessionId = peekCurrentSessionId();
+      for (const [index, session] of sessions.entries()) {
+        if (session.id === activeSessionId) continue;
         const sessionTimestamp = Math.floor(new Date(session.startedAt).getTime() / 1000);
-        const filename = `${sessionTimestamp}_glow_session.txt`;
+        // Whole seconds alone collide when two sessions start in the same
+        // one (a quick reload), and the zip would keep only the last.
+        const suffix = session.id.split('-')[1] ?? String(index);
+        const filename = `${sessionTimestamp}_glow_session_${suffix}.txt`;
         const sessionHeader = [
           `Glow Log Export`,
           `Session ID: ${session.id}`,
