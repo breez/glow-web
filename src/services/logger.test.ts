@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { logger, LogCategory } from './logger';
+import { logger, LogCategory, scrubSecrets, redactDeep } from './logger';
+
+// A published BIP39 test vector, never a real wallet's phrase.
+const MNEMONIC =
+  'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 
 describe('logger', () => {
   beforeEach(() => {
@@ -141,5 +145,68 @@ describe('logger', () => {
     expect(logs[0].message).toBe('[onboarding] step.begin');
     expect(logs[1].message).toBe('[onboarding] step.error');
     expect(logs[1].level).toBe('WARN');
+  });
+
+  it('scrubs secrets out of the message string, not just the context', () => {
+    logger.info(LogCategory.SDK_INTERNAL, `paying lnbc${'q'.repeat(60)} now`);
+
+    expect(logger.getLogs()[0].message).toBe('paying [REDACTED] now');
+  });
+});
+
+describe('scrubSecrets', () => {
+  it('redacts secret-shaped values inside free-form text', () => {
+    const secrets = [
+      MNEMONIC,
+      `lnbc1pvjluez${'q'.repeat(60)}`,
+      'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJnbG93In0.dBjftJeZ4CVPmB92K27uhbUJU1p1r1wPWnvVpvcMOOO',
+      'xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi',
+    ];
+
+    // Punctuation delimiters: "before" and friends are themselves BIP39
+    // words, so a word-delimited fixture tests the wrong thing.
+    for (const secret of secrets) {
+      expect(scrubSecrets(`>> ${secret} <<`)).toBe('>> [REDACTED] <<');
+    }
+  });
+
+  it('redacts hex only when the line says it is secret material', () => {
+    const hex = 'a'.repeat(64);
+
+    expect(scrubSecrets(`settled with preimage ${hex}`)).toBe('settled with preimage [REDACTED]');
+    expect(scrubSecrets(`derived seed ${hex}`)).toBe('derived seed [REDACTED]');
+  });
+
+  it('keeps what support needs: identifiers, pubkeys, and prose', () => {
+    // The SDK reports claim and deposit failures as text with the txid
+    // inline. Blanking it would leave the failure untraceable.
+    const txid = 'a'.repeat(64);
+    expect(scrubSecrets(`Claimed utxo ${txid}:0`)).toBe(`Claimed utxo ${txid}:0`);
+
+    const pubkey = `03${'a'.repeat(64)}`;
+    expect(scrubSecrets(`peer ${pubkey} connected`)).toBe(`peer ${pubkey} connected`);
+
+    const prose = 'failed to claim the deposit because the node never answered within the window';
+    expect(scrubSecrets(prose)).toBe(prose);
+  });
+});
+
+describe('redactDeep', () => {
+  it('blanks sensitive keys, scrubs values, keeps ids and shape', () => {
+    const paymentId = 'f'.repeat(64);
+    const out = redactDeep({
+      payments: [{ id: paymentId, preimage: 'x', note: `phrase: ${MNEMONIC}` }],
+      settings: [
+        { key: 'breez_jwt', value: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJnIn0.c2lnbmF0dXJlXw' },
+      ],
+      count: 1,
+    });
+
+    expect(out).toEqual({
+      // Row ids survive, so the export can still be followed row to row.
+      payments: [{ id: paymentId, preimage: '[REDACTED]', note: 'phrase: [REDACTED]' }],
+      settings: [{ key: 'breez_jwt', value: '[REDACTED]' }],
+      count: 1,
+    });
   });
 });

@@ -12,6 +12,7 @@
  * - Persistent encrypted storage across sessions (up to 10 sessions)
  */
 
+import { wordlists } from 'bip39';
 import { isConsoleLoggingEnabled } from './settings';
 import {
   isStorageAvailable,
@@ -76,26 +77,102 @@ const SENSITIVE_KEYS = [
   'invoice',
 ];
 
+const REDACTED = '[REDACTED]';
+
+/** Secret shapes that must never reach the buffer whatever field they
+ *  arrive in. Key-name matching alone misses SDK log lines and error
+ *  strings, which are free-form text with the secret inline. */
+const SECRET_PATTERNS = [
+  /\b(?:lnbcrt|lntbs|lnbc|lntb|lnsb)[0-9a-z]{40,}/gi, // bolt11
+  /\blnurl1[0-9a-z]{20,}/gi,
+  /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g, // jwt
+  /\b(?:xprv|tprv|yprv|zprv|uprv|vprv)[1-9A-HJ-NP-Za-km-z]{50,}/g, // extended privkey
+];
+
+/** 32 bytes of hex and up: a preimage, a txid, and a payment hash are all
+ *  this shape, so the value alone cannot say which it is. */
+const HEX_BLOB = /\b[0-9a-fA-F]{64,}\b/g;
+
+/** What decides it is the line's own wording. Blanking every hex blob
+ *  costs more than it buys: the SDK reports claim, deposit, and exit
+ *  failures as text with the txid inline, and those are the failures we
+ *  are usually asked to explain. So hex goes only when the line says it
+ *  is carrying secret material. */
+const SECRET_LABEL = /preimage|mnemonic|\bseed\b|entropy|passphrase|private[_ ]?key|secret/i;
+
+const BIP39_WORDS = new Set(wordlists.english);
+
+/** Shortest phrase BIP39 defines. */
+const MNEMONIC_MIN_WORDS = 12;
+
+/**
+ * Redact runs of 12+ whitespace-separated wordlist words. Every word is
+ * checked, so prose has to be a valid phrase to match: scanning for runs
+ * rather than regex-matching a shape is what keeps a phrase quoted
+ * mid-sentence from hiding inside a longer, non-matching run.
+ */
+function redactMnemonics(text: string): string {
+  const spans: Array<[number, number]> = [];
+  let start = -1;
+  let end = -1;
+  let words = 0;
+
+  for (const match of text.matchAll(/[a-z]+/g)) {
+    const at = match.index ?? 0;
+    const isWord = BIP39_WORDS.has(match[0]);
+    // Anything but whitespace between two words breaks the phrase.
+    const joined = words > 0 && /^\s+$/.test(text.slice(end, at));
+
+    if (isWord && (words === 0 || joined)) {
+      if (words === 0) start = at;
+      words++;
+    } else {
+      if (words >= MNEMONIC_MIN_WORDS) spans.push([start, end]);
+      words = isWord ? 1 : 0;
+      start = at;
+    }
+    end = at + match[0].length;
+  }
+  if (words >= MNEMONIC_MIN_WORDS) spans.push([start, end]);
+
+  // Back to front so the earlier spans keep their offsets.
+  return spans.reduceRight((out, [from, to]) => out.slice(0, from) + REDACTED + out.slice(to), text);
+}
+
+/** Redact secret-shaped values inside a free-form string. */
+export function scrubSecrets(text: string): string {
+  let out = text;
+  for (const pattern of SECRET_PATTERNS) out = out.replace(pattern, REDACTED);
+  if (SECRET_LABEL.test(out)) out = out.replace(HEX_BLOB, REDACTED);
+  return redactMnemonics(out);
+}
+
+/**
+ * Blank values under a sensitive key name, scrub every remaining string
+ * for secret-shaped content. Arrays and dates keep their shape: this
+ * also runs over the SDK database export, where a mangled row is a
+ * broken export.
+ */
+export function redactDeep(value: unknown): unknown {
+  if (typeof value === 'string') return scrubSecrets(value);
+  if (Array.isArray(value)) return value.map(redactDeep);
+  if (value instanceof Date) return value;
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, v]) => {
+        const lowerKey = key.toLowerCase();
+        if (SENSITIVE_KEYS.some((k) => lowerKey.includes(k.toLowerCase()))) return [key, REDACTED];
+        return [key, redactDeep(v)];
+      }),
+    );
+  }
+  return value;
+}
+
 /** Sanitize context object by redacting sensitive values */
 function sanitizeContext(ctx?: Record<string, unknown>): Record<string, unknown> | undefined {
   if (!ctx) return undefined;
-
-  const sanitized: Record<string, unknown> = {};
-
-  for (const [key, value] of Object.entries(ctx)) {
-    const lowerKey = key.toLowerCase();
-    const isSensitive = SENSITIVE_KEYS.some((k) => lowerKey.includes(k.toLowerCase()));
-
-    if (isSensitive) {
-      sanitized[key] = '[REDACTED]';
-    } else if (typeof value === 'object' && value !== null) {
-      sanitized[key] = sanitizeContext(value as Record<string, unknown>);
-    } else {
-      sanitized[key] = value;
-    }
-  }
-
-  return sanitized;
+  return redactDeep(ctx) as Record<string, unknown>;
 }
 
 /** Core logging function */
@@ -109,7 +186,9 @@ function log(
     timestamp: new Date().toISOString(),
     level,
     category,
-    message,
+    // SDK lines and error strings carry their secrets inline, so the
+    // message needs the value scrubber too, not just the context.
+    message: scrubSecrets(message),
     context: sanitizeContext(context),
   };
 

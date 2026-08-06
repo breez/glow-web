@@ -1,4 +1,4 @@
-import { logger, LogCategory } from './logger';
+import { logger, LogCategory, redactDeep } from './logger';
 import { getAllSessions, isStorageAvailable } from './logStorage';
 import JSZip from 'jszip';
 import { Capacitor } from '@capacitor/core';
@@ -96,9 +96,13 @@ export const exportDatabaseState = async (identityPubkey: string, network: strin
   }
 
   try {
+    // The SDK database holds the full payment history: bolt11 invoices,
+    // payment preimages, and the cached Breez JWT in `settings`. The dump
+    // is for debugging state machines, not for carrying credentials, so
+    // every row goes through the log redactor first.
     const objectStores: Record<string, unknown[]> = {};
     for (const name of db.objectStoreNames) {
-      objectStores[name] = await dumpIndexedDBStore(db, name);
+      objectStores[name] = redactDeep(await dumpIndexedDBStore(db, name)) as unknown[];
     }
 
     const json = JSON.stringify({
