@@ -8,6 +8,7 @@ import {
 } from '../components/Icons';
 import { LEGACY_RP_ID, SHARED_RP_ID } from '../services/passkeyPrfProvider';
 import { getPasskeyRpId } from '../services/passkeyService';
+import { isDevMode as isDevModeEnabled } from '../services/settings';
 
 interface PasskeySettingsPageProps {
   onBack: () => void;
@@ -54,7 +55,7 @@ const PasskeySettingsPage: React.FC<PasskeySettingsPageProps> = ({
   // Dev-only RP-ID switch: only meaningful when a distinct shared RP ID is
   // configured. Lets a tester sign in under the legacy vs shared RP ID to
   // exercise the passkey-RP migration path.
-  const isDevMode = localStorage.getItem('spark-dev-mode') === 'true';
+  const isDevMode = isDevModeEnabled();
   const sharedRpConfigured = !!SHARED_RP_ID && SHARED_RP_ID !== LEGACY_RP_ID;
   const [activeRpId] = useState<string>(getPasskeyRpId() ?? LEGACY_RP_ID);
   const [switchingRp, setSwitchingRp] = useState<string | null>(null);

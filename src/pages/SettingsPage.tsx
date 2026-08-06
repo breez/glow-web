@@ -1,18 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
-import { getSettings, saveSettings, UserSettings, isBuyBitcoinAvailable } from '../services/settings';
+import React, { useEffect, useRef, useState } from 'react';
+import { ConfirmDialog, FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
+import { PinGate } from '../components/PinEntry';
+import { getSettings, saveSettings, UserSettings, isBuyBitcoinAvailable, isDevMode as isDevModeEnabled, setDevMode } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
 import { CurrencyIcon, ChevronRightIcon, DownloadIcon, KeyIcon, LockIcon, ShieldCheckIcon, TrashIcon, ExternalLinkIcon } from '../components/Icons';
 import { ACCOUNT_DELETION_GUIDE_URL } from '@/services/accountDeletion';
 import { openExternalUrl } from '@/utils/externalLink';
-import { isAppLockSupported } from '@/services/appLock';
+import { isAppLockSupported, isPinEnabled } from '@/services/appLock';
 import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs, exportDatabaseState } from '@/services/logExport';
 import { useSecretTap } from '@/hooks/useSecretTap';
-
-const DEV_MODE_STORAGE_KEY = 'spark-dev-mode';
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -39,10 +38,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     activated: isDevMode,
     tapCount: devTapCount,
     threshold: devTapThreshold,
-  } = useSecretTap(5, 2000, () =>
-    new URLSearchParams(window.location.search).get('dev') === 'true'
-    || localStorage.getItem(DEV_MODE_STORAGE_KEY) === 'true'
-  );
+  } = useSecretTap(5, 2000, isDevModeEnabled);
   // Network and persisted settings only change via handlers that
   // reload the page, so reading once at mount is sufficient.
   const [selectedNetwork, setSelectedNetwork] = useState<Network>(
@@ -89,9 +85,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   const [isDownloadingLogs, setIsDownloadingLogs] = useState<boolean>(false);
   const [isExportingDb, setIsExportingDb] = useState<boolean>(false);
 
-  // Persist dev mode to localStorage when toggled via secret tap
+  // Persist the tap toggle only. The first run is skipped because the
+  // hook seeds from `?dev=true`, and writing that would turn a link into
+  // a permanent local change.
+  const devModeSeeded = useRef(false);
   useEffect(() => {
-    localStorage.setItem(DEV_MODE_STORAGE_KEY, String(isDevMode));
+    if (!devModeSeeded.current) {
+      devModeSeeded.current = true;
+      return;
+    }
+    setDevMode(isDevMode);
   }, [isDevMode]);
 
   const handleNetworkChange = (network: Network) => {
@@ -124,7 +127,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     window.location.reload();
   };
 
+  // The database export carries the whole payment history off the device,
+  // so it goes behind the app lock. Where there is no lock to check
+  // against (web, or no PIN set) a confirm step is all that is available.
+  const [exportGate, setExportGate] = useState<'pin' | 'confirm' | null>(null);
+
   const handleExportDb = async () => {
+    setExportGate((await isPinEnabled()) ? 'pin' : 'confirm');
+  };
+
+  const runExportDb = async () => {
+    setExportGate(null);
     setIsExportingDb(true);
     try {
       const info = await wallet.getInfo({});
@@ -156,6 +169,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       Save Changes
     </PrimaryButton>
   ) : undefined;
+
+  // Same shape as BackupPage: the gate replaces the page body, and the
+  // header's close button is the way out.
+  if (exportGate === 'pin') {
+    return (
+      <SlideInPage title="Settings" onClose={() => setExportGate(null)} slideFrom="left">
+        <PinGate reason="Export database" onUnlocked={() => { void runExportDb(); }} />
+      </SlideInPage>
+    );
+  }
 
   return (
     <SlideInPage title="Settings" onClose={onBack} slideFrom="left" footer={footer}>
@@ -434,6 +457,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={exportGate === 'confirm'}
+        title="Export Database"
+        message="This saves your full payment history, including invoices and contacts, to a file you can share. Only do this if you were asked for it, and only send it to someone you trust."
+        confirmLabel="Export"
+        variant="warning"
+        onConfirm={() => { void runExportDb(); }}
+        onCancel={() => setExportGate(null)}
+      />
     </SlideInPage>
   );
 };
