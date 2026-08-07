@@ -41,6 +41,25 @@ function sheetButton(label: string) {
   return within(actions).getByText(label);
 }
 
+// SlideInPage wraps the page in a z-60 opaque overlay. The sheet
+// portals to #root as that overlay's sibling, so anything at or below
+// this stacks behind the page and the card's Continue reads as dead.
+const SLIDE_IN_PAGE_Z = 60;
+
+describe('GetRefundPage deposit card', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('opens the refund sheet above the slide-in page', async () => {
+    await renderPage();
+
+    const sheetRoot = document.querySelector(
+      '.react-modal-sheet-root',
+    ) as HTMLElement;
+    expect(sheetRoot).not.toBeNull();
+    expect(Number(sheetRoot.style.zIndex)).toBeGreaterThan(SLIDE_IN_PAGE_Z);
+  });
+});
+
 // The sheet's Continue must never be pressable in a state its handler
 // rejects: the press is swallowed with no feedback.
 describe('GetRefundPage address step', () => {

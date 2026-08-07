@@ -290,7 +290,9 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
         </div>
       </div>
       {/* Refund Flow Bottom Sheet */}
-      <BottomSheetContainer isOpen={isRefundFlowOpen} onClose={closeRefundFlow}>
+      {/* Above SlideInPage's z-60 wrapper: the sheet portals to #root as
+          its sibling, so at the default z-50 it opens behind the page. */}
+      <BottomSheetContainer isOpen={isRefundFlowOpen} onClose={closeRefundFlow} zIndex={70}>
         <BottomSheetCard>
           <DialogHeader
             title={refundStep === 'result' ? (refundSuccess ? 'Refund Sent' : 'Refund Failed') : 'Refund to Bitcoin'}
