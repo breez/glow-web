@@ -217,7 +217,7 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
         {...(restorePrompt ? {
           title: 'USD Balance Detected',
           description:
-            "We've detected USD funds in your wallet. Would you like to switch to USD mode?" +
+            "We've detected USD funds. Would you like to switch to USD mode?" +
             '\n\n' +
             'Your balance will be held in USD. Incoming BTC is automatically converted to USD, ' +
             'and outgoing payments are converted back to BTC.',

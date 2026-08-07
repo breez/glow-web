@@ -53,7 +53,7 @@ const RestorePage: React.FC<RestorePageProps> = ({
         className="w-full"
         data-testid="restore-confirm-button"
       >
-        {isLoading ? 'Restoring...' : 'Restore Wallet'}
+        {isLoading ? 'Restoring...' : 'Restore'}
       </PrimaryButton>
     </div>
   );
@@ -69,7 +69,7 @@ const RestorePage: React.FC<RestorePageProps> = ({
         </div>
 
         <p className="text-spark-text-secondary text-center mb-6">
-          Enter your 12 or 24-word recovery phrase to restore your wallet. Words should be separated by spaces.
+          Enter your 12 or 24-word recovery phrase to restore Glow. Words should be separated by spaces.
         </p>
 
         <div className="relative">

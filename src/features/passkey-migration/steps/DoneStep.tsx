@@ -31,8 +31,8 @@ const DoneStep: React.FC<DoneStepProps> = ({ onDone, lnAddressFailures = [] }) =
         </ul>
         <p className="text-xs text-spark-warning mt-2 text-center">
           {lnAddressFailures.length === 1
-            ? "Payments sent to it will continue to arrive in your old wallet until the transfer is complete."
-            : "Payments sent to them will continue to arrive in your old wallets until the transfers are complete."}
+            ? "Payments sent to it will continue to arrive under your old passkey until the transfer is complete."
+            : "Payments sent to them will continue to arrive under your old passkey until the transfers are complete."}
         </p>
       </div>
     )}
