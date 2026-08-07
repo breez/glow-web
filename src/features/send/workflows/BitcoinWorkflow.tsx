@@ -4,6 +4,7 @@ import type { PaymentStep } from '../../../types/domain';
 import { PrimaryButton } from '../../../components/ui';
 import { RadioCheckIcon } from '../../../components/Icons';
 import ConfirmStep from '../steps/ConfirmStep';
+import { SatAmount } from '../../../components/SatAmount';
 import { getSendDestination } from '../utils';
 
 interface BitcoinWorkflowProps {
@@ -54,7 +55,7 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, f
                   <RadioCheckIcon className="absolute top-2 right-2" />
                 )}
                 <div>Slow</div>
-                <div className="text-xs opacity-70">₿{(fq.speedSlow.l1BroadcastFeeSat + fq.speedSlow.userFeeSat).toLocaleString()}</div>
+                <div className="text-xs opacity-70"><SatAmount sats={fq.speedSlow.l1BroadcastFeeSat + fq.speedSlow.userFeeSat} /></div>
               </button>
               <button
                 onClick={() => setSelectedFeeRate('medium')}
@@ -67,7 +68,7 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, f
                   <RadioCheckIcon className="absolute top-2 right-2" />
                 )}
                 <div>Medium</div>
-                <div className="text-xs opacity-70">₿{(fq.speedMedium.l1BroadcastFeeSat + fq.speedMedium.userFeeSat).toLocaleString()}</div>
+                <div className="text-xs opacity-70"><SatAmount sats={fq.speedMedium.l1BroadcastFeeSat + fq.speedMedium.userFeeSat} /></div>
               </button>
               <button
                 onClick={() => setSelectedFeeRate('fast')}
@@ -80,7 +81,7 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, f
                   <RadioCheckIcon className="absolute top-2 right-2" />
                 )}
                 <div>Fast</div>
-                <div className="text-xs opacity-70">₿{(fq.speedFast.l1BroadcastFeeSat + fq.speedFast.userFeeSat).toLocaleString()}</div>
+                <div className="text-xs opacity-70"><SatAmount sats={fq.speedFast.l1BroadcastFeeSat + fq.speedFast.userFeeSat} /></div>
               </button>
             </div>
           </div>

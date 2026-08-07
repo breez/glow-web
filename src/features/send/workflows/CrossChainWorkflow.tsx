@@ -11,7 +11,7 @@ import { ChevronDownIcon, CopyFilledIcon, CheckIcon, SpinnerIcon } from '../../.
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
 import { useWallet } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
-import { formatWithThinSpaces } from '../../../utils/formatNumber';
+import { SatAmount } from '../../../components/SatAmount';
 import { copyToClipboard } from '../../../utils/clipboard';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
@@ -586,10 +586,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                     {formatTokenAmount(BigInt(quote.amountIn), { ...stableBalance.displayConfig, symbol: '', symbolPosition: 'after' })}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center">
-                    <span className="text-[0.8em] opacity-70 mr-px">₿</span>
-                    {formatWithThinSpaces(Number(quote.amountIn))}
-                  </span>
+                  <SatAmount sats={Number(quote.amountIn)} />
                 )}
               </span>
             </div>

@@ -18,6 +18,7 @@ import {
 import type { PaymentMethod } from '../../types/domain';
 import { useLightningAddress } from './hooks/useLightningAddress';
 import { useReceivePayment } from './hooks/useReceivePayment';
+import { formatWithSpaces } from '../../utils/formatNumber';
 import SparkAddressDisplay from './SparkAddressDisplay';
 import BitcoinAddressDisplay from './BitcoinAddressDisplay';
 import LightningAddressDisplay from './LightningAddressDisplay';
@@ -62,7 +63,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, tit
 
         {feeSats > 0 && (
           <Alert type="warning" className="mt-8">
-            <center>A fee of ₿{feeSats.toLocaleString()} is applied to this transaction.</center>
+            <center>A fee of ₿{formatWithSpaces(feeSats)} is applied to this transaction.</center>
           </Alert>
         )}
       </div>

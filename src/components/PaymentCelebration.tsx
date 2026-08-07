@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Payment } from '@breeztech/breez-sdk-spark';
 import { useStableBalance } from '../contexts/StableBalanceContext';
+import { SatAmount } from './SatAmount';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig } from '../utils/tokenFormatting';
 import GlowLogo from './GlowLogo';
@@ -40,10 +41,6 @@ const PaymentCelebration: React.FC<PaymentCelebrationProps> = ({ payment, onClos
       clearTimeout(closeTimer);
     };
   }, [onClose]);
-
-  const formatSatsAmount = (sats: number) => {
-    return sats.toLocaleString('en-US').replace(/,/g, '\u2009');
-  };
 
   // Determine display: token amount or sats
   // Always show token denomination for token payments, even if stable balance is off
@@ -107,8 +104,7 @@ const PaymentCelebration: React.FC<PaymentCelebrationProps> = ({ payment, onClos
           ) : (
             <span className="relative inline-flex items-center gap-1 text-5xl font-mono font-bold text-spark-primary">
               {isSent && '-'}
-              <span className="text-3xl opacity-70">₿</span>
-              {formatSatsAmount(Number(payment.amount))}
+              <SatAmount sats={Number(payment.amount)} />
             </span>
           )}
         </div>

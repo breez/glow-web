@@ -5,6 +5,7 @@ import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
 import { formatWithSpaces } from '../../../utils/formatNumber';
 import ProcessingStep from '../steps/ProcessingStep';
+import { SatAmount } from '../../../components/SatAmount';
 
 // Seconds the SDK waits for the withdrawal to settle before returning. The SDK
 // bounds the wait, so the await resolves with the outcome (a settled payment or
@@ -118,10 +119,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
           </div>
         ) : isFixed ? (
           <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary flex items-center justify-center text-2xl font-semibold">
-            <span className="inline-flex items-center">
-              <span className="text-[0.8em] opacity-70 mr-px">₿</span>
-              {formatWithSpaces(maxSats)}
-            </span>
+            <SatAmount sats={maxSats} />
           </div>
         ) : (
           <input

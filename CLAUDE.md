@@ -213,33 +213,23 @@ UI with primary color").
 
 ## Bitcoin Symbol (₿) in Amount Displays
 
-All sat amounts shown to the user include the ₿ symbol. Follow these conventions:
+Every sat amount rendered as JSX goes through `SatAmount` (`src/components/SatAmount.tsx`). It supplies the ₿ symbol, the space-grouped digits, the mono font, and the `word-spacing` that corrects that font. Never hand-roll the markup: the parts have to agree, and assembling them by hand is how they drift.
 
-**Standard pattern** — for inline amounts (buttons, labels, breakdowns):
 ```tsx
-<span className="inline-flex items-center">
-  <span className="text-[0.8em] opacity-70 mr-px">₿</span>
-  {formatWithSpaces(amount)}
-</span>
+<SatAmount sats={amount} />          // inherits size, so wrap it to scale
+<span className="text-4xl font-bold"><SatAmount sats={total} /></span>
 ```
 
-**Balance header** — ₿ is absolutely positioned left of the centered number:
+**Plain text** (error messages, alerts, string props) cannot use a component, so prefix with `₿` and group with `formatWithSpaces`, never `toLocaleString`:
 ```tsx
-<span className="absolute right-full top-1/2 -translate-y-1/2 mr-0.5 text-3xl text-spark-text-secondary opacity-70 font-mono">₿</span>
-```
-
-**Transaction list** — ₿ after the +/- sign:
-```tsx
-{isReceive ? '+' : '-'}<span className="text-[0.8em] opacity-70">₿</span>{amount}
-```
-
-**Plain text** (error messages, alerts, string props) — just prefix with `₿`:
-```tsx
-setError(`Amount must be at least ₿${minSats.toLocaleString()}`);
+setError(`Amount must be at least ₿${formatWithSpaces(minSats)}`);
 ```
 
 **Key rules:**
-- Use `formatWithThinSpaces` for large text (text-4xl+), `formatWithSpaces`/`formatWithCommas` for smaller text
+- `formatWithSpaces` is the only separator. No commas, and no narrower space character: U+2009 is absent from JetBrains Mono, so a thin space silently draws from a fallback font
+- The tightening exists because mono gives every space a full character cell, which makes an untightened separator read as a break in the number. It is calibrated for mono, so never put it on proportional text, where it would pull the groups into each other
+- Apply it only to digits. `word-spacing` hits every space in the element, so a ticker (`USDC`), a chain name, or a trailing label like "change" belongs outside the amount, as a sibling
+- Two displays are deliberately hand-rolled: the balance header positions ₿ absolutely and tightens via `.balance-display`, and the transaction list's token rows carry a per-asset symbol split off a pre-formatted string
 - Input field labels can use "sats" as a unit name (e.g., "Amount (sats)")
 - Range displays and placeholders use "sats" text, not ₿
 

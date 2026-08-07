@@ -2,7 +2,7 @@ import React from 'react';
 import { PrimaryButton, SecondaryButton, FormError } from '../../../components/ui';
 import { FeeBreakdownCard, SimpleFeeBreakdown } from '../../../components/FeeBreakdownCard';
 import { SpinnerIcon, CopyFilledIcon, CheckIcon } from '../../../components/Icons';
-import { formatWithThinSpaces } from '../../../utils/formatNumber';
+import { SatAmount } from '../../../components/SatAmount';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
 import { truncateAddress } from '../../../utils/crossChainFormat';
 import { copyToClipboard } from '../../../utils/clipboard';
@@ -107,7 +107,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
         <p className="text-spark-text-muted text-sm mb-2">You're sending</p>
         <div className="flex items-baseline justify-center gap-2">
           <span className="text-4xl font-mono font-bold text-spark-text-primary">
-            <span className="inline-flex items-center"><span className="text-[0.8em] opacity-70 mr-px">₿</span>{formatWithThinSpaces(total)}</span>
+            <SatAmount sats={total} />
           </span>
         </div>
       </div>

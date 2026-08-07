@@ -12,6 +12,7 @@ import { useAmountInput, useUsdFiatOverride } from '../../../hooks/useAmountInpu
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
 import { useHasPendingConversion } from '../../../contexts/WalletContext';
 import { dismissKeyboard } from '../../../utils/keyboard';
+import { SatAmount } from '../../../components/SatAmount';
 
 export interface AmountStepProps {
   paymentInput: string;
@@ -232,7 +233,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
                       : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
                 }`}
               >
-                {formatQuickAmount(quickAmount, config, isTokenMode)}
+                {isTokenMode && config ? formatQuickAmount(quickAmount, config) : <SatAmount sats={quickAmount} />}
               </button>
             );
           })}

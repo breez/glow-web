@@ -6,7 +6,7 @@ import { SimpleAlert } from '../components/AlertCard';
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
 import { CloseIcon, CheckIcon, WarningIcon, RadioCheckIcon } from '../components/Icons';
 import { isDepositRejected, removeRejectedDeposit } from '../services/depositState';
-import { formatWithSpaces } from '../utils/formatNumber';
+import { SatAmount } from '../components/SatAmount';
 import SlideInPage from '@/components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
 
@@ -248,7 +248,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                       <div className="flex items-center justify-between py-2">
                         <span className="text-spark-text-secondary text-sm">Amount</span>
                         <span className="font-mono text-sm font-medium text-spark-text-primary">
-                          <span className="inline-flex items-center"><span className="text-[0.8em] opacity-70 mr-px">₿</span>{formatWithSpaces(amount)}</span>
+                          <SatAmount sats={amount} />
                         </span>
                       </div>
 
@@ -358,7 +358,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                         <RadioCheckIcon className="absolute top-2 right-2" />
                       )}
                       <div>Slow</div>
-                      <div className="text-xs opacity-70">₿{formatWithSpaces(feeEstimates.slow)}</div>
+                      <div className="text-xs opacity-70"><SatAmount sats={feeEstimates.slow} /></div>
                     </button>
                     <button
                       onClick={() => setSelectedFeeRate('medium')}
@@ -371,7 +371,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                         <RadioCheckIcon className="absolute top-2 right-2" />
                       )}
                       <div>Medium</div>
-                      <div className="text-xs opacity-70">₿{formatWithSpaces(feeEstimates.medium)}</div>
+                      <div className="text-xs opacity-70"><SatAmount sats={feeEstimates.medium} /></div>
                     </button>
                     <button
                       onClick={() => setSelectedFeeRate('fast')}
@@ -384,7 +384,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                         <RadioCheckIcon className="absolute top-2 right-2" />
                       )}
                       <div>Fast</div>
-                      <div className="text-xs opacity-70">₿{formatWithSpaces(feeEstimates.fast)}</div>
+                      <div className="text-xs opacity-70"><SatAmount sats={feeEstimates.fast} /></div>
                     </button>
                   </div>
                 </div>
