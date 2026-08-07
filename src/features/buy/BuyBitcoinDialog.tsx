@@ -10,6 +10,7 @@ import {
   LoadingSpinner,
 } from '../../components/ui';
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
+import { SatAmount } from '../../components/SatAmount';
 import type { Network } from '@breeztech/breez-sdk-spark';
 import { CurrencyIcon, MoonPayIcon, CashAppIcon } from '../../components/Icons';
 import { type BuyBitcoinProvider } from '../../services/settings';
@@ -165,7 +166,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                         : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
                     }`}
                   >
-                    {formatQuickAmount(quickAmount, buy.tokenConfig, buy.isTokenMode)}
+                    {buy.isTokenMode && buy.tokenConfig ? formatQuickAmount(quickAmount, buy.tokenConfig) : <SatAmount sats={quickAmount} />}
                   </button>
                 ))}
               </div>

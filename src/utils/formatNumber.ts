@@ -4,24 +4,11 @@
 const THOUSAND_SEPARATOR_REGEX = /\B(?=(\d{3})+(?!\d))/g;
 
 /**
- * Format number with space as thousand separator
+ * Group a number into thousands with a plain space. The one separator for
+ * user-facing amounts; mono displays tighten it with `word-spacing`, see
+ * the amount rules in CLAUDE.md.
  */
 export function formatWithSpaces(num: number | bigint): string {
   return num.toString().replace(THOUSAND_SEPARATOR_REGEX, ' ');
-}
-
-/**
- * Format number with thin space (U+2009) as thousand separator
- * Better for monospace fonts
- */
-export function formatWithThinSpaces(num: number | bigint): string {
-  return num.toString().replace(THOUSAND_SEPARATOR_REGEX, '\u2009');
-}
-
-/**
- * Format number with comma as thousand separator
- */
-export function formatWithCommas(num: number): string {
-  return num.toString().replace(THOUSAND_SEPARATOR_REGEX, ',');
 }
 

@@ -10,6 +10,8 @@ import {
   formatQuickAmount,
 } from '../../../utils/tokenFormatting';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
+import { SatAmount } from '../../../components/SatAmount';
+import { formatWithSpaces } from '../../../utils/formatNumber';
 import { useAmountInput, useUsdFiatOverride } from '../../../hooks/useAmountInput';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
 import { useHasPendingConversion } from '../../../contexts/WalletContext';
@@ -190,11 +192,11 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     // (token mode without stable balance) computes exact sats, so check it.
     if (!isTokenMode || !isStableBalanceActive) {
       if (minSats && sats < minSats) {
-        setError(`Amount must be at least ₿${minSats.toLocaleString()}`);
+        setError(`Amount must be at least ₿${formatWithSpaces(minSats)}`);
         return;
       }
       if (maxSats && sats > maxSats) {
-        setError(`Amount must be at most ₿${maxSats.toLocaleString()}`);
+        setError(`Amount must be at most ₿${formatWithSpaces(maxSats)}`);
         return;
       }
     }
@@ -240,7 +242,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
       ? BigInt(prepareResponse.amountSats)
       : BigInt(balance.parseInputToSats(amount) || 0);
     return (
-      <ConfirmStep amountSats={confirmAmountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} error={error} isLoading={isLoading} onBack={() => { setPrepareResponse(null); setError(null); setStep('amount'); }} onConfirm={onConfirm} />
+      <ConfirmStep amountSats={confirmAmountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} destination={{ label: 'To', value: parsed.address ?? parsed.domain }} error={error} isLoading={isLoading} onBack={() => { setPrepareResponse(null); setError(null); setStep('amount'); }} onConfirm={onConfirm} />
     );
   }
 
@@ -326,7 +328,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
                       : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
                 }`}
               >
-                {formatQuickAmount(quickAmount, config, isTokenMode)}
+                {isTokenMode && config ? formatQuickAmount(quickAmount, config) : <SatAmount sats={quickAmount} />}
               </button>
             );
           })}

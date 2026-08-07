@@ -268,14 +268,12 @@ export const TOKEN_QUICK_AMOUNTS = [1, 5, 10];
 /** Quick amount presets for sat-denominated inputs. */
 export const SATS_QUICK_AMOUNTS = [1000, 10000, 100000];
 
-/** Format a quick amount button label respecting symbol position. */
-export function formatQuickAmount(amt: number, config: TokenDisplayConfig | null, isTokenMode: boolean): string {
-  if (isTokenMode && config) {
-    return config.symbolPosition === 'before'
-      ? `${config.symbol}${amt}`
-      : `${amt} ${config.symbol}`;
-  }
-  return `₿${amt.toLocaleString('en-US').replace(/,/g, '\u2009')}`;
+/** Format a token-denominated quick amount label, respecting symbol position.
+ *  Sat-denominated buttons render `SatAmount` instead. */
+export function formatQuickAmount(amt: number, config: TokenDisplayConfig): string {
+  return config.symbolPosition === 'before'
+    ? `${config.symbol}${amt}`
+    : `${amt} ${config.symbol}`;
 }
 
 /**

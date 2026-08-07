@@ -145,7 +145,9 @@ export const PaymentInfoCard: React.FC<{
 
 export const PaymentInfoRow: React.FC<{
   label: string;
-  value: string | number;
+  /** Rendered in `font-mono`, so a grouped amount passed here must bring its own
+   *  digit tightening. See the amount rules in CLAUDE.md. */
+  value: ReactNode;
   isBold?: boolean;
   icon?: ReactNode;
   iconBgColor?: string;

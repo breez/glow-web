@@ -2,7 +2,8 @@ import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import type { GetInfoResponse, FiatCurrency } from '@breeztech/breez-sdk-spark';
 import { safeAreaTop } from '../utils/safeAreaInsets';
 import { getFiatSettings } from '../services/settings';
-import { formatWithThinSpaces, formatWithSpaces } from '../utils/formatNumber';
+import { formatWithSpaces } from '../utils/formatNumber';
+import { SatAmount } from './SatAmount';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 import { MenuIcon, AlertTriangleIcon, CurrencyIcon, SpinnerIcon, SwapVerticalIcon } from './Icons';
 import { useStableBalance } from '../contexts/StableBalanceContext';
@@ -214,11 +215,11 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
     };
   }, [stableBalance.isActive, fiatCurrencyInfo, activeFiatIndex, displayBalance, btcBalanceSat, hasSecondaryData]);
 
-  // Stable balance secondary line
-  const stableSecondaryText = useMemo(() => {
+  // Stable balance secondary line. Sats only: the "change" label renders beside
+  // the amount rather than inside it, so it keeps a normal word space.
+  const stableSecondarySats = useMemo(() => {
     if (!stableBalance.isActive) return null;
-    if (btcBalanceSat > 0) return `${formatWithThinSpaces(btcBalanceSat)} change`;
-    return null;
+    return btcBalanceSat > 0 ? btcBalanceSat : null;
   }, [stableBalance.isActive, btcBalanceSat]);
 
   // Format primary balance display — strip the currency symbol so we can position it separately.
@@ -245,7 +246,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   // Hide fiat secondary line while stable balance config is still loading
   // (activeLabel is set from cache but displayConfig hasn't loaded yet)
   const stableBalanceLoading = !!stableBalance.activeLabel && !stableBalance.isActive;
-  const hasSecondaryLine = stableBalance.isActive ? !!stableSecondaryText : (!stableBalanceLoading && !!currentFiat);
+  const hasSecondaryLine = stableBalance.isActive ? !!stableSecondarySats : (!stableBalanceLoading && !!currentFiat);
 
   return (
   <>
@@ -386,8 +387,11 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             }} />
             <span className="text-spark-text-secondary text-sm font-mono">
               {stableBalance.isActive ? (
-                stableSecondaryText ? (
-                  <span className="inline-flex items-center"><span className="text-[0.8em] opacity-70 mr-px">₿</span>{stableSecondaryText}</span>
+                stableSecondarySats ? (
+                  <span className="inline-flex items-center">
+                    <SatAmount sats={stableSecondarySats} />
+                    <span className="ml-1">change</span>
+                  </span>
                 ) : (
                   <span className="invisible">$0.00</span>
                 )

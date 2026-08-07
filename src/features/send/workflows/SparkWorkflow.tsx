@@ -1,6 +1,7 @@
 import React from 'react';
 import type { SendPaymentMethod, SendPaymentOptions, ConversionEstimate } from '@breeztech/breez-sdk-spark';
 import ConfirmStep from '../steps/ConfirmStep';
+import { getSendDestination } from '../utils';
 
 interface SparkWorkflowProps {
   method: Extract<SendPaymentMethod, { type: 'sparkAddress' }>;
@@ -17,7 +18,7 @@ const SparkWorkflow: React.FC<SparkWorkflowProps> = ({ method, amountSats, feesI
   // Currently no fee exposed for spark address
   const feesSat: number | null = method.type === 'sparkAddress' ? null : null;
   const handleSend = () => onSend();
-  return <ConfirmStep amountSats={amountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} error={null} isLoading={false} onBack={onBack} onConfirm={handleSend} />;
+  return <ConfirmStep amountSats={amountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} destination={getSendDestination(method)} error={null} isLoading={false} onBack={onBack} onConfirm={handleSend} />;
 };
 
 export default SparkWorkflow;

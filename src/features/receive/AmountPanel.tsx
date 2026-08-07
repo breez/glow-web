@@ -14,6 +14,7 @@ import {
   formatQuickAmount,
 } from '../../utils/tokenFormatting';
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
+import { SatAmount } from '../../components/SatAmount';
 import { useAmountInput } from '../../hooks/useAmountInput';
 import type { Sats } from '../../types/sats';
 import { dismissKeyboard } from '../../utils/keyboard';
@@ -208,7 +209,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                   }
                 `}
               >
-                {formatQuickAmount(quickAmount, config, isTokenMode)}
+                {isTokenMode && config ? formatQuickAmount(quickAmount, config) : <SatAmount sats={quickAmount} />}
               </button>
             ))}
           </div>

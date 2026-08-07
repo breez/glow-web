@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { ReactNode, useState } from 'react';
 import type { Payment, ConversionSide, TokenMetadata } from '@breeztech/breez-sdk-spark';
 import {
   DialogHeader, PaymentInfoCard, PaymentInfoRow,
   CollapsibleCodeField, CollapsibleSection, BottomSheetContainer, BottomSheetCard
 } from './ui';
-import { formatWithSpaces } from '../utils/formatNumber';
+import { SatAmount } from './SatAmount';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig } from '../utils/tokenFormatting';
 import { useFiatData } from '../contexts/FiatDataContext';
@@ -74,10 +74,10 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
 
   // Format a conversion side's amount or fee in its native unit
   // Note: side.amount and side.fee are strings from WASM (u128 serialized as string)
-  const formatSideValue = (side: ConversionSide, isFee?: boolean): string => {
+  const formatSideValue = (side: ConversionSide, isFee?: boolean): ReactNode => {
     const value = BigInt(isFee ? side.fee : side.amount);
     if (side.asset.ticker === 'BTC') {
-      return `₿${formatWithSpaces(Number(value))}`;
+      return <SatAmount sats={Number(value)} />;
     }
     const config = stableBalance.displayConfig ?? buildTokenDisplayConfig(
       { ticker: side.asset.ticker, decimals: side.asset.decimals } as TokenMetadata,
@@ -87,12 +87,12 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   };
 
   // Format a fee value in the payment's native denomination
-  const formatPaymentFee = (fee: bigint): string => {
+  const formatPaymentFee = (fee: bigint): ReactNode => {
     if (payment.details?.type === 'token') {
       const config = stableBalance.displayConfig ?? buildTokenDisplayConfig(payment.details.metadata, fiatCurrencies);
       return formatTokenAmount(fee, config, { fullPrecision: true });
     }
-    return `₿${formatWithSpaces(Number(fee))}`;
+    return <SatAmount sats={Number(fee)} />;
   };
 
   // When the conversion amount was adjusted (min limit floor or dust prevention),
@@ -105,9 +105,9 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   const sign = payment.paymentType === 'receive' ? '+' : '-';
   const amountDisplay = hasTokenDisplay
     ? `${sign} ${formatTokenAmount(tokenInfo.amount, tokenDisplayConfig)}`
-    : `${sign} ₿${formatWithSpaces(payment.amount)}`;
+    : <>{sign} <SatAmount sats={payment.amount} /></>;
   const feeDisplay = payment.fees > 0
-    ? (isAmountAdjusted ? `₿${formatWithSpaces(Number(payment.fees))}` : formatPaymentFee(BigInt(payment.fees)))
+    ? (isAmountAdjusted ? <SatAmount sats={Number(payment.fees)} /> : formatPaymentFee(BigInt(payment.fees)))
     : null;
 
   // Cross-chain ("USD Transfer"): surface the destination (recipient address +

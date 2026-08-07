@@ -55,7 +55,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     if (!initialRawInput) return;
     void (async () => {
       try {
-        await send.processInput(initialRawInput);
+        await send.processInput(initialRawInput, { requireReview: true });
       } catch (err) {
         logger.error(LogCategory.PAYMENT, 'Failed to process initial payment input', {
           error: formatError(err),
@@ -154,12 +154,14 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 // Remount on contact-selection change so InputStep
                 // lazy-inits from the latest props.
                 key={`input-${selectedContactAddress ?? ''}`}
-                paymentInput={send.paymentInput?.rawInput || ''}
+                // `initialRawInput` seeds the field at mount so a scan that stops
+                // here for review shows the payload it scanned.
+                paymentInput={send.paymentInput?.rawInput || initialRawInput || ''}
                 selectedContactAddress={selectedContactAddress}
                 isLoading={send.isLoading}
                 error={send.error}
                 onClearError={send.clearError}
-                onContinue={(input) => send.processInput(input)}
+                onContinue={(input, opts) => send.processInput(input, opts)}
                 onScanQr={onScanQr}
                 onOpenContacts={() => {
                   setSelectedContactAddress(null);

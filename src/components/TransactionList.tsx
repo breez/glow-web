@@ -1,16 +1,14 @@
 import React, { useMemo } from 'react';
 import { Payment } from '@breeztech/breez-sdk-spark';
 import type { ExtendedPayment } from '../utils/depositHelpers';
-import { formatWithCommas } from '../utils/formatNumber';
+import { formatWithSpaces } from '../utils/formatNumber';
+import { SatAmount } from './SatAmount';
 import { ArrowDownIcon, ArrowUpIcon, LightningBoltIcon, WalletIcon } from './Icons';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
 import { formatTokenAmount, buildTokenDisplayConfig, tokenAmountDisplaysAsZero } from '../utils/tokenFormatting';
 import { getPaymentDescription } from '../utils/paymentDescription';
-
-// Use centralized formatting utility
-const formatWithSpaces = formatWithCommas;
 
 // Hoisted static JSX elements (rendering-hoist-jsx optimization)
 const ReceiveIcon = <ArrowDownIcon size="sm" />;
@@ -195,12 +193,15 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
           {(tx.details?.type === 'token' || tx.conversionDetails)
             ? (() => {
                 const formatted = stableBalance.formatPaymentAmount(tx);
-                // Style the leading currency symbol (e.g. $, €) to match ₿ treatment
+                // Style the leading currency symbol (e.g. $, €) to match ₿ treatment.
+                // The tail is digits only, so it takes the same tightening as a sats
+                // row: a converted payment reaches this branch as "₿6 507". A
+                // symbol-last format (no match) keeps its space before the ticker.
                 const match = formatted.match(/^([^\d-]+)(.*)/);
-                if (match) return <><span className="text-[0.8em] opacity-70">{match[1]}</span>{match[2]}</>;
+                if (match) return <><span className="text-[0.8em] opacity-70">{match[1]}</span><span className="[word-spacing:-0.4em]">{match[2]}</span></>;
                 return formatted;
               })()
-            : <><span className="text-[0.8em] opacity-70">₿</span>{formatWithSpaces(Number(tx.amount))}</>
+            : <SatAmount sats={Number(tx.amount)} />
           }
         </span>
       </li>

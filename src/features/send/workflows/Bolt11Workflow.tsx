@@ -1,6 +1,7 @@
 import React from 'react';
 import type { SendPaymentMethod, ConversionEstimate } from '@breeztech/breez-sdk-spark';
 import ConfirmStep from '../steps/ConfirmStep';
+import { getSendDestination } from '../utils';
 
 interface Bolt11WorkflowProps {
   method: Extract<SendPaymentMethod, { type: 'bolt11Invoice' }>;
@@ -27,7 +28,7 @@ const Bolt11Workflow: React.FC<Bolt11WorkflowProps> = ({ method, amountSats, fee
     feesSat = method.lightningFeeSats;
   }
 
-  return <ConfirmStep amountSats={amountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} error={null} isLoading={false} onBack={onBack} onConfirm={handleSend} />;
+  return <ConfirmStep amountSats={amountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} destination={getSendDestination(method)} error={null} isLoading={false} onBack={onBack} onConfirm={handleSend} />;
 };
 
 export default Bolt11Workflow;
