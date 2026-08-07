@@ -11,6 +11,7 @@ import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
 import { getPaymentDescription, getProviderDisplayName, isCrossChainPayment } from '../utils/paymentDescription';
 import { formatChainName, getCrossChainDestination, formatReceiveAmount } from '../utils/crossChainFormat';
+import { explorerTxUrl } from '../utils/explorer';
 
 interface PaymentDetailsDialogProps {
   optionalPayment: Payment | null;
@@ -305,6 +306,9 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                   value={payment.details.txId}
                   isVisible={visibleFields.txId}
                   onToggle={() => toggleField('txId')}
+                  href={explorerTxUrl(payment.details.txId)}
+                  copyable
+                  shareable
                 />
               </div>
             )}

@@ -1,9 +1,9 @@
 import React, { ReactNode, forwardRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Capacitor } from '@capacitor/core';
-import { Share } from '@capacitor/share';
 import { logger, LogCategory } from '@/services/logger';
 import { copyToClipboard } from '@/utils/clipboard';
+import { canShare, shareText } from '@/utils/share';
+import { openExternalUrl } from '@/utils/externalLink';
 import {
   CloseIcon,
   ChevronDownIcon,
@@ -205,10 +205,13 @@ export const CollapsibleCodeField: React.FC<{
   value: string;
   isVisible: boolean;
   onToggle: () => void;
+  /** Tapping the value opens this URL. */
   href?: string;
-  /** Show a tap-to-copy button next to the value. */
+  /** Show a copy button next to the value. */
   copyable?: boolean;
-}> = ({ label, value, isVisible, onToggle, href, copyable }) => {
+  /** Show a share button next to the value. */
+  shareable?: boolean;
+}> = ({ label, value, isVisible, onToggle, href, copyable, shareable }) => {
   const [copied, setCopied] = React.useState(false);
   const handleCopy = () => {
     copyToClipboard(value)
@@ -222,35 +225,48 @@ export const CollapsibleCodeField: React.FC<{
         });
       });
   };
+  const logFailure = (message: string) => (err: unknown) => {
+    logger.error(LogCategory.UI, message, {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  };
   return (
     <CollapsibleSection label={label} isVisible={isVisible} onToggle={onToggle}>
       <div className="flex items-start gap-2">
         <div className="overflow-x-auto flex-1 min-w-0">
           {href ? (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-xs break-all flex items-center gap-1 group"
+            <button
+              onClick={() => openExternalUrl(href).catch(logFailure('Failed to open link'))}
+              className="font-mono text-xs break-all text-left flex items-start gap-1 group"
+              aria-label={`Open ${label}`}
             >
               <span className="text-spark-text-secondary">{value}</span>
               <ExternalLinkIcon className="w-3.5 h-3.5 shrink-0 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" />
-            </a>
+            </button>
           ) : (
             <code className="text-spark-text-secondary font-mono text-xs break-all">
               {value}
             </code>
           )}
         </div>
-        {copyable && !href && (
+        {copyable && (
           <button
             onClick={handleCopy}
             className="shrink-0 p-1 rounded-md hover:bg-white/5 transition-colors"
-            aria-label="Copy"
+            aria-label={`Copy ${label}`}
           >
             {copied
               ? <CheckIcon size="sm" className="text-spark-success" />
               : <CopyFilledIcon size="sm" className="text-spark-text-secondary" />}
+          </button>
+        )}
+        {shareable && canShare() && (
+          <button
+            onClick={() => shareText(label, value).catch(logFailure('Failed to share'))}
+            className="shrink-0 p-1 rounded-md hover:bg-white/5 transition-colors"
+            aria-label={`Share ${label}`}
+          >
+            <ShareIcon size="sm" className="text-spark-text-secondary" />
           </button>
         )}
       </div>
@@ -278,15 +294,7 @@ export const CopyableText: React.FC<{
   'data-testid'?: string;
 }> = ({ text, truncate = false, hideText = false, showShare = false, onCopied, onShareError, label = 'Address', additionalActions, textColor = 'text-spark-text-muted', textToCopy, textToShare, shareLabel, 'data-testid': testId }) => {
   const [copied, setCopied] = React.useState(false);
-  // Share is available via @capacitor/share on native (Android System
-  // WebView does not implement navigator.share, which is why the
-  // button only appeared on iOS before) and via the Web Share API on
-  // the web. Fixed for the page lifetime; read once at init.
-  const [canShare] = React.useState(
-    () =>
-      Capacitor.isNativePlatform() ||
-      (typeof navigator !== 'undefined' && !!navigator.share),
-  );
+  const [shareAvailable] = React.useState(canShare);
 
   const handleCopy = () => {
     const textToUse = textToCopy || text;
@@ -303,25 +311,8 @@ export const CopyableText: React.FC<{
       });
   };
 
-  const handleShare = async () => {
-    const textToUse = textToShare || text;
-    const shareTitle = shareLabel || label;
-    try {
-      if (Capacitor.isNativePlatform()) {
-        await Share.share({ title: shareTitle, text: textToUse });
-      } else {
-        await navigator.share({ title: shareTitle, text: textToUse });
-      }
-    } catch (err) {
-      // Web AbortError = user dismissed the sheet; the native plugin
-      // rejects a dismissed share with a "canceled"/"Share canceled"
-      // message. Neither is an error worth surfacing.
-      const name = (err as Error).name;
-      const message = (err as Error).message ?? '';
-      if (name !== 'AbortError' && !/cancel/i.test(message)) {
-        onShareError?.();
-      }
-    }
+  const handleShare = () => {
+    shareText(shareLabel || label, textToShare || text).catch(() => onShareError?.());
   };
 
   // Truncate text for display if requested
@@ -361,7 +352,7 @@ export const CopyableText: React.FC<{
           {copied ? 'Copied!' : 'Copy'}
         </button>
 
-        {showShare && canShare && (
+        {showShare && shareAvailable && (
           <button
             onClick={handleShare}
             className="flex items-center gap-2 px-4 py-2 border border-spark-border text-spark-text-secondary rounded-xl font-medium text-sm hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
