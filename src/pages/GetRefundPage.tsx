@@ -323,7 +323,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                   </SecondaryButton>
                   <PrimaryButton
                     onClick={handleContinueToFeeSelection}
-                    disabled={!destination.trim()}
+                    disabled={!selectedDeposit || !destination.trim()}
                     className="flex-1"
                   >
                     Continue
