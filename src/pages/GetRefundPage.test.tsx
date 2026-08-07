@@ -57,6 +57,11 @@ describe('GetRefundPage deposit card', () => {
     ) as HTMLElement;
     expect(sheetRoot).not.toBeNull();
     expect(Number(sheetRoot.style.zIndex)).toBeGreaterThan(SLIDE_IN_PAGE_Z);
+    // The backdrop is what dims the page behind the sheet; without it
+    // the sheet arrives over an undimmed page and is easy to miss.
+    expect(
+      document.querySelector('.react-modal-sheet-backdrop'),
+    ).not.toBeNull();
   });
 });
 
