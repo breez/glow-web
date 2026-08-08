@@ -1,7 +1,7 @@
 {
   "name": "Glow",
   "short_name": "Glow",
-  "description": "Lightning fast Bitcoin payments powered by Breez SDK",
+  "description": "Glow is a bitcoin app for everyone. Everyday payments in bitcoin or USD, built in the open on the Breez SDK.",
   "start_url": "/",
   "id": "/",
   "display": "standalone",
