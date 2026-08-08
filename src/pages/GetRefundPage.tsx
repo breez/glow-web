@@ -226,7 +226,14 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                   const refundedTxId = getRefundTxId(dep);
                   const txKey = `deposit-tx-${idx}`;
                   const refundKey = `deposit-refund-${idx}`;
-                  const borderClass = isRefunded ? 'border-spark-success/30' : 'border-spark-border';
+                  // Marks which deposit the open sheet is refunding: the
+                  // sheet covers only part of the list behind it.
+                  const isSelected = isRefundFlowOpen
+                    && selectedDeposit?.txid === dep.txid
+                    && selectedDeposit?.vout === dep.vout;
+                  const borderClass = isSelected
+                    ? 'border-spark-primary'
+                    : isRefunded ? 'border-spark-success/30' : 'border-spark-border';
 
                   return (
                     <div
@@ -290,7 +297,9 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
         </div>
       </div>
       {/* Refund Flow Bottom Sheet */}
-      <BottomSheetContainer isOpen={isRefundFlowOpen} onClose={closeRefundFlow}>
+      {/* Above SlideInPage's z-60 wrapper: the sheet portals to #root as
+          its sibling, so at the default z-50 it opens behind the page. */}
+      <BottomSheetContainer isOpen={isRefundFlowOpen} onClose={closeRefundFlow} zIndex={70} showBackdrop>
         <BottomSheetCard>
           <DialogHeader
             title={refundStep === 'result' ? (refundSuccess ? 'Refund Sent' : 'Refund Failed') : 'Refund to Bitcoin'}
@@ -323,7 +332,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                   </SecondaryButton>
                   <PrimaryButton
                     onClick={handleContinueToFeeSelection}
-                    disabled={!destination.trim()}
+                    disabled={!selectedDeposit || !destination.trim()}
                     className="flex-1"
                   >
                     Continue

@@ -111,6 +111,12 @@ export interface BottomSheetContainerProps {
   fullHeight?: boolean;
   /** Whether to show a backdrop overlay */
   showBackdrop?: boolean;
+  /**
+   * Stacking order of the sheet root. Raise it past any opaque overlay
+   * the sheet opens from: SlideInPage is z-60, so a sheet left at the
+   * default opens behind it and reads as a dead button.
+   */
+  zIndex?: number;
 }
 
 export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
@@ -122,6 +128,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   maxHeightVh = 100,
   fullHeight = false,
   showBackdrop = false,
+  zIndex = 50,
 }) => {
   const sheetRef = useRef<SheetRef>(null);
   const [contentPx, setContentPx] = useState<number | null>(null);
@@ -480,7 +487,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       // whole window. The old hand-rolled sheet was absolute inside the
       // column and inherited this for free. The backdrop is a separate
       // fixed child and still covers the full viewport.
-      style={{ zIndex: 50, maxWidth: '56rem', marginInline: 'auto' }}
+      style={{ zIndex, maxWidth: '56rem', marginInline: 'auto' }}
       // Portal into #root, not document.body: the web viewport
       // manager pins #root against Safari's focus pan, and sheets
       // portaled outside it stayed uncompensated. That is what let a
