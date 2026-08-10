@@ -397,7 +397,7 @@ const AppContent: React.FC = () => {
             onRequestMigrationCheck={requestMigrationCheck}
             onUseRecoveryPhrase={() => {
               setPasskeySdkConnected(false);
-              setUserScreen('restore');
+              setUserScreen('generate');
             }}
           />
         );

@@ -85,7 +85,11 @@ interface PasskeyPageProps {
    * and App took over).
    */
   onRequestMigrationCheck?: () => Promise<'proceed' | 'handled'>;
-  /** Routes to the restore flow; the primary escape on ceremony failures. */
+  /**
+   * Starts create-via-seed onboarding (new seed, phrase shown for
+   * backup); the primary escape on ceremony failures. Restoring an
+   * existing phrase stays reachable from the home screen.
+   */
   onUseRecoveryPhrase: () => void;
 }
 
