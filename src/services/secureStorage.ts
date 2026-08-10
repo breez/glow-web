@@ -58,8 +58,8 @@ interface NativeVaultPlugin {
   authenticate(options?: { reason?: string }): Promise<void>;
   /** Biometrics-or-passcode prompt (iOS); clears biometry lockout. */
   authenticateDeviceOwner(options?: { reason?: string }): Promise<void>;
+  // Retired biometric-bound tier: read and clear only.
   hasStoredSeed(): Promise<{ stored: boolean }>;
-  storeSeed(options: { seed: string }): Promise<void>;
   retrieveSeed(): Promise<{ seed: string }>;
   clearSeed(): Promise<void>;
   // Device-only tier (encrypted at rest, no biometric gate).
@@ -306,6 +306,14 @@ export interface SecureStorage {
    */
   clearSeed(): Promise<void>;
 }
+
+/**
+ * The retired biometric-bound tier: readable and clearable, never
+ * written. Legacy installs still have an entry here, which is moved
+ * into device-only storage on first unlock. The native plugin has no
+ * write path for it either.
+ */
+export type DrainOnlySecureStorage = Omit<SecureStorage, 'storeSeed'>;
 
 // ============================================
 // Error mapping + utilities
@@ -563,7 +571,7 @@ async function cleanupStaleEntriesOnFreshInstall(): Promise<void> {
  * which causes the wallet startup code in `useBreezSdk` to fall
  * through to the passkey onboarding flow. After the user completes
  * the passkey ceremony (a single extra tap), the seed is re-persisted
- * via `storeSeed`, which now uses the F3 access control.
+ * into the device-only tier.
  *
  * We considered a read-then-rewrite approach (decrypt with F2,
  * re-encrypt with F3) but rejected it because:
@@ -591,7 +599,7 @@ async function migrateToF3IfNeeded(): Promise<void> {
   }
 }
 
-class NativeSecureStorage implements SecureStorage {
+class NativeSecureStorage implements DrainOnlySecureStorage {
   /**
    * Single in-flight `retrieveSeed` promise so concurrent callers share the
    * same biometric prompt instead of stacking two prompts on top of each
@@ -617,28 +625,6 @@ class NativeSecureStorage implements SecureStorage {
     }
   }
 
-  async storeSeed(seed: Seed): Promise<void> {
-    await ensureSharedInitialized();
-    const blob: PersistedSeedBlob = {
-      version: 1,
-      seed: serializeSeedForStorage(seed),
-      createdAt: new Date().toISOString(),
-    };
-    try {
-      // The plugin treats the seed parameter as opaque bytes, so we
-      // JSON-encode the blob on this side and JSON-decode in retrieveSeed.
-      // Storage policy (Keychain accessibility, Keystore key params) is
-      // owned by the plugin's native side.
-      await getNativeVault().storeSeed({ seed: JSON.stringify(blob) });
-      await markVaultInitialized();
-      logSecureStorageSuccess('storeSeed');
-    } catch (err) {
-      const code = mapNativeVaultErrorCode(err);
-      logSecureStorageFailure('storeSeed', code);
-      throw new SecureStorageError(code, getErrorMessage(err) ?? 'Failed to persist seed.');
-    }
-  }
-
   async retrieveSeed(): Promise<Seed> {
     await ensureSharedInitialized();
     // De-duplicate concurrent callers so we only show one biometric prompt.
@@ -653,8 +639,8 @@ class NativeSecureStorage implements SecureStorage {
 
   private async doRetrieve(): Promise<Seed> {
     // The plugin handles both the biometric prompt and the Keychain /
-    // Keystore read. On success it returns the opaque string we passed
-    // to storeSeed; on failure it rejects with one of our typed
+    // Keystore read. On success it returns the opaque string an earlier
+    // build persisted; on failure it rejects with one of our typed
     // SecureStorageErrorCode strings.
     let result: { seed: string };
     try {
@@ -918,7 +904,7 @@ export async function recoverBiometryWithPasscode(reason: string): Promise<void>
 // Factory + singleton
 // ============================================
 
-function createSecureStorage(): SecureStorage {
+function createSecureStorage(): DrainOnlySecureStorage {
   return Capacitor.isNativePlatform() ? new NativeSecureStorage() : new NoopSecureStorage();
 }
 
@@ -929,8 +915,8 @@ function createDeviceOnlyStorage(): SecureStorage {
 /**
  * Module-level singletons.
  *
- * `secureStorage`: biometric-bound tier (legacy installs only; migrated
- * to device-only at first unlock).
+ * `secureStorage`: retired biometric-bound tier, read-only (legacy
+ * installs only; moved into device-only at first unlock).
  * `deviceOnlyStorage`: encrypted at rest, no biometric gate (the default).
  *
  * Both resolve to `NoopSecureStorage` on non-native hosts.
@@ -938,7 +924,7 @@ function createDeviceOnlyStorage(): SecureStorage {
  * Import as:
  *   `import { secureStorage, deviceOnlyStorage } from '@/services/secureStorage';`
  */
-export const secureStorage: SecureStorage = createSecureStorage();
+export const secureStorage: DrainOnlySecureStorage = createSecureStorage();
 export const deviceOnlyStorage: SecureStorage = createDeviceOnlyStorage();
 
 // ============================================
