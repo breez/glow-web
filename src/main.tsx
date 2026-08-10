@@ -301,7 +301,90 @@ function handOffNativeSplash(): void {
   });
 }
 
+/**
+ * Terminal screen for a WebView with WebAssembly switched off. In practice that
+ * means Apple's Lockdown Mode: WebKit disables WASM there, which takes the SDK
+ * (and therefore all of Glow) with it. Nothing is fixable app-side, because
+ * opting a page out of Lockdown Mode needs the `com.apple.developer.web-browser`
+ * entitlement that only real browsers get. So the only useful thing to render is
+ * the way out. Plain DOM: this runs before React mounts, and the splash node is
+ * removed directly rather than via hideSplash(), whose passkey gate would itself
+ * wait on the WASM module that isn't coming. The logo keeps the 144 box every
+ * launch-path logo uses (index.html's .splash-logo, LockScreen) so it does not
+ * resize as the splash hands over, and the layout mirrors UnlockPage (same
+ * surface canvas, container, and logo / title / subtitle spacing) since that is
+ * the sibling screen for a launch that cannot proceed. It drops UnlockPage's
+ * h-dvh, though: the step list is taller than that page's content and would
+ * clip on a short screen rather than scroll.
+ */
+function showWebAssemblyBlocked(): void {
+  logger.error(LogCategory.UI, 'WebAssembly unavailable (Lockdown Mode?), halting startup');
+  handOffNativeSplash();
+  document.getElementById('splash')?.remove();
+
+  const isIos = Capacitor.getPlatform() === 'ios';
+  // Lockdown Mode's per-app exception list is deliberately not offered here.
+  // Glow never appears in it: Capacitor serves the app from capacitor://
+  // through a WKURLSchemeHandler, so the WebView performs no web navigation,
+  // and it is a web navigation that triggers WebKit's first-use panel and the
+  // registration behind that list. There is no opt-in API. Verified on device:
+  // a clean launch under Lockdown Mode still leaves Glow off the list. Turning
+  // Lockdown Mode off is the only route that actually works on native. Safari
+  // does support per-site exceptions, so the web copy still points at those.
+  const heading = isIos ? 'Turn off Lockdown Mode to use Glow' : 'Lockdown Mode is stopping Glow';
+  const intro = isIos
+    ? 'Lockdown Mode is stopping Glow from running.'
+    : 'Lockdown Mode is stopping Glow from running. Add an exception for Glow in your browser settings, or open Glow in another browser.';
+  const steps = isIos
+    ? [
+        'Open Settings',
+        'Go to Privacy &amp; Security, then Lockdown Mode',
+        'Tap Turn Off Lockdown Mode',
+        'Confirm, and your iPhone restarts',
+      ]
+    : [];
+
+  document.getElementById('root')!.innerHTML = `
+    <div class="min-h-dvh w-full flex flex-col bg-spark-surface relative">
+      <div class="flex-1 flex items-center justify-center p-6">
+        <div class="max-w-sm w-full space-y-8">
+          <div class="flex flex-col items-center gap-4">
+            <img src="/assets/Glow_Logo.svg" alt="Glow" class="w-36 h-36 object-contain" />
+            <h1 class="font-display text-2xl font-bold text-spark-text-primary text-center">${heading}</h1>
+            <p class="text-sm text-spark-text-secondary text-center">${intro}</p>
+          </div>
+          ${steps.length ? `
+          <ol class="bg-spark-elevated border border-spark-border rounded-2xl p-5 space-y-4">
+            ${steps.map((step, i) => `
+            <li class="flex gap-3 items-baseline">
+              <span class="font-mono text-xs text-spark-primary shrink-0">${i + 1}</span>
+              <span class="text-sm text-spark-text-primary leading-snug">${step}</span>
+            </li>`).join('')}
+          </ol>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Retry when the user returns from Settings. WebKit swaps the web process
+  // between Lockdown and non-Lockdown pages, so a reload is the cheapest shot
+  // at picking the exemption up without making the user find the app switcher.
+  // If it doesn't take, the guard just paints this screen again, and relaunching
+  // the app is the fallback.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') location.reload();
+  });
+}
+
 async function init() {
+  // Lockdown Mode leaves the WebView running but takes WebAssembly with it, so
+  // startup would otherwise paint a working-looking welcome screen and fail at
+  // the first SDK call. Bail out here with something actionable instead.
+  if (typeof WebAssembly === 'undefined') {
+    showWebAssemblyBlocked();
+    return;
+  }
+
   try {
     handOffNativeSplash();
     logger.info(LogCategory.UI, 'Initializing application');
