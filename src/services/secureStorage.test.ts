@@ -13,6 +13,7 @@ import { Preferences } from '@capacitor/preferences';
 import { wipeAllLocalData } from './accountDeletion';
 
 const INSTALL_MARKER_KEY = 'glow.secureStorageInitialized';
+const F3_MIGRATION_MARKER_KEY = 'glow.secureStorageF3Migrated';
 
 vi.mock('@capacitor/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@capacitor/core')>();
@@ -39,8 +40,10 @@ const vault: { deviceOnly: string | null; bound: string | null } = {
       storeSeedDeviceOnly: async ({ seed }: { seed: string }) => { vault.deviceOnly = seed; },
       retrieveSeedDeviceOnly: async () => ({ seed: vault.deviceOnly! }),
       clearSeedDeviceOnly: async () => { vault.deviceOnly = null; },
+      // Retired bound tier: no `storeSeed`, matching the real plugin.
+      // A legacy entry only ever comes from an old build, so a test that
+      // needs one assigns `vault.bound` directly.
       hasStoredSeed: async () => ({ stored: vault.bound !== null }),
-      storeSeed: async ({ seed }: { seed: string }) => { vault.bound = seed; },
       retrieveSeed: async () => ({ seed: vault.bound! }),
       clearSeed: async () => { vault.bound = null; },
     },
@@ -109,5 +112,58 @@ describe('secure storage install marker', () => {
     // The account must survive the next launch.
     const relaunch = await coldStart();
     expect(await relaunch.deviceOnlyStorage.hasStoredSeed()).toBe(true);
+  });
+});
+
+/**
+ * The bound tier is read-only, and moving its entry into device-only
+ * storage is the only way a pre-app-lock install reaches its seed.
+ */
+describe('retired biometric-bound tier', () => {
+  beforeEach(async () => {
+    vault.deviceOnly = null;
+    vault.bound = null;
+    localStorage.clear();
+    await Preferences.clear();
+  });
+
+  /**
+   * What an old build left behind: a blob in the bound slot plus both
+   * markers. With only one, the F3 migration pass clears the slot on
+   * the next launch, which is correct but not the case under test.
+   */
+  async function plantLegacyInstall() {
+    vault.bound = JSON.stringify({
+      version: 1,
+      seed: { type: 'mnemonic', mnemonic: SEED.mnemonic },
+      createdAt: new Date().toISOString(),
+    });
+    const now = new Date().toISOString();
+    await Preferences.set({ key: INSTALL_MARKER_KEY, value: now });
+    await Preferences.set({ key: F3_MIGRATION_MARKER_KEY, value: now });
+  }
+
+  it('still drains a legacy seed and can then wipe it', async () => {
+    await plantLegacyInstall();
+
+    const { secureStorage, deviceOnlyStorage } = await coldStart();
+    expect(await secureStorage.hasStoredSeed()).toBe(true);
+    expect(await secureStorage.retrieveSeed()).toEqual(SEED);
+
+    // The drain: forward into device-only, then retire the old slot.
+    await deviceOnlyStorage.storeSeed(SEED);
+    await secureStorage.clearSeed();
+
+    expect(vault.bound).toBeNull();
+    expect(await secureStorage.hasStoredSeed()).toBe(false);
+    expect(await deviceOnlyStorage.hasStoredSeed()).toBe(true);
+  });
+
+  it('exposes no way to write the tier back', async () => {
+    const { secureStorage } = await coldStart();
+    // Compile-time guaranteed by DrainOnlySecureStorage; asserted at
+    // runtime too, because the type would not catch a stray re-add on
+    // the class itself.
+    expect('storeSeed' in secureStorage).toBe(false);
   });
 });
