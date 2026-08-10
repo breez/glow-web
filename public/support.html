@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#13131d" media="(prefers-color-scheme: dark)" />
+  <meta name="robots" content="index, follow" />
+  <title>Glow Support</title>
+  <meta name="description" content="Get help with Glow: contact Breez, save your recovery phrase, restore on a new device." />
+  <link rel="icon" href="/icons/Glow_favicon.png" />
+  <!-- ponytail: style block copied from delete-account.html rather than
+       shared. Extract to /legal.css if a fourth static page shows up. -->
+  <style>
+    :root {
+      --void: #ffffff;
+      --surface: #f5f3ef;
+      --border: #e6e2da;
+      --text: #16161c;
+      --text-secondary: rgba(0, 0, 0, 0.68);
+      --text-muted: rgba(0, 0, 0, 0.42);
+      --primary: #20609f;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --void: #0a0a0f;
+        --surface: #151520;
+        --border: #252535;
+        --text: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.7);
+        --text-muted: rgba(255, 255, 255, 0.4);
+        --primary: #d4a574;
+      }
+
+      body {
+        background:
+          radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.15), transparent),
+          radial-gradient(ellipse 60% 40% at 100% 0%, rgba(247, 147, 26, 0.08), transparent),
+          radial-gradient(ellipse 60% 40% at 0% 100%, rgba(0, 212, 255, 0.06), transparent),
+          var(--void);
+        background-attachment: fixed;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--void);
+      color: var(--text-secondary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.65;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 1.25rem 5rem;
+    }
+
+    h1 {
+      color: var(--text);
+      font-size: 2rem;
+      line-height: 1.2;
+      margin: 0 0 0.5rem;
+    }
+
+    h2 {
+      color: var(--text);
+      font-size: 1.25rem;
+      margin: 2.5rem 0 0.75rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    p { margin: 0 0 1rem; }
+
+    ol, ul {
+      margin: 0 0 1rem;
+      padding-left: 1.25rem;
+    }
+
+    li { margin: 0 0 0.6rem; }
+
+    strong { color: var(--text); }
+
+    a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    a:hover { text-decoration: underline; }
+
+    .back-bar {
+      display: none;
+      background: none;
+      border: 0;
+      color: var(--primary);
+      font: inherit;
+      font-weight: 600;
+      padding: 0 0 1.5rem;
+      cursor: pointer;
+    }
+
+    .standalone .back-bar { display: block; }
+  </style>
+</head>
+
+<body>
+  <!-- Escape hatch when this page loads inside an installed PWA's own
+       window (in-scope navigation shows no browser chrome, so there is
+       no other way back). Hidden in normal tabs and in the app's
+       overlay iframe. -->
+  <script>
+    if (window.self === window.top
+        && (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true)) {
+      document.body.classList.add('standalone');
+    }
+  </script>
+  <main>
+    <button type="button" class="back-bar"
+      onclick="if (history.length > 1) { history.back(); } else { location.href = '/'; }">
+      &larr; Back to Glow
+    </button>
+    <h1>Glow Support</h1>
+    <p>Glow is a non-custodial Bitcoin app made by Breez. If something is not working, or you
+      just want to ask a question, here is how to reach us and what to try first.</p>
+
+    <h2>Contact us</h2>
+    <ul>
+      <li>Email <a href="mailto:contact@breez.technology">contact@breez.technology</a>.</li>
+      <li>Report a bug or request a feature at
+        <a href="https://github.com/breez/glow-web/issues">github.com/breez/glow-web/issues</a>.</li>
+    </ul>
+    <p><strong>Never send anyone your recovery phrase.</strong> Breez will never ask for it, and
+      anyone who has it can spend your funds.</p>
+
+    <h2>Before you write in</h2>
+    <p>It helps a lot if you include your app version (menu &gt; Settings, at the bottom), your
+      device and OS version, and what you were doing when the problem happened.</p>
+    <p>You can also attach diagnostic logs: open the menu, then Settings, and use
+      <strong>Download Logs</strong> under Diagnostics. Logs stay on your device until you choose
+      to send them, and sensitive values are redacted.</p>
+
+    <h2>Save your recovery phrase</h2>
+    <p>Your funds are secured by your passkey and by a 12-word recovery phrase. Either one
+      restores access on any device, and Breez holds neither. Write the phrase down and keep it
+      offline.</p>
+    <p>To see it: open the menu, then Settings &gt; Backup &gt; Show Recovery Phrase.</p>
+
+    <h2>Restoring on a new device</h2>
+    <p>Install Glow, then either sign in with the passkey you created (it syncs through iCloud
+      Keychain or Google Password Manager) or choose to restore from your 12-word recovery
+      phrase.</p>
+
+    <h2>A payment did not arrive</h2>
+    <p>Incoming on-chain deposits that could not be completed show up as refundable. When that
+      happens, a <strong>Get Refund</strong> entry appears in the menu and walks you through
+      claiming the funds back to a Bitcoin address you choose.</p>
+
+    <h2>Removing Glow from your device</h2>
+    <p>See <a href="/delete-account.html">how to delete your Glow data and passkey</a>. Save your
+      recovery phrase first if you still hold funds.</p>
+
+    <h2>Privacy</h2>
+    <p>Glow has no registration, no identity checks, and no analytics. The full
+      <a href="/privacy.html">privacy policy</a> explains what data leaves your device and why.</p>
+  </main>
+</body>
+
+</html>
