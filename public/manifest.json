@@ -49,6 +49,12 @@
       "purpose": "any"
     }
   ],
+  "protocol_handlers": [
+    {
+      "protocol": "bitcoin",
+      "url": "/?pay=%s"
+    }
+  ],
   "shortcuts": [],
   "related_applications": [],
   "prefer_related_applications": false

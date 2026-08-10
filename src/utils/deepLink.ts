@@ -12,7 +12,10 @@ import { logger, LogCategory } from '@/services/logger';
  * SDK parser accepts, and is delivered to whoever is listening (in practice
  * WalletPage, which opens the send sheet with it).
  *
- * No-op on web: `Capacitor.isNativePlatform()` is false and nothing is wired.
+ * An installed PWA gets a narrower version of the same thing through the
+ * manifest's `protocol_handlers`, which is limited to `bitcoin:` by the
+ * safelist. See `consumeProtocolHandlerLaunch` below. In a plain browser tab
+ * nothing is wired at all.
  */
 
 type DeepLinkListener = (paymentInput: string) => void;
@@ -60,10 +63,45 @@ function deliver(url: string): void {
   else pending = paymentInput;
 }
 
+/**
+ * The query parameter an installed PWA is launched with when it handles a
+ * registered protocol, per the `protocol_handlers` entry in manifest.json.
+ */
+const PROTOCOL_HANDLER_PARAM = 'pay';
+
+/**
+ * An installed PWA handles a protocol by being launched at a URL, not by
+ * receiving an event, so the payload arrives as a query parameter. Consume it
+ * and scrub it from the address bar, so a reload doesn't reopen the sheet on a
+ * payment the person has already dealt with.
+ *
+ * Only `bitcoin:` can reach here. The manifest may only claim schemes on the
+ * spec's safelist (which has `bitcoin` but not `lightning` or the LNURL ones)
+ * or invented `web+` ones, which nothing in the world emits.
+ */
+function consumeProtocolHandlerLaunch(): void {
+  const params = new URLSearchParams(window.location.search);
+  const launched = params.get(PROTOCOL_HANDLER_PARAM);
+  if (!launched) return;
+
+  params.delete(PROTOCOL_HANDLER_PARAM);
+  const query = params.toString();
+  window.history.replaceState(
+    null,
+    '',
+    `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`,
+  );
+  deliver(launched);
+}
+
 /** Start listening for deep links. Safe to call more than once. */
 export function startDeepLinks(): void {
-  if (started || !Capacitor.isNativePlatform()) return;
+  if (started) return;
   started = true;
+
+  consumeProtocolHandlerLaunch();
+
+  if (!Capacitor.isNativePlatform()) return;
 
   void App.addListener('appUrlOpen', ({ url }) => deliver(url));
 

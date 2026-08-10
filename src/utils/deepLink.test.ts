@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toPaymentInput } from './deepLink';
 
 const BOLT11 = 'lnbc1u1p3xyzqwpp5abcdefg';
@@ -37,5 +37,48 @@ describe('toPaymentInput', () => {
 
   it('passes through bare input and trims surrounding whitespace', () => {
     expect(toPaymentInput(`  ${BOLT11}\n`)).toBe(BOLT11);
+  });
+});
+
+/**
+ * An installed PWA handles `bitcoin:` by being launched at `/?pay=<uri>`
+ * (see `protocol_handlers` in public/manifest.json). The module is re-imported
+ * per case because it starts at most once per page load.
+ */
+describe('protocol handler launch', () => {
+  const startAt = async (url: string) => {
+    window.history.replaceState(null, '', url);
+    vi.resetModules();
+    const mod = await import('./deepLink');
+    mod.startDeepLinks();
+    return mod;
+  };
+
+  afterEach(() => {
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('opens on the launched payment and scrubs it from the address bar', async () => {
+    const { onDeepLink } = await startAt(`/?pay=${encodeURIComponent(`bitcoin:${ADDRESS}`)}`);
+
+    const seen: string[] = [];
+    onDeepLink((input) => seen.push(input));
+
+    expect(seen).toEqual([`bitcoin:${ADDRESS}`]);
+    expect(window.location.search).toBe('');
+  });
+
+  it('leaves unrelated query parameters alone', async () => {
+    await startAt(`/?utm=x&pay=${encodeURIComponent(`bitcoin:${ADDRESS}`)}`);
+    expect(window.location.search).toBe('?utm=x');
+  });
+
+  it('does nothing on an ordinary launch', async () => {
+    const { onDeepLink } = await startAt('/');
+
+    const seen: string[] = [];
+    onDeepLink((input) => seen.push(input));
+
+    expect(seen).toEqual([]);
   });
 });
