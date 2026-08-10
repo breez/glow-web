@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import PageLayout from '../components/layout/PageLayout';
 import { PrimaryButton } from '../components/ui';
 import { SimpleAlert } from '../components/AlertCard';
-import { UploadIcon } from '../components/Icons';
 import { useScreenCaptureProtection } from '@/utils/screenSecurity';
 
 interface RestorePageProps {
@@ -61,13 +60,6 @@ const RestorePage: React.FC<RestorePageProps> = ({
   return (
     <PageLayout footer={footer} onBack={onBack} title="Restore from Backup" onClearError={onClearError}>
        <div className="max-w-xl mx-auto w-full space-y-4">
-        {/* Icon */}
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
-            <UploadIcon size="xl" className="text-spark-primary" />
-          </div>
-        </div>
-
         <p className="text-spark-text-secondary text-center mb-6">
           Enter your 12 or 24-word recovery phrase to restore Glow. Words should be separated by spaces.
         </p>

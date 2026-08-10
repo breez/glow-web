@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { WarningIcon, SpinnerIcon, EyeIcon, FaceIdIcon, FingerprintIcon, PasskeyIcon } from '../components/Icons';
+import { WarningIcon, PasskeyIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
 import { PinGate } from '../components/PinEntry';
 import { LoadingSpinner } from '../components/ui';
@@ -274,13 +274,6 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               disabled={isLoading}
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
-              <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
-                {isLoading ? (
-                  <SpinnerIcon size="xl" className="text-spark-primary" />
-                ) : (
-                  <EyeIcon size="xl" className="text-spark-primary" />
-                )}
-              </div>
               <span className="font-display font-semibold text-spark-text-primary">
                 {isLoading ? 'Authenticating...' : 'Tap to reveal phrase'}
               </span>
@@ -303,17 +296,6 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               disabled={isLoading}
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
-              <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
-                {isLoading ? (
-                  <SpinnerIcon size="xl" className="text-spark-primary" />
-                ) : mnemonic ? (
-                  <EyeIcon size="xl" className="text-spark-primary" />
-                ) : biometry?.kind === 'face' ? (
-                  <FaceIdIcon size="xl" className="text-spark-primary" />
-                ) : (
-                  <FingerprintIcon size="xl" className="text-spark-primary" />
-                )}
-              </div>
               <span className="font-display font-semibold text-spark-text-primary">
                 {isLoading ? 'Authenticating...' : 'Tap to reveal phrase'}
               </span>
@@ -350,15 +332,6 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               disabled={isLoading}
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
-              <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
-                {isLoading ? (
-                  <SpinnerIcon size="xl" className="text-spark-primary" />
-                ) : biometry?.kind === 'face' && fallbackTier === 'biometric' ? (
-                  <FaceIdIcon size="xl" className="text-spark-primary" />
-                ) : (
-                  <FingerprintIcon size="xl" className="text-spark-primary" />
-                )}
-              </div>
               <span className="font-display font-semibold text-spark-text-primary">
                 {isLoading ? 'Authenticating...' : 'Tap to reveal phrase'}
               </span>
