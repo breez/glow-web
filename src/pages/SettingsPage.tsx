@@ -12,6 +12,7 @@ import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs, exportDatabaseState } from '@/services/logExport';
 import { useSecretTap } from '@/hooks/useSecretTap';
+import { isPasskeyMode } from '@/services/passkeyService';
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -255,8 +256,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
           </div>
 
-          {/* Passkey & Labels */}
-          {isDevMode && (
+          {/* Passkey & Labels. Every page in the hub acts on the active
+              passkey, so a mnemonic-only wallet has nothing to open. */}
+          {isDevMode && isPasskeyMode() && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
               <h3 className="font-display font-semibold text-spark-text-primary mb-3">Passkey</h3>
               <button

@@ -3,7 +3,7 @@ import { Payment } from '@breeztech/breez-sdk-spark';
 import type { ExtendedPayment } from '../utils/depositHelpers';
 import { formatWithSpaces } from '../utils/formatNumber';
 import { SatAmount } from './SatAmount';
-import { ArrowDownIcon, ArrowUpIcon, LightningBoltIcon, WalletIcon } from './Icons';
+import { ArrowDownIcon, ArrowUpIcon, LightningBoltIcon } from './Icons';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
@@ -16,8 +16,6 @@ const ReceiveIcon = <ArrowDownIcon size="sm" />;
 const SendIcon = <ArrowUpIcon size="sm" />;
 
 const LightningIcon = <LightningBoltIcon size="xs" />;
-
-const EmptyStateIcon = <WalletIcon className="w-10 h-10 text-spark-text-muted" />;
 
 // Hoisted helper functions (rendering-hoist-jsx optimization)
 const formatTimeAgo = (timestamp: number): string => {
@@ -106,9 +104,6 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
     }
     return (
       <div className="flex flex-col items-center justify-center py-20 px-6" data-testid="empty-state">
-        <div className="w-20 h-20 rounded-2xl bg-spark-surface border border-spark-border flex items-center justify-center mb-6">
-          {EmptyStateIcon}
-        </div>
         <h3 className="text-lg font-semibold text-spark-text-primary mb-2">No payments yet</h3>
         <p className="text-spark-text-muted text-sm text-center max-w-xs">
           Your payment history will appear here once you send or receive your first payment.

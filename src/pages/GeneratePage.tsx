@@ -4,7 +4,7 @@ import { PrimaryButton } from '../components/ui';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PageLayout from '../components/layout/PageLayout';
 import { AlertCard } from '../components/AlertCard';
-import { CheckIcon, CopyIcon, KeyIcon } from '../components/Icons';
+import { CheckIcon, CopyIcon } from '../components/Icons';
 import { logger, LogCategory } from '@/services/logger';
 import { copyToClipboard } from '@/utils/clipboard';
 
@@ -81,13 +81,6 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
   return (
     <PageLayout onBack={onBack} footer={footer} title="Get Started" onClearError={onClearError}>
       <div className="max-w-xl mx-auto w-full space-y-4">
-        {/* Icon */}
-        <div className="flex justify-center mb-4">
-          <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
-            <KeyIcon size="xl" className="text-spark-primary" />
-          </div>
-        </div>
-
         <p className="text-spark-text-secondary text-center mb-6">
           Write down these words in order. This is your only backup to recover your funds.
         </p>
