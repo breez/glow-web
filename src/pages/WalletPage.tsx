@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import { useToast } from '../contexts/ToastContext';
 import { logger, LogCategory } from '@/services/logger';
@@ -20,6 +20,7 @@ import BuyBitcoinDialog from '../features/buy/BuyBitcoinDialog';
 import { getBuyProviderSettings, filterProvidersByNetwork, isBuyBitcoinAvailable } from '../services/settings';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';
 import { STATUS_BAR_WALLET_GLASS } from '../utils/statusBarManager';
+import { onDeepLink } from '../utils/deepLink';
 
 interface WalletPageProps {
   walletInfo: GetInfoResponse | null;
@@ -189,6 +190,16 @@ const WalletPage: React.FC<WalletPageProps> = ({
     setScannerOpenedFromSend(true);
     setIsQrScannerOpen(true);
   }, []);
+
+  // A tapped lightning: / bitcoin: / lnurlp: / lnurlw: / keyauth: / glow: link
+  // opens the send sheet on it. Unlike the QR path there is no pre-parse: the OS just
+  // switched the user into Glow, so an unreadable link has to say so on screen
+  // rather than land on the home page having apparently done nothing. The
+  // sheet parses `initialRawInput` itself and surfaces its own error.
+  useEffect(() => onDeepLink((input) => {
+    setPaymentInput(input);
+    openSendDialog();
+  }), [openSendDialog]);
 
   const handleQrScan = async (data: string | null) => {
     if (!data) return;
