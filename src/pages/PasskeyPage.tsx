@@ -22,6 +22,7 @@ import {
   signInPinnedToActiveCredential,
   removeStaleCredential,
   passkeyAvailability,
+  isGrapheneOsDevice,
 } from '@/services/passkeyService';
 import {
   PasskeyAlreadyExistsError,
@@ -84,6 +85,8 @@ interface PasskeyPageProps {
    * and App took over).
    */
   onRequestMigrationCheck?: () => Promise<'proceed' | 'handled'>;
+  /** Routes to the restore flow; the primary escape on ceremony failures. */
+  onUseRecoveryPhrase: () => void;
 }
 
 // 5s under the OS's ~60s WebAuthn inactivity ceiling: anything past
@@ -103,6 +106,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
   skipDetection = false,
   consumeFreshInstallSignal,
   onRequestMigrationCheck,
+  onUseRecoveryPhrase,
 }) => {
   // Post-AASA transition branches on `skipDetection`: straight to
   // 'creating' for the Create CTA, 'detecting' for Use Passkey.
@@ -379,7 +383,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
               ? 'Sign-in timed out. Please try again.'
               : isCancelled
                 ? 'Passkey prompt cancelled. Please try again.'
-                : (friendlyPasskeyError(e) ?? 'Could not sign in with your passkey. Please try again.'),
+                : (friendlyPasskeyError(e, { isGrapheneOs: isGrapheneOsDevice() }) ?? 'Could not sign in with your passkey. Please try again.'),
           );
           setErrorKind('sign-in-failed');
         }
@@ -633,7 +637,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
               ? (isLikelyTimeout(elapsedMs)
                 ? 'Sign-in timed out. Please try again.'
                 : 'Sign-in cancelled. Please try again.')
-              : (friendlyPasskeyError(e) ?? 'Could not sign in with your passkey. Please try again.'),
+              : (friendlyPasskeyError(e, { isGrapheneOs: isGrapheneOsDevice() }) ?? 'Could not sign in with your passkey. Please try again.'),
           );
           setErrorKind('sign-in-failed');
           return;
@@ -916,7 +920,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         } else if (isCancelled) {
           setError('Sign-in cancelled. Please try again.');
         } else {
-          setError(friendlyPasskeyError(e) ?? 'Something went wrong. Please try again.');
+          setError(friendlyPasskeyError(e, { isGrapheneOs: isGrapheneOsDevice() }) ?? 'Something went wrong. Please try again.');
         }
         setErrorKind('generic');
         logger.error(LogCategory.AUTH, 'Passkey wallet restore failed', {
@@ -1197,23 +1201,25 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       );
     }
 
-    // Slow cancel on detecting: user dismissed a sheet, so they probably
-    // have a passkey and Try Again stays the primary action. Create is
-    // offered as a secondary escape (this branch only fires for a device
-    // with no passkey history), or a first-timer whose OS still put a
-    // sheet in front of them has no way forward at all.
-    // Bouncing through aasa-checking re-fires the detecting effect
-    // (which only depends on [phase]).
+    // Slow cancel on detecting: user dismissed a sheet. Recovery phrase
+    // leads, as on every ceremony-failure footer (product call: passkey
+    // issues fall back to the recovery phrase). Try Again bounces through
+    // aasa-checking to re-fire the detecting effect (which only depends
+    // on [phase]); Create covers the first-timer whose OS still put a
+    // sheet in front of them.
     if (error && phase === 'detecting' && errorKind === 'sign-in-cancelled') {
       return (
         <div className="max-w-xl mx-auto space-y-3">
-          <PrimaryButton className="w-full" onClick={() => {
+          <PrimaryButton className="w-full" onClick={onUseRecoveryPhrase}>
+            Continue with Recovery Phrase
+          </PrimaryButton>
+          <SecondaryButton className="w-full" onClick={() => {
             setError(null);
             setErrorKind(null);
             setPhase('aasa-checking');
           }}>
             Try Again
-          </PrimaryButton>
+          </SecondaryButton>
           <SecondaryButton className="w-full" onClick={() => {
             setError(null);
             setErrorKind(null);
@@ -1258,21 +1264,25 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     }
 
     // Returning-user sign-in failures (cancel, transient
-    // CredentialNotFound, relay error). Native: retry only. Web: also
-    // offer Use Another Passkey (drops the active pin so the picker
-    // can surface siblings), with Create gated by `retryOnly`.
+    // CredentialNotFound, relay error). Recovery phrase leads; retry is
+    // secondary. Web additionally offers Use Another Passkey (drops the
+    // active pin so the picker can surface siblings), with Create gated
+    // by `retryOnly`.
     if (error && phase === 'detecting' && errorKind === 'sign-in-failed') {
       const isWeb = !Capacitor.isNativePlatform();
       const retryOnly = isWeb && immediateGetSupported !== true;
       return (
         <div className="max-w-xl mx-auto space-y-3">
-          <PrimaryButton className="w-full" onClick={() => {
+          <PrimaryButton className="w-full" onClick={onUseRecoveryPhrase}>
+            Continue with Recovery Phrase
+          </PrimaryButton>
+          <SecondaryButton className="w-full" onClick={() => {
             setError(null);
             setErrorKind(null);
             setPhase('aasa-checking');
           }}>
             Try Again
-          </PrimaryButton>
+          </SecondaryButton>
           {isWeb && (
             <SecondaryButton className="w-full" onClick={() => {
               // Drop the active-cred pin so the next detect runs
@@ -1308,12 +1318,15 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       const retryOnly = !Capacitor.isNativePlatform() && immediateGetSupported !== true;
       return (
         <div className="max-w-xl mx-auto space-y-3">
-          <PrimaryButton className="w-full" onClick={() => {
+          <PrimaryButton className="w-full" onClick={onUseRecoveryPhrase}>
+            Continue with Recovery Phrase
+          </PrimaryButton>
+          <SecondaryButton className="w-full" onClick={() => {
             setError(null);
             setPhase('aasa-checking');
           }}>
             Try Again
-          </PrimaryButton>
+          </SecondaryButton>
           {!retryOnly && (
             <SecondaryButton className="w-full" onClick={() => {
               setError(null);
@@ -1350,13 +1363,17 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       );
     }
 
-    // Error state on any auto-triggered phase: Retry + Back
+    // Error state on any auto-triggered phase: recovery phrase leads,
+    // Retry + Back stay as secondaries.
     if (error && ['creating', 'new-storing', 'connecting'].includes(phase)) {
       return (
         <div className="max-w-xl mx-auto space-y-3">
-          <PrimaryButton className="w-full" onClick={handleRetry}>
-            Retry
+          <PrimaryButton className="w-full" onClick={onUseRecoveryPhrase}>
+            Continue with Recovery Phrase
           </PrimaryButton>
+          <SecondaryButton className="w-full" onClick={handleRetry}>
+            Retry
+          </SecondaryButton>
           <SecondaryButton className="w-full" onClick={handleErrorBack}>
             Go Back
           </SecondaryButton>

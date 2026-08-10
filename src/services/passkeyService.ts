@@ -155,7 +155,11 @@ interface NativePasskeyPlugin {
     breezApiKey?: string;
     defaultLabel?: string;
   }): Promise<void>;
-  checkAvailability(): Promise<PasskeyAvailability>;
+  /**
+   * `isGrapheneOs` is Android-only (the plugin flags Vanadium as the
+   * WebView provider); absent on iOS.
+   */
+  checkAvailability(): Promise<PasskeyAvailability & { isGrapheneOs?: boolean }>;
   register(opts: {
     label?: string;
     excludeCredentials?: string[];
@@ -892,6 +896,16 @@ export function prfAvailability(): Promise<boolean> {
 
 let availabilityPromise: Promise<PasskeyAvailability> | null = null;
 
+// Android-only signal from the native plugin (Vanadium as the WebView
+// provider means GrapheneOS). Read at error time for deterministic
+// passkey-failure copy; stays false until availability has resolved.
+let grapheneOs = false;
+
+/** True once availability has reported a GrapheneOS device. */
+export function isGrapheneOsDevice(): boolean {
+  return grapheneOs;
+}
+
 /**
  * Memoized `checkAvailability()`.
  *
@@ -912,6 +926,7 @@ export function passkeyAvailability(): Promise<PasskeyAvailability> {
   if (!availabilityPromise) {
     availabilityPromise = getPasskey().checkAvailability()
       .then((availability) => {
+        if ((availability as { isGrapheneOs?: boolean }).isGrapheneOs === true) grapheneOs = true;
         if (availability.type === 'notAssociated') availabilityPromise = null;
         return availability;
       })
