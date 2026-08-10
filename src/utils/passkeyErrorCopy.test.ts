@@ -7,14 +7,31 @@ const withCode = (message: string, code: string): Error => {
   return e;
 };
 
+const GPM_LOOP =
+  'v1=breez_sdk_spark.PrfProviderException$AuthenticationFailed: v1=Google Password Manager: [15] Flow has timed out.';
+
 describe('friendlyPasskeyError', () => {
   it('maps the wrapped GPM auth-failed timeout (QA repro, code collapsed to GENERIC_ERROR)', () => {
-    const e = withCode(
-      'v1=breez_sdk_spark.PrfProviderException$AuthenticationFailed: v1=Google Password Manager: [15] Flow has timed out.',
-      'GENERIC_ERROR',
-    );
-    expect(friendlyPasskeyError(e)).toBe(
+    expect(friendlyPasskeyError(withCode(GPM_LOOP, 'GENERIC_ERROR'))).toBe(
       "Your device couldn't finish verifying your identity. Lock and unlock your device, then try again.",
+    );
+  });
+
+  it('maps the GPM loop to deterministic recovery-phrase copy on GrapheneOS', () => {
+    expect(friendlyPasskeyError(withCode(GPM_LOOP, 'GENERIC_ERROR'), { isGrapheneOs: true })).toBe(
+      "Passkeys aren't working with Google Password Manager on this device. Try again with another password provider, or continue with your recovery phrase.",
+    );
+  });
+
+  it('keeps generic copy on GrapheneOS when the provider is not Google Password Manager', () => {
+    expect(
+      friendlyPasskeyError(new Error('Bitwarden: operation timed out'), { isGrapheneOs: true }),
+    ).toBe('The passkey prompt timed out. Please try again.');
+  });
+
+  it('maps PRF_NOT_SUPPORTED with provider-switch advice', () => {
+    expect(friendlyPasskeyError(withCode('nope', 'PRF_NOT_SUPPORTED'))).toMatch(
+      /different password manager/,
     );
   });
 
