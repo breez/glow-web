@@ -11,6 +11,7 @@ import './index.css';
 import { logger, LogCategory } from '@/services/logger';
 import { initWebViewportManager } from '@/utils/webViewportManager';
 import { installUserAgentStrippingFetch } from '@/utils/stripUserAgentFetch';
+import { startDeepLinks } from '@/utils/deepLink';
 import { logStartupDeviceInfo } from '@/utils/deviceInfo';
 import { startSdkInit } from '@/services/sdkReady';
 import { prfAvailability } from '@/services/passkeyService';
@@ -26,6 +27,12 @@ installUserAgentStrippingFetch();
 (BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
   return this.toString();
 };
+
+// Start listening for payment deep links (lightning:, bitcoin:, lnurlp:,
+// lnurlw:, keyauth:, glow:) before anything renders, so a link that
+// cold-started the app is buffered by the time there is a screen to open it on.
+// Self-guarding: no-op on web.
+startDeepLinks();
 
 // Pin the system bars to the Glow "surface" tone on native builds so they
 // blend with the app bar glassmorphism. setStyle controls icon brightness;
