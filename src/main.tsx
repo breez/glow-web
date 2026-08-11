@@ -339,15 +339,18 @@ function showWebAssemblyBlocked(): void {
   // Lockdown Mode off is the only route that actually works on native. Safari
   // does support per-site exceptions, so the web copy still points at those.
   const heading = isIos ? 'Turn off Lockdown Mode to use Glow' : 'Lockdown Mode is stopping Glow';
+  // The steps read as a trail to follow, so anything the user has to spot in
+  // iOS Settings is set in bold and worded exactly as the device labels it.
+  const ui = (label: string) => `<strong class="font-semibold">${label}</strong>`;
   const intro = isIos
-    ? 'Lockdown Mode is stopping Glow from running.'
-    : 'Lockdown Mode is stopping Glow from running. Add an exception for Glow in your browser settings, or open Glow in another browser.';
+    ? ''
+    : 'Add an exception for Glow in your browser settings, or open Glow in another browser.';
   const steps = isIos
     ? [
-        'Open Settings',
-        'Go to Privacy &amp; Security, then Lockdown Mode',
-        'Tap Turn Off Lockdown Mode',
-        'Confirm, and your iPhone restarts',
+        `Open ${ui('Settings')}`,
+        `Go to ${ui('Privacy &amp; Security')}, then ${ui('Lockdown Mode')}`,
+        `Tap ${ui('Turn Off Lockdown Mode')}`,
+        `Confirm with ${ui('Turn Off &amp; Restart')}`,
       ]
     : [];
 
@@ -358,7 +361,7 @@ function showWebAssemblyBlocked(): void {
           <div class="flex flex-col items-center gap-4">
             <img src="/assets/Glow_Logo.svg" alt="Glow" class="w-36 h-36 object-contain" />
             <h1 class="font-display text-2xl font-bold text-spark-text-primary text-center">${heading}</h1>
-            <p class="text-sm text-spark-text-secondary text-center">${intro}</p>
+            ${intro ? `<p class="text-sm text-spark-text-secondary text-center">${intro}</p>` : ''}
           </div>
           ${steps.length ? `
           <ol class="bg-spark-elevated border border-spark-border rounded-2xl p-5 space-y-4">
