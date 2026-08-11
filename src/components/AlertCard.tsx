@@ -50,13 +50,6 @@ const variantStyles: Record<AlertVariant, {
   },
 };
 
-const defaultIcons: Record<AlertVariant, ReactNode> = {
-  info: <InfoIcon size="md" className="text-spark-electric" />,
-  warning: <WarningIcon size="md" className="text-spark-primary" />,
-  success: <CheckCircleIcon size="md" className="text-spark-success" />,
-  error: <ErrorIcon size="md" className="text-spark-primary" />,
-};
-
 export interface AlertCardProps {
   /** Visual style variant */
   variant: AlertVariant;
@@ -64,7 +57,11 @@ export interface AlertCardProps {
   title: string;
   /** Content displayed below the title */
   children: ReactNode;
-  /** Custom icon (optional, defaults based on variant) */
+  /**
+   * Opt-in badge beside the title. There is no per-variant default: the
+   * title already names the condition, so a generic glyph only repeated it
+   * and pushed the body into a narrower column.
+   */
   icon?: ReactNode;
   /** Additional CSS classes */
   className?: string;
@@ -78,19 +75,18 @@ export const AlertCard: React.FC<AlertCardProps> = ({
   className = '',
 }) => {
   const styles = variantStyles[variant];
-  const displayIcon = icon ?? defaultIcons[variant];
 
   return (
     <div className={`border rounded-2xl p-4 ${styles.container} ${className}`}>
       <div className="flex items-center gap-3 mb-2">
-        {displayIcon && (
+        {icon && (
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${styles.iconBg}`}>
-            {displayIcon}
+            {icon}
           </div>
         )}
         <h3 className={`font-display font-bold ${styles.title}`}>{title}</h3>
       </div>
-      <div className={`pl-[52px] ${styles.body}`}>
+      <div className={`${icon ? 'pl-[52px]' : ''} ${styles.body}`}>
         {children}
       </div>
     </div>

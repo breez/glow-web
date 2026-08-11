@@ -395,9 +395,9 @@ const AppContent: React.FC = () => {
             consumeFreshInstallSignal={sdk.consumeFreshInstallSignal}
             skipDetection={passkeySkipDetection}
             onRequestMigrationCheck={requestMigrationCheck}
-            onUseRecoveryPhrase={(mode) => {
+            onUseRecoveryPhrase={() => {
               setPasskeySdkConnected(false);
-              setUserScreen(mode === 'restore' ? 'restore' : 'generate');
+              setUserScreen('generate');
             }}
           />
         );
