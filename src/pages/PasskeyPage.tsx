@@ -37,7 +37,7 @@ import {
 
 import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs } from '@/services/logExport';
-import { friendlyPasskeyError } from '@/utils/passkeyErrorCopy';
+import { friendlyPasskeyError, isDeterministicFailureCopy } from '@/utils/passkeyErrorCopy';
 import { useLatest } from '../hooks/useLatest';
 
 /**
@@ -86,12 +86,11 @@ interface PasskeyPageProps {
    */
   onRequestMigrationCheck?: () => Promise<'proceed' | 'handled'>;
   /**
-   * Leaves the passkey flow for a seed phrase; the primary escape on
-   * ceremony failures. `'restore'` opens phrase entry for a returning
-   * user, whose passkey wallet has a phrase revealable from Settings ->
-   * Backup. `'create'` starts seed onboarding for a first-timer.
+   * Starts create-via-seed onboarding (new seed, phrase shown for
+   * backup); the primary escape on ceremony failures. Restoring an
+   * existing phrase stays reachable from the home screen.
    */
-  onUseRecoveryPhrase: (mode: 'restore' | 'create') => void;
+  onUseRecoveryPhrase: () => void;
 }
 
 // 5s under the OS's ~60s WebAuthn inactivity ceiling: anything past
@@ -940,11 +939,6 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     return () => { cancelled = true; };
   }, [phase, error, onWalletReadyRef]);
 
-  // A returning user is signing in to a wallet that already exists, so
-  // sending them to seed onboarding would hand them a fresh empty
-  // wallet and look like their funds are gone.
-  const handleUseRecoveryPhrase = () => onUseRecoveryPhrase(isNewUser ? 'create' : 'restore');
-
   /** Clear error to re-trigger the current phase's effect. */
   const handleRetry = () => {
     setError(null);
@@ -1220,7 +1214,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     if (error && phase === 'detecting' && errorKind === 'sign-in-cancelled') {
       return (
         <div className="max-w-xl mx-auto space-y-3">
-          <PrimaryButton className="w-full" onClick={handleUseRecoveryPhrase}>
+          <PrimaryButton className="w-full" onClick={onUseRecoveryPhrase}>
             Continue with Recovery Phrase
           </PrimaryButton>
           <SecondaryButton className="w-full" onClick={() => {
@@ -1283,7 +1277,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       const retryOnly = isWeb && immediateGetSupported !== true;
       return (
         <div className="max-w-xl mx-auto space-y-3">
-          <PrimaryButton className="w-full" onClick={handleUseRecoveryPhrase}>
+          <PrimaryButton className="w-full" onClick={onUseRecoveryPhrase}>
             Continue with Recovery Phrase
           </PrimaryButton>
           <SecondaryButton className="w-full" onClick={() => {
@@ -1291,7 +1285,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             setErrorKind(null);
             setPhase('aasa-checking');
           }}>
-            Try Again
+            {isDeterministicFailureCopy(error) ? 'Try Another Provider' : 'Try Again'}
           </SecondaryButton>
           {isWeb && (
             <SecondaryButton className="w-full" onClick={() => {
@@ -1328,14 +1322,14 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
       const retryOnly = !Capacitor.isNativePlatform() && immediateGetSupported !== true;
       return (
         <div className="max-w-xl mx-auto space-y-3">
-          <PrimaryButton className="w-full" onClick={handleUseRecoveryPhrase}>
+          <PrimaryButton className="w-full" onClick={onUseRecoveryPhrase}>
             Continue with Recovery Phrase
           </PrimaryButton>
           <SecondaryButton className="w-full" onClick={() => {
             setError(null);
             setPhase('aasa-checking');
           }}>
-            Try Again
+            {isDeterministicFailureCopy(error) ? 'Try Another Provider' : 'Try Again'}
           </SecondaryButton>
           {!retryOnly && (
             <SecondaryButton className="w-full" onClick={() => {
@@ -1378,15 +1372,20 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
     if (error && ['creating', 'new-storing', 'connecting'].includes(phase)) {
       return (
         <div className="max-w-xl mx-auto space-y-3">
-          <PrimaryButton className="w-full" onClick={handleUseRecoveryPhrase}>
+          <PrimaryButton className="w-full" onClick={onUseRecoveryPhrase}>
             Continue with Recovery Phrase
           </PrimaryButton>
           <SecondaryButton className="w-full" onClick={handleRetry}>
-            Retry
+            {isDeterministicFailureCopy(error) ? 'Try Another Provider' : 'Retry'}
           </SecondaryButton>
-          <SecondaryButton className="w-full" onClick={handleErrorBack}>
-            Go Back
-          </SecondaryButton>
+          {/* Dropped on a deterministic failure: it would only offer the
+              label picker, which cannot fix a provider that has no PRF.
+              The header back arrow still leaves the flow. */}
+          {!isDeterministicFailureCopy(error) && (
+            <SecondaryButton className="w-full" onClick={handleErrorBack}>
+              Go Back
+            </SecondaryButton>
+          )}
         </div>
       );
     }
@@ -1473,7 +1472,11 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             <AlertCard
               variant="error"
               title={
-                errorKind === 'already-exists'
+                // Ahead of the phase branches: a deterministic failure reads
+                // the same whether it surfaced on connect or on sign-in.
+                isDeterministicFailureCopy(error)
+                  ? 'Passkey Not Supported'
+                : errorKind === 'already-exists'
                   ? 'Passkey already exists'
                   : errorKind === 'sign-in-cancelled'
                     ? 'Sign-in cancelled'

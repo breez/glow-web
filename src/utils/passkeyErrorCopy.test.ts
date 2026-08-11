@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { friendlyPasskeyError } from './passkeyErrorCopy';
+import { friendlyPasskeyError, isDeterministicFailureCopy } from './passkeyErrorCopy';
+
+const DETERMINISTIC = 'Please try again with another password provider, or continue with a recovery phrase.';
 
 const withCode = (message: string, code: string): Error => {
   const e = new Error(message);
@@ -19,7 +21,7 @@ describe('friendlyPasskeyError', () => {
 
   it('maps the GPM loop to deterministic recovery-phrase copy on GrapheneOS', () => {
     expect(friendlyPasskeyError(withCode(GPM_LOOP, 'GENERIC_ERROR'), { isGrapheneOs: true })).toBe(
-      "Passkeys aren't working with Google Password Manager on this device. Try again with another password provider, or continue with your recovery phrase.",
+      DETERMINISTIC,
     );
   });
 
@@ -29,10 +31,8 @@ describe('friendlyPasskeyError', () => {
     ).toBe('The passkey prompt timed out. Please try again.');
   });
 
-  it('maps PRF_NOT_SUPPORTED with provider-switch advice', () => {
-    expect(friendlyPasskeyError(withCode('nope', 'PRF_NOT_SUPPORTED'))).toMatch(
-      /different password manager/,
-    );
+  it('maps PRF_NOT_SUPPORTED to the same deterministic copy as the GPM loop', () => {
+    expect(friendlyPasskeyError(withCode('nope', 'PRF_NOT_SUPPORTED'))).toBe(DETERMINISTIC);
   });
 
   it('maps a bare AUTHENTICATION_FAILED code regardless of message', () => {
@@ -52,5 +52,34 @@ describe('friendlyPasskeyError', () => {
   it('returns null for unknown errors so callers keep their fallback copy', () => {
     expect(friendlyPasskeyError(new Error('some novel failure'))).toBeNull();
     expect(friendlyPasskeyError('not even an Error')).toBeNull();
+  });
+});
+
+describe('isDeterministicFailureCopy', () => {
+  // Hiding the retry action rests on these two, so they are asserted
+  // through friendlyPasskeyError rather than against pasted strings: a
+  // copy edit that misses one side fails here instead of shipping a
+  // footer whose only remaining action is the recovery phrase.
+  it('flags the GPM loop on GrapheneOS', () => {
+    const copy = friendlyPasskeyError(withCode(GPM_LOOP, 'GENERIC_ERROR'), { isGrapheneOs: true });
+    expect(isDeterministicFailureCopy(copy)).toBe(true);
+  });
+
+  it('flags PRF_NOT_SUPPORTED', () => {
+    expect(isDeterministicFailureCopy(friendlyPasskeyError(withCode('nope', 'PRF_NOT_SUPPORTED')))).toBe(true);
+  });
+
+  it('leaves retryable failures alone', () => {
+    // The same GPM error off GrapheneOS is the retryable lock-and-unlock case.
+    expect(isDeterministicFailureCopy(friendlyPasskeyError(withCode(GPM_LOOP, 'GENERIC_ERROR')))).toBe(false);
+    expect(isDeterministicFailureCopy(friendlyPasskeyError(new Error('The operation timed out.')))).toBe(false);
+    expect(isDeterministicFailureCopy(friendlyPasskeyError(new TypeError('Failed to fetch')))).toBe(false);
+    expect(isDeterministicFailureCopy(friendlyPasskeyError(withCode('x', 'PRF_EVALUATION_FAILED')))).toBe(false);
+  });
+
+  it('treats an unmatched error and a missing message as retryable', () => {
+    expect(isDeterministicFailureCopy(friendlyPasskeyError(new Error('some novel failure')))).toBe(false);
+    expect(isDeterministicFailureCopy(null)).toBe(false);
+    expect(isDeterministicFailureCopy('Could not sign in with your passkey. Please try again.')).toBe(false);
   });
 });
