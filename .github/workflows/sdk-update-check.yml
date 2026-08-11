@@ -42,45 +42,26 @@ jobs:
 
           echo "Current: $CURRENT, Latest: $LATEST"
 
-          if [[ "$CURRENT" == file:* ]]; then
-            # Vendored tarball builds are stamped 0.1.0, so compare by source
-            # commit instead: vendor/SOURCE_COMMIT holds the spark-sdk sha the
-            # tarball was built from (update it on every rebuild). Release tags
-            # match npm versions, so ancestry tells us if the build is newer.
-            SRC=$(cat vendor/SOURCE_COMMIT 2>/dev/null || true)
-            if [ -n "$SRC" ]; then
-              STATUS=$(gh api "repos/breez/spark-sdk/compare/$LATEST...$SRC" --jq .status 2>/dev/null || echo unknown)
-              echo "Vendored source $SRC vs tag $LATEST: $STATUS"
-              if [ "$STATUS" = "ahead" ] || [ "$STATUS" = "identical" ]; then
-                echo "Vendored build already contains $LATEST."; exit 0
-              fi
-            fi
+          # Strip range operators (^, ~, >=, etc.) and pre-release tags
+          # so ^0.11.0-dev4 becomes 0.11.0 for a clean comparison
+          CURRENT_BASE=$(echo "$CURRENT" | sed 's/^[^0-9]*//' | sed 's/-.*//')
 
-            BODY="\`package.json\` points at a vendored tarball (\`$CURRENT\`) and npm has a stable release \`$LATEST\` that the vendored build does not contain (source commit: \`${SRC:-unknown}\`).
-
-          If \`$LATEST\` contains the vendored fixes, point \`@breeztech/breez-sdk-spark\` back to it, delete the tarball, run \`npm install\`, then fix any type errors (\`npx tsc --noEmit\`) and test failures (\`npm test\`)."
-          else
-            # Strip range operators (^, ~, >=, etc.) and pre-release tags
-            # so ^0.11.0-dev4 becomes 0.11.0 for a clean comparison
-            CURRENT_BASE=$(echo "$CURRENT" | sed 's/^[^0-9]*//' | sed 's/-.*//')
-
-            if npx semver "$LATEST" -r ">$CURRENT_BASE" > /dev/null 2>&1; then
-              echo "New version available: $CURRENT_BASE → $LATEST"
-            elif [ "${{ inputs.include-prerelease-upgrades }}" = "true" ]; then
-              CURRENT_VER=$(echo "$CURRENT" | sed 's/^[^0-9]*//')
-              if [ "$CURRENT_VER" != "$CURRENT_BASE" ] && npx semver "$LATEST" -r ">=$CURRENT_BASE" > /dev/null 2>&1; then
-                echo "Stable release available for current pre-release: $CURRENT_VER → $LATEST"
-              else
-                echo "Up to date."; exit 0
-              fi
+          if npx semver "$LATEST" -r ">$CURRENT_BASE" > /dev/null 2>&1; then
+            echo "New version available: $CURRENT_BASE → $LATEST"
+          elif [ "${{ inputs.include-prerelease-upgrades }}" = "true" ]; then
+            CURRENT_VER=$(echo "$CURRENT" | sed 's/^[^0-9]*//')
+            if [ "$CURRENT_VER" != "$CURRENT_BASE" ] && npx semver "$LATEST" -r ">=$CURRENT_BASE" > /dev/null 2>&1; then
+              echo "Stable release available for current pre-release: $CURRENT_VER → $LATEST"
             else
               echo "Up to date."; exit 0
             fi
+          else
+            echo "Up to date."; exit 0
+          fi
 
-            BODY="New stable release: \`$CURRENT\` → \`$LATEST\`
+          BODY="New stable release: \`$CURRENT\` → \`$LATEST\`
 
           Update \`@breeztech/breez-sdk-spark\` in \`package.json\` to \`$LATEST\`, run \`npm install\`, then fix any type errors (\`npx tsc --noEmit\`) and test failures (\`npm test\`)."
-          fi
 
           # Dedup by version across open AND closed issues: a closed issue for
           # the same version was already seen and handled or dismissed.
