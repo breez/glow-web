@@ -797,25 +797,29 @@ video::-webkit-media-controls-panel {
    TOAST NOTIFICATIONS
    ============================================ */
 
+/* The container is what anchors the stack: each toast is an in-flow flex
+   item, so a second toast lands under the first instead of on top of it.
+   Positioning the toasts themselves would take them out of flow and
+   collapse the column to a single point.
+
+   Transparent to pointer events across its whole band, which spans the
+   viewport width; only the toast cards inside take taps. */
 .toast-container {
   position: fixed;
-  left: 16px;
-  right: 16px;
   z-index: 99999;
+  left: env(safe-area-inset-left, 1em);
+  right: env(safe-area-inset-right, 1em);
+  top: calc(1em + env(safe-area-inset-top, 0em));
   display: flex;
   flex-direction: column;
   gap: 12px;
+  pointer-events: none;
 }
 
 .toast-notification {
   pointer-events: none;
-  display:flex;
-  position: fixed;
+  display: flex;
   justify-content: center;
-  z-index: 50;
-  left: env(safe-area-inset-left, 1em);
-  right: env(safe-area-inset-right, 1em);
-  top: calc(1em + env(safe-area-inset-top, 0em));
 }
 
 /* ============================================

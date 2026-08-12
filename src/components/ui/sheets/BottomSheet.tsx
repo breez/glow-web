@@ -477,9 +477,10 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       // Drop the library's decorative styles (white card, grey pills);
       // the surface look comes from our classes below.
       unstyled
-      // Keep sheets in the app's existing z order (confirm dialogs and
-      // toasts render at z-50 in the same stacking context); the
-      // library would otherwise default to 9999.
+      // Keep sheets in the app's existing z order (confirm dialogs render
+      // at z-50 in the same stacking context); the library would otherwise
+      // default to 9999. Toasts deliberately sit above every sheet, in
+      // their own stacking context at 99999.
       //
       // Constrain the library's position:fixed root to the app content
       // column (#content-root is max-w-4xl) and center it, so on wide web
