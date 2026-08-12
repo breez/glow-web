@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "rm -rf node_modules/@breeztech && npm install",
+  "installCommand": "npm ci",
   "headers": [
     {
       "source": "/(.*)",
