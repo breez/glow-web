@@ -4,7 +4,11 @@ import {
   getMigrationCounterpartCredentialIdBytes,
   clearMigrationCredentialPairs,
   bytesToBase64,
+  getPasskeyRpId,
+  setPasskeyRpId,
+  resetPasskeyMigrationState,
 } from './passkeyService';
+import { LEGACY_RP_ID } from './passkeyPrfProvider';
 
 const LEGACY = 'legacy.example';
 const SHARED = 'shared.example';
@@ -76,5 +80,27 @@ describe('migration credential pairs', () => {
     clearMigrationCredentialPairs();
     setActive(legacyA, LEGACY);
     expect(counterpart(SHARED)).toBeNull();
+  });
+});
+
+describe('passkey RP pin', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('pins the legacy RP on a device that has no pin yet', () => {
+    setPasskeyRpId(LEGACY_RP_ID);
+    expect(getPasskeyRpId()).toBe(LEGACY_RP_ID);
+  });
+
+  // The route back is how stranded funds get recovered. Keep it open.
+  it('lets a migrated device pin the legacy RP again', () => {
+    setPasskeyRpId(SHARED);
+    setPasskeyRpId(LEGACY_RP_ID);
+    expect(getPasskeyRpId()).toBe(LEGACY_RP_ID);
+  });
+
+  it('still rewinds on the dev migration reset', () => {
+    setPasskeyRpId(SHARED);
+    resetPasskeyMigrationState();
+    expect(getPasskeyRpId()).toBe(LEGACY_RP_ID);
   });
 });
