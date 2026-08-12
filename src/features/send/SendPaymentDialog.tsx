@@ -41,11 +41,14 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
 
   // Publish sheet visibility so the SDK event handler knows whether this
   // sheet is still around to report the payment outcome (it is dismissible
-  // mid-send). Mount/unmount, because the parent keys a fresh mount per open.
+  // mid-send). Keyed on `isOpen`, not mount: WalletPage pre-mounts this
+  // dialog closed, so a mount-scoped flag would read as open for the whole
+  // session and suppress the outcome report it exists to trigger.
   useEffect(() => {
+    if (!isOpen) return;
     setSendSheetOpen(true);
     return () => setSendSheetOpen(false);
-  }, []);
+  }, [isOpen]);
 
   // Parent (WalletPage) bumps `sendDialogSession` on every open and passes
   // it as `key`, so each open is a fresh mount: hooks re-init, useState
