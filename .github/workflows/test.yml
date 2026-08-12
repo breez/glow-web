@@ -87,13 +87,13 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
-    # Only run E2E tests on releases, manual dispatch, explicit run-e2e label,
-    # or SDK upgrade PRs (matched by title: the SDK is what E2E exercises).
+    # Releases, manual dispatch, or the explicit run-e2e label. A PR title
+    # used to start this too, but titles are set by whoever opens the PR,
+    # including automation, so runs began without anyone choosing to.
     if: >-
       github.event_name == 'release' ||
       github.event_name == 'workflow_dispatch' ||
-      contains(github.event.pull_request.labels.*.name, 'run-e2e') ||
-      contains(github.event.pull_request.title, 'breez-sdk-spark')
+      contains(github.event.pull_request.labels.*.name, 'run-e2e')
     env:
       RUN_FULL_E2E: "${{ ((github.event_name == 'release') || (github.event_name == 'workflow_dispatch' && inputs.run_full_e2e) || contains(github.event.pull_request.labels.*.name, 'run-full-e2e')) && '1' || '' }}"
       HAS_TEST_SECRETS: "${{ secrets.TEST_WALLET_A_MNEMONIC != '' && '1' || '' }}"
