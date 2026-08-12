@@ -974,8 +974,16 @@ export function getPasskeyRpId(): string | null {
   return localStorage.getItem(PASSKEY_RP_ID_KEY);
 }
 
-/** Persist the RP ID used for this device's passkey. */
+/**
+ * Persist the RP ID used for this device's passkey. A move back to the legacy
+ * ID is logged, never refused: recovering funds a migration left behind means
+ * signing in on the old passkey, which pins the legacy ID here.
+ */
 export function setPasskeyRpId(rpId: string): void {
+  const current = getPasskeyRpId();
+  if (rpId === LEGACY_RP_ID && current !== null && current !== LEGACY_RP_ID) {
+    logger.warn(LogCategory.AUTH, 'Passkey RP pinned back to the legacy ID', { current });
+  }
   localStorage.setItem(PASSKEY_RP_ID_KEY, rpId);
 }
 

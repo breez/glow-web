@@ -45,6 +45,12 @@ import {
 } from '../services/passkeyService';
 import { LEGACY_RP_ID, SHARED_RP_ID, rpId as defaultRpId } from '../services/passkeyPrfProvider';
 import { secureStorage, deviceOnlyStorage, SecureStorageError, resetSecureStorageInit } from '../services/secureStorage';
+import {
+  saveMnemonic,
+  getSavedMnemonic,
+  clearMnemonic,
+  migrateLegacyMnemonicIfNeeded,
+} from '../services/legacyMnemonicMigration';
 import { isSendSheetOpen } from '../features/send/sendSheetVisibility';
 import { clearPin, isAppLockSupported } from '../services/appLock';
 
@@ -91,41 +97,6 @@ async function initSdkLogging() {
     );
   } catch {
     /* SDK unavailable; skip the log bridge. */
-  }
-}
-
-// ============================================
-// Mnemonic storage (localStorage)
-// ============================================
-
-const MNEMONIC_KEY = 'walletMnemonic';
-const saveMnemonic = (m: string) => localStorage.setItem(MNEMONIC_KEY, m);
-const getSavedMnemonic = () => localStorage.getItem(MNEMONIC_KEY);
-const clearMnemonic = () => localStorage.removeItem(MNEMONIC_KEY);
-
-// ============================================
-// Legacy mnemonic → secure storage migration
-// ============================================
-
-/**
- * On native, copy any plaintext localStorage mnemonic into the
- * device-only secure-storage tier (NOT the biometric-bound tier:
- * these are pre-0.0.3 non-passkey users who never opted into
- * biometrics) and wipe the plaintext copy. Idempotent and non-fatal:
- * retried every startup until done, legacy path keeps working in the
- * meantime.
- */
-async function migrateLegacyMnemonicIfNeeded(): Promise<void> {
-  if (!deviceOnlyStorage.isSupported()) return;
-  const legacy = getSavedMnemonic();
-  if (!legacy) return;
-  try {
-    if (await deviceOnlyStorage.hasStoredSeed()) return;
-    await deviceOnlyStorage.storeSeed({ type: 'mnemonic', mnemonic: legacy });
-    clearMnemonic();
-    logger.info(LogCategory.AUTH, 'Migrated plaintext mnemonic into device-only secure storage');
-  } catch {
-    // deviceOnlyStorage logged the typed error; we'll retry next startup.
   }
 }
 
