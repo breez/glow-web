@@ -225,7 +225,12 @@ export function pinAttemptMessage(result: PinVerifyResult): string {
 export async function getAutoLockSeconds(): Promise<number> {
   const { value } = await Preferences.get({ key: AUTO_LOCK_KEY });
   const parsed = value == null ? NaN : parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : DEFAULT_AUTO_LOCK_SECONDS;
+  const seconds = Number.isFinite(parsed) ? parsed : DEFAULT_AUTO_LOCK_SECONDS;
+  // Backfill the mirror for installs that chose a timeout before the
+  // mirror existed (and self-heal an evicted one). Every lock decision
+  // reads the mirror, so a missing one silently means 2 minutes.
+  mirrorSet(AUTO_LOCK_MIRROR_KEY, String(seconds));
+  return seconds;
 }
 
 /** Mirror-backed synchronous read for the foreground-return decision. */
@@ -247,6 +252,41 @@ export function formatAutoLockOption(seconds: number): string {
   if (minutes < 60) return minutes === 1 ? '1 minute' : `${minutes} minutes`;
   const hours = minutes / 60;
   return hours === 1 ? '1 hour' : `${hours} hours`;
+}
+
+// ============================================
+// Idle-lock suppression
+// ============================================
+
+/**
+ * Held on by screens meant to be looked at rather than touched: a
+ * receive QR waiting to be scanned, a camera being aimed at someone
+ * else's code. Only the foreground idle timer honours it, so
+ * backgrounding and cold start still lock as usual. Module-level rather
+ * than context so the lock hook reads it without a re-render coupling,
+ * the same shape as `features/send/sendSheetVisibility.ts`.
+ *
+ * A counter, not a flag: the scanner opens over the send sheet, so
+ * holders overlap, and the inner one's release would otherwise cancel
+ * the outer one's hold.
+ */
+let idleLockHolds = 0;
+
+/** Suppress the foreground idle lock until the returned release runs.
+ *  Releasing twice is a no-op, so a double cleanup cannot drop another
+ *  holder's suppression. */
+export function holdIdleLock(): () => void {
+  idleLockHolds += 1;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    idleLockHolds -= 1;
+  };
+}
+
+export function isIdleLockSuppressed(): boolean {
+  return idleLockHolds > 0;
 }
 
 // ============================================

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   BottomSheetContainer,
   BottomSheetCard,
@@ -17,6 +17,7 @@ import { type BuyBitcoinProvider } from '../../services/settings';
 import { useToast } from '../../contexts/ToastContext';
 import { formatQuickAmount } from '../../utils/tokenFormatting';
 import { useBuyBitcoin } from './hooks/useBuyBitcoin';
+import { holdIdleLock } from '@/services/appLock';
 
 const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.ReactNode; loadingIcon: React.ReactNode }> = {
   moonpay: {
@@ -75,6 +76,14 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
     onMobileRedirectComplete: onClose,
     onInvoicePaid: onClose,
   });
+
+  // The Cash App code is scanned by another device, so nobody touches
+  // this screen while it is up. Scoped to the QR step: picking a
+  // provider and entering an amount are both tapped through.
+  useEffect(() => {
+    if (!isOpen || buy.step !== 'qr') return;
+    return holdIdleLock();
+  }, [isOpen, buy.step]);
 
   const handleSelect = async (provider: BuyBitcoinProvider) => {
     await buy.selectProvider(provider);

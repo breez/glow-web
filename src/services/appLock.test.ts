@@ -137,6 +137,18 @@ describe('appLock auto-lock timeout', () => {
     expect(appLock.getAutoLockSecondsSync()).toBe(600);
   });
 
+  it('heals an evicted mirror on the next async read', async () => {
+    const appLock = await loadAppLock(true);
+    await appLock.setAutoLockSeconds(3600);
+    // WebView storage eviction, or an install that chose a timeout
+    // before the mirror existed. The sync read silently means 2 minutes
+    // until something reads through to Preferences.
+    localStorage.clear();
+    expect(appLock.getAutoLockSecondsSync()).toBe(120);
+    await appLock.getAutoLockSeconds();
+    expect(appLock.getAutoLockSecondsSync()).toBe(3600);
+  });
+
   it('formats every dropdown option', async () => {
     const appLock = await loadAppLock(true);
     const labels = appLock.AUTO_LOCK_OPTIONS_SECONDS.map(appLock.formatAutoLockOption);
@@ -144,6 +156,33 @@ describe('appLock auto-lock timeout', () => {
       'Immediately', '30 seconds', '2 minutes', '5 minutes',
       '10 minutes', '30 minutes', '1 hour',
     ]);
+  });
+});
+
+describe('appLock idle-lock suppression', () => {
+  it('stays suppressed until every overlapping holder releases', async () => {
+    const appLock = await loadAppLock(true);
+    expect(appLock.isIdleLockSuppressed()).toBe(false);
+
+    // The scanner opening over the send sheet: the inner release must
+    // not cancel the outer hold.
+    const send = appLock.holdIdleLock();
+    const scanner = appLock.holdIdleLock();
+    scanner();
+    expect(appLock.isIdleLockSuppressed()).toBe(true);
+    send();
+    expect(appLock.isIdleLockSuppressed()).toBe(false);
+  });
+
+  it('ignores a second release from the same holder', async () => {
+    const appLock = await loadAppLock(true);
+    const receive = appLock.holdIdleLock();
+    const scanner = appLock.holdIdleLock();
+    receive();
+    receive();
+    expect(appLock.isIdleLockSuppressed()).toBe(true);
+    scanner();
+    expect(appLock.isIdleLockSuppressed()).toBe(false);
   });
 });
 

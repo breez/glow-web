@@ -11,10 +11,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   clearPin,
+  getAutoLockSeconds,
   getAutoLockSecondsSync,
   isAppLockSupported,
   isBiometricGateEnabled,
   isBiometricGateEnabledSync,
+  isIdleLockSuppressed,
   isPinEnabled,
   isPinEnabledSync,
   verifyPin,
@@ -62,7 +64,13 @@ export function useAppLock(): AppLockState {
     if (!isAppLockSupported()) return;
     let cancelled = false;
     void (async () => {
-      const [pin, gate] = await Promise.all([isPinEnabled(), isBiometricGateEnabled()]);
+      const [pin, gate] = await Promise.all([
+        isPinEnabled(),
+        isBiometricGateEnabled(),
+        // Read through to heal a stale or evicted auto-lock mirror
+        // before the idle timer arms against it.
+        getAutoLockSeconds(),
+      ]);
       if (cancelled) return;
       if (!pin) {
         setLocked(false);
@@ -139,6 +147,14 @@ export function useAppLock(): AppLockState {
       // takes the shortest real option instead.
       const seconds = getAutoLockSecondsSync() || 30;
       timer = setTimeout(() => {
+        // A suppressing screen is up (a receive QR mid-scan). Re-arm
+        // rather than lock, so the lock lands on the first expiry after
+        // it goes away instead of waiting for the user to touch
+        // something.
+        if (isIdleLockSuppressed()) {
+          arm();
+          return;
+        }
         setLocked(true);
         setBiometricGate(isBiometricGateEnabledSync());
       }, seconds * 1000);
