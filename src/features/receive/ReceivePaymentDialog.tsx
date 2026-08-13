@@ -24,6 +24,7 @@ import BitcoinAddressDisplay from './BitcoinAddressDisplay';
 import LightningAddressDisplay from './LightningAddressDisplay';
 import AmountPanel from './AmountPanel';
 import { ArrowDownIcon, LightningBoltIcon } from '../../components/Icons';
+import { setIdleLockSuppressed } from '@/services/appLock';
 
 interface ReceivePaymentDialogProps {
   isOpen: boolean;
@@ -90,6 +91,16 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
   // on the next frame while the sheet is already sliding up. Sticky —
   // once true, stays true for the session, so subsequent opens render
   // content immediately (no placeholder flash).
+  // Hold the foreground idle lock off while the sheet is up: a QR
+  // waiting to be scanned is exactly the case where nobody touches the
+  // screen. Keyed to `isOpen`, not to mount, because the sheet stays in
+  // the React tree across opens (see the deferral note below).
+  useEffect(() => {
+    if (!isOpen) return;
+    setIdleLockSuppressed(true);
+    return () => setIdleLockSuppressed(false);
+  }, [isOpen]);
+
   const [isContentReady, setIsContentReady] = useState(false);
   useEffect(() => {
     if (!isOpen || isContentReady) return;
