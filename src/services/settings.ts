@@ -40,6 +40,7 @@ export const ALL_BUY_PROVIDERS: BuyBitcoinProvider[] = ['moonpay', 'cashApp'];
 
 const SETTINGS_KEY = 'user_settings_v1';
 const FIAT_SETTINGS_KEY = 'fiat_settings_v1';
+const ACTIVE_FIAT_KEY = 'fiat_active_currency';
 const BUY_PROVIDERS_KEY = 'buy_providers_v1';
 
 const defaultSettings: UserSettings = {
@@ -152,6 +153,23 @@ export function getFiatSettings(): FiatSettings {
 
 export function saveFiatSettings(settings: FiatSettings): void {
   setCachedItem(FIAT_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+/**
+ * The fiat currency the balance header is showing: the one the user last
+ * cycled to, else the top of their list. Other fiat surfaces read this so
+ * they denominate in the same currency the balance does.
+ */
+export function getDisplayFiatCurrency(): string {
+  const { selectedCurrencies } = getFiatSettings();
+  const active = getCachedItem(ACTIVE_FIAT_KEY);
+  return active && selectedCurrencies.includes(active)
+    ? active
+    : (selectedCurrencies[0] ?? 'USD');
+}
+
+export function setDisplayFiatCurrency(currencyId: string): void {
+  setCachedItem(ACTIVE_FIAT_KEY, currencyId);
 }
 
 // Stable Balance disclaimer acceptance (one-time)
