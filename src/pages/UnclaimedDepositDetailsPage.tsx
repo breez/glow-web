@@ -3,7 +3,8 @@ import { useWallet } from '../contexts/WalletContext';
 import type { DepositInfo, MaxFee } from '@breeztech/breez-sdk-spark';
 import { BottomSheetContainer, BottomSheetCard, DialogHeader, PrimaryButton, SecondaryButton, PaymentInfoCard, CollapsibleCodeField } from '../components/ui';
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
-import { SpinnerIcon, WarningIcon } from '../components/Icons';
+import { SpinnerIcon } from '../components/Icons';
+import { AlertCard } from '../components/AlertCard';
 import { rejectDeposit, removeRejectedDeposit } from '../services/depositState';
 import { explorerTxUrl } from '../utils/explorer';
 import { logger, LogCategory } from '@/services/logger';
@@ -157,18 +158,10 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
 
           {/* Error message for failed automatic claim (non-fee error) */}
           {claimError && (
-            <div className="bg-spark-warn-surface border border-spark-warn-border rounded-2xl p-4">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-spark-primary/20 flex items-center justify-center shrink-0">
-                  <WarningIcon size="md" className="text-spark-primary" />
-                </div>
-                <h3 className="font-display font-bold text-spark-warn-title">Claim Failed</h3>
-              </div>
-              <div className="pl-[52px]">
-                <p className="text-spark-warn-text text-sm">{claimError}</p>
-                <p className="text-spark-primary text-sm mt-2">You can reject to process a refund instead.</p>
-              </div>
-            </div>
+            <AlertCard variant="warning" title="Claim Failed">
+              <p className="text-sm">{claimError}</p>
+              <p className="text-spark-primary text-sm mt-2">You can reject to process a refund instead.</p>
+            </AlertCard>
           )}
 
           {/* Action Buttons - Approve/Reject for fee exceeded, hide when claim error shown */}
