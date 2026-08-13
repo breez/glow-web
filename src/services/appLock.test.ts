@@ -137,6 +137,18 @@ describe('appLock auto-lock timeout', () => {
     expect(appLock.getAutoLockSecondsSync()).toBe(600);
   });
 
+  it('heals an evicted mirror on the next async read', async () => {
+    const appLock = await loadAppLock(true);
+    await appLock.setAutoLockSeconds(3600);
+    // WebView storage eviction, or an install that chose a timeout
+    // before the mirror existed. The sync read silently means 2 minutes
+    // until something reads through to Preferences.
+    localStorage.clear();
+    expect(appLock.getAutoLockSecondsSync()).toBe(120);
+    await appLock.getAutoLockSeconds();
+    expect(appLock.getAutoLockSecondsSync()).toBe(3600);
+  });
+
   it('formats every dropdown option', async () => {
     const appLock = await loadAppLock(true);
     const labels = appLock.AUTO_LOCK_OPTIONS_SECONDS.map(appLock.formatAutoLockOption);

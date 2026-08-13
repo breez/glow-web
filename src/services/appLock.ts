@@ -225,7 +225,12 @@ export function pinAttemptMessage(result: PinVerifyResult): string {
 export async function getAutoLockSeconds(): Promise<number> {
   const { value } = await Preferences.get({ key: AUTO_LOCK_KEY });
   const parsed = value == null ? NaN : parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : DEFAULT_AUTO_LOCK_SECONDS;
+  const seconds = Number.isFinite(parsed) ? parsed : DEFAULT_AUTO_LOCK_SECONDS;
+  // Backfill the mirror for installs that chose a timeout before the
+  // mirror existed (and self-heal an evicted one). Every lock decision
+  // reads the mirror, so a missing one silently means 2 minutes.
+  mirrorSet(AUTO_LOCK_MIRROR_KEY, String(seconds));
+  return seconds;
 }
 
 /** Mirror-backed synchronous read for the foreground-return decision. */

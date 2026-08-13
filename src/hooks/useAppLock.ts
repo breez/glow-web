@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   clearPin,
+  getAutoLockSeconds,
   getAutoLockSecondsSync,
   isAppLockSupported,
   isBiometricGateEnabled,
@@ -62,7 +63,13 @@ export function useAppLock(): AppLockState {
     if (!isAppLockSupported()) return;
     let cancelled = false;
     void (async () => {
-      const [pin, gate] = await Promise.all([isPinEnabled(), isBiometricGateEnabled()]);
+      const [pin, gate] = await Promise.all([
+        isPinEnabled(),
+        isBiometricGateEnabled(),
+        // Read through to heal a stale or evicted auto-lock mirror
+        // before the idle timer arms against it.
+        getAutoLockSeconds(),
+      ]);
       if (cancelled) return;
       if (!pin) {
         setLocked(false);
