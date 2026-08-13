@@ -20,6 +20,11 @@ describe('hasConversionInFlight', () => {
     expect(hasConversionInFlight([payment(NOW - 5, 'pending')], NOW)).toBe(true);
   });
 
+  it('still gates at the edge of the window', () => {
+    expect(hasConversionInFlight([payment(NOW - 29, 'pending')], NOW)).toBe(true);
+    expect(hasConversionInFlight([payment(NOW - 31, 'pending')], NOW)).toBe(false);
+  });
+
   it('ignores a pending status the SDK stranded (#367)', () => {
     expect(hasConversionInFlight([payment(NOW - 3600, 'pending')], NOW)).toBe(false);
   });

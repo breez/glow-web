@@ -4,9 +4,10 @@ import type { SdkEventHandler, SdkEventUnsubscribe } from '../hooks/useBreezSdk'
 
 /**
  * How long a `pending` conversion status is trusted to mean "in flight".
- * Matches the SDK's own deferred-conversion timeout.
+ * Matches the SDK's `DEFAULT_CONVERSION_TIMEOUT_SECS`, the longest one
+ * conversion attempt may take. Observed attempts settle in under 10s.
  */
-const PENDING_CONVERSION_MAX_AGE_SECS = 120;
+const PENDING_CONVERSION_MAX_AGE_SECS = 30;
 
 /**
  * Whether a conversion is in flight right now, so balance-dependent actions
