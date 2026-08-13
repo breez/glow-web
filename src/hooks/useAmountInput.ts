@@ -20,21 +20,21 @@ export interface FiatOverride {
 }
 
 /**
- * USD fiat override for amount inputs, built from live fiat data. Lets a
- * BTC-balance user type dollars: the amount is converted to sats client-side.
+ * Fiat override for amount inputs, built from live fiat data. Lets a
+ * BTC-balance user type a fiat amount: it is converted to sats client-side.
  *
- * Returns undefined while the USD rate hasn't loaded, so callers offer no
- * fiat entry that can't parse. Exception: `startInFiat` flows (cross-chain
+ * Returns undefined while that currency's rate hasn't loaded, so callers offer
+ * no fiat entry that can't parse. Exception: `startInFiat` flows (cross-chain
  * "Send USD") are USD-denominated by design and must not fall back to sats
  * entry, so they keep the config even before the rate arrives.
  */
-export function useUsdFiatOverride(startInFiat = false): FiatOverride | undefined {
+export function useFiatOverride(currencyId = 'USD', startInFiat = false): FiatOverride | undefined {
   const { fiatCurrencies, fiatRates } = useFiatData();
   return useMemo(() => {
-    const btcFiatRate = fiatRates.find(r => r.coin === 'USD')?.value ?? 0;
+    const btcFiatRate = fiatRates.find(r => r.coin === currencyId)?.value ?? 0;
     if (!startInFiat && btcFiatRate <= 0) return undefined;
-    return { config: buildFiatDisplayConfig('USD', fiatCurrencies), btcFiatRate, startInFiat };
-  }, [startInFiat, fiatCurrencies, fiatRates]);
+    return { config: buildFiatDisplayConfig(currencyId, fiatCurrencies), btcFiatRate, startInFiat };
+  }, [currencyId, startInFiat, fiatCurrencies, fiatRates]);
 }
 
 export interface UseAmountInputOptions {

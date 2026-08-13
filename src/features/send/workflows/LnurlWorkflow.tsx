@@ -12,7 +12,7 @@ import {
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
 import { SatAmount } from '../../../components/SatAmount';
 import { formatWithSpaces } from '../../../utils/formatNumber';
-import { useAmountInput, useUsdFiatOverride } from '../../../hooks/useAmountInput';
+import { useAmountInput, useFiatOverride } from '../../../hooks/useAmountInput';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
 import { useHasPendingConversion } from '../../../contexts/WalletContext';
 
@@ -30,7 +30,7 @@ interface LnurlWorkflowProps {
 const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, balanceSats, tokenBalance, onBack, onRun, onPrepare, onPay }) => {
   // USD as a secondary entry option on BTC sends (#253): starts in sats,
   // toggleable to USD, converted to sats client-side.
-  const fiatOverride = useUsdFiatOverride();
+  const fiatOverride = useFiatOverride();
   const input = useAmountInput({ balanceSats, tokenBalance, fiatOverride });
   const {
     amountInput: amount,

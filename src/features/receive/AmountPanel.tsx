@@ -15,7 +15,8 @@ import {
 } from '../../utils/tokenFormatting';
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
 import { SatAmount } from '../../components/SatAmount';
-import { useAmountInput } from '../../hooks/useAmountInput';
+import { useAmountInput, useFiatOverride } from '../../hooks/useAmountInput';
+import { getDisplayFiatCurrency } from '../../services/settings';
 import type { Sats } from '../../types/sats';
 import { dismissKeyboard } from '../../utils/keyboard';
 import { LIGHTNING_INVOICE_MIN_SATS, LIGHTNING_INVOICE_MAX_SATS } from '../../constants/receive';
@@ -53,7 +54,10 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   onClose,
   resetCount,
 }) => {
-  const input = useAmountInput();
+  // Fiat entry without a stable-balance token: the typed amount is converted to
+  // sats client-side (#356). Denominated in whatever currency the balance
+  // header is showing, including one the user cycled to by tapping it.
+  const input = useAmountInput({ fiatOverride: useFiatOverride(getDisplayFiatCurrency()) });
   const {
     amountInput: displayAmount,
     setAmount,
@@ -61,7 +65,6 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     resetAmount,
     isTokenMode,
     toggleDenomination,
-    isStableBalanceActive,
     tokenSymbol,
     config,
     btcFiatRate,
@@ -179,7 +182,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                 className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 pr-16 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus-within:border-spark-primary focus:outline-hidden transition-all resize-none"
                 data-testid="invoice-amount-input"
               />
-              {isStableBalanceActive && tokenSymbol && (
+              {tokenSymbol && (
                 <CurrencySwitcher
                   isTokenMode={isTokenMode}
                   tokenSymbol={tokenSymbol}

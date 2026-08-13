@@ -8,7 +8,7 @@ import {
   formatQuickAmount,
 } from '../../../utils/tokenFormatting';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
-import { useAmountInput, useUsdFiatOverride } from '../../../hooks/useAmountInput';
+import { useAmountInput, useFiatOverride } from '../../../hooks/useAmountInput';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
 import { useHasPendingConversion } from '../../../contexts/WalletContext';
 import { dismissKeyboard } from '../../../utils/keyboard';
@@ -41,7 +41,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
   // USD entry without a stable-balance token, funded from BTC. Cross-chain
   // ("Send USD", amountFirst) starts in USD; plain BTC sends start in sats
   // with USD as a toggleable secondary option (#253).
-  const fiatOverride = useUsdFiatOverride(amountFirst);
+  const fiatOverride = useFiatOverride('USD', amountFirst);
 
   const input = useAmountInput({ initialAmount: amount, balanceSats, tokenBalance, fiatOverride });
   const {
