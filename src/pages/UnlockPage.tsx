@@ -9,8 +9,8 @@
  * Presents a primary "Unlock with <biometry>" action and a secondary
  * "Erase and start over" escape that clears the stored seed and routes
  * back to welcome. A plain connect failure also lands here, so that
- * escape is confirm-gated: it is destructive and one tap away from a
- * user who is only offline.
+ * escape is gated on a confirm plus a device-owner prompt: it is
+ * destructive and one tap away from a user who is only offline.
  *
  * Layout mirrors `feat/password-encrypted-seed-storage`'s UnlockPage so
  * that when both native secure storage and the password vault coexist
@@ -21,7 +21,7 @@ import React, { useEffect, useState } from 'react';
 import { PrimaryButton, SecondaryButton, ConfirmDialog } from '../components/ui';
 import { FaceIdIcon, FingerprintIcon, PasskeyIcon } from '../components/Icons';
 import { AlertCard } from '../components/AlertCard';
-import { getBiometryInfo, BiometryInfo, secureStorage } from '../services/secureStorage';
+import { confirmDeviceOwner, getBiometryInfo, BiometryInfo, secureStorage } from '../services/secureStorage';
 import { isPasskeyMode } from '../services/passkeyService';
 
 interface UnlockPageProps {
@@ -132,7 +132,15 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
           ? "This deletes all Glow data stored on this device. You'll need your passkey to access your funds again."
           : "This deletes all Glow data stored on this device. Make sure you've saved your recovery phrase: you'll need it to access your funds again."}
         confirmLabel="Erase"
-        onConfirm={() => { setShowEraseConfirm(false); void onAbandon(); }}
+        // Device-owner prompt on top of the confirm, as on the lock
+        // screen. The dialog stays up on a cancelled prompt.
+        onConfirm={() => {
+          void confirmDeviceOwner('Erase all Glow data').then((confirmed) => {
+            if (!confirmed) return;
+            setShowEraseConfirm(false);
+            void onAbandon();
+          });
+        }}
         onCancel={() => setShowEraseConfirm(false)}
       />
     </div>

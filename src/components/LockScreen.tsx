@@ -7,15 +7,17 @@
  *
  * The lock covers every screen including Backup, and the PIN has no
  * reset, so the "Forgot your PIN?" escape is the only alternative to
- * reinstalling. It erases all local data, so it is confirm-gated.
+ * reinstalling. It erases all local data, so it is gated on a confirm
+ * plus a device-owner prompt.
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { PinEntry, PinScreenLayout } from './PinEntry';
-import { getBiometryInfo, BiometryKind } from '../services/secureStorage';
+import { confirmDeviceOwner, getBiometryInfo, BiometryKind } from '../services/secureStorage';
 import { useBackButton } from '../hooks/useBackButton';
 import { ConfirmDialog } from './ui';
 import { isPasskeyMode } from '@/services/passkeyService';
+import { pinAttemptMessage, type PinVerifyResult } from '@/services/appLock';
 
 interface LockScreenProps {
   biometricGate: boolean;
@@ -23,7 +25,7 @@ interface LockScreenProps {
    *  legacy vault unlock): concurrent BiometricPrompt calls cancel each
    *  other on Android, so the auto-fire waits until it clears. */
   suppressAutoBiometric?: boolean;
-  unlockWithPin: (pin: string) => Promise<boolean>;
+  unlockWithPin: (pin: string) => Promise<PinVerifyResult>;
   unlockWithBiometric: () => Promise<void>;
   /** Erase-everything escape for a forgotten PIN. The PIN is not
    *  recoverable and the lock covers the whole app (including Backup),
@@ -95,7 +97,10 @@ const LockScreen: React.FC<LockScreenProps> = ({
             }
           >
             <PinEntry
-              onSubmit={async (pin) => ((await unlockWithPin(pin)) ? null : 'Incorrect PIN')}
+              onSubmit={async (pin) => {
+                const result = await unlockWithPin(pin);
+                return result.ok ? null : pinAttemptMessage(result);
+              }}
               // Gate flag AND live availability, so a Face ID outage
               // (denied / locked out) never leaves a dead button.
               onBiometric={biometricGate && biometryKind ? () => { void tryBiometric(); } : undefined}
@@ -131,7 +136,16 @@ const LockScreen: React.FC<LockScreenProps> = ({
           ? "The PIN can't be recovered. The only way back in is to erase all Glow data on this device and sign in again with your passkey."
           : "The PIN can't be recovered. The only way back in is to erase all Glow data on this device and restore from your recovery phrase. Make sure you have it saved."}
         confirmLabel="Erase"
-        onConfirm={() => { setShowForgotConfirm(false); void onForgotPin(); }}
+        // The dialog stays up until the device-owner prompt passes, so a
+        // cancelled prompt reads as "nothing happened" rather than as a
+        // silently dropped erase.
+        onConfirm={() => {
+          void confirmDeviceOwner('Erase all Glow data').then((confirmed) => {
+            if (!confirmed) return;
+            setShowForgotConfirm(false);
+            void onForgotPin();
+          });
+        }}
         onCancel={() => setShowForgotConfirm(false)}
       />
     </div>

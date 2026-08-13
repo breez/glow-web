@@ -30,6 +30,12 @@ const vault: { deviceOnly: string | null; bound: string | null } = {
   bound: null,
 };
 
+/** How the OS answers each auth prompt; set per test. Android rejects
+ *  the device-owner one outright, which is why the biometric fallback
+ *  exists. */
+let deviceOwnerPrompt: 'pass' | { code: string } = 'pass';
+let biometricPrompt: 'pass' | { code: string } = 'pass';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).window = globalThis;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,6 +52,12 @@ const vault: { deviceOnly: string | null; bound: string | null } = {
       hasStoredSeed: async () => ({ stored: vault.bound !== null }),
       retrieveSeed: async () => ({ seed: vault.bound! }),
       clearSeed: async () => { vault.bound = null; },
+      authenticateDeviceOwner: async () => {
+        if (deviceOwnerPrompt !== 'pass') throw deviceOwnerPrompt;
+      },
+      authenticate: async () => {
+        if (biometricPrompt !== 'pass') throw biometricPrompt;
+      },
     },
   },
 };
@@ -165,5 +177,44 @@ describe('retired biometric-bound tier', () => {
     // runtime too, because the type would not catch a stray re-add on
     // the class itself.
     expect('storeSeed' in secureStorage).toBe(false);
+  });
+});
+
+describe('device-owner gate in front of a local erase', () => {
+  beforeEach(() => {
+    deviceOwnerPrompt = 'pass';
+    biometricPrompt = 'pass';
+  });
+
+  it('lets the erase run once the owner passes the prompt', async () => {
+    const { confirmDeviceOwner } = await coldStart();
+    expect(await confirmDeviceOwner('Erase all Glow data')).toBe(true);
+  });
+
+  it('refuses when the prompt is cancelled', async () => {
+    const { confirmDeviceOwner } = await coldStart();
+    deviceOwnerPrompt = { code: 'USER_CANCELLED' };
+    expect(await confirmDeviceOwner('Erase all Glow data')).toBe(false);
+  });
+
+  it('falls back to the biometric prompt where device-owner auth is unavailable', async () => {
+    // Android: the plugin rejects authenticateDeviceOwner outright, so
+    // the biometric prompt has to carry the check there.
+    const { confirmDeviceOwner } = await coldStart();
+    deviceOwnerPrompt = { code: 'BIOMETRIC_UNAVAILABLE' };
+    biometricPrompt = { code: 'USER_CANCELLED' };
+    expect(await confirmDeviceOwner('Erase all Glow data')).toBe(false);
+
+    biometricPrompt = 'pass';
+    expect(await confirmDeviceOwner('Erase all Glow data')).toBe(true);
+  });
+
+  it('lets the erase run when there is no check left to run', async () => {
+    // Neither passcode nor biometrics enrolled: refusing here would leave
+    // a forgotten PIN with no way out except reinstalling.
+    const { confirmDeviceOwner } = await coldStart();
+    deviceOwnerPrompt = { code: 'BIOMETRIC_UNAVAILABLE' };
+    biometricPrompt = { code: 'BIOMETRIC_NOT_ENROLLED' };
+    expect(await confirmDeviceOwner('Erase all Glow data')).toBe(true);
   });
 });

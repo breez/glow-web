@@ -7,7 +7,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { PIN_LENGTH, isBiometricGateEnabled, isBiometricGateEnabledSync, verifyPin } from '@/services/appLock';
+import { PIN_LENGTH, isBiometricGateEnabled, isBiometricGateEnabledSync, pinAttemptMessage, verifyPin } from '@/services/appLock';
 import { authenticateBiometric, getBiometryInfo, BiometryKind } from '@/services/secureStorage';
 import { useBackButton } from '@/hooks/useBackButton';
 import { BackspaceIcon, FaceIdIcon, FingerprintIcon, TrashIcon } from './Icons';
@@ -264,11 +264,14 @@ export const PinGate: React.FC<{
     >
       <PinEntry
         onSubmit={async (pin) => {
-          if (await verifyPin(pin)) {
+          const result = await verifyPin(pin);
+          if (result.ok) {
             onUnlocked();
             return null;
           }
-          return 'Incorrect PIN';
+          // No wipe branch here: this gate sits behind an already
+          // unlocked app, so the erase belongs to the lock screen.
+          return pinAttemptMessage(result);
         }}
         // Gate flag AND live availability: with Face ID denied /
         // locked out / not enrolled, a biometric button would be a

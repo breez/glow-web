@@ -1,10 +1,11 @@
 /**
  * App-lock lifecycle (native only). Locked when a PIN is set and the
- * app cold-starts or returns from the background past the auto-lock
- * timeout (0 = lock the moment it backgrounds). Lock decisions use the
- * synchronous appLock mirrors so no unlocked frame renders while a
- * bridge read is in flight; the mount effect reconciles against the
- * durable Preferences truth.
+ * app cold-starts, returns from the background past the auto-lock
+ * timeout (0 = lock the moment it backgrounds), or sits idle in the
+ * foreground for that same timeout. Lock decisions use the synchronous
+ * appLock mirrors so no unlocked frame renders while a bridge read is
+ * in flight; the mount effect reconciles against the durable
+ * Preferences truth.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -18,6 +19,7 @@ import {
   isPinEnabledSync,
   verifyPin,
 } from '@/services/appLock';
+import type { PinVerifyResult } from '@/services/appLock';
 import {
   deviceOnlyStorage,
   secureStorage,
@@ -31,7 +33,8 @@ export interface AppLockState {
   /** True when the biometric gate is on: the lock screen auto-fires the
    *  OS prompt and offers a retry button; PIN stays as fallback. */
   biometricGate: boolean;
-  unlockWithPin: (pin: string) => Promise<boolean>;
+  /** Rate-limited: a rejected result carries the remaining backoff. */
+  unlockWithPin: (pin: string) => Promise<PinVerifyResult>;
   /** Never rejects: cancel / unavailable leaves the lock in place and
    *  the PIN pad as fallback. */
   unlockWithBiometric: () => Promise<void>;
@@ -121,10 +124,38 @@ export function useAppLock(): AppLockState {
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
+  // Foreground idle: the visibility handler above only covers
+  // backgrounding, so the timeout needs a second trigger to apply while
+  // Glow stays open. Any pointer or key activity restarts the
+  // countdown, so this only fires on real inactivity.
+  useEffect(() => {
+    if (!isAppLockSupported() || locked) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const arm = () => {
+      clearTimeout(timer);
+      if (!isPinEnabledSync()) return;
+      // 'Immediately' (0) is a rule about backgrounding. Read as an idle
+      // timeout it would lock the screen the user is looking at, so it
+      // takes the shortest real option instead.
+      const seconds = getAutoLockSecondsSync() || 30;
+      timer = setTimeout(() => {
+        setLocked(true);
+        setBiometricGate(isBiometricGateEnabledSync());
+      }, seconds * 1000);
+    };
+    arm();
+    const events = ['pointerdown', 'keydown', 'touchstart', 'wheel'] as const;
+    events.forEach((event) => document.addEventListener(event, arm, { passive: true }));
+    return () => {
+      clearTimeout(timer);
+      events.forEach((event) => document.removeEventListener(event, arm));
+    };
+  }, [locked]);
+
   const unlockWithPin = useCallback(async (pin: string) => {
-    const ok = await verifyPin(pin);
-    if (ok) setLocked(false);
-    return ok;
+    const result = await verifyPin(pin);
+    if (result.ok) setLocked(false);
+    return result;
   }, []);
 
   const unlockWithBiometric = useCallback(async () => {
