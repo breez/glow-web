@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import type { GetInfoResponse, FiatCurrency } from '@breeztech/breez-sdk-spark';
 import { safeAreaTop } from '../utils/safeAreaInsets';
-import { getFiatSettings } from '../services/settings';
+import { getFiatSettings, getDisplayFiatCurrency, setDisplayFiatCurrency } from '../services/settings';
 import { formatWithSpaces } from '../utils/formatNumber';
 import { SatAmount } from './SatAmount';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
@@ -41,7 +41,9 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
 }) => {
   const { fiatRates, fiatCurrencies } = useFiatData();
   const stableBalance = useStableBalance();
-  const [activeFiatIndex, setActiveFiatIndex] = useState(0);
+  // Persisted rather than a plain index: the receive amount input reads the
+  // same value so it denominates in whatever the balance is showing.
+  const [activeFiatId, setActiveFiatId] = useState<string>(getDisplayFiatCurrency);
   // User-driven open. session is bumped on every tap so the dialog
   // remounts with fresh state via key-based remount (no reset effect).
   const [userToggle, setUserToggle] = useState<{
@@ -138,12 +140,18 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
     return result;
   }, [ratesMap, currenciesMap]);
 
+  // Falls back to the first entry when the stored currency isn't in the list
+  // (rate missing, or the user removed it in Settings).
+  const activeFiatIndex = Math.max(0, fiatCurrencyInfo.findIndex(c => c.currencyId === activeFiatId));
+
   // Cycle through fiat currencies on tap
   const handleFiatTap = useCallback(() => {
     if (fiatCurrencyInfo.length > 1) {
-      setActiveFiatIndex(prev => (prev + 1) % fiatCurrencyInfo.length);
+      const next = fiatCurrencyInfo[(activeFiatIndex + 1) % fiatCurrencyInfo.length];
+      setActiveFiatId(next.currencyId);
+      setDisplayFiatCurrency(next.currencyId);
     }
-  }, [fiatCurrencyInfo.length]);
+  }, [fiatCurrencyInfo, activeFiatIndex]);
 
   // Compute balances
   const btcBalanceSat = walletInfo?.balanceSats || 0;

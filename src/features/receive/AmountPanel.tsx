@@ -16,7 +16,7 @@ import {
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
 import { SatAmount } from '../../components/SatAmount';
 import { useAmountInput, useFiatOverride } from '../../hooks/useAmountInput';
-import { getFiatSettings } from '../../services/settings';
+import { getDisplayFiatCurrency } from '../../services/settings';
 import type { Sats } from '../../types/sats';
 import { dismissKeyboard } from '../../utils/keyboard';
 import { LIGHTNING_INVOICE_MIN_SATS, LIGHTNING_INVOICE_MAX_SATS } from '../../constants/receive';
@@ -55,11 +55,9 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   resetCount,
 }) => {
   // Fiat entry without a stable-balance token: the typed amount is converted to
-  // sats client-side (#356). Denominated in the currency at the top of the
-  // user's Settings list, the one the balance header opens on.
-  const input = useAmountInput({
-    fiatOverride: useFiatOverride(getFiatSettings().selectedCurrencies[0] ?? 'USD'),
-  });
+  // sats client-side (#356). Denominated in whatever currency the balance
+  // header is showing, including one the user cycled to by tapping it.
+  const input = useAmountInput({ fiatOverride: useFiatOverride(getDisplayFiatCurrency()) });
   const {
     amountInput: displayAmount,
     setAmount,
@@ -193,14 +191,6 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                 />
               )}
             </div>
-            {/* The invoice is fixed in sats, converted off the last fetched
-                rate, so the fiat value it settles at can differ. The ≈ carries
-                that on its own. */}
-            {isTokenMode && parsedSats !== null && (
-              <p className="mt-2 text-xs text-spark-text-muted">
-                ≈ <SatAmount sats={parsedSats} />
-              </p>
-            )}
           </div>
 
           {/* Quick amount buttons. Hidden while the native keyboard is

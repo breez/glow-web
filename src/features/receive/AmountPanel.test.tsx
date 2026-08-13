@@ -5,7 +5,7 @@ import { WalletProvider } from '@/contexts/WalletContext';
 import { FiatDataProvider } from '@/contexts/FiatDataContext';
 import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
-import { saveFiatSettings } from '@/services/settings';
+import { saveFiatSettings, setDisplayFiatCurrency } from '@/services/settings';
 import AmountPanel from './AmountPanel';
 
 // Mock rates put BTC at $100,000 and €92,000, so $1 = 1,000 sats.
@@ -36,9 +36,12 @@ function renderAmountPanel(client?: BreezSdk) {
 }
 
 describe('AmountPanel fiat entry (no stable balance)', () => {
-  afterEach(() => saveFiatSettings({ selectedCurrencies: ['USD'] }));
+  afterEach(() => {
+    saveFiatSettings({ selectedCurrencies: ['USD'] });
+    setDisplayFiatCurrency('USD');
+  });
 
-  it('converts typed dollars to sats and shows them as an approximation', async () => {
+  it('converts typed dollars to sats', async () => {
     const { setAmountSats } = renderAmountPanel();
 
     // The switcher appears once the USD rate loads.
@@ -46,11 +49,12 @@ describe('AmountPanel fiat entry (no stable balance)', () => {
     fireEvent.change(screen.getByTestId('invoice-amount-input'), { target: { value: '5' } });
 
     await waitFor(() => expect(setAmountSats).toHaveBeenCalledWith(5000n));
-    expect(screen.getByText(/≈/)).toHaveTextContent('5 000');
   });
 
-  it('denominates in the currency at the top of the user\'s list', async () => {
-    saveFiatSettings({ selectedCurrencies: ['EUR', 'USD'] });
+  it('denominates in the currency the balance header is showing', async () => {
+    saveFiatSettings({ selectedCurrencies: ['USD', 'EUR'] });
+    // What the header writes when the user taps the balance to cycle to EUR.
+    setDisplayFiatCurrency('EUR');
     const { setAmountSats } = renderAmountPanel();
 
     fireEvent.click(await screen.findByRole('button', { name: '₿' }));
@@ -59,6 +63,17 @@ describe('AmountPanel fiat entry (no stable balance)', () => {
     // €5 at €92,000/BTC = 5,435 sats.
     await waitFor(() => expect(setAmountSats).toHaveBeenCalledWith(5435n));
     expect(screen.getByRole('button', { name: '€' })).toBeInTheDocument();
+  });
+
+  it('falls back to the top of the list when that currency is deselected', async () => {
+    setDisplayFiatCurrency('EUR');
+    saveFiatSettings({ selectedCurrencies: ['USD'] });
+    const { setAmountSats } = renderAmountPanel();
+
+    fireEvent.click(await screen.findByRole('button', { name: '₿' }));
+    fireEvent.change(screen.getByTestId('invoice-amount-input'), { target: { value: '5' } });
+
+    await waitFor(() => expect(setAmountSats).toHaveBeenCalledWith(5000n));
   });
 
   it('offers no fiat toggle while the rate has not loaded', async () => {
