@@ -53,6 +53,7 @@ import {
 } from '../services/legacyMnemonicMigration';
 import { isSendSheetOpen } from '../features/send/sendSheetVisibility';
 import { clearPin, isAppLockSupported } from '../services/appLock';
+import { hasConversionInFlight } from '../contexts/WalletContext';
 
 
 // ============================================
@@ -242,9 +243,10 @@ export function useBreezSdk(
   const [transactions, setTransactions] = useState<Payment[]>([]);
   // Any payment in the latest snapshot that's still mid-conversion (e.g.
   // auto-conversion in flight after a receive). While true, balances are in
-  // motion and Send All flows shouldn't trust the snapshot.
+  // motion and Send All flows shouldn't trust the snapshot. Recomputed per
+  // snapshot, so the age bound clears on the next refresh rather than on a timer.
   const hasPendingConversion = useMemo(
-    () => transactions.some(p => p.conversionDetails?.status === 'pending'),
+    () => hasConversionInFlight(transactions),
     [transactions],
   );
   const [unclaimedDeposits, setUnclaimedDeposits] = useState<DepositInfo[]>([]);
