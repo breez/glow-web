@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useWallet } from '../contexts/WalletContext';
-import type { DepositInfo, MaxFee } from '@breeztech/breez-sdk-spark';
+import type { BreezSdk, DepositInfo, MaxFee } from '@breeztech/breez-sdk-spark';
 import { BottomSheetContainer, BottomSheetCard, DialogHeader, PrimaryButton, SecondaryButton, PaymentInfoCard, CollapsibleCodeField } from '../components/ui';
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
 import { SpinnerIcon } from '../components/Icons';
 import { AlertCard } from '../components/AlertCard';
+import { SatAmount } from '../components/SatAmount';
 import { rejectDeposit, removeRejectedDeposit } from '../services/depositState';
 import { explorerTxUrl } from '../utils/explorer';
 import { logger, LogCategory } from '@/services/logger';
@@ -15,11 +16,14 @@ interface UnclaimedDepositDetailsPageProps {
   onChanged?: () => void;
 }
 
-// Derive the initial claim/fee state from the deposit's automatic-claim
-// outcome. Pure function so it can be reused as the lazy useState init.
-function deriveInitialClaimState(
-  deposit: DepositInfo | null,
-): { claimError: string | null; requiredFeeSats: number | null } {
+interface ClaimState {
+  claimError: string | null;
+  requiredFeeSats: number | null;
+}
+
+// Derive the claim/fee state from a deposit record's last claim outcome,
+// whether that came from an automatic claim or from a manual retry.
+function deriveClaimState(deposit: DepositInfo | null): ClaimState {
   if (!deposit || !deposit.isMature) {
     return { claimError: null, requiredFeeSats: null };
   }
@@ -38,6 +42,23 @@ function deriveInitialClaimState(
   return { claimError: 'Automatic claim failed', requiredFeeSats: null };
 }
 
+// claimDeposit stores the fresh claim error before it throws, so the deposit
+// record already carries the fee the operator just quoted. Re-reading it is
+// the only way back to that number: the thrown error crosses the WASM
+// boundary as a plain string.
+async function refetchClaimState(
+  wallet: BreezSdk,
+  deposit: DepositInfo,
+): Promise<ClaimState | null> {
+  try {
+    const { deposits } = await wallet.listUnclaimedDeposits({});
+    const fresh = deposits.find(d => d.txid === deposit.txid && d.vout === deposit.vout);
+    return fresh ? deriveClaimState(fresh) : null;
+  } catch {
+    return null;
+  }
+}
+
 const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = ({
   deposit,
   onBack,
@@ -45,13 +66,12 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
 }) => {
   const wallet = useWallet();
 
-  // Parent keys this component on deposit identity, so the prop is
-  // stable per mount. claimError stays in useState because handleClaim
-  // can update it after a retry; requiredFeeSats is purely derived.
-  const initialClaim = useMemo(() => deriveInitialClaimState(deposit), [deposit]);
-  const requiredFeeSats = initialClaim.requiredFeeSats;
+  // Parent keys this component on deposit identity, so the prop is stable
+  // per mount and never picks up a later claim outcome; handleClaim owns
+  // the state from the first retry on.
+  const [{ claimError, requiredFeeSats }, setClaim] = useState<ClaimState>(() => deriveClaimState(deposit));
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [claimError, setClaimError] = useState<string | null>(() => initialClaim.claimError);
+  const [feeRaised, setFeeRaised] = useState<boolean>(false);
   const [isTxIdVisible, setIsTxIdVisible] = useState<boolean>(false);
 
   const isConfirming = deposit ? !deposit.isMature : false;
@@ -59,7 +79,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
 
   const handleClaim = async () => {
     if (!deposit || requiredFeeSats === null) return;
-    setClaimError(null);
+    setFeeRaised(false);
     setIsProcessing(true);
     try {
       const maxFee: MaxFee = { type: 'fixed', amount: requiredFeeSats };
@@ -72,8 +92,17 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
       logger.error(LogCategory.PAYMENT, 'Failed to claim transfer', {
         error: e instanceof Error ? e.message : String(e),
       });
-      const errorMessage = e instanceof Error ? e.message : 'Failed to claim transfer';
-      setClaimError(errorMessage);
+      // The operator re-quotes on every attempt, so the fee we just sent can
+      // already be stale. Retrying at it fails the same way with the same
+      // number, so adopt the quote behind the failure when there is one.
+      const fresh = await refetchClaimState(wallet, deposit);
+      if (fresh?.requiredFeeSats != null && fresh.requiredFeeSats !== requiredFeeSats) {
+        setClaim(fresh);
+        setFeeRaised(true);
+      } else {
+        const errorMessage = e instanceof Error ? e.message : 'Failed to claim transfer';
+        setClaim({ claimError: errorMessage, requiredFeeSats: null });
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -125,6 +154,15 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
           {/* Show fee breakdown only when we have a required fee from claim error */}
           {!claimError && requiredFeeSats !== null && (
             <>
+              {feeRaised && (
+                <AlertCard variant="warning" title="Network fee changed">
+                  <p className="text-sm">
+                    The fee rose to <SatAmount sats={requiredFeeSats} /> while you were confirming.
+                    Approve to claim at the new fee.
+                  </p>
+                </AlertCard>
+              )}
+
               <FeeBreakdownCard
                 items={[
                   { label: 'Amount', value: depositAmount },
