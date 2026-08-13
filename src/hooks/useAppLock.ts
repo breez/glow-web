@@ -16,6 +16,7 @@ import {
   isAppLockSupported,
   isBiometricGateEnabled,
   isBiometricGateEnabledSync,
+  isIdleLockSuppressed,
   isPinEnabled,
   isPinEnabledSync,
   verifyPin,
@@ -146,6 +147,14 @@ export function useAppLock(): AppLockState {
       // takes the shortest real option instead.
       const seconds = getAutoLockSecondsSync() || 30;
       timer = setTimeout(() => {
+        // A suppressing screen is up (a receive QR mid-scan). Re-arm
+        // rather than lock, so the lock lands on the first expiry after
+        // it goes away instead of waiting for the user to touch
+        // something.
+        if (isIdleLockSuppressed()) {
+          arm();
+          return;
+        }
         setLocked(true);
         setBiometricGate(isBiometricGateEnabledSync());
       }, seconds * 1000);

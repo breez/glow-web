@@ -255,6 +255,32 @@ export function formatAutoLockOption(seconds: number): string {
 }
 
 // ============================================
+// Idle-lock suppression
+// ============================================
+
+/**
+ * Held on by screens meant to be looked at rather than touched: a
+ * receive QR waiting to be scanned would otherwise lock mid-scan. Only
+ * the foreground idle timer honours it, so backgrounding and cold start
+ * still lock as usual. Module-level rather than context so the lock hook
+ * reads it without a re-render coupling, the same shape as
+ * `features/send/sendSheetVisibility.ts`.
+ *
+ * ponytail: a plain flag, with the receive sheet as its only holder. If
+ * a second surface ever needs it, make it a counter, so overlapping
+ * holders cannot release each other's suppression.
+ */
+let idleLockSuppressed = false;
+
+export function setIdleLockSuppressed(suppressed: boolean): void {
+  idleLockSuppressed = suppressed;
+}
+
+export function isIdleLockSuppressed(): boolean {
+  return idleLockSuppressed;
+}
+
+// ============================================
 // Biometric gate flag
 // ============================================
 
