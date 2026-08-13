@@ -68,11 +68,21 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialRawInput]);
 
-  // Detect successful send to non-contact lightning address for save prompt
+  // A successful send to a lightning address that isn't a contact yet, for
+  // the save prompt. Keyed on whatever the destination RESOLVED to, not on
+  // how it was entered: an LNURL that names an address is the same
+  // recipient as the address typed by hand (#366). Hence the address comes
+  // off the parsed input rather than `rawInput`, which for an LNURL is the
+  // lnurl1... blob and for a `lightning:` URI carries a scheme prefix,
+  // neither of which a contact can be keyed on. A bare LNURL exposes only a
+  // domain, so it resolves to nothing saveable and prompts nothing.
   const lightningAddressForSave = useMemo(() => {
     if (send.paymentResult !== 'success') return undefined;
-    if (send.paymentInput?.parsedInput.type !== 'lightningAddress') return undefined;
-    const address = send.paymentInput.rawInput;
+    const parsed = send.paymentInput?.parsedInput;
+    const address = parsed?.type === 'lightningAddress' || parsed?.type === 'lnurlPay'
+      ? parsed.address
+      : undefined;
+    if (!address) return undefined;
     if (findContactByAddress(address)) return undefined;
     return address;
   }, [send.paymentResult, send.paymentInput, findContactByAddress]);
