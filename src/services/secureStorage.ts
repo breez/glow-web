@@ -824,7 +824,7 @@ export interface BiometryStatus {
   info: BiometryInfo | null;
   /** iOS: biometry is disabled until the device passcode is entered
    *  (too many failed matches). Recoverable in-app via
-   *  `recoverBiometryWithPasscode`. */
+   *  `authenticateDeviceOwner`. */
   lockedOut: boolean;
 }
 
@@ -883,11 +883,12 @@ export async function getBiometryInfo(): Promise<BiometryInfo | null> {
 
 /**
  * Biometrics-or-passcode prompt (iOS `deviceOwnerAuthentication`).
- * Succeeding via passcode clears a biometry lockout system-wide, so
- * this is the in-app recovery for BIOMETRIC_LOCKOUT. Resolves on
- * success; throws `SecureStorageError` (USER_CANCELLED, ...).
+ * Confirms the device owner is present. Succeeding via passcode also
+ * clears a biometry lockout system-wide, which is the in-app recovery
+ * for BIOMETRIC_LOCKOUT. Resolves on success; throws
+ * `SecureStorageError` (USER_CANCELLED, ...).
  */
-export async function recoverBiometryWithPasscode(reason: string): Promise<void> {
+export async function authenticateDeviceOwner(reason: string): Promise<void> {
   try {
     await getNativeVault().authenticateDeviceOwner({ reason });
   } catch (err) {
@@ -898,6 +899,35 @@ export async function recoverBiometryWithPasscode(reason: string): Promise<void>
       err instanceof Error ? err.message : 'Device authentication failed',
     );
   }
+}
+
+/**
+ * Device-owner check in front of an erase of all local data. True means
+ * "go ahead".
+ *
+ * Only an explicit cancel refuses. A host with no owner check to run
+ * (web, or a device with neither passcode nor biometrics enrolled)
+ * passes through: a refusal there would leave a forgotten PIN with no
+ * escape but reinstalling.
+ */
+export async function confirmDeviceOwner(reason: string): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return true;
+  // The plugin has no passcode-backed prompt on Android, where the
+  // device-owner call rejects outright and the biometric one carries the
+  // check instead.
+  // ponytail: drop the second prompt once the plugin implements
+  // authenticateDeviceOwner with DEVICE_CREDENTIAL on Android.
+  for (const prompt of [authenticateDeviceOwner, authenticateBiometric]) {
+    try {
+      await prompt(reason);
+      return true;
+    } catch (err) {
+      // A cancel is the user saying no. Anything else means that prompt
+      // could not run, so fall through to the next one.
+      if (err instanceof SecureStorageError && err.code === 'USER_CANCELLED') return false;
+    }
+  }
+  return true;
 }
 
 // ============================================

@@ -24,8 +24,8 @@ import {
 } from '@/services/appLock';
 import {
   authenticateBiometric,
+  authenticateDeviceOwner,
   getBiometryStatus,
-  recoverBiometryWithPasscode,
   BiometryInfo,
 } from '@/services/secureStorage';
 import { logger, LogCategory } from '@/services/logger';
@@ -138,7 +138,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
     setOptionsError(null);
     try {
       // Passcode-allowed prompt: succeeding clears the OS lockout.
-      await recoverBiometryWithPasscode('Re-enable biometric unlock');
+      await authenticateDeviceOwner('Re-enable biometric unlock');
       const status = await getBiometryStatus();
       setBiometry(status.info);
       setBiometryLockedOut(status.lockedOut);
