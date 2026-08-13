@@ -1,6 +1,27 @@
 import React, { createContext, useContext, useMemo } from 'react';
-import type { BreezSdk, GetInfoResponse } from '@breeztech/breez-sdk-spark';
+import type { BreezSdk, GetInfoResponse, Payment } from '@breeztech/breez-sdk-spark';
 import type { SdkEventHandler, SdkEventUnsubscribe } from '../hooks/useBreezSdk';
+
+/**
+ * How long a `pending` conversion status is trusted to mean "in flight".
+ * Matches the SDK's own deferred-conversion timeout.
+ */
+const PENDING_CONVERSION_MAX_AGE_SECS = 120;
+
+/**
+ * Whether a conversion is in flight right now, so balance-dependent actions
+ * (Send All) should wait for it to settle.
+ *
+ * Age-bounded because the status can be stranded: the SDK marks a payment
+ * `pending` when it queues a conversion, but skips the `completed` write when
+ * the conversion turns out to be a no-op (below the minimum, stable balance
+ * deactivated, already converted elsewhere). An unbounded check leaves Send All
+ * disabled for the life of that wallet's local storage (#367).
+ */
+export function hasConversionInFlight(payments: Payment[], nowSecs = Date.now() / 1000): boolean {
+  const cutoff = nowSecs - PENDING_CONVERSION_MAX_AGE_SECS;
+  return payments.some(p => p.conversionDetails?.status === 'pending' && p.timestamp >= cutoff);
+}
 
 type SubscribeToSdkEvents = (handler: SdkEventHandler) => SdkEventUnsubscribe;
 
@@ -104,8 +125,9 @@ export const useWalletInfo = (): GetInfoResponse | null => {
 
 /**
  * Returns true while an auto-conversion (or any payment-linked conversion) is
- * still pending. While true, the balance snapshot in `walletInfo` may be mid
- * flight: Send All flows should treat it as unsettled and gate the action.
+ * still in flight. While true, the balance snapshot in `walletInfo` may be mid
+ * flight: Send All flows should treat it as unsettled and gate the action. See
+ * `hasConversionInFlight` for why this is age-bounded.
  */
 export const useHasPendingConversion = (): boolean => {
   return useContext(WalletStatusContext).hasPendingConversion;
