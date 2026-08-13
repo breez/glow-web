@@ -1,11 +1,25 @@
 import { useState, useCallback, useMemo } from 'react';
-import type { PrepareSendPaymentResponse, FeePolicy, SendPaymentOptions, SdkEvent, ConversionOptions } from '@breeztech/breez-sdk-spark';
+import type { PrepareSendPaymentResponse, FeePolicy, SendPaymentOptions, SdkEvent, ConversionOptions, InputType } from '@breeztech/breez-sdk-spark';
 import type { SendInput } from '@/types/domain';
 import { useWallet, useWalletInfo } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { getTokenBalance } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
+
+/** The destination string inside a parsed input, or null for the types that
+ *  are paid through their own workflow rather than a prepared destination. */
+function bareDestination(parsed: InputType): string | null {
+  switch (parsed.type) {
+    case 'bolt11Invoice':
+      return parsed.invoice.bolt11;
+    case 'bitcoinAddress':
+    case 'sparkAddress':
+      return parsed.address;
+    default:
+      return null;
+  }
+}
 
 export type SendStep = 'input' | 'amount' | 'workflow' | 'processing' | 'result';
 export type ProcessingPhase = 'sending' | 'converting';
@@ -137,12 +151,8 @@ export function useSendPayment(): UseSendPaymentReturn {
       const parseResult = await wallet.parse(currentInput);
 
       // Unwrap a BIP21 URI (bitcoin:<addr>?amount=&label=) to its underlying
-      // payment method. `paymentRequest` becomes the bare address/invoice sent to
-      // prepareSendPayment (the URI itself isn't a valid send request), while
-      // `rawInput` keeps the original text so the input field still shows it on
-      // back-navigation. The URI amount (sats) is used as the exact send amount.
+      // payment method. The URI amount (sats) is used as the exact send amount.
       let effective = parseResult;
-      let paymentRequest = currentInput;
       let prefillAmountSat: number | undefined;
       if (parseResult.type === 'bip21') {
         const method = parseResult.paymentMethods.find(
@@ -154,13 +164,16 @@ export function useSendPayment(): UseSendPaymentReturn {
           return;
         }
         effective = method;
-        if (method.type === 'bolt11Invoice') {
-          paymentRequest = method.invoice.bolt11;
-        } else if (method.type === 'bitcoinAddress' || method.type === 'sparkAddress') {
-          paymentRequest = method.address;
-        }
         prefillAmountSat = parseResult.amountSat;
       }
+
+      // prepareSendPayment gets the bare destination the parser resolved, never
+      // the text it came in. The SDK parses what it is handed but then decodes
+      // the invoice from that same string, so a wrapper the parser accepts (a
+      // BIP21 URI, or the `lightning:` prefix a QR code carries) reaches the
+      // decoder and fails there (breez/glow-app#168). `rawInput` keeps the original text so
+      // the input field still shows it on back-navigation.
+      const paymentRequest = bareDestination(effective) ?? currentInput;
 
       const parsed: SendInput = { rawInput: currentInput, paymentRequest, parsedInput: effective };
       setPaymentInput(parsed);
