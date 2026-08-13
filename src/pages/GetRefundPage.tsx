@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import type { DepositInfo, Fee, SdkEvent } from '@breeztech/breez-sdk-spark';
 import { LoadingSpinner, PrimaryButton, SecondaryButton, FormInput, BottomSheetContainer, BottomSheetCard, DialogHeader, CollapsibleCodeField, PaymentInfoCard } from '../components/ui';
-import { SimpleAlert } from '../components/AlertCard';
+import { AlertCard, SimpleAlert } from '../components/AlertCard';
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
-import { CloseIcon, CheckIcon, WarningIcon, RadioCheckIcon } from '../components/Icons';
+import { CloseIcon, CheckIcon, RadioCheckIcon } from '../components/Icons';
 import { isDepositRejected, removeRejectedDeposit } from '../services/depositState';
 import { SatAmount } from '../components/SatAmount';
 import { explorerTxUrl } from '../utils/explorer';
@@ -419,17 +419,9 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                 />
 
                 {refundError && (
-                  <div className="bg-spark-warn-surface border border-spark-warn-border rounded-2xl p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-xl bg-spark-primary/20 flex items-center justify-center shrink-0">
-                        <WarningIcon size="md" className="text-spark-primary" />
-                      </div>
-                      <h3 className="font-display font-bold text-spark-warn-title">Refund Failed</h3>
-                    </div>
-                    <div className="pl-[52px]">
-                      <p className="text-spark-warn-text text-sm">{refundError}</p>
-                    </div>
-                  </div>
+                  <AlertCard variant="warning" title="Refund Failed">
+                    <p className="text-sm">{refundError}</p>
+                  </AlertCard>
                 )}
 
                 <div className="flex gap-3">

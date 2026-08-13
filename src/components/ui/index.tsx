@@ -13,11 +13,11 @@ import {
   WarningIcon,
   CheckCircleIcon,
   ErrorIcon,
-  AlertTriangleIcon,
   CheckIcon,
   ExternalLinkIcon,
   BackIcon,
 } from '../Icons';
+import { AlertCard } from '../AlertCard';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useStatusBarColor } from '../../hooks/useStatusBarColor';
 import { STATUS_BAR_DIALOG_SCRIM } from '../../utils/statusBarManager';
@@ -446,24 +446,16 @@ export const ErrorMessageBox: React.FC<{
   }
 
   return (
-    <div className={`bg-spark-warn-surface border border-spark-warn-border rounded-2xl p-4 ${className}`}>
-      <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 rounded-xl bg-spark-primary/20 flex items-center justify-center shrink-0">
-          <AlertTriangleIcon className="text-spark-primary" />
+    <AlertCard variant="error" title={title} className={className}>
+      <p className="text-sm">{mainMessage}</p>
+      {stackTrace && (
+        <div className="mt-3 bg-spark-dark/50 border border-spark-border rounded-xl p-3 max-h-32 overflow-auto">
+          <code className="text-xs text-spark-text-muted font-mono whitespace-pre-wrap break-all">
+            {stackTrace}
+          </code>
         </div>
-        <h3 className="font-display font-bold text-spark-warn-title">{title}</h3>
-      </div>
-      <div className="pl-[52px]">
-        <p className="text-spark-warn-text text-sm">{mainMessage}</p>
-        {stackTrace && (
-          <div className="mt-3 bg-spark-dark/50 border border-spark-border rounded-xl p-3 max-h-32 overflow-auto">
-            <code className="text-xs text-spark-text-muted font-mono whitespace-pre-wrap break-all">
-              {stackTrace}
-            </code>
-          </div>
-        )}
-      </div>
-    </div>
+      )}
+    </AlertCard>
   );
 };
 
