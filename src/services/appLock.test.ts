@@ -159,6 +159,33 @@ describe('appLock auto-lock timeout', () => {
   });
 });
 
+describe('appLock idle-lock suppression', () => {
+  it('stays suppressed until every overlapping holder releases', async () => {
+    const appLock = await loadAppLock(true);
+    expect(appLock.isIdleLockSuppressed()).toBe(false);
+
+    // The scanner opening over the send sheet: the inner release must
+    // not cancel the outer hold.
+    const send = appLock.holdIdleLock();
+    const scanner = appLock.holdIdleLock();
+    scanner();
+    expect(appLock.isIdleLockSuppressed()).toBe(true);
+    send();
+    expect(appLock.isIdleLockSuppressed()).toBe(false);
+  });
+
+  it('ignores a second release from the same holder', async () => {
+    const appLock = await loadAppLock(true);
+    const receive = appLock.holdIdleLock();
+    const scanner = appLock.holdIdleLock();
+    receive();
+    receive();
+    expect(appLock.isIdleLockSuppressed()).toBe(true);
+    scanner();
+    expect(appLock.isIdleLockSuppressed()).toBe(false);
+  });
+});
+
 describe('appLock on web', () => {
   it('reports unsupported and disabled everywhere', async () => {
     const appLock = await loadAppLock(false);

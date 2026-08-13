@@ -17,6 +17,7 @@ import ProcessingStep from './steps/ProcessingStep';
 import ResultStep from './steps/ResultStep';
 import ContactsSubView from './components/ContactsSubView';
 import { setSendSheetOpen } from './sendSheetVisibility';
+import { holdIdleLock } from '@/services/appLock';
 import { PrepareLnurlPayRequest } from '@breeztech/breez-sdk-spark';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
@@ -48,6 +49,14 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     if (!isOpen) return;
     setSendSheetOpen(true);
     return () => setSendSheetOpen(false);
+  }, [isOpen]);
+
+  // Hold the idle lock while the sheet is up: reading the recipient and
+  // fee before confirming, and waiting out a payment in flight, are both
+  // untouched screens, and locking there strands a send half-finished.
+  useEffect(() => {
+    if (!isOpen) return;
+    return holdIdleLock();
   }, [isOpen]);
 
   // Parent (WalletPage) bumps `sendDialogSession` on every open and passes

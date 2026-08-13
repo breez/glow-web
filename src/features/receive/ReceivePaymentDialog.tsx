@@ -24,7 +24,7 @@ import BitcoinAddressDisplay from './BitcoinAddressDisplay';
 import LightningAddressDisplay from './LightningAddressDisplay';
 import AmountPanel from './AmountPanel';
 import { ArrowDownIcon, LightningBoltIcon } from '../../components/Icons';
-import { setIdleLockSuppressed } from '@/services/appLock';
+import { holdIdleLock } from '@/services/appLock';
 
 interface ReceivePaymentDialogProps {
   isOpen: boolean;
@@ -97,8 +97,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
   // the React tree across opens (see the deferral note below).
   useEffect(() => {
     if (!isOpen) return;
-    setIdleLockSuppressed(true);
-    return () => setIdleLockSuppressed(false);
+    return holdIdleLock();
   }, [isOpen]);
 
   const [isContentReady, setIsContentReady] = useState(false);

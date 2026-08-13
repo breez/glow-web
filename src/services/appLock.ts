@@ -260,24 +260,33 @@ export function formatAutoLockOption(seconds: number): string {
 
 /**
  * Held on by screens meant to be looked at rather than touched: a
- * receive QR waiting to be scanned would otherwise lock mid-scan. Only
- * the foreground idle timer honours it, so backgrounding and cold start
- * still lock as usual. Module-level rather than context so the lock hook
- * reads it without a re-render coupling, the same shape as
- * `features/send/sendSheetVisibility.ts`.
+ * receive QR waiting to be scanned, a camera being aimed at someone
+ * else's code. Only the foreground idle timer honours it, so
+ * backgrounding and cold start still lock as usual. Module-level rather
+ * than context so the lock hook reads it without a re-render coupling,
+ * the same shape as `features/send/sendSheetVisibility.ts`.
  *
- * ponytail: a plain flag, with the receive sheet as its only holder. If
- * a second surface ever needs it, make it a counter, so overlapping
- * holders cannot release each other's suppression.
+ * A counter, not a flag: the scanner opens over the send sheet, so
+ * holders overlap, and the inner one's release would otherwise cancel
+ * the outer one's hold.
  */
-let idleLockSuppressed = false;
+let idleLockHolds = 0;
 
-export function setIdleLockSuppressed(suppressed: boolean): void {
-  idleLockSuppressed = suppressed;
+/** Suppress the foreground idle lock until the returned release runs.
+ *  Releasing twice is a no-op, so a double cleanup cannot drop another
+ *  holder's suppression. */
+export function holdIdleLock(): () => void {
+  idleLockHolds += 1;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    idleLockHolds -= 1;
+  };
 }
 
 export function isIdleLockSuppressed(): boolean {
-  return idleLockSuppressed;
+  return idleLockHolds > 0;
 }
 
 // ============================================

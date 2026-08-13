@@ -3,6 +3,7 @@ import QrScanner from 'qr-scanner';
 import { BottomSheetContainer, FloatingIconButton } from './ui';
 import { useQrScanner } from '../hooks/useQrScanner';
 import { logger, LogCategory } from '@/services/logger';
+import { holdIdleLock } from '@/services/appLock';
 import { CameraFlipIcon, ImageIcon, AlertTriangleIcon } from './Icons';
 import { useLatest } from '../hooks/useLatest';
 
@@ -53,6 +54,14 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
     toggleCamera,
     clearError,
   } = useQrScanner({ onScan: handleScan });
+
+  // Aiming a camera produces no pointer or key events, so the idle
+  // timer would run to completion mid-scan and lock the screen the
+  // user is scanning with.
+  useEffect(() => {
+    if (!isOpen) return;
+    return holdIdleLock();
+  }, [isOpen]);
 
   // Use refs to avoid effect re-running when callbacks change
   const startScanningRef = useLatest(startScanning);
