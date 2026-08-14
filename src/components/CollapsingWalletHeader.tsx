@@ -7,6 +7,7 @@ import { SatAmount } from './SatAmount';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 import { MenuIcon, AlertTriangleIcon, CurrencyIcon, SpinnerIcon, SwapVerticalIcon } from './Icons';
 import { useStableBalance } from '../contexts/StableBalanceContext';
+import { useIsOutOfSync } from '../contexts/WalletContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { getTokenBalance, formatTokenAmount } from '../utils/tokenFormatting';
 import StableBalanceToggleFlow from './StableBalanceToggleFlow';
@@ -41,6 +42,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
 }) => {
   const { fiatRates, fiatCurrencies } = useFiatData();
   const stableBalance = useStableBalance();
+  const isOutOfSync = useIsOutOfSync();
   // Persisted rather than a plain index: the receive amount input reads the
   // same value so it denominates in whatever the balance is showing.
   const [activeFiatId, setActiveFiatId] = useState<string>(getDisplayFiatCurrency);
@@ -78,13 +80,17 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   const direction: 'toToken' | 'toBitcoin' = userToggle?.direction ?? 'toToken';
   const dialogKey = userToggle ? `user-${userToggle.session}` : 'restore';
 
+  // Switching modes quotes and queues a conversion off the current balance.
+  // Unsynced, that balance is the local cache: the flow reads it as empty,
+  // offers "Balance too low to convert", and still queues the conversion.
+  // The control is off screen in that state; this is the backstop.
   const handleSuffixTap = useCallback(() => {
-    if (stableBalance.isToggling) return;
+    if (stableBalance.isToggling || isOutOfSync) return;
     setUserToggle((prev) => ({
       direction: stableBalance.isActive ? 'toBitcoin' : 'toToken',
       session: (prev?.session ?? 0) + 1,
     }));
-  }, [stableBalance]);
+  }, [stableBalance, isOutOfSync]);
 
   // Acknowledge the restore prompt on dismiss so it doesn't re-open
   // within the same shouldPrompt window.
@@ -343,12 +349,25 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-spark-primary animate-pulse" />
               Syncing
             </span>
+            {/* Same slot, steady dot rather than pulsing: syncing is a state
+                that resolves itself, this one is not. Taking the slot also
+                takes the currency-switch control off screen, which is the
+                point. Switching quotes a conversion off the balance, and an
+                unconfirmed balance reads as empty. */}
+            <span
+              className={`absolute text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase transition-opacity duration-300 inline-flex items-center gap-1.5 ${
+                !isSyncing && isOutOfSync ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-spark-primary" />
+              Not synced
+            </span>
             {/* inline-flex + items-center keeps the suffix pill on the
                 same vertical axis as the BALANCE text (inline baseline
                 alignment sat the pill visibly lower, #300). */}
             <span
               className={`absolute inline-flex items-center text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase transition-opacity duration-300 ${
-                isSyncing ? 'opacity-0' : 'opacity-100'
+                isSyncing || isOutOfSync ? 'pointer-events-none opacity-0' : 'opacity-100'
               }`}
             >
               Balance

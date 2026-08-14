@@ -36,7 +36,7 @@ function renderSend(parsed: unknown, contacts: unknown[] = []) {
     <ToastProvider>
       <WalletProvider client={client} isConnected>
         <WalletInfoProvider walletInfo={{ balanceSats: 500_000 } as never}>
-          <WalletStatusProvider hasPendingConversion={false}>
+          <WalletStatusProvider hasPendingConversion={false} isOutOfSync={false}>
             <FiatDataProvider>
               <StableBalanceProvider>
                 <ContactsProvider>

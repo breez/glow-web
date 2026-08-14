@@ -18,7 +18,7 @@ function renderDialog(isOpen: boolean) {
     <ToastProvider>
       <WalletProvider client={client} isConnected>
         <WalletInfoProvider walletInfo={{ balanceSats: 500_000 } as never}>
-          <WalletStatusProvider hasPendingConversion={false}>
+          <WalletStatusProvider hasPendingConversion={false} isOutOfSync={false}>
             <FiatDataProvider>
               <StableBalanceProvider>
                 <ContactsProvider>
@@ -55,7 +55,7 @@ describe('isSendSheetOpen', () => {
       <ToastProvider>
         <WalletProvider client={createMockClient() as unknown as BreezSdk} isConnected>
           <WalletInfoProvider walletInfo={{ balanceSats: 500_000 } as never}>
-            <WalletStatusProvider hasPendingConversion={false}>
+            <WalletStatusProvider hasPendingConversion={false} isOutOfSync={false}>
               <FiatDataProvider>
                 <StableBalanceProvider>
                   <ContactsProvider>

@@ -572,7 +572,10 @@ const AppContent: React.FC = () => {
   return (
     <WalletProvider client={sdk.sdk} isConnected={sdk.isConnected} subscribeToSdkEvents={sdk.subscribeToSdkEvents}>
       <WalletInfoProvider walletInfo={sdk.walletInfo}>
-        <WalletStatusProvider hasPendingConversion={sdk.hasPendingConversion}>
+        <WalletStatusProvider
+          hasPendingConversion={sdk.hasPendingConversion}
+          isOutOfSync={sdk.isOutOfSync}
+        >
           <FiatDataProvider>
             <StableBalanceProvider>
               <StableBalanceFormatterBridge formatterRef={formatPaymentAmountRef} />

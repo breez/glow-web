@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { useWallet } from '../contexts/WalletContext';
+import { useWallet, useIsOutOfSync } from '../contexts/WalletContext';
 import { useToast } from '../contexts/ToastContext';
 import { logger, LogCategory } from '@/services/logger';
 import CollapsingWalletHeader from '../components/CollapsingWalletHeader';
@@ -55,6 +55,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
 }) => {
   const wallet = useWallet();
   const { showToast } = useToast();
+  const isOutOfSync = useIsOutOfSync();
 
   // Tint the native system bars to the wallet page glass effective
   // color so the CollapsingWalletHeader glassmorphism reads as a
@@ -86,10 +87,19 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const [receiveDialogSession, setReceiveDialogSession] = useState(0);
   const [buyBitcoinSession, setBuyBitcoinSession] = useState(0);
 
+  // Gated at the single entry point so every route in (button, QR scan, deep
+  // link) is covered: with no confirmed sync the balance driving the amount
+  // step is unverified, and on an operator-unreachable device it is a flat 0
+  // that makes every amount look unaffordable.
   const openSendDialog = useCallback(() => {
+    if (isOutOfSync) {
+      // The detail line is clamped to one line, so it has to fit in one.
+      showToast('warning', 'Balance not confirmed', 'Glow cannot reach the network right now.');
+      return;
+    }
     setSendDialogSession(s => s + 1);
     setIsSendDialogOpen(true);
-  }, []);
+  }, [isOutOfSync, showToast]);
   const openReceiveDialog = useCallback(() => {
     setReceiveDialogSession(s => s + 1);
     setIsReceiveDialogOpen(true);

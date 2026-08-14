@@ -17,6 +17,7 @@ import type { PluginListenerHandle } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { useLatest } from './useLatest';
+import { useOutOfSync } from './useOutOfSync';
 import { buildConnectConfig } from './buildConnectConfig';
 import { logger, LogCategory, logSdkMessage } from '../services/logger';
 import { formatError } from '../utils/formatError';
@@ -131,6 +132,13 @@ export interface BreezSdkState {
   walletInfo: GetInfoResponse | null;
   transactions: Payment[];
   hasPendingConversion: boolean;
+  /**
+   * True when this session has never confirmed a sync against the network, so
+   * every balance on screen comes from the local cache and may be wrong (an
+   * empty cache reads as a flat 0). Drives the connection banner and gates the
+   * actions that would otherwise be taken against an unverified balance.
+   */
+  isOutOfSync: boolean;
   unclaimedDeposits: DepositInfo[];
   config: Config | null;
   error: string | null;
@@ -250,6 +258,16 @@ export function useBreezSdk(
     () => hasConversionInFlight(transactions),
     [transactions],
   );
+  // The SDK instance that has confirmed a sync, set by the `synced` event
+  // (which the SDK only emits once a sync actually reached the network: its
+  // first emission requires the wallet leg, not just the local ones).
+  // Absence of it is what `useOutOfSync` reads. Held as an identity rather
+  // than a boolean so it resets itself: a logout, or an adopted migrated SDK,
+  // brings a new instance, and a stale `true` cannot leak into a session that
+  // has confirmed nothing.
+  const [syncedSdk, setSyncedSdk] = useState<BreezSdk | null>(null);
+  const hasSynced = syncedSdk !== null && syncedSdk === sdk;
+  const isOutOfSync = useOutOfSync(isConnected, hasSynced);
   const [unclaimedDeposits, setUnclaimedDeposits] = useState<DepositInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
@@ -341,6 +359,7 @@ export function useBreezSdk(
         logger.info(LogCategory.SESSION, 'Restoration sync complete; hiding overlay');
         setIsSyncing(false);
       }
+      setSyncedSdk(sdkRef.current);
       document.body.setAttribute('data-wallet-synced', 'true');
       refreshWalletData(false);
       fetchUnclaimedDeposits();
@@ -412,7 +431,7 @@ export function useBreezSdk(
         logger.error(LogCategory.SDK, 'SDK event subscriber threw', { error: formatError(e) });
       }
     });
-  }, [refreshWalletData, fetchUnclaimedDeposits, isSyncingRef, showToastRef]);
+  }, [refreshWalletData, fetchUnclaimedDeposits, isSyncingRef, showToastRef, sdkRef]);
 
   // ----------------------------------------
   // Connection lifecycle
@@ -1389,6 +1408,11 @@ export function useBreezSdk(
 
   useEffect(() => {
     if (!isConnected) return;
+    // The initial load's `pageshow` fires while we are still connecting, so
+    // the listeners below never see it and the first sync of a launch was
+    // left to the SDK's 60s loop: up to a minute of cached data presented as
+    // current, with no `synced` event to confirm or deny it.
+    void foregroundResync();
     const onVisible = () => {
       if (document.visibilityState === 'visible') void foregroundResync();
     };
@@ -1434,6 +1458,7 @@ export function useBreezSdk(
     walletInfo,
     transactions,
     hasPendingConversion,
+    isOutOfSync,
     unclaimedDeposits,
     config,
     error,

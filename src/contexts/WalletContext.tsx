@@ -46,8 +46,12 @@ const WalletInfoContext = createContext<GetInfoResponse | null>(null);
 
 // Derived live status flags (e.g., in-flight auto-conversion). Separate from
 // WalletInfoContext so unrelated consumers don't re-render on every refresh.
-const WalletStatusContext = createContext<{ hasPendingConversion: boolean }>({
+const WalletStatusContext = createContext<{
+  hasPendingConversion: boolean;
+  isOutOfSync: boolean;
+}>({
   hasPendingConversion: false,
+  isOutOfSync: false,
 });
 
 export const WalletProvider: React.FC<{
@@ -79,8 +83,12 @@ export const WalletInfoProvider: React.FC<{
 export const WalletStatusProvider: React.FC<{
   children: React.ReactNode;
   hasPendingConversion: boolean;
-}> = ({ children, hasPendingConversion }) => {
-  const value = useMemo(() => ({ hasPendingConversion }), [hasPendingConversion]);
+  isOutOfSync: boolean;
+}> = ({ children, hasPendingConversion, isOutOfSync }) => {
+  const value = useMemo(
+    () => ({ hasPendingConversion, isOutOfSync }),
+    [hasPendingConversion, isOutOfSync],
+  );
   return <WalletStatusContext.Provider value={value}>{children}</WalletStatusContext.Provider>;
 };
 
@@ -132,4 +140,15 @@ export const useWalletInfo = (): GetInfoResponse | null => {
  */
 export const useHasPendingConversion = (): boolean => {
   return useContext(WalletStatusContext).hasPendingConversion;
+};
+
+/**
+ * Returns true when this session has never confirmed a sync against the
+ * network. Everything on screen is then the local cache, which on a device
+ * that cannot reach the Spark operators is simply empty and renders as 0.
+ * Callers should say so rather than presenting the number as fact, and should
+ * refuse actions that spend or convert against it.
+ */
+export const useIsOutOfSync = (): boolean => {
+  return useContext(WalletStatusContext).isOutOfSync;
 };
