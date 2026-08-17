@@ -211,8 +211,11 @@ export const CollapsibleCodeField: React.FC<{
   <CollapsibleSection label={label} isVisible={isVisible} onToggle={onToggle}>
     <div className="flex items-start gap-2">
       {/* Selectable rather than copy/share buttons: the value is the point of
-          the row, and the OS selection menu already copies and shares it. */}
-      <code className="flex-1 min-w-0 text-spark-text-secondary font-mono text-xs break-all select-text">
+          the row, and the OS selection menu already copies and shares it.
+          The WebKit properties are not redundant with `select-text`: Tailwind
+          emits `user-select` unprefixed only, which the WKWebView ignores, and
+          a WebView withholds long-press selection until the page asks. */}
+      <code className="flex-1 min-w-0 text-spark-text-secondary font-mono text-xs break-all select-text [-webkit-touch-callout:default] [-webkit-user-select:text]">
         {value}
       </code>
       {href && (
