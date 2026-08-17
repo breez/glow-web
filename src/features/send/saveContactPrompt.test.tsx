@@ -111,6 +111,76 @@ describe('save-as-contact prompt after a send', () => {
     expect(onSuccessfulSend).not.toHaveBeenCalled();
   });
 
+  // A scanned QR yields a bech32 blob with no `address`, which is the case
+  // QA hit: the confirm step showed the bare domain and nothing was offered.
+  it('offers to save a scanned LNURL whose address is only in metadata', async () => {
+    const { onSuccessfulSend } = renderSend({
+      type: 'lnurlPay',
+      ...payRequest(undefined),
+      metadataStr: '[["text/plain","Tips"],["text/identifier","alice@example.com"]]',
+    });
+
+    await payAndClose(LNURL);
+    expect(onSuccessfulSend).toHaveBeenCalledWith(ADDRESS);
+  });
+
+  it('shows the resolved address on the confirm step, not the domain', async () => {
+    renderSend({
+      type: 'lnurlPay',
+      ...payRequest(undefined),
+      metadataStr: '[["text/identifier","alice@example.com"]]',
+    });
+
+    fireEvent.change(await screen.findByTestId('payment-input'), { target: { value: LNURL } });
+    fireEvent.click(screen.getByTestId('continue-button'));
+    fireEvent.change(await screen.findByPlaceholderText(/Between/i), { target: { value: '1000' } });
+    fireEvent.click(screen.getByText('Continue'));
+
+    const destination = await screen.findByTestId('send-destination');
+    expect(destination.textContent).toBe(ADDRESS);
+  });
+
+  it('falls back to the domain when the LNURL is not an address', async () => {
+    renderSend({ type: 'lnurlPay', ...payRequest(undefined) });
+
+    fireEvent.change(await screen.findByTestId('payment-input'), { target: { value: LNURL } });
+    fireEvent.click(screen.getByTestId('continue-button'));
+    fireEvent.change(await screen.findByPlaceholderText(/Between/i), { target: { value: '1000' } });
+    fireEvent.click(screen.getByText('Continue'));
+
+    const destination = await screen.findByTestId('send-destination');
+    expect(destination.textContent).toBe('example.com');
+  });
+
+  it('names the recipient on the amount step of a scanned LNURL', async () => {
+    renderSend({
+      type: 'lnurlPay',
+      ...payRequest(undefined),
+      metadataStr: '[["text/plain","Tips"],["text/identifier","alice@example.com"]]',
+    });
+
+    fireEvent.change(await screen.findByTestId('payment-input'), { target: { value: LNURL } });
+    fireEvent.click(screen.getByTestId('continue-button'));
+
+    expect(await screen.findByText(`Pay to ${ADDRESS}`)).toBeTruthy();
+  });
+
+  it('names an existing contact when a scanned LNURL resolves to one', async () => {
+    renderSend(
+      {
+        type: 'lnurlPay',
+        ...payRequest(undefined),
+        metadataStr: '[["text/identifier","alice@example.com"]]',
+      },
+      [{ id: 'c1', name: 'Alice', paymentIdentifier: ADDRESS }],
+    );
+
+    fireEvent.change(await screen.findByTestId('payment-input'), { target: { value: LNURL } });
+    fireEvent.click(screen.getByTestId('continue-button'));
+
+    expect(await screen.findByText('Pay to Alice')).toBeTruthy();
+  });
+
   it('stays quiet for a bare LNURL that resolves to no address', async () => {
     const { onSuccessfulSend } = renderSend({ type: 'lnurlPay', ...payRequest(undefined) });
 
