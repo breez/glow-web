@@ -146,8 +146,6 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
               isVisible={isTxIdVisible}
               onToggle={() => setIsTxIdVisible(prev => !prev)}
               href={explorerTxUrl(deposit.txid)}
-              copyable
-              shareable
             />
           </PaymentInfoCard>
 

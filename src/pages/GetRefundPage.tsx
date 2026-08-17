@@ -256,8 +256,6 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                           isVisible={expandedTxIds[txKey] || false}
                           onToggle={() => setExpandedTxIds(prev => ({ ...prev, [txKey]: !prev[txKey] }))}
                           href={explorerTxUrl(dep.txid)}
-                          copyable
-                          shareable
                         />
 
                         {isRefunded && refundedTxId && (
@@ -267,8 +265,6 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                             isVisible={expandedTxIds[refundKey] || false}
                             onToggle={() => setExpandedTxIds(prev => ({ ...prev, [refundKey]: !prev[refundKey] }))}
                             href={explorerTxUrl(refundedTxId)}
-                            copyable
-                            shareable
                           />
                         )}
                       </div>
@@ -485,8 +481,6 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                       isVisible={isTxIdVisible}
                       onToggle={() => setIsTxIdVisible(prev => !prev)}
                       href={explorerTxUrl(refundTxId)}
-                      copyable
-                      shareable
                     />
                   </PaymentInfoCard>
                 )}

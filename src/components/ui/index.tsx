@@ -205,74 +205,32 @@ export const CollapsibleCodeField: React.FC<{
   value: string;
   isVisible: boolean;
   onToggle: () => void;
-  /** Tapping the value opens this URL. */
+  /** Adds a button that opens this URL. */
   href?: string;
-  /** Show a copy button next to the value. */
-  copyable?: boolean;
-  /** Show a share button next to the value. */
-  shareable?: boolean;
-}> = ({ label, value, isVisible, onToggle, href, copyable, shareable }) => {
-  const [copied, setCopied] = React.useState(false);
-  const handleCopy = () => {
-    copyToClipboard(value)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch(err => {
-        logger.error(LogCategory.UI, 'Failed to copy to clipboard', {
-          error: err instanceof Error ? err.message : String(err),
-        });
-      });
-  };
-  const logFailure = (message: string) => (err: unknown) => {
-    logger.error(LogCategory.UI, message, {
-      error: err instanceof Error ? err.message : String(err),
-    });
-  };
-  return (
-    <CollapsibleSection label={label} isVisible={isVisible} onToggle={onToggle}>
-      <div className="flex items-start gap-2">
-        <div className="overflow-x-auto flex-1 min-w-0">
-          {href ? (
-            <button
-              onClick={() => openExternalUrl(href).catch(logFailure('Failed to open link'))}
-              className="font-mono text-xs break-all text-left flex items-start gap-1 group"
-              aria-label={`Open ${label}`}
-            >
-              <span className="text-spark-text-secondary">{value}</span>
-              <ExternalLinkIcon className="w-3.5 h-3.5 shrink-0 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" />
-            </button>
-          ) : (
-            <code className="text-spark-text-secondary font-mono text-xs break-all">
-              {value}
-            </code>
-          )}
-        </div>
-        {copyable && (
-          <button
-            onClick={handleCopy}
-            className="shrink-0 p-1 rounded-md hover:bg-white/5 transition-colors"
-            aria-label={`Copy ${label}`}
-          >
-            {copied
-              ? <CheckIcon size="sm" className="text-spark-success" />
-              : <CopyFilledIcon size="sm" className="text-spark-text-secondary" />}
-          </button>
-        )}
-        {shareable && canShare() && (
-          <button
-            onClick={() => shareText(label, value).catch(logFailure('Failed to share'))}
-            className="shrink-0 p-1 rounded-md hover:bg-white/5 transition-colors"
-            aria-label={`Share ${label}`}
-          >
-            <ShareIcon size="sm" className="text-spark-text-secondary" />
-          </button>
-        )}
-      </div>
-    </CollapsibleSection>
-  );
-};
+}> = ({ label, value, isVisible, onToggle, href }) => (
+  <CollapsibleSection label={label} isVisible={isVisible} onToggle={onToggle}>
+    <div className="flex items-start gap-2">
+      {/* Selectable rather than copy/share buttons: the value is the point of
+          the row, and the OS selection menu already copies and shares it. */}
+      <code className="flex-1 min-w-0 text-spark-text-secondary font-mono text-xs break-all select-text">
+        {value}
+      </code>
+      {href && (
+        <button
+          onClick={() => openExternalUrl(href).catch(err => {
+            logger.error(LogCategory.UI, 'Failed to open link', {
+              error: err instanceof Error ? err.message : String(err),
+            });
+          })}
+          className="shrink-0 p-1 rounded-md hover:bg-white/5 transition-colors group"
+          aria-label={`Open ${label}`}
+        >
+          <ExternalLinkIcon className="w-3.5 h-3.5 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" />
+        </button>
+      )}
+    </div>
+  </CollapsibleSection>
+);
 
 // ============================================
 // TEXT COMPONENTS
