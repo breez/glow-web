@@ -159,7 +159,6 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                 value={dest.recipientAddress}
                 isVisible={visibleFields.recipientAddress}
                 onToggle={() => toggleField('recipientAddress')}
-                copyable
               />
             )}
 
@@ -307,8 +306,6 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                   isVisible={visibleFields.txId}
                   onToggle={() => toggleField('txId')}
                   href={explorerTxUrl(payment.details.txId)}
-                  copyable
-                  shareable
                 />
               </div>
             )}
