@@ -15,6 +15,7 @@ import { formatWithSpaces } from '../../../utils/formatNumber';
 import { useAmountInput, useFiatOverride } from '../../../hooks/useAmountInput';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
 import { useHasPendingConversion } from '../../../contexts/WalletContext';
+import { getLnurlPayAddress } from '../utils';
 
 interface LnurlWorkflowProps {
   parsed: LnurlPayRequestDetails;
@@ -242,7 +243,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
       ? BigInt(prepareResponse.amountSats)
       : BigInt(balance.parseInputToSats(amount) || 0);
     return (
-      <ConfirmStep amountSats={confirmAmountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} destination={{ label: 'To', value: parsed.address ?? parsed.domain }} error={error} isLoading={isLoading} onBack={() => { setPrepareResponse(null); setError(null); setStep('amount'); }} onConfirm={onConfirm} />
+      <ConfirmStep amountSats={confirmAmountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} destination={{ label: 'To', value: getLnurlPayAddress(parsed) ?? parsed.domain }} error={error} isLoading={isLoading} onBack={() => { setPrepareResponse(null); setError(null); setStep('amount'); }} onConfirm={onConfirm} />
     );
   }
 
