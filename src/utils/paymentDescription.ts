@@ -29,6 +29,15 @@ const isCrossChain = (convInfo: ReturnType<typeof getConversionInfo>) =>
 export const isCrossChainPayment = (payment: Payment): boolean =>
   isCrossChain(getConversionInfo(payment.details));
 
+/**
+ * Whether a payment is part of a conversion rather than money arriving or
+ * leaving. Cross-chain legs carry `conversionInfo`, while an AMM /
+ * stable-balance swap marks only the parent with `conversionDetails` and
+ * leaves the info to its child legs.
+ */
+export const isConversionPayment = (payment: Payment): boolean =>
+  getConversionInfo(payment.details) != null || payment.conversionDetails != null;
+
 /** Truncate text to maxLen characters, appending "..." if shortened */
 const truncate = (text: string, maxLen: number): string =>
   text.length > maxLen ? `${text.slice(0, maxLen)}…` : text;

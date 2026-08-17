@@ -54,6 +54,7 @@ import {
 import { isSendSheetOpen } from '../features/send/sendSheetVisibility';
 import { clearPin, isAppLockSupported } from '../services/appLock';
 import { hasConversionInFlight } from '../contexts/WalletContext';
+import { isConversionPayment } from '../utils/paymentDescription';
 
 
 // ============================================
@@ -359,11 +360,9 @@ export function useBreezSdk(
         setTimeout(() => shownPaymentIdsRef.current.delete(paymentId), 30000);
 
         const isReceived = event.payment.paymentType === 'receive';
-        const hasConversionInfo = event.payment.details &&
-          'conversionInfo' in event.payment.details &&
-          event.payment.details.conversionInfo != null;
+        const isConversion = isConversionPayment(event.payment);
 
-        if (!hasConversionInfo && isReceived && !isMigrationInProgress()) {
+        if (!isConversion && isReceived && !isMigrationInProgress()) {
           setCelebrationPayment(event.payment);
         }
         // A send normally reports itself through the sheet's ResultStep, so
@@ -371,7 +370,7 @@ export function useBreezSdk(
         // the SDK call outlives it, and an unreported SUCCESS is the
         // dangerous direction: the user assumes it failed and sends again.
         // Reuse the same celebration when the sheet is no longer on screen.
-        if (!hasConversionInfo && !isReceived && !isSendSheetOpen() && !isMigrationInProgress()) {
+        if (!isConversion && !isReceived && !isSendSheetOpen() && !isMigrationInProgress()) {
           setCelebrationPayment(event.payment);
         }
       }
