@@ -170,22 +170,26 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   const hasSecondaryData = stableBalance.isActive
     ? true
     : fiatCurrencyInfo.length > 0;
+  // activeLabel is cache-seeded but displayConfig loads async, so a stable
+  // balance shows sats for the first frames. Arming the one-shot there spends
+  // it on the wrong balance and the token amount never animates.
+  const stableBalanceLoading = !!stableBalance.activeLabel && !stableBalance.isActive;
   const skipAnimation = hasPlayedInitialAnimation;
   const [animationReady, setAnimationReady] = useState(skipAnimation);
   const hasTriggeredAnimation = useRef(skipAnimation);
 
   useEffect(() => {
     // Start animation only when BOTH balance and secondary data are available
-    if (primaryBalance > 0 && hasSecondaryData && !hasTriggeredAnimation.current) {
+    if (primaryBalance > 0 && hasSecondaryData && !stableBalanceLoading && !hasTriggeredAnimation.current) {
       hasTriggeredAnimation.current = true;
       hasPlayedInitialAnimation = true;
       setAnimationReady(true);
     }
-  }, [primaryBalance, hasSecondaryData]);
+  }, [primaryBalance, hasSecondaryData, stableBalanceLoading]);
 
   // Timeout fallback: if secondary data doesn't load within 2s, animate balance anyway
   useEffect(() => {
-    if (primaryBalance > 0 && !hasTriggeredAnimation.current) {
+    if (primaryBalance > 0 && !stableBalanceLoading && !hasTriggeredAnimation.current) {
       const timeout = setTimeout(() => {
         if (!hasTriggeredAnimation.current) {
           hasTriggeredAnimation.current = true;
@@ -195,7 +199,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
       }, 2000);
       return () => clearTimeout(timeout);
     }
-  }, [primaryBalance]);
+  }, [primaryBalance, stableBalanceLoading]);
 
   // Only animate from 80% when both are ready; otherwise show full value
   // On return visits, skip the count-up effect (no initialStartPercent)
@@ -251,9 +255,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
 
   const balanceSuffix = stableBalance.isActive ? 'USD' : 'sats';
 
-  // Hide fiat secondary line while stable balance config is still loading
-  // (activeLabel is set from cache but displayConfig hasn't loaded yet)
-  const stableBalanceLoading = !!stableBalance.activeLabel && !stableBalance.isActive;
+  // Hide the fiat secondary line while stable balance config is still loading
   const hasSecondaryLine = stableBalance.isActive ? !!stableSecondarySats : (!stableBalanceLoading && !!currentFiat);
 
   return (
