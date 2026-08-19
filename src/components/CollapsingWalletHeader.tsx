@@ -1,11 +1,11 @@
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import type { GetInfoResponse, FiatCurrency } from '@breeztech/breez-sdk-spark';
 import { safeAreaTop } from '../utils/safeAreaInsets';
-import { getFiatSettings, getDisplayFiatCurrency, setDisplayFiatCurrency } from '../services/settings';
+import { getFiatSettings, getDisplayFiatCurrency, setDisplayFiatCurrency, buyCopy, isBuyIconOnly } from '../services/settings';
 import { formatWithSpaces } from '../utils/formatNumber';
 import { SatAmount } from './SatAmount';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
-import { MenuIcon, AlertTriangleIcon, CurrencyIcon, SpinnerIcon, SwapVerticalIcon } from './Icons';
+import { MenuIcon, AlertTriangleIcon, CurrencyIcon, CashAppIcon, SpinnerIcon, SwapVerticalIcon } from './Icons';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { getTokenBalance, formatTokenAmount } from '../utils/tokenFormatting';
@@ -321,11 +321,25 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
               <button
                 type="button"
                 disabled={isBuyLoading}
-                className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-spark-text-secondary hover:text-spark-text-primary border border-white/10 hover:border-white/20 hover:bg-white/5 transition-colors text-sm font-medium disabled:opacity-50"
+                aria-label={buyCopy('Buy')}
+                className={`flex items-center justify-center gap-1.5 h-9 rounded-xl transition-colors text-sm font-medium disabled:opacity-50 ${
+                  isBuyIconOnly()
+                    ? 'w-9 bg-[#00D64F] hover:bg-[#00c247] border border-black/15 hover:border-black/25'
+                    : 'px-3 text-spark-text-secondary hover:text-spark-text-primary border border-white/10 hover:border-white/20 hover:bg-white/5'
+                }`}
                 onClick={onOpenBuyBitcoin}
               >
-                {isBuyLoading ? <SpinnerIcon size="sm" className="animate-spin" /> : <CurrencyIcon size="sm" />}
-                <span>Buy</span>
+                {isBuyLoading ? (
+                  <SpinnerIcon size="sm" className="animate-spin" />
+                ) : isBuyIconOnly() ? (
+                  // Cash App's mark with its tile knocked out: the button is
+                  // already Cash App's green, so drawing the tile again would
+                  // stack a second square on top of it.
+                  <CashAppIcon size="xl" className="text-transparent" />
+                ) : (
+                  <CurrencyIcon size="sm" />
+                )}
+                {!isBuyIconOnly() && <span>{buyCopy('Buy')}</span>}
               </button>
             )}
           </div>

@@ -17,7 +17,8 @@ import { useLatest } from '../hooks/useLatest';
 import UnclaimedDepositDetailsPage from './UnclaimedDepositDetailsPage';
 import SaveContactDialog from '../features/send/components/SaveContactDialog';
 import BuyBitcoinDialog from '../features/buy/BuyBitcoinDialog';
-import { getBuyProviderSettings, filterProvidersByNetwork, isBuyBitcoinAvailable } from '../services/settings';
+import { getBuyProviderSettings, filterProvidersByNetwork, filterProvidersByPlatform } from '../services/settings';
+import { useCashAppInstalled } from '../hooks/useCashAppInstalled';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';
 import { STATUS_BAR_WALLET_GLASS } from '../utils/statusBarManager';
 import { onDeepLink } from '../utils/deepLink';
@@ -74,10 +75,14 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isBuyBitcoinOpen, setIsBuyBitcoinOpen] = useState(false);
   const [isBuyLoading, setIsBuyLoading] = useState(false);
+  const cashAppInstalled = useCashAppInstalled();
   // Computed per render (cheap in-memory read) so the Buy button's
   // visibility is fresh after any return from Settings; a memo keyed
   // on menu state went stale when providers changed under an overlay.
-  const enabledBuyProviders = filterProvidersByNetwork(getBuyProviderSettings(), network);
+  const enabledBuyProviders = filterProvidersByPlatform(
+    filterProvidersByNetwork(getBuyProviderSettings(), network),
+    cashAppInstalled,
+  );
   const [saveContactAddress, setSaveContactAddress] = useState<string | null>(null);
   // Bump these on each open so each dialog remounts and lazy-inits its
   // state, instead of relying on a reset-in-effect inside the dialog.
@@ -234,9 +239,9 @@ const WalletPage: React.FC<WalletPageProps> = ({
           walletInfo={walletInfo}
           scrollProgress={scrollProgress}
           onOpenMenu={() => setIsMenuOpen(true)}
-          // Buy is hidden when no provider is enabled (Settings →
-          // Buy Bitcoin), not just when the platform disallows buying.
-          onOpenBuyBitcoin={!isBuyBitcoinAvailable() || enabledBuyProviders.length === 0 ? undefined : () => {
+          // Hidden when nothing is left to offer: no provider enabled in
+          // Settings, or (on iOS) Cash App not installed.
+          onOpenBuyBitcoin={enabledBuyProviders.length === 0 ? undefined : () => {
             if (enabledBuyProviders.length === 1 && enabledBuyProviders[0] === 'moonpay') {
               // MoonPay can redirect directly; Cash App needs amount entry via the dialog.
               setIsBuyLoading(true);

@@ -14,8 +14,11 @@ import { isStandalonePwa, openExternalUrl } from '../../../utils/externalLink';
 import {
   getBuyProviderSettings,
   filterProvidersByNetwork,
+  filterProvidersByPlatform,
+  hasBuyProviderSettings,
   type BuyBitcoinProvider,
 } from '../../../services/settings';
+import { useCashAppInstalled } from '../../../hooks/useCashAppInstalled';
 
 export type BuyStep = 'select' | 'amount' | 'qr';
 
@@ -62,7 +65,7 @@ export interface UseBuyBitcoinReturn {
   setQuickAmount: (value: number) => void;
   toggleDenomination: () => void;
   generate: () => Promise<void>;
-  goBackToSelect: () => void;
+  goBackToSelect: (() => void) | null;
   goBackToAmount: () => void;
 }
 
@@ -105,19 +108,29 @@ export function useBuyBitcoin({
     return projectedSats > Number.MAX_SAFE_INTEGER;
   }, [amountInput, amountSats, isTokenMode, btcFiatRate]);
 
-  const [step, setStep] = useState<BuyStep>('select');
   const [redirectingProvider, setRedirectingProvider] = useState<BuyBitcoinProvider | null>(null);
   const [cashAppUrl, setCashAppUrl] = useState<string | null>(null);
   const [generatedAmountSats, setGeneratedAmountSats] = useState<Sats | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const cashAppInstalled = useCashAppInstalled();
   const enabledProviders = useMemo(
-    () => filterProvidersByNetwork(getBuyProviderSettings(), network),
+    () => filterProvidersByPlatform(
+      filterProvidersByNetwork(getBuyProviderSettings(), network),
+      cashAppInstalled,
+    ),
     // Re-read when the dialog opens so updates from settings are reflected.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isOpen, network]
+    [isOpen, network, cashAppInstalled]
   );
+
+  // A lone Cash App entry (iOS) has nothing to pick, so the picker is skipped
+  // and the sheet opens on the amount. Safe as a mount-time decision: the
+  // parent remounts this hook on every open.
+  const skipsProviderSelect = !hasBuyProviderSettings()
+    && enabledProviders.length === 1 && enabledProviders[0] === 'cashApp';
+  const [step, setStep] = useState<BuyStep>(skipsProviderSelect ? 'amount' : 'select');
 
   // No reset-on-close needed — parent (WalletPage) bumps `buyBitcoinSession`
   // on each open and passes it as `key`, so each open is a fresh mount of
@@ -232,11 +245,13 @@ export function useBuyBitcoin({
 
   useInvoicePaid(activeInvoice, onInvoicePaid);
 
-  const goBackToSelect = useCallback(() => {
+  const goBackToSelectFn = useCallback(() => {
     setStep('select');
     resetAmount();
     setError(null);
   }, [resetAmount]);
+  // null when there is no picker behind us, so the caller drops the back arrow.
+  const goBackToSelect = skipsProviderSelect ? null : goBackToSelectFn;
 
   const goBackToAmount = useCallback(() => {
     setStep('amount');

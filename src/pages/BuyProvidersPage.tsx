@@ -3,7 +3,8 @@ import type { Network } from '@breeztech/breez-sdk-spark';
 import { Checkbox } from '../components/ui';
 import { ChevronUpIcon, ChevronDownIcon, DragHandleIcon, MoonPayIcon, CashAppIcon } from '../components/Icons';
 import SlideInPage from '../components/layout/SlideInPage';
-import { getBuyProviderSettings, saveBuyProviderSettings, ALL_BUY_PROVIDERS, type BuyBitcoinProvider } from '../services/settings';
+import { getBuyProviderSettings, saveBuyProviderSettings, filterProvidersByPlatform, buyCopy, ALL_BUY_PROVIDERS, type BuyBitcoinProvider } from '../services/settings';
+import { useCashAppInstalled } from '../hooks/useCashAppInstalled';
 
 interface BuyProvidersPageProps {
   onBack: () => void;
@@ -29,13 +30,18 @@ const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.React
 // fixed drill-in nav: slide in from the right, < back affordance.
 const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, network }) => {
   const isMainnet = network === 'mainnet';
-  const [enabledProviders, setEnabledProviders] = useState<BuyBitcoinProvider[]>(getBuyProviderSettings);
+  const cashAppInstalled = useCashAppInstalled();
+  // Stored state stays whole; the platform filter applies on display only, so
+  // a provider hidden on iOS keeps its stored slot for web and Android.
+  const [storedProviders, setStoredProviders] = useState<BuyBitcoinProvider[]>(getBuyProviderSettings);
   const [draggedItem, setDraggedItem] = useState<BuyBitcoinProvider | null>(null);
 
-  const disabledProviders = ALL_BUY_PROVIDERS.filter(p => !enabledProviders.includes(p));
+  const enabledProviders = filterProvidersByPlatform(storedProviders, cashAppInstalled);
+  const disabledProviders = filterProvidersByPlatform(ALL_BUY_PROVIDERS, cashAppInstalled)
+    .filter(p => !enabledProviders.includes(p));
 
   const handleToggle = useCallback((provider: BuyBitcoinProvider) => {
-    setEnabledProviders(prev => {
+    setStoredProviders(prev => {
       const next = prev.includes(provider)
         ? prev.filter(p => p !== provider)
         : [...prev, provider];
@@ -45,7 +51,7 @@ const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, network }) 
   }, []);
 
   const handleMoveUp = useCallback((provider: BuyBitcoinProvider) => {
-    setEnabledProviders(prev => {
+    setStoredProviders(prev => {
       const i = prev.indexOf(provider);
       if (i <= 0) return prev;
       const next = [...prev];
@@ -56,7 +62,7 @@ const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, network }) 
   }, []);
 
   const handleMoveDown = useCallback((provider: BuyBitcoinProvider) => {
-    setEnabledProviders(prev => {
+    setStoredProviders(prev => {
       const i = prev.indexOf(provider);
       if (i === -1 || i >= prev.length - 1) return prev;
       const next = [...prev];
@@ -73,7 +79,7 @@ const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, network }) 
   const handleDragOver = useCallback((e: React.DragEvent, target: BuyBitcoinProvider) => {
     e.preventDefault();
     if (!draggedItem || draggedItem === target) return;
-    setEnabledProviders(prev => {
+    setStoredProviders(prev => {
       const di = prev.indexOf(draggedItem);
       const ti = prev.indexOf(target);
       if (di === -1 || ti === -1) return prev;
@@ -86,14 +92,14 @@ const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, network }) 
 
   const handleDragEnd = useCallback(() => {
     setDraggedItem(null);
-    setEnabledProviders(prev => {
+    setStoredProviders(prev => {
       saveBuyProviderSettings(prev);
       return prev;
     });
   }, []);
 
   return (
-    <SlideInPage title="Buy Bitcoin" closeStyle="back" onClose={onBack} slideFrom="right">
+    <SlideInPage title={buyCopy('Buy Bitcoin')} closeStyle="back" onClose={onBack} slideFrom="right">
       <div className="p-4 space-y-2">
         {/* Enabled providers — reorderable */}
         {enabledProviders.map((provider, index) => {

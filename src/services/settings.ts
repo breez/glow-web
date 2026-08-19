@@ -6,14 +6,47 @@ import { Preferences } from "@capacitor/preferences";
 export type BuyBitcoinProvider = 'moonpay' | 'cashApp';
 
 /**
- * Buy Bitcoin is hidden in the native iOS app: App Review Guideline 3.1.5(iii)
- * treats third-party purchase links as exchange services requiring licensing
- * evidence. Web and Android are unaffected. TestFlight-only iOS builds may
- * re-enable it via VITE_IOS_ENABLE_BUY=true; never ship a flagged build to
- * App Store review.
+ * iOS surfaces Cash App only, and only while it is installed: what is left
+ * there is a hand-off to an app the user already has, not the purchase link
+ * App Review read as Glow operating an exchange (#281). MoonPay is that
+ * purchase link, so it stays off iOS. Web and Android keep both providers.
+ * `cashAppInstalled` comes from useCashAppInstalled() and is ignored off iOS.
  */
-export function isBuyBitcoinAvailable(): boolean {
-  return Capacitor.getPlatform() !== 'ios' || import.meta.env.VITE_IOS_ENABLE_BUY === 'true';
+export function filterProvidersByPlatform(
+  providers: BuyBitcoinProvider[],
+  cashAppInstalled: boolean,
+): BuyBitcoinProvider[] {
+  if (Capacitor.getPlatform() !== 'ios') return providers;
+  return cashAppInstalled ? providers.filter((p) => p === 'cashApp') : [];
+}
+
+/**
+ * Whether the provider list is worth offering in Settings. iOS is not a
+ * shorter version of that list: it has one destination and no MoonPay, so
+ * there is nothing to order or switch off. Adding funds from Cash App is its
+ * own thing there, sharing the flow rather than the settings.
+ */
+export function hasBuyProviderSettings(): boolean {
+  return Capacitor.getPlatform() !== 'ios';
+}
+
+/**
+ * iOS names the destination instead of the act, since "Buy" is what App Review
+ * read as Glow selling bitcoin. Other platforms keep their existing wording.
+ */
+export function buyCopy(elsewhere: string): string {
+  return Capacitor.getPlatform() === 'ios' ? 'Add funds from Cash App' : elsewhere;
+}
+
+/**
+ * The header pill drops its label on iOS: "Add funds from Cash App" does not
+ * fit next to the Refund pill on a small phone, and truncating it would leave
+ * wording App Review reads differently than intended. The icon keeps its name
+ * as an aria-label. It also carries Cash App's own mark rather than the
+ * generic currency glyph, since naming the destination is the whole point.
+ */
+export function isBuyIconOnly(): boolean {
+  return Capacitor.getPlatform() === 'ios';
 }
 
 /** Filter out providers unavailable on the current network (e.g. CashApp is mainnet-only) */

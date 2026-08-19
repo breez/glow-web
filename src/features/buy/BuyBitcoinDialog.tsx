@@ -13,7 +13,7 @@ import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
 import { SatAmount } from '../../components/SatAmount';
 import type { Network } from '@breeztech/breez-sdk-spark';
 import { CurrencyIcon, MoonPayIcon, CashAppIcon } from '../../components/Icons';
-import { type BuyBitcoinProvider } from '../../services/settings';
+import { buyCopy, type BuyBitcoinProvider } from '../../services/settings';
 import { useToast } from '../../contexts/ToastContext';
 import { formatQuickAmount } from '../../utils/tokenFormatting';
 import { useBuyBitcoin } from './hooks/useBuyBitcoin';
@@ -96,7 +96,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
         {buy.step === 'select' && (
           <>
             <DialogHeader
-              title="Buy Bitcoin"
+              title={buyCopy('Buy Bitcoin')}
               onClose={onClose}
               icon={<CurrencyIcon size="md" />}
             />
@@ -125,9 +125,9 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
         {buy.step === 'amount' && (
           <>
             <DialogHeader
-              title="Buy with Cash App"
+              title={buyCopy('Buy with Cash App')}
               onClose={onClose}
-              onBack={buy.goBackToSelect}
+              onBack={buy.goBackToSelect ?? undefined}
               icon={cashAppHeaderIcon}
             />
             <div className="space-y-4">
@@ -201,7 +201,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
         {buy.step === 'qr' && buy.cashAppUrl && buy.generatedAmountSats !== null && (
           <>
             <DialogHeader
-              title="Buy with Cash App"
+              title={buyCopy('Buy with Cash App')}
               onClose={onClose}
               onBack={buy.goBackToAmount}
               icon={cashAppHeaderIcon}
