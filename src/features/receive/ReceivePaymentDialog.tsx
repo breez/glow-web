@@ -158,10 +158,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     const parts = lightningAddress.lightningAddress.split('@');
     const username = parts[0];
     const domain = parts[1] || 'breez.tips';
-    // The server reserves a dropped address for its previous owner, so it
-    // never goes to anyone else. Reclaiming it needs SDK support that hasn't
-    // shipped, so the copy still calls the change final.
-    return `'${username}@${domain}' will stop receiving payments. It can't be reclaimed, by you or by anyone else.\n\nDo you want to proceed?`;
+    return `'${username}@${domain}' will stop receiving payments.\n\nDo you want to proceed?`;
   };
 
   const getQRTitle = () => {
