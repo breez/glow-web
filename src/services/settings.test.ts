@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ensureSparkPrivateMode } from './settings';
 
 function makeSdk(sparkPrivateModeEnabled: boolean, failUpdate = false) {
@@ -69,5 +69,29 @@ describe('buildConnectConfig', () => {
     const { buildConnectConfig } = await import('../hooks/buildConnectConfig');
     expect(buildConnectConfig('mainnet').privateEnabledDefault).toBe(true);
     vi.unstubAllEnvs();
+  });
+});
+
+describe('getSettings deposit claim fee', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+  });
+
+  it('defaults to a flat 500 sat claim threshold', async () => {
+    const { getSettings } = await import('./settings');
+    expect(getSettings().depositMaxFee).toEqual({ type: 'fixed', amount: 500 });
+  });
+
+  it('keeps a saved threshold', async () => {
+    const { getSettings, saveSettings } = await import('./settings');
+    saveSettings({ depositMaxFee: { type: 'fixed', amount: 1200 } });
+    expect(getSettings().depositMaxFee).toEqual({ type: 'fixed', amount: 1200 });
+  });
+
+  it('falls back to the default when the stored fee is malformed', async () => {
+    localStorage.setItem('user_settings_v1', JSON.stringify({ depositMaxFee: { type: 'fixed' } }));
+    const { getSettings } = await import('./settings');
+    expect(getSettings().depositMaxFee).toEqual({ type: 'fixed', amount: 500 });
   });
 });

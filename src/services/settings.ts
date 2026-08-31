@@ -43,8 +43,15 @@ const FIAT_SETTINGS_KEY = 'fiat_settings_v1';
 const ACTIVE_FIAT_KEY = 'fiat_active_currency';
 const BUY_PROVIDERS_KEY = 'buy_providers_v1';
 
+/**
+ * Deposits are claimed automatically while the claim fee stays under this
+ * limit. A flat sat amount is what the Settings page exposes; the rate and
+ * network-recommended variants stay behind developer mode.
+ */
+export const DEFAULT_DEPOSIT_MAX_FEE_SATS = 500;
+
 const defaultSettings: UserSettings = {
-  depositMaxFee: { type: 'rate', satPerVbyte: 1 },
+  depositMaxFee: { type: 'fixed', amount: DEFAULT_DEPOSIT_MAX_FEE_SATS },
 };
 
 const defaultFiatSettings: FiatSettings = {

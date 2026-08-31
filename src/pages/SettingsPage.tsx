@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ConfirmDialog, FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
 import { PinGate } from '../components/PinEntry';
 import { getSettings, saveSettings, UserSettings, isBuyBitcoinAvailable, isDevMode as isDevModeEnabled, setDevMode } from '../services/settings';
-import type { Config, Network } from '@breeztech/breez-sdk-spark';
+import type { Config, MaxFee, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
 import { CurrencyIcon, ChevronRightIcon, DownloadIcon, KeyIcon, LockIcon, ShieldCheckIcon, TrashIcon, ExternalLinkIcon } from '../components/Icons';
 import { ACCOUNT_DELETION_GUIDE_URL } from '@/services/accountDeletion';
@@ -50,6 +50,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     const s = getSettings();
     return s.depositMaxFee.type;
   });
+  // A stored rate / leeway value shows its raw number in the sats field
+  // outside developer mode. Only an ex-developer-mode install can be in that
+  // state, and the next save rewrites it as a flat sat amount.
   const [feeValue, setFeeValue] = useState<string>(() => {
     const s = getSettings();
     if (s.depositMaxFee.type === 'fixed') return String(s.depositMaxFee.amount);
@@ -110,21 +113,28 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   };
 
   const handleSave = async () => {
+    const current = getSettings();
     const n = Number(feeValue);
-    if (isDevMode) {
-      const updated: UserSettings = {
-        ...(feeType === 'fixed'
-          ? { depositMaxFee: { type: 'fixed', amount: Math.floor(n) } }
-          : feeType === 'rate'
-            ? { depositMaxFee: { type: 'rate', satPerVbyte: n } }
-            : { depositMaxFee: { type: 'networkRecommended', leewaySatPerVbyte: Math.max(0, Math.floor(n)) } }
-        ),
-        syncIntervalSecs: syncIntervalSecs !== '' ? Math.max(0, Math.floor(Number(syncIntervalSecs))) : undefined,
-        lnurlDomain: lnurlDomain !== '' ? lnurlDomain : undefined,
-        preferSparkOverLightning,
-      };
-      saveSettings(updated);
-    }
+    // The field is free text, and a bad value persisted here would fail
+    // validation on the next read and reset every setting to its default.
+    const validFee = feeValue.trim() !== '' && Number.isFinite(n) && n >= 0;
+    // Outside developer mode the only shape on offer is a flat sat amount.
+    const depositMaxFee: MaxFee = !validFee
+      ? current.depositMaxFee
+      : !isDevMode || feeType === 'fixed'
+        ? { type: 'fixed', amount: Math.floor(n) }
+        : feeType === 'rate'
+          ? { type: 'rate', satPerVbyte: n }
+          : { type: 'networkRecommended', leewaySatPerVbyte: Math.floor(n) };
+    const updated: UserSettings = isDevMode
+      ? {
+          depositMaxFee,
+          syncIntervalSecs: syncIntervalSecs !== '' ? Math.max(0, Math.floor(Number(syncIntervalSecs))) : undefined,
+          lnurlDomain: lnurlDomain !== '' ? lnurlDomain : undefined,
+          preferSparkOverLightning,
+        }
+      : { ...current, depositMaxFee };
+    saveSettings(updated);
     window.location.reload();
   };
 
@@ -165,11 +175,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     }
   };
 
-  const footer = isDevMode ? (
+  const footer = (
     <PrimaryButton className="w-full" onClick={handleSave}>
       Save Changes
     </PrimaryButton>
-  ) : undefined;
+  );
 
   // Same shape as BackupPage: the gate replaces the page body, and the
   // header's close button is the way out.
@@ -373,11 +383,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           )}
 
           {/* Deposit Claim Fee */}
-          {isDevMode && (
-            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Deposit Claim Fee</h3>
-              <FormGroup>
-                <div className="flex gap-2 items-center">
+          <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+            <h3 className="font-display font-semibold text-spark-text-primary mb-1">Automatic Claims</h3>
+            <p className="text-sm text-spark-text-muted mb-3">
+              Incoming Bitcoin is claimed for you while the network fee stays under this amount.
+            </p>
+            <FormGroup>
+              <div className="flex gap-2 items-center">
+                {isDevMode && (
                   <select
                     value={feeType}
                     onChange={(e) => setFeeType(e.currentTarget.value as 'fixed' | 'rate' | 'networkRecommended')}
@@ -388,20 +401,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     <option className="bg-spark-surface" value="rate">Rate (sat/vB)</option>
                     <option className="bg-spark-surface" value="networkRecommended">Network + leeway</option>
                   </select>
-                  <div className="flex-1">
-                    <FormInput
-                      id="deposit-fee-default"
-                      type="number"
-                      min={0}
-                      value={feeValue}
-                      onChange={(e) => setFeeValue(e.target.value)}
-                      placeholder={feeType === 'fixed' ? 'sats' : 'sat/vB'}
-                    />
-                  </div>
+                )}
+                <div className="flex-1">
+                  <FormInput
+                    id="deposit-fee-default"
+                    type="number"
+                    min={0}
+                    value={feeValue}
+                    onChange={(e) => setFeeValue(e.target.value)}
+                    placeholder={isDevMode && feeType !== 'fixed' ? 'sat/vB' : 'sats'}
+                    aria-label="Maximum claim fee"
+                  />
                 </div>
-              </FormGroup>
-            </div>
-          )}
+              </div>
+            </FormGroup>
+          </div>
 
           {/* Sync Settings */}
           {isDevMode && (
