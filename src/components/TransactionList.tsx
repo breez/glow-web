@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Payment } from '@breeztech/breez-sdk-spark';
-import type { ExtendedPayment } from '../utils/depositHelpers';
+import { depositNeedsAction, type ExtendedPayment } from '../utils/depositHelpers';
 import { formatWithSpaces } from '../utils/formatNumber';
 import { SatAmount } from './SatAmount';
 import { ArrowDownIcon, ArrowUpIcon, LightningBoltIcon } from './Icons';
@@ -65,25 +65,30 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
   const { fiatCurrencies } = useFiatData();
   const { findContactByAddress } = useContactsContext();
   // Split transactions into pending deposits and regular payments
-  const { confirming, pendingApproval, regularPayments } = useMemo(() => {
-    const conf: Payment[] = [];
-    const pending: Payment[] = [];
+  const sections = useMemo(() => {
+    const confirming: Payment[] = [];
+    const pendingApproval: Payment[] = [];
     const regular: Payment[] = [];
 
     for (const tx of transactions) {
       if (tx.method === 'deposit' && tx.status === 'pending') {
-        const ext = tx as ExtendedPayment;
-        if (ext.depositInfo && !ext.depositInfo.isMature) {
-          conf.push(tx);
+        // Approval means a decision to make. A deposit that is merely waiting,
+        // for confirmations or for its own claim to go through, is not one.
+        if (depositNeedsAction(tx)) {
+          pendingApproval.push(tx);
         } else {
-          pending.push(tx);
+          confirming.push(tx);
         }
       } else {
         regular.push(tx);
       }
     }
 
-    return { confirming: conf, pendingApproval: pending, regularPayments: regular };
+    return [
+      { title: 'Pending Confirmation', items: confirming },
+      { title: 'Pending Approval', items: pendingApproval },
+      { title: 'Payments', items: regular },
+    ];
   }, [transactions]);
 
   if (!transactions.length) {
@@ -116,6 +121,24 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
     const isReceive = tx.paymentType === 'receive';
     const isFailed = tx.status === 'failed';
     const isPending = !isFailed && (tx.status === 'pending' || tx.conversionDetails?.status === 'pending');
+    const needsAction = depositNeedsAction(tx);
+    // An unclaimed deposit has no time of its own, so the row says where it
+    // stands instead of dating itself by the fetch. A matured deposit sits
+    // with the ones still gaining confirmations, so it says which it is.
+    const deposit = (tx as ExtendedPayment).depositInfo;
+    // Confirmed, and the claim that follows is under way. The row leaves for
+    // Payments once that lands, so the chip names the work, not the milestone.
+    const isProcessing = !needsAction && deposit?.isMature === true;
+    const subtitle = needsAction
+      ? 'Tap to claim'
+      : deposit
+        ? null
+        : formatTimeAgo(tx.timestamp);
+    const amountClass = isFailed
+      ? 'text-spark-text-muted line-through'
+      : isReceive
+        ? 'text-spark-success'
+        : 'text-spark-electric';
 
     return (
       <li
@@ -150,8 +173,17 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1 text-xs text-spark-text-muted mt-0.5">
-            <span>{formatTimeAgo(tx.timestamp)}</span>
+          {/* min-h holds the line when there is no subtitle, so a row without
+              one keeps its title on the same baseline as every other row. */}
+          <div className="flex items-center gap-1 text-xs text-spark-text-muted mt-0.5 min-h-4">
+            {/* The call to action borrows the amount's color so the row gains
+                no color of its own. */}
+            {isProcessing && (
+              <span className="px-1.5 py-0.5 rounded-sm bg-spark-text-muted/15 text-[10px] leading-3 font-medium uppercase">
+                Processing
+              </span>
+            )}
+            {subtitle && <span className={needsAction ? amountClass : ''}>{subtitle}</span>}
             {(() => {
               if (isFailed || tx.fees <= 0) return null;
               let feeText: string;
@@ -176,12 +208,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
 
         {/* Amount - right aligned */}
         <span
-          className={`
-            font-mono font-semibold text-[15px] shrink-0 inline-flex items-center
-            ${isFailed ? 'text-spark-text-muted line-through' : ''}
-            ${!isFailed && isReceive ? 'text-spark-success' : ''}
-            ${!isFailed && !isReceive ? 'text-spark-electric' : ''}
-          `}
+          className={`font-mono font-semibold text-[15px] shrink-0 inline-flex items-center ${amountClass}`}
           data-testid="transaction-amount"
         >
           {isReceive ? '+' : '-'}
@@ -205,50 +232,19 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
 
   return (
     <div className="px-4 py-3">
-      {/* Confirming section */}
-      {confirming.length > 0 && (
-        <>
+      {sections.map(({ title, items }) => items.length > 0 && (
+        <React.Fragment key={title}>
           <div className="flex items-center gap-2 mb-3">
             <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
-              Pending Confirmation
+              {title}
             </h2>
             <div className="flex-1 h-px bg-linear-to-r from-spark-border to-transparent" />
           </div>
-          <ul className="space-y-2 mb-6">
-            {confirming.map((tx, index) => renderTransactionItem(tx, index))}
+          <ul className="space-y-2 not-last:mb-6">
+            {items.map((tx, index) => renderTransactionItem(tx, index))}
           </ul>
-        </>
-      )}
-
-      {/* Pending Approval section */}
-      {pendingApproval.length > 0 && (
-        <>
-          <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
-              Pending Approval
-            </h2>
-            <div className="flex-1 h-px bg-linear-to-r from-spark-border to-transparent" />
-          </div>
-          <ul className="space-y-2 mb-6">
-            {pendingApproval.map((tx, index) => renderTransactionItem(tx, index))}
-          </ul>
-        </>
-      )}
-
-      {/* Payments section */}
-      {regularPayments.length > 0 && (
-        <>
-          <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
-              Payments
-            </h2>
-            <div className="flex-1 h-px bg-linear-to-r from-spark-border to-transparent" />
-          </div>
-          <ul className="space-y-2">
-            {regularPayments.map((tx, index) => renderTransactionItem(tx, index))}
-          </ul>
-        </>
-      )}
+        </React.Fragment>
+      ))}
     </div>
   );
 };

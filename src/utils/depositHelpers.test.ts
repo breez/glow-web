@@ -3,6 +3,7 @@ import {
   convertDepositsToPayments,
   mergeDepositsWithTransactions,
   isUnclaimedDepositPayment,
+  depositNeedsAction,
   ExtendedPayment,
 } from './depositHelpers';
 import type { Payment, DepositInfo } from '@breeztech/breez-sdk-spark';
@@ -185,6 +186,18 @@ describe('depositHelpers', () => {
     it('returns false for payments without isUnclaimedDeposit property', () => {
       const payment = { id: 'payment-1' } as Payment;
       expect(isUnclaimedDepositPayment(payment)).toBe(false);
+    });
+  });
+
+  describe('depositNeedsAction', () => {
+    const deposit = (info: Partial<DepositInfo>): ExtendedPayment =>
+      ({ depositInfo: { txid: 'a', vout: 0, amountSats: 1, ...info } } as ExtendedPayment);
+
+    it('is true only for a mature deposit whose automatic claim failed', () => {
+      expect(depositNeedsAction(deposit({ isMature: true, claimError: { type: 'generic', message: 'x' } as DepositInfo['claimError'] }))).toBe(true);
+      expect(depositNeedsAction(deposit({ isMature: true }))).toBe(false);
+      expect(depositNeedsAction(deposit({ isMature: false, claimError: { type: 'generic', message: 'x' } as DepositInfo['claimError'] }))).toBe(false);
+      expect(depositNeedsAction({ id: 'p' } as ExtendedPayment)).toBe(false);
     });
   });
 });
