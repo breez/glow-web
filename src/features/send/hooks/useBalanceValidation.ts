@@ -58,6 +58,10 @@ export function useBalanceValidation(
   const parseInputToSats = (input: string): Sats | null =>
     parseAmountToSats(input, isTokenMode, btcFiatRate);
 
+  // Max, not sum: a partial send converts with MinAmountOut(amount), so the
+  // token has to cover the whole payment on its own and the sat change is left
+  // where it is. Send All is the exception, and the SDK sweeps both there by
+  // adding the sat balance to the conversion output.
   const maxAvailableSats = (): number | undefined => {
     if (balanceSats === undefined) return undefined;
     const tokenFallback = isActive && tokenBalanceSats !== null ? tokenBalanceSats : 0;
