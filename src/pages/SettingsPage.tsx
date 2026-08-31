@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ConfirmDialog, FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
 import { PinGate } from '../components/PinEntry';
-import { getSettings, saveSettings, UserSettings, isBuyBitcoinAvailable, isDevMode as isDevModeEnabled, setDevMode } from '../services/settings';
-import type { Config, MaxFee, Network } from '@breeztech/breez-sdk-spark';
+import { getSettings, saveSettings, UserSettings, isBuyBitcoinAvailable, isDevMode as isDevModeEnabled, setDevMode, buildDepositMaxFee, depositMaxFeeDrafts, DepositMaxFeeType } from '../services/settings';
+import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
 import { CurrencyIcon, ChevronRightIcon, DownloadIcon, KeyIcon, LockIcon, ShieldCheckIcon, TrashIcon, ExternalLinkIcon } from '../components/Icons';
 import { ACCOUNT_DELETION_GUIDE_URL } from '@/services/accountDeletion';
@@ -46,19 +46,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     () => (new URLSearchParams(window.location.search).get('network') || 'mainnet') as Network,
   );
 
-  const [feeType, setFeeType] = useState<'fixed' | 'rate' | 'networkRecommended'>(() => {
-    const s = getSettings();
-    return s.depositMaxFee.type;
-  });
-  // A stored rate / leeway value shows its raw number in the sats field
-  // outside developer mode. Only an ex-developer-mode install can be in that
-  // state, and the next save rewrites it as a flat sat amount.
-  const [feeValue, setFeeValue] = useState<string>(() => {
-    const s = getSettings();
-    if (s.depositMaxFee.type === 'fixed') return String(s.depositMaxFee.amount);
-    if (s.depositMaxFee.type === 'rate') return String(s.depositMaxFee.satPerVbyte);
-    return String(s.depositMaxFee.leewaySatPerVbyte);
-  });
+  const [feeType, setFeeType] = useState<DepositMaxFeeType>(() => getSettings().depositMaxFee.type);
+  // One draft per type: the units differ, so carrying a single number across
+  // a type change would turn 500 sats into 500 sat/vB.
+  const [feeDrafts, setFeeDrafts] = useState<Record<DepositMaxFeeType, string>>(() =>
+    depositMaxFeeDrafts(getSettings()),
+  );
+  const feeValue = feeDrafts[feeType];
+  const feeUnit = feeType === 'fixed' ? 'sats' : 'sat/vB';
 
   // SettingsPage only mounts after wallet connect, so `config` is
   // effectively stable for this lifetime; capture once via lazy init.
@@ -114,26 +109,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
   const handleSave = async () => {
     const current = getSettings();
-    const n = Number(feeValue);
-    // The field is free text, and a bad value persisted here would fail
-    // validation on the next read and reset every setting to its default.
-    const validFee = feeValue.trim() !== '' && Number.isFinite(n) && n >= 0;
-    // Outside developer mode the only shape on offer is a flat sat amount.
-    const depositMaxFee: MaxFee = !validFee
-      ? current.depositMaxFee
-      : !isDevMode || feeType === 'fixed'
-        ? { type: 'fixed', amount: Math.floor(n) }
-        : feeType === 'rate'
-          ? { type: 'rate', satPerVbyte: n }
-          : { type: 'networkRecommended', leewaySatPerVbyte: Math.floor(n) };
+    const entered = buildDepositMaxFee(feeType, feeValue);
+    const depositMaxFee = entered ?? current.depositMaxFee;
+    const depositMaxFeeByType = { ...current.depositMaxFeeByType };
+    for (const [type, value] of Object.entries(feeDrafts)) {
+      const parsed = buildDepositMaxFee(type as DepositMaxFeeType, value);
+      if (parsed) depositMaxFeeByType[type as DepositMaxFeeType] = Number(value);
+    }
     const updated: UserSettings = isDevMode
       ? {
           depositMaxFee,
+          depositMaxFeeByType,
           syncIntervalSecs: syncIntervalSecs !== '' ? Math.max(0, Math.floor(Number(syncIntervalSecs))) : undefined,
           lnurlDomain: lnurlDomain !== '' ? lnurlDomain : undefined,
           preferSparkOverLightning,
         }
-      : { ...current, depositMaxFee };
+      : { ...current, depositMaxFee, depositMaxFeeByType };
     saveSettings(updated);
     window.location.reload();
   };
@@ -195,9 +186,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     <SlideInPage title="Settings" onClose={onBack} slideFrom="left" footer={footer}>
       <div className="p-4">
         <div className="max-w-xl mx-auto w-full space-y-4">
-          {/* Order: page nav, exports, reconnect, toggles, inputs.
-              The "Save Changes" footer applies the toggles + inputs;
-              everything above it commits on tap. */}
+          {/* Order: page nav, exports, settings, diagnostics, developer
+              options, account deletion last. The "Save Changes" footer
+              applies the toggles + inputs; the rest commits on tap. */}
 
           {/* Lock Screen (native only: app lock needs the Capacitor
               shell). Backup is its own entry below; BackupPage runs its
@@ -266,6 +257,46 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
           </div>
 
+          {/* Automatic claims. The network-recommended form needs a
+              paragraph to explain, so it stays in developer mode unless it
+              is already what the user picked. */}
+          <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+            <h3 className="font-display font-semibold text-spark-text-primary mb-1">Automatic Claims</h3>
+            <p className="text-sm text-spark-text-muted mb-3">
+              On-chain deposits are claimed automatically while the network fee stays under this limit.
+            </p>
+            <FormGroup>
+              <div className="flex gap-2 items-center">
+                <select
+                  value={feeType}
+                  onChange={(e) => setFeeType(e.currentTarget.value as DepositMaxFeeType)}
+                  className="min-w-[160px] bg-spark-surface border border-spark-border rounded-xl px-3 py-3 text-spark-text-primary text-sm focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20"
+                  aria-label="Max fee type"
+                >
+                  <option className="bg-spark-surface" value="fixed">Fixed</option>
+                  <option className="bg-spark-surface" value="rate">Rate</option>
+                  {(isDevMode || feeType === 'networkRecommended') && (
+                    <option className="bg-spark-surface" value="networkRecommended">Network + leeway</option>
+                  )}
+                </select>
+                <div className="flex-1">
+                  <FormInput
+                    id="deposit-fee-default"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    value={feeValue}
+                    onChange={(e) => setFeeDrafts({ ...feeDrafts, [feeType]: e.target.value })}
+                    placeholder={feeUnit}
+                  />
+                </div>
+                {/* The placeholder carries the unit too, but it is gone as
+                    soon as the field holds a value. */}
+                <span className="text-sm text-spark-text-muted shrink-0">{feeUnit}</span>
+              </div>
+            </FormGroup>
+          </div>
+
           {/* Passkey & Labels. Every page in the hub acts on the active
               passkey, so a mnemonic-only wallet has nothing to open. */}
           {isDevMode && isPasskeyMode() && (
@@ -300,25 +331,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 <DownloadIcon size="md" />
               )}
               {isDownloadingLogs ? 'Preparing...' : 'Download Logs'}
-            </button>
-          </div>
-
-          {/* Account deletion (App Store 5.1.1(v)): opens the guide
-              explaining how to delete the account (logout wipes the
-              device) and remove the passkey. Reachable without dev
-              mode. */}
-          <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-            <h3 className="font-display font-semibold text-spark-text-primary mb-3">Account</h3>
-            <button
-              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-warning/40 rounded-xl text-spark-warning hover:bg-spark-warning/10 transition-colors"
-              type="button"
-              onClick={() => { void openExternalUrl(ACCOUNT_DELETION_GUIDE_URL); }}
-            >
-              <div className="flex items-center gap-3">
-                <TrashIcon size="md" />
-                <span>How to delete your account</span>
-              </div>
-              <ExternalLinkIcon size="sm" />
             </button>
           </div>
 
@@ -382,41 +394,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
           )}
 
-          {/* Deposit Claim Fee */}
-          <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-            <h3 className="font-display font-semibold text-spark-text-primary mb-1">Automatic Claims</h3>
-            <p className="text-sm text-spark-text-muted mb-3">
-              Incoming Bitcoin is claimed for you while the network fee stays under this amount.
-            </p>
-            <FormGroup>
-              <div className="flex gap-2 items-center">
-                {isDevMode && (
-                  <select
-                    value={feeType}
-                    onChange={(e) => setFeeType(e.currentTarget.value as 'fixed' | 'rate' | 'networkRecommended')}
-                    className="min-w-[160px] bg-spark-surface border border-spark-border rounded-xl px-3 py-3 text-spark-text-primary text-sm focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20"
-                    aria-label="Max fee type"
-                  >
-                    <option className="bg-spark-surface" value="fixed">Fixed (sats)</option>
-                    <option className="bg-spark-surface" value="rate">Rate (sat/vB)</option>
-                    <option className="bg-spark-surface" value="networkRecommended">Network + leeway</option>
-                  </select>
-                )}
-                <div className="flex-1">
-                  <FormInput
-                    id="deposit-fee-default"
-                    type="number"
-                    min={0}
-                    value={feeValue}
-                    onChange={(e) => setFeeValue(e.target.value)}
-                    placeholder={isDevMode && feeType !== 'fixed' ? 'sat/vB' : 'sats'}
-                    aria-label="Maximum claim fee"
-                  />
-                </div>
-              </div>
-            </FormGroup>
-          </div>
-
           {/* Sync Settings */}
           {isDevMode && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
@@ -455,6 +432,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               </FormGroup>
             </div>
           )}
+
+          {/* Account deletion (App Store 5.1.1(v)): opens the guide
+              explaining how to delete the account (logout wipes the
+              device) and remove the passkey. Reachable without dev
+              mode. */}
+          <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+            <h3 className="font-display font-semibold text-spark-text-primary mb-3">Account</h3>
+            <button
+              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-warning/40 rounded-xl text-spark-warning hover:bg-spark-warning/10 transition-colors"
+              type="button"
+              onClick={() => { void openExternalUrl(ACCOUNT_DELETION_GUIDE_URL); }}
+            >
+              <div className="flex items-center gap-3">
+                <TrashIcon size="md" />
+                <span>How to delete your account</span>
+              </div>
+              <ExternalLinkIcon size="sm" />
+            </button>
+          </div>
 
           {/* Version / Dev Mode Toggle */}
           <div className="text-center pt-4">
