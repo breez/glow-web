@@ -9,8 +9,8 @@ import {
 } from '../../components/ui';
 import { LightningBoltIcon } from '../../components/Icons';
 import {
-  TOKEN_QUICK_AMOUNTS,
   SATS_QUICK_AMOUNTS,
+  fixedQuickAmounts,
   formatQuickAmount,
 } from '../../utils/tokenFormatting';
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
@@ -68,6 +68,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     tokenSymbol,
     config,
     btcFiatRate,
+    unitsPerUsd,
     amountSats: parsedSats,
   } = input;
 
@@ -110,7 +111,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     setAmountInput(String(quickAmount));
   };
 
-  const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : SATS_QUICK_AMOUNTS;
+  const quickAmounts = isTokenMode ? fixedQuickAmounts(unitsPerUsd) : SATS_QUICK_AMOUNTS;
 
   // Range-aware validity check. Mirrors the guard in
   // `useReceivePayment.generateBolt11Invoice` so the UI disables the

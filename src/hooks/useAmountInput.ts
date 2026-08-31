@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import {
+  FALLBACK_SATS_PER_USD,
   buildFiatDisplayConfig,
   parseAmountToSats,
   sanitizeTokenInput,
@@ -86,6 +87,12 @@ export interface UseAmountInputResult {
   config: TokenDisplayConfig | null;
   /** BTC→fiat rate. Escape hatch; prefer the formatting helpers. */
   btcFiatRate: number;
+  /**
+   * How many units of the current denomination make one US dollar: sats per
+   * dollar in sats mode, currency units per dollar in fiat mode. Quick amounts
+   * are the round numbers on this scale. 0 until the USD rate loads.
+   */
+  unitsPerUsd: number;
 
   // ----- Parsing -----
   /** Parse the current input (or a passed string) to a validated Sats value. */
@@ -131,6 +138,7 @@ export interface UseAmountInputResult {
 export function useAmountInput(options: UseAmountInputOptions = {}): UseAmountInputResult {
   const { initialAmount = '', balanceSats, tokenBalance, fiatOverride } = options;
   const stableBalance = useStableBalance();
+  const { fiatRates } = useFiatData();
 
   // When stable balance is off, a fiat override (USD toggle, cross-chain
   // "Send USD") supplies the currency config + rate so the user can still
@@ -174,6 +182,16 @@ export function useAmountInput(options: UseAmountInputOptions = {}): UseAmountIn
     setIsTokenMode((prev) => !prev);
     setAmountInput('');
   }, []);
+
+  // Both rates are quoted per BTC, so dividing one by the other drops BTC out
+  // and leaves the cross rate against the dollar.
+  const unitsPerUsd = useMemo(() => {
+    const usdPerBtc = fiatRates.find(r => r.coin === 'USD')?.value ?? 0;
+    // Sats entry works without a rate, so it falls back rather than dropping
+    // its quick amounts. Fiat entry is gated on the rate anyway.
+    if (usdPerBtc <= 0) return isTokenMode ? 0 : FALLBACK_SATS_PER_USD;
+    return isTokenMode ? btcFiatRate / usdPerBtc : 100_000_000 / usdPerBtc;
+  }, [fiatRates, isTokenMode, btcFiatRate]);
 
   const parseToSats = useCallback(
     (input?: string): Sats | null =>
@@ -230,6 +248,7 @@ export function useAmountInput(options: UseAmountInputOptions = {}): UseAmountIn
     tokenSymbol: config?.symbol ?? null,
     config,
     btcFiatRate,
+    unitsPerUsd,
     parseToSats,
     amountSats,
     tokenBalanceDisplay,

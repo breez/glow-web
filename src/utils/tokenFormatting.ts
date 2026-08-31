@@ -161,6 +161,12 @@ export function fiatToSats(fiatAmount: number, btcFiatRate: number): number {
   return Math.round((fiatAmount / btcFiatRate) * 100_000_000);
 }
 
+/** Inverse of `fiatToSats`. 0 when no rate has loaded. */
+export function satsToFiat(sats: number, btcFiatRate: number): number {
+  if (btcFiatRate <= 0) return 0;
+  return (sats / 100_000_000) * btcFiatRate;
+}
+
 /**
  * Parse a user-entered amount string to a validated `Sats` value.
  * - Token mode: input is fiat (e.g. "10.50") → converts via btcFiatRate
@@ -262,11 +268,85 @@ export function getTokenAmountFromPayment(payment: Payment): TokenPaymentInfo | 
   return null;
 }
 
-/** Quick amount presets for token-denominated inputs. */
-export const TOKEN_QUICK_AMOUNTS = [1, 5, 10];
-
 /** Quick amount presets for sat-denominated inputs. */
 export const SATS_QUICK_AMOUNTS = [1000, 10000, 100000];
+
+/** Value a quick amount may be worth, in US dollars (#393). */
+const MIN_USD = 1;
+const MAX_USD = 1000;
+
+/** Seven digits is where a label stops fitting the four-button row on a phone.
+ *  Only binds in a currency whose unit is worth a fraction of a cent, which
+ *  gets a lower ceiling in exchange for a row that still lays out. */
+const MAX_UNITS = 999_999;
+
+/** Sats per dollar to fall back on before a rate has loaded, so sat quick
+ *  amounts still render on a cold start. It only decides which round numbers
+ *  get offered, never a conversion, so being off by a price move costs at most
+ *  a rung. */
+export const FALLBACK_SATS_PER_USD = 1000;
+
+/** Share of the balance the largest quick amount may reach. The rest is fee
+ *  headroom: an amount equal to the balance dead-ends on insufficient funds at
+ *  the confirm step, and Send All already spends everything. */
+const SPENDABLE_HEADROOM = 0.8;
+
+/** Round amounts (1, 2 and 5 times a power of ten) from `min` to `max`, ascending. */
+function roundAmountsBetween(min: number, max: number): number[] {
+  if (!(min > 0) || !(max >= min)) return [];
+  const amounts: number[] = [];
+  for (let exponent = Math.floor(Math.log10(min)); 10 ** exponent <= max; exponent++) {
+    for (const step of [1, 2, 5]) {
+      const amount = step * 10 ** exponent;
+      if (amount >= min && amount <= max) amounts.push(amount);
+    }
+  }
+  return amounts;
+}
+
+/**
+ * The round amounts worth between $1 and $1000 in the unit the user is typing.
+ * `unitsPerUsd` is how many of that unit make a dollar: sats per dollar in sats
+ * mode, currency units per dollar in fiat mode. Deriving the ladder from the
+ * rate is what keeps the amounts round in a currency whose unit is worth a
+ * hundredth of a dollar, where a fixed 1 to 1000 ladder would be all dust.
+ *
+ * Rungs can carry one decimal place in a currency worth more than a dollar per
+ * unit. Every such currency has a fraction size of at least 2, so the value is
+ * always representable.
+ */
+function quickAmountLadder(unitsPerUsd: number): number[] {
+  return roundAmountsBetween(MIN_USD * unitsPerUsd, Math.min(MAX_USD * unitsPerUsd, MAX_UNITS));
+}
+
+/**
+ * Up to three round quick amounts, scaled to what the user can send.
+ * `spendable` is the balance in the unit being typed. 0 for either argument
+ * (unknown balance or no rate yet) offers nothing.
+ *
+ * The largest pick is the biggest round amount inside the headroom, and the
+ * other two step down the ladder from it. Anchoring to the top is what makes
+ * the row scale: a large balance gets amounts worth sending rather than the
+ * ladder's floor, which no balance would ever price out.
+ */
+export function pickQuickAmounts(spendable: number, unitsPerUsd: number): number[] {
+  const ladder = quickAmountLadder(unitsPerUsd);
+  const top = ladder.filter((amount) => amount <= spendable * SPENDABLE_HEADROOM).length - 1;
+  // Two rungs apart (roughly 5x) once the balance leaves room for it, so the
+  // three cover a range; adjacent rungs when it doesn't. Negative indices fall
+  // out, which is also how a balance under the smallest rung returns nothing.
+  const stride = top >= 4 ? 2 : 1;
+  return [top - 2 * stride, top - stride, top].filter((i) => i >= 0).map((i) => ladder[i]);
+}
+
+/**
+ * Quick amounts for an input with no balance to scale against (receive): the
+ * round amounts worth roughly $1, $5 and $10 in the display currency.
+ */
+export function fixedQuickAmounts(unitsPerUsd: number): number[] {
+  const ladder = quickAmountLadder(unitsPerUsd);
+  return [0, 2, 3].map((i) => ladder[i]).filter((amount) => amount !== undefined);
+}
 
 /** Format a token-denominated quick amount label, respecting symbol position.
  *  Sat-denominated buttons render `SatAmount` instead. */

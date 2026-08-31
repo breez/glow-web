@@ -87,6 +87,29 @@ describe('AmountStep USD entry (no stable balance)', () => {
     );
   });
 
+  const buttonLabels = () => screen.getAllByRole('button').map((b) => b.textContent);
+
+  it('offers only quick amounts the balance covers', () => {
+    // 3,000 sats clears ₿1 000 and ₿2 000 and nothing above.
+    renderAmountStep({ balanceSats: 3000 });
+
+    const labels = buttonLabels();
+    expect(labels).toContain('₿1 000');
+    expect(labels).toContain('₿2 000');
+    expect(labels).not.toContain('₿5 000');
+    expect(labels).not.toContain('₿100 000');
+  });
+
+  it('never offers the whole balance as a quick amount', () => {
+    // 100,000 sats: the largest round amount inside the fee headroom is
+    // ₿50 000, so tapping a quick amount can't dead-end on insufficient funds.
+    renderAmountStep();
+
+    const labels = buttonLabels();
+    expect(labels).toEqual(expect.arrayContaining(['₿2 000', '₿10 000', '₿50 000']));
+    expect(labels).not.toContain('₿100 000');
+  });
+
   it('keeps cross-chain (amountFirst) USD-only with no toggle', async () => {
     renderAmountStep({ amountFirst: true });
 

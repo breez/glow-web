@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
-import { fiatToSats, parseAmountToSats, type TokenDisplayConfig } from '../../../utils/tokenFormatting';
+import { fiatToSats, satsToFiat, parseAmountToSats, type TokenDisplayConfig } from '../../../utils/tokenFormatting';
 import type { Sats } from '../../../types/sats';
 import type { ConversionEstimate } from '@breeztech/breez-sdk-spark';
 
@@ -14,6 +14,12 @@ interface BalanceValidation {
    * value is the raw display value, not a validated Sats.
    */
   exceedsBalance: (displayAmount: number) => boolean;
+  /**
+   * The balance in the unit the user types in: fiat in token mode, sats
+   * otherwise. 0 when it isn't known yet, so callers offer nothing rather than
+   * offering amounts they can't check.
+   */
+  spendableDisplay: number;
   validateAmount: (input: string, feesIncluded?: boolean) => string | null;
   checkInsufficientFunds: (opts: {
     totalSats: Sats;
@@ -57,6 +63,11 @@ export function useBalanceValidation(
     const tokenFallback = isActive && tokenBalanceSats !== null ? tokenBalanceSats : 0;
     return Math.max(balanceSats, tokenFallback);
   };
+
+  const availableSats = maxAvailableSats();
+  const spendableDisplay = availableSats === undefined
+    ? 0
+    : isTokenMode ? satsToFiat(availableSats, btcFiatRate) : availableSats;
 
   const exceedsBalance = (displayAmount: number): boolean => {
     if (isTokenMode && config) {
@@ -115,6 +126,7 @@ export function useBalanceValidation(
     setIsTokenMode,
     parseInputToSats,
     exceedsBalance,
+    spendableDisplay,
     validateAmount,
     checkInsufficientFunds,
     config,
