@@ -30,7 +30,7 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
 }) => {
   const wallet = useWallet();
   const stableBalance = useStableBalance();
-  const { getOrFetchFiatData } = useFiatData();
+  const { refreshFiatData } = useFiatData();
 
   const [step, setStep] = useState<FlowStep>('disclaimer');
   const [conversionEstimate, setConversionEstimate] = useState<ConversionEstimate | null>(null);
@@ -42,10 +42,12 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
     setError(null);
 
     try {
-      // Fetch wallet info and ensure fiat data is available (cached or freshly fetched)
+      // The rate sizes the conversion's minimum output below, so it is fetched
+      // rather than read off the 60s refresh: a price move since the last tick
+      // would size the request against a price that no longer holds.
       const [freshInfo, fiatData, metadataResult] = await Promise.all([
         wallet.getInfo({}),
-        getOrFetchFiatData(),
+        refreshFiatData(),
         wallet.getTokensMetadata({ tokenIdentifiers: [USDB_TOKEN_IDENTIFIER] }),
       ]);
 
@@ -122,7 +124,7 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
       }
       setStep('confirm');
     }
-  }, [wallet, direction, getOrFetchFiatData]);
+  }, [wallet, direction, refreshFiatData]);
 
   // Use refs so the isOpen effect snapshots the latest props/callbacks
   // without re-firing when they change mid-flow.
