@@ -294,8 +294,10 @@ const MAX_UNITS = 999_999;
 export const FALLBACK_SATS_PER_USD = 1000;
 
 /** Share of the balance the largest quick amount may reach. The rest is fee
- *  headroom: an amount equal to the balance dead-ends on insufficient funds at
- *  the confirm step, and Send All already spends everything. */
+ *  headroom: an amount equal to the balance dead-ends on insufficient funds,
+ *  and Send All already spends everything. Being proportional it covers a Spark
+ *  or Lightning send, but not a flat onchain fee, which is quoted after the
+ *  amount is picked and can outrun it on a small balance. */
 const SPENDABLE_HEADROOM = 0.8;
 
 /** Round amounts (1, 2 and 5 times a power of ten) from `min` to `max`, ascending. */
