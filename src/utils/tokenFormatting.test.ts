@@ -37,6 +37,13 @@ describe('pickQuickAmounts', () => {
     expect(pickQuickAmounts(100_000, JPY)).toEqual([2000, 10_000, 50_000]);
   });
 
+  it('offers the same steps in either denomination', () => {
+    // $3.48 of stable balance at 1136 sats to the dollar (BTC near $88,000),
+    // where 1000 sats is worth $0.88 and a hard $1 floor would drop it.
+    expect(pickQuickAmounts(3.48, 1)).toEqual([1, 2]);
+    expect(pickQuickAmounts(3.48 * 1136, 1136)).toEqual([1000, 2000]);
+  });
+
   it('follows the BTC price in sats, so the floor stays worth a dollar', () => {
     // 10,000 sats is $10 at $100,000 per BTC, and $2.50 at a quarter of that.
     expect(pickQuickAmounts(10_000, 1000)).toEqual([1000, 2000, 5000]);

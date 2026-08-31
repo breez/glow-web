@@ -275,6 +275,13 @@ export const SATS_QUICK_AMOUNTS = [1000, 10000, 100000];
 const MIN_USD = 1;
 const MAX_USD = 1000;
 
+/** How far under `MIN_USD` a rung may sit and still count. Rungs are about 2x
+ *  apart, so a hard floor drops the one just below it and nearly doubles the
+ *  smallest offer: at 1136 sats to the dollar, 1000 sats is worth $0.88, and
+ *  the sat row would start at 2000 while the same balance in fiat starts at $1.
+ *  Half a rung of slack keeps the two denominations offering the same steps. */
+const MIN_USD_SLACK = Math.SQRT2;
+
 /** Seven digits is where a label stops fitting the four-button row on a phone.
  *  Only binds in a currency whose unit is worth a fraction of a cent, which
  *  gets a lower ceiling in exchange for a row that still lays out. */
@@ -316,7 +323,10 @@ function roundAmountsBetween(min: number, max: number): number[] {
  * always representable.
  */
 function quickAmountLadder(unitsPerUsd: number): number[] {
-  return roundAmountsBetween(MIN_USD * unitsPerUsd, Math.min(MAX_USD * unitsPerUsd, MAX_UNITS));
+  return roundAmountsBetween(
+    (MIN_USD * unitsPerUsd) / MIN_USD_SLACK,
+    Math.min(MAX_USD * unitsPerUsd, MAX_UNITS),
+  );
 }
 
 /**
