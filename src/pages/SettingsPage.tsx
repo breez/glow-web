@@ -290,11 +290,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     min={0}
                     value={feeValue}
                     onChange={(e) => setFeeDrafts({ ...feeDrafts, [feeType]: e.target.value })}
-                    placeholder={feeUnit}
                   />
                 </div>
-                {/* The placeholder carries the unit too, but it is gone as
-                    soon as the field holds a value. */}
+                {/* Pinned next to the field: a placeholder would carry the
+                    unit only while the field is empty. */}
                 <span className="text-sm text-spark-text-muted shrink-0">{feeUnit}</span>
               </div>
               {!enteredFee && (
