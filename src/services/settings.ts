@@ -82,11 +82,12 @@ export function depositMaxFeeValue(fee: MaxFee): number {
 export function buildDepositMaxFee(type: DepositMaxFeeType, input: string): MaxFee | null {
   const n = Number(input);
   if (input.trim() === '' || !Number.isFinite(n) || n < 0) return null;
-  // Only a sat amount has to be whole. Both sat/vB values are legitimately
-  // fractional, and 1.5 sat/vB floored to 1 is a different limit than asked.
+  // Every variant is a u64 in the SDK, rates included. A fraction crossing
+  // the wasm boundary fails to deserialize and takes the connection with it,
+  // so round down rather than hand one over.
   if (type === 'fixed') return { type: 'fixed', amount: Math.floor(n) };
-  if (type === 'rate') return { type: 'rate', satPerVbyte: n };
-  return { type: 'networkRecommended', leewaySatPerVbyte: n };
+  if (type === 'rate') return { type: 'rate', satPerVbyte: Math.floor(n) };
+  return { type: 'networkRecommended', leewaySatPerVbyte: Math.floor(n) };
 }
 
 /** Starting field value for every limit type: the active limit first, then what was last entered for that type, then its default. */
