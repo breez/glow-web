@@ -4,7 +4,7 @@ import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { toSdkAmountNumber, type Sats } from '../../../types/sats';
 import type { PaymentMethod, ReceiveStep } from '../../../types/domain';
-import { LIGHTNING_INVOICE_MIN_SATS, LIGHTNING_INVOICE_MAX_SATS } from '../../../constants/receive';
+import { LIGHTNING_INVOICE_MIN_SATS } from '../../../constants/receive';
 
 export interface UseReceivePaymentReturn {
   // State
@@ -166,10 +166,6 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     }
     if (amountSats < BigInt(LIGHTNING_INVOICE_MIN_SATS)) {
       setError(`Amount must be at least ₿${LIGHTNING_INVOICE_MIN_SATS.toLocaleString()}`);
-      return;
-    }
-    if (amountSats > BigInt(LIGHTNING_INVOICE_MAX_SATS)) {
-      setError(`Amount must be at most ₿${LIGHTNING_INVOICE_MAX_SATS.toLocaleString()}`);
       return;
     }
 
