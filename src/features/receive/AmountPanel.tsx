@@ -114,9 +114,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
 
   // Mirrors the guard in `useReceivePayment.generateBolt11Invoice` so
   // the UI disables the Generate button + Enter-to-submit path for
-  // amounts below the minimum. There is no upper bound: `amountSats`
-  // is already null for anything `toSats` rejects (> 21M BTC or
-  // outside safe-integer range). Works in both sats and token mode
+  // amounts below the minimum. Works in both sats and token mode
   // because the parsed sats are produced by `useAmountInput`
   // regardless of denomination.
   const validAmount = amountSats !== null
@@ -147,8 +145,6 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
         {/* Amount Input */}
         <div className="space-y-4">
           <div>
-            {/* No range badge: with the maximum gone the only bound
-                left is the 1-sat minimum, which is not worth a hint. */}
             <label className="block text-spark-text-secondary text-sm font-medium mb-2">
               Amount
             </label>
