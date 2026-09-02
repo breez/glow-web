@@ -78,6 +78,9 @@ describe('fixedQuickAmounts', () => {
 
   it('holds the sat points at their value as the BTC price moves', () => {
     expect(fixedQuickAmounts(sats(1000), [1, 10, 100])).toEqual([1000, 10_000, 100_000]);
+    // Buy's points, the same values in either denomination.
+    expect(fixedQuickAmounts(sats(1000), [20, 50, 100])).toEqual([20_000, 50_000, 100_000]);
+    expect(fixedQuickAmounts(USD, [20, 50, 100])).toEqual([20, 50, 100]);
   });
 
   it('holds the sat minimum rather than follow a dollar down', () => {
