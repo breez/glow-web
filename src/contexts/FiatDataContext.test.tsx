@@ -18,13 +18,16 @@ function renderWithRates(client: BreezSdk) {
   );
 }
 
-function goToBackgroundAndReturn() {
+function returnToForeground(event = 'visibilitychange', times = 1) {
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
   act(() => {
-    document.dispatchEvent(new Event('visibilitychange'));
+    const target = event === 'pageshow' ? window : document;
+    for (let i = 0; i < times; i++) target.dispatchEvent(new Event(event));
     vi.advanceTimersByTime(1500);
   });
 }
+
+const goToBackgroundAndReturn = () => returnToForeground();
 
 const RefreshButton = () => {
   const { fiatRates, refreshFiatData } = useFiatData();
@@ -82,6 +85,28 @@ describe('FiatDataProvider', () => {
     goToBackgroundAndReturn();
 
     await waitFor(() => expect(screen.getByTestId('usd')).toHaveTextContent('123456'));
+  });
+
+  it('refetches on a bfcache restore, which skips visibilitychange', async () => {
+    const client = createMockClient();
+    renderWithRates(client);
+    await screen.findByText('100000');
+
+    vi.mocked(client.listFiatRates).mockResolvedValue({ rates: [{ coin: 'USD', value: 123456 }] });
+    returnToForeground('pageshow');
+
+    await waitFor(() => expect(screen.getByTestId('usd')).toHaveTextContent('123456'));
+  });
+
+  it('coalesces a burst of foreground events into one refetch', async () => {
+    const client = createMockClient();
+    renderWithRates(client);
+    await screen.findByText('100000');
+    expect(client.listFiatRates).toHaveBeenCalledTimes(1);
+
+    returnToForeground('visibilitychange', 3);
+
+    await waitFor(() => expect(client.listFiatRates).toHaveBeenCalledTimes(2));
   });
 
   it('keeps the last good rates when a refetch fails', async () => {

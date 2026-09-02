@@ -71,10 +71,13 @@ export const FiatDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // A backgrounded WebView freezes the interval, and an iOS standalone PWA
     // resumes a days-old page instead of reloading, so rates would otherwise
     // sit at whatever they were when the app last had the foreground until a
-    // relaunch. Same reason `useBreezSdk` resyncs the wallet on visibility.
+    // relaunch. Mirrors the events `useBreezSdk` resyncs the wallet on.
     let resumeTimer: ReturnType<typeof setTimeout> | undefined;
     const refetchOnResume = () => {
       if (document.visibilityState !== 'visible') return;
+      // Drop any pending one: a hide/show cycle leaves a timer per event
+      // otherwise, and they all fire together once the page is back.
+      clearTimeout(resumeTimer);
       // iOS 18+ WebKit fails a request started directly on visibilitychange
       // ("TypeError: Load failed"), so wait the same 1.5s the resync does.
       resumeTimer = setTimeout(() => {
@@ -82,12 +85,15 @@ export const FiatDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }, 1500);
     };
     document.addEventListener('visibilitychange', refetchOnResume);
+    // pageshow catches bfcache restores, which skip visibilitychange.
+    window.addEventListener('pageshow', refetchOnResume);
 
     return () => {
       cancelled = true;
       clearInterval(interval);
       clearTimeout(resumeTimer);
       document.removeEventListener('visibilitychange', refetchOnResume);
+      window.removeEventListener('pageshow', refetchOnResume);
     };
   }, [isConnected, sdk]);
 
