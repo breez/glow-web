@@ -275,9 +275,6 @@ export function getTokenAmountFromPayment(payment: Payment): TokenPaymentInfo | 
   return null;
 }
 
-/** Quick amount presets for sat-denominated inputs. */
-export const SATS_QUICK_AMOUNTS = [1000, 10000, 100000];
-
 /** Value a quick amount may be worth, in US dollars (#393). */
 const MIN_USD = 1;
 const MAX_USD = 1000;
@@ -370,11 +367,28 @@ export function pickQuickAmounts(
 
 /**
  * Quick amounts for an input with no balance to scale against (receive): the
- * round amounts worth roughly $1, $5 and $10 in the display currency.
+ * round amount nearest each of `usdPoints`, which names the values wanted in
+ * dollars, ascending.
  */
-export function fixedQuickAmounts(unitsPerUsd: number): number[] {
+export function fixedQuickAmounts(unitsPerUsd: number, usdPoints: number[]): number[] {
   const ladder = quickAmountLadder(unitsPerUsd);
-  return [0, 2, 3].map((i) => ladder[i]).filter((amount) => amount !== undefined);
+  if (ladder.length === 0) return [];
+  const picked: number[] = [];
+  for (const usd of usdPoints) {
+    const target = usd * unitsPerUsd;
+    // Nearest by ratio, not by difference: steps are spaced multiplicatively,
+    // so subtracting would pull every point towards the top of the ladder.
+    const nearest = ladder.reduce((best, amount) =>
+      Math.abs(Math.log(amount / target)) < Math.abs(Math.log(best / target)) ? amount : best);
+    const last = picked[picked.length - 1];
+    // Step up rather than repeat: in a currency whose unit is worth several
+    // dollars, two points can land on one step and spend two buttons on it.
+    const choice = last !== undefined && nearest <= last
+      ? ladder.find((amount) => amount > last)
+      : nearest;
+    if (choice !== undefined && choice !== last) picked.push(choice);
+  }
+  return picked;
 }
 
 /** Format a token-denominated quick amount label, respecting symbol position.

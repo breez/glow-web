@@ -8,11 +8,7 @@ import {
   DialogHeader,
 } from '../../components/ui';
 import { LightningBoltIcon } from '../../components/Icons';
-import {
-  SATS_QUICK_AMOUNTS,
-  fixedQuickAmounts,
-  formatQuickAmount,
-} from '../../utils/tokenFormatting';
+import { fixedQuickAmounts, formatQuickAmount } from '../../utils/tokenFormatting';
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
 import { SatAmount } from '../../components/SatAmount';
 import { useAmountInput, useFiatOverride } from '../../hooks/useAmountInput';
@@ -111,7 +107,13 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     setAmountInput(String(quickAmount));
   };
 
-  const quickAmounts = isTokenMode ? fixedQuickAmounts(unitsPerUsd) : SATS_QUICK_AMOUNTS;
+  // Receive has no balance to scale against, so both denominations offer fixed
+  // points of value. They differ by design: a sat request reaches further up
+  // than a fiat one. Deriving them from the rate keeps each worth what it says
+  // instead of drifting with the BTC price.
+  const quickAmounts = isTokenMode
+    ? fixedQuickAmounts(unitsPerUsd, [1, 5, 10])
+    : fixedQuickAmounts(unitsPerUsd, [1, 10, 100]);
 
   // Range-aware validity check. Mirrors the guard in
   // `useReceivePayment.generateBolt11Invoice` so the UI disables the

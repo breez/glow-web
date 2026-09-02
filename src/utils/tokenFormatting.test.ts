@@ -58,13 +58,25 @@ describe('pickQuickAmounts', () => {
 });
 
 describe('fixedQuickAmounts', () => {
-  it('offers about $1, $5 and $10 in the display currency', () => {
-    expect(fixedQuickAmounts(USD)).toEqual([1, 5, 10]);
-    expect(fixedQuickAmounts(JPY)).toEqual([200, 1000, 2000]);
-    expect(fixedQuickAmounts(0.307)).toEqual([0.5, 2, 5]);
+  it('offers the round amount nearest each named value', () => {
+    expect(fixedQuickAmounts(USD, [1, 5, 10])).toEqual([1, 5, 10]);
+    expect(fixedQuickAmounts(JPY, [1, 5, 10])).toEqual([200, 1000, 2000]);
+    expect(fixedQuickAmounts(0.307, [1, 5, 10])).toEqual([0.5, 2, 5]);
+  });
+
+  it('holds the sat points at their value as the BTC price moves', () => {
+    // 1000 sats to the dollar, then 400: the same three values in sats.
+    expect(fixedQuickAmounts(1000, [1, 10, 100])).toEqual([1000, 10_000, 100_000]);
+    expect(fixedQuickAmounts(400, [1, 10, 100])).toEqual([500, 5000, 50_000]);
+  });
+
+  it('keeps the points on separate steps when the ladder is coarse', () => {
+    // A unit worth several dollars puts $5 and $10 on the same step.
+    expect(fixedQuickAmounts(0.307, [1, 5, 10])).toEqual([0.5, 2, 5]);
+    expect(fixedQuickAmounts(USD, [1, 1.1])).toEqual([1, 2]);
   });
 
   it('offers nothing without a rate', () => {
-    expect(fixedQuickAmounts(0)).toEqual([]);
+    expect(fixedQuickAmounts(0, [1, 5, 10])).toEqual([]);
   });
 });
