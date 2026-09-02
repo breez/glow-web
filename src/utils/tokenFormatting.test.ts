@@ -3,7 +3,7 @@ import { pickQuickAmounts, fixedQuickAmounts, MIN_SATS_QUICK_AMOUNT } from './to
 
 /** A fiat denomination: `unitsPerUsd` is 1 for dollars, 150 for a yen scale. */
 const fiat = (unitsPerUsd: number) => ({ unitsPerUsd, minUnit: 0 });
-/** Sats, whose `unitsPerUsd` is sats per dollar: 1000 at $100,000 per BTC. */
+/** Sats, whose `unitsPerUsd` is sats per dollar. */
 const sats = (unitsPerUsd = 1000) => ({ unitsPerUsd, minUnit: MIN_SATS_QUICK_AMOUNT });
 
 const USD = fiat(1);
@@ -49,21 +49,21 @@ describe('pickQuickAmounts', () => {
   });
 
   it('offers the same steps in either denomination', () => {
-    // $3.48 of stable balance at 1136 sats to the dollar (BTC near $88,000),
-    // where 1000 sats is worth $0.88 and a hard $1 floor would drop it.
+    // A stable balance at 1136 sats to the dollar, where ₿1 000 is worth just
+    // under a dollar and a hard floor would drop it.
     expect(pickQuickAmounts(3.48, USD)).toEqual([1, 2]);
     expect(pickQuickAmounts(3.48 * 1136, sats(1136))).toEqual([1000, 2000]);
   });
 
   it('follows the BTC price in sats, so the floor stays worth a dollar', () => {
-    // 10,000 sats is $10 at $100,000 per BTC, and $2.50 at a quarter of that.
+    // The same sats are worth a quarter as much at four times the sats per dollar.
     expect(pickQuickAmounts(10_000, sats(1000))).toEqual([1000, 2000, 5000]);
     expect(pickQuickAmounts(10_000, sats(4000))).toEqual([5000]);
   });
 
   it('never offers sats below the round minimum, however high BTC goes', () => {
-    // At $500,000 a dollar is 200 sats, so an unfloored ladder would start at
-    // ₿200. Sat amounts stay in thousands instead.
+    // At 200 sats to the dollar an unfloored ladder would start at ₿200. Sat
+    // amounts stay in thousands instead.
     expect(pickQuickAmounts(30_000, sats(200))).toEqual([1000, 5000, 20_000]);
     expect(pickQuickAmounts(3000, sats(200))).toEqual([1000, 2000]);
   });
@@ -84,7 +84,7 @@ describe('fixedQuickAmounts', () => {
   });
 
   it('holds the sat minimum rather than follow a dollar down', () => {
-    // At 400 sats to the dollar the $1 point would land on ₿500.
+    // At 400 sats to the dollar the lowest point would land on ₿500.
     expect(fixedQuickAmounts(sats(400), [1, 10, 100])).toEqual([1000, 5000, 50_000]);
   });
 

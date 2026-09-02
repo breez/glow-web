@@ -108,9 +108,8 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   };
 
   // Receive has no balance to scale against, so both denominations offer fixed
-  // points of value. They differ by design: a sat request reaches further up
-  // than a fiat one. Deriving them from the rate keeps each worth what it says
-  // instead of drifting with the BTC price.
+  // points of value, held to that value by the rate. A sat request reaches
+  // further up than a fiat one.
   const quickAmounts = isTokenMode
     ? fixedQuickAmounts(quickAmountScale, [1, 5, 10])
     : fixedQuickAmounts(quickAmountScale, [1, 10, 100]);

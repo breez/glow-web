@@ -279,11 +279,10 @@ export function getTokenAmountFromPayment(payment: Payment): TokenPaymentInfo | 
 const MIN_USD = 1;
 const MAX_USD = 1000;
 
-/** How far under `MIN_USD` a rung may sit and still count. Rungs are about 2x
- *  apart, so a hard floor drops the one just below it and nearly doubles the
- *  smallest offer: at 1136 sats to the dollar, 1000 sats is worth $0.88, and
- *  the sat row would start at 2000 while the same balance in fiat starts at $1.
- *  Half a rung of slack keeps the two denominations offering the same steps. */
+/** How far under `MIN_USD` a step may sit and still count. Steps are about 2x
+ *  apart, so a hard floor drops the one just below it, nearly doubling the
+ *  smallest offer and splitting the denominations apart. Half a step of slack
+ *  keeps them aligned. */
 const MIN_USD_SLACK = Math.SQRT2;
 
 /** Seven digits is where a label stops fitting the four-button row on a phone.
@@ -298,8 +297,9 @@ const MAX_UNITS = 999_999;
 export const FALLBACK_SATS_PER_USD = 1000;
 
 /** Smallest sat amount worth offering. A dollar buys fewer sats as BTC rises,
- *  and without this the row follows it down to ₿500 and then ₿200, which read
- *  as change rather than as amounts. */
+ *  and without a floor the row follows it down into amounts that read as
+ *  change. Steps are 1, 2 and 5 times a power of ten, so a floor here also
+ *  keeps every sat amount a round thousand. */
 export const MIN_SATS_QUICK_AMOUNT = 1000;
 
 /** The denomination a row of quick amounts is drawn in. */
@@ -311,12 +311,10 @@ export interface QuickAmountScale {
 }
 
 /** Share of the balance the largest quick amount may reach. The rest covers the
- *  conversion (10 bps slippage cap plus pool and integrator fees) and a
- *  Lightning base fee, and keeps the top amount off the balance exactly, which
- *  dead-ends on insufficient funds and duplicates Send All. Steps sit about 2x
- *  apart, so a tighter value would rarely change the pick but would remove that
- *  margin. A flat onchain fee is quoted after the amount is picked and can
- *  outrun any proportional reserve. */
+ *  conversion and a Lightning base fee, and keeps the top amount off the
+ *  balance exactly, which dead-ends on insufficient funds and duplicates Send
+ *  All. A flat onchain fee is quoted only after the amount is picked, so no
+ *  proportional reserve bounds it. */
 const SPENDABLE_HEADROOM = 0.98;
 
 /** Round amounts (1, 2 and 5 times a power of ten) from `min` to `max`, ascending. */

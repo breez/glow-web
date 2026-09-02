@@ -7,7 +7,7 @@ import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
 import AmountStep, { AmountStepProps } from './AmountStep';
 
-// Mock rates put BTC at $100,000, so $1 = 1,000 sats.
+// The mock rate makes a dollar 1,000 sats.
 function renderAmountStep(props: Partial<AmountStepProps> = {}, client?: BreezSdk) {
   const onNext = vi.fn();
   const mockClient = client ?? createMockClient();
@@ -89,9 +89,9 @@ describe('AmountStep USD entry (no stable balance)', () => {
 
   const buttonLabels = () => screen.getAllByRole('button').map((b) => b.textContent);
 
-  // The mock puts BTC at $100,000, which is also the pre-rate fallback scale, so
-  // a test that asserts against it cannot tell the two apart. Waiting for the
-  // switcher is what proves the rate landed first.
+  // The mock rate matches the pre-rate fallback scale, so a test that asserts
+  // against it cannot tell the two apart. Waiting for the switcher is what
+  // proves the rate landed first.
   const ratedLabels = async () => {
     await screen.findByRole('button', { name: '₿' });
     return buttonLabels();
@@ -119,8 +119,8 @@ describe('AmountStep USD entry (no stable balance)', () => {
   });
 
   it('scales the quick amounts to the loaded rate, not the fallback', async () => {
-    // BTC at $50,000 makes a dollar 2,000 sats, so the smallest round amount
-    // worth a dollar is ₿2 000. The fallback scale would still offer ₿1 000.
+    // A rate of 2,000 sats to the dollar puts the smallest round amount worth a
+    // dollar at ₿2 000. The fallback scale would still offer ₿1 000.
     const client = createMockClient({
       listFiatRates: vi.fn().mockResolvedValue({ rates: [{ coin: 'USD', value: 50000 }] }),
     } as unknown as Partial<BreezSdk>);
