@@ -4,6 +4,9 @@ import { isCrossChainPayment } from './paymentDescription';
 
 export interface TokenDisplayConfig {
   symbol: string;
+  /** Code to name the unit in prose ("Enter amount in USD"), where the symbol
+   *  reads as decoration rather than a unit. Falls back to the token ticker. */
+  currencyCode: string;
   symbolPosition: 'before' | 'after';
   fractionSize: number;
   decimals: number;
@@ -38,6 +41,7 @@ export function buildFiatDisplayConfig(
   if (match) {
     return {
       symbol: match.info.symbol?.grapheme || match.id,
+      currencyCode: match.id,
       symbolPosition: match.info.symbol?.rtl ? 'after' : 'before',
       fractionSize: match.info.fractionSize,
       decimals: match.info.fractionSize,
@@ -47,6 +51,7 @@ export function buildFiatDisplayConfig(
   }
   return {
     symbol: currencyId === 'USD' ? '$' : currencyId,
+    currencyCode: currencyId,
     symbolPosition: 'before',
     fractionSize: 2,
     decimals: 2,
@@ -79,6 +84,7 @@ export function buildTokenDisplayConfig(
   if (bestMatch) {
     return {
       symbol: bestMatch.info.symbol?.grapheme || bestMatch.id,
+      currencyCode: bestMatch.id,
       symbolPosition: bestMatch.info.symbol?.rtl ? 'after' : 'before',
       fractionSize: bestMatch.info.fractionSize,
       decimals: tokenMetadata.decimals,
@@ -93,6 +99,7 @@ export function buildTokenDisplayConfig(
 
   return {
     symbol: displayTicker,
+    currencyCode: tokenMetadata.ticker,
     symbolPosition: 'before',
     fractionSize: Math.min(tokenMetadata.decimals, 2),
     decimals: tokenMetadata.decimals,

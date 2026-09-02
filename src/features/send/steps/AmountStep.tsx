@@ -194,7 +194,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
                 }
               }
             }}
-            placeholder={amountFirst ? 'Enter amount in USD' : isTokenMode && tokenSymbol ? `Enter amount in ${tokenSymbol}` : 'Enter amount in satoshis'}
+            placeholder={isTokenMode && config ? `Enter amount in ${config.currencyCode}` : 'Enter amount in sats'}
             className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed"
             disabled={isLoading}
             readOnly={isSendAll}
