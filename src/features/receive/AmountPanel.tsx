@@ -19,7 +19,7 @@ import { useAmountInput, useFiatOverride } from '../../hooks/useAmountInput';
 import { getDisplayFiatCurrency } from '../../services/settings';
 import type { Sats } from '../../types/sats';
 import { dismissKeyboard } from '../../utils/keyboard';
-import { LIGHTNING_INVOICE_MIN_SATS, LIGHTNING_INVOICE_MAX_SATS } from '../../constants/receive';
+import { LIGHTNING_INVOICE_MIN_SATS } from '../../constants/receive';
 
 interface AmountPanelProps {
   isOpen: boolean;
@@ -112,15 +112,15 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
 
   const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : SATS_QUICK_AMOUNTS;
 
-  // Range-aware validity check. Mirrors the guard in
-  // `useReceivePayment.generateBolt11Invoice` so the UI disables the
-  // Generate button + Enter-to-submit path for amounts outside the
-  // configured Lightning-invoice receive bounds. Works in both sats
-  // and token mode because the parsed sats are produced by
-  // `useAmountInput` regardless of denomination.
+  // Mirrors the guard in `useReceivePayment.generateBolt11Invoice` so
+  // the UI disables the Generate button + Enter-to-submit path for
+  // amounts below the minimum. There is no upper bound: `amountSats`
+  // is already null for anything `toSats` rejects (> 21M BTC or
+  // outside safe-integer range). Works in both sats and token mode
+  // because the parsed sats are produced by `useAmountInput`
+  // regardless of denomination.
   const validAmount = amountSats !== null
-    && amountSats >= BigInt(LIGHTNING_INVOICE_MIN_SATS)
-    && amountSats <= BigInt(LIGHTNING_INVOICE_MAX_SATS);
+    && amountSats >= BigInt(LIGHTNING_INVOICE_MIN_SATS);
 
   // "Invalid amount" surfaces when the input is non-empty and positive but
   // can't safely be converted to sats: covers both unsafe-integer overflow
@@ -147,20 +147,11 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
         {/* Amount Input */}
         <div className="space-y-4">
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-spark-text-secondary text-sm font-medium">
-                Amount
-              </label>
-              {/* Range badge — matches LnurlWorkflow's Send-side
-                  treatment at features/send/workflows/LnurlWorkflow.tsx.
-                  Uses plain "sats" (not ₿) per CLAUDE.md:
-                  "Range displays and placeholders use 'sats' text,
-                  not ₿". Thin-space separators on the max value match
-                  the Send-side formatting. */}
-              <span className="text-xs text-spark-text-muted">
-                {LIGHTNING_INVOICE_MIN_SATS.toLocaleString('en-US').replace(/,/g, ' ')} – {LIGHTNING_INVOICE_MAX_SATS.toLocaleString('en-US').replace(/,/g, ' ')} sats
-              </span>
-            </div>
+            {/* No range badge: with the maximum gone the only bound
+                left is the 1-sat minimum, which is not worth a hint. */}
+            <label className="block text-spark-text-secondary text-sm font-medium mb-2">
+              Amount
+            </label>
             <div className="relative">
               <textarea
                 inputMode={isTokenMode ? 'decimal' : 'numeric'}
