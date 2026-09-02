@@ -3,10 +3,12 @@ import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import {
   FALLBACK_SATS_PER_USD,
+  MIN_SATS_QUICK_AMOUNT,
   buildFiatDisplayConfig,
   parseAmountToSats,
   sanitizeTokenInput,
   tokenAmountDisplaysAsZero,
+  type QuickAmountScale,
   type TokenDisplayConfig,
 } from '../utils/tokenFormatting';
 import { normalizeDecimalInput } from '../utils/decimalInput';
@@ -88,11 +90,11 @@ export interface UseAmountInputResult {
   /** BTC→fiat rate. Escape hatch; prefer the formatting helpers. */
   btcFiatRate: number;
   /**
-   * How many units of the current denomination make one US dollar: sats per
-   * dollar in sats mode, currency units per dollar in fiat mode. Quick amounts
-   * are the round numbers on this scale. 0 until the USD rate loads.
+   * The denomination quick amounts are drawn in: how many of its units make a
+   * dollar, and the smallest unit worth offering. The rate is 0 until the USD
+   * one loads, which is what fiat entry waits on.
    */
-  unitsPerUsd: number;
+  quickAmountScale: QuickAmountScale;
 
   // ----- Parsing -----
   /** Parse the current input (or a passed string) to a validated Sats value. */
@@ -185,12 +187,15 @@ export function useAmountInput(options: UseAmountInputOptions = {}): UseAmountIn
 
   // Both rates are quoted per BTC, so dividing one by the other drops BTC out
   // and leaves the cross rate against the dollar.
-  const unitsPerUsd = useMemo(() => {
+  const quickAmountScale = useMemo<QuickAmountScale>(() => {
     const usdPerBtc = fiatRates.find(r => r.coin === 'USD')?.value ?? 0;
-    // Sats entry works without a rate, so it falls back rather than dropping
-    // its quick amounts. Fiat entry is gated on the rate anyway.
-    if (usdPerBtc <= 0) return isTokenMode ? 0 : FALLBACK_SATS_PER_USD;
-    return isTokenMode ? btcFiatRate / usdPerBtc : 100_000_000 / usdPerBtc;
+    // Sats entry works without the USD rate, so it falls back rather than drop
+    // its quick amounts. Fiat entry cannot parse without a rate at all, so it
+    // has nothing to fall back to.
+    const unitsPerUsd = usdPerBtc <= 0
+      ? (isTokenMode ? 0 : FALLBACK_SATS_PER_USD)
+      : (isTokenMode ? btcFiatRate / usdPerBtc : 100_000_000 / usdPerBtc);
+    return { unitsPerUsd, minUnit: isTokenMode ? 0 : MIN_SATS_QUICK_AMOUNT };
   }, [fiatRates, isTokenMode, btcFiatRate]);
 
   const parseToSats = useCallback(
@@ -248,7 +253,7 @@ export function useAmountInput(options: UseAmountInputOptions = {}): UseAmountIn
     tokenSymbol: config?.symbol ?? null,
     config,
     btcFiatRate,
-    unitsPerUsd,
+    quickAmountScale,
     parseToSats,
     amountSats,
     tokenBalanceDisplay,

@@ -50,7 +50,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
     tokenIdentifier,
     tokenSymbol,
     config,
-    unitsPerUsd,
+    quickAmountScale,
     parseToSats,
     tokenBalanceDisplay,
     formatSatsAsTokenDisplay,
@@ -83,7 +83,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
     ? localAmount !== '' && parseFloat(localAmount) > 0
     : localAmount !== '' && parseInt(localAmount) > 0;
 
-  const quickAmounts = pickQuickAmounts(balance.spendableDisplay, unitsPerUsd);
+  const quickAmounts = pickQuickAmounts(balance.spendableDisplay, quickAmountScale);
   const amountNum = isTokenMode ? parseFloat(localAmount) || 0 : parseInt(localAmount) || 0;
 
   // Send All target value in BTC-as-fiat (when in token mode without a token

@@ -42,7 +42,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     tokenSymbol,
     config,
     btcFiatRate,
-    unitsPerUsd,
+    quickAmountScale,
     tokenBalanceDisplay,
     formatSatsAsTokenDisplay,
     tokenSendAllBelowThreshold,
@@ -269,7 +269,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
   const toTypedUnit = (sats: number) => (isTokenMode ? satsToFiat(sats, btcFiatRate) : sats);
   const quickAmounts = pickQuickAmounts(
     balance.spendableDisplay,
-    unitsPerUsd,
+    quickAmountScale,
     toTypedUnit(maxSats),
   ).filter((amt) => amt >= toTypedUnit(minSats));
 

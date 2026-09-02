@@ -64,7 +64,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     tokenSymbol,
     config,
     btcFiatRate,
-    unitsPerUsd,
+    quickAmountScale,
     amountSats: parsedSats,
   } = input;
 
@@ -112,8 +112,8 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   // than a fiat one. Deriving them from the rate keeps each worth what it says
   // instead of drifting with the BTC price.
   const quickAmounts = isTokenMode
-    ? fixedQuickAmounts(unitsPerUsd, [1, 5, 10])
-    : fixedQuickAmounts(unitsPerUsd, [1, 10, 100]);
+    ? fixedQuickAmounts(quickAmountScale, [1, 5, 10])
+    : fixedQuickAmounts(quickAmountScale, [1, 10, 100]);
 
   // Range-aware validity check. Mirrors the guard in
   // `useReceivePayment.generateBolt11Invoice` so the UI disables the

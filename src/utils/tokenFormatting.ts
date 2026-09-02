@@ -297,6 +297,19 @@ const MAX_UNITS = 999_999;
  *  a rung. */
 export const FALLBACK_SATS_PER_USD = 1000;
 
+/** Smallest sat amount worth offering. A dollar buys fewer sats as BTC rises,
+ *  and without this the row follows it down to ₿500 and then ₿200, which read
+ *  as change rather than as amounts. */
+export const MIN_SATS_QUICK_AMOUNT = 1000;
+
+/** The denomination a row of quick amounts is drawn in. */
+export interface QuickAmountScale {
+  /** Units of that denomination in one US dollar. 0 when no rate has loaded. */
+  unitsPerUsd: number;
+  /** Smallest amount to offer, in the denomination's own units. */
+  minUnit: number;
+}
+
 /** Share of the balance the largest quick amount may reach. The rest covers the
  *  conversion (10 bps slippage cap plus pool and integrator fees) and a
  *  Lightning base fee, and keeps the top amount off the balance exactly, which
@@ -330,18 +343,18 @@ function roundAmountsBetween(min: number, max: number): number[] {
  * unit. Every such currency has a fraction size of at least 2, so the value is
  * always representable.
  */
-function quickAmountLadder(unitsPerUsd: number): number[] {
+function quickAmountLadder({ unitsPerUsd, minUnit }: QuickAmountScale): number[] {
   return roundAmountsBetween(
-    (MIN_USD * unitsPerUsd) / MIN_USD_SLACK,
+    Math.max((MIN_USD * unitsPerUsd) / MIN_USD_SLACK, minUnit),
     Math.min(MAX_USD * unitsPerUsd, MAX_UNITS),
   );
 }
 
 /**
  * Up to three round quick amounts, scaled to what the user can send.
- * `spendable` is the balance in the unit being typed. 0 for either of the first
- * two arguments (unknown balance or no rate yet) offers nothing.
- * `hardCeiling` caps the picks at a destination's own maximum.
+ * `spendable` is the balance in the unit being typed; 0 for it or for the
+ * scale's rate (none loaded yet) offers nothing. `hardCeiling` caps the picks
+ * at a destination's own maximum.
  *
  * The largest pick is the biggest round amount inside the headroom, and the
  * other two step down the ladder from it. Anchoring to the top is what makes
@@ -350,10 +363,10 @@ function quickAmountLadder(unitsPerUsd: number): number[] {
  */
 export function pickQuickAmounts(
   spendable: number,
-  unitsPerUsd: number,
+  scale: QuickAmountScale,
   hardCeiling = Infinity,
 ): number[] {
-  const ladder = quickAmountLadder(unitsPerUsd);
+  const ladder = quickAmountLadder(scale);
   // `hardCeiling` is a limit of the destination's own, not of the balance, so
   // it takes no headroom: an amount equal to it is payable.
   const ceiling = Math.min(spendable * SPENDABLE_HEADROOM, hardCeiling);
@@ -370,12 +383,12 @@ export function pickQuickAmounts(
  * round amount nearest each of `usdPoints`, which names the values wanted in
  * dollars, ascending.
  */
-export function fixedQuickAmounts(unitsPerUsd: number, usdPoints: number[]): number[] {
-  const ladder = quickAmountLadder(unitsPerUsd);
+export function fixedQuickAmounts(scale: QuickAmountScale, usdPoints: number[]): number[] {
+  const ladder = quickAmountLadder(scale);
   if (ladder.length === 0) return [];
   const picked: number[] = [];
   for (const usd of usdPoints) {
-    const target = usd * unitsPerUsd;
+    const target = usd * scale.unitsPerUsd;
     // Nearest by ratio, not by difference: steps are spaced multiplicatively,
     // so subtracting would pull every point towards the top of the ladder.
     const nearest = ladder.reduce((best, amount) =>
