@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ConfirmDialog, FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
 import { PinGate } from '../components/PinEntry';
-import { getSettings, saveSettings, UserSettings, isBuyBitcoinAvailable, isDevMode as isDevModeEnabled, setDevMode, buildDepositMaxFee, depositMaxFeeDrafts, DepositMaxFeeType } from '../services/settings';
+import { getSettings, saveSettings, UserSettings, isBuyBitcoinAvailable, isDevMode as isDevModeEnabled, setDevMode, buildDepositMaxFee, depositMaxFeeDrafts, depositMaxFeeValue, DepositMaxFeeType } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
 import { CurrencyIcon, ChevronRightIcon, DownloadIcon, KeyIcon, LockIcon, ShieldCheckIcon, TrashIcon, ExternalLinkIcon } from '../components/Icons';
@@ -54,6 +54,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   );
   const feeValue = feeDrafts[feeType];
   const feeUnit = feeType === 'fixed' ? 'sats' : 'sat/vB';
+  const enteredFee = buildDepositMaxFee(feeType, feeValue);
 
   // SettingsPage only mounts after wallet connect, so `config` is
   // effectively stable for this lifetime; capture once via lazy init.
@@ -108,13 +109,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   };
 
   const handleSave = async () => {
+    // Save is disabled while the limit field cannot be read, so there is
+    // nothing here that would quietly discard what the user typed.
+    if (!enteredFee) return;
     const current = getSettings();
-    const entered = buildDepositMaxFee(feeType, feeValue);
-    const depositMaxFee = entered ?? current.depositMaxFee;
+    const depositMaxFee = enteredFee;
     const depositMaxFeeByType = { ...current.depositMaxFeeByType };
     for (const [type, value] of Object.entries(feeDrafts)) {
       const parsed = buildDepositMaxFee(type as DepositMaxFeeType, value);
-      if (parsed) depositMaxFeeByType[type as DepositMaxFeeType] = Number(value);
+      if (parsed) depositMaxFeeByType[type as DepositMaxFeeType] = depositMaxFeeValue(parsed);
     }
     const updated: UserSettings = isDevMode
       ? {
@@ -167,7 +170,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   };
 
   const footer = (
-    <PrimaryButton className="w-full" onClick={handleSave}>
+    <PrimaryButton className="w-full" onClick={handleSave} disabled={!enteredFee}>
       Save Changes
     </PrimaryButton>
   );
@@ -294,6 +297,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     soon as the field holds a value. */}
                 <span className="text-sm text-spark-text-muted shrink-0">{feeUnit}</span>
               </div>
+              {!enteredFee && (
+                <p className="text-xs text-spark-warning">Enter a positive number to save.</p>
+              )}
             </FormGroup>
           </div>
 

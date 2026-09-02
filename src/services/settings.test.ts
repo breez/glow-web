@@ -113,7 +113,7 @@ describe('deposit claim limit helpers', () => {
     const { buildDepositMaxFee } = await import('./settings');
     expect(buildDepositMaxFee('fixed', '500.7')).toEqual({ type: 'fixed', amount: 500 });
     expect(buildDepositMaxFee('rate', '1.5')).toEqual({ type: 'rate', satPerVbyte: 1.5 });
-    expect(buildDepositMaxFee('networkRecommended', '2')).toEqual({ type: 'networkRecommended', leewaySatPerVbyte: 2 });
+    expect(buildDepositMaxFee('networkRecommended', '2.5')).toEqual({ type: 'networkRecommended', leewaySatPerVbyte: 2.5 });
   });
 
   it('drafts the active limit, the last value used for the others, then the defaults', async () => {
