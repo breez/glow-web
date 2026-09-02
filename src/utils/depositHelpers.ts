@@ -19,7 +19,10 @@ export function convertDepositsToPayments(deposits: DepositInfo[]): ExtendedPaym
       paymentType: 'receive' as const,
       method: 'deposit' as const,
       amount: BigInt(deposit.amountSats),
-      timestamp: Math.floor(Date.now() / 1000), // Use current time since we don't have deposit timestamp
+      // A deposit record carries no timestamp, and upstream declined to add
+      // one (breez/spark-sdk#518), so this is when the deposit was read, not
+      // when it was made. Anything displaying it is showing fetch time.
+      timestamp: Math.floor(Date.now() / 1000),
       status: 'pending' as const, // Show as pending
       fees: BigInt(0),
       isUnclaimedDeposit: true,
@@ -56,4 +59,15 @@ export function mergeDepositsWithTransactions(
  */
 export function isUnclaimedDepositPayment(payment: Payment | ExtendedPayment): payment is ExtendedPayment {
   return (payment as ExtendedPayment).isUnclaimedDeposit === true;
+}
+
+/**
+ * Whether a deposit is waiting on the user rather than on the network.
+ * A mature deposit only carries a claimError once the automatic claim gave
+ * up, and that is the only state where the details sheet offers approve /
+ * reject. Everything else resolves on its own.
+ */
+export function depositNeedsAction(payment: Payment | ExtendedPayment): boolean {
+  const deposit = (payment as ExtendedPayment).depositInfo;
+  return Boolean(deposit?.isMature && deposit.claimError);
 }
