@@ -120,15 +120,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       const parsed = buildDepositMaxFee(type as DepositMaxFeeType, value);
       if (parsed) depositMaxFeeByType[type as DepositMaxFeeType] = depositMaxFeeValue(parsed);
     }
-    const updated: UserSettings = isDevMode
-      ? {
-          depositMaxFee,
-          depositMaxFeeByType,
-          syncIntervalSecs: syncIntervalSecs !== '' ? Math.max(0, Math.floor(Number(syncIntervalSecs))) : undefined,
-          lnurlDomain: lnurlDomain !== '' ? lnurlDomain : undefined,
-          preferSparkOverLightning,
-        }
-      : { ...current, depositMaxFee, depositMaxFeeByType };
+    // Carry the stored settings through: the fields below are the only ones
+    // this page edits, and rebuilding the object without them dropped
+    // whatever the rest of the app had written, crossChainEnabled included.
+    const updated: UserSettings = {
+      ...current,
+      depositMaxFee,
+      depositMaxFeeByType,
+      ...(isDevMode
+        ? {
+            syncIntervalSecs: syncIntervalSecs !== '' ? Math.max(0, Math.floor(Number(syncIntervalSecs))) : undefined,
+            lnurlDomain: lnurlDomain !== '' ? lnurlDomain : undefined,
+            preferSparkOverLightning,
+          }
+        : {}),
+    };
     saveSettings(updated);
     window.location.reload();
   };
