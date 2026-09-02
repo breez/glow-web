@@ -55,6 +55,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   const feeValue = feeDrafts[feeType];
   const feeUnit = feeType === 'fixed' ? 'sats' : 'sat/vB';
   const enteredFee = buildDepositMaxFee(feeType, feeValue);
+  const feeError = feeType === 'fixed' ? 'Please enter a valid amount' : 'Please enter a valid fee rate';
 
   // SettingsPage only mounts after wallet connect, so `config` is
   // effectively stable for this lifetime; capture once via lazy init.
@@ -297,7 +298,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 <span className="text-sm text-spark-text-muted shrink-0">{feeUnit}</span>
               </div>
               {!enteredFee && (
-                <p className="text-xs text-spark-warning">Enter a positive number to save.</p>
+                <p className="text-xs text-spark-warning">{feeError}</p>
               )}
             </FormGroup>
           </div>
