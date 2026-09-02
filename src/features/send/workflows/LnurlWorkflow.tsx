@@ -263,11 +263,14 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
 
   // Quick amounts answer to the request's own send limits as well as the
   // balance. Both bounds convert into the typed unit, so fiat mode is held to
-  // them too, which the fixed presets never were.
+  // them too, which the fixed presets never were. The max goes in as a hard
+  // ceiling rather than as a smaller balance, so it keeps its own value instead
+  // of losing the balance's fee headroom on top.
   const toTypedUnit = (sats: number) => (isTokenMode ? satsToFiat(sats, btcFiatRate) : sats);
   const quickAmounts = pickQuickAmounts(
-    Math.min(balance.spendableDisplay, toTypedUnit(maxSats)),
+    balance.spendableDisplay,
     unitsPerUsd,
+    toTypedUnit(maxSats),
   ).filter((amt) => amt >= toTypedUnit(minSats));
 
   // amount + optional comment form

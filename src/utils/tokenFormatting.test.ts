@@ -10,7 +10,7 @@ const SATS = 1000;
 describe('pickQuickAmounts', () => {
   it('offers nothing without a balance or a rate', () => {
     expect(pickQuickAmounts(0, USD)).toEqual([]);
-    expect(pickQuickAmounts(1.2, USD)).toEqual([]);
+    expect(pickQuickAmounts(0.9, USD)).toEqual([]);
     expect(pickQuickAmounts(1000, 0)).toEqual([]);
   });
 
@@ -24,6 +24,12 @@ describe('pickQuickAmounts', () => {
   it('keeps the largest pick clear of the balance, which is Send All', () => {
     expect(pickQuickAmounts(1000, USD)).not.toContain(1000);
     expect(pickQuickAmounts(500_000, SATS)).not.toContain(500_000);
+  });
+
+  it('treats a destination maximum as its own limit, with no headroom taken', () => {
+    // An LNURL max of $500 is payable in full, unlike $500 of balance.
+    expect(pickQuickAmounts(1_000_000, USD, 500)).toContain(500);
+    expect(pickQuickAmounts(500, USD)).not.toContain(500);
   });
 
   it('caps the value at $1000 however large the balance', () => {

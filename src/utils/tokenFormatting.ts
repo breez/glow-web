@@ -300,12 +300,14 @@ const MAX_UNITS = 999_999;
  *  a rung. */
 export const FALLBACK_SATS_PER_USD = 1000;
 
-/** Share of the balance the largest quick amount may reach. The rest is fee
- *  headroom: an amount equal to the balance dead-ends on insufficient funds,
- *  and Send All already spends everything. Being proportional it covers a Spark
- *  or Lightning send, but not a flat onchain fee, which is quoted after the
- *  amount is picked and can outrun it on a small balance. */
-const SPENDABLE_HEADROOM = 0.8;
+/** Share of the balance the largest quick amount may reach. The rest covers the
+ *  conversion (10 bps slippage cap plus pool and integrator fees) and a
+ *  Lightning base fee, and keeps the top amount off the balance exactly, which
+ *  dead-ends on insufficient funds and duplicates Send All. Steps sit about 2x
+ *  apart, so a tighter value would rarely change the pick but would remove that
+ *  margin. A flat onchain fee is quoted after the amount is picked and can
+ *  outrun any proportional reserve. */
+const SPENDABLE_HEADROOM = 0.98;
 
 /** Round amounts (1, 2 and 5 times a power of ten) from `min` to `max`, ascending. */
 function roundAmountsBetween(min: number, max: number): number[] {
@@ -340,17 +342,25 @@ function quickAmountLadder(unitsPerUsd: number): number[] {
 
 /**
  * Up to three round quick amounts, scaled to what the user can send.
- * `spendable` is the balance in the unit being typed. 0 for either argument
- * (unknown balance or no rate yet) offers nothing.
+ * `spendable` is the balance in the unit being typed. 0 for either of the first
+ * two arguments (unknown balance or no rate yet) offers nothing.
+ * `hardCeiling` caps the picks at a destination's own maximum.
  *
  * The largest pick is the biggest round amount inside the headroom, and the
  * other two step down the ladder from it. Anchoring to the top is what makes
  * the row scale: a large balance gets amounts worth sending rather than the
  * ladder's floor, which no balance would ever price out.
  */
-export function pickQuickAmounts(spendable: number, unitsPerUsd: number): number[] {
+export function pickQuickAmounts(
+  spendable: number,
+  unitsPerUsd: number,
+  hardCeiling = Infinity,
+): number[] {
   const ladder = quickAmountLadder(unitsPerUsd);
-  const top = ladder.filter((amount) => amount <= spendable * SPENDABLE_HEADROOM).length - 1;
+  // `hardCeiling` is a limit of the destination's own, not of the balance, so
+  // it takes no headroom: an amount equal to it is payable.
+  const ceiling = Math.min(spendable * SPENDABLE_HEADROOM, hardCeiling);
+  const top = ladder.filter((amount) => amount <= ceiling).length - 1;
   // Two rungs apart (roughly 5x) once the balance leaves room for it, so the
   // three cover a range; adjacent rungs when it doesn't. Negative indices fall
   // out, which is also how a balance under the smallest rung returns nothing.
