@@ -11,6 +11,8 @@ export interface FeeBreakdownItem {
   value: number | bigint | string;
   unit?: string;
   highlight?: boolean;
+  /** Marker set before the amount, e.g. "~" for a figure that is estimated. */
+  prefix?: string;
 }
 
 export interface FeeBreakdownCardProps {
@@ -48,6 +50,7 @@ export const FeeBreakdownCard: React.FC<FeeBreakdownCardProps> = ({
               {item.label}
             </span>
             <span className={`font-mono text-sm ${item.highlight ? 'font-bold text-spark-primary' : 'text-spark-text-primary'}`}>
+              {item.prefix}
               {useRawStrings || typeof item.value === 'string'
                 ? String(item.value)
                 : Number(item.value) === 0 ? '0' : <SatAmount sats={item.value} />

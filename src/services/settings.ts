@@ -67,6 +67,11 @@ export interface UserSettings {
   lnurlDomain?: string;
   preferSparkOverLightning?: boolean;
   crossChainEnabled?: boolean;
+  /**
+   * TEMPORARY: gates the priority deposit claim while it is being tested.
+   * Absent means off, so the deposit sheet behaves as it did before it.
+   */
+  priorityDepositClaimEnabled?: boolean;
 }
 
 export interface FiatSettings {
@@ -198,6 +203,8 @@ export function getSettings(): UserSettings {
       lnurlDomain: typeof parsed.lnurlDomain === 'string' ? parsed.lnurlDomain : undefined,
       preferSparkOverLightning: typeof parsed.preferSparkOverLightning === 'boolean' ? parsed.preferSparkOverLightning : undefined,
       crossChainEnabled: typeof parsed.crossChainEnabled === 'boolean' ? parsed.crossChainEnabled : undefined,
+      priorityDepositClaimEnabled:
+        typeof parsed.priorityDepositClaimEnabled === 'boolean' ? parsed.priorityDepositClaimEnabled : undefined,
     };
     return out;
   } catch {
@@ -207,6 +214,11 @@ export function getSettings(): UserSettings {
 
 export function saveSettings(settings: UserSettings): void {
   setCachedItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+/** TEMPORARY: whether the priority deposit claim is offered. Off by default. */
+export function isPriorityDepositClaimEnabled(): boolean {
+  return getSettings().priorityDepositClaimEnabled === true;
 }
 
 /**
