@@ -24,6 +24,12 @@ export function filterProvidersByNetwork(providers: BuyBitcoinProvider[], networ
 
 export interface UserSettings {
   depositMaxFee: MaxFee;
+  /**
+   * Last value entered for each limit type, so switching the type back and
+   * forth keeps what the user chose instead of resetting to the default.
+   * Only the active type is what the SDK is given.
+   */
+  depositMaxFeeByType?: Partial<Record<DepositMaxFeeType, number>>;
   syncIntervalSecs?: number;
   lnurlDomain?: string;
   preferSparkOverLightning?: boolean;
@@ -43,9 +49,58 @@ const FIAT_SETTINGS_KEY = 'fiat_settings_v1';
 const ACTIVE_FIAT_KEY = 'fiat_active_currency';
 const BUY_PROVIDERS_KEY = 'buy_providers_v1';
 
-const defaultSettings: UserSettings = {
-  depositMaxFee: { type: 'rate', satPerVbyte: 1 },
+export type DepositMaxFeeType = MaxFee['type'];
+
+/**
+ * Deposits are claimed automatically while the claim fee stays under this
+ * limit. Each type carries its own default, so switching type gives a
+ * sensible starting value rather than reusing a number in the wrong unit.
+ */
+export const DEFAULT_DEPOSIT_MAX_FEE_BY_TYPE: Record<DepositMaxFeeType, number> = {
+  fixed: 500,
+  rate: 1,
+  networkRecommended: 0,
 };
+
+const defaultSettings: UserSettings = {
+  depositMaxFee: { type: 'fixed', amount: DEFAULT_DEPOSIT_MAX_FEE_BY_TYPE.fixed },
+};
+
+/** The number carried by a limit, whatever unit its type uses. */
+export function depositMaxFeeValue(fee: MaxFee): number {
+  if (fee.type === 'fixed') return fee.amount;
+  if (fee.type === 'rate') return fee.satPerVbyte;
+  return fee.leewaySatPerVbyte;
+}
+
+/**
+ * Build a limit from what the user typed. Returns null when the field holds
+ * nothing usable, which the caller treats as "leave the stored limit alone":
+ * persisting a malformed one would fail validation on the next read and take
+ * every other setting down with it.
+ */
+export function buildDepositMaxFee(type: DepositMaxFeeType, input: string): MaxFee | null {
+  const n = Number(input);
+  if (input.trim() === '' || !Number.isFinite(n) || n < 0) return null;
+  // Every variant is a u64 in the SDK, rates included. A fraction crossing
+  // the wasm boundary fails to deserialize and takes the connection with it,
+  // so round down rather than hand one over.
+  if (type === 'fixed') return { type: 'fixed', amount: Math.floor(n) };
+  if (type === 'rate') return { type: 'rate', satPerVbyte: Math.floor(n) };
+  return { type: 'networkRecommended', leewaySatPerVbyte: Math.floor(n) };
+}
+
+/** Starting field value for every limit type: the active limit first, then what was last entered for that type, then its default. */
+export function depositMaxFeeDrafts(settings: UserSettings): Record<DepositMaxFeeType, string> {
+  const byType = settings.depositMaxFeeByType ?? {};
+  const draft = (type: DepositMaxFeeType) =>
+    String(
+      settings.depositMaxFee.type === type
+        ? depositMaxFeeValue(settings.depositMaxFee)
+        : byType[type] ?? DEFAULT_DEPOSIT_MAX_FEE_BY_TYPE[type],
+    );
+  return { fixed: draft('fixed'), rate: draft('rate'), networkRecommended: draft('networkRecommended') };
+}
 
 const defaultFiatSettings: FiatSettings = {
   selectedCurrencies: ['USD'],
@@ -71,6 +126,15 @@ function removeCachedItem(key: string): void {
   storageCache.delete(key);
 }
 
+/** Drops any remembered per-type value that is not a usable number. */
+function sanitizeFeeByType(raw: unknown): UserSettings['depositMaxFeeByType'] {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const entries = Object.entries(raw as Record<string, unknown>).filter(
+    ([type, value]) => type in DEFAULT_DEPOSIT_MAX_FEE_BY_TYPE && typeof value === 'number' && Number.isFinite(value) && value >= 0,
+  );
+  return entries.length > 0 ? (Object.fromEntries(entries) as UserSettings['depositMaxFeeByType']) : undefined;
+}
+
 export function getSettings(): UserSettings {
   try {
     const raw = getCachedItem(SETTINGS_KEY);
@@ -93,8 +157,10 @@ export function getSettings(): UserSettings {
         return defaultSettings;
       }
     }
+    const byType = parsed.depositMaxFeeByType;
     const out: UserSettings = {
       depositMaxFee: depositMaxFee as MaxFee,
+      depositMaxFeeByType: sanitizeFeeByType(byType),
       syncIntervalSecs: typeof parsed.syncIntervalSecs === 'number' ? parsed.syncIntervalSecs : undefined,
       lnurlDomain: typeof parsed.lnurlDomain === 'string' ? parsed.lnurlDomain : undefined,
       preferSparkOverLightning: typeof parsed.preferSparkOverLightning === 'boolean' ? parsed.preferSparkOverLightning : undefined,
