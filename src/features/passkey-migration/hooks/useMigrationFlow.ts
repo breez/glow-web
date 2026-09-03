@@ -31,6 +31,7 @@ import {
   type MigrationSession,
 } from '@/services/passkeyMigrationService';
 import { formatError } from '@/utils/formatError';
+import { useLatest } from '@/hooks/useLatest';
 import type { LnAddressFailure, MigrationEntry, MigrationOutcome, MigrationPhase } from '../types';
 
 export interface UseMigrationFlowArgs {
@@ -117,10 +118,8 @@ export function useMigrationFlow({
 
   // Latest-ref pattern so the phase effects can call these without listing the
   // (identity-unstable) props in their deps, which would re-trigger async phases.
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-  const onSwitchRef = useRef(onSwitchToNewWallet);
-  onSwitchRef.current = onSwitchToNewWallet;
+  const onCloseRef = useLatest(onClose);
+  const onSwitchRef = useLatest(onSwitchToNewWallet);
 
   // ============================================
   // Init
@@ -160,12 +159,10 @@ export function useMigrationFlow({
 
     if (entry === 'banner' && !activeLegacySdk) {
       logger.error(LogCategory.AUTH, 'Migration modal opened from banner without active legacy SDK');
-      setError('Wallet not connected. Please refresh and try again.');
-      setPhase('error');
       return;
     }
 
-    setPhase('explain');
+    queueMicrotask(() => setPhase('explain'));
   }, [isOpen, entry, activeLegacySdk]);
 
   // ============================================
@@ -262,7 +259,7 @@ export function useMigrationFlow({
     })();
 
     return () => { cancelled = true; };
-  }, [isOpen, phase, activeLegacySdk]);
+  }, [isOpen, phase, activeLegacySdk, onCloseRef]);
 
   // ============================================
   // Phase: check-deposits-all. Per label: derive seed (cached), connect, sync,
@@ -614,7 +611,7 @@ export function useMigrationFlow({
     })();
 
     return () => { cancelled = true; };
-  }, [isOpen, phase]);
+  }, [isOpen, phase, onSwitchRef]);
 
   // ============================================
   // Actions
@@ -628,7 +625,7 @@ export function useMigrationFlow({
     logger.info(LogCategory.AUTH, 'Migration: user clicked Skip (no old passkey)');
     setPasskeyMigrated();
     onCloseRef.current('proceed');
-  }, []);
+  }, [onCloseRef]);
 
   const startFromBanner = useCallback(() => {
     logger.info(LogCategory.AUTH, 'Migration: user clicked Continue (banner explain)');
@@ -643,17 +640,17 @@ export function useMigrationFlow({
   const openUnclaimedDeposits = useCallback(() => {
     logger.info(LogCategory.AUTH, 'Migration: user clicked Open unclaimed deposits');
     onCloseRef.current('handled');
-  }, []);
+  }, [onCloseRef]);
 
   const done = useCallback(() => {
     logger.info(LogCategory.AUTH, 'Migration: user clicked Done');
     onCloseRef.current('handled');
-  }, []);
+  }, [onCloseRef]);
 
   const cancel = useCallback(() => {
     logger.info(LogCategory.AUTH, 'Migration: user cancelled', { phase });
     onCloseRef.current('handled');
-  }, [phase]);
+  }, [phase, onCloseRef]);
 
   const retry = useCallback(() => {
     logger.info(LogCategory.AUTH, 'Migration: user clicked Retry', { entry, labels: labelsToMigrateRef.current.length });
@@ -699,6 +696,12 @@ export function useMigrationFlow({
     phase === 'sweep-label' ||
     phase === 'switch';
 
+  const hasMissingLegacySdk = isOpen && entry === 'banner' && !activeLegacySdk;
+  const displayedPhase: MigrationPhase = hasMissingLegacySdk ? 'error' : phase;
+  const displayedError = hasMissingLegacySdk
+    ? 'Wallet not connected. Please refresh and try again.'
+    : error;
+
   const spinnerText = (() => {
     switch (phase) {
       case 'probe': return 'Checking for passkey...';
@@ -717,8 +720,8 @@ export function useMigrationFlow({
   })();
 
   return {
-    phase,
-    error,
+    phase: displayedPhase,
+    error: displayedError,
     unclaimedCount,
     confirmedLabels,
     primaryLabel,

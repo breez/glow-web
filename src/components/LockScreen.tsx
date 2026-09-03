@@ -69,8 +69,9 @@ const LockScreen: React.FC<LockScreenProps> = ({
   }, [unlockWithBiometric]);
 
   useEffect(() => {
-    if (!biometricGate) setPadVisible(true);
-    else if (!suppressAutoBiometric) void tryBiometric();
+    if (biometricGate && !suppressAutoBiometric) {
+      void Promise.resolve().then(tryBiometric);
+    }
   }, [biometricGate, suppressAutoBiometric, tryBiometric]);
 
   return (
@@ -78,7 +79,7 @@ const LockScreen: React.FC<LockScreenProps> = ({
     // both to keep the PIN screen clean and because a payment-received
     // toast over the lock would leak amounts on a locked device.
     <div className="fixed inset-0 z-[100000] bg-spark-surface flex flex-col">
-      {padVisible ? (
+      {padVisible || !biometricGate ? (
         // Safe-area insets live on this branch only: the pad anchors to
         // the screen edges (1/3 / 2/3 split), while the pending branch
         // below must center in the FULL screen like the splash does.

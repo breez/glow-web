@@ -16,7 +16,7 @@
     "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
-    "@breeztech/breez-sdk-spark": "0.23.0",
+    "@breeztech/breez-sdk-spark": "0.24.1",
     "@capacitor/app": "^8.1.0",
     "@capacitor/app-launcher": "^8.0.1",
     "@capacitor/browser": "^8.0.3",
@@ -65,7 +65,7 @@
     "globals": "^16.0.0",
     "happy-dom": "^20.3.9",
     "postcss": "^8.4.27",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.4",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.0",
     "vite": "^8.0.0",
