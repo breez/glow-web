@@ -8,11 +8,7 @@ import {
   DialogHeader,
 } from '../../components/ui';
 import { LightningBoltIcon } from '../../components/Icons';
-import {
-  TOKEN_QUICK_AMOUNTS,
-  SATS_QUICK_AMOUNTS,
-  formatQuickAmount,
-} from '../../utils/tokenFormatting';
+import { fixedQuickAmounts, formatQuickAmount } from '../../utils/tokenFormatting';
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
 import { SatAmount } from '../../components/SatAmount';
 import { useAmountInput, useFiatOverride } from '../../hooks/useAmountInput';
@@ -68,6 +64,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     tokenSymbol,
     config,
     btcFiatRate,
+    quickAmountScale,
     amountSats: parsedSats,
   } = input;
 
@@ -110,7 +107,12 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     setAmountInput(String(quickAmount));
   };
 
-  const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : SATS_QUICK_AMOUNTS;
+  // Receive has no balance to scale against, so both denominations offer fixed
+  // points of value, held to that value by the rate. A sat request reaches
+  // further up than a fiat one.
+  const quickAmounts = isTokenMode
+    ? fixedQuickAmounts(quickAmountScale, [1, 5, 10])
+    : fixedQuickAmounts(quickAmountScale, [1, 10, 100]);
 
   // Mirrors the guard in `useReceivePayment.generateBolt11Invoice` so
   // the UI disables the Generate button + Enter-to-submit path for

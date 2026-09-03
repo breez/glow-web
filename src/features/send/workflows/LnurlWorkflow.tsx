@@ -5,10 +5,7 @@ import { FormError, PrimaryButton, SecondaryButton } from '../../../components/u
 import ConfirmStep from '../steps/ConfirmStep';
 import { logger, LogCategory } from '@/services/logger';
 import { SpinnerIcon } from '@/components/Icons';
-import {
-  TOKEN_QUICK_AMOUNTS,
-  formatQuickAmount,
-} from '../../../utils/tokenFormatting';
+import { formatQuickAmount, pickQuickAmounts, satsToFiat } from '../../../utils/tokenFormatting';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
 import { SatAmount } from '../../../components/SatAmount';
 import { formatWithSpaces } from '../../../utils/formatNumber';
@@ -44,6 +41,8 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     tokenIdentifier,
     tokenSymbol,
     config,
+    btcFiatRate,
+    quickAmountScale,
     tokenBalanceDisplay,
     formatSatsAsTokenDisplay,
     tokenSendAllBelowThreshold,
@@ -262,6 +261,17 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     ? 'Amount exceeds available balance'
     : null;
 
+  // Quick amounts answer to the request's own send limits as well as the
+  // balance. Both bounds convert into the typed unit so they bind in fiat mode
+  // too. The max is the request's limit, not the user's, so it goes in as a
+  // hard ceiling and keeps its own value.
+  const toTypedUnit = (sats: number) => (isTokenMode ? satsToFiat(sats, btcFiatRate) : sats);
+  const quickAmounts = pickQuickAmounts(
+    balance.spendableDisplay,
+    quickAmountScale,
+    toTypedUnit(maxSats),
+  ).filter((amt) => amt >= toTypedUnit(minSats));
+
   // amount + optional comment form
   return (
     <div className="space-y-5">
@@ -291,8 +301,8 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
               setAmount(e.target.value);
               setFeesIncluded(false);
             }}
-            placeholder={isTokenMode && tokenSymbol
-              ? `Enter amount in ${tokenSymbol}`
+            placeholder={isTokenMode && config
+              ? `Enter amount in ${config.currencyCode}`
               : `Between ${minSats.toLocaleString('en-US').replace(/,/g, ' ')} and ${maxSats.toLocaleString('en-US').replace(/,/g, ' ')} sats`
             }
             className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed"
@@ -313,20 +323,16 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
 
         {/* Quick amount buttons */}
         <div className="flex gap-2 mt-3">
-          {(isTokenMode ? TOKEN_QUICK_AMOUNTS : [1000, 10000, 100000].filter(v => v >= minSats && v <= maxSats)).map((quickAmount) => {
-            const disabled = balance.exceedsBalance(quickAmount);
+          {quickAmounts.map((quickAmount) => {
             const isSelected = amountNum === quickAmount && !isSendAll;
             return (
               <button
                 key={quickAmount}
                 onClick={() => { setAmountInput(String(quickAmount)); setFeesIncluded(false); }}
-                disabled={disabled}
                 className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
                   isSelected
                     ? 'bg-spark-primary text-white'
-                    : disabled
-                      ? 'opacity-40 cursor-not-allowed border border-spark-border text-spark-text-secondary'
-                      : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+                    : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
                 }`}
               >
                 {isTokenMode && config ? formatQuickAmount(quickAmount, config) : <SatAmount sats={quickAmount} />}

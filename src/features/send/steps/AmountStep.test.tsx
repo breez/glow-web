@@ -7,7 +7,7 @@ import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
 import AmountStep, { AmountStepProps } from './AmountStep';
 
-// Mock rates put BTC at $100,000, so $1 = 1,000 sats.
+// The mock rate makes a dollar 1,000 sats.
 function renderAmountStep(props: Partial<AmountStepProps> = {}, client?: BreezSdk) {
   const onNext = vi.fn();
   const mockClient = client ?? createMockClient();
@@ -37,7 +37,7 @@ describe('AmountStep USD entry (no stable balance)', () => {
     const { onNext } = renderAmountStep();
 
     const input = screen.getByTestId('amount-input');
-    expect(input).toHaveAttribute('placeholder', 'Enter amount in satoshis');
+    expect(input).toHaveAttribute('placeholder', 'Enter amount in sats');
 
     fireEvent.change(input, { target: { value: '1500' } });
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
@@ -53,7 +53,7 @@ describe('AmountStep USD entry (no stable balance)', () => {
     fireEvent.click(switcher);
 
     const input = screen.getByTestId('amount-input');
-    expect(input).toHaveAttribute('placeholder', 'Enter amount in $');
+    expect(input).toHaveAttribute('placeholder', 'Enter amount in USD');
 
     fireEvent.change(input, { target: { value: '5' } });
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
@@ -83,8 +83,62 @@ describe('AmountStep USD entry (no stable balance)', () => {
     expect(screen.queryByRole('button', { name: '₿' })).toBeNull();
     expect(screen.getByTestId('amount-input')).toHaveAttribute(
       'placeholder',
-      'Enter amount in satoshis'
+      'Enter amount in sats'
     );
+  });
+
+  const buttonLabels = () => screen.getAllByRole('button').map((b) => b.textContent);
+
+  // The mock rate matches the pre-rate fallback scale, so a test that asserts
+  // against it cannot tell the two apart. Waiting for the switcher is what
+  // proves the rate landed first.
+  const ratedLabels = async () => {
+    await screen.findByRole('button', { name: '₿' });
+    return buttonLabels();
+  };
+
+  it('offers only quick amounts the balance covers', async () => {
+    // 3,000 sats clears ₿1 000 and ₿2 000 and nothing above.
+    renderAmountStep({ balanceSats: 3000 });
+
+    const labels = await ratedLabels();
+    expect(labels).toContain('₿1 000');
+    expect(labels).toContain('₿2 000');
+    expect(labels).not.toContain('₿5 000');
+    expect(labels).not.toContain('₿100 000');
+  });
+
+  it('never offers the whole balance as a quick amount', async () => {
+    // 100,000 sats: the largest round amount inside the fee headroom is
+    // ₿50 000, so tapping a quick amount can't dead-end on insufficient funds.
+    renderAmountStep();
+
+    const labels = await ratedLabels();
+    expect(labels).toEqual(expect.arrayContaining(['₿2 000', '₿10 000', '₿50 000']));
+    expect(labels).not.toContain('₿100 000');
+  });
+
+  it('scales the quick amounts to the loaded rate, not the fallback', async () => {
+    // A rate of 2,000 sats to the dollar puts the smallest round amount worth a
+    // dollar at ₿2 000. The fallback scale would still offer ₿1 000.
+    const client = createMockClient({
+      listFiatRates: vi.fn().mockResolvedValue({ rates: [{ coin: 'USD', value: 50000 }] }),
+    } as unknown as Partial<BreezSdk>);
+    renderAmountStep({ balanceSats: 3000 }, client);
+
+    await waitFor(() => expect(buttonLabels()).not.toContain('₿1 000'));
+    expect(buttonLabels()).toContain('₿2 000');
+  });
+
+  it('offers sat quick amounts before any rate has loaded', () => {
+    // Sats entry works without a rate, so the row falls back rather than
+    // waiting. Asserted synchronously: the rate never arrives here.
+    const client = createMockClient({
+      listFiatRates: vi.fn(() => new Promise(() => {})),
+    } as unknown as Partial<BreezSdk>);
+    renderAmountStep({ balanceSats: 3000 }, client);
+
+    expect(buttonLabels()).toEqual(expect.arrayContaining(['₿1 000', '₿2 000']));
   });
 
   it('keeps cross-chain (amountFirst) USD-only with no toggle', async () => {

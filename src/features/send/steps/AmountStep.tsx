@@ -2,11 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import type { ConversionOptions } from '@breeztech/breez-sdk-spark';
 import { FormError, PrimaryButton, SecondaryButton } from '../../../components/ui';
 import { SpinnerIcon } from '../../../components/Icons';
-import {
-  TOKEN_QUICK_AMOUNTS,
-  SATS_QUICK_AMOUNTS,
-  formatQuickAmount,
-} from '../../../utils/tokenFormatting';
+import { formatQuickAmount, pickQuickAmounts } from '../../../utils/tokenFormatting';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
 import { useAmountInput, useFiatOverride } from '../../../hooks/useAmountInput';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
@@ -54,6 +50,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
     tokenIdentifier,
     tokenSymbol,
     config,
+    quickAmountScale,
     parseToSats,
     tokenBalanceDisplay,
     formatSatsAsTokenDisplay,
@@ -86,7 +83,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
     ? localAmount !== '' && parseFloat(localAmount) > 0
     : localAmount !== '' && parseInt(localAmount) > 0;
 
-  const quickAmounts = isTokenMode ? TOKEN_QUICK_AMOUNTS : SATS_QUICK_AMOUNTS;
+  const quickAmounts = pickQuickAmounts(balance.spendableDisplay, quickAmountScale);
   const amountNum = isTokenMode ? parseFloat(localAmount) || 0 : parseInt(localAmount) || 0;
 
   // Send All target value in BTC-as-fiat (when in token mode without a token
@@ -197,7 +194,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
                 }
               }
             }}
-            placeholder={amountFirst ? 'Enter amount in USD' : isTokenMode && tokenSymbol ? `Enter amount in ${tokenSymbol}` : 'Enter amount in satoshis'}
+            placeholder={isTokenMode && config ? `Enter amount in ${config.currencyCode}` : 'Enter amount in sats'}
             className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed"
             disabled={isLoading}
             readOnly={isSendAll}
@@ -218,19 +215,15 @@ const AmountStep: React.FC<AmountStepProps> = ({
         {/* Quick amount buttons */}
         <div className="flex gap-2 mt-3">
           {quickAmounts.map((quickAmount) => {
-            const disabled = balance.exceedsBalance(quickAmount);
             const isSelected = amountNum === quickAmount && !isSendAll;
             return (
               <button
                 key={quickAmount}
                 onClick={() => { setLocalAmount(String(quickAmount)); setFeesIncluded(false); setLocalError(null); }}
-                disabled={disabled}
                 className={`flex-1 py-2 rounded-lg text-sm font-mono font-medium transition-all ${
                   isSelected
                     ? 'bg-spark-primary text-white'
-                    : disabled
-                      ? 'opacity-40 cursor-not-allowed border border-spark-border text-spark-text-secondary'
-                      : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
+                    : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
                 }`}
               >
                 {isTokenMode && config ? formatQuickAmount(quickAmount, config) : <SatAmount sats={quickAmount} />}

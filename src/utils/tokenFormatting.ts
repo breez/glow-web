@@ -4,6 +4,9 @@ import { isCrossChainPayment } from './paymentDescription';
 
 export interface TokenDisplayConfig {
   symbol: string;
+  /** Code to name the unit in prose ("Enter amount in USD"), where the symbol
+   *  reads as decoration rather than a unit. Falls back to the token ticker. */
+  currencyCode: string;
   symbolPosition: 'before' | 'after';
   fractionSize: number;
   decimals: number;
@@ -38,6 +41,7 @@ export function buildFiatDisplayConfig(
   if (match) {
     return {
       symbol: match.info.symbol?.grapheme || match.id,
+      currencyCode: match.id,
       symbolPosition: match.info.symbol?.rtl ? 'after' : 'before',
       fractionSize: match.info.fractionSize,
       decimals: match.info.fractionSize,
@@ -47,6 +51,7 @@ export function buildFiatDisplayConfig(
   }
   return {
     symbol: currencyId === 'USD' ? '$' : currencyId,
+    currencyCode: currencyId,
     symbolPosition: 'before',
     fractionSize: 2,
     decimals: 2,
@@ -79,6 +84,7 @@ export function buildTokenDisplayConfig(
   if (bestMatch) {
     return {
       symbol: bestMatch.info.symbol?.grapheme || bestMatch.id,
+      currencyCode: bestMatch.id,
       symbolPosition: bestMatch.info.symbol?.rtl ? 'after' : 'before',
       fractionSize: bestMatch.info.fractionSize,
       decimals: tokenMetadata.decimals,
@@ -93,6 +99,7 @@ export function buildTokenDisplayConfig(
 
   return {
     symbol: displayTicker,
+    currencyCode: tokenMetadata.ticker,
     symbolPosition: 'before',
     fractionSize: Math.min(tokenMetadata.decimals, 2),
     decimals: tokenMetadata.decimals,
@@ -159,6 +166,12 @@ export function formatTokenAmountMinimum(config: TokenDisplayConfig): string {
 export function fiatToSats(fiatAmount: number, btcFiatRate: number): number {
   if (btcFiatRate <= 0) return 0;
   return Math.round((fiatAmount / btcFiatRate) * 100_000_000);
+}
+
+/** Inverse of `fiatToSats`. 0 when no rate has loaded. */
+export function satsToFiat(sats: number, btcFiatRate: number): number {
+  if (btcFiatRate <= 0) return 0;
+  return (sats / 100_000_000) * btcFiatRate;
 }
 
 /**
@@ -262,11 +275,132 @@ export function getTokenAmountFromPayment(payment: Payment): TokenPaymentInfo | 
   return null;
 }
 
-/** Quick amount presets for token-denominated inputs. */
-export const TOKEN_QUICK_AMOUNTS = [1, 5, 10];
+/** Value a quick amount may be worth, in US dollars (#393). */
+const MIN_USD = 1;
+const MAX_USD = 1000;
 
-/** Quick amount presets for sat-denominated inputs. */
-export const SATS_QUICK_AMOUNTS = [1000, 10000, 100000];
+/** How far under `MIN_USD` a step may sit and still count. Steps are about 2x
+ *  apart, so a hard floor drops the one just below it, nearly doubling the
+ *  smallest offer and splitting the denominations apart. Half a step of slack
+ *  keeps them aligned. */
+const MIN_USD_SLACK = Math.SQRT2;
+
+/** Seven digits is where a label stops fitting the four-button row on a phone.
+ *  Only binds in a currency whose unit is worth a fraction of a cent, which
+ *  gets a lower ceiling in exchange for a row that still lays out. */
+const MAX_UNITS = 999_999;
+
+/** Sats per dollar to fall back on before a rate has loaded, so sat quick
+ *  amounts still render on a cold start. It only decides which round numbers
+ *  get offered, never a conversion, so being off by a price move costs at most
+ *  a rung. */
+export const FALLBACK_SATS_PER_USD = 1000;
+
+/** Smallest sat amount worth offering. A dollar buys fewer sats as BTC rises,
+ *  and without a floor the row follows it down into amounts that read as
+ *  change. Steps are 1, 2 and 5 times a power of ten, so a floor here also
+ *  keeps every sat amount a round thousand. */
+export const MIN_SATS_QUICK_AMOUNT = 1000;
+
+/** The denomination a row of quick amounts is drawn in. */
+export interface QuickAmountScale {
+  /** Units of that denomination in one US dollar. 0 when no rate has loaded. */
+  unitsPerUsd: number;
+  /** Smallest amount to offer, in the denomination's own units. */
+  minUnit: number;
+}
+
+/** Share of the balance the largest quick amount may reach. The rest covers the
+ *  conversion and a Lightning base fee, and keeps the top amount off the
+ *  balance exactly, which dead-ends on insufficient funds and duplicates Send
+ *  All. A flat onchain fee is quoted only after the amount is picked, so no
+ *  proportional reserve bounds it. */
+const SPENDABLE_HEADROOM = 0.98;
+
+/** Round amounts (1, 2 and 5 times a power of ten) from `min` to `max`, ascending. */
+function roundAmountsBetween(min: number, max: number): number[] {
+  if (!(min > 0) || !(max >= min)) return [];
+  const amounts: number[] = [];
+  for (let exponent = Math.floor(Math.log10(min)); 10 ** exponent <= max; exponent++) {
+    for (const step of [1, 2, 5]) {
+      const amount = step * 10 ** exponent;
+      if (amount >= min && amount <= max) amounts.push(amount);
+    }
+  }
+  return amounts;
+}
+
+/**
+ * The round amounts worth between $1 and $1000 in the unit the user is typing.
+ * `unitsPerUsd` is how many of that unit make a dollar: sats per dollar in sats
+ * mode, currency units per dollar in fiat mode. Deriving the ladder from the
+ * rate is what keeps the amounts round in a currency whose unit is worth a
+ * hundredth of a dollar, where a fixed 1 to 1000 ladder would be all dust.
+ *
+ * Rungs can carry one decimal place in a currency worth more than a dollar per
+ * unit. Every such currency has a fraction size of at least 2, so the value is
+ * always representable.
+ */
+function quickAmountLadder({ unitsPerUsd, minUnit }: QuickAmountScale): number[] {
+  return roundAmountsBetween(
+    Math.max((MIN_USD * unitsPerUsd) / MIN_USD_SLACK, minUnit),
+    Math.min(MAX_USD * unitsPerUsd, MAX_UNITS),
+  );
+}
+
+/**
+ * Up to three round quick amounts, scaled to what the user can send.
+ * `spendable` is the balance in the unit being typed; 0 for it or for the
+ * scale's rate (none loaded yet) offers nothing. `hardCeiling` caps the picks
+ * at a destination's own maximum.
+ *
+ * The largest pick is the biggest round amount inside the headroom, and the
+ * other two step down the ladder from it. Anchoring to the top is what makes
+ * the row scale: a large balance gets amounts worth sending rather than the
+ * ladder's floor, which no balance would ever price out.
+ */
+export function pickQuickAmounts(
+  spendable: number,
+  scale: QuickAmountScale,
+  hardCeiling = Infinity,
+): number[] {
+  const ladder = quickAmountLadder(scale);
+  // `hardCeiling` is a limit of the destination's own, not of the balance, so
+  // it takes no headroom: an amount equal to it is payable.
+  const ceiling = Math.min(spendable * SPENDABLE_HEADROOM, hardCeiling);
+  const top = ladder.filter((amount) => amount <= ceiling).length - 1;
+  // Two rungs apart (roughly 5x) once the balance leaves room for it, so the
+  // three cover a range; adjacent rungs when it doesn't. Negative indices fall
+  // out, which is also how a balance under the smallest rung returns nothing.
+  const stride = top >= 4 ? 2 : 1;
+  return [top - 2 * stride, top - stride, top].filter((i) => i >= 0).map((i) => ladder[i]);
+}
+
+/**
+ * Quick amounts for an input with no balance to scale against (receive): the
+ * round amount nearest each of `usdPoints`, which names the values wanted in
+ * dollars, ascending.
+ */
+export function fixedQuickAmounts(scale: QuickAmountScale, usdPoints: number[]): number[] {
+  const ladder = quickAmountLadder(scale);
+  if (ladder.length === 0) return [];
+  const picked: number[] = [];
+  for (const usd of usdPoints) {
+    const target = usd * scale.unitsPerUsd;
+    // Nearest by ratio, not by difference: steps are spaced multiplicatively,
+    // so subtracting would pull every point towards the top of the ladder.
+    const nearest = ladder.reduce((best, amount) =>
+      Math.abs(Math.log(amount / target)) < Math.abs(Math.log(best / target)) ? amount : best);
+    const last = picked[picked.length - 1];
+    // Step up rather than repeat: in a currency whose unit is worth several
+    // dollars, two points can land on one step and spend two buttons on it.
+    const choice = last !== undefined && nearest <= last
+      ? ladder.find((amount) => amount > last)
+      : nearest;
+    if (choice !== undefined && choice !== last) picked.push(choice);
+  }
+  return picked;
+}
 
 /** Format a token-denominated quick amount label, respecting symbol position.
  *  Sat-denominated buttons render `SatAmount` instead. */

@@ -8,7 +8,7 @@ import { useInvoicePaid } from '../../../hooks/useInvoicePaid';
 import { useAmountInput } from '../../../hooks/useAmountInput';
 import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
-import { type TokenDisplayConfig } from '../../../utils/tokenFormatting';
+import { fixedQuickAmounts, type TokenDisplayConfig } from '../../../utils/tokenFormatting';
 import { toSdkAmountNumber, type Sats } from '../../../types/sats';
 import { isStandalonePwa, openExternalUrl } from '../../../utils/externalLink';
 import {
@@ -19,8 +19,10 @@ import {
 
 export type BuyStep = 'select' | 'amount' | 'qr';
 
-const CASH_APP_QUICK_AMOUNTS_SATS = [10000, 50000, 100000];
-const CASH_APP_QUICK_AMOUNTS_TOKEN = [5, 10, 25];
+/** What a Cash App quick amount is worth, in dollars. They start where a
+ *  purchase is worth making: below this the provider's fee takes much of it.
+ *  Any amount can still be typed, down to `MIN_CASH_APP_SATS`. */
+const CASH_APP_POINTS_USD = [20, 50, 100];
 const MIN_CASH_APP_SATS: Sats = 1n as Sats;
 
 export interface UseBuyBitcoinOptions {
@@ -87,6 +89,7 @@ export function useBuyBitcoin({
     config: tokenConfig,
     amountSats,
     btcFiatRate,
+    quickAmountScale,
   } = input;
 
   // Detect "too large" inputs: parseAmountToSats returns null once the result
@@ -247,7 +250,10 @@ export function useBuyBitcoin({
 
   const displayedError = error ?? (amountTooLarge ? 'Invalid amount' : null);
 
-  const quickAmounts = isTokenMode ? CASH_APP_QUICK_AMOUNTS_TOKEN : CASH_APP_QUICK_AMOUNTS_SATS;
+  // Buying adds funds, so there is no balance to scale against: fixed points of
+  // value, held there by the rate. One set covers both denominations, since a
+  // purchase has no reason to reach higher in sats than in fiat.
+  const quickAmounts = fixedQuickAmounts(quickAmountScale, CASH_APP_POINTS_USD);
 
   return {
     step,
