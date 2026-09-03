@@ -8,6 +8,7 @@ import {
   buildTokenDisplayConfig,
   formatTokenAmount,
   getTokenAmountFromPayment,
+  withAssetDecimals,
 } from '../utils/tokenFormatting';
 import { logger, LogCategory } from '../services/logger';
 import { getCachedStableTicker, setCachedStableTicker, getNativeStableTicker, setNativeStableTicker } from '../services/settings';
@@ -216,13 +217,9 @@ export const StableBalanceProvider: React.FC<StableBalanceProviderProps> = ({ ch
 
       const tokenInfo = getTokenAmountFromPayment(payment);
 
-      if (displayConfig && tokenInfo) {
-        return formatTokenAmount(tokenInfo.amount, displayConfig);
-      }
-
       if (tokenInfo) {
-        const config = buildTokenDisplayConfig(tokenInfo.metadata, fiatCurrencies);
-        return formatTokenAmount(tokenInfo.amount, config);
+        const base = displayConfig ?? buildTokenDisplayConfig(tokenInfo.metadata, fiatCurrencies);
+        return formatTokenAmount(tokenInfo.amount, withAssetDecimals(base, tokenInfo.metadata.decimals));
       }
 
       return `₿${formatWithSpaces(Number(payment.amount))}`;

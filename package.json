@@ -16,7 +16,7 @@
     "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
-    "@breeztech/breez-sdk-spark": "0.23.0",
+    "@breeztech/breez-sdk-spark": "file:vendor/breeztech-breez-sdk-spark.tgz",
     "@capacitor/app": "^8.1.0",
     "@capacitor/app-launcher": "^8.0.1",
     "@capacitor/browser": "^8.0.3",

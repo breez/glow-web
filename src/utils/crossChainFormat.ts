@@ -34,6 +34,18 @@ export function formatCrossChainAmount(amount: bigint, decimals: number): string
 }
 
 /**
+ * Parse a decimal amount string into an asset's base units, the inverse of
+ * `formatCrossChainAmount`. Scaling through `Number` drifts once the result
+ * passes 2^53, which an 18-decimal source asset reaches around $100k, so the
+ * digits are assembled as a string. Fraction digits beyond the asset's
+ * precision are truncated, never rounded up past what the user typed.
+ */
+export function parseCrossChainAmount(value: string, decimals: number): bigint {
+  const [whole, frac = ''] = value.split('.');
+  return BigInt(`${whole}${frac.slice(0, decimals).padEnd(decimals, '0')}`);
+}
+
+/**
  * Format a delivered/received amount to 2 decimal places (estimates, so cents
  * is enough). Rounds via integer math to avoid float precision loss.
  */

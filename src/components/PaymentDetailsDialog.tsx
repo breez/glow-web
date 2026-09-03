@@ -6,7 +6,7 @@ import {
 } from './ui';
 import { SatAmount } from './SatAmount';
 import { useStableBalance } from '../contexts/StableBalanceContext';
-import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig } from '../utils/tokenFormatting';
+import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig, withAssetDecimals } from '../utils/tokenFormatting';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
 import { getPaymentDescription, getProviderDisplayName, isCrossChainPayment } from '../utils/paymentDescription';
@@ -80,17 +80,19 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
     if (side.asset.ticker === 'BTC') {
       return <SatAmount sats={Number(value)} />;
     }
-    const config = stableBalance.displayConfig ?? buildTokenDisplayConfig(
+    const base = stableBalance.displayConfig ?? buildTokenDisplayConfig(
       { ticker: side.asset.ticker, decimals: side.asset.decimals } as TokenMetadata,
       fiatCurrencies,
     );
+    const config = withAssetDecimals(base, side.asset.decimals);
     return formatTokenAmount(value, config, isFee ? { fullPrecision: true } : undefined);
   };
 
   // Format a fee value in the payment's native denomination
   const formatPaymentFee = (fee: bigint): ReactNode => {
     if (payment.details?.type === 'token') {
-      const config = stableBalance.displayConfig ?? buildTokenDisplayConfig(payment.details.metadata, fiatCurrencies);
+      const base = stableBalance.displayConfig ?? buildTokenDisplayConfig(payment.details.metadata, fiatCurrencies);
+      const config = withAssetDecimals(base, payment.details.metadata.decimals);
       return formatTokenAmount(fee, config, { fullPrecision: true });
     }
     return <SatAmount sats={Number(fee)} />;
@@ -100,10 +102,14 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   // the token amount doesn't match the payment — show sats instead.
   const isAmountAdjusted = payment.conversionDetails?.conversions?.some(c => !!c.amountAdjustment) ?? false;
   const tokenInfo = getTokenAmountFromPayment(payment);
-  const tokenDisplayConfig = stableBalance.displayConfig
+  const baseDisplayConfig = stableBalance.displayConfig
     ?? (tokenInfo ? buildTokenDisplayConfig(tokenInfo.metadata, fiatCurrencies) : null);
+  const tokenDisplayConfig = baseDisplayConfig && tokenInfo
+    ? withAssetDecimals(baseDisplayConfig, tokenInfo.metadata.decimals)
+    : baseDisplayConfig;
   const hasTokenDisplay = !isAmountAdjusted && !!tokenInfo && !!tokenDisplayConfig;
-  const sign = payment.paymentType === 'receive' ? '+' : '-';
+  const isReceive = payment.paymentType === 'receive';
+  const sign = isReceive ? '+' : '-';
   const amountDisplay = hasTokenDisplay
     ? `${sign} ${formatTokenAmount(tokenInfo.amount, tokenDisplayConfig)}`
     : <>{sign} <SatAmount sats={payment.amount} /></>;
@@ -111,10 +117,20 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
     ? (isAmountAdjusted ? <SatAmount sats={Number(payment.fees)} /> : formatPaymentFee(BigInt(payment.fees)))
     : null;
 
-  // Cross-chain ("USD Transfer"): surface the destination (recipient address +
-  // chain/asset) the funds landed on, instead of leading with the internal
-  // BOLT11/spark source leg. Null for all non-cross-chain payments.
+  // Cross-chain ("USD Transfer"): surface the external leg. For a send that's
+  // the destination (recipient + delivered amount); for a receive it's the
+  // source the sender deposited. Null for all non-cross-chain payments.
   const dest = isCrossChainPayment(payment) ? getCrossChainDestination(payment) : null;
+  const conversions = payment.conversionDetails?.conversions;
+
+  // Receive: the amount the sender deposited on the external chain (the `from`
+  // side of the cross-chain conversion), e.g. "1.00 USDC".
+  const crossChainSource = (() => {
+    if (!dest || !isReceive) return null;
+    const xc = conversions?.find(c => c.provider === 'orchestra' || c.provider === 'boltz');
+    if (!xc) return null;
+    return `${formatReceiveAmount(BigInt(xc.from.amount), xc.from.asset.decimals)} ${xc.from.asset.ticker}`;
+  })();
 
   return (
     <BottomSheetContainer isOpen={optionalPayment != null} onClose={onClose}>
@@ -128,7 +144,8 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               value={amountDisplay}
             />
 
-            {feeDisplay && (
+            {/* Cross-chain fee lives in the Conversion Details dropdown. */}
+            {!dest && feeDisplay && (
               <PaymentInfoRow
                 label="Fee"
                 value={feeDisplay}
@@ -140,26 +157,38 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               value={formatDateTime(payment.timestamp)}
             />
 
-            {/* Cross-chain destination — what chain/asset it landed on + recipient */}
-            {dest?.deliveredAmount !== undefined && dest.assetDecimals !== undefined && dest.assetTicker && (
-              <PaymentInfoRow
-                label="Received Amount"
-                value={`~${formatReceiveAmount(dest.deliveredAmount, dest.assetDecimals)} ${dest.assetTicker}`}
-              />
+            {/* Cross-chain external leg. Receive: the deposited source amount +
+                source network. Send: delivered amount + recipient address. */}
+            {dest && isReceive && (
+              <>
+                {crossChainSource && (
+                  <PaymentInfoRow label="Sent Amount" value={crossChainSource} />
+                )}
+                {dest.chainName && (
+                  <PaymentInfoRow label="Network" value={formatChainName(dest.chainName)} />
+                )}
+              </>
             )}
-            {dest?.chainName && (
-              <PaymentInfoRow
-                label="Network"
-                value={formatChainName(dest.chainName)}
-              />
-            )}
-            {dest?.recipientAddress && (
-              <CollapsibleCodeField
-                label="Recipient Address"
-                value={dest.recipientAddress}
-                isVisible={visibleFields.recipientAddress}
-                onToggle={() => toggleField('recipientAddress')}
-              />
+            {dest && !isReceive && (
+              <>
+                {dest.deliveredAmount !== undefined && dest.assetDecimals !== undefined && dest.assetTicker && (
+                  <PaymentInfoRow
+                    label="Received Amount"
+                    value={`~${formatReceiveAmount(dest.deliveredAmount, dest.assetDecimals)} ${dest.assetTicker}`}
+                  />
+                )}
+                {dest.chainName && (
+                  <PaymentInfoRow label="Network" value={formatChainName(dest.chainName)} />
+                )}
+                {dest.recipientAddress && (
+                  <CollapsibleCodeField
+                    label="Recipient Address"
+                    value={dest.recipientAddress}
+                    isVisible={visibleFields.recipientAddress}
+                    onToggle={() => toggleField('recipientAddress')}
+                  />
+                )}
+              </>
             )}
 
             {/* Description is noise for cross-chain (it's the internal BOLT11 leg) */}
@@ -313,7 +342,6 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
 
             {/* Conversion Details — shows original payment values */}
             {(() => {
-              const conversions = payment.conversionDetails?.conversions;
               if (!conversions?.length) return null;
               return (
               <CollapsibleSection
@@ -324,10 +352,13 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               >
                 <div className="space-y-3">
                   {conversions.map((conv, i) => {
-                    const isCrossChain = conv.provider === 'orchestra' || conv.provider === 'boltz';
                     const fromFee = BigInt(conv.from.fee);
                     const toFee = BigInt(conv.to.fee);
-                    const feeSide = isCrossChain ? conv.to : (fromFee > 0n ? conv.from : conv.to);
+                    // Show the discrete fee from whichever side carries it (the
+                    // deposit side for cross-chain, in the source asset).
+                    const feeValue = fromFee > 0n || toFee > 0n
+                      ? formatSideValue(fromFee > 0n ? conv.from : conv.to, true)
+                      : null;
                     return (
                       <div
                         key={i}
@@ -345,8 +376,8 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                           label="Converted Amount"
                           value={formatSideValue(conv.to)}
                         />
-                        {(fromFee > 0n || toFee > 0n) && (
-                          <PaymentInfoRow label="Fee" value={formatSideValue(feeSide, true)} />
+                        {feeValue && (
+                          <PaymentInfoRow label="Fee" value={feeValue} />
                         )}
                       </div>
                     );

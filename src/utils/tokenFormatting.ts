@@ -105,6 +105,18 @@ export function buildTokenDisplayConfig(
  * Format raw token units into a display string.
  * e.g., 1234567n with USDB config (decimals=6, fractionSize=2, symbol=$) → "$1.23"
  */
+/**
+ * Presentation from `config`, precision from the asset actually being shown.
+ *
+ * The stable-balance config renders payment rows in the wallet's chosen
+ * currency, but `decimals` is a property of the asset in the row, not of the
+ * wallet: a cross-chain leg delivered on an 18-decimal chain reads 10^12 too
+ * large under the 6-decimal stable config.
+ */
+export function withAssetDecimals(config: TokenDisplayConfig, decimals: number): TokenDisplayConfig {
+  return config.decimals === decimals ? config : { ...config, decimals };
+}
+
 export function formatTokenAmount(
   amount: bigint,
   config: TokenDisplayConfig,
@@ -202,9 +214,40 @@ export function parseAmountToSats(
 }
 
 /**
- * Extract displayable token amount from a payment.
+ * The cross-chain leg as the provider reported it, for a send whose settled
+ * `conversionDetails.conversions` are absent (the field is optional on a
+ * payment). Mirrors the conversions path: gross value at the destination
+ * asset's own precision. `feeAmount` is the gap between the source amount
+ * expressed in destination units and what was delivered, so it shares
+ * `assetDecimals` and adds the same way `to.fee` does.
+ */
+function crossChainInfoAmount(payment: Payment): TokenPaymentInfo | null {
+  const details = payment.details;
+  const info = details && 'conversionInfo' in details ? details.conversionInfo : undefined;
+  if (info?.type !== 'orchestra' && info?.type !== 'boltz') return null;
+
+  const delivered = info.deliveredAmount ?? info.estimatedOut;
+  // Without a ticker the amount can't be labelled, or told apart from a BTC leg.
+  if (!delivered || !info.asset || info.asset === 'BTC') return null;
+
+  const fee = info.feeAmount ? BigInt(info.feeAmount) : 0n;
+  return {
+    amount: BigInt(delivered) + fee,
+    fee,
+    metadata: {
+      ticker: info.asset,
+      decimals: info.assetDecimals,
+    } as TokenMetadata,
+  };
+}
+
+/**
+ * Extract displayable token amount from a payment. The returned `amount` and
+ * `metadata.decimals` always come from the same source, so they cannot
+ * disagree.
  * - Token payments (details.type === 'token'): amount/fee are in token units
  * - Conversion payments: token step's amount/fee are in token units
+ * - Cross-chain sends without settled legs: the provider's `conversionInfo`
  * - Plain BTC: returns null (these get faded styling)
  */
 export function getTokenAmountFromPayment(payment: Payment): TokenPaymentInfo | null {
@@ -257,6 +300,14 @@ export function getTokenAmountFromPayment(payment: Payment): TokenPaymentInfo | 
         };
       }
     }
+  }
+
+  // No settled legs: fall back to the provider's own view of the leg rather
+  // than dropping a USD transfer to sats. Send-only, matching the branch
+  // above — on a receive `conversionInfo` describes the external source leg,
+  // not what landed in the wallet.
+  if (payment.paymentType === 'send') {
+    return crossChainInfoAmount(payment);
   }
 
   return null;

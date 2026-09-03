@@ -7,7 +7,7 @@ import { ArrowDownIcon, ArrowUpIcon, LightningBoltIcon } from './Icons';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
-import { formatTokenAmount, buildTokenDisplayConfig, tokenAmountDisplaysAsZero } from '../utils/tokenFormatting';
+import { formatTokenAmount, buildTokenDisplayConfig, tokenAmountDisplaysAsZero, withAssetDecimals } from '../utils/tokenFormatting';
 import { getPaymentDescription } from '../utils/paymentDescription';
 
 // Hoisted static JSX elements (rendering-hoist-jsx optimization)
@@ -189,8 +189,10 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onPayme
               let feeText: string;
               if (tx.details?.type === 'token') {
                 const feeBigInt = BigInt(tx.fees);
-                const config = stableBalance.displayConfig
-                  ?? buildTokenDisplayConfig(tx.details.metadata, fiatCurrencies);
+                const config = withAssetDecimals(
+                  stableBalance.displayConfig ?? buildTokenDisplayConfig(tx.details.metadata, fiatCurrencies),
+                  tx.details.metadata.decimals,
+                );
                 if (tokenAmountDisplaysAsZero(feeBigInt, config)) return null;
                 feeText = formatTokenAmount(feeBigInt, config);
               } else {
