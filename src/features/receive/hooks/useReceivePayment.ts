@@ -230,6 +230,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     } else if (tab === 'bitcoin') {
       generateBitcoinAddress();
     }
+    // 'usd' needs no kickoff here — CrossChainReceiveWorkflow owns its own route fetching.
   }, [generateSparkAddress, generateBitcoinAddress]);
 
   return {

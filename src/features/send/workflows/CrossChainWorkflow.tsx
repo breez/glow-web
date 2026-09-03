@@ -6,19 +6,27 @@ import type {
   PrepareSendPaymentResponse,
 } from '@breeztech/breez-sdk-spark';
 import { PrimaryButton, SecondaryButton } from '../../../components/ui';
-import { useSheetFullSnap } from '../../../components/ui/sheets/BottomSheetCardContext';
-import { ChevronDownIcon, CopyFilledIcon, CheckIcon, SpinnerIcon } from '../../../components/Icons';
+import { SpinnerIcon } from '../../../components/Icons';
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
+import { CrossChainAssetStep } from '../../../components/crossChain/CrossChainAssetStep';
+import { CrossChainChainStep } from '../../../components/crossChain/CrossChainChainStep';
 import { useWallet } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { SatAmount } from '../../../components/SatAmount';
-import { copyToClipboard } from '../../../utils/clipboard';
+import { useCrossChainRouteGroups } from '../../../hooks/useCrossChainRouteGroups';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
 import { getProviderDisplayName } from '../../../utils/paymentDescription';
 import { truncateAddress, formatChainName, formatCrossChainAmount, formatReceiveAmount } from '../../../utils/crossChainFormat';
+import {
+  assetDisplayName,
+  assetMatchesGroup,
+  buildGroupLookup,
+  chainGroupKey as chainGroupKeyWith,
+  crossChainCardClass,
+  crossChainFriendlyError,
+} from '../../../utils/crossChainRoutes';
 import { formatError } from '@/utils/formatError';
-import CryptoIcon from '../../../components/CryptoIcon';
 
 type WorkflowStep = 'loading' | 'asset' | 'chain' | 'provider' | 'confirm';
 
@@ -39,33 +47,6 @@ interface ProviderQuote {
   loading: boolean;
 }
 
-function friendlyError(err: unknown): string {
-  const raw = err instanceof Error ? err.message : 'Unknown error';
-  if (raw.includes('Amount too small')) return 'Amount too small for this route.';
-  if (raw.includes('Amount too large')) return 'Amount too large for this route.';
-  return 'Failed to get quote.';
-}
-
-// Group asset variants under a canonical display name (e.g. USDT0 → USDT)
-const ASSET_DISPLAY_GROUP: Record<string, string> = { 'USDT0': 'USDT' };
-const assetDisplayName = (asset: string) => ASSET_DISPLAY_GROUP[asset] ?? asset;
-const assetMatchesGroup = (routeAsset: string, group: string) =>
-  assetDisplayName(routeAsset) === group;
-
-// Normalize chain name for grouping. Strips common suffixes so e.g.
-// "Arbitrum" and "Arbitrum one", or "Polygon" and "Polygon POS" merge.
-const CHAIN_SUFFIXES = [' one', ' pos', ' mainnet', ' network'];
-function normalizeChainName(chain: string) {
-  let name = chain.toLowerCase();
-  for (const suffix of CHAIN_SUFFIXES) {
-    if (name.endsWith(suffix)) {
-      name = name.slice(0, -suffix.length);
-      break;
-    }
-  }
-  return name;
-}
-
 const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   addressDetails,
   amountSats,
@@ -76,7 +57,6 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   onRun,
 }) => {
   const wallet = useWallet();
-  const isSheetFull = useSheetFullSnap();
   const stableBalance = useStableBalance();
   const [step, setStep] = useState<WorkflowStep>('loading');
   const [routes, setRoutes] = useState<CrossChainRoutePair[]>([]);
@@ -89,9 +69,6 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   const [pendingAsset, setPendingAsset] = useState<string | null>(null);
   const [pendingChain, setPendingChain] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
-  // Chain card expand/copy state
-  const [expandedChain, setExpandedChain] = useState<string | null>(null);
-  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
   // Stable balance detection
   const useUsdb = stableBalance.isActive && !!stableBalance.tokenIdentifier && stableBalance.btcFiatRate > 0 && !!stableBalance.displayConfig;
@@ -102,48 +79,12 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       : BigInt(amountSats);
   const effectiveTokenId = tokenIdentifier ?? (useUsdb ? stableBalance.tokenIdentifier! : undefined);
 
-  // Derived data
-  const uniqueAssets = useMemo(
-    () => [...new Set(routes
-      .map(r => assetDisplayName(r.asset))
-    )].sort(),
-    [routes]
+  // Derived asset/chain groupings (shared with the receive workflow)
+  const { uniqueAssets, chainGroupKey, getChainsForAsset } = useCrossChainRouteGroups(routes);
+  const chainsForAsset = useMemo(
+    () => (selectedAsset ? getChainsForAsset(selectedAsset) : []),
+    [selectedAsset, getChainsForAsset],
   );
-
-  // Build chain group lookup: maps each raw chain name to its normalized form
-  const buildGroupLookup = useCallback((allRoutes: CrossChainRoutePair[]) => {
-    const byChain = new Map<string, string>();
-    for (const r of allRoutes) {
-      const chainLower = r.chain.toLowerCase();
-      if (!byChain.has(chainLower)) {
-        byChain.set(chainLower, normalizeChainName(r.chain));
-      }
-    }
-    return { byChain };
-  }, []);
-
-  const groupLookup = useMemo(() => buildGroupLookup(routes), [routes, buildGroupLookup]);
-
-  // Get chain group key for a route
-  const chainGroupKey = useCallback((r: CrossChainRoutePair, lookup?: { byChain: Map<string, string> }) => {
-    const l = lookup ?? groupLookup;
-    return l.byChain.get(r.chain.toLowerCase()) ?? normalizeChainName(r.chain);
-  }, [groupLookup]);
-
-  const chainsForAsset = useMemo(() => {
-    if (!selectedAsset) return [];
-    const matching = routes.filter(r => assetMatchesGroup(r.asset, selectedAsset));
-    // Deduplicate by chain group, keeping shortest chain name as display label
-    const groups = new Map<string, CrossChainRoutePair>();
-    for (const r of matching) {
-      const key = chainGroupKey(r);
-      const existing = groups.get(key);
-      if (!existing || r.chain.length < existing.chain.length) {
-        groups.set(key, r);
-      }
-    }
-    return [...groups.values()].sort((a, b) => a.chain.localeCompare(b.chain));
-  }, [routes, selectedAsset, chainGroupKey]);
 
   const routesForSelection = useMemo(
     () => {
@@ -184,7 +125,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
         logger.error(LogCategory.PAYMENT, 'Failed to prepare cross-chain payment', { error: formatError(err), provider: r.provider });
         setProviderQuotes(prev => {
           const next = new Map(prev);
-          next.set(r.provider, { route: r, response: null, error: friendlyError(err), loading: false });
+          next.set(r.provider, { route: r, response: null, error: crossChainFriendlyError(err, 'Failed to get quote.'), loading: false });
           return next;
         });
       }
@@ -196,7 +137,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
     setSelectedAsset(asset);
     const lookup = buildGroupLookup(allRoutes);
     const matching = allRoutes.filter(r => assetMatchesGroup(r.asset, asset));
-    const chainKeys = [...new Set(matching.map(r => chainGroupKey(r, lookup)))];
+    const chainKeys = [...new Set(matching.map(r => chainGroupKeyWith(r, lookup)))];
     if (chainKeys.length === 1) {
       selectChain(asset, chainKeys[0], allRoutes);
     } else {
@@ -208,7 +149,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   const selectChain = useCallback((asset: string, chainKey: string, allRoutes: CrossChainRoutePair[]) => {
     setSelectedChain(chainKey);
     const lookup = buildGroupLookup(allRoutes);
-    const matching = allRoutes.filter(r => assetMatchesGroup(r.asset, asset) && chainGroupKey(r, lookup) === chainKey);
+    const matching = allRoutes.filter(r => assetMatchesGroup(r.asset, asset) && chainGroupKeyWith(r, lookup) === chainKey);
     if (matching.length === 1) {
       // Single provider — show loading, prepare, and go to confirm
       setStep('loading');
@@ -220,10 +161,10 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
         })
         .catch(err => {
           logger.error(LogCategory.PAYMENT, 'Failed to prepare cross-chain payment', { error: formatError(err) });
-          setError(friendlyError(err));
+          setError(crossChainFriendlyError(err, 'Failed to get quote.'));
           // Show provider step so user can see the error and go back
           const quotes = new Map<string, ProviderQuote>();
-          quotes.set(matching[0].provider, { route: matching[0], response: null, error: friendlyError(err), loading: false });
+          quotes.set(matching[0].provider, { route: matching[0], response: null, error: crossChainFriendlyError(err, 'Failed to get quote.'), loading: false });
           setProviderQuotes(quotes);
           setStep('provider');
         });
@@ -231,7 +172,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       prepareAllProviders(matching);
       setStep('provider');
     }
-  }, [prepareRoute, prepareAllProviders, buildGroupLookup, chainGroupKey]);
+  }, [prepareRoute, prepareAllProviders]);
 
   // Fetch routes on mount
   useEffect(() => {
@@ -343,14 +284,6 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
     return 'Couldn’t get a quote from any provider right now. Try again, or go back and use a different amount.';
   })();
 
-  // Shared card style
-  const cardClass = (active = false) =>
-    `w-full p-4 rounded-2xl border text-left transition-all ${
-      active
-        ? 'bg-spark-primary/10 border-spark-primary'
-        : 'bg-spark-dark border-spark-border hover:border-spark-border-light'
-    }`;
-
   return (
     <>
       {/* Loading */}
@@ -363,121 +296,28 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
 
       {/* Step 2: Asset selection */}
       {step === 'asset' && (
-        <div className="flex flex-col" style={{ maxHeight: '60vh' }}>
-          {error && (
-            <div className="mb-4 p-3 bg-spark-warn-surface border border-spark-warn-border rounded-xl text-sm text-spark-warn-text shrink-0">
-              {error}
-            </div>
-          )}
-          {uniqueAssets.length > 0 && (
-            <div className="mb-4 min-h-0 flex flex-col">
-              <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">Select coin</label>
-              <div className="space-y-2 overflow-y-auto min-h-0 pr-1">
-                {uniqueAssets.map(asset => (
-                  <button
-                    key={asset}
-                    onClick={() => setPendingAsset(asset)}
-                    className={cardClass(pendingAsset === asset)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <CryptoIcon asset={asset} size={32} />
-                      <span className="font-display font-medium text-spark-text-primary">{asset}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="flex gap-3 shrink-0 pt-2">
-            <SecondaryButton onClick={onBack} className="flex-1">
-              Back
-            </SecondaryButton>
-            <PrimaryButton
-              onClick={() => { if (pendingAsset) selectAsset(pendingAsset, routes); }}
-              className="flex-1"
-              disabled={!pendingAsset}
-            >
-              Continue
-            </PrimaryButton>
-          </div>
-        </div>
+        <CrossChainAssetStep
+          assets={uniqueAssets}
+          pending={pendingAsset}
+          onPendingChange={setPendingAsset}
+          onBack={onBack}
+          onContinue={() => { if (pendingAsset) selectAsset(pendingAsset, routes); }}
+          error={error}
+        />
       )}
 
-      {/* Step 3: Chain selection. Bounded list area so the title, the
-          internally-scrolling list, and the actions all stay on-screen
-          (the sheet is content-sized, no off-screen partial snap). The cap
-          grows when the sheet is dragged to full so the list fills it. */}
+      {/* Step 3: Chain selection */}
       {step === 'chain' && (
-        <div className="flex flex-col" style={{ maxHeight: isSheetFull ? '85dvh' : '60dvh' }}>
-          {error && (
-            <div className="mb-4 p-3 bg-spark-warn-surface border border-spark-warn-border rounded-xl text-sm text-spark-warn-text shrink-0">
-              {error}
-            </div>
-          )}
-          <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">Select Network for {selectedAsset}</label>
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-none touch-pan-y space-y-2 pr-1">
-            {chainsForAsset.map(r => {
-                const key = chainGroupKey(r);
-                const isExpanded = expandedChain === key;
-                const isCopied = copiedAddress === key;
-                return (
-                  <div
-                    key={key}
-                    onClick={() => setPendingChain(key)}
-                    className={`${cardClass(pendingChain === key)} cursor-pointer`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <CryptoIcon chain={r.chain} size={32} />
-                        <span className="font-display font-medium text-spark-text-primary">
-                          {formatChainName(r.chain)}
-                        </span>
-                      </div>
-                      {r.contractAddress && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setExpandedChain(isExpanded ? null : key); }}
-                          className="p-1 text-spark-primary hover:text-spark-primary-light transition-colors"
-                        >
-                          <ChevronDownIcon size="sm" className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                        </button>
-                      )}
-                    </div>
-                    {isExpanded && r.contractAddress && (
-                      <div className="mt-2 bg-spark-surface border border-spark-border/50 rounded-lg p-2.5 flex items-center justify-between gap-2">
-                        <code className="text-spark-text-secondary font-mono text-xs break-all">{r.contractAddress}</code>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void copyToClipboard(r.contractAddress!);
-                            setCopiedAddress(key);
-                            setTimeout(() => setCopiedAddress(null), 2000);
-                          }}
-                          className="shrink-0 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                        >
-                          {isCopied
-                            ? <CheckIcon size="sm" className="text-spark-success" />
-                            : <CopyFilledIcon size="sm" className="text-spark-text-secondary" />
-                          }
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-          <div className="flex gap-3 shrink-0 pt-2">
-            <SecondaryButton onClick={goBackFromChain} className="flex-1">
-              Back
-            </SecondaryButton>
-            <PrimaryButton
-              onClick={() => { if (pendingChain) selectChain(selectedAsset!, pendingChain, routes); }}
-              className="flex-1"
-              disabled={!pendingChain}
-            >
-              Continue
-            </PrimaryButton>
-          </div>
-        </div>
+        <CrossChainChainStep
+          chains={chainsForAsset}
+          chainGroupKey={chainGroupKey}
+          selectedAsset={selectedAsset}
+          pending={pendingChain}
+          onPendingChange={setPendingChain}
+          onBack={goBackFromChain}
+          onContinue={() => { if (pendingChain) selectChain(selectedAsset!, pendingChain, routes); }}
+          error={error}
+        />
       )}
 
       {/* Step 4: Provider selection */}
@@ -504,7 +344,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                       key={key}
                       disabled={!ready}
                       onClick={() => { if (ready) setPendingProvider(key); }}
-                      className={`${cardClass(pendingProvider === key)} ${!ready ? 'opacity-70' : ''}`}
+                      className={`${crossChainCardClass(pendingProvider === key)} ${!ready ? 'opacity-70' : ''}`}
                     >
                       <span className="font-display font-medium text-spark-text-primary">
                         {getProviderDisplayName(pq.route.provider)}

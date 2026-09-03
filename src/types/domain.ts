@@ -3,7 +3,7 @@
 import { InputType } from "@breeztech/breez-sdk-spark/bundler";
 
 // Supported receive tabs / methods in Receive dialog
-export type PaymentMethod = 'lightning' | 'spark' | 'bitcoin';
+export type PaymentMethod = 'lightning' | 'spark' | 'bitcoin' | 'usd';
 
 // Steps for the Receive dialog
 export type ReceiveStep = 'input' | 'qr' | 'loading';

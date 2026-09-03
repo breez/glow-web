@@ -4,7 +4,7 @@ import type { Payment } from '@breeztech/breez-sdk-spark';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import { SatAmount } from './SatAmount';
 import { useFiatData } from '../contexts/FiatDataContext';
-import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig } from '../utils/tokenFormatting';
+import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig, withAssetDecimals } from '../utils/tokenFormatting';
 import GlowLogo from './GlowLogo';
 import { hapticLight } from '@/utils/haptics';
 
@@ -47,8 +47,8 @@ const PaymentCelebration: React.FC<PaymentCelebrationProps> = ({ payment, onClos
   let displayText: string | null = null;
   const tokenInfo = getTokenAmountFromPayment(payment);
   if (tokenInfo) {
-    const config = stableBalance.displayConfig ?? buildTokenDisplayConfig(tokenInfo.metadata, fiatCurrencies);
-    displayText = formatTokenAmount(tokenInfo.amount, config);
+    const base = stableBalance.displayConfig ?? buildTokenDisplayConfig(tokenInfo.metadata, fiatCurrencies);
+    displayText = formatTokenAmount(tokenInfo.amount, withAssetDecimals(base, tokenInfo.metadata.decimals));
   }
 
   return createPortal(
