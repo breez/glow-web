@@ -29,7 +29,11 @@
     "tryAgain": "Try Again",
     "export": "Export",
     "exporting": "Exporting...",
-    "preparing": "Preparing..."
+    "preparing": "Preparing...",
+    "approve": "Approve",
+    "reject": "Reject",
+    "retry": "Retry",
+    "goBack": "Go Back"
   },
   "labels": {
     "address": "Address",
@@ -40,7 +44,10 @@
     "networkFee": "Network fee",
     "unknownError": "Unknown error",
     "mainnetOnly": "Mainnet only",
-    "fiatLoadFailed": "Failed to load currencies. Please try again."
+    "fiatLoadFailed": "Failed to load currencies. Please try again.",
+    "transactionId": "Transaction ID",
+    "youReceive": "You receive",
+    "somethingWentWrong": "Something went wrong"
   },
   "a11y": {
     "goBack": "Go back",
@@ -57,7 +64,8 @@
     "copyThing": "Copy {{label}}",
     "moveUp": "Move up",
     "moveDown": "Move down",
-    "lockAutomatically": "Lock automatically"
+    "lockAutomatically": "Lock automatically",
+    "scanQr": "Scan QR Code"
   },
   "biometry": {
     "faceId": "Face ID",
@@ -69,7 +77,9 @@
     "settings": "Settings",
     "fiatCurrencies": "Fiat Currencies",
     "buyBitcoin": "Buy Bitcoin",
-    "lockScreen": "Lock Screen"
+    "lockScreen": "Lock Screen",
+    "getStarted": "Get Started",
+    "restoreFromBackup": "Restore from Backup"
   },
   "menu": {
     "settings": "Settings",
@@ -238,5 +248,52 @@
     "deleteAccountGuide": "How to delete your account",
     "invalidAmount": "Please enter a valid amount",
     "invalidFeeRate": "Please enter a valid fee rate"
+  },
+  "onboarding": {
+    "useRecoveryPhrase": "Use Recovery Phrase Instead",
+    "createPasskey": "Create Passkey",
+    "useExistingPasskey": "Use Existing Passkey",
+    "usePasskeyInstead": "Use Passkey Instead"
+  },
+  "wallet": {
+    "send": "Send",
+    "receive": "Receive",
+    "saveAsContact": "Save as contact?"
+  },
+  "passkey": {
+    "selectLabel": "Select a label",
+    "selectLabelBody": "Select an existing label or create a new one to connect with.",
+    "createLabelOption": "Create a new label...",
+    "createLabel": "Create a new label",
+    "labelExists": "A label with this name already exists",
+    "labelName": "Label name",
+    "verificationFailed": "Passkey verification failed",
+    "domainNotRecognised": "This device can't complete a passkey ceremony until the app's domain configuration is recognized.",
+    "domainRetryBody": "This typically happens when the app's domain configuration was recently deployed and the platform's verification cache hasn't refreshed, or when the configuration is missing entirely. There's no guaranteed refresh time. Retry periodically, or share logs so the team can check server-side state.",
+    "sourceLabel": "Source:",
+    "reasonLabel": "Reason:",
+    "diagnosticDetails": "Diagnostic details",
+    "retryCheck": "Retry Check",
+    "continueWithPhrase": "Continue with Recovery Phrase",
+    "useAnotherPasskey": "Use Another Passkey",
+    "createNewPasskey": "Create New Passkey",
+    "usePasskey": "Use Passkey",
+    "tryAnotherProvider": "Try Another Provider",
+    "notSupported": "Passkey Not Supported",
+    "alreadyExists": "Passkey already exists",
+    "signInCancelled": "Sign-in cancelled",
+    "unavailable": "Passkey unavailable",
+    "signInFailed": "Sign-in failed",
+    "noLongerOnDevice": "That passkey is no longer on this device.",
+    "couldNotSignIn": "Could not sign in with that passkey. It may have been removed, or the prompt was cancelled.",
+    "saveLabelFailed": "Couldn't save label",
+    "connectFailed": "Couldn't connect",
+    "createFailed": "Couldn't create passkey",
+    "verifyingDomain": "Verifying app domain...",
+    "discoveringLabels": "Discovering labels...",
+    "detecting": "Detecting passkey...",
+    "initializing": "Initializing passkey...",
+    "savingLabel": "Saving label...",
+    "startingGlow": "Starting Glow..."
   }
 }
