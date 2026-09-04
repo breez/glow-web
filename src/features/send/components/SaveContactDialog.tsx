@@ -3,6 +3,7 @@ import { BottomSheetContainer, BottomSheetCard, DialogHeader, PrimaryButton, For
 import { ContactsIcon, CheckIcon } from '../../../components/Icons';
 import { useContactsContext } from '../../../contexts/ContactsContext';
 import { paymentIdentifierLabel } from '../../../hooks/useContacts';
+import { useTranslation } from 'react-i18next';
 
 interface SaveContactDialogProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface SaveContactDialogProps {
 }
 
 const SaveContactDialog: React.FC<SaveContactDialogProps> = ({ isOpen, lightningAddress, onClose }) => {
+  const { t } = useTranslation('common');
   // Initialise state from the address that was passed when this instance
   // mounted. Parents are expected to bump a `key` on each open so a new
   // open with a new address always gets fresh state via remount, instead
@@ -48,7 +50,7 @@ const SaveContactDialog: React.FC<SaveContactDialogProps> = ({ isOpen, lightning
         setSaved(true);
         closeTimerRef.current = setTimeout(onClose, 2000);
       } else {
-        setError('Failed to save contact');
+        setError(t('contacts.saveFailed'));
       }
     } finally {
       setIsSaving(false);
@@ -63,11 +65,11 @@ const SaveContactDialog: React.FC<SaveContactDialogProps> = ({ isOpen, lightning
             <div className="w-12 h-12 rounded-full bg-spark-success/15 flex items-center justify-center">
               <CheckIcon className="text-spark-success w-6 h-6" />
             </div>
-            <p className="font-display font-semibold text-spark-text-primary">Contact saved</p>
+            <p className="font-display font-semibold text-spark-text-primary">{t('contacts.saved')}</p>
           </div>
         ) : (
           <>
-            <DialogHeader title="Save Contact" onClose={onClose} icon={<ContactsIcon />} />
+            <DialogHeader title={t('contacts.saveTitle')} onClose={onClose} icon={<ContactsIcon />} />
 
             <div className="space-y-4">
               <p className="text-sm text-spark-text-muted text-center font-mono truncate">{paymentIdentifierLabel(lightningAddress)}</p>
@@ -78,7 +80,7 @@ const SaveContactDialog: React.FC<SaveContactDialogProps> = ({ isOpen, lightning
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) handleSave(); }}
-                placeholder="Contact name"
+                placeholder={t('contacts.namePlaceholder')}
                 disabled={isSaving}
                 className={`${AMOUNT_FIELD_CLASS} disabled:opacity-50 disabled:cursor-not-allowed`}
               />
@@ -89,14 +91,14 @@ const SaveContactDialog: React.FC<SaveContactDialogProps> = ({ isOpen, lightning
                   onClick={onClose}
                   className="flex-1 py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
                 >
-                  Cancel
+                  {t('actions.cancel')}
                 </button>
                 <PrimaryButton
                   onClick={handleSave}
                   disabled={!name.trim() || isSaving}
                   className="flex-1"
                 >
-                  {isSaving ? 'Saving...' : 'Save'}
+                  {isSaving ? t('actions.saving') : t('actions.save')}
                 </PrimaryButton>
               </div>
             </div>

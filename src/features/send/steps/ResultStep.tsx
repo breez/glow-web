@@ -3,6 +3,7 @@ import { PrimaryButton } from '../../../components/ui';
 import { CloseIcon } from '../../../components/Icons';
 import GlowLogo from '../../../components/GlowLogo';
 import { hapticLight } from '@/utils/haptics';
+import { useTranslation } from 'react-i18next';
 
 export interface ResultStepProps {
   result: 'success' | 'failure';
@@ -17,6 +18,7 @@ export interface ResultStepProps {
 }
 
 const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operationType = 'payment', description, children }) => {
+  const { t } = useTranslation(['critical', 'common']);
   const isSuccess = result === 'success';
   const [starsAnimating, setStarsAnimating] = useState(false);
 
@@ -30,27 +32,27 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
 
   const getTitle = () => {
     if (operationType === 'auth') {
-      return 'Authenticated!';
+      return t('send.authenticated');
     }
     if (operationType === 'refund') {
-      return isSuccess ? 'Refund Sent!' : 'Refund Failed';
+      return isSuccess ? t('send.result.refundSent') : t('send.result.refundFailed');
     }
-    return isSuccess ? 'Payment Sent!' : 'Payment Failed';
+    return isSuccess ? t('send.sent') : t('send.failed');
   };
 
   const getSuccessDescription = () => {
     if (description) return description;
     if (operationType === 'refund') {
-      return 'Your refund has been sent to the Bitcoin network.';
+      return t('send.result.refundSuccessBody');
     }
-    return 'Your payment has been successfully sent to the recipient.';
+    return t('send.result.sentBody');
   };
 
   const getDefaultErrorMessage = () => {
     if (operationType === 'refund') {
-      return 'There was an error processing your refund. Please try again.';
+      return t('send.result.refundFailBody');
     }
-    return 'There was an error processing your payment. Please try again.';
+    return t('send.result.failBody');
   };
 
   if (!isSuccess) {
@@ -76,7 +78,7 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
         </p>
 
         <PrimaryButton onClick={onClose} className="min-w-[200px]">
-          Close
+          {t('common:actions.close')}
         </PrimaryButton>
       </div>
     );
@@ -114,7 +116,7 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
 
       {/* Action button */}
       <PrimaryButton onClick={onClose} className="min-w-[200px]">
-        Done
+        {t('common:actions.done')}
       </PrimaryButton>
     </div>
   );

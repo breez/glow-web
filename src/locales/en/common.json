@@ -19,7 +19,14 @@
     "installing": "Installing...",
     "notNow": "Not now",
     "share": "Share",
-    "shareThing": "Share {{label}}"
+    "shareThing": "Share {{label}}",
+    "add": "Add",
+    "delete": "Delete",
+    "paste": "Paste",
+    "save": "Save",
+    "saving": "Saving...",
+    "scan": "Scan",
+    "tryAgain": "Try Again"
   },
   "labels": {
     "address": "Address",
@@ -27,7 +34,8 @@
     "total": "Total",
     "genericError": "An error occurred",
     "amount": "Amount",
-    "networkFee": "Network fee"
+    "networkFee": "Network fee",
+    "unknownError": "Unknown error"
   },
   "a11y": {
     "goBack": "Go back",
@@ -36,7 +44,12 @@
     "pickImage": "Pick image from gallery",
     "clearPin": "Clear PIN",
     "deleteDigit": "Delete digit",
-    "switchBalance": "Switch balance to {{currency}}"
+    "switchBalance": "Switch balance to {{currency}}",
+    "addContact": "Add contact",
+    "clearSearch": "Clear search",
+    "searchContacts": "Search contacts",
+    "clearContact": "Clear contact",
+    "copyThing": "Copy {{label}}"
   },
   "biometry": {
     "faceId": "Face ID",
@@ -126,5 +139,43 @@
   },
   "buy": {
     "addFundsFromCashApp": "Add funds from Cash App"
+  },
+  "contacts": {
+    "title": "Contacts",
+    "name": "Name",
+    "namePlaceholder": "Contact name",
+    "lightningAddress": "Lightning Address",
+    "searchPlaceholder": "Search contacts...",
+    "deleteTitle": "Delete Contact",
+    "noMatches": "No matches",
+    "noMatchesBody": "Try a different search term.",
+    "empty": "No contacts yet",
+    "emptyBody": "Add contacts to quickly send payments.",
+    "edit": "Edit Contact",
+    "new": "New Contact",
+    "saveTitle": "Save Contact",
+    "saved": "Contact saved",
+    "saveFailed": "Failed to save contact",
+    "addressPlaceholder": "user@domain.com",
+    "nameRequired": "Name is required",
+    "addressRequired": "Address is required",
+    "invalidAddress": "Invalid Lightning address format",
+    "addressNotFound": "Lightning address not found",
+    "updateFailed": "Failed to update contact",
+    "addFailed": "Failed to add contact",
+    "editAria": "Edit {{name}}",
+    "deleteAria": "Delete {{name}}",
+    "deleteConfirm": "Are you sure you want to delete “{{name}}”?"
+  },
+  "methods": {
+    "lightningInvoice": "Lightning Invoice",
+    "sparkAddress": "Spark Address",
+    "bitcoinAddress": "Bitcoin Address",
+    "lnurlPay": "LNURL Pay",
+    "lightningAddress": "Lightning Address",
+    "lnurlAuth": "LNURL Auth",
+    "receive": "Receive",
+    "sendUsd": "Send USD",
+    "payment": "Payment"
   }
 }

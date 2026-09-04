@@ -11,6 +11,7 @@ import { useBalanceValidation } from '../hooks/useBalanceValidation';
 import { useHasPendingConversion } from '../../../contexts/WalletContext';
 import { dismissKeyboard } from '../../../utils/keyboard';
 import { SatAmount } from '../../../components/SatAmount';
+import { useTranslation } from 'react-i18next';
 
 export interface AmountStepProps {
   paymentInput: string;
@@ -36,6 +37,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
   onNext,
   amountFirst = false,
 }) => {
+  const { t } = useTranslation(['critical', 'common']);
   // USD entry without a stable-balance token, funded from BTC. Cross-chain
   // ("Send USD", amountFirst) starts in USD; plain BTC sends start in sats
   // with USD as a toggleable secondary option (#253).
@@ -160,13 +162,13 @@ const AmountStep: React.FC<AmountStepProps> = ({
   const inlineBalanceError = useMemo(() => {
     if (amountNum <= 0) return null;
     if (isSendAll) return null;
-    return balance.exceedsBalance(amountNum) ? 'Amount exceeds available balance' : null;
-  }, [amountNum, isSendAll, balance]);
+    return balance.exceedsBalance(amountNum) ? t('send.exceedsBalance') : null;
+  }, [amountNum, isSendAll, balance, t]);
 
   const destinationSection = (
     <div>
       <label className="block text-sm font-medium text-spark-text-primary mb-2">
-        Destination
+        {t('send.destination')}
       </label>
       <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-secondary font-mono text-sm break-all">
         {paymentInput}
@@ -177,7 +179,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
   const amountSection = (
     <div>
         <label className="block text-sm font-medium text-spark-text-primary mb-2">
-          Amount
+          {t('send.amount')}
         </label>
         <div className="relative">
           <input
@@ -197,7 +199,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
                 }
               }
             }}
-            placeholder={isTokenMode && config ? `Enter amount in ${config.currencyCode}` : 'Enter amount in sats'}
+            placeholder={isTokenMode && config ? t('send.enterAmountIn', { currency: config.currencyCode }) : t('send.enterAmount')}
             className={`${AMOUNT_FIELD_CLASS} pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
             disabled={isLoading}
             readOnly={isSendAll}
@@ -259,7 +261,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
                 setLocalError(null);
               }}
               disabled={tokenSendAllBelowThreshold || hasPendingConversion}
-              title={hasPendingConversion ? 'Balance is updating. Try again in a moment.' : undefined}
+              title={hasPendingConversion ? t('send.balanceUpdating') : undefined}
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                 tokenSendAllBelowThreshold || hasPendingConversion
                   ? 'opacity-40 cursor-not-allowed border border-spark-border text-spark-text-secondary'
@@ -271,9 +273,9 @@ const AmountStep: React.FC<AmountStepProps> = ({
               {hasPendingConversion ? (
                 <span className="inline-flex items-center justify-center gap-1.5">
                   <SpinnerIcon size="xs" />
-                  Send All
+                  {t('send.sendAll')}
                 </span>
-              ) : 'Send All'}
+              ) : t('send.sendAll')}
             </button>
           )}
         </div>
@@ -298,9 +300,9 @@ const AmountStep: React.FC<AmountStepProps> = ({
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <SpinnerIcon />
-            Processing...
+            {t('send.processingEllipsis')}
           </span>
-        ) : 'Continue'}
+        ) : t('common:actions.continue')}
       </PrimaryButton>
     </div>
   );
