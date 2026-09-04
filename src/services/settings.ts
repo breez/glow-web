@@ -3,6 +3,7 @@ import type { Network } from "@breeztech/breez-sdk-spark";
 import { Capacitor } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
 import { STABLE_BALANCE_CONVERSION_KINDS, type StableBalanceFailure } from "../utils/stableBalanceFailure";
+import i18n from "i18next";
 /** Provider identifiers matching the SDK's BuyBitcoinRequest tagged union */
 export type BuyBitcoinProvider = 'moonpay' | 'cashApp';
 
@@ -36,7 +37,7 @@ export function hasBuyProviderSettings(): boolean {
  * read as Glow selling bitcoin. Other platforms keep their existing wording.
  */
 export function buyCopy(elsewhere: string): string {
-  return Capacitor.getPlatform() === 'ios' ? 'Add funds from Cash App' : elsewhere;
+  return Capacitor.getPlatform() === 'ios' ? i18n.t('common:buy.addFundsFromCashApp') : elsewhere;
 }
 
 /**

@@ -11,6 +11,7 @@ import { PIN_LENGTH, isBiometricGateEnabled, isBiometricGateEnabledSync, pinAtte
 import { authenticateBiometric, getBiometryInfo, BiometryKind } from '@/services/secureStorage';
 import { useBackButton } from '@/hooks/useBackButton';
 import { BackspaceIcon, FaceIdIcon, FingerprintIcon, TrashIcon } from './Icons';
+import { useTranslation } from 'react-i18next';
 
 export const PinDots: React.FC<{ filled: number; error?: boolean }> = ({ filled, error = false }) => (
   <div
@@ -90,7 +91,9 @@ export const PinPad: React.FC<{
   onBiometric?: () => void;
   /** Icon for the biometric button; fingerprint when unknown. */
   biometryKind?: BiometryKind;
-}> = ({ onDigit, onBackspace, onClear, disabled = false, onBiometric, biometryKind = 'fingerprint' }) => (
+}> = ({ onDigit, onBackspace, onClear, disabled = false, onBiometric, biometryKind = 'fingerprint' }) => {
+  const { t } = useTranslation('common');
+  return (
   <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto w-full">
     {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
       <PadButton key={d} onClick={() => onDigit(d)} disabled={disabled}>
@@ -98,24 +101,25 @@ export const PinPad: React.FC<{
       </PadButton>
     ))}
     {onBiometric ? (
-      <PadButton onClick={onBiometric} disabled={disabled} aria-label="Use biometrics">
+      <PadButton onClick={onBiometric} disabled={disabled} aria-label={t('lock.useBiometrics')}>
         {biometryKind === 'face'
           ? <FaceIdIcon size="lg" className="text-spark-primary" />
           : <FingerprintIcon size="lg" className="text-spark-primary" />}
       </PadButton>
     ) : (
-      <PadButton onClick={onClear} disabled={disabled} aria-label="Clear PIN">
+      <PadButton onClick={onClear} disabled={disabled} aria-label={t('a11y.clearPin')}>
         <TrashIcon size="lg" />
       </PadButton>
     )}
     <PadButton onClick={() => onDigit('0')} disabled={disabled}>
       0
     </PadButton>
-    <PadButton onClick={onBackspace} disabled={disabled} aria-label="Delete digit">
+    <PadButton onClick={onBackspace} disabled={disabled} aria-label={t('a11y.deleteDigit')}>
       <BackspaceIcon size="lg" />
     </PadButton>
   </div>
-);
+  );
+};
 
 /**
  * Self-contained PIN collection: dots + pad + error line. Calls
@@ -252,6 +256,7 @@ export const PinGate: React.FC<{
   // Biometric pending: keep the page body empty under the OS prompt.
   // The logo-and-pad composition only appears once the user cancels
   // into the PIN fallback.
+  const { t } = useTranslation('common');
   if (!padVisible) return null;
 
   return (
@@ -259,7 +264,7 @@ export const PinGate: React.FC<{
     <PinScreenLayout
       className="pt-8 pb-14"
       prompt={
-        <p className="text-sm text-spark-text-secondary">Enter your PIN to continue</p>
+        <p className="text-sm text-spark-text-secondary">{t('lock.continuePrompt')}</p>
       }
     >
       <PinEntry
