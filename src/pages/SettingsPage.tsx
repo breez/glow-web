@@ -78,6 +78,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     if (typeof cfg.lnurlDomain === 'string') return cfg.lnurlDomain;
     return '';
   });
+  const [priorityDepositClaim, setPriorityDepositClaim] = useState<boolean>(
+    () => getSettings().priorityDepositClaimEnabled === true,
+  );
   const [preferSparkOverLightning, setPreferSparkOverLightning] = useState<boolean>(() => {
     const s = getSettings();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK config type doesn't expose all fields
@@ -135,6 +138,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             syncIntervalSecs: syncIntervalSecs !== '' ? Math.max(0, Math.floor(Number(syncIntervalSecs))) : undefined,
             lnurlDomain: lnurlDomain !== '' ? lnurlDomain : undefined,
             preferSparkOverLightning,
+            priorityDepositClaimEnabled: priorityDepositClaim,
           }
         : {}),
     };
@@ -404,6 +408,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 <Switch
                   checked={preferSparkOverLightning}
                   onChange={() => setPreferSparkOverLightning(!preferSparkOverLightning)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* TEMPORARY: the dev gate for the priority deposit claim, removed at launch. */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <span className="font-display font-medium text-spark-text-primary block">Priority deposit claim</span>
+                  <span className="text-sm text-spark-text-muted">Offer to claim a transfer before it confirms, for a fee</span>
+                </div>
+                <Switch
+                  checked={priorityDepositClaim}
+                  onChange={() => setPriorityDepositClaim(!priorityDepositClaim)}
                 />
               </div>
             </div>
