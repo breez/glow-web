@@ -36,21 +36,21 @@ const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.React
   cashApp: {
     name: 'Cash App',
     icon: (
-      <div className="w-11 h-11 rounded-xl bg-[#00D64F] flex items-center justify-center shrink-0 p-1">
-        <CashAppIcon className="w-full h-full text-[#00D64F]" />
+      <div className="w-11 h-11 rounded-xl bg-[#00D632] flex items-center justify-center shrink-0 p-1">
+        <CashAppIcon className="w-full h-full text-[#00D632]" />
       </div>
     ),
     loadingIcon: (
-      <div className="w-11 h-11 rounded-xl bg-[#00D64F] flex items-center justify-center shrink-0 p-1 animate-pulse">
-        <CashAppIcon className="w-full h-full text-[#00D64F]" />
+      <div className="w-11 h-11 rounded-xl bg-[#00D632] flex items-center justify-center shrink-0 p-1 animate-pulse">
+        <CashAppIcon className="w-full h-full text-[#00D632]" />
       </div>
     ),
   },
 };
 
 const cashAppHeaderIcon = (
-  <div className="w-5 h-5 rounded-sm bg-[#00D64F] flex items-center justify-center p-0.5">
-    <CashAppIcon className="w-full h-full text-[#00D64F]" />
+  <div className="w-5 h-5 rounded-sm bg-[#00D632] flex items-center justify-center p-0.5">
+    <CashAppIcon className="w-full h-full text-[#00D632]" />
   </div>
 );
 
@@ -77,11 +77,11 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
     onInvoicePaid: onClose,
   });
 
-  // The Cash App code is scanned by another device, so nobody touches
-  // this screen while it is up. Scoped to the QR step: picking a
-  // provider and entering an amount are both tapped through.
+  // This screen waits on something outside the app: a scan from another
+  // device, or a trip through Cash App. Neither touches Glow, so the idle
+  // lock is held here and not on the steps that are tapped through.
   useEffect(() => {
-    if (!isOpen || buy.step !== 'qr') return;
+    if (!isOpen || buy.step !== 'link') return;
     return holdIdleLock();
   }, [isOpen, buy.step]);
 
@@ -125,7 +125,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
         {buy.step === 'amount' && (
           <>
             <DialogHeader
-              title={buyCopy('Buy with Cash App')}
+              title={buyCopy('Cash App')}
               onClose={onClose}
               onBack={buy.goBackToSelect ?? undefined}
               icon={cashAppHeaderIcon}
@@ -198,20 +198,44 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
           </>
         )}
 
-        {buy.step === 'qr' && buy.cashAppUrl && buy.generatedAmountSats !== null && (
+        {buy.step === 'link' && buy.cashAppUrl && buy.generatedAmountSats !== null && (
           <>
             <DialogHeader
-              title={buyCopy('Buy with Cash App')}
+              title={buyCopy('Cash App')}
               onClose={onClose}
               onBack={buy.goBackToAmount}
               icon={cashAppHeaderIcon}
             />
             <div className="flex flex-col items-center gap-6 pt-2">
+              {/* Both openers are real anchors, never a button with a handler:
+                  only a tap on one makes iOS resolve the universal link, or
+                  Chrome hand the App Link to Cash App. A scripted navigation
+                  reaches the cash.app web page instead. `_blank` keeps Glow
+                  behind it, which an installed PWA has no other way back
+                  from. */}
               <p className="text-center text-sm text-spark-text-secondary">
-                Scan this code with Cash App
+                <a
+                  href={buy.cashAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-spark-primary underline underline-offset-4 hover:text-spark-primary/80 transition-colors"
+                  data-testid="cashapp-open-link"
+                >
+                  Open Cash App
+                </a>
+                , or scan from another device.
               </p>
 
-              <QRCodeContainer value={buy.cashAppUrl} />
+              <a
+                href={buy.cashAppUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open Cash App"
+                className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spark-primary"
+                data-testid="cashapp-open-qr"
+              >
+                <QRCodeContainer value={buy.cashAppUrl} />
+              </a>
 
               <CopyableText
                 text={buy.cashAppUrl}

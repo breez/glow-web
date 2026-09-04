@@ -324,7 +324,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 aria-label={buyCopy('Buy')}
                 className={`flex items-center justify-center gap-1.5 h-9 rounded-xl transition-colors text-sm font-medium disabled:opacity-50 ${
                   isBuyIconOnly()
-                    ? 'w-9 bg-[#00D64F] hover:bg-[#00c247] border border-black/15 hover:border-black/25'
+                    ? 'w-9 bg-[#00D632] hover:bg-[#00bf2d] border border-black/15 hover:border-black/25'
                     : 'px-3 text-spark-text-secondary hover:text-spark-text-primary border border-white/10 hover:border-white/20 hover:bg-white/5'
                 }`}
                 onClick={onOpenBuyBitcoin}

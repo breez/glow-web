@@ -3,14 +3,12 @@ import { Capacitor } from '@capacitor/core';
 import { AppLauncher } from '@capacitor/app-launcher';
 import type { Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../../../contexts/WalletContext';
-import { usePlatform } from '../../../hooks/usePlatform';
 import { useInvoicePaid } from '../../../hooks/useInvoicePaid';
 import { useAmountInput } from '../../../hooks/useAmountInput';
 import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
 import { fixedQuickAmounts, type TokenDisplayConfig } from '../../../utils/tokenFormatting';
 import { toSdkAmountNumber, type Sats } from '../../../types/sats';
-import { isStandalonePwa, openExternalUrl } from '../../../utils/externalLink';
 import {
   getBuyProviderSettings,
   filterProvidersByNetwork,
@@ -20,7 +18,7 @@ import {
 } from '../../../services/settings';
 import { useCashAppInstalled } from '../../../hooks/useCashAppInstalled';
 
-export type BuyStep = 'select' | 'amount' | 'qr';
+export type BuyStep = 'select' | 'amount' | 'link';
 
 /** What a Cash App quick amount is worth, in dollars. They start where a
  *  purchase is worth making: below this the provider's fee takes much of it.
@@ -35,9 +33,9 @@ export interface UseBuyBitcoinOptions {
   network?: Network;
   /** Called for providers that redirect externally (MoonPay). */
   onSelectRedirectProvider: (provider: BuyBitcoinProvider) => Promise<void>;
-  /** Called after a mobile/native Cash App redirect; the caller closes the dialog. */
+  /** Called after the native Cash App handoff; the caller closes the dialog. */
   onMobileRedirectComplete: () => void;
-  /** Called when the displayed QR invoice is paid; the caller typically closes the dialog. */
+  /** Called when the displayed invoice is paid; the caller typically closes the dialog. */
   onInvoicePaid: () => void;
 }
 
@@ -77,8 +75,6 @@ export function useBuyBitcoin({
   onInvoicePaid,
 }: UseBuyBitcoinOptions): UseBuyBitcoinReturn {
   const sdk = useWallet();
-  const platform = usePlatform();
-  const isMobile = platform.isIOS || platform.isAndroid;
 
   const input = useAmountInput();
   const {
@@ -188,17 +184,10 @@ export function useBuyBitcoin({
     setError(null);
     setIsGenerating(true);
 
-    // Mobile web: pre-open a blank tab synchronously in the tap gesture so
-    // navigating it later doesn't trip popup blockers. Native must not do
-    // this (or fall back to window.location.href): navigating the WebView
-    // to cash.app strands the user.
-    const isNative = Capacitor.isNativePlatform();
-    const mobileTab = isMobile && !isNative ? window.open('', '_blank') : null;
-
     try {
       const response = await sdk.buyBitcoin({ type: 'cashApp', amountSats: amountSatsForSdk });
       setGeneratedAmountSats(amountSats);
-      if (isNative) {
+      if (Capacitor.isNativePlatform()) {
         // AppLauncher bridges to UIApplication.open, the only iOS API that
         // hands an https universal link (cash.app/launch/...) off to the
         // Cash App app. Browser.open (SFSafariViewController) only loads the
@@ -206,40 +195,28 @@ export function useBuyBitcoin({
         // in-app-browser load. Falls back to Safari if Cash App is absent.
         await AppLauncher.openUrl({ url: response.url });
         onMobileRedirectComplete();
-      } else if (isMobile) {
-        // Navigate immediately: the cash.app universal link only bounces
-        // to the app inside the tap's user-activation window, so any await
-        // before this (e.g. a sheet-close animation) drops it to the web
-        // page.
-        if (mobileTab) {
-          mobileTab.location.href = response.url;
-        } else if (isStandalonePwa()) {
-          // window.open returns null in an installed PWA, so this is the
-          // normal path there: navigating the standalone window itself
-          // would leave no way back.
-          await openExternalUrl(response.url);
-        } else {
-          window.location.href = response.url;
-        }
-        onMobileRedirectComplete();
-      } else {
-        setCashAppUrl(response.url);
-        setStep('qr');
+        return;
       }
+      // Web hands the URL to a real anchor the person taps (see the `link`
+      // step). Scripted navigation cannot reach the Cash App app: iOS only
+      // resolves a universal link from a genuine tap, and Chrome refuses to
+      // hand an App Link to an app without user activation, which the await
+      // above has already spent.
+      setCashAppUrl(response.url);
+      setStep('link');
     } catch (e) {
-      mobileTab?.close();
       logger.error(LogCategory.SDK, 'Failed to create Cash App buy URL', { error: formatError(e) });
       setError('Failed to create invoice. Please try again.');
     } finally {
       setIsGenerating(false);
     }
-  }, [amountSats, isMobile, sdk, onMobileRedirectComplete]);
+  }, [amountSats, sdk, onMobileRedirectComplete]);
 
   // Cash App URLs are `https://cash.app/launch/lightning/<bolt11>`. Extract the
-  // invoice only while we're showing the QR so the bus subscription pauses
+  // invoice only while the link is on screen so the bus subscription pauses
   // once we leave that step.
   const activeInvoice = useMemo(() => {
-    if (step !== 'qr' || !cashAppUrl) return null;
+    if (step !== 'link' || !cashAppUrl) return null;
     return cashAppUrl.split('/').pop() ?? null;
   }, [step, cashAppUrl]);
 
