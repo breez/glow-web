@@ -23,6 +23,7 @@ import { FaceIdIcon, FingerprintIcon, PasskeyIcon } from '../components/Icons';
 import { AlertCard } from '../components/AlertCard';
 import { confirmDeviceOwner, getBiometryInfo, BiometryInfo, secureStorage } from '../services/secureStorage';
 import { isPasskeyMode } from '../services/passkeyService';
+import { useTranslation } from 'react-i18next';
 
 interface UnlockPageProps {
   isLoading: boolean;
@@ -37,6 +38,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
   onUnlock,
   onAbandon,
 }) => {
+  const { t } = useTranslation(['critical', 'common']);
   // Web hosts use passkey terminology; native uses biometric.
   const isWebPasskey = !secureStorage.isSupported();
 
@@ -66,13 +68,13 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
   }, [isWebPasskey]);
 
   const unlockLabel = isWebPasskey
-    ? 'Unlock with passkey'
-    : !isBiometricTier ? 'Try Again'
-      : biometry ? `Unlock with ${biometry.label}` : 'Unlock';
+    ? t('unlock.withPasskey')
+    : !isBiometricTier ? t('common:actions.tryAgain')
+      : biometry ? t('unlock.withMethod', { method: biometry.label }) : t('unlock.unlock');
   const unlockDescription = isWebPasskey
-    ? 'Glow is locked. Unlock with your passkey to continue.'
-    : !isBiometricTier ? 'Glow could not start up. Please try again.'
-      : 'Glow is locked. Unlock with your biometric to continue.';
+    ? t('unlock.lockedPasskey')
+    : !isBiometricTier ? t('unlock.couldNotStartBody')
+      : t('unlock.lockedBiometric');
   const UnlockIcon = isWebPasskey
     ? PasskeyIcon
     : biometry?.kind === 'face' ? FaceIdIcon : FingerprintIcon;
@@ -89,7 +91,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
               className="w-36 h-36 object-contain"
             />
             <h1 className="font-display text-2xl font-bold text-spark-text-primary">
-              Welcome back
+              {t('unlock.welcomeBack')}
             </h1>
             <p className="text-sm text-spark-text-secondary text-center">
               {unlockDescription}
@@ -98,7 +100,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
 
           {/* Error banner */}
           {error && (
-            <AlertCard variant="error" title={isBiometricTier ? 'Unlock failed' : 'Could not start'}>
+            <AlertCard variant="error" title={isBiometricTier ? t('unlock.unlockFailed') : t('unlock.couldNotStart')}>
               {error}
             </AlertCard>
           )}
@@ -118,7 +120,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
               disabled={isLoading}
               className="w-full"
             >
-              Erase and Start Over
+              {t('unlock.eraseTitle')}
             </SecondaryButton>
           </div>
         </div>
@@ -127,15 +129,15 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
       <ConfirmDialog
         isOpen={showEraseConfirm}
         variant="danger"
-        title="Erase and start over"
+        title={t('unlock.eraseAction')}
         message={isPasskey
-          ? "This deletes all Glow data stored on this device. You'll need your passkey to access your funds again."
-          : "This deletes all Glow data stored on this device. Make sure you've saved your recovery phrase: you'll need it to access your funds again."}
-        confirmLabel="Erase"
+          ? t('unlock.eraseBodyPasskey')
+          : t('unlock.eraseBodyMnemonic')}
+        confirmLabel={t('unlock.erase')}
         // Device-owner prompt on top of the confirm, as on the lock
         // screen. The dialog stays up on a cancelled prompt.
         onConfirm={() => {
-          void confirmDeviceOwner('Erase all Glow data').then((confirmed) => {
+          void confirmDeviceOwner(t('unlock.eraseReason')).then((confirmed) => {
             if (!confirmed) return;
             setShowEraseConfirm(false);
             void onAbandon();

@@ -32,6 +32,8 @@ import { useSheetFullSnap } from '../components/ui/sheets/BottomSheetCardContext
 import { useLatest } from '../hooks/useLatest';
 import { unsettledDeposits } from '../utils/depositHelpers';
 import { logger, LogCategory } from '@/services/logger';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 
 interface UnclaimedDepositDetailsPageProps {
   deposit: DepositInfo | null;
@@ -68,10 +70,10 @@ function deriveClaimState(deposit: DepositInfo | null): ClaimState {
     return { claimError: null, requiredFeeSats: claimErrorData.requiredFeeSats || 0 };
   }
   if (claimErrorData.type === 'generic') {
-    return { claimError: claimErrorData.message || 'Automatic claim failed', requiredFeeSats: null };
+    return { claimError: claimErrorData.message || i18n.t('critical:deposit.autoClaimFailed'), requiredFeeSats: null };
   }
   // missingUtxo or other error - can only reject
-  return { claimError: 'Automatic claim failed', requiredFeeSats: null };
+  return { claimError: i18n.t('critical:deposit.autoClaimFailed'), requiredFeeSats: null };
 }
 
 // claimDeposit stores the fresh claim error before it throws, so the deposit
@@ -198,6 +200,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   onChanged,
   onRefresh,
 }) => {
+  const { t } = useTranslation(['critical', 'common']);
   const wallet = useWallet();
   const subscribeToSdkEvents = useSdkEvents();
 
@@ -304,7 +307,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
     if (!spendsNow && instructs(early)) void claimRoute(early);
   };
   /** The paid row names what it is: a route that has not opened yet is not instant. */
-  const earlyLabel = offer?.ready ? 'Instant delivery' : 'Expedited delivery';
+  const earlyLabel = offer?.ready ? t('deposit.instantDelivery') : t('deposit.expeditedDelivery');
 
   // Null once the automatic claim is due, which is a different sentence.
   const matureWait = quote ? formatWait(blocksToWait(quote.mature, confirmations)) : null;
@@ -329,7 +332,8 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
     }
   }, [instantFeeFrom, instantError]);
   const claimFailure: ReactNode = instantFeeFrom !== null
-    ? <>Your claim did not go through: the fee changed from <SatAmount sats={instantFeeFrom} />.</>
+    ? <Trans i18nKey="deposit.claimFeeChanged" ns="critical"
+        components={{ amount: <SatAmount sats={instantFeeFrom} /> }} />
     : instantError;
   // What the deposit is doing, when nothing else on screen already says it. A
   // ready early route speaks through its own button, so it needs no line.
@@ -341,7 +345,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
     // the claim rather than showing an amount and nothing else.
     ? CLAIM_SUBMITTED_LINE
     : !isConfirming
-      ? 'This transfer will be claimed automatically.'
+      ? t('deposit.autoClaim')
       // Nothing until the quote lands. The depth a deposit matures at is not
       // the depth the early route opens at, so any figure named here is one
       // the next render contradicts.
@@ -355,8 +359,8 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
           // nothing for a countdown to be weighed against. The wait is priced
           // inside the group, or it is not priced at all.
           : matureDue
-            ? 'This transfer is being claimed.'
-            : 'This transfer will be claimed automatically.';
+            ? t('deposit.beingClaimed')
+            : t('deposit.autoClaim');
 
   const handleClose = () => {
     onBack();
@@ -377,7 +381,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
       // down here would report an approval that never happened.
       if (outcome.type === 'deferred') {
         setStandingCeiling(maxFee);
-        setInstantError('Could not claim this transfer yet. Please try again.');
+        setInstantError(t('deposit.claimDeferred'));
         return;
       }
       onChanged?.();
@@ -395,7 +399,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
         setClaim(fresh);
         setFeeRaised(true);
       } else {
-        const errorMessage = e instanceof Error ? e.message : 'Failed to claim transfer';
+        const errorMessage = e instanceof Error ? e.message : t('deposit.claimFailedGeneric');
         setClaim({ claimError: errorMessage, requiredFeeSats: null });
       }
     } finally {
@@ -534,7 +538,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
           logger.warn(LogCategory.PAYMENT, 'Provider declined to front the deposit', {
             message: outcome.reason.message,
           });
-          setInstantError('Early delivery is not available right now, so this transfer will be claimed automatically instead.');
+          setInstantError(t('deposit.earlyUnavailable'));
         }
         // The recorded ceiling has to reach the list this sheet is opened from:
         // a reopened sheet seeds its selection from that copy, so without this
@@ -587,8 +591,8 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
         return;
       }
       setInstantError(committing
-        ? 'Could not set this transfer up to be claimed. Please try again.'
-        : (e instanceof Error ? e.message : 'Failed to claim transfer'));
+        ? t('deposit.setupFailed')
+        : (e instanceof Error ? e.message : t('deposit.claimFailedGeneric')));
     } finally {
       claimInFlightRef.current = false;
       setIsProcessing(false);
@@ -619,7 +623,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   return (
     <BottomSheetContainer isOpen={deposit != null} onClose={handleClose}>
       <BottomSheetCard>
-        <DialogHeader title="BTC Transfer" onClose={handleClose} />
+        <DialogHeader title={t('deposit.title')} onClose={handleClose} />
         <SheetBody>
           {/* The scroller sits in its own box so a fade can sit over its bottom
               edge. Without it a cut lands flush against the footer and reads as
@@ -629,7 +633,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
           {/* Which transfer this is, before anything priced about it. */}
           <PaymentInfoCard compact>
             <CollapsibleCodeField
-              label="Transaction ID"
+              label={t('common:labels.transactionId')}
               value={deposit.txid}
               isVisible={isTxIdVisible}
               onToggle={() => setIsTxIdVisible(prev => !prev)}
@@ -642,24 +646,27 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
           {!claimError && requiredFeeSats !== null && (
             <>
               {feeRaised && (
-                <AlertCard variant="warning" title="Network fee changed">
+                <AlertCard variant="warning" title={t('deposit.feeChanged')}>
                   <p className="text-sm">
-                    The fee rose to <SatAmount sats={requiredFeeSats} /> while you were confirming.
-                    Approve to claim at the new fee.
+                    <Trans
+                      i18nKey="deposit.feeRose"
+                      ns="critical"
+                      components={{ amount: <SatAmount sats={requiredFeeSats} /> }}
+                    />
                   </p>
                 </AlertCard>
               )}
 
               <FeeBreakdownCard
                 items={[
-                  { label: 'Amount', value: depositAmount },
-                  { label: 'Network fee', value: requiredFeeSats },
-                  { label: 'You receive', value: receiveAmount, highlight: true },
+                  { label: t('deposit.amount'), value: depositAmount },
+                  { label: t('deposit.networkFee'), value: requiredFeeSats },
+                  { label: t('common:labels.youReceive'), value: receiveAmount, highlight: true },
                 ]}
               />
 
               <p className="text-spark-text-muted text-sm text-center">
-                Approve to claim this transfer, or reject to process a refund.
+                {t('deposit.approveOrReject')}
               </p>
             </>
           )}
@@ -673,12 +680,12 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                   nothing on screen to account for it. */}
               {isConfirming && isPricing && !quote && (
                 <div id={INSTANT_OFFER_ID} data-testid="delivery-speed-pending" className="space-y-2">
-                  <span className="block text-sm text-spark-text-secondary">Speed</span>
+                  <span className="block text-sm text-spark-text-secondary">{t('deposit.speed')}</span>
                   {/* 9.25rem is the two option rows it stands in for (70px
                       each, 8px apart), so the sheet is the same height before
                       and after and nothing moves under the reader when the
                       prices land. */}
-                  <LoadingSpinner text="Checking delivery options" className="min-h-[9.25rem]" />
+                  <LoadingSpinner text={t('deposit.checkingOptions')} className="min-h-[9.25rem]" />
                 </div>
               )}
 
@@ -688,11 +695,11 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                   skip it. */}
               {offer && quote && (
                 <div id={INSTANT_OFFER_ID} data-testid="delivery-speed" className="space-y-2">
-                  <span className="block text-sm text-spark-text-secondary">Speed</span>
-                  <div role="radiogroup" aria-label="Speed" className="space-y-2">
+                  <span className="block text-sm text-spark-text-secondary">{t('deposit.speed')}</span>
+                  <div role="radiogroup" aria-label={t('deposit.speed')} className="space-y-2">
                     <SpeedOption
-                      label="Standard delivery"
-                      detail={matureWait ?? 'Claimed automatically'}
+                      label={t('deposit.standardDelivery')}
+                      detail={matureWait ?? t('deposit.claimedAutomatically')}
                       feeSats={quote.mature.feeSats}
                       isEstimate={quote.mature.isEstimate}
                       selected={!earlySelected}
@@ -701,8 +708,8 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                     <SpeedOption
                       label={earlyLabel}
                       detail={offer.ready
-                        ? 'Arrives in seconds'
-                        : `Unlocks in ${formatWait(blocksToWait(offer.option, confirmations))}`}
+                        ? t('deposit.arrivesInSeconds')
+                        : t('deposit.unlocksIn', { wait: formatWait(blocksToWait(offer.option, confirmations)) })}
                       feeSats={offer.option.feeSats}
                       isEstimate={offer.option.isEstimate}
                       selected={earlySelected}
@@ -715,27 +722,27 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
               <FeeBreakdownCard
                 items={receipt
                   ? [
-                      { label: 'Amount', value: depositAmount },
-                      { label: 'Delivery fee', value: receipt.feeSats, emphasis: true },
-                      { label: 'You receive', value: receipt.creditAmountSats, highlight: true },
+                      { label: t('deposit.amount'), value: depositAmount },
+                      { label: t('deposit.deliveryFee'), value: receipt.feeSats, emphasis: true },
+                      { label: t('deposit.youReceive'), value: receipt.creditAmountSats, highlight: true },
                     ]
                   : chosen
                   ? [
-                      { label: 'Amount', value: depositAmount },
+                      { label: t('deposit.amount'), value: depositAmount },
                       // Same estimate caveat as the row above: an unpriced
                       // maturity fee is marked, not presented as firm.
                       // The one row the group above changes, so it is lifted
                       // without taking the accent that marks what lands.
-                      { label: earlySelected ? 'Delivery fee' : 'Network fee', value: chosen.feeSats, approximate: chosen.isEstimate, emphasis: earlySelected },
-                      { label: 'You receive', value: chosen.creditAmountSats, highlight: true },
+                      { label: earlySelected ? t('deposit.deliveryFee') : t('deposit.networkFee'), value: chosen.feeSats, approximate: chosen.isEstimate, emphasis: earlySelected },
+                      { label: t('deposit.youReceive'), value: chosen.creditAmountSats, highlight: true },
                     ]
                   : isPricing
                   ? [
-                      { label: 'Amount', value: depositAmount },
-                      { label: 'Network fee', pending: true },
-                      { label: 'You receive', pending: true, highlight: true },
+                      { label: t('deposit.amount'), value: depositAmount },
+                      { label: t('deposit.networkFee'), pending: true },
+                      { label: t('deposit.youReceive'), pending: true, highlight: true },
                     ]
-                  : [{ label: 'Amount', value: depositAmount, highlight: true }]}
+                  : [{ label: t('deposit.amount'), value: depositAmount, highlight: true }]}
               />
 
               {statusLine && (
@@ -756,9 +763,9 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
 
           {/* Error message for failed automatic claim (non-fee error) */}
           {claimError && (
-            <AlertCard variant="warning" title="Claim Failed">
+            <AlertCard variant="warning" title={t('deposit.claimFailed')}>
               <p className="text-sm">{claimError}</p>
-              <p className="text-spark-primary text-sm mt-2">You can reject to process a refund instead.</p>
+              <p className="text-spark-primary text-sm mt-2">{t('deposit.canReject')}</p>
             </AlertCard>
           )}
 
@@ -790,10 +797,10 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                 {isProcessing ? (
                   <span className="flex items-center justify-center gap-2">
                     <SpinnerIcon size="md" />
-                    Processing...
+                    {t('send.processingEllipsis')}
                   </span>
                 ) : (
-                  'Claim'
+                  t('deposit.claim')
                 )}
               </PrimaryButton>
             )}
@@ -802,16 +809,16 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
             {requiredFeeSats !== null && !claimError && (
               <div className="flex gap-3">
                 <SecondaryButton onClick={handleReject} disabled={isProcessing} className="flex-1">
-                  Reject
+                  {t('deposit.reject')}
                 </SecondaryButton>
                 <PrimaryButton onClick={handleClaim} disabled={isProcessing} className="flex-1">
                   {isProcessing ? (
                     <span className="flex items-center justify-center gap-2">
                       <SpinnerIcon size="md" />
-                      Processing...
+                      {t('send.processingEllipsis')}
                     </span>
                   ) : (
-                    'Approve'
+                    t('deposit.approve')
                   )}
                 </PrimaryButton>
               </div>

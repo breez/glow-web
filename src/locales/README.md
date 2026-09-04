@@ -40,6 +40,20 @@ send screen is worse than an English one.
 | `en` | source | |
 | `hu` | **no** | First draft, machine-generated. Needs a native speaker before `hu` joins `SHIPPING_LANGUAGES`. |
 
+## What is deliberately not translated
+
+- **Developer-only screens.** The passkey hub (`PasskeySettingsPage` and the
+  management, labels and local-state pages under it) is reachable only after a
+  five-tap gesture in Settings. Its strings stay hardcoded in English: nobody
+  who cannot read them can reach them, and putting roughly sixty diagnostic
+  strings in front of volunteers wastes the effort translating the screens
+  people actually use.
+- **Product and company names.** Glow, Breez, Spark, MoonPay, Cash App,
+  Face ID, Touch ID.
+- **Currency and protocol names.** Bitcoin, USD, LNURL, Lightning.
+- **The credential timestamp label**, which is deliberately English and
+  ASCII-only because it is stored on the relying party.
+
 ## Notes for translators
 
 - **Never concatenate.** If a string reads oddly because a placeholder needs a

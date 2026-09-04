@@ -526,7 +526,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         isOpen={exportGate === 'confirm'}
         title={t('settings.exportDatabase')}
         message={t('settings.exportDatabaseBody')}
-        confirmLabel="Export"
+        confirmLabel={t('actions.export')}
         variant="warning"
         onConfirm={() => { void runExportDb(); }}
         onCancel={() => setExportGate(null)}
