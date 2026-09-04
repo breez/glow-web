@@ -4,6 +4,7 @@ import { Device } from '@capacitor/device';
 import { Preferences } from '@capacitor/preferences';
 import { isDevMode } from './settings';
 
+import shipping from '../locales/shipping.json';
 import enCommon from '../locales/en/common.json';
 import enCritical from '../locales/en/critical.json';
 
@@ -52,10 +53,14 @@ export const LOCALES: Record<string, LocaleMeta> = {
  * The languages actually served, which is not the same as having a
  * translation. Volunteer work arrives partial, and a reader is better off in
  * English than in a half-translated send screen. A language joins once a
- * speaker has reviewed its `critical` bundle. Generate this from the
- * translation platform's completion data once that exists.
+ * speaker has reviewed its `critical` bundle.
+ *
+ * Kept in its own JSON file because the native side reads it too: the iOS and
+ * Android locale declarations must list exactly these, or the OS offers a
+ * language it then renders in English. See scripts/ci/check-locale-declarations.sh
+ * in the app repository.
  */
-export const SHIPPING_LANGUAGES: readonly string[] = [FALLBACK_LANGUAGE];
+export const SHIPPING_LANGUAGES: readonly string[] = shipping;
 
 /**
  * What the picker offers and what startup will restore. Dev mode widens it to
