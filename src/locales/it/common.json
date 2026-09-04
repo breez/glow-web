@@ -257,7 +257,8 @@
     "account": "Account",
     "deleteAccountGuide": "Come eliminare il tuo account",
     "invalidAmount": "Inserisci un importo valido",
-    "invalidFeeRate": "Inserisci una tariffa valida"
+    "invalidFeeRate": "Inserisci una tariffa valida",
+    "language": "Lingua"
   },
   "onboarding": {
     "useRecoveryPhrase": "Usa invece la frase di recupero",

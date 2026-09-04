@@ -261,7 +261,8 @@
     "account": "Account",
     "deleteAccountGuide": "How to delete your account",
     "invalidAmount": "Please enter a valid amount",
-    "invalidFeeRate": "Please enter a valid fee rate"
+    "invalidFeeRate": "Please enter a valid fee rate",
+    "language": "Language"
   },
   "onboarding": {
     "useRecoveryPhrase": "Use Recovery Phrase Instead",

@@ -2,6 +2,7 @@ import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { Device } from '@capacitor/device';
 import { Preferences } from '@capacitor/preferences';
+import { isDevMode } from './settings';
 
 import enCommon from '../locales/en/common.json';
 import enCritical from '../locales/en/critical.json';
@@ -57,6 +58,17 @@ export const LOCALES: Record<string, LocaleMeta> = {
 export const SHIPPING_LANGUAGES: readonly string[] = [FALLBACK_LANGUAGE];
 
 /**
+ * What the picker offers and what startup will restore. Dev mode widens it to
+ * every language that has files, so an unreviewed translation can be read in
+ * place; otherwise reviewing one means changing the whole device's language. It
+ * gates startup too, not just the picker, or a chosen language would be
+ * discarded on the next launch.
+ */
+export function selectableLanguages(): readonly string[] {
+  return isDevMode() ? translatedLanguages() : SHIPPING_LANGUAGES;
+}
+
+/**
  * One lazily fetched chunk per file, so a reader downloads only their own
  * language. English is excluded because it is imported eagerly above: it
  * backs every missing key everywhere, so it must be resident before first
@@ -66,6 +78,20 @@ const BUNDLES = import.meta.glob<{ default: Record<string, string> }>([
   '../locales/*/*.json',
   '!../locales/en/*.json',
 ]);
+
+/**
+ * Languages that have bundle files, in LOCALES order. The rest of LOCALES is a
+ * home for work nobody has started; offering one would just show English under
+ * a native name.
+ */
+export function translatedLanguages(): string[] {
+  const present = new Set([FALLBACK_LANGUAGE]);
+  for (const path of Object.keys(BUNDLES)) {
+    const lang = path.split('/')[2];
+    if (lang) present.add(lang);
+  }
+  return Object.keys(LOCALES).filter((l) => present.has(l));
+}
 
 /**
  * Pure so the branching can be tested without plugin doubles. A stored choice
@@ -111,7 +137,7 @@ async function detectSystemTag(): Promise<string | null> {
 
 export async function resolveLanguage(): Promise<string> {
   const [stored, systemTag] = await Promise.all([readStoredLanguage(), detectSystemTag()]);
-  return pickLanguage(stored, systemTag);
+  return pickLanguage(stored, systemTag, selectableLanguages());
 }
 
 async function loadBundles(language: string): Promise<void> {
@@ -155,7 +181,10 @@ export async function initI18n(): Promise<string> {
   await i18next.use(initReactI18next).init({
     lng: language,
     fallbackLng: FALLBACK_LANGUAGE,
-    supportedLngs: SHIPPING_LANGUAGES,
+    // Every language with files, not the shipping list: dev mode can widen the
+    // selection after init, and i18next freezes this at init. The real gate is
+    // pickLanguage and setLanguage, which is where it can respond to the change.
+    supportedLngs: Object.keys(LOCALES),
     ns: NAMESPACES,
     defaultNS: 'common',
     resources: { [FALLBACK_LANGUAGE]: { common: enCommon, critical: enCritical } },
@@ -170,9 +199,16 @@ export async function initI18n(): Promise<string> {
 }
 
 export async function setLanguage(language: string): Promise<void> {
-  if (!SHIPPING_LANGUAGES.includes(language)) return;
+  if (!selectableLanguages().includes(language)) return;
   await Preferences.set({ key: LANGUAGE_KEY, value: language });
   await loadBundles(language);
   await i18next.changeLanguage(language);
   applyDocumentLanguage(language);
+  // Startup warms the font subset behind the splash. A switch at runtime has no
+  // splash to hide behind, and font-display: block would paint the new
+  // language's accented characters as nothing until the file arrived.
+  const sample = warmupSample();
+  for (const family of ['Plus Jakarta Sans', 'Manrope']) {
+    void document.fonts?.load(`400 1rem "${family}"`, sample).catch(() => undefined);
+  }
 }

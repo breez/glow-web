@@ -12,6 +12,7 @@ import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs, exportDatabaseState } from '@/services/logExport';
 import { useSecretTap } from '@/hooks/useSecretTap';
+import { LOCALES, SHIPPING_LANGUAGES, setLanguage, translatedLanguages } from '@/services/i18n';
 import { isPasskeyMode } from '@/services/passkeyService';
 import { getAppVersion } from '@/services/appVersion';
 import { useTranslation } from 'react-i18next';
@@ -37,7 +38,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onOpenBackup,
   onOpenUnilateralExit,
 }) => {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const wallet = useWallet();
   const [appVersion, setAppVersion] = useState<string | null>(null);
   useEffect(() => { void getAppVersion().then(setAppVersion); }, []);
@@ -315,6 +316,31 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               )}
             </FormGroup>
           </div>
+
+          {/* Language (dev only). The picker exists so a translation can be
+              reviewed in place: without it, reading the Hungarian strings means
+              changing the whole device's language. It lists unreviewed
+              languages on purpose, which is why it stays behind the gesture.
+              The "unreviewed" marker is left in English deliberately, like the
+              rest of the developer-only surfaces. */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <h3 className="font-display font-semibold text-spark-text-primary mb-3">{t('settings.language')}</h3>
+              <select
+                value={i18n.language}
+                onChange={(e) => { void setLanguage(e.currentTarget.value); }}
+                className="w-full bg-spark-surface border border-spark-border rounded-xl px-3 py-3 text-spark-text-primary text-sm focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20"
+                aria-label={t('settings.language')}
+              >
+                {translatedLanguages().map((code) => (
+                  <option key={code} className="bg-spark-surface" value={code}>
+                    {LOCALES[code]?.name ?? code}
+                    {SHIPPING_LANGUAGES.includes(code) ? '' : ' (unreviewed)'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Passkey & Labels. Every page in the hub acts on the active
               passkey, so a mnemonic-only wallet has nothing to open. */}
