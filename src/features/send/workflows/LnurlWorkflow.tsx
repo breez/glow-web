@@ -15,6 +15,7 @@ import { useBalanceValidation } from '../hooks/useBalanceValidation';
 import { useHasPendingConversion } from '../../../contexts/WalletContext';
 import { getLnurlPayAddress } from '../utils';
 import { paymentIdentifierLabel } from '../../../hooks/useContacts';
+import { useTranslation } from 'react-i18next';
 
 interface LnurlWorkflowProps {
   parsed: LnurlPayRequestDetails;
@@ -28,6 +29,7 @@ interface LnurlWorkflowProps {
 }
 
 const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, balanceSats, tokenBalance, onBack, onRun, onPrepare, onPay }) => {
+  const { t } = useTranslation(['critical', 'common']);
   // USD as a secondary entry option on BTC sends (#253): starts in sats,
   // toggleable to USD, converted to sats client-side.
   const fiatOverride = useFiatOverride();
@@ -121,7 +123,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
   // need a clearing effect; the confirm-back handler clears inline.
   const onAmountNext = async () => {
     if (commentAllowed && commentMaxLen && comment.length > commentMaxLen) {
-      setError(`Comment must be at most ${commentMaxLen} characters`);
+      setError(t('send.lnurl.commentTooLong', { max: commentMaxLen }));
       return;
     }
 
@@ -146,7 +148,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
         logger.error(LogCategory.PAYMENT, 'Failed to prepare LNURL Pay', {
           error: err instanceof Error ? err.message : String(err),
         });
-        setError(`Failed to prepare LNURL Pay: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setError(t('send.lnurl.prepareFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
       } finally {
         setIsLoading(false);
       }
@@ -172,7 +174,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
         logger.error(LogCategory.PAYMENT, 'Failed to prepare LNURL Pay', {
           error: err instanceof Error ? err.message : String(err),
         });
-        setError(`Failed to prepare LNURL Pay: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setError(t('send.lnurl.prepareFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
       } finally {
         setIsLoading(false);
       }
@@ -218,7 +220,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
       logger.error(LogCategory.PAYMENT, 'Failed to prepare LNURL Pay', {
         error: err instanceof Error ? err.message : String(err),
       });
-      setError(`Failed to prepare LNURL Pay: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(t('send.lnurl.prepareFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
     } finally {
       setIsLoading(false);
     }
@@ -247,7 +249,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
       ? BigInt(prepareResponse.amountSats)
       : BigInt(balance.parseInputToSats(amount) || 0);
     return (
-      <ConfirmStep amountSats={confirmAmountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} destination={{ label: 'To', value: paymentIdentifierLabel(getLnurlPayAddress(parsed) ?? parsed.domain) }} error={error} isLoading={isLoading} onBack={() => { setPrepareResponse(null); setError(null); setStep('amount'); }} onConfirm={onConfirm} />
+      <ConfirmStep amountSats={confirmAmountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} destination={{ label: t('send.lnurl.to'), value: paymentIdentifierLabel(getLnurlPayAddress(parsed) ?? parsed.domain) }} error={error} isLoading={isLoading} onBack={() => { setPrepareResponse(null); setError(null); setStep('amount'); }} onConfirm={onConfirm} />
     );
   }
 
@@ -263,7 +265,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
   // useMemo) because we're past the early-return for the confirm step and
   // can't add a Hook here without violating rules-of-hooks.
   const inlineBalanceError = amountNum > 0 && !isSendAll && balance.exceedsBalance(amountNum)
-    ? 'Amount exceeds available balance'
+    ? t('send.exceedsBalance')
     : null;
 
   // Quick amounts answer to the request's own send limits as well as the
@@ -289,7 +291,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="block text-sm font-medium text-spark-text-primary">
-            Amount
+            {t('send.amount')}
           </label>
           {!isTokenMode && (
             <span className="text-xs text-spark-text-secondary">
@@ -365,7 +367,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
                 setFeesIncluded(true);
               }}
               disabled={tokenSendAllBelowThreshold || hasPendingConversion}
-              title={hasPendingConversion ? 'Balance is updating. Try again in a moment.' : undefined}
+              title={hasPendingConversion ? t('send.balanceUpdating') : undefined}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
                 tokenSendAllBelowThreshold || hasPendingConversion
                   ? 'opacity-40 cursor-not-allowed border border-spark-border text-spark-text-secondary'
@@ -377,9 +379,9 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
               {hasPendingConversion ? (
                 <span className="inline-flex items-center justify-center gap-1.5">
                   <SpinnerIcon size="xs" />
-                  Send All
+                  {t('send.sendAll')}
                 </span>
-              ) : 'Send All'}
+              ) : t('send.sendAll')}
             </button>
           )}
         </div>
@@ -389,13 +391,13 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
       {commentAllowed && (
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-medium text-spark-text-primary">Comment (optional)</label>
+            <label className="block text-sm font-medium text-spark-text-primary">{t('send.lnurl.comment')}</label>
             <span className="text-xs text-spark-text-secondary">{comment.length}/{commentMaxLen}</span>
           </div>
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Add a message..."
+            placeholder={t('send.lnurl.commentPlaceholder')}
             className={`${AMOUNT_FIELD_CLASS} resize-none`}
             rows={3}
             maxLength={commentMaxLen}
@@ -410,9 +412,9 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <SpinnerIcon />
-            Processing...
+            {t('send.processingEllipsis')}
           </span>
-        ) : 'Continue'}
+        ) : t('common:actions.continue')}
       </PrimaryButton>
     </div>
   );

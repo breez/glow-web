@@ -7,6 +7,7 @@ import { getTokenBalance } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { destinationErrorMessage } from '@/utils/destinationAddress';
+import { useTranslation } from 'react-i18next';
 
 /** The destination string inside a parsed input, or null for the types that
  *  are paid through their own workflow rather than a prepared destination. */
@@ -89,6 +90,7 @@ export interface UseSendPaymentReturn {
 }
 
 export function useSendPayment(): UseSendPaymentReturn {
+  const { t } = useTranslation('critical');
   const wallet = useWallet();
   const walletInfo = useWalletInfo();
   const stableBalance = useStableBalance();
@@ -129,7 +131,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     errorStep: SendStep = 'amount',
   ) => {
     if (amount <= 0n) {
-      setError('Please enter a valid amount');
+      setError(t('send.invalidAmount'));
       return;
     }
     setIsLoading(true);
@@ -163,12 +165,12 @@ export function useSendPayment(): UseSendPaymentReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [wallet]);
+  }, [wallet, t]);
 
   const processInput = useCallback(async (input: string | null = null, opts?: ProcessInputOptions) => {
     const currentInput = (input || paymentInput?.rawInput)?.trim();
     if (!currentInput) {
-      setError('Please enter a payment destination');
+      setError(t('send.noDestination'));
       return;
     }
 
@@ -198,7 +200,7 @@ export function useSendPayment(): UseSendPaymentReturn {
           .map((type) => parseResult.paymentMethods.find((m) => m.type === type))
           .find(Boolean);
         if (!method) {
-          setError('Invalid payment destination');
+          setError(t('send.invalidDestination'));
           setCurrentStep('input');
           return;
         }
@@ -266,18 +268,18 @@ export function useSendPayment(): UseSendPaymentReturn {
       ) {
         setCurrentStep('workflow');
       } else {
-        setError('Invalid payment destination');
+        setError(t('send.invalidDestination'));
         setCurrentStep('input');
       }
     } catch (err) {
       logger.warn(LogCategory.PAYMENT, 'Failed to parse payment input', { error: formatError(err) });
       setError(destinationErrorMessage(err, BAD_LOGIN_CODE.test(formatError(err))
-        ? 'This login code is not valid. Refresh the site for a new one.'
-        : 'Invalid payment destination'));
+        ? t('send.loginCodeInvalid')
+        : t('send.invalidDestination')));
     } finally {
       setIsLoading(false);
     }
-  }, [wallet, paymentInput?.rawInput, prepareSend]);
+  }, [wallet, paymentInput?.rawInput, prepareSend, t]);
 
   const parsedInputType = paymentInput?.parsedInput.type;
   const onAmountNext = useCallback(async (
@@ -287,7 +289,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     conversionOptions?: ConversionOptions,
   ) => {
     if (amount <= 0n) {
-      setError('Please enter a valid amount');
+      setError(t('send.invalidAmount'));
       return;
     }
     setFeesIncluded(!!includeFees);
@@ -307,7 +309,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       tokenIdentifier,
       conversionOptions,
     );
-  }, [paymentInput?.paymentRequest, parsedInputType, prepareSend]);
+  }, [paymentInput?.paymentRequest, parsedInputType, prepareSend, t]);
 
   const handleSend = useCallback(async (options?: SendPaymentOptions) => {
     if (!prepareResponse) return;
@@ -366,7 +368,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setIsLoading(false);
       setCurrentStep('result');
     }
-  }, [wallet, prepareResponse]);
+  }, [wallet, prepareResponse, t]);
 
   const handleRun = useCallback(async (runner: () => Promise<void>, hasConversion?: boolean) => {
     setProcessingPhase(hasConversion ? 'converting' : 'sending');
@@ -404,7 +406,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setPaymentResult('success');
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Operation failed during payment flow', { error: formatError(err) });
-      setError(`Operation failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(t('send.operationFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
       setPaymentResult('failure');
     } finally {
       if (listenerId) {
@@ -414,7 +416,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setIsLoading(false);
       setCurrentStep('result');
     }
-  }, [wallet]);
+  }, [wallet, t]);
 
   const reset = useCallback(() => {
     setCurrentStep('input');

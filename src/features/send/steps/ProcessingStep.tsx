@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ProcessingPhase } from '../hooks/useSendPayment';
+import { useTranslation } from 'react-i18next';
 
 export interface ProcessingStepProps {
   /** Operation type to customize messaging (default: 'payment') */
@@ -9,18 +10,19 @@ export interface ProcessingStepProps {
 }
 
 const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'payment', processingPhase = 'sending' }) => {
+  const { t } = useTranslation('critical');
   const isWithdraw = operationType === 'withdraw';
   const isConverting = processingPhase === 'converting';
 
   const getTitle = () => {
-    if (isWithdraw) return 'Waiting for payment...';
-    if (isConverting) return 'Converting...';
-    return 'Sending...';
+    if (isWithdraw) return t('send.processingPhase.waitingForPayment');
+    if (isConverting) return t('send.processingPhase.converting');
+    return t('send.processingPhase.sending');
   };
   const getDescription = () => {
-    if (isWithdraw) return 'Completing the transfer. This can take a moment...';
-    if (isConverting) return 'Please wait while we convert the amount...';
-    return 'Please wait while we process your transaction...';
+    if (isWithdraw) return t('send.processingPhase.withdrawBody');
+    if (isConverting) return t('send.processingPhase.convertBody');
+    return t('send.processingPhase.sendBody');
   };
 
   return (
@@ -53,7 +55,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'paymen
 
           <img
             src="/assets/Glow_Logo.svg"
-            alt="Processing"
+            alt={t('send.processing')}
             className="w-14 h-14 object-contain animate-pulse drop-shadow-[0_0_15px_rgba(212,165,116,0.4)]"
             style={{ animationDuration: '2s' }}
           />
