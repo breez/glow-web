@@ -4,6 +4,7 @@ import { useWalletConnection } from '../contexts/WalletContext';
 import { logger, LogCategory } from '../services/logger';
 import { formatError } from '../utils/formatError';
 import { selectedNetwork } from '../services/sdkConnect';
+import { useTranslation } from 'react-i18next';
 
 const LN_ADDRESS_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -76,6 +77,7 @@ export interface UseContactsReturn {
 const EMPTY_CONTACTS: Contact[] = [];
 
 export function useContacts(): UseContactsReturn {
+  const { t } = useTranslation('common');
   const { sdk: wallet } = useWalletConnection();
   // Underlying state is only meaningful while a wallet is connected. We
   // don't reset it on disconnect (avoiding setState-in-effect); the returned
@@ -101,9 +103,9 @@ export function useContacts(): UseContactsReturn {
       setError(null);
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to list contacts', { error: formatError(e) });
-      setError('Failed to load contacts');
+      setError(t('contacts.loadFailed'));
     }
-  }, [wallet]);
+  }, [wallet, t]);
 
   // Adjust-state-on-prop-change pattern (React docs): flip isLoading
   // synchronously when wallet appears, no setState-in-effect.
@@ -191,10 +193,10 @@ export function useContacts(): UseContactsReturn {
       return contact;
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to add contact', { error: formatError(e) });
-      setError('Failed to add contact');
+      setError(t('contacts.addFailed'));
       return null;
     }
-  }, [wallet, refreshContacts]);
+  }, [wallet, refreshContacts, t]);
 
   const updateContact = useCallback(async (id: string, name: string, paymentIdentifier: string): Promise<Contact | null> => {
     if (!wallet) return null;
@@ -205,10 +207,10 @@ export function useContacts(): UseContactsReturn {
       return contact;
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to update contact', { error: formatError(e) });
-      setError('Failed to update contact');
+      setError(t('contacts.updateFailed'));
       return null;
     }
-  }, [wallet, refreshContacts]);
+  }, [wallet, refreshContacts, t]);
 
   const deleteContact = useCallback(async (id: string): Promise<boolean> => {
     if (!wallet) return false;
@@ -219,10 +221,10 @@ export function useContacts(): UseContactsReturn {
       return true;
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to delete contact', { error: formatError(e) });
-      setError('Failed to delete contact');
+      setError(t('contacts.deleteFailed'));
       return false;
     }
-  }, [wallet, refreshContacts]);
+  }, [wallet, refreshContacts, t]);
 
   return {
     contacts,

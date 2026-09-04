@@ -1,6 +1,7 @@
 import type { Payment, PaymentDetails } from '@breeztech/breez-sdk-spark';
 import { paymentIdentifierLabel } from '../hooks/useContacts';
 import { USDB_TICKER } from '../constants/stableBalance';
+import i18n from 'i18next';
 
 type ContactLookup = (address: string) => { name: string } | undefined;
 
@@ -77,9 +78,9 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
         if (contact) return isSend ? `Pay to ${contact.name}` : contact.name;
         return isSend ? `Pay to ${paymentIdentifierLabel(payment.details.lnurlPayInfo.lnAddress)}` : payment.details.lnurlPayInfo.lnAddress;
       }
-      return payment.details?.description || 'Lightning Payment';
+      return payment.details?.description || i18n.t('common:methods.lightningPayment');
     }
-    return 'Lightning Payment';
+    return i18n.t('common:methods.lightningPayment');
   }
   if (payment.method === 'spark') {
     if (isCrossChain(convInfo)) return 'USD Transfer';
@@ -87,19 +88,19 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
       const dir = payment.paymentType === 'send' ? 'from' : 'to';
       return `Conversion ${dir} Bitcoin`;
     }
-    return 'Spark Transfer';
+    return i18n.t('common:methods.sparkTransfer');
   }
   if (payment.method === 'token') {
     const ticker = payment.details?.type === 'token' ? payment.details.metadata.ticker : null;
     const displayName = (ticker ? tickerToDisplayName(ticker) : null) || fiatCurrencyName;
-    if (isCrossChain(convInfo)) return displayName ? `${displayName} Transfer` : 'Token Transfer';
+    if (isCrossChain(convInfo)) return displayName ? i18n.t('common:methods.namedTransfer', { name: displayName }) : i18n.t('common:methods.tokenTransfer');
     if (convInfo) {
       const dir = payment.paymentType === 'send' ? 'from' : 'to';
       return `Conversion ${dir} ${displayName}`;
     }
-    return displayName ? `${displayName} Transfer` : 'Token Transfer';
+    return displayName ? i18n.t('common:methods.namedTransfer', { name: displayName }) : i18n.t('common:methods.tokenTransfer');
   }
   if (payment.method === 'deposit') return 'BTC Transfer';
   if (payment.method === 'withdraw') return 'BTC Transfer';
-  return 'Payment';
+  return i18n.t('common:methods.payment');
 }

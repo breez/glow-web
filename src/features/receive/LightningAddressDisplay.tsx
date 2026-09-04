@@ -4,6 +4,7 @@ import { AlertCard } from '../../components/AlertCard';
 import { QRCodeContainer, QrPlaceholder, PrimaryButton, CopyableText, TextButton } from '../../components/ui';
 import { useToast } from '../../contexts/ToastContext';
 import { EditIcon } from '../../components/Icons';
+import { useTranslation } from 'react-i18next';
 
 export interface LightningAddressDisplayProps {
   address: LightningAddressInfo | null;
@@ -18,16 +19,19 @@ export interface LightningAddressDisplayProps {
   qrCardClassName?: string;
 }
 
-const EditButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+const EditButton: React.FC<{ onClick: () => void }> = ({ onClick }) => {
+  const { t } = useTranslation('common');
+  return (
   <button
     onClick={onClick}
     className="flex items-center gap-2 px-4 border border-spark-border text-spark-text-secondary rounded-xl font-medium text-sm hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
-    title="Edit Lightning Address"
+    title={t('receive.editLightningAddress')}
   >
     <EditIcon />
-    Edit
+    {t('actions.edit')}
   </button>
-);
+  );
+};
 
 const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   address,
@@ -39,6 +43,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   qrSize = 200,
   qrCardClassName,
 }) => {
+  const { t } = useTranslation('common');
   const { showToast } = useToast();
   const amountLink = (className: string) => (
     <TextButton
@@ -54,7 +59,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
 
   if (!isSupported) {
     return section === 'qr' ? slot(
-      <AlertCard variant="info" title="Lightning addresses unavailable" className="w-full text-left">
+      <AlertCard variant="info" title={t('receive.lightningUnavailable')} className="w-full text-left">
         <p className="text-spark-text-secondary text-sm" data-testid="lightning-address-unsupported">
           They&apos;re not supported in this environment.
         </p>
@@ -88,11 +93,11 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   if (!address) {
     return section === 'qr' ? slot(
       <div className="text-center">
-        <h3 className="font-display text-lg font-semibold text-spark-text-primary mb-2">Lightning Address</h3>
+        <h3 className="font-display text-lg font-semibold text-spark-text-primary mb-2">{t('methods.lightningAddress')}</h3>
         <p className="text-spark-text-secondary text-sm mb-4">
-          Create a Lightning Address to receive payments easily
+          {t('receive.createAddressBody')}
         </p>
-        <PrimaryButton onClick={onEdit}>Create Lightning Address</PrimaryButton>
+        <PrimaryButton onClick={onEdit}>{t('receive.createAddress')}</PrimaryButton>
       </div>,
     ) : (
       <div className="w-full flex justify-center">{amountLink('text-sm')}</div>
@@ -109,10 +114,10 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
         text={address.lightningAddress}
         truncate
         showShare
-        label="Lightning Address"
+        label={t('methods.lightningAddress')}
         textColor="text-spark-primary"
-        onCopied={() => showToast('success', 'Copied!')}
-        onShareError={() => showToast('error', 'Failed to share')}
+        onCopied={() => showToast('success', t('actions.copied'))}
+        onShareError={() => showToast('error', t('receive.shareFailed'))}
         additionalActions={<EditButton onClick={onEdit} />}
         textToCopy={address.lightningAddress}
         textToShare={address.lnurl.bech32}
