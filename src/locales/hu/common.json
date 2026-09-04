@@ -15,5 +15,14 @@
   },
   "pages": {
     "backup": "Biztonsági mentés"
+  },
+  "paymentDetails": {
+    "sentAmount": "Elküldött összeg"
+  },
+  "transactions": {
+    "confirming": "Megerősítés"
+  },
+  "buy": {
+    "addFundsFromCashApp": "Pénz hozzáadása a Cash Appből"
   }
 }

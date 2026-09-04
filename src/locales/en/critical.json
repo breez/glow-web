@@ -31,5 +31,25 @@
     "deriveFailed": "Could not derive recovery phrase",
     "retrieveFailed": "Could not retrieve recovery phrase",
     "authFailed": "Failed to authenticate"
+  },
+  "logout": {
+    "confirmPasskey": "Logging out deletes all Glow data stored on this device. You'll need your passkey to access your funds again.",
+    "confirmMnemonic": "Logging out deletes all Glow data stored on this device. Make sure you've saved your recovery phrase: you'll need it to access your funds again."
+  },
+  "pinReset": {
+    "bodyPasskey": "The PIN can't be recovered. The only way back in is to erase all Glow data on this device and sign in again with your passkey.",
+    "bodyMnemonic": "The PIN can't be recovered. The only way back in is to erase all Glow data on this device and restore from your recovery phrase. Make sure you have it saved.",
+    "confirm": "Erase",
+    "deviceOwnerReason": "Erase all Glow data"
+  },
+  "stableBalance": {
+    "toUsd": "Your BTC balance will be converted to USD.",
+    "toBtc": "Your USD balance will be converted back to BTC.",
+    "convertToUsd": "Convert to USD",
+    "convertToBtc": "Convert to BTC",
+    "conversionFee": "Conversion fee:",
+    "feeUnavailable": "Couldn't estimate fee",
+    "disclaimerTitle": "Stable Balance",
+    "disclaimerBody": "Your balance is held in USD. Incoming BTC is automatically converted to USD, and outgoing payments are converted back to BTC. Amounts under the conversion threshold remain as change until they accumulate."
   }
 }

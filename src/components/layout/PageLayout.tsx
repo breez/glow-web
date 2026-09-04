@@ -3,6 +3,7 @@ import { BackIcon } from '../Icons';
 import { safeAreaTop, safeAreaBottom } from '../../utils/safeAreaInsets';
 import { useStatusBarColor } from '../../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE } from '../../utils/statusBarManager';
+import { useTranslation } from 'react-i18next';
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -20,6 +21,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
   onBack = null,
   showHeader = true,
 }) => {
+  const { t } = useTranslation('common');
   // Generic PageLayout screens (get refund, etc.) use a solid
   // spark-surface background; match the system bars to that tone.
   useStatusBarColor(STATUS_BAR_SURFACE);
@@ -42,7 +44,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
               <button
                 onClick={onBack}
                 className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
-                aria-label="Go back"
+                aria-label={t('a11y.goBack')}
               >
                 <BackIcon />
               </button>

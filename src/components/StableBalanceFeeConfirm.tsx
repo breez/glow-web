@@ -3,6 +3,7 @@ import { DialogContainer, DialogCard } from './ui';
 import { SpinnerIcon } from './Icons';
 import { formatTokenAmount, type TokenDisplayConfig } from '../utils/tokenFormatting';
 import type { ConversionEstimate } from '@breeztech/breez-sdk-spark';
+import { useTranslation } from 'react-i18next';
 
 interface StableBalanceFeeConfirmProps {
   isOpen: boolean;
@@ -35,12 +36,13 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
   onCancel,
   onDone,
 }) => {
+  const { t } = useTranslation(['critical', 'common']);
   if (!isOpen) return null;
 
-  const title = direction === 'toToken' ? 'Convert to USD' : 'Convert to BTC';
+  const title = direction === 'toToken' ? t('stableBalance.convertToUsd') : t('stableBalance.convertToBtc');
   const description = direction === 'toToken'
-    ? 'Your BTC balance will be converted to USD.'
-    : 'Your USD balance will be converted back to BTC.';
+    ? t('stableBalance.toUsd')
+    : t('stableBalance.toBtc');
 
   const feeText = conversionEstimate && displayConfig
     ? formatTokenAmount(conversionEstimate.fee, displayConfig, { fullPrecision: true })
