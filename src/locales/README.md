@@ -44,12 +44,60 @@ Until then, a reader whose device asks for that language gets English. This is
 deliberate: volunteer translation does not arrive finished, and a half-translated
 send screen is worse than an English one.
 
+## Glossary
+
+Terms that must be translated the same way everywhere, and the ones that must
+not be translated at all. Consistency here is what makes the 82 critical strings
+reviewable in one sitting.
+
+| English | it | de | hu |
+|---|---|---|---|
+| recovery phrase | frase di recupero | Wiederherstellungsphrase | helyreállítási kifejezés |
+| passkey | passkey | Passkey | azonosítókulcs |
+| label (a named set of funds) | etichetta | Label | címke |
+| balance | saldo | Guthaben | egyenleg |
+| funds | fondi | Guthaben | pénz |
+| fee | commissione | Gebühr | díj |
+
+Never translated: Glow, Breez, Spark, Lightning, Bitcoin, LNURL, Flashnet,
+MoonPay, Cash App, Face ID, Touch ID, sats, BTC, USD.
+
+Never used, in any language: the local word for *wallet* or *account*. The one
+exception is `settings.account` and `settings.deleteAccountGuide`, which App
+Store guideline 5.1.1(v) requires to be named that way.
+
+Address the reader informally where the language distinguishes it. Hungarian
+uses *tegezés*, German uses *du*. This is a whole-file decision, so it is the
+first thing to confirm or reject in review.
+
 ## Review status
 
 | Language | `critical` reviewed | Notes |
 |---|---|---|
 | `en` | source | |
-| `hu` | **no** | First draft, machine-generated. Needs a native speaker before `hu` joins `SHIPPING_LANGUAGES`. |
+| `it` | **no** | Complete first draft, machine-generated. |
+| `de` | **no** | Complete first draft, machine-generated. |
+| `hu` | **no** | Complete first draft, machine-generated. |
+
+None of these ship until a speaker has read `critical.json`. That is eighty-two
+strings per language.
+
+## Where translations break the layout
+
+Measured against English: Italian runs 1.18x longer, German 1.27x, Hungarian
+1.18x. Prose absorbs that; short labels in fixed rows do not. Check these
+screens on a narrow device before shipping a language:
+
+- **The three buttons under the send input** (paste, scan, contacts). Seventeen
+  characters in English, twenty-nine in Hungarian.
+- **The wallet header chips** (refund, buy, syncing). All three grow by 8 or
+  more characters in German.
+- **Transaction status chips** (failed, processing, pending confirmation).
+- **Anything reading "..." while busy**: saving, preparing, restoring. German
+  turns these into whole clauses (*Wird gespeichert...*).
+
+If a label has no shorter form that is still correct, say so on the pull
+request rather than inventing an abbreviation.
 
 ## What is deliberately not translated
 
