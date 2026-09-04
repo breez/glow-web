@@ -85,17 +85,22 @@ const BUNDLES = import.meta.glob<{ default: Record<string, string> }>([
 ]);
 
 /**
- * Languages that have bundle files, in LOCALES order. The rest of LOCALES is a
- * home for work nobody has started; offering one would just show English under
- * a native name.
+ * Languages with a bundle for every namespace, in LOCALES order. One namespace
+ * short is not offered either: the rest of LOCALES is work nobody has started,
+ * and a half-started language would render mostly English under a native name,
+ * which reads worse than not being listed at all.
  */
 export function translatedLanguages(): string[] {
-  const present = new Set([FALLBACK_LANGUAGE]);
+  const counts = new Map<string, number>();
   for (const path of Object.keys(BUNDLES)) {
-    const lang = path.split('/')[2];
-    if (lang) present.add(lang);
+    const [, , lang, file] = path.split('/');
+    if (lang && NAMESPACES.includes(file!.replace('.json', '') as (typeof NAMESPACES)[number])) {
+      counts.set(lang, (counts.get(lang) ?? 0) + 1);
+    }
   }
-  return Object.keys(LOCALES).filter((l) => present.has(l));
+  return Object.keys(LOCALES).filter(
+    (l) => l === FALLBACK_LANGUAGE || counts.get(l) === NAMESPACES.length,
+  );
 }
 
 /**

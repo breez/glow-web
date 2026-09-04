@@ -50,14 +50,31 @@ Terms that must be translated the same way everywhere, and the ones that must
 not be translated at all. Consistency here is what makes the 82 critical strings
 reviewable in one sitting.
 
-| English | it | de | hu |
-|---|---|---|---|
-| recovery phrase | frase di recupero | Wiederherstellungsphrase | helyreállítási kifejezés |
-| passkey | passkey | Passkey | azonosítókulcs |
-| label (a named set of funds) | etichetta | Label | címke |
-| balance | saldo | Guthaben | egyenleg |
-| funds | fondi | Guthaben | pénz |
-| fee | commissione | Gebühr | díj |
+| English | it | de | hu | es | fr |
+|---|---|---|---|---|---|
+| recovery phrase | frase di recupero | Wiederherstellungsphrase | helyreállítási kifejezés | frase de recuperación | phrase de récupération |
+| passkey | passkey | Passkey | azonosítókulcs | passkey | passkey |
+| label | etichetta | Label | címke | etiqueta | étiquette |
+| balance | saldo | Guthaben | egyenleg | saldo | solde |
+| funds | fondi | Guthaben | pénz | fondos | fonds |
+| fee | commissione | Gebühr | díj | comisión | frais |
+
+The same six terms in the other languages: Dutch *herstelzin / passkey /
+label / saldo / geld / kosten*, Portuguese *frase de recuperação / passkey /
+etiqueta / saldo / fundos / taxa*, Swedish *återställningsfras / passkey /
+etikett / saldo / pengar / avgift*, Finnish *palautuslause / avainkoodi /
+tunniste / saldo / varat / maksu*, Turkish *kurtarma ifadesi / geçiş anahtarı /
+etiket / bakiye / para / ücret*, Greek *φράση ανάκτησης / passkey / ετικέτα /
+υπόλοιπο / χρήματα / χρέωση*, Bulgarian *възстановяваща фраза / passkey /
+етикет / баланс / средства / такса*, Czech *obnovovací fráze / passkey /
+štítek / zůstatek / prostředky / poplatek*, Slovak *obnovovacia fráza /
+passkey / štítok / zostatok / prostriedky / poplatok*, Polish *fraza
+odzyskiwania / passkey / etykieta / saldo / środki / opłata*.
+
+Hungarian, Finnish and Turkish translate *passkey* rather than borrowing it,
+following what Apple and Google use in those languages. The rest keep the
+English word, as those platforms do.
+
 
 Never translated: Glow, Breez, Spark, Lightning, Bitcoin, LNURL, Flashnet,
 MoonPay, Cash App, Face ID, Touch ID, sats, BTC, USD.
@@ -72,15 +89,36 @@ first thing to confirm or reject in review.
 
 ## Review status
 
-| Language | `critical` reviewed | Notes |
-|---|---|---|
-| `en` | source | |
-| `it` | **no** | Complete first draft, machine-generated. |
-| `de` | **no** | Complete first draft, machine-generated. |
-| `hu` | **no** | Complete first draft, machine-generated. |
+Every language below is a complete first draft, machine-generated, and none of
+them ships. A language joins `shipping.json` only after a speaker has read its
+`critical.json`: eighty-two strings, an evening's work.
 
-None of these ship until a speaker has read `critical.json`. That is eighty-two
-strings per language.
+| Language | `critical` reviewed |
+|---|---|
+| `en` English | source |
+| `bg` Български | **no** |
+| `cs` Čeština | **no** |
+| `de` Deutsch | **no** |
+| `el` Ελληνικά | **no** |
+| `es` Español | **no** |
+| `fi` Suomi | **no** |
+| `fr` Français | **no** |
+| `hu` Magyar | **no** |
+| `it` Italiano | **no** |
+| `nl` Nederlands | **no** |
+| `pl` Polski | **no** |
+| `pt` Português | **no** |
+| `sk` Slovenčina | **no** |
+| `sv` Svenska | **no** |
+| `tr` Türkçe | **no** |
+
+## Plural forms
+
+Each language carries the plural categories it actually uses, which is not the
+same set English needs. Polish selects `few` and `many` and never `other` for
+small counts, so an `_other`-only Polish plural would be English for every
+number. Czech and Slovak need `_few`. A test checks this per language against
+`Intl.PluralRules` rather than against a hand-maintained list.
 
 ## Reading a translation in the app
 

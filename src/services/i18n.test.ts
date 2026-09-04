@@ -61,6 +61,12 @@ describe('bundle shape', () => {
     return mod ? flatten(mod.default) : null;
   };
 
+  // Plural suffixes are language-specific: Polish needs _few and _many where
+  // English has only _one and _other, so a suffix is stripped before comparing.
+  // Without this the guard would reject a correct Slavic translation.
+  const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/;
+  const base = (key: string) => key.replace(PLURAL_SUFFIX, '');
+
   // A translation may lag English: that is normal for volunteer work, and the
   // missing keys fall back. Carrying a key English does not have is a typo or a
   // one-sided rename, and renders as nothing.
@@ -71,10 +77,39 @@ describe('bundle shape', () => {
       if (lang === 'en') continue;
       const english = keysOf('en', ns);
       expect(english, `en/${ns}.json should exist for ${lang}/${ns}.json`).not.toBeNull();
+      const englishBases = new Set(english!.map(base));
       for (const key of keysOf(lang!, ns)!) {
-        expect(english, `${lang}/${ns}.json has orphan key "${key}"`).toContain(key);
+        expect(
+          [...englishBases],
+          `${lang}/${ns}.json has orphan key "${key}"`,
+        ).toContain(base(key));
       }
     }
+  });
+
+  // Every plural category the language actually uses for a small count must be
+  // present, or i18next falls through to English for that count alone. Polish
+  // never selects `other` below a million, so an _other-only Polish plural is
+  // English for every number.
+  it('covers every plural form each language selects', () => {
+    const missing: string[] = [];
+    for (const path of Object.keys(bundles)) {
+      const [, , lang, file] = path.split('/');
+      const ns = file!.replace('.json', '');
+      if (lang === 'en') continue;
+      const keys = new Set(keysOf(lang!, ns)!);
+      const plurals = new Set([...keys].filter((k) => PLURAL_SUFFIX.test(k)).map(base));
+      const rules = new Intl.PluralRules(lang!);
+      const needed = new Set(
+        Array.from({ length: 12 }, (_, i) => rules.select(i + 1)),
+      );
+      for (const stem of plurals) {
+        for (const form of needed) {
+          if (!keys.has(`${stem}_${form}`)) missing.push(`${lang}/${ns} ${stem}_${form}`);
+        }
+      }
+    }
+    expect(missing, `missing plural forms:\n${missing.join('\n')}`).toEqual([]);
   });
 
   it('interpolation placeholders survive translation', () => {
@@ -88,7 +123,9 @@ describe('bundle shape', () => {
       const read = (obj: Record<string, unknown>, key: string): unknown =>
         key.split('.').reduce<unknown>((acc, k) => (acc as Record<string, unknown>)?.[k], obj);
       for (const key of flatten(other)) {
-        const source = read(en, key);
+        // A language-specific plural form has no same-named English key, so
+        // compare it against English's `other`, which carries the placeholders.
+        const source = read(en, key) ?? read(en, `${key.replace(PLURAL_SUFFIX, '')}_other`);
         const target = read(other, key);
         if (typeof source !== 'string' || typeof target !== 'string') continue;
         expect(
@@ -175,12 +212,25 @@ describe('what the picker may offer', () => {
   afterEach(() => localStorage.removeItem('spark-dev-mode'));
 
   it('offers only languages that have files', () => {
+    // A language with a home in LOCALES but no bundle would render as English
+    // under a native name, which reads as a broken translation rather than an
+    // absent one. Checked structurally rather than by naming a language, so it
+    // keeps working as translations land.
+    const withFiles = new Set(
+      Object.keys(
+        import.meta.glob('../locales/*/common.json', { eager: true }),
+      ).map((path) => path.split('/')[2]),
+    );
+    withFiles.add('en');
     const offered = translatedLanguages();
     expect(offered).toContain('en');
-    for (const lang of offered) expect(LOCALES[lang]).toBeDefined();
-    // A language with a home in LOCALES but no bundle would render as English
-    // under a native name, which reads as a broken translation.
-    expect(offered).not.toContain('bg');
+    for (const lang of offered) {
+      expect(LOCALES[lang], `${lang} is offered but has no metadata`).toBeDefined();
+      expect(withFiles, `${lang} is offered but has no bundle`).toContain(lang);
+    }
+    for (const lang of Object.keys(LOCALES)) {
+      if (!withFiles.has(lang)) expect(offered).not.toContain(lang);
+    }
   });
 
   it('keeps the gate closed until dev mode opens it', () => {
