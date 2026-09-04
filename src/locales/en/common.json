@@ -1,19 +1,130 @@
 {
+  "app": {
+    "name": "Glow",
+    "poweredBy": "Powered by Breez SDK"
+  },
   "actions": {
+    "back": "Back",
     "cancel": "Cancel",
     "close": "Close",
+    "confirm": "Confirm",
     "continue": "Continue",
     "copy": "Copy",
     "copied": "Copied!",
     "done": "Done",
+    "enable": "Enable",
     "getStarted": "Get Started",
-    "hide": "Hide"
+    "hide": "Hide",
+    "install": "Install",
+    "installing": "Installing...",
+    "notNow": "Not now",
+    "share": "Share",
+    "shareThing": "Share {{label}}"
+  },
+  "labels": {
+    "address": "Address",
+    "error": "Error",
+    "total": "Total",
+    "genericError": "An error occurred",
+    "amount": "Amount",
+    "networkFee": "Network fee"
+  },
+  "a11y": {
+    "goBack": "Go back",
+    "openMenu": "Open menu",
+    "switchCamera": "Switch camera",
+    "pickImage": "Pick image from gallery",
+    "clearPin": "Clear PIN",
+    "deleteDigit": "Delete digit",
+    "switchBalance": "Switch balance to {{currency}}"
   },
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID"
   },
   "pages": {
-    "backup": "Backup"
+    "backup": "Backup",
+    "settings": "Settings"
+  },
+  "menu": {
+    "settings": "Settings",
+    "getRefund": "Get Refund",
+    "privacyPolicy": "Privacy Policy",
+    "support": "Support",
+    "logout": "Logout",
+    "removePasskeyGuide": "How to remove your passkey"
+  },
+  "header": {
+    "refund": "Refund",
+    "buy": "Buy",
+    "syncing": "Syncing",
+    "bitcoin": "Bitcoin"
+  },
+  "install": {
+    "title": "Install Glow",
+    "body": "Add to your home screen for quick access and a better experience."
+  },
+  "lock": {
+    "unlockPrompt": "Enter your PIN to unlock",
+    "continuePrompt": "Enter your PIN to continue",
+    "forgotPin": "Forgot your PIN?",
+    "useBiometrics": "Use biometrics"
+  },
+  "offline": {
+    "banner": "No internet connection"
+  },
+  "celebration": {
+    "dismiss": "Tap anywhere to dismiss",
+    "sent": "Payment Sent",
+    "received": "Payment Received"
+  },
+  "transactions": {
+    "title": "Payments",
+    "emptyTitle": "No payments yet",
+    "emptyBody": "Your payment history will appear here once you send or receive your first payment.",
+    "failed": "Failed",
+    "processing": "Processing",
+    "pendingConfirmation": "Pending Confirmation",
+    "pendingApproval": "Pending Approval",
+    "tapToClaim": "Tap to claim",
+    "confirming": "Confirming"
+  },
+  "paymentDetails": {
+    "amount": "Amount",
+    "fee": "Fee",
+    "dateTime": "Date & Time",
+    "receivedAmount": "Received Amount",
+    "network": "Network",
+    "recipientAddress": "Recipient Address",
+    "description": "Description",
+    "lightningAddress": "Lightning Address",
+    "lnurlPayment": "LNURL Payment",
+    "comment": "Comment",
+    "invoice": "Invoice",
+    "preimage": "Payment Preimage",
+    "destinationPubkey": "Destination Public Key",
+    "successAction": "Success Action",
+    "message": "Message",
+    "transactionId": "Transaction ID",
+    "conversionDetails": "Conversion Details",
+    "provider": "Provider",
+    "initialAmount": "Initial Amount",
+    "convertedAmount": "Converted Amount",
+    "url": "URL",
+    "sentAmount": "Sent Amount"
+  },
+  "qrScanner": {
+    "initializing": "Initializing camera...",
+    "unavailable": "Camera not available",
+    "hint": "Point camera at QR code"
+  },
+  "staging": {
+    "title": "Staging Environment",
+    "body": "This is a development build. Enter the password to continue.",
+    "placeholder": "Enter password",
+    "incorrect": "Incorrect password"
+  },
+  "buy": {
+    "addFundsFromCashApp": "Add funds from Cash App"
   }
 }

@@ -11,6 +11,7 @@ import { useFiatData } from '../contexts/FiatDataContext';
 import { getTokenBalance, formatTokenAmount } from '../utils/tokenFormatting';
 import StableBalanceToggleFlow from './StableBalanceToggleFlow';
 import { useRestoreStableBalancePrompt } from '../hooks/useRestoreStableBalancePrompt';
+import { useTranslation } from 'react-i18next';
 
 // Module-level flag: once the balance count-up has played, skip it on remount.
 // Resets on full page reload.
@@ -39,6 +40,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   hasRejectedDeposits,
   onOpenGetRefund,
 }) => {
+  const { t } = useTranslation('common');
   const { fiatRates, fiatCurrencies } = useFiatData();
   const stableBalance = useStableBalance();
   // Persisted rather than a plain index: the receive amount input reads the
@@ -298,7 +300,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           <button
             onClick={onOpenMenu}
             className="p-2 -ml-2 text-spark-text-secondary hover:text-spark-text-primary transition-colors rounded-xl hover:bg-white/5"
-            aria-label="Open menu"
+            aria-label={t('a11y.openMenu')}
             data-testid="menu-button"
           >
             <MenuIcon size="lg" />
@@ -314,7 +316,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 className="flex items-center gap-1 h-9 px-3 rounded-xl text-spark-warning border border-spark-warning/20 hover:border-spark-warning/40 hover:bg-spark-warning/5 transition-colors text-xs font-medium"
               >
                 <AlertTriangleIcon size="xs" />
-                Refund
+                {t('header.refund')}
               </button>
             )}
             {/* Buy Bitcoin */}
@@ -322,7 +324,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
               <button
                 type="button"
                 disabled={isBuyLoading}
-                aria-label={buyCopy('Buy')}
+                aria-label={buyCopy(t('header.buy'))}
                 className={`flex items-center justify-center gap-1.5 h-9 rounded-xl transition-colors text-sm font-medium disabled:opacity-50 ${
                   isBuyIconOnly()
                     ? 'w-9 bg-[#00D632] hover:bg-[#00bf2d] border border-black/15 hover:border-black/25'
@@ -340,7 +342,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 ) : (
                   <CurrencyIcon size="sm" />
                 )}
-                {!isBuyIconOnly() && <span>{buyCopy('Buy')}</span>}
+                {!isBuyIconOnly() && <span>{buyCopy(t('header.buy'))}</span>}
               </button>
             )}
           </div>
@@ -356,7 +358,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-spark-primary animate-pulse" />
-              Syncing
+              {t('header.syncing')}
             </span>
             {/* inline-flex + items-center keeps the suffix pill on the
                 same vertical axis as the BALANCE text (inline baseline
@@ -376,7 +378,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 type="button"
                 onClick={handleSuffixTap}
                 disabled={stableBalance.isToggling}
-                aria-label={`Switch balance to ${stableBalance.isActive ? 'Bitcoin' : 'USD'}`}
+                aria-label={t('a11y.switchBalance', { currency: stableBalance.isActive ? 'Bitcoin' : 'USD' })}
                 className="group inline-flex items-center cursor-pointer transition-colors disabled:opacity-50 font-display text-xs font-medium uppercase"
               >
                 <span className="mx-1.5 tracking-widest">·</span>
