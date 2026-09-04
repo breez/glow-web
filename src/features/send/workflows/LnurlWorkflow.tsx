@@ -122,7 +122,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
   // need a clearing effect; the confirm-back handler clears inline.
   const onAmountNext = async () => {
     if (commentAllowed && commentMaxLen && comment.length > commentMaxLen) {
-      setError(t('send.lnurl.commentTooLong', { max: commentMaxLen }));
+      setError(t('common:send.lnurl.commentTooLong', { max: commentMaxLen }));
       return;
     }
 
@@ -147,7 +147,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
         logger.error(LogCategory.PAYMENT, 'Failed to prepare LNURL Pay', {
           error: err instanceof Error ? err.message : String(err),
         });
-        setError(t('send.lnurl.prepareFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
+        setError(t('common:send.lnurl.prepareFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
       } finally {
         setIsLoading(false);
       }
@@ -173,7 +173,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
         logger.error(LogCategory.PAYMENT, 'Failed to prepare LNURL Pay', {
           error: err instanceof Error ? err.message : String(err),
         });
-        setError(t('send.lnurl.prepareFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
+        setError(t('common:send.lnurl.prepareFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
       } finally {
         setIsLoading(false);
       }
@@ -219,7 +219,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
       logger.error(LogCategory.PAYMENT, 'Failed to prepare LNURL Pay', {
         error: err instanceof Error ? err.message : String(err),
       });
-      setError(t('send.lnurl.prepareFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
+      setError(t('common:send.lnurl.prepareFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
     } finally {
       setIsLoading(false);
     }
@@ -248,7 +248,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
       ? BigInt(prepareResponse.amountSats)
       : BigInt(balance.parseInputToSats(amount) || 0);
     return (
-      <ConfirmStep amountSats={confirmAmountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} destination={{ label: t('send.lnurl.to'), value: getLnurlPayAddress(parsed) ?? parsed.domain }} error={error} isLoading={isLoading} onBack={() => { setPrepareResponse(null); setError(null); setStep('amount'); }} onConfirm={onConfirm} />
+      <ConfirmStep amountSats={confirmAmountSats} feesSat={feesSat} feesIncluded={feesIncluded} conversionEstimate={conversionEstimate} balanceSats={balanceSats} tokenBalance={tokenBalance} destination={{ label: t('common:send.lnurl.to'), value: getLnurlPayAddress(parsed) ?? parsed.domain }} error={error} isLoading={isLoading} onBack={() => { setPrepareResponse(null); setError(null); setStep('amount'); }} onConfirm={onConfirm} />
     );
   }
 
@@ -290,7 +290,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="block text-sm font-medium text-spark-text-primary">
-            {t('send.amount')}
+            {t('common:send.amount')}
           </label>
           {!isTokenMode && (
             <span className="text-xs text-spark-text-secondary">
@@ -390,13 +390,13 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
       {commentAllowed && (
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-medium text-spark-text-primary">{t('send.lnurl.comment')}</label>
+            <label className="block text-sm font-medium text-spark-text-primary">{t('common:send.lnurl.comment')}</label>
             <span className="text-xs text-spark-text-secondary">{comment.length}/{commentMaxLen}</span>
           </div>
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder={t('send.lnurl.commentPlaceholder')}
+            placeholder={t('common:send.lnurl.commentPlaceholder')}
             className={`${AMOUNT_FIELD_CLASS} resize-none`}
             rows={3}
             maxLength={commentMaxLen}
@@ -411,7 +411,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <SpinnerIcon />
-            {t('send.processingEllipsis')}
+            {t('common:send.processingEllipsis')}
           </span>
         ) : t('common:actions.continue')}
       </PrimaryButton>

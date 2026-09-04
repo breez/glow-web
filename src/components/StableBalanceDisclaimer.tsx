@@ -18,7 +18,7 @@ const StableBalanceDisclaimer: React.FC<StableBalanceDisclaimerProps> = ({
   description,
 }) => {
   const { t } = useTranslation(['critical', 'common']);
-  const resolvedTitle = title ?? t('stableBalance.disclaimerTitle');
+  const resolvedTitle = title ?? t('common:stableBalance.disclaimerTitle');
   const resolvedDescription = description ?? t('stableBalance.disclaimerBody');
   if (!isOpen) return null;
 

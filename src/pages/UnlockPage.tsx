@@ -68,13 +68,13 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
   }, [isWebPasskey]);
 
   const unlockLabel = isWebPasskey
-    ? t('unlock.withPasskey')
+    ? t('common:unlock.withPasskey')
     : !isBiometricTier ? t('common:actions.tryAgain')
-      : biometry ? t('unlock.withMethod', { method: biometry.label }) : t('unlock.unlock');
+      : biometry ? t('common:unlock.withMethod', { method: biometry.label }) : t('common:unlock.unlock');
   const unlockDescription = isWebPasskey
-    ? t('unlock.lockedPasskey')
-    : !isBiometricTier ? t('unlock.couldNotStartBody')
-      : t('unlock.lockedBiometric');
+    ? t('common:unlock.lockedPasskey')
+    : !isBiometricTier ? t('common:unlock.couldNotStartBody')
+      : t('common:unlock.lockedBiometric');
   const UnlockIcon = isWebPasskey
     ? PasskeyIcon
     : biometry?.kind === 'face' ? FaceIdIcon : FingerprintIcon;
@@ -91,7 +91,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
               className="w-36 h-36 object-contain"
             />
             <h1 className="font-display text-2xl font-bold text-spark-text-primary">
-              {t('unlock.welcomeBack')}
+              {t('common:unlock.welcomeBack')}
             </h1>
             <p className="text-sm text-spark-text-secondary text-center">
               {unlockDescription}
@@ -100,7 +100,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
 
           {/* Error banner */}
           {error && (
-            <AlertCard variant="error" title={isBiometricTier ? t('unlock.unlockFailed') : t('unlock.couldNotStart')}>
+            <AlertCard variant="error" title={isBiometricTier ? t('common:unlock.unlockFailed') : t('common:unlock.couldNotStart')}>
               {error}
             </AlertCard>
           )}

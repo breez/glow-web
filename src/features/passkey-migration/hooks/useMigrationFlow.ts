@@ -277,7 +277,7 @@ export function useMigrationFlow({
     (async () => {
       const labels = labelsToMigrateRef.current;
       if (labels.length === 0) {
-        setError(t('migration.noLabels'));
+        setError(t('common:migration.noLabels'));
         setPhase('error');
         return;
       }
@@ -340,7 +340,7 @@ export function useMigrationFlow({
       } catch (e) {
         if (cancelled) return;
         logger.error(LogCategory.AUTH, 'Migration check-deposits-all: failed', { error: formatError(e) });
-        setError(t('migration.checkFailed'));
+        setError(t('common:migration.checkFailed'));
         setPhase('error');
       }
     })();
@@ -413,7 +413,7 @@ export function useMigrationFlow({
       } catch (e) {
         if (cancelled) return;
         logger.error(LogCategory.AUTH, 'Migration derive-new-passkey: failed', { error: formatError(e) });
-        setError(t('migration.createFailed'));
+        setError(t('common:migration.createFailed'));
         setPhase('error');
       }
     })();
@@ -554,7 +554,7 @@ export function useMigrationFlow({
           oldSdk.disconnect().catch(() => {});
         }
         logger.error(LogCategory.AUTH, 'Migration sweep-label: failed', { label, error: formatError(e) });
-        setError(t('migration.labelFailed', { label }));
+        setError(t('common:migration.labelFailed', { label }));
         setPhase('error');
       }
     })();
@@ -702,22 +702,22 @@ export function useMigrationFlow({
   const hasMissingLegacySdk = isOpen && entry === 'banner' && !activeLegacySdk;
   const displayedPhase: MigrationPhase = hasMissingLegacySdk ? 'error' : phase;
   const displayedError = hasMissingLegacySdk
-    ? t('migration.notConnected')
+    ? t('common:migration.notConnected')
     : error;
 
   const spinnerText = (() => {
     switch (phase) {
-      case 'probe': return t('migration.stageProbe');
-      case 'enumerate-labels': return t('migration.stageLabels');
-      case 'check-deposits-all': return t('migration.stageDeposits');
-      case 'derive-new-passkey': return t('migration.stageDerive');
+      case 'probe': return t('common:migration.stageProbe');
+      case 'enumerate-labels': return t('common:migration.stageLabels');
+      case 'check-deposits-all': return t('common:migration.stageDeposits');
+      case 'derive-new-passkey': return t('common:migration.stageDerive');
       case 'sweep-label': {
         if (confirmedLabels.length > 1) {
           return `Moving your ${sweepDetail} (${currentLabelIndex + 1} of ${confirmedLabels.length})...`;
         }
         return `Moving your ${sweepDetail}...`;
       }
-      case 'switch': return t('migration.stageSwitch');
+      case 'switch': return t('common:migration.stageSwitch');
       default: return '';
     }
   })();

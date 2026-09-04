@@ -13,7 +13,7 @@ const BlockedDepositsStep: React.FC<BlockedDepositsStepProps> = ({ count, onOpen
   const { t } = useTranslation('critical');
   return (
   <>
-    <AlertCard variant="warning" title={t('migration.unclaimedDeposits')}>
+    <AlertCard variant="warning" title={t('common:migration.unclaimedDeposits')}>
       <p className="text-sm text-spark-text-secondary">
         You have {count} unclaimed deposit{count === 1 ? '' : 's'} across your wallets. Please
         resolve {count === 1 ? 'it' : 'them'} before upgrading. You can come back and try again
@@ -21,7 +21,7 @@ const BlockedDepositsStep: React.FC<BlockedDepositsStepProps> = ({ count, onOpen
       </p>
     </AlertCard>
     <div className="flex flex-col gap-3 mt-4">
-      <PrimaryButton onClick={onOpenDeposits}>{t('migration.openUnclaimedDeposits')}</PrimaryButton>
+      <PrimaryButton onClick={onOpenDeposits}>{t('common:migration.openUnclaimedDeposits')}</PrimaryButton>
     </div>
   </>
   );

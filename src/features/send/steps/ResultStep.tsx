@@ -32,27 +32,27 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
 
   const getTitle = () => {
     if (operationType === 'auth') {
-      return t('send.authenticated');
+      return t('common:send.authenticated');
     }
     if (operationType === 'refund') {
-      return isSuccess ? t('send.result.refundSent') : t('send.result.refundFailed');
+      return isSuccess ? t('common:send.result.refundSent') : t('common:send.result.refundFailed');
     }
-    return isSuccess ? t('send.sent') : t('send.failed');
+    return isSuccess ? t('common:send.sent') : t('common:send.failed');
   };
 
   const getSuccessDescription = () => {
     if (description) return description;
     if (operationType === 'refund') {
-      return t('send.result.refundSuccessBody');
+      return t('common:send.result.refundSuccessBody');
     }
-    return t('send.result.sentBody');
+    return t('common:send.result.sentBody');
   };
 
   const getDefaultErrorMessage = () => {
     if (operationType === 'refund') {
-      return t('send.result.refundFailBody');
+      return t('common:send.result.refundFailBody');
     }
-    return t('send.result.failBody');
+    return t('common:send.result.failBody');
   };
 
   if (!isSuccess) {

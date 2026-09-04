@@ -51,10 +51,10 @@ const PasskeyMigrationModal: React.FC<PasskeyMigrationModalProps> = (props) => {
           </div>
           <h2 className="font-display text-lg font-bold text-spark-text-primary">
             {flow.phase === 'done'
-              ? t('migration.upgradeComplete')
+              ? t('common:migration.upgradeComplete')
               : flow.isInFlight
-                ? t('migration.upgrading')
-                : entry === 'login' ? t('migration.checkPasskey') : t('migration.upgradePasskey')}
+                ? t('common:migration.upgrading')
+                : entry === 'login' ? t('common:migration.checkPasskey') : t('common:migration.upgradePasskey')}
           </h2>
         </div>
 

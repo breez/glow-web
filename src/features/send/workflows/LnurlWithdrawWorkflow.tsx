@@ -83,7 +83,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
         return;
       }
       // Completion window elapsed without settlement.
-      setError(t('send.withdraw.timedOut'));
+      setError(t('common:send.withdraw.timedOut'));
       setIsWaiting(false);
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'LNURL withdraw failed', { error: formatError(err) });
@@ -108,7 +108,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="block text-sm font-medium text-spark-text-primary">
-            {t('send.withdraw.amountToReceive')}
+            {t('common:send.withdraw.amountToReceive')}
           </label>
           {!isFixed && !unserviceable && (
             <span className="text-xs text-spark-text-secondary">
