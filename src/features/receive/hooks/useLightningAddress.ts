@@ -5,6 +5,7 @@ import { generateRandomName } from '../../../utils/randomName';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { useLatest } from '../../../hooks/useLatest';
+import { useTranslation } from 'react-i18next';
 
 export interface UseLightningAddress {
   address: LightningAddressInfo | null;
@@ -32,6 +33,7 @@ const LOAD_FAILED_MESSAGE = "Couldn't load your Lightning address. Please try ag
 const SAVE_FAILED_MESSAGE = "Couldn't save your Lightning address. Please try again.";
 
 export const useLightningAddress = (): UseLightningAddress => {
+  const { t } = useTranslation('common');
   const wallet = useWallet();
 
   const [address, setAddress] = useState<LightningAddressInfo | null>(null);
@@ -54,7 +56,7 @@ export const useLightningAddress = (): UseLightningAddress => {
     setIsEditing(false);
     setEditValue('');
     setError(null);
-  }, []);
+  }, [t]);
 
   const extractUsername = (value: string): string => {
     if (!value) return '';
@@ -167,7 +169,7 @@ export const useLightningAddress = (): UseLightningAddress => {
     }
     const username = extractUsername(editValue.trim());
     if (!username) {
-      setError('Please enter a username');
+      setError(t('receive.enterUsername'));
       return;
     }
 
@@ -177,7 +179,7 @@ export const useLightningAddress = (): UseLightningAddress => {
     try {
       const isAvailable = await wallet.checkLightningAddressAvailable({ username });
       if (!isAvailable) {
-        setError('This username is not available');
+        setError(t('receive.usernameUnavailable'));
         setIsLoading(false);
         return;
       }
@@ -199,7 +201,7 @@ export const useLightningAddress = (): UseLightningAddress => {
     } finally {
       setIsLoading(false);
     }
-  }, [editValue, wallet, isSupported, markUnsupported]);
+  }, [editValue, wallet, isSupported, markUnsupported, t]);
 
   const reset = useCallback(() => {
     setIsEditing(false);

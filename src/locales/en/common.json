@@ -33,7 +33,9 @@
     "approve": "Approve",
     "reject": "Reject",
     "retry": "Retry",
-    "goBack": "Go Back"
+    "goBack": "Go Back",
+    "edit": "Edit",
+    "skip": "Skip"
   },
   "labels": {
     "address": "Address",
@@ -47,7 +49,13 @@
     "fiatLoadFailed": "Failed to load currencies. Please try again.",
     "transactionId": "Transaction ID",
     "youReceive": "You receive",
-    "somethingWentWrong": "Something went wrong"
+    "somethingWentWrong": "Something went wrong",
+    "balance": "Balance",
+    "unknown": "Unknown",
+    "justNow": "Just now",
+    "somethingWentWrongRetry": "Something went wrong. Please try again.",
+    "shareFailed": "Failed to share",
+    "guide": "Guide"
   },
   "a11y": {
     "goBack": "Go back",
@@ -70,7 +78,8 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
-    "generic": "biometric"
+    "generic": "biometric",
+    "lockout": "Biometric unlock is locked. Unlock your device with your passcode and try again."
   },
   "pages": {
     "backup": "Backup",
@@ -151,7 +160,8 @@
   "qrScanner": {
     "initializing": "Initializing camera...",
     "unavailable": "Camera not available",
-    "hint": "Point camera at QR code"
+    "hint": "Point camera at QR code",
+    "noQrInImage": "No QR code found in image"
   },
   "staging": {
     "title": "Staging Environment",
@@ -160,6 +170,17 @@
     "incorrect": "Incorrect password"
   },
   "buy": {
+    "title": "Buy Bitcoin",
+    "withCashApp": "Buy with Cash App",
+    "cashAppLink": "Cash App link",
+    "cashAppNote": "Cash App will show the equivalent amount in your local currency and charge your Cash or BTC balance.",
+    "scanWithCashApp": "Scan this code with Cash App",
+    "redirecting": "Redirecting…",
+    "amount": "Amount",
+    "invalidAmount": "Invalid amount",
+    "invoiceFailed": "Failed to create invoice. Please try again.",
+    "openCashApp": "Open Cash App",
+    "openFailed": "Failed to open purchase page. Please try again.",
     "addFundsFromCashApp": "Add funds from Cash App"
   },
   "contacts": {
@@ -187,7 +208,9 @@
     "addFailed": "Failed to add contact",
     "editAria": "Edit {{name}}",
     "deleteAria": "Delete {{name}}",
-    "deleteConfirm": "Are you sure you want to delete “{{name}}”?"
+    "deleteConfirm": "Are you sure you want to delete “{{name}}”?",
+    "loadFailed": "Failed to load contacts",
+    "deleteFailed": "Failed to delete contact"
   },
   "methods": {
     "lightningInvoice": "Lightning Invoice",
@@ -198,7 +221,12 @@
     "lnurlAuth": "LNURL Auth",
     "receive": "Receive",
     "sendUsd": "Send USD",
-    "payment": "Payment"
+    "payment": "Payment",
+    "lightningPayment": "Lightning Payment",
+    "sparkTransfer": "Spark Transfer",
+    "tokenTransfer": "Token Transfer",
+    "namedTransfer": "{{name}} Transfer",
+    "usdTransfer": "USD Transfer"
   },
   "security": {
     "gateReason": "Unlock Lock Screen settings",
@@ -294,6 +322,79 @@
     "detecting": "Detecting passkey...",
     "initializing": "Initializing passkey...",
     "savingLabel": "Saving label...",
-    "startingGlow": "Starting Glow..."
+    "startingGlow": "Starting Glow...",
+    "notFoundOnDevice": "Could not find your Glow passkey on this device. Try again, or check Settings > Passwords.",
+    "createdNotReady": "Your passkey was created but was not ready to use yet. Use it to sign in.",
+    "timedOut": "Sign-in timed out. Please try again.",
+    "cancelledRetry": "Sign-in cancelled. Please try again."
+  },
+  "receive": {
+    "title": "Receive",
+    "lightningInvoice": "Lightning Invoice",
+    "paymentRequest": "Payment Request",
+    "sparkAddress": "Spark Address",
+    "bitcoinAddress": "Bitcoin Address",
+    "scanToPay": "Scan to pay this Lightning invoice",
+    "useThisAddress": "Use this address to receive payments",
+    "sendBitcoinHere": "Send Bitcoin to this address for automatic Lightning conversion",
+    "generatingBitcoin": "Generating Bitcoin address...",
+    "generatingSpark": "Generating Spark address...",
+    "loadingLightningAddress": "Loading Lightning Address...",
+    "confirmUsernameChange": "Confirm Username Change",
+    "change": "Change",
+    "createInvoice": "Create Invoice",
+    "generateInvoice": "Generate Invoice",
+    "descriptionPlaceholder": "What's this for?",
+    "amount": "Amount",
+    "specificAmount": "Create invoice with specific amount →",
+    "lightningAddress": "Lightning Address",
+    "createAddressPrompt": "Create a Lightning Address to receive payments easily",
+    "createLightningAddress": "Create Lightning Address",
+    "editLightningAddress": "Edit Lightning Address",
+    "editAddress": "Edit Address",
+    "createAddress": "Create Lightning Address",
+    "addressUnavailable": "Lightning addresses are not available in this environment.",
+    "loadAddressFailed": "Failed to load Lightning address",
+    "enterUsername": "Please enter a username",
+    "usernameUnavailable": "This username is not available",
+    "saveAddressFailed": "Failed to save Lightning address",
+    "invalidAmount": "Invalid amount",
+    "invalidAmountEntry": "Please enter a valid amount",
+    "enterAmountSats": "Enter amount in sats",
+    "description": "Description (optional)",
+    "createAddressBody": "Create a Lightning Address to receive payments easily",
+    "lightningUnavailable": "Lightning addresses unavailable",
+    "shareFailed": "Failed to share",
+    "scanToPayShort": "Scan to pay"
+  },
+  "passkeyErrors": {
+    "tryAnotherProvider": "Please try again with another password provider, or continue with a recovery phrase.",
+    "authFailed": "Your device couldn't finish verifying your identity. Lock and unlock your device, then try again.",
+    "timeout": "The passkey prompt timed out. Please try again.",
+    "prfEval": "Your password manager couldn't process the passkey. Please try again.",
+    "config": "Passkeys aren't configured correctly for this app. Please update Glow or try again later.",
+    "network": "Network problem. Check your connection and try again."
+  },
+  "logs": {
+    "shareTitle": "Glow Logs",
+    "shareDialogTitle": "Share logs",
+    "dbShareTitle": "Glow SDK Database Export"
+  },
+  "startupFailure": {
+    "title": "Failed to load application",
+    "body": "There was an error starting Glow. Please refresh and try again.",
+    "missingApiKey": "Missing API Key"
+  },
+  "lockdown": {
+    "headingIos": "Turn off Lockdown Mode to use Glow",
+    "headingWeb": "Lockdown Mode is stopping Glow",
+    "introWeb": "Add an exception for Glow in your browser settings, or open Glow in another browser.",
+    "step1": "Open <strong class=\"font-semibold\">Settings</strong>",
+    "step2": "Go to <strong class=\"font-semibold\">Privacy &amp; Security</strong>, then <strong class=\"font-semibold\">Lockdown Mode</strong>",
+    "step3": "Tap <strong class=\"font-semibold\">Turn Off Lockdown Mode</strong>",
+    "step4": "Confirm with <strong class=\"font-semibold\">Turn Off &amp; Restart</strong>"
+  },
+  "logout": {
+    "done": "Successfully logged out"
   }
 }

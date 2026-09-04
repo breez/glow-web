@@ -39,12 +39,12 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
       onScan(result);
       onClose();
     } catch {
-      setGalleryError('No QR code found in image');
+      setGalleryError(t('qrScanner.noQrInImage'));
       setTimeout(() => setGalleryError(null), 3000);
     }
     // Reset so the same file can be re-selected
     if (fileInputRef.current) fileInputRef.current.value = '';
-  }, [onScan, onClose]);
+  }, [onScan, onClose, t]);
 
   const {
     videoRef,

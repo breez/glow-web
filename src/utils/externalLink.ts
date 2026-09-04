@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import i18n from 'i18next';
 
 /**
  * Open a URL without stranding the user outside the app.
@@ -48,7 +49,7 @@ export const isStandalonePwa = (): boolean =>
 function openInAppOverlay(url: string): void {
   const overlay = document.createElement('div');
   overlay.setAttribute('role', 'dialog');
-  overlay.setAttribute('aria-label', 'Guide');
+  overlay.setAttribute('aria-label', i18n.t('common:labels.guide'));
   overlay.style.cssText =
     'position:fixed;inset:0;z-index:2147483647;background:#0a0a0f;display:flex;flex-direction:column;';
 
@@ -74,7 +75,7 @@ function openInAppOverlay(url: string): void {
 
   const frame = document.createElement('iframe');
   frame.src = url;
-  frame.title = 'Guide';
+  frame.title = i18n.t('common:labels.guide');
   frame.style.cssText = 'display:block;width:100%;height:100%;border:0;background:#0a0a0f;';
 
   let closed = false;

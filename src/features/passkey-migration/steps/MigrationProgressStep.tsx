@@ -2,13 +2,16 @@ import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { AlertTriangleIcon } from '@/components/Icons';
+import { useTranslation } from 'react-i18next';
 
 interface MigrationProgressStepProps {
   text: string;
 }
 
 /** In-flight spinner shared by every working phase, with a keep-open reminder. */
-const MigrationProgressStep: React.FC<MigrationProgressStepProps> = ({ text }) => (
+const MigrationProgressStep: React.FC<MigrationProgressStepProps> = ({ text }) => {
+  const { t } = useTranslation('critical');
+  return (
   <div className="flex flex-col items-center justify-center py-6">
     <LoadingSpinner />
     {/* Crossfade the label so a phase or sub-step change reads as forward progress, not a jump. */}
@@ -28,9 +31,9 @@ const MigrationProgressStep: React.FC<MigrationProgressStepProps> = ({ text }) =
     </div>
     <div className="mt-3 flex items-center justify-center gap-2 text-xs text-spark-primary">
       <AlertTriangleIcon size="xs" />
-      <span className="text-spark-primary-light">Keep this window open</span>
+      <span className="text-spark-primary-light">{t('migration.keepWindowOpen')}</span>
     </div>
   </div>
-);
-
+  );
+};
 export default MigrationProgressStep;

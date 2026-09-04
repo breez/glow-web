@@ -1,6 +1,7 @@
 import React from 'react';
 import { PrimaryButton } from '@/components/ui/buttons';
 import type { LnAddressFailure } from '../types';
+import { useTranslation } from 'react-i18next';
 
 interface DoneStepProps {
   onDone: () => void;
@@ -9,17 +10,17 @@ interface DoneStepProps {
 }
 
 /** Success screen after the new wallet has been adopted. */
-const DoneStep: React.FC<DoneStepProps> = ({ onDone, lnAddressFailures = [] }) => (
+const DoneStep: React.FC<DoneStepProps> = ({ onDone, lnAddressFailures = [] }) => {
+  const { t } = useTranslation(['critical', 'common']);
+  return (
   <>
     <p className="text-sm text-spark-text-secondary mb-4 text-center">
-      Your funds have been moved to your new passkey.
+      {t('migration.doneBody')}
     </p>
     {lnAddressFailures.length > 0 && (
       <div className="mb-4">
         <p className="text-xs text-spark-warning mb-2 text-center">
-          {lnAddressFailures.length === 1
-            ? "This Lightning address couldn't be transferred:"
-            : "These Lightning addresses couldn't be transferred:"}
+          {t('migration.addressPending', { count: lnAddressFailures.length })}
         </p>
         <ul className="space-y-1.5">
           {lnAddressFailures.map(({ label, address }) => (
@@ -30,16 +31,14 @@ const DoneStep: React.FC<DoneStepProps> = ({ onDone, lnAddressFailures = [] }) =
           ))}
         </ul>
         <p className="text-xs text-spark-warning mt-2 text-center">
-          {lnAddressFailures.length === 1
-            ? "Payments sent to it will continue to arrive under your old passkey until the transfer is complete."
-            : "Payments sent to them will continue to arrive under your old passkey until the transfers are complete."}
+          {t('migration.addressPendingBody', { count: lnAddressFailures.length })}
         </p>
       </div>
     )}
     <div className="flex flex-col gap-3">
-      <PrimaryButton onClick={onDone}>Done</PrimaryButton>
+      <PrimaryButton onClick={onDone}>{t('common:actions.done')}</PrimaryButton>
     </div>
   </>
-);
-
+  );
+};
 export default DoneStep;

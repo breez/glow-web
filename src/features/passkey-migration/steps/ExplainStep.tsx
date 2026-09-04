@@ -1,6 +1,7 @@
 import React from 'react';
 import { PrimaryButton, SecondaryButton } from '@/components/ui/buttons';
 import type { MigrationEntry } from '../types';
+import { Trans, useTranslation } from 'react-i18next';
 
 interface ExplainStepProps {
   entry: MigrationEntry;
@@ -9,27 +10,27 @@ interface ExplainStepProps {
 }
 
 /** First screen: explains the upgrade and offers Continue + a per-entry opt-out. */
-const ExplainStep: React.FC<ExplainStepProps> = ({ entry, onContinue, onSecondary }) => (
+const ExplainStep: React.FC<ExplainStepProps> = ({ entry, onContinue, onSecondary }) => {
+  const { t } = useTranslation(['critical', 'common']);
+  return (
   <>
     {entry === 'banner' ? (
       <p className="text-sm text-spark-text-secondary mb-4">
-        We'll create a new passkey and automatically transfer your funds. 
-        You'll be asked to verify your identity a few times during the process.
+        {t('migration.explainBody')}
       </p>
     ) : (
       <p className="text-sm text-spark-text-secondary mb-4">
-        If you created your passkey with an earlier version of Glow, we'll create a new one and transfer your funds automatically. 
-        If this is your first time using Glow, choose <em>Skip</em> to continue.
+        <Trans i18nKey="migration.explainFirstTime" ns="critical" components={{ skip: <em>{t('common:actions.skip')}</em> }} />
       </p>
     )}
     <p className="text-xs text-spark-text-muted mb-4">
-      Your funds will be transferred in a single transaction. Your payment history won't carry over.
+      {t('migration.singleTransaction')}
     </p>
     <div className="flex flex-col gap-3">
-      <PrimaryButton onClick={onContinue}>Continue</PrimaryButton>
-      <SecondaryButton onClick={onSecondary}>{entry === 'banner' ? 'Not now' : 'Skip'}</SecondaryButton>
+      <PrimaryButton onClick={onContinue}>{t('common:actions.continue')}</PrimaryButton>
+      <SecondaryButton onClick={onSecondary}>{entry === 'banner' ? t('migration.notNow') : t('common:actions.skip')}</SecondaryButton>
     </div>
   </>
-);
-
+  );
+};
 export default ExplainStep;

@@ -29,6 +29,7 @@ import AmountPanel from './AmountPanel';
 import { SideCaption, SideDock, type BtcMode } from './SideDock';
 import { ArrowDownIcon } from '../../components/Icons';
 import { holdIdleLock } from '@/services/appLock';
+import { useTranslation } from 'react-i18next';
 
 /**
  * How long the card takes to turn out while it waits for a code, matching
@@ -62,7 +63,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, amo
     <div className="pt-4 space-y-6 flex flex-col items-center">
       {amount && (
         <div className="text-center">
-          <p className="text-spark-text-muted text-sm mb-2">Scan to pay</p>
+          <p className="text-spark-text-muted text-sm mb-2">{t('receive.scanToPayShort')}</p>
           <span className="text-3xl font-mono font-bold text-spark-text-primary">
             {amount.display ?? <SatAmount sats={amount.sats} />}
           </span>
@@ -81,9 +82,9 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, amo
           text={paymentData}
           truncate
           showShare
-          label="Lightning Invoice"
-          onCopied={() => showToast('success', 'Copied!')}
-          onShareError={() => showToast('error', 'Failed to share')}
+          label={t('receive.lightningInvoice')}
+          onCopied={() => showToast('success', t('actions.copied'))}
+          onShareError={() => showToast('error', t('labels.shareFailed'))}
           data-testid="lightning-invoice-text"
         />
 
@@ -98,6 +99,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, amo
 };
 
 const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation('common');
   const receive = useReceivePayment();
   const [showChangeConfirm, setShowChangeConfirm] = useState<boolean>(false);
   // The tabs belong to choosing, not to what you have made with the choice:
@@ -318,11 +320,11 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
 
   const getQRTitle = () => {
     switch (receive.activeTab) {
-      case 'lightning': return 'Lightning Invoice';
-      case 'spark': return 'Spark Address';
-      case 'bitcoin': return 'Bitcoin Address';
-      case 'usd': return 'USD Transfer';
-      default: return 'Payment Request';
+      case 'lightning': return t('methods.lightningInvoice');
+      case 'spark': return t('methods.sparkAddress');
+      case 'bitcoin': return t('methods.bitcoinAddress');
+      case 'usd': return t('methods.usdTransfer');
+      default: return t('receive.paymentRequest');
     }
   };
 
@@ -331,7 +333,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
       <BottomSheetContainer isOpen={isOpen} onClose={onClose} showBackdrop>
         <BottomSheetCard>
           <DialogHeader
-            title="Receive"
+            title={t('receive.title')}
             onClose={onClose}
             // The USD steps lend theirs through `useSheetBack`; the invoice is
             // rendered here, so its way back is passed in directly.
@@ -430,17 +432,17 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
             // because `isContentReady` gates the tab UI, so a
             // Lightning-specific copy is safe.
             <div className="text-center py-8">
-              <LoadingSpinner text="Loading Lightning Address..." />
+              <LoadingSpinner text={t('receive.loadingLightningAddress')} />
             </div>
           )}
         </BottomSheetCard>
 
         <ConfirmDialog
           isOpen={showChangeConfirm}
-          title="Confirm Username Change"
+          title={t('receive.confirmUsernameChange')}
           message={getAddressChangeMessage()}
-          confirmLabel="Change"
-          cancelLabel="Cancel"
+          confirmLabel={t('receive.change')}
+          cancelLabel={t('actions.cancel')}
           variant="warning"
           onConfirm={async () => {
             setShowChangeConfirm(false);
