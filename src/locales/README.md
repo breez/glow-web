@@ -82,6 +82,21 @@ first thing to confirm or reject in review.
 None of these ship until a speaker has read `critical.json`. That is eighty-two
 strings per language.
 
+## Reading a translation in the app
+
+The language normally comes from the device and cannot be changed in Glow. For
+review there is a picker, behind the same developer gesture as the rest of the
+diagnostic surfaces:
+
+1. Open **Settings** and tap the version line at the bottom five times.
+2. A **Language** section appears above **Passkey**.
+3. Pick a language. Unreviewed ones are marked, and the choice survives a
+   restart while developer mode stays on.
+
+It lists only languages that have files, so a language nobody has started
+cannot be selected and mistaken for a broken translation. Turning developer
+mode back off returns the app to the device language on the next launch.
+
 ## Where translations break the layout
 
 Measured against English: Italian runs 1.18x longer, German 1.27x, Hungarian

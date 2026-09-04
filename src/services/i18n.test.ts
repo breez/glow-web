@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { LOCALES, SHIPPING_LANGUAGES, pickLanguage } from './i18n';
+import { afterEach, describe, expect, it } from 'vitest';
+import {
+  LOCALES,
+  SHIPPING_LANGUAGES,
+  pickLanguage,
+  selectableLanguages,
+  translatedLanguages,
+} from './i18n';
 
 // The shipping list is short today and grows as locales pass review, so these
 // pass their own list rather than asserting against whatever ships right now.
@@ -160,5 +166,36 @@ describe('every referenced key exists', () => {
       }
     }
     expect(missing, `unresolved keys:\n${missing.join('\n')}`).toEqual([]);
+  });
+});
+
+describe('what the picker may offer', () => {
+  // isDevMode reads localStorage, which the test setup already fakes, so the
+  // gate can be driven directly rather than through a module double.
+  afterEach(() => localStorage.removeItem('spark-dev-mode'));
+
+  it('offers only languages that have files', () => {
+    const offered = translatedLanguages();
+    expect(offered).toContain('en');
+    for (const lang of offered) expect(LOCALES[lang]).toBeDefined();
+    // A language with a home in LOCALES but no bundle would render as English
+    // under a native name, which reads as a broken translation.
+    expect(offered).not.toContain('bg');
+  });
+
+  it('keeps the gate closed until dev mode opens it', () => {
+    expect(selectableLanguages()).toEqual(SHIPPING_LANGUAGES);
+    localStorage.setItem('spark-dev-mode', 'true');
+    expect(selectableLanguages()).toEqual(translatedLanguages());
+    expect(selectableLanguages().length).toBeGreaterThan(SHIPPING_LANGUAGES.length);
+  });
+
+  it('restores a dev-selected language at startup, and drops it once dev mode is off', () => {
+    // The picker persists the choice, so startup has to accept it back or the
+    // language would silently revert on the next launch.
+    localStorage.setItem('spark-dev-mode', 'true');
+    expect(pickLanguage('hu', null, selectableLanguages())).toBe('hu');
+    localStorage.removeItem('spark-dev-mode');
+    expect(pickLanguage('hu', null, selectableLanguages())).toBe('en');
   });
 });

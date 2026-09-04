@@ -257,7 +257,8 @@
     "account": "Account",
     "deleteAccountGuide": "So löschst du deinen Account",
     "invalidAmount": "Bitte gib einen gültigen Betrag ein",
-    "invalidFeeRate": "Bitte gib eine gültige Gebührenrate ein"
+    "invalidFeeRate": "Bitte gib eine gültige Gebührenrate ein",
+    "language": "Sprache"
   },
   "onboarding": {
     "useRecoveryPhrase": "Stattdessen Wiederherstellungsphrase verwenden",
