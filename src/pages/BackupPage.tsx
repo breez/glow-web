@@ -22,9 +22,9 @@ interface BackupPageProps {
 }
 
 const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' }) => {
-  // `critical` first so bare keys resolve there; `common:` prefixed keys reach
-  // the shared bundle. This screen is the reason the two namespaces are split:
-  // every string below describes how someone recovers their money.
+  // `critical` first, so a bare key resolves there and a `common:` prefix
+  // reaches the shared bundle. Only the sentences about the phrase itself sit
+  // in critical; the chrome around them does not.
   const { t } = useTranslation(['critical', 'common']);
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -171,14 +171,14 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
         setMnemonic(w.seed.mnemonic);
         setIsRevealed(true);
       } else {
-        setError(t('errors.deriveFailed'));
+        setError(t('common:errors.deriveFailed'));
         setPasskeyAttemptFailed(true);
       }
     } catch (e) {
       logger.error(LogCategory.AUTH, 'Failed to derive mnemonic from passkey', {
         error: e instanceof Error ? e.message : String(e),
       });
-      setError(e instanceof Error ? e.message : t('errors.authFailed'));
+      setError(e instanceof Error ? e.message : t('common:errors.authFailed'));
       setPasskeyAttemptFailed(true);
     } finally {
       setIsLoading(false);
@@ -199,13 +199,13 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
         setMnemonic(seed.mnemonic);
         setIsRevealed(true);
       } else {
-        setError(t('errors.retrieveFailed'));
+        setError(t('common:errors.retrieveFailed'));
       }
     } catch (e) {
       logger.error(LogCategory.AUTH, 'Biometric fallback retrieveSeed failed', {
         error: e instanceof Error ? e.message : String(e),
       });
-      setError(e instanceof Error ? e.message : t('errors.authFailed'));
+      setError(e instanceof Error ? e.message : t('common:errors.authFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -249,7 +249,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
           )}
 
           {gate === 'locked' && (
-            <PinGate reason={t('backup.pinReason')} onUnlocked={() => setGate('open')} />
+            <PinGate reason={t('common:backup.pinReason')} onUnlocked={() => setGate('open')} />
           )}
 
           {gate === 'open' && (
@@ -262,7 +262,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
                   <PasskeyIcon size="md" className="text-spark-primary" />
                 </div>
                 <div>
-                  <h4 className="font-medium text-spark-text-primary mb-1">{t('backup.passkeyProtected.title')}</h4>
+                  <h4 className="font-medium text-spark-text-primary mb-1">{t('common:backup.passkeyProtected.title')}</h4>
                   <p className="text-spark-text-muted text-sm">
                     {t('backup.passkeyProtected.body')}
                   </p>
@@ -283,10 +283,10 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
               <span className="font-display font-semibold text-spark-text-primary">
-                {isLoading ? t('backup.reveal.busyTitle') : t('backup.reveal.title')}
+                {isLoading ? t('common:backup.reveal.busyTitle') : t('common:backup.reveal.title')}
               </span>
               <span className="text-sm text-spark-text-muted">
-                {isLoading ? t('backup.reveal.hintPasskeyBusy') : t('backup.reveal.hintPasskey')}
+                {isLoading ? t('common:backup.reveal.hintPasskeyBusy') : t('common:backup.reveal.hintPasskey')}
               </span>
             </button>
           )}
@@ -305,14 +305,14 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
               <span className="font-display font-semibold text-spark-text-primary">
-                {isLoading ? t('backup.reveal.busyTitle') : t('backup.reveal.title')}
+                {isLoading ? t('common:backup.reveal.busyTitle') : t('common:backup.reveal.title')}
               </span>
               <span className="text-sm text-spark-text-muted">
                 {mnemonic
                   ? t('backup.reveal.hintRevealed')
                   : isLoading
-                    ? t('backup.reveal.hintBiometricBusy', { method: biometry?.label ?? t('backup.reveal.methodFallbackShort') })
-                    : t('backup.reveal.hintBiometric', { method: biometry?.label ?? t('backup.reveal.methodFallback') })}
+                    ? t('common:backup.reveal.hintBiometricBusy', { method: biometry?.label ?? t('common:backup.reveal.methodFallbackShort') })
+                    : t('common:backup.reveal.hintBiometric', { method: biometry?.label ?? t('common:backup.reveal.methodFallback') })}
               </span>
             </button>
           )}
@@ -341,14 +341,14 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
               <span className="font-display font-semibold text-spark-text-primary">
-                {isLoading ? t('backup.reveal.busyTitle') : t('backup.reveal.title')}
+                {isLoading ? t('common:backup.reveal.busyTitle') : t('common:backup.reveal.title')}
               </span>
               <span className="text-sm text-spark-text-muted">
                 {fallbackTier === 'device'
                   ? t('backup.reveal.hintDeviceStored')
                   : isLoading
-                    ? t('backup.reveal.hintBiometricBusy', { method: biometry?.label ?? t('backup.reveal.methodFallbackShort') })
-                    : t('backup.reveal.hintBiometric', { method: biometry?.label ?? t('backup.reveal.methodFallback') })}
+                    ? t('common:backup.reveal.hintBiometricBusy', { method: biometry?.label ?? t('common:backup.reveal.methodFallbackShort') })
+                    : t('common:backup.reveal.hintBiometric', { method: biometry?.label ?? t('common:backup.reveal.methodFallback') })}
               </span>
             </button>
           )}
@@ -363,7 +363,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center mx-auto mb-4">
                 <WarningIcon size="xl" className="text-spark-primary" />
               </div>
-              <h3 className="font-display font-semibold text-spark-text-primary mb-2">{t('backup.passkeyUnavailable.title')}</h3>
+              <h3 className="font-display font-semibold text-spark-text-primary mb-2">{t('common:backup.passkeyUnavailable.title')}</h3>
               <p className="text-spark-text-muted text-sm">
                 {t('backup.passkeyUnavailable.body')}
               </p>
@@ -421,7 +421,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center mx-auto mb-4">
                 <WarningIcon size="xl" className="text-spark-primary" />
               </div>
-              <h3 className="font-display font-semibold text-spark-text-primary mb-2">{t('backup.notFound.title')}</h3>
+              <h3 className="font-display font-semibold text-spark-text-primary mb-2">{t('common:backup.notFound.title')}</h3>
               <p className="text-spark-text-muted text-sm">
                 {t('backup.notFound.body')}
               </p>

@@ -58,9 +58,9 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
         if (contact) return isSend ? `Pay to ${contact.name}` : contact.name;
         return isSend ? `Pay to ${payment.details.lnurlPayInfo.lnAddress}` : payment.details.lnurlPayInfo.lnAddress;
       }
-      return payment.details?.description || i18n.t('common:methods.lightningPayment');
+      return payment.details?.description || i18n.t('methods.lightningPayment');
     }
-    return i18n.t('common:methods.lightningPayment');
+    return i18n.t('methods.lightningPayment');
   }
   if (payment.method === 'spark') {
     if (isCrossChain(convInfo)) return 'USD Transfer';
@@ -68,19 +68,19 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
       const dir = payment.paymentType === 'send' ? 'from' : 'to';
       return `Conversion ${dir} Bitcoin`;
     }
-    return i18n.t('common:methods.sparkTransfer');
+    return i18n.t('methods.sparkTransfer');
   }
   if (payment.method === 'token') {
     const ticker = payment.details?.type === 'token' ? payment.details.metadata.ticker : null;
     const displayName = (ticker ? tickerToDisplayName(ticker) : null) || fiatCurrencyName;
-    if (isCrossChain(convInfo)) return displayName ? i18n.t('common:methods.namedTransfer', { name: displayName }) : i18n.t('common:methods.tokenTransfer');
+    if (isCrossChain(convInfo)) return displayName ? i18n.t('methods.namedTransfer', { name: displayName }) : i18n.t('methods.tokenTransfer');
     if (convInfo) {
       const dir = payment.paymentType === 'send' ? 'from' : 'to';
       return `Conversion ${dir} ${displayName}`;
     }
-    return displayName ? i18n.t('common:methods.namedTransfer', { name: displayName }) : i18n.t('common:methods.tokenTransfer');
+    return displayName ? i18n.t('methods.namedTransfer', { name: displayName }) : i18n.t('methods.tokenTransfer');
   }
   if (payment.method === 'deposit') return 'BTC Transfer';
   if (payment.method === 'withdraw') return 'BTC Transfer';
-  return i18n.t('common:methods.payment');
+  return i18n.t('methods.payment');
 }

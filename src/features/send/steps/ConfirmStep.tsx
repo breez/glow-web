@@ -90,7 +90,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
       )}
 
       {/* Sats breakdown */}
-      <SimpleFeeBreakdown amount={feesIncluded ? amount - fee : amount} fee={fee} amountLabel={feesIncluded ? t('send.recipientGets') : t('send.amount')} />
+      <SimpleFeeBreakdown amount={feesIncluded ? amount - fee : amount} fee={fee} amountLabel={feesIncluded ? t('send.recipientGets') : t('common:send.amount')} />
 
       {/* Token conversion details */}
       {isTokenMode && tokenAmount && tokenFee && (
@@ -114,10 +114,10 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <SpinnerIcon size="md" />
-            {t('send.processingEllipsis')}
+            {t('common:send.processingEllipsis')}
           </span>
         ) : (
-          t('send.crossChain.send')
+          t('common:send.crossChain.send')
         )}
       </PrimaryButton>
     </div>

@@ -29,7 +29,7 @@ const ConfirmLabelsStep: React.FC<ConfirmLabelsStepProps> = ({
             <span className="w-1.5 h-1.5 rounded-full bg-spark-primary" />
             {label}
             {label === primaryLabel && (
-              <span className="text-xs text-spark-text-muted">{t('migration.currentLabel')}</span>
+              <span className="text-xs text-spark-text-muted">{t('common:migration.currentLabel')}</span>
             )}
           </li>
         ))}
@@ -40,7 +40,7 @@ const ConfirmLabelsStep: React.FC<ConfirmLabelsStepProps> = ({
     </p>
     <div className="flex flex-col gap-3">
       <PrimaryButton onClick={onContinue}>{t('common:actions.continue')}</PrimaryButton>
-      <SecondaryButton onClick={onCancel}>{t('migration.notNow')}</SecondaryButton>
+      <SecondaryButton onClick={onCancel}>{t('common:migration.notNow')}</SecondaryButton>
     </div>
   </>
   );

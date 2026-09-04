@@ -128,7 +128,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
         logger.error(LogCategory.PAYMENT, 'Failed to prepare cross-chain payment', { error: formatError(err), provider: r.provider });
         setProviderQuotes(prev => {
           const next = new Map(prev);
-          next.set(r.provider, { route: r, response: null, error: crossChainFriendlyError(err, t('send.crossChain.quoteFailedShort')), loading: false });
+          next.set(r.provider, { route: r, response: null, error: crossChainFriendlyError(err, t('common:send.crossChain.quoteFailedShort')), loading: false });
           return next;
         });
       }
@@ -164,10 +164,10 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
         })
         .catch(err => {
           logger.error(LogCategory.PAYMENT, 'Failed to prepare cross-chain payment', { error: formatError(err) });
-          setError(crossChainFriendlyError(err, t('send.crossChain.quoteFailedShort')));
+          setError(crossChainFriendlyError(err, t('common:send.crossChain.quoteFailedShort')));
           // Show provider step so user can see the error and go back
           const quotes = new Map<string, ProviderQuote>();
-          quotes.set(matching[0].provider, { route: matching[0], response: null, error: crossChainFriendlyError(err, t('send.crossChain.quoteFailedShort')), loading: false });
+          quotes.set(matching[0].provider, { route: matching[0], response: null, error: crossChainFriendlyError(err, t('common:send.crossChain.quoteFailedShort')), loading: false });
           setProviderQuotes(quotes);
           setStep('provider');
         });
@@ -189,7 +189,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
         if (cancelled) return;
 
         if (!fetched || fetched.length === 0) {
-          setError(t('send.crossChain.noRoutesAny'));
+          setError(t('common:send.crossChain.noRoutesAny'));
           setStep('asset');
           return;
         }
@@ -201,7 +201,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
           .map(r => assetDisplayName(r.asset))
         )].sort();
         if (assets.length === 0) {
-          setError(t('send.crossChain.noRoutes'));
+          setError(t('common:send.crossChain.noRoutes'));
           setStep('asset');
         } else if (assets.length === 1) {
           selectAsset(assets[0], fetched);
@@ -211,7 +211,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       } catch (err) {
         if (cancelled) return;
         logger.error(LogCategory.PAYMENT, 'Failed to fetch cross-chain routes', { error: formatError(err) });
-        setError(t('send.crossChain.routesFetchFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
+        setError(t('common:send.crossChain.routesFetchFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
         setStep('asset');
       }
     })();
@@ -290,7 +290,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       return t('send.crossChain.amountTooSmallHint');
     if (errs.some(e => e.toLowerCase().includes('too large')))
       return t('send.crossChain.amountTooLargeHint');
-    return t('send.crossChain.quoteFailedHint');
+    return t('common:send.crossChain.quoteFailedHint');
   })();
 
   return (
@@ -299,7 +299,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       {step === 'loading' && (
         <div className="flex flex-col items-center justify-center py-12 space-y-3">
           <SpinnerIcon size="lg" className="text-spark-primary animate-spin" />
-          <p className="text-sm text-spark-text-secondary">{t('send.crossChain.fetchingRoutes')}</p>
+          <p className="text-sm text-spark-text-secondary">{t('common:send.crossChain.fetchingRoutes')}</p>
         </div>
       )}
 
@@ -334,7 +334,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
         <div className="flex flex-col" style={{ maxHeight: '60dvh' }}>
           {allProvidersFailed ? (
             <div className="mb-4 p-4 bg-spark-warn-surface border border-spark-warn-border rounded-xl">
-              <p className="text-sm font-medium text-spark-warn-title mb-1">{t('send.crossChain.quoteFailed')}</p>
+              <p className="text-sm font-medium text-spark-warn-title mb-1">{t('common:send.crossChain.quoteFailed')}</p>
               <p className="text-sm text-spark-warn-text">{providerFailureReason}</p>
             </div>
           ) : (
@@ -361,20 +361,20 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                       {pq.loading && (
                         <div className="flex items-center gap-2 mt-2">
                           <SpinnerIcon size="xs" className="animate-spin text-spark-text-secondary" />
-                          <span className="text-xs text-spark-text-secondary">{t('send.crossChain.gettingQuote')}</span>
+                          <span className="text-xs text-spark-text-secondary">{t('common:send.crossChain.gettingQuote')}</span>
                         </div>
                       )}
                       {ready && pQuote && (
                         <div className="mt-2 space-y-1.5">
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-spark-text-secondary">{t('send.crossChain.receiving')}</span>
+                            <span className="text-sm text-spark-text-secondary">{t('common:send.crossChain.receiving')}</span>
                             <span className="font-mono text-sm text-spark-text-primary">
                               ~{formatReceiveAmount(BigInt(pQuote.estimatedOut), pq.route.decimals)} {pq.route.asset}
                             </span>
                           </div>
                           <div className="border-t border-spark-border/50" />
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-spark-text-secondary">{t('send.crossChain.fee')}</span>
+                            <span className="text-sm text-spark-text-secondary">{t('common:send.crossChain.fee')}</span>
                             <span className="font-mono text-sm text-spark-text-primary">
                               {formatCrossChainAmount(BigInt(pQuote.feeAmount), pq.route.decimals)} {pq.route.asset}
                             </span>
@@ -442,23 +442,23 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
             useRawStrings
             items={[
               {
-                label: t('send.crossChain.receiving'),
+                label: t('common:send.crossChain.receiving'),
                 value: `~${formatReceiveAmount(BigInt(quote.estimatedOut), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
               },
               {
-                label: t('send.crossChain.chain'),
+                label: t('common:send.crossChain.chain'),
                 value: `${formatChainName(confirmedRoute.chain)}`,
               },
               {
-                label: t('send.crossChain.provider'),
+                label: t('common:send.crossChain.provider'),
                 value: getProviderDisplayName(confirmedRoute.provider),
               },
               {
-                label: t('send.crossChain.address'),
+                label: t('common:send.crossChain.address'),
                 value: truncateAddress(quote.recipientAddress, 20),
               },
               {
-                label: t('send.crossChain.fee'),
+                label: t('common:send.crossChain.fee'),
                 value: `${formatCrossChainAmount(BigInt(quote.feeAmount), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
               },
             ]}

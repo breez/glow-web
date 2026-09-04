@@ -161,7 +161,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
-              placeholder={t('send.inputPlaceholder')}
+              placeholder={t('common:send.inputPlaceholder')}
               className={`${FIELD_BASE_CLASS} h-full p-4 resize-none font-mono text-sm outline-hidden`}
               disabled={isLoading}
               data-testid="payment-input"
@@ -226,7 +226,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <SpinnerIcon />
-            {t('send.processingEllipsis')}
+            {t('common:send.processingEllipsis')}
           </span>
         ) : t('common:actions.continue')}
       </PrimaryButton>

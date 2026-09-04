@@ -335,13 +335,13 @@ function showWebAssemblyBlocked(): void {
   // a clean launch under Lockdown Mode still leaves Glow off the list. Turning
   // Lockdown Mode off is the only route that actually works on native. Safari
   // does support per-site exceptions, so the web copy still points at those.
-  const heading = isIos ? i18n.t('common:lockdown.headingIos') : i18n.t('common:lockdown.headingWeb');
+  const heading = isIos ? i18n.t('lockdown.headingIos') : i18n.t('lockdown.headingWeb');
   // Each step carries its own markup and its own iOS Settings labels, so a
   // translator can match what their device actually says. The labels have to
   // read exactly as the device shows them, which only a speaker can confirm.
   const intro = isIos
     ? ''
-    : i18n.t('common:lockdown.introWeb');
+    : i18n.t('lockdown.introWeb');
   const steps = isIos
     ? [1, 2, 3, 4].map((n) => i18n.t(`common:lockdown.step${n}`))
     : [];
@@ -463,8 +463,8 @@ async function init() {
     void hideSplash();
     document.getElementById('root')!.innerHTML = `
       <div style="color: #d4a574; padding: 20px; text-align: center; background: #0a0a0f; min-height: 100vh; display: flex; flex-direction: column; justify-content: center;">
-        <h2>${i18n.t('common:startupFailure.title')}</h2>
-        <p>${i18n.t('common:startupFailure.body')}</p>
+        <h2>${i18n.t('startupFailure.title')}</h2>
+        <p>${i18n.t('startupFailure.body')}</p>
       </div>
     `;
   }

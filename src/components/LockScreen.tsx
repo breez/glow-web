@@ -96,7 +96,7 @@ const LockScreen: React.FC<LockScreenProps> = ({
         >
           <PinScreenLayout
             prompt={
-              <p className="text-sm text-spark-text-secondary">{t('common:lock.unlockPrompt')}</p>
+              <p className="text-sm text-spark-text-secondary">{t('lock.unlockPrompt')}</p>
             }
           >
             <PinEntry
@@ -116,7 +116,7 @@ const LockScreen: React.FC<LockScreenProps> = ({
             onClick={() => setShowForgotConfirm(true)}
             className="mx-auto mt-6 shrink-0 text-sm text-spark-text-muted underline hover:text-spark-text-secondary transition-colors"
           >
-            {t('common:lock.forgotPin')}
+            {t('lock.forgotPin')}
           </button>
         </div>
       ) : (
@@ -134,7 +134,7 @@ const LockScreen: React.FC<LockScreenProps> = ({
         isOpen={showForgotConfirm}
         variant="danger"
         zClassName="z-[100001]"
-        title={t('common:lock.forgotPin')}
+        title={t('lock.forgotPin')}
         message={isPasskey
           ? t('critical:pinReset.bodyPasskey')
           : t('critical:pinReset.bodyMnemonic')}

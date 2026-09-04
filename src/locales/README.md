@@ -9,13 +9,24 @@ translation renders as a mix rather than as blank space or a raw key.
 
 | File | What belongs in it |
 |---|---|
-| `common.json` | Everything else. Buttons, labels, screen titles, empty states. |
-| `critical.json` | The money path. Recovery-phrase handling, send confirmations, fee disclosure, and any sentence saying an action cannot be undone. |
+| `common.json` | Everything else. Buttons, labels, screen titles, spinners, status headings, failure notices. |
+| `critical.json` | Only where a mistranslation could cost someone money or trigger an irreversible action they did not intend. |
 
-The split exists so `critical.json` can be gated on human review. Machine
-translation is fine for "Settings". It is not fine for a warning whose softening
-costs someone their money, and nobody on this team can spot a softened warning in
-Slovak.
+The split exists so `critical.json` can be gated on human review, and it is only
+worth gating if it stays small. One test decides membership:
+
+> If this sentence were translated wrongly, could someone lose money, or destroy
+> something they cannot get back?
+
+Recovery-phrase handling passes: the phrase is the money. So do the wipe and
+erase confirmations, the amount and balance warnings, the fee disclosures on a
+confirm screen, the rows naming who gets paid, and anything stating whether
+funds are safe.
+
+Field labels, spinner text, screen titles, navigation buttons and "something
+went wrong" notices all fail it. A mistranslated column heading is an
+annoyance; a mistranslated irreversibility warning is a loss. Keeping the second
+kind reviewable means not burying it under the first.
 
 ## How a language ships
 

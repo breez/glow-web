@@ -25,7 +25,7 @@ const LightningIcon = <LightningBoltIcon size="xs" />;
 // and unit abbreviations it needs, which six hand-translated strings would not.
 const formatTimeAgo = (timestamp: number): string => {
   const diffSeconds = Math.floor(Date.now() / 1000) - timestamp;
-  if (diffSeconds < 60) return i18n.t('common:labels.justNow');
+  if (diffSeconds < 60) return i18n.t('labels.justNow');
   const rtf = new Intl.RelativeTimeFormat(i18n.language, { numeric: 'always', style: 'narrow' });
   if (diffSeconds < 3600) return rtf.format(-Math.floor(diffSeconds / 60), 'minute');
   if (diffSeconds < 86400) return rtf.format(-Math.floor(diffSeconds / 3600), 'hour');

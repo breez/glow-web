@@ -55,7 +55,7 @@ const RestorePage: React.FC<RestorePageProps> = ({
         className="w-full"
         data-testid="restore-confirm-button"
       >
-        {isLoading ? t('restore.restoring') : t('restore.restore')}
+        {isLoading ? t('common:restore.restoring') : t('common:restore.restore')}
       </PrimaryButton>
     </div>
   );

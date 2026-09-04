@@ -98,7 +98,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
       logger.error(LogCategory.PAYMENT, 'Failed to load rejected deposits', {
         error: e instanceof Error ? e.message : String(e),
       });
-      setError(t('refund.loadFailed'));
+      setError(t('common:refund.loadFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +117,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
         logger.error(LogCategory.PAYMENT, 'Failed to load rejected deposits', {
           error: e instanceof Error ? e.message : String(e),
         });
-        setError(t('refund.loadFailed'));
+        setError(t('common:refund.loadFailed'));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -172,7 +172,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     const parsed = await wallet.parse(trimmed).catch(e => e as unknown);
     const address = parsed instanceof Error ? undefined : destinationAddressOf(parsed as InputType);
     if (!address) {
-      setDestinationError(destinationErrorMessage(parsed, t('refund.notOnchainAddress')));
+      setDestinationError(destinationErrorMessage(parsed, t('common:refund.notOnchainAddress')));
       return;
     }
     setDestination(address);
@@ -225,7 +225,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
       logger.error(LogCategory.PAYMENT, 'Failed to refund deposit', {
         error: e instanceof Error ? e.message : String(e),
       });
-      setRefundError(e instanceof Error ? e.message : t('refund.refundFailed'));
+      setRefundError(e instanceof Error ? e.message : t('common:refund.refundFailed'));
       setRefundStep('confirm');
     } finally {
       setIsProcessing(false);
@@ -240,7 +240,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   };
 
   return (
-    <SlideInPage title={t('refund.getRefund')} onClose={onBack} slideFrom={animationDirection}>
+    <SlideInPage title={t('common:refund.getRefund')} onClose={onBack} slideFrom={animationDirection}>
       <div className="p-4">
         <div className="max-w-xl mx-auto w-full space-y-6">
           {/* Content */}
@@ -260,8 +260,8 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                 <div className="w-16 h-16 rounded-2xl bg-spark-success/20 flex items-center justify-center mx-auto mb-4">
                   <CheckIcon size="xl" className="text-spark-success" />
                 </div>
-                <h3 className="font-display font-semibold text-spark-text-primary mb-2">{t('refund.allClear')}</h3>
-                <p className="text-spark-text-muted text-sm">{t('refund.nonePending')}</p>
+                <h3 className="font-display font-semibold text-spark-text-primary mb-2">{t('common:refund.allClear')}</h3>
+                <p className="text-spark-text-muted text-sm">{t('common:refund.nonePending')}</p>
               </div>
             )}
 
@@ -307,7 +307,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
 
                         {isRefunded && refundedTxId && (
                           <CollapsibleCodeField
-                            label={t('refund.txId')}
+                            label={t('common:refund.txId')}
                             value={refundedTxId}
                             isVisible={expandedTxIds[refundKey] || false}
                             onToggle={() => setExpandedTxIds(prev => ({ ...prev, [refundKey]: !prev[refundKey] }))}
@@ -320,7 +320,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                       <div>
                         {isRefunded ? (
                           <button disabled className="w-full px-4 py-3 bg-spark-electric/15 text-spark-electric rounded-xl font-medium cursor-not-allowed">
-                            <span className="animate-pulse-slow">{t('refund.broadcasting')}</span>
+                            <span className="animate-pulse-slow">{t('common:refund.broadcasting')}</span>
                           </button>
                         ) : (
                           <PrimaryButton
@@ -345,7 +345,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
       <BottomSheetContainer isOpen={isRefundFlowOpen} onClose={closeRefundFlow} zIndex={70} showBackdrop>
         <BottomSheetCard>
           <DialogHeader
-            title={t('refund.title')}
+            title={t('common:refund.title')}
             onClose={closeRefundFlow}
             onBack={
               refundStep === 'fee' ? () => setRefundStep('address')
@@ -389,7 +389,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                   />
                 ) : (
                   <div className="py-8 flex justify-center">
-                    <LoadingSpinner text={t('refund.readingFeeRates')} />
+                    <LoadingSpinner text={t('common:refund.readingFeeRates')} />
                   </div>
                 )}
 
@@ -417,7 +417,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                 />
 
                 {refundError && (
-                  <AlertCard variant="warning" title={t('refund.failed')}>
+                  <AlertCard variant="warning" title={t('common:refund.failed')}>
                     <p className="text-sm">{refundError}</p>
                   </AlertCard>
                 )}

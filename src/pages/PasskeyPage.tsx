@@ -1487,7 +1487,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
                           ? t('passkey.connectFailed')
                           : phase === 'creating'
                             ? t('passkey.createFailed')
-                            : t('common:labels.somethingWentWrong')
+                            : t('labels.somethingWentWrong')
               }
             >
               <p className="text-spark-text-secondary text-sm wrap-break-word">

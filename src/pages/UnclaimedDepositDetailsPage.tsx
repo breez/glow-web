@@ -70,10 +70,10 @@ function deriveClaimState(deposit: DepositInfo | null): ClaimState {
     return { claimError: null, requiredFeeSats: claimErrorData.requiredFeeSats || 0 };
   }
   if (claimErrorData.type === 'generic') {
-    return { claimError: claimErrorData.message || i18n.t('critical:deposit.autoClaimFailed'), requiredFeeSats: null };
+    return { claimError: claimErrorData.message || i18n.t('common:deposit.autoClaimFailed'), requiredFeeSats: null };
   }
   // missingUtxo or other error - can only reject
-  return { claimError: i18n.t('critical:deposit.autoClaimFailed'), requiredFeeSats: null };
+  return { claimError: i18n.t('common:deposit.autoClaimFailed'), requiredFeeSats: null };
 }
 
 // claimDeposit stores the fresh claim error before it throws, so the deposit
@@ -307,7 +307,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
     if (!spendsNow && instructs(early)) void claimRoute(early);
   };
   /** The paid row names what it is: a route that has not opened yet is not instant. */
-  const earlyLabel = offer?.ready ? t('deposit.instantDelivery') : t('deposit.expeditedDelivery');
+  const earlyLabel = offer?.ready ? t('common:deposit.instantDelivery') : t('common:deposit.expeditedDelivery');
 
   // Null once the automatic claim is due, which is a different sentence.
   const matureWait = quote ? formatWait(blocksToWait(quote.mature, confirmations)) : null;
@@ -345,7 +345,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
     // the claim rather than showing an amount and nothing else.
     ? CLAIM_SUBMITTED_LINE
     : !isConfirming
-      ? t('deposit.autoClaim')
+      ? t('common:deposit.autoClaim')
       // Nothing until the quote lands. The depth a deposit matures at is not
       // the depth the early route opens at, so any figure named here is one
       // the next render contradicts.
@@ -359,8 +359,8 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
           // nothing for a countdown to be weighed against. The wait is priced
           // inside the group, or it is not priced at all.
           : matureDue
-            ? t('deposit.beingClaimed')
-            : t('deposit.autoClaim');
+            ? t('common:deposit.beingClaimed')
+            : t('common:deposit.autoClaim');
 
   const handleClose = () => {
     onBack();
@@ -381,7 +381,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
       // down here would report an approval that never happened.
       if (outcome.type === 'deferred') {
         setStandingCeiling(maxFee);
-        setInstantError(t('deposit.claimDeferred'));
+        setInstantError(t('common:deposit.claimDeferred'));
         return;
       }
       onChanged?.();
@@ -399,7 +399,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
         setClaim(fresh);
         setFeeRaised(true);
       } else {
-        const errorMessage = e instanceof Error ? e.message : t('deposit.claimFailedGeneric');
+        const errorMessage = e instanceof Error ? e.message : t('common:deposit.claimFailedGeneric');
         setClaim({ claimError: errorMessage, requiredFeeSats: null });
       }
     } finally {
@@ -538,7 +538,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
           logger.warn(LogCategory.PAYMENT, 'Provider declined to front the deposit', {
             message: outcome.reason.message,
           });
-          setInstantError(t('deposit.earlyUnavailable'));
+          setInstantError(t('common:deposit.earlyUnavailable'));
         }
         // The recorded ceiling has to reach the list this sheet is opened from:
         // a reopened sheet seeds its selection from that copy, so without this
@@ -591,8 +591,8 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
         return;
       }
       setInstantError(committing
-        ? t('deposit.setupFailed')
-        : (e instanceof Error ? e.message : t('deposit.claimFailedGeneric')));
+        ? t('common:deposit.setupFailed')
+        : (e instanceof Error ? e.message : t('common:deposit.claimFailedGeneric')));
     } finally {
       claimInFlightRef.current = false;
       setIsProcessing(false);
@@ -623,7 +623,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   return (
     <BottomSheetContainer isOpen={deposit != null} onClose={handleClose}>
       <BottomSheetCard>
-        <DialogHeader title={t('deposit.title')} onClose={handleClose} />
+        <DialogHeader title={t('common:deposit.title')} onClose={handleClose} />
         <SheetBody>
           {/* The scroller sits in its own box so a fade can sit over its bottom
               edge. Without it a cut lands flush against the footer and reads as
@@ -680,12 +680,12 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                   nothing on screen to account for it. */}
               {isConfirming && isPricing && !quote && (
                 <div id={INSTANT_OFFER_ID} data-testid="delivery-speed-pending" className="space-y-2">
-                  <span className="block text-sm text-spark-text-secondary">{t('deposit.speed')}</span>
+                  <span className="block text-sm text-spark-text-secondary">{t('common:deposit.speed')}</span>
                   {/* 9.25rem is the two option rows it stands in for (70px
                       each, 8px apart), so the sheet is the same height before
                       and after and nothing moves under the reader when the
                       prices land. */}
-                  <LoadingSpinner text={t('deposit.checkingOptions')} className="min-h-[9.25rem]" />
+                  <LoadingSpinner text={t('common:deposit.checkingOptions')} className="min-h-[9.25rem]" />
                 </div>
               )}
 
@@ -695,11 +695,11 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                   skip it. */}
               {offer && quote && (
                 <div id={INSTANT_OFFER_ID} data-testid="delivery-speed" className="space-y-2">
-                  <span className="block text-sm text-spark-text-secondary">{t('deposit.speed')}</span>
-                  <div role="radiogroup" aria-label={t('deposit.speed')} className="space-y-2">
+                  <span className="block text-sm text-spark-text-secondary">{t('common:deposit.speed')}</span>
+                  <div role="radiogroup" aria-label={t('common:deposit.speed')} className="space-y-2">
                     <SpeedOption
-                      label={t('deposit.standardDelivery')}
-                      detail={matureWait ?? t('deposit.claimedAutomatically')}
+                      label={t('common:deposit.standardDelivery')}
+                      detail={matureWait ?? t('common:deposit.claimedAutomatically')}
                       feeSats={quote.mature.feeSats}
                       isEstimate={quote.mature.isEstimate}
                       selected={!earlySelected}
@@ -708,8 +708,8 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                     <SpeedOption
                       label={earlyLabel}
                       detail={offer.ready
-                        ? t('deposit.arrivesInSeconds')
-                        : t('deposit.unlocksIn', { wait: formatWait(blocksToWait(offer.option, confirmations)) })}
+                        ? t('common:deposit.arrivesInSeconds')
+                        : t('common:deposit.unlocksIn', { wait: formatWait(blocksToWait(offer.option, confirmations)) })}
                       feeSats={offer.option.feeSats}
                       isEstimate={offer.option.isEstimate}
                       selected={earlySelected}
@@ -763,7 +763,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
 
           {/* Error message for failed automatic claim (non-fee error) */}
           {claimError && (
-            <AlertCard variant="warning" title={t('deposit.claimFailed')}>
+            <AlertCard variant="warning" title={t('common:deposit.claimFailed')}>
               <p className="text-sm">{claimError}</p>
               <p className="text-spark-primary text-sm mt-2">{t('deposit.canReject')}</p>
             </AlertCard>
@@ -797,7 +797,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                 {isProcessing ? (
                   <span className="flex items-center justify-center gap-2">
                     <SpinnerIcon size="md" />
-                    {t('send.processingEllipsis')}
+                    {t('common:send.processingEllipsis')}
                   </span>
                 ) : (
                   t('deposit.claim')
@@ -815,7 +815,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                   {isProcessing ? (
                     <span className="flex items-center justify-center gap-2">
                       <SpinnerIcon size="md" />
-                      {t('send.processingEllipsis')}
+                      {t('common:send.processingEllipsis')}
                     </span>
                   ) : (
                     t('deposit.approve')

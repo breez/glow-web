@@ -294,7 +294,7 @@ export function useBreezSdk(
       return true;
     } catch (e) {
       logger.error(LogCategory.SDK, 'Error refreshing wallet data', { error: formatError(e) });
-      setError(t('startup.refreshFailed'));
+      setError(t('common:startup.refreshFailed'));
       return false;
     } finally {
       if (showLoading) setIsLoading(false);
@@ -386,7 +386,7 @@ export function useBreezSdk(
       // Same reasoning as the send celebration above: with the sheet gone
       // there is nothing else to tell the user the payment did not go out.
       if (event.payment.paymentType === 'send' && !isSendSheetOpen()) {
-        showToastRef.current('error', t('send.failed'), t('send.result.notSentBody'));
+        showToastRef.current('error', t('common:send.failed'), t('send.result.notSentBody'));
       }
     } else if (event.type === 'paymentMetadataUpdated') {
       // A cross-chain receive lands as a plain Spark transfer and is marked as
@@ -406,7 +406,7 @@ export function useBreezSdk(
       fetchUnclaimedDeposits();
     } else if (event.type === 'unclaimedDeposits') {
       logger.warn(LogCategory.PAYMENT, 'Claim deposits failed', { remaining: event.unclaimedDeposits.length });
-      showToastRef.current('error', t('deposit.claimFailed'), t('deposit.countNotClaimed', { count: event.unclaimedDeposits.length }));
+      showToastRef.current('error', t('common:deposit.claimFailed'), t('common:deposit.countNotClaimed', { count: event.unclaimedDeposits.length }));
       fetchUnclaimedDeposits();
     }
 
@@ -510,8 +510,8 @@ export function useBreezSdk(
             // it look like the app forgot the account on restart.
             showToast(
               'error',
-              t('startup.saveFailed'),
-              t('startup.saveFailedBody'),
+              t('common:startup.saveFailed'),
+              t('common:startup.saveFailedBody'),
             );
           }
         } else if (passkeyLabel != null) {
@@ -575,7 +575,7 @@ export function useBreezSdk(
         setSdk(null);
       }
 
-      setError(t('startup.connectFailed'));
+      setError(t('common:startup.connectFailed'));
       setIsSyncing(false);
       setIsLoading(false);
       setConfig(null);
@@ -951,7 +951,7 @@ export function useBreezSdk(
         await connectWallet(response.wallet.seed, false, response.wallet.label);
       } catch (e) {
         logger.error(LogCategory.AUTH, 'Web passkey retry failed', { error: formatError(e) });
-        setError(t('startup.passkeyAuthFailed'));
+        setError(t('common:startup.passkeyAuthFailed'));
         setStartupState('native-locked');
         setIsLoading(false);
       } finally {
@@ -1005,11 +1005,11 @@ export function useBreezSdk(
           case 'KEY_INVALIDATED':
             // Voided by a new biometric enrollment. Wipe + re-onboard.
             await secureStorage.clearSeed().catch(() => { /* best-effort */ });
-            setError(t('startup.biometryChanged'));
+            setError(t('common:startup.biometryChanged'));
             setStartupState('no-wallet');
             break;
           case 'BIOMETRIC_NOT_ENROLLED':
-            setError(t('startup.biometryNotSetUp'));
+            setError(t('common:startup.biometryNotSetUp'));
             setStartupState('no-wallet');
             break;
           case 'BIOMETRIC_UNAVAILABLE':
@@ -1018,7 +1018,7 @@ export function useBreezSdk(
             // of routing back to welcome (which would look like the
             // wallet was lost).
             setError(
-              t('startup.biometryUnavailable'),
+              t('common:startup.biometryUnavailable'),
             );
             setStartupState('native-locked');
             break;
@@ -1028,7 +1028,7 @@ export function useBreezSdk(
           case 'NOT_SUPPORTED':
           case 'UNKNOWN':
           default:
-            setError(t('startup.unlockFailed'));
+            setError(t('common:startup.unlockFailed'));
             setStartupState('native-locked');
             break;
         }
@@ -1036,7 +1036,7 @@ export function useBreezSdk(
         logger.error(LogCategory.SDK, 'Unexpected error retrying unlock', {
           error: formatError(e),
         });
-        setError(t('startup.unlockFailed'));
+        setError(t('common:startup.unlockFailed'));
         setStartupState('native-locked');
       }
     } finally {
@@ -1233,7 +1233,7 @@ export function useBreezSdk(
           const vaultEmpty = e instanceof SecureStorageError
             && (e.code === 'NO_STORED_SEED' || e.code === 'KEY_INVALIDATED');
           if (!vaultEmpty) {
-            setError(t('startup.reconnectFailed'));
+            setError(t('common:startup.reconnectFailed'));
             setStartupState('native-locked');
           }
         }
@@ -1252,7 +1252,7 @@ export function useBreezSdk(
             await connectWallet({ type: 'mnemonic', mnemonic: savedMnemonic }, false);
           } catch (e) {
             logger.error(LogCategory.SDK, 'Failed to connect with saved mnemonic', { error: formatError(e) });
-            setError(t('startup.mnemonicConnectFailed'));
+            setError(t('common:startup.mnemonicConnectFailed'));
             // Deliberately keep the mnemonic: a failed connect is a
             // network/SDK outcome, not proof the seed is bad, and
             // clearing it here lost the only copy on the device.
@@ -1284,7 +1284,7 @@ export function useBreezSdk(
             wallet = result.wallet;
           } catch (e) {
             logger.error(LogCategory.AUTH, 'Passkey authentication failed', { error: formatError(e) });
-            setError(t('startup.passkeyAuthFailed'));
+            setError(t('common:startup.passkeyAuthFailed'));
             setStartupState('native-locked');
             setIsLoading(false);
           }
@@ -1293,7 +1293,7 @@ export function useBreezSdk(
               await connectWallet(wallet.seed, false, wallet.label);
             } catch (e) {
               logger.error(LogCategory.SDK, 'Failed to connect after passkey auth', { error: formatError(e) });
-              setError(t('startup.connectFailed'));
+              setError(t('common:startup.connectFailed'));
               setStartupState('native-locked');
               setIsLoading(false);
             }
@@ -1420,7 +1420,7 @@ export function useBreezSdk(
         })
         .catch(e => {
           logger.error(LogCategory.SDK, 'Failed to add wallet event listener', { error: formatError(e) });
-          setError(t('startup.listenersFailed'));
+          setError(t('common:startup.listenersFailed'));
         });
 
       return () => {

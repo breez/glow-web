@@ -36,7 +36,7 @@ export function hasBuyProviderSettings(): boolean {
  * read as Glow selling bitcoin. Other platforms keep their existing wording.
  */
 export function buyCopy(elsewhere: string): string {
-  return Capacitor.getPlatform() === 'ios' ? i18n.t('common:buy.addFundsFromCashApp') : elsewhere;
+  return Capacitor.getPlatform() === 'ios' ? i18n.t('buy.addFundsFromCashApp') : elsewhere;
 }
 
 /**

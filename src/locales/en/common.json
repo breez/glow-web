@@ -169,20 +169,6 @@
     "placeholder": "Enter password",
     "incorrect": "Incorrect password"
   },
-  "buy": {
-    "title": "Buy Bitcoin",
-    "withCashApp": "Buy with Cash App",
-    "cashAppLink": "Cash App link",
-    "cashAppNote": "Cash App will show the equivalent amount in your local currency and charge your Cash or BTC balance.",
-    "scanWithCashApp": "Scan this code with Cash App",
-    "redirecting": "Redirecting…",
-    "amount": "Amount",
-    "invalidAmount": "Invalid amount",
-    "invoiceFailed": "Failed to create invoice. Please try again.",
-    "openCashApp": "Open Cash App",
-    "openFailed": "Failed to open purchase page. Please try again.",
-    "addFundsFromCashApp": "Add funds from Cash App"
-  },
   "contacts": {
     "title": "Contacts",
     "name": "Name",
@@ -367,6 +353,20 @@
     "shareFailed": "Failed to share",
     "scanToPayShort": "Scan to pay"
   },
+  "buy": {
+    "title": "Buy Bitcoin",
+    "withCashApp": "Buy with Cash App",
+    "cashAppLink": "Cash App link",
+    "cashAppNote": "Cash App will show the equivalent amount in your local currency and charge your Cash or BTC balance.",
+    "scanWithCashApp": "Scan this code with Cash App",
+    "redirecting": "Redirecting…",
+    "amount": "Amount",
+    "invalidAmount": "Invalid amount",
+    "invoiceFailed": "Failed to create invoice. Please try again.",
+    "openCashApp": "Open Cash App",
+    "openFailed": "Failed to open purchase page. Please try again.",
+    "addFundsFromCashApp": "Add funds from Cash App"
+  },
   "passkeyErrors": {
     "tryAnotherProvider": "Please try again with another password provider, or continue with a recovery phrase.",
     "authFailed": "Your device couldn't finish verifying your identity. Lock and unlock your device, then try again.",
@@ -393,6 +393,204 @@
     "step2": "Go to <strong class=\"font-semibold\">Privacy &amp; Security</strong>, then <strong class=\"font-semibold\">Lockdown Mode</strong>",
     "step3": "Tap <strong class=\"font-semibold\">Turn Off Lockdown Mode</strong>",
     "step4": "Confirm with <strong class=\"font-semibold\">Turn Off &amp; Restart</strong>"
+  },
+  "backup": {
+    "pinReason": "Unlock Backup",
+    "passkeyProtected": {
+      "title": "Passkey Protected"
+    },
+    "passkeyUnavailable": {
+      "title": "Passkey Unavailable"
+    },
+    "notFound": {
+      "title": "No Backup Found"
+    },
+    "reveal": {
+      "title": "Tap to reveal phrase",
+      "busyTitle": "Authenticating...",
+      "hintPasskey": "Requires passkey authentication",
+      "hintPasskeyBusy": "Complete passkey authentication",
+      "hintBiometric": "Requires {{method}}",
+      "hintBiometricBusy": "Complete {{method}} authentication",
+      "methodFallback": "biometric authentication",
+      "methodFallbackShort": "biometric"
+    }
+  },
+  "errors": {
+    "deriveFailed": "Could not derive recovery phrase",
+    "retrieveFailed": "Could not retrieve recovery phrase",
+    "authFailed": "Failed to authenticate"
+  },
+  "stableBalance": {
+    "disclaimerTitle": "Stable Balance"
+  },
+  "send": {
+    "destination": "Destination",
+    "amount": "Amount",
+    "processing": "Processing",
+    "processingEllipsis": "Processing...",
+    "sent": "Payment Sent!",
+    "failed": "Payment Failed",
+    "authenticated": "Authenticated!",
+    "authFailed": "Authentication Failed",
+    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / contact / USDC or USDT address",
+    "feeRate": {
+      "title": "Select Fee Rate",
+      "slow": "Slow",
+      "medium": "Medium",
+      "fast": "Fast"
+    },
+    "crossChain": {
+      "selectCoin": "Select coin",
+      "quoteFailed": "Couldn’t get a quote",
+      "gettingQuote": "Getting quote...",
+      "receiving": "Receiving",
+      "fee": "Fee",
+      "changeAmount": "Change Amount",
+      "send": "Send",
+      "noRoutes": "No supported stablecoin routes available for this address",
+      "chain": "Chain",
+      "provider": "Provider",
+      "address": "Address",
+      "quoteFailedShort": "Failed to get quote.",
+      "noRoutesAny": "No cross-chain routes available for this address",
+      "routesFetchFailed": "Failed to fetch routes: {{error}}",
+      "quoteFailedHint": "Couldn’t get a quote from any provider right now. Try again, or go back and use a different amount.",
+      "fetchingRoutes": "Fetching routes..."
+    },
+    "withdraw": {
+      "amountToReceive": "Amount to receive",
+      "receive": "Receive",
+      "timedOut": "The payment did not arrive in time. Please try again."
+    },
+    "lnurl": {
+      "commentPlaceholder": "Add a message...",
+      "commentTooLong": "Comment must be at most {{max}} characters",
+      "prepareFailed": "Failed to prepare LNURL Pay: {{error}}",
+      "comment": "Comment (optional)",
+      "to": "To"
+    },
+    "noDestination": "Please enter a payment destination",
+    "prepareFailed": "Failed to prepare payment {{error}}",
+    "paymentFailed": "Payment failed: {{error}}",
+    "operationFailed": "Operation failed: {{error}}",
+    "processingPhase": {
+      "authenticating": "Authenticating...",
+      "waitingForPayment": "Waiting for payment...",
+      "converting": "Converting...",
+      "sending": "Sending...",
+      "authBody": "Please wait while we verify your identity...",
+      "withdrawBody": "Completing the transfer. This can take a moment...",
+      "convertBody": "Please wait while we convert the amount...",
+      "sendBody": "Please wait while we process your transaction..."
+    },
+    "result": {
+      "authSuccessBody": "You have successfully authenticated with the service.",
+      "sentBody": "Your payment has been successfully sent to the recipient.",
+      "authFailBody": "There was an error during authentication. Please try again.",
+      "failBody": "There was an error processing your payment. Please try again.",
+      "refundSent": "Refund Sent!",
+      "refundFailed": "Refund Failed",
+      "refundSuccessBody": "Your refund has been sent to the Bitcoin network.",
+      "refundFailBody": "There was an error processing your refund. Please try again."
+    },
+    "loginCodeInvalid": "This login code is not valid. Refresh the site for a new one."
+  },
+  "restore": {
+    "restoring": "Restoring...",
+    "restore": "Restore"
+  },
+  "unlock": {
+    "welcomeBack": "Welcome back",
+    "lockedPasskey": "Glow is locked. Unlock with your passkey to continue.",
+    "lockedBiometric": "Glow is locked. Unlock with your biometric to continue.",
+    "couldNotStartBody": "Glow could not start up. Please try again.",
+    "unlockFailed": "Unlock failed",
+    "couldNotStart": "Could not start",
+    "withPasskey": "Unlock with passkey",
+    "withMethod": "Unlock with {{method}}",
+    "unlock": "Unlock"
+  },
+  "refund": {
+    "allClear": "All Clear!",
+    "nonePending": "No rejected deposits pending refund.",
+    "destination": "Destination",
+    "title": "Refund to Bitcoin",
+    "broadcasting": "Broadcasting",
+    "broadcast": "Refund Broadcast",
+    "sent": "Refund Sent",
+    "broadcastBody": "Your refund has been sent to the Bitcoin network.",
+    "failed": "Refund Failed",
+    "processing": "Processing refund...",
+    "errorBody": "An error occurred while processing your refund.",
+    "txId": "Refund Transaction ID",
+    "loadFailed": "Failed to load rejected deposits",
+    "notOnchainAddress": "That is not an on-chain Bitcoin address",
+    "refundFailed": "Failed to refund deposit",
+    "getRefund": "Get Refund",
+    "readingFeeRates": "Reading current fee rates..."
+  },
+  "deposit": {
+    "title": "BTC Transfer",
+    "claimFailed": "Claim Failed",
+    "autoClaimFailed": "Automatic claim failed",
+    "waitingConfirmations": "Waiting for 3 confirmations.",
+    "autoClaim": "This transfer will be claimed automatically.",
+    "speed": "Speed",
+    "standardDelivery": "Standard delivery",
+    "instantDelivery": "Instant delivery",
+    "expeditedDelivery": "Expedited delivery",
+    "claimedAutomatically": "Claimed automatically",
+    "arrivesInSeconds": "Arrives in seconds",
+    "unlocksIn": "Unlocks in {{wait}}",
+    "beingClaimed": "This transfer is being claimed.",
+    "claimDeferred": "Could not claim this transfer yet. Please try again.",
+    "claimFailedGeneric": "Failed to claim transfer",
+    "earlyUnavailable": "Early delivery is not available right now, so this transfer will be claimed automatically instead.",
+    "setupFailed": "Could not set this transfer up to be claimed. Please try again.",
+    "checkingOptions": "Checking delivery options",
+    "countNotClaimed_one": "{{count}} deposit could not be claimed",
+    "countNotClaimed_other": "{{count}} deposits could not be claimed"
+  },
+  "startup": {
+    "refreshFailed": "Could not refresh your data.",
+    "connectFailed": "Could not connect. Please try again.",
+    "passkeyAuthFailed": "Failed to authenticate with passkey. Please try again.",
+    "biometryChanged": "Your biometric enrollment changed. Please set up Glow again.",
+    "biometryNotSetUp": "Biometric authentication is not set up on this device.",
+    "biometryUnavailable": "Biometric authentication is unavailable. Please enable Face ID / Touch ID / fingerprint for Glow in your device settings and try again.",
+    "unlockFailed": "Unable to unlock. Please try again.",
+    "reconnectFailed": "Could not reconnect. Please try again.",
+    "mnemonicConnectFailed": "Failed to connect with saved mnemonic. Please try again.",
+    "listenersFailed": "Failed to set up event listeners.",
+    "missingApiKey": "Missing API Key",
+    "missingApiKeyBody": "Please add VITE_BREEZ_API_KEY to your .env file",
+    "saveFailed": "Could not save to this device",
+    "saveFailedBody": "You may be asked to sign in again the next time you open Glow."
+  },
+  "migration": {
+    "upgradePasskey": "Upgrade passkey",
+    "upgrading": "Upgrading passkey",
+    "upgradeComplete": "Upgrade complete",
+    "checkPasskey": "Check passkey",
+    "noLabels": "No labels to migrate.",
+    "checkFailed": "Could not check your labels. Please try again.",
+    "createFailed": "Could not create the new passkey. Please try again.",
+    "notConnected": "Not connected. Please refresh and try again.",
+    "stageProbe": "Checking for passkey...",
+    "stageLabels": "Reading your labels...",
+    "stageDeposits": "Verifying your labels...",
+    "stageDerive": "Setting up your new passkey...",
+    "stageSwitch": "Finishing up...",
+    "failed": "Migration failed",
+    "failedBody": "Something went wrong.",
+    "createNewPasskey": "Create a new passkey",
+    "unclaimedDeposits": "Unclaimed deposits",
+    "openUnclaimedDeposits": "Open unclaimed deposits",
+    "notNow": "Not now",
+    "lightningAddress": "Lightning address",
+    "labelFailed": "Could not migrate the label “{{label}}”. Please try again.",
+    "currentLabel": "(current)"
   },
   "logout": {
     "done": "Successfully logged out"

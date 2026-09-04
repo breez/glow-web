@@ -167,7 +167,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
   const destinationSection = (
     <div>
       <label className="block text-sm font-medium text-spark-text-primary mb-2">
-        {t('send.destination')}
+        {t('common:send.destination')}
       </label>
       <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-secondary font-mono text-sm break-all">
         {paymentInput}
@@ -178,7 +178,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
   const amountSection = (
     <div>
         <label className="block text-sm font-medium text-spark-text-primary mb-2">
-          {t('send.amount')}
+          {t('common:send.amount')}
         </label>
         <div className="relative">
           <input
@@ -295,7 +295,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <SpinnerIcon />
-            {t('send.processingEllipsis')}
+            {t('common:send.processingEllipsis')}
           </span>
         ) : t('common:actions.continue')}
       </PrimaryButton>

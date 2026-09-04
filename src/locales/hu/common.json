@@ -16,13 +16,31 @@
   "pages": {
     "backup": "Biztonsági mentés"
   },
-  "paymentDetails": {
-    "sentAmount": "Elküldött összeg"
+  "backup": {
+    "pinReason": "Biztonsági mentés feloldása",
+    "passkeyProtected": {
+      "title": "Azonosítókulccsal védve"
+    },
+    "passkeyUnavailable": {
+      "title": "Az azonosítókulcs nem érhető el"
+    },
+    "notFound": {
+      "title": "Nincs biztonsági mentés"
+    },
+    "reveal": {
+      "title": "Koppintson a kifejezés megjelenítéséhez",
+      "busyTitle": "Hitelesítés…",
+      "hintPasskey": "Azonosítókulcsos hitelesítést igényel",
+      "hintPasskeyBusy": "Végezze el az azonosítókulcsos hitelesítést",
+      "hintBiometric": "{{method}} szükséges",
+      "hintBiometricBusy": "Végezze el a következő hitelesítést: {{method}}",
+      "methodFallback": "biometrikus hitelesítés",
+      "methodFallbackShort": "biometrikus"
+    }
   },
-  "transactions": {
-    "confirming": "Megerősítés"
-  },
-  "buy": {
-    "addFundsFromCashApp": "Pénz hozzáadása a Cash Appből"
+  "errors": {
+    "deriveFailed": "A helyreállítási kifejezés nem állítható elő",
+    "retrieveFailed": "A helyreállítási kifejezés nem nyerhető vissza",
+    "authFailed": "A hitelesítés sikertelen"
   }
 }
