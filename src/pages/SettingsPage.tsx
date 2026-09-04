@@ -13,6 +13,7 @@ import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs, exportDatabaseState } from '@/services/logExport';
 import { useSecretTap } from '@/hooks/useSecretTap';
 import { isPasskeyMode } from '@/services/passkeyService';
+import { getAppVersion } from '@/services/appVersion';
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -34,6 +35,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onOpenBackup,
 }) => {
   const wallet = useWallet();
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+  useEffect(() => { void getAppVersion().then(setAppVersion); }, []);
   const {
     handleTap: devTap,
     activated: isDevMode,
@@ -470,7 +473,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               onClick={devTap}
               className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors select-none"
             >
-              Glow
+              Glow{appVersion && ` v${appVersion}`}
               {isDevMode && <span className="ml-1 text-spark-primary">(dev)</span>}
             </button>
             {devTapCount > 0 && devTapCount < devTapThreshold && (
