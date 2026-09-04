@@ -1,0 +1,120 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "Je herstelzin wordt afgeleid van je passkey. Gebruik je passkey of de herstelzin hieronder om op een ander apparaat te herstellen."
+    },
+    "passkeyUnavailable": {
+      "body": "Je herstelzin wordt afgeleid van je passkey. Zonder die passkey kan de zin op dit apparaat niet worden opgehaald. Log in op een apparaat waar de passkey nog beschikbaar is om hem te bekijken."
+    },
+    "notFound": {
+      "body": "Geen herstelzin gevonden op dit apparaat."
+    },
+    "reveal": {
+      "hintRevealed": "Zorg dat niemand meekijkt",
+      "hintDeviceStored": "Veilig opgeslagen op dit apparaat"
+    },
+    "phraseLabel": "Herstelzin"
+  },
+  "logout": {
+    "confirmPasskey": "Uitloggen verwijdert alle Glow-gegevens die op dit apparaat zijn opgeslagen. Je hebt je passkey nodig om weer bij je geld te komen.",
+    "confirmMnemonic": "Uitloggen verwijdert alle Glow-gegevens die op dit apparaat zijn opgeslagen. Zorg dat je je herstelzin hebt opgeslagen: je hebt hem nodig om weer bij je geld te komen."
+  },
+  "pinReset": {
+    "bodyPasskey": "De pincode kan niet worden hersteld. De enige weg terug is alle Glow-gegevens op dit apparaat wissen en opnieuw inloggen met je passkey.",
+    "bodyMnemonic": "De pincode kan niet worden hersteld. De enige weg terug is alle Glow-gegevens op dit apparaat wissen en herstellen vanaf je herstelzin. Zorg dat je hem hebt opgeslagen.",
+    "confirm": "Wissen",
+    "deviceOwnerReason": "Alle Glow-gegevens wissen"
+  },
+  "stableBalance": {
+    "toUsd": "Je BTC-saldo wordt omgezet naar USD.",
+    "toBtc": "Je USD-saldo wordt terug omgezet naar BTC.",
+    "convertToUsd": "Omzetten naar USD",
+    "convertToBtc": "Omzetten naar BTC",
+    "conversionFee": "Omzettingskosten:",
+    "feeUnavailable": "Kosten konden niet worden geschat",
+    "disclaimerBody": "Je saldo wordt in USD aangehouden. Binnenkomende BTC wordt automatisch omgezet naar USD, en uitgaande betalingen worden terug omgezet naar BTC. Bedragen onder de omzettingsdrempel blijven als wisselgeld staan tot ze zich opstapelen."
+  },
+  "send": {
+    "sendAll": "Alles versturen",
+    "enterAmount": "Voer het bedrag in sats in",
+    "exceedsBalance": "Het bedrag is hoger dan je beschikbare saldo",
+    "balanceUpdating": "Het saldo wordt bijgewerkt. Probeer het zo nog eens.",
+    "invalidAmount": "Voer een geldig bedrag in",
+    "invalidDestination": "Ongeldige betaalbestemming",
+    "youAreSending": "Je verstuurt",
+    "recipientGets": "Ontvanger krijgt",
+    "insufficientFunds": "Onvoldoende saldo",
+    "conversionAmount": "Omzettingsbedrag",
+    "conversionFee": "Omzettingskosten",
+    "toAddress": "Naar adres",
+    "toSparkAddress": "Naar Spark-adres",
+    "toSparkInvoice": "Naar Spark-factuur",
+    "toInvoice": "Naar factuur",
+    "crossChain": {
+      "amountTooSmall": "Bedrag te klein voor deze route.",
+      "amountTooLarge": "Bedrag te groot voor deze route.",
+      "amountTooSmallHint": "Dit bedrag is te klein voor de beschikbare routes. Probeer een groter bedrag te versturen.",
+      "amountTooLargeHint": "Dit bedrag is te groot voor de beschikbare routes. Probeer een kleiner bedrag te versturen."
+    },
+    "withdraw": {
+      "noValidAmount": "Deze opnamelink bevat geen geldig bedrag dat Glow kan ontvangen.",
+      "wholeSats": "Voer een heel getal aan sats in"
+    },
+    "enterAmountIn": "Voer het bedrag in {{currency}} in",
+    "amountRange": "Tussen {{min}} en {{max}} sats"
+  },
+  "generate": {
+    "title": "Houd hem geheim",
+    "body": "Schrijf deze woorden in volgorde op. Dit is je enige back-up om je geld terug te krijgen.",
+    "warning": "Deel je herstelzin nooit. Iedereen met deze woorden kan bij je geld.",
+    "copyToClipboard": "Kopiëren naar klembord",
+    "saved": "Ik heb mijn zin opgeslagen"
+  },
+  "restore": {
+    "body": "Voer je herstelzin van 12 of 24 woorden in om Glow te herstellen. Scheid de woorden met spaties.",
+    "placeholder": "woord1 woord2 woord3 ...",
+    "invalidLength": "Voer een geldige herstelzin van 12 of 24 woorden in",
+    "invalidPhrase": "Ongeldige herstelzin. Controleer je woorden en probeer het opnieuw."
+  },
+  "unlock": {
+    "eraseTitle": "Wissen en opnieuw beginnen",
+    "eraseAction": "Wissen en opnieuw beginnen",
+    "erase": "Wissen",
+    "eraseReason": "Alle Glow-gegevens wissen",
+    "eraseBodyPasskey": "Hiermee verwijder je alle Glow-gegevens die op dit apparaat zijn opgeslagen. Je hebt je passkey nodig om weer bij je geld te komen.",
+    "eraseBodyMnemonic": "Hiermee verwijder je alle Glow-gegevens die op dit apparaat zijn opgeslagen. Zorg dat je je herstelzin hebt opgeslagen: je hebt hem nodig om weer bij je geld te komen."
+  },
+  "refund": {
+    "destinationBody": "Voer het Bitcoin-adres in waarop je de terugbetaling wilt ontvangen.",
+    "refund": "Terugbetalen",
+    "amount": "Bedrag",
+    "networkFee": "Netwerkkosten"
+  },
+  "deposit": {
+    "amount": "Bedrag",
+    "networkFee": "Netwerkkosten",
+    "feeChanged": "Netwerkkosten gewijzigd",
+    "approveOrReject": "Keur goed om deze overdracht te claimen, of wijs af om een terugbetaling te starten.",
+    "canReject": "Je kunt afwijzen om in plaats daarvan een terugbetaling te starten.",
+    "feeRose": "De kosten stegen naar <amount/> terwijl je aan het bevestigen was. Keur goed om te claimen tegen de nieuwe kosten."
+  },
+  "passkey": {
+    "confirmDeleted": "Ik bevestig dat deze passkey is verwijderd.",
+    "confirmDeletedHint": "Optioneel. Ga verder zonder aanvinken als je het niet zeker weet."
+  },
+  "migration": {
+    "switchFailed": "We konden het overschakelen naar je nieuwe passkey niet afronden. Je geld is veilig. Probeer het opnieuw.",
+    "keepWindowOpen": "Houd dit venster open",
+    "verifyMultipleTimes": "Tijdens de migratie wordt je meerdere keren gevraagd je identiteit te bevestigen: één keer per gemigreerd label, en daarna nog een paar keer om je nieuwe passkey aan te maken. Houd dit venster open tot de migratie klaar is.",
+    "explainBody": "We maken een nieuwe passkey aan en dragen je geld automatisch over. Tijdens dit proces wordt je een paar keer gevraagd je identiteit te bevestigen.",
+    "singleTransaction": "Je geld wordt in één transactie overgedragen. Je betaalgeschiedenis gaat niet mee.",
+    "doneBody": "Je geld is overgezet naar je nieuwe passkey.",
+    "addressPending_one": "Dit Lightning-adres kon niet worden overgezet:",
+    "addressPending_other": "Deze Lightning-adressen konden niet worden overgezet:",
+    "addressPendingBody_one": "Betalingen naar dit adres komen binnen op je oude passkey tot de overdracht klaar is.",
+    "addressPendingBody_other": "Betalingen naar deze adressen komen binnen op je oude passkey tot de overdrachten klaar zijn.",
+    "explainFirstTime": "Als je je passkey met een eerdere versie van Glow hebt aangemaakt, maken we een nieuwe aan en dragen we je geld automatisch over. Gebruik je Glow voor het eerst, kies dan <skip/> om verder te gaan.",
+    "migrateLabels_one": "We migreren je label naar je nieuwe passkey.",
+    "migrateLabels_other": "We migreren alle {{count}} labels naar je nieuwe passkey."
+  }
+}
