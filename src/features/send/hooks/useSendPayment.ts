@@ -170,7 +170,7 @@ export function useSendPayment(): UseSendPaymentReturn {
   const processInput = useCallback(async (input: string | null = null, opts?: ProcessInputOptions) => {
     const currentInput = (input || paymentInput?.rawInput)?.trim();
     if (!currentInput) {
-      setError(t('send.noDestination'));
+      setError(t('common:send.noDestination'));
       return;
     }
 
@@ -274,7 +274,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     } catch (err) {
       logger.warn(LogCategory.PAYMENT, 'Failed to parse payment input', { error: formatError(err) });
       setError(destinationErrorMessage(err, BAD_LOGIN_CODE.test(formatError(err))
-        ? t('send.loginCodeInvalid')
+        ? t('common:send.loginCodeInvalid')
         : t('send.invalidDestination')));
     } finally {
       setIsLoading(false);
@@ -406,7 +406,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setPaymentResult('success');
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Operation failed during payment flow', { error: formatError(err) });
-      setError(t('send.operationFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
+      setError(t('common:send.operationFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
       setPaymentResult('failure');
     } finally {
       if (listenerId) {

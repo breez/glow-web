@@ -232,7 +232,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <SpinnerIcon />
-            {t('send.processingEllipsis')}
+            {t('common:send.processingEllipsis')}
           </span>
         ) : t('common:actions.continue')}
       </PrimaryButton>

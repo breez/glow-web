@@ -113,3 +113,52 @@ describe('locale table', () => {
     }
   });
 });
+
+describe('every referenced key exists', () => {
+  // The one check that catches a key renamed or moved between namespaces on
+  // one side only. i18next answers a missing key with the key itself, so
+  // without this the symptom is a raw dotted path on screen, in whichever
+  // language and screen nobody happened to open.
+  const bundles = import.meta.glob<{ default: Record<string, unknown> }>(
+    '../locales/en/*.json',
+    { eager: true },
+  );
+  const sources = import.meta.glob('../**/*.{ts,tsx}', { eager: true, query: '?raw', import: 'default' });
+
+  const flatten = (obj: Record<string, unknown>, prefix = ''): string[] =>
+    Object.entries(obj).flatMap(([k, v]) =>
+      v !== null && typeof v === 'object'
+        ? flatten(v as Record<string, unknown>, `${prefix}${k}.`)
+        : [`${prefix}${k}`],
+    );
+
+  const known = new Set<string>();
+  for (const [path, mod] of Object.entries(bundles)) {
+    const ns = path.split('/').pop()!.replace('.json', '');
+    for (const key of flatten(mod.default)) {
+      known.add(`${ns}:${key}`);
+      // i18next strips the plural suffix before lookup, so the bare key counts.
+      known.add(`${ns}:${key.replace(/_(one|other|few|many|two|zero)$/, '')}`);
+    }
+  }
+
+  it('resolves every t() and Trans key in the source', () => {
+    const missing: string[] = [];
+    for (const [path, raw] of Object.entries(sources)) {
+      if (path.includes('.test.') || path.includes('/locales/')) continue;
+      const src = raw as string;
+      // A file's default namespace is whichever it lists first.
+      const declared = /useTranslation\(\s*\[?\s*'([a-z]+)'/.exec(src)?.[1] ?? 'common';
+      const refs = [
+        ...src.matchAll(/\bt\(\s*['"]([a-zA-Z][\w.:-]*)['"]/g),
+        ...src.matchAll(/i18nKey="([\w.:-]+)"/g),
+      ];
+      for (const m of refs) {
+        const ref = m[1]!;
+        const full = ref.includes(':') ? ref : `${declared}:${ref}`;
+        if (!known.has(full)) missing.push(`${path.replace('../', '')} -> ${full}`);
+      }
+    }
+    expect(missing, `unresolved keys:\n${missing.join('\n')}`).toEqual([]);
+  });
+});

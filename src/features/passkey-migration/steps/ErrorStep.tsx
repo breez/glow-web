@@ -16,13 +16,13 @@ const ErrorStep: React.FC<ErrorStepProps> = ({ error, onRetry, onCancel, onStart
   const { t } = useTranslation(['critical', 'common']);
   return (
   <>
-    <AlertCard variant="error" title={t('migration.failed')}>
-      <p className="text-sm text-spark-text-secondary">{error ?? t('migration.failedBody')}</p>
+    <AlertCard variant="error" title={t('common:migration.failed')}>
+      <p className="text-sm text-spark-text-secondary">{error ?? t('common:migration.failedBody')}</p>
     </AlertCard>
     <div className="flex flex-col gap-3 mt-4">
       <PrimaryButton onClick={onRetry}>{t('common:actions.retry')}</PrimaryButton>
       {onStartOver && (
-        <SecondaryButton onClick={onStartOver}>{t('migration.createNewPasskey')}</SecondaryButton>
+        <SecondaryButton onClick={onStartOver}>{t('common:migration.createNewPasskey')}</SecondaryButton>
       )}
       <SecondaryButton onClick={onCancel}>{t('common:actions.cancel')}</SecondaryButton>
     </div>

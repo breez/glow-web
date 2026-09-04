@@ -15,14 +15,14 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'paymen
   const isConverting = processingPhase === 'converting';
 
   const getTitle = () => {
-    if (isWithdraw) return t('send.processingPhase.waitingForPayment');
-    if (isConverting) return t('send.processingPhase.converting');
-    return t('send.processingPhase.sending');
+    if (isWithdraw) return t('common:send.processingPhase.waitingForPayment');
+    if (isConverting) return t('common:send.processingPhase.converting');
+    return t('common:send.processingPhase.sending');
   };
   const getDescription = () => {
-    if (isWithdraw) return t('send.processingPhase.withdrawBody');
-    if (isConverting) return t('send.processingPhase.convertBody');
-    return t('send.processingPhase.sendBody');
+    if (isWithdraw) return t('common:send.processingPhase.withdrawBody');
+    if (isConverting) return t('common:send.processingPhase.convertBody');
+    return t('common:send.processingPhase.sendBody');
   };
 
   return (
@@ -55,7 +55,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'paymen
 
           <img
             src="/assets/Glow_Logo.svg"
-            alt={t('send.processing')}
+            alt={t('common:send.processing')}
             className="w-14 h-14 object-contain animate-pulse drop-shadow-[0_0_15px_rgba(212,165,116,0.4)]"
             style={{ animationDuration: '2s' }}
           />

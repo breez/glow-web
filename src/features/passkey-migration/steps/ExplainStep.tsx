@@ -28,7 +28,7 @@ const ExplainStep: React.FC<ExplainStepProps> = ({ entry, onContinue, onSecondar
     </p>
     <div className="flex flex-col gap-3">
       <PrimaryButton onClick={onContinue}>{t('common:actions.continue')}</PrimaryButton>
-      <SecondaryButton onClick={onSecondary}>{entry === 'banner' ? t('migration.notNow') : t('common:actions.skip')}</SecondaryButton>
+      <SecondaryButton onClick={onSecondary}>{entry === 'banner' ? t('common:migration.notNow') : t('common:actions.skip')}</SecondaryButton>
     </div>
   </>
   );

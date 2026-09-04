@@ -28,24 +28,24 @@ export function getPaymentMethodName(input: SendInput | null): string {
   if (!input) return '';
   switch (input.parsedInput.type) {
     case 'bolt11Invoice':
-      return i18n.t('common:methods.lightningInvoice');
+      return i18n.t('methods.lightningInvoice');
     case 'sparkAddress':
-      return i18n.t('common:methods.sparkAddress');
+      return i18n.t('methods.sparkAddress');
     case 'bitcoinAddress':
-      return i18n.t('common:methods.bitcoinAddress');
+      return i18n.t('methods.bitcoinAddress');
     case 'lnurlPay':
-      return i18n.t('common:methods.lnurlPay');
+      return i18n.t('methods.lnurlPay');
     case 'lightningAddress':
-      return i18n.t('common:methods.lightningAddress');
+      return i18n.t('methods.lightningAddress');
     case 'lnurlAuth':
-      return i18n.t('common:methods.lnurlAuth');
+      return i18n.t('methods.lnurlAuth');
     case 'lnurlWithdraw':
       // Withdraw pulls funds into this wallet, so the dialog reads as a receive.
-      return i18n.t('common:methods.receive');
+      return i18n.t('methods.receive');
     case 'crossChainAddress':
-      return i18n.t('common:methods.sendUsd');
+      return i18n.t('methods.sendUsd');
     default:
-      return i18n.t('common:methods.payment');
+      return i18n.t('methods.payment');
   }
 }
 

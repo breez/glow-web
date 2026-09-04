@@ -76,16 +76,16 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
   // not start when it started fine and the passkey did not answer.
   const isPasskeyUnlock = isWebPasskey || passkeyRefused;
   const unlockLabel = isPasskeyUnlock
-    ? t('unlock.withPasskey')
+    ? t('common:unlock.withPasskey')
     : !isBiometricTier ? t('common:actions.tryAgain')
-      : biometry ? t('unlock.withMethod', { method: biometry.label }) : t('unlock.unlock');
+      : biometry ? t('common:unlock.withMethod', { method: biometry.label }) : t('common:unlock.unlock');
   // No line for the passkey: the button under it already says to unlock
   // with the passkey, and the error card above it says why this screen
   // is here at all.
   const unlockDescription = isPasskeyUnlock
     ? null
-    : !isBiometricTier ? t('unlock.couldNotStartBody')
-      : t('unlock.lockedBiometric');
+    : !isBiometricTier ? t('common:unlock.couldNotStartBody')
+      : t('common:unlock.lockedBiometric');
   const UnlockIcon = isPasskeyUnlock
     ? PasskeyIcon
     : biometry?.kind === 'face' ? FaceIdIcon : FingerprintIcon;
@@ -102,7 +102,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
               className="w-36 h-36 object-contain"
             />
             <h1 className="font-display text-2xl font-bold text-spark-text-primary">
-              {t('unlock.welcomeBack')}
+              {t('common:unlock.welcomeBack')}
             </h1>
             {unlockDescription && (
               <p className="text-sm text-spark-text-secondary text-center">
@@ -115,7 +115,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
           {error && (
             <AlertCard
               variant="error"
-              title={isBiometricTier || isPasskeyUnlock ? t('unlock.unlockFailed') : t('unlock.couldNotStart')}
+              title={isBiometricTier || isPasskeyUnlock ? t('common:unlock.unlockFailed') : t('common:unlock.couldNotStart')}
             >
               {error}
             </AlertCard>
@@ -136,7 +136,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
               disabled={isLoading}
               className="w-full"
             >
-              {t('unlock.eraseTitle')}
+              {t('common:unlock.eraseTitle')}
             </SecondaryButton>
           </div>
         </div>
@@ -145,15 +145,15 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
       <ConfirmDialog
         isOpen={showEraseConfirm}
         variant="danger"
-        title={t('unlock.eraseAction')}
+        title={t('common:unlock.eraseAction')}
         message={isPasskey
-          ? t('unlock.eraseBodyPasskey')
-          : t('unlock.eraseBodyMnemonic')}
-        confirmLabel={t('unlock.erase')}
+          ? t('common:unlock.eraseBodyPasskey')
+          : t('common:unlock.eraseBodyMnemonic')}
+        confirmLabel={t('common:unlock.erase')}
         // Device-owner prompt on top of the confirm, as on the lock
         // screen. The dialog stays up on a cancelled prompt.
         onConfirm={() => {
-          void confirmDeviceOwner(t('unlock.eraseReason')).then((confirmed) => {
+          void confirmDeviceOwner(t('common:unlock.eraseReason')).then((confirmed) => {
             if (!confirmed) return;
             setShowEraseConfirm(false);
             void onAbandon();
