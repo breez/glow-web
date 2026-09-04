@@ -22,7 +22,7 @@ const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.React
   },
   cashApp: {
     name: 'Cash App',
-    icon: <CashAppIcon size="lg" className="text-[#00D64F]" />,
+    icon: <CashAppIcon size="lg" className="text-[#00D632]" />,
   },
 };
 
