@@ -99,7 +99,7 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
                   <SpinnerIcon size="md" />
                 </span>
               ) : (
-                'Confirm'
+                t('common:actions.confirm')
               )}
             </button>
           </div>

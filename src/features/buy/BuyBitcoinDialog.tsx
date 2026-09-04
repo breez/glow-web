@@ -19,6 +19,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { formatQuickAmount } from '../../utils/tokenFormatting';
 import { useBuyBitcoin } from './hooks/useBuyBitcoin';
 import { holdIdleLock } from '@/services/appLock';
+import { useTranslation } from 'react-i18next';
 
 const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.ReactNode; loadingIcon: React.ReactNode }> = {
   moonpay: {
@@ -68,6 +69,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
   onBuyBitcoin,
   network,
 }) => {
+  const { t } = useTranslation('common');
   const { showToast } = useToast();
 
   const buy = useBuyBitcoin({
@@ -97,7 +99,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
         {buy.step === 'select' && (
           <>
             <DialogHeader
-              title={buyCopy('Buy Bitcoin')}
+              title={buyCopy(t('buy.title'))}
               onClose={onClose}
               icon={<CurrencyIcon size="md" />}
             />
@@ -114,7 +116,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                   >
                     {isLoading ? meta.loadingIcon : meta.icon}
                     <span className="font-display font-semibold text-spark-text-primary text-sm">
-                      {isLoading ? 'Redirecting…' : meta.name}
+                      {isLoading ? t('buy.redirecting') : meta.name}
                     </span>
                   </button>
                 );
@@ -134,7 +136,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-spark-text-primary mb-2">
-                  Amount
+                  {t('buy.amount')}
                 </label>
                 <div className="relative">
                   <input
@@ -145,7 +147,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                     placeholder={
                       buy.isTokenMode && buy.tokenConfig
                         ? `Enter amount in ${buy.tokenConfig.currencyCode}`
-                        : 'Enter amount in sats'
+                        : t('receive.enterAmountSats')
                     }
                     disabled={buy.isGenerating}
                     min={buy.isTokenMode ? undefined : 1}
@@ -183,7 +185,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
               </div>
 
               <p className="text-xs text-spark-text-muted">
-                Cash App will show the equivalent amount in your local currency and charge your Cash or BTC balance.
+                {t('buy.cashAppNote')}
               </p>
 
               <FormError error={buy.error} />
@@ -194,7 +196,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                 className="w-full"
                 data-testid="cashapp-continue-button"
               >
-                {buy.isGenerating ? <LoadingSpinner size="small" /> : 'Continue'}
+                {buy.isGenerating ? <LoadingSpinner size="small" /> : t('actions.continue')}
               </PrimaryButton>
             </div>
           </>
@@ -232,7 +234,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                 href={buy.cashAppUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Open Cash App"
+                aria-label={t('buy.openCashApp')}
                 className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spark-primary"
                 data-testid="cashapp-open-qr"
               >
@@ -243,9 +245,9 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                 text={buy.cashAppUrl}
                 hideText
                 showShare
-                label="Cash App link"
-                onCopied={() => showToast('success', 'Copied!')}
-                onShareError={() => showToast('error', 'Failed to share')}
+                label={t('buy.cashAppLink')}
+                onCopied={() => showToast('success', t('actions.copied'))}
+                onShareError={() => showToast('error', t('labels.shareFailed'))}
               />
             </div>
           </>

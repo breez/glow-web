@@ -386,7 +386,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           }
           setError(
             isTimedOut || (isCancelled && isLikelyTimeout(elapsedMs))
-              ? 'Sign-in timed out. Please try again.'
+              ? t('passkey.timedOut')
               : isCancelled
                 ? 'Passkey prompt cancelled. Please try again.'
                 : (friendlyPasskeyError(e, { isGrapheneOs: isGrapheneOsDevice() }) ?? 'Could not sign in with your passkey. Please try again.'),
@@ -585,7 +585,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             // lure a duplicate. Stay on detecting with a retryable error.
             logger.warn(LogCategory.AUTH, 'Slow CREDENTIAL_NOT_FOUND on returning user, surfacing retryable error');
             setError(
-              'Could not find your Glow passkey on this device. Try again, or check Settings → Passwords.',
+              t('passkey.notFoundOnDevice'),
             );
             setErrorKind('sign-in-failed');
             return;
@@ -641,8 +641,8 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           setError(
             isCancelled
               ? (isLikelyTimeout(elapsedMs)
-                ? 'Sign-in timed out. Please try again.'
-                : 'Sign-in cancelled. Please try again.')
+                ? t('passkey.timedOut')
+                : t('passkey.cancelledRetry'))
               : (friendlyPasskeyError(e, { isGrapheneOs: isGrapheneOsDevice() }) ?? 'Could not sign in with your passkey. Please try again.'),
           );
           setErrorKind('sign-in-failed');
@@ -709,7 +709,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             });
             setError(
               isLikelyTimeout(elapsedMs)
-                ? 'Sign-in timed out. Please try again.'
+                ? t('passkey.timedOut')
                 : 'Sign-in cancelled. Pick your passkey to continue, or create a new one.',
             );
             setErrorKind('sign-in-cancelled');
@@ -720,7 +720,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             });
             setError(
               isLikelyTimeout(elapsedMs)
-                ? 'Sign-in timed out. Please try again.'
+                ? t('passkey.timedOut')
                 : 'Could not sign in. Please try again.',
             );
             setErrorKind(null);
@@ -889,7 +889,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             setIsNewUser(false);
             detectingFailCountRef.current = 0;
             setPhase('creating');
-            setError('Your passkey was created but was not ready to use yet. Use it to sign in.');
+            setError(t('passkey.createdNotReady'));
             setErrorKind('already-exists');
             return;
           }
@@ -922,11 +922,11 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         );
         console.error('[Glow] Connect failed', { error: underlying, errorCode, elapsedMs, raw: e });
         if (isTimedOut || (isCancelled && isLikelyTimeout(elapsedMs))) {
-          setError('Sign-in timed out. Please try again.');
+          setError(t('passkey.timedOut'));
         } else if (isCancelled) {
-          setError('Sign-in cancelled. Please try again.');
+          setError(t('passkey.cancelledRetry'));
         } else {
-          setError(friendlyPasskeyError(e, { isGrapheneOs: isGrapheneOsDevice() }) ?? 'Something went wrong. Please try again.');
+          setError(friendlyPasskeyError(e, { isGrapheneOs: isGrapheneOsDevice() }) ?? t('labels.somethingWentWrongRetry'));
         }
         setErrorKind('generic');
         logger.error(LogCategory.AUTH, 'Passkey wallet restore failed', {
@@ -939,7 +939,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
 
     run();
     return () => { cancelled = true; };
-  }, [phase, error, onWalletReadyRef]);
+  }, [phase, error, onWalletReadyRef, t]);
 
   /** Clear error to re-trigger the current phase's effect. */
   const handleRetry = () => {

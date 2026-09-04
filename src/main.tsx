@@ -16,6 +16,7 @@ import { logStartupDeviceInfo } from '@/utils/deviceInfo';
 import { startSdkInit } from '@/services/sdkReady';
 import { prfAvailability } from '@/services/passkeyService';
 import { initI18n, warmupSample } from '@/services/i18n';
+import i18n from 'i18next';
 
 // Strip the SDK's script-set User-Agent before the SDK (or anything else)
 // issues a request. stripUserAgentFetch.ts explains why it is still needed.
@@ -334,20 +335,15 @@ function showWebAssemblyBlocked(): void {
   // a clean launch under Lockdown Mode still leaves Glow off the list. Turning
   // Lockdown Mode off is the only route that actually works on native. Safari
   // does support per-site exceptions, so the web copy still points at those.
-  const heading = isIos ? 'Turn off Lockdown Mode to use Glow' : 'Lockdown Mode is stopping Glow';
-  // The steps read as a trail to follow, so anything the user has to spot in
-  // iOS Settings is set in bold and worded exactly as the device labels it.
-  const ui = (label: string) => `<strong class="font-semibold">${label}</strong>`;
+  const heading = isIos ? i18n.t('common:lockdown.headingIos') : i18n.t('common:lockdown.headingWeb');
+  // Each step carries its own markup and its own iOS Settings labels, so a
+  // translator can match what their device actually says. The labels have to
+  // read exactly as the device shows them, which only a speaker can confirm.
   const intro = isIos
     ? ''
-    : 'Add an exception for Glow in your browser settings, or open Glow in another browser.';
+    : i18n.t('common:lockdown.introWeb');
   const steps = isIos
-    ? [
-        `Open ${ui('Settings')}`,
-        `Go to ${ui('Privacy &amp; Security')}, then ${ui('Lockdown Mode')}`,
-        `Tap ${ui('Turn Off Lockdown Mode')}`,
-        `Confirm with ${ui('Turn Off &amp; Restart')}`,
-      ]
+    ? [1, 2, 3, 4].map((n) => i18n.t(`common:lockdown.step${n}`))
     : [];
 
   document.getElementById('root')!.innerHTML = `
@@ -429,11 +425,6 @@ async function init() {
     handOffNativeSplash();
     logger.info(LogCategory.UI, 'Initializing application');
 
-    // Awaited before the first render, not after: resolving the language needs
-    // a bridge call and a lazily-fetched bundle, and rendering ahead of it
-    // would paint English and then swap the whole UI a frame later. The splash
-    // is already covering this.
-    const language = await initI18n();
     logger.info(LogCategory.UI, 'Language resolved', { language });
     // Startup debugging breadcrumb: what hardware / OS / build this ran on.
     void logStartupDeviceInfo();
@@ -472,8 +463,8 @@ async function init() {
     void hideSplash();
     document.getElementById('root')!.innerHTML = `
       <div style="color: #d4a574; padding: 20px; text-align: center; background: #0a0a0f; min-height: 100vh; display: flex; flex-direction: column; justify-content: center;">
-        <h2>Failed to load application</h2>
-        <p>There was an error starting Glow. Please refresh and try again.</p>
+        <h2>${i18n.t('common:startupFailure.title')}</h2>
+        <p>${i18n.t('common:startupFailure.body')}</p>
       </div>
     `;
   }

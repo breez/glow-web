@@ -102,7 +102,8 @@
       "routesFetchFailed": "Failed to fetch routes: {{error}}",
       "amountTooSmallHint": "This amount is too small for the available routes. Try sending a larger amount.",
       "amountTooLargeHint": "This amount is too large for the available routes. Try sending a smaller amount.",
-      "quoteFailedHint": "Couldn’t get a quote from any provider right now. Try again, or go back and use a different amount."
+      "quoteFailedHint": "Couldn’t get a quote from any provider right now. Try again, or go back and use a different amount.",
+      "fetchingRoutes": "Fetching routes..."
     },
     "withdraw": {
       "amountToReceive": "Amount to receive",
@@ -140,7 +141,8 @@
       "refundSent": "Refund Sent!",
       "refundFailed": "Refund Failed",
       "refundSuccessBody": "Your refund has been sent to the Bitcoin network.",
-      "refundFailBody": "There was an error processing your refund. Please try again."
+      "refundFailBody": "There was an error processing your refund. Please try again.",
+      "notSentBody": "The payment did not go through. Your funds were not sent."
     },
     "enterAmountIn": "Enter amount in {{currency}}",
     "amountRange": "Between {{min}} and {{max}} sats",
@@ -180,7 +182,6 @@
   },
   "refund": {
     "allClear": "All Clear!",
-    "noneP4ending": "No rejected deposits pending refund.",
     "destination": "Destination",
     "destinationBody": "Enter the Bitcoin address where you want to receive the refund.",
     "title": "Refund to Bitcoin",
@@ -199,7 +200,8 @@
     "notOnchainAddress": "That is not an on-chain Bitcoin address",
     "refundFailed": "Failed to refund deposit",
     "getRefund": "Get Refund",
-    "readingFeeRates": "Reading current fee rates..."
+    "readingFeeRates": "Reading current fee rates...",
+    "nonePending": "No rejected deposits pending refund."
   },
   "deposit": {
     "title": "BTC Transfer",
@@ -231,10 +233,65 @@
     "earlyUnavailable": "Early delivery is not available right now, so this transfer will be claimed automatically instead.",
     "setupFailed": "Could not set this transfer up to be claimed. Please try again.",
     "checkingOptions": "Checking delivery options",
-    "claimFeeChanged": "Your claim did not go through: the fee changed from <amount/>."
+    "claimFeeChanged": "Your claim did not go through: the fee changed from <amount/>.",
+    "countNotClaimed_one": "{{count}} deposit could not be claimed",
+    "countNotClaimed_other": "{{count}} deposits could not be claimed"
   },
   "passkey": {
     "confirmDeleted": "I confirm that this passkey was deleted.",
     "confirmDeletedHint": "Optional. Continue without ticking if unsure."
+  },
+  "startup": {
+    "refreshFailed": "Could not refresh your data.",
+    "connectFailed": "Could not connect. Please try again.",
+    "passkeyAuthFailed": "Failed to authenticate with passkey. Please try again.",
+    "biometryChanged": "Your biometric enrollment changed. Please set up Glow again.",
+    "biometryNotSetUp": "Biometric authentication is not set up on this device.",
+    "biometryUnavailable": "Biometric authentication is unavailable. Please enable Face ID / Touch ID / fingerprint for Glow in your device settings and try again.",
+    "unlockFailed": "Unable to unlock. Please try again.",
+    "reconnectFailed": "Could not reconnect. Please try again.",
+    "mnemonicConnectFailed": "Failed to connect with saved mnemonic. Please try again.",
+    "listenersFailed": "Failed to set up event listeners.",
+    "missingApiKey": "Missing API Key",
+    "missingApiKeyBody": "Please add VITE_BREEZ_API_KEY to your .env file",
+    "saveFailed": "Could not save to this device",
+    "saveFailedBody": "You may be asked to sign in again the next time you open Glow."
+  },
+  "migration": {
+    "upgradePasskey": "Upgrade passkey",
+    "upgrading": "Upgrading passkey",
+    "upgradeComplete": "Upgrade complete",
+    "checkPasskey": "Check passkey",
+    "noLabels": "No labels to migrate.",
+    "checkFailed": "Could not check your labels. Please try again.",
+    "createFailed": "Could not create the new passkey. Please try again.",
+    "switchFailed": "We could not finish switching to your new passkey. Your funds are safe. Please retry.",
+    "notConnected": "Not connected. Please refresh and try again.",
+    "stageProbe": "Checking for passkey...",
+    "stageLabels": "Reading your labels...",
+    "stageDeposits": "Verifying your labels...",
+    "stageDerive": "Setting up your new passkey...",
+    "stageSwitch": "Finishing up...",
+    "keepWindowOpen": "Keep this window open",
+    "verifyMultipleTimes": "You'll be asked to verify your identity multiple times during the migration: once for each label being migrated, then a few more times to create your new passkey. Please keep this window open until the migration is complete.",
+    "explainBody": "We'll create a new passkey and automatically transfer your funds. You'll be asked to verify your identity a few times during the process.",
+    "singleTransaction": "Your funds will be transferred in a single transaction. Your payment history won't carry over.",
+    "doneBody": "Your funds have been moved to your new passkey.",
+    "failed": "Migration failed",
+    "failedBody": "Something went wrong.",
+    "createNewPasskey": "Create a new passkey",
+    "unclaimedDeposits": "Unclaimed deposits",
+    "openUnclaimedDeposits": "Open unclaimed deposits",
+    "notNow": "Not now",
+    "lightningAddress": "Lightning address",
+    "addressPending_one": "This Lightning address couldn't be transferred:",
+    "addressPending_other": "These Lightning addresses couldn't be transferred:",
+    "addressPendingBody_one": "Payments sent to it will continue to arrive under your old passkey until the transfer is complete.",
+    "addressPendingBody_other": "Payments sent to them will continue to arrive under your old passkey until the transfers are complete.",
+    "explainFirstTime": "If you created your passkey with an earlier version of Glow, we'll create a new one and transfer your funds automatically. If this is your first time using Glow, choose <skip/> to continue.",
+    "labelFailed": "Could not migrate the label “{{label}}”. Please try again.",
+    "migrateLabels_one": "We'll migrate your label to your new passkey.",
+    "migrateLabels_other": "We'll migrate all {{count}} labels to your new passkey.",
+    "currentLabel": "(current)"
   }
 }

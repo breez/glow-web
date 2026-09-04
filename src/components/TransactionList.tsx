@@ -20,16 +20,18 @@ const SendIcon = <ArrowUpIcon size="sm" />;
 const LightningIcon = <LightningBoltIcon size="xs" />;
 
 // Hoisted helper functions (rendering-hoist-jsx optimization)
+// `narrow` + `numeric: 'always'` reproduces the previous English exactly
+// ("5m ago", "1y ago") while giving every other language the case agreement
+// and unit abbreviations it needs, which six hand-translated strings would not.
 const formatTimeAgo = (timestamp: number): string => {
-  const now = Math.floor(Date.now() / 1000);
-  const diffSeconds = now - timestamp;
-
-  if (diffSeconds < 60) return 'Just now';
-  if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
-  if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h ago`;
-  if (diffSeconds < 2592000) return `${Math.floor(diffSeconds / 86400)}d ago`;
-  if (diffSeconds < 31536000) return `${Math.floor(diffSeconds / 2592000)}mo ago`;
-  return `${Math.floor(diffSeconds / 31536000)}y ago`;
+  const diffSeconds = Math.floor(Date.now() / 1000) - timestamp;
+  if (diffSeconds < 60) return i18n.t('common:labels.justNow');
+  const rtf = new Intl.RelativeTimeFormat(i18n.language, { numeric: 'always', style: 'narrow' });
+  if (diffSeconds < 3600) return rtf.format(-Math.floor(diffSeconds / 60), 'minute');
+  if (diffSeconds < 86400) return rtf.format(-Math.floor(diffSeconds / 3600), 'hour');
+  if (diffSeconds < 2592000) return rtf.format(-Math.floor(diffSeconds / 86400), 'day');
+  if (diffSeconds < 31536000) return rtf.format(-Math.floor(diffSeconds / 2592000), 'month');
+  return rtf.format(-Math.floor(diffSeconds / 31536000), 'year');
 };
 
 const getTransactionIcon = (payment: Payment): React.ReactNode => {

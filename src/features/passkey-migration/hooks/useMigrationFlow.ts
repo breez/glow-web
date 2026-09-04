@@ -34,6 +34,7 @@ import { formatError } from '@/utils/formatError';
 import { unsettledDeposits } from '@/utils/depositHelpers';
 import { useLatest } from '@/hooks/useLatest';
 import type { LnAddressFailure, MigrationEntry, MigrationOutcome, MigrationPhase } from '../types';
+import { useTranslation } from 'react-i18next';
 
 export interface UseMigrationFlowArgs {
   isOpen: boolean;
@@ -75,6 +76,7 @@ export function useMigrationFlow({
   onClose,
   onSwitchToNewWallet,
 }: UseMigrationFlowArgs): MigrationFlow {
+  const { t } = useTranslation(['critical', 'common']);
   const [phase, setPhase] = useState<MigrationPhase>('explain');
   const [error, setError] = useState<string | null>(null);
   const [unclaimedCount, setUnclaimedCount] = useState(0);
@@ -275,7 +277,7 @@ export function useMigrationFlow({
     (async () => {
       const labels = labelsToMigrateRef.current;
       if (labels.length === 0) {
-        setError('No labels to migrate.');
+        setError(t('migration.noLabels'));
         setPhase('error');
         return;
       }
@@ -338,13 +340,13 @@ export function useMigrationFlow({
       } catch (e) {
         if (cancelled) return;
         logger.error(LogCategory.AUTH, 'Migration check-deposits-all: failed', { error: formatError(e) });
-        setError('Could not check your wallets. Please try again.');
+        setError(t('migration.checkFailed'));
         setPhase('error');
       }
     })();
 
     return () => { cancelled = true; };
-  }, [isOpen, phase, entry, activeLegacySdk]);
+  }, [isOpen, phase, entry, activeLegacySdk, t]);
 
   // ============================================
   // Phase: derive-new-passkey (one-time). Create the single shared passkey all
@@ -411,13 +413,13 @@ export function useMigrationFlow({
       } catch (e) {
         if (cancelled) return;
         logger.error(LogCategory.AUTH, 'Migration derive-new-passkey: failed', { error: formatError(e) });
-        setError('Could not create the new passkey. Please try again.');
+        setError(t('migration.createFailed'));
         setPhase('error');
       }
     })();
 
     return () => { cancelled = true; };
-  }, [isOpen, phase]);
+  }, [isOpen, phase, t]);
 
   // ============================================
   // Phase: sweep-label (loops via currentLabelIndex). Per label: connect old +
@@ -552,13 +554,13 @@ export function useMigrationFlow({
           oldSdk.disconnect().catch(() => {});
         }
         logger.error(LogCategory.AUTH, 'Migration sweep-label: failed', { label, error: formatError(e) });
-        setError(`Could not migrate wallet "${label}". Please try again.`);
+        setError(t('migration.labelFailed', { label }));
         setPhase('error');
       }
     })();
 
     return () => { cancelled = true; };
-  }, [isOpen, phase, currentLabelIndex, entry, activeLegacySdk]);
+  }, [isOpen, phase, currentLabelIndex, entry, activeLegacySdk, t]);
 
   // ============================================
   // Phase: switch. Apply the stable ticker, pin the shared credential as active
@@ -606,13 +608,13 @@ export function useMigrationFlow({
       } catch (e) {
         if (cancelled) return;
         logger.error(LogCategory.AUTH, 'Migration switch: failed', { error: formatError(e) });
-        setError('We could not finish switching to your new passkey. Your funds are safe. Please retry.');
+        setError(t('migration.switchFailed'));
         setPhase('error');
       }
     })();
 
     return () => { cancelled = true; };
-  }, [isOpen, phase, onSwitchRef]);
+  }, [isOpen, phase, onSwitchRef, t]);
 
   // ============================================
   // Actions
@@ -700,22 +702,22 @@ export function useMigrationFlow({
   const hasMissingLegacySdk = isOpen && entry === 'banner' && !activeLegacySdk;
   const displayedPhase: MigrationPhase = hasMissingLegacySdk ? 'error' : phase;
   const displayedError = hasMissingLegacySdk
-    ? 'Wallet not connected. Please refresh and try again.'
+    ? t('migration.notConnected')
     : error;
 
   const spinnerText = (() => {
     switch (phase) {
-      case 'probe': return 'Checking for passkey...';
-      case 'enumerate-labels': return 'Reading your labels...';
-      case 'check-deposits-all': return 'Verifying your wallets...';
-      case 'derive-new-passkey': return 'Setting up your new passkey...';
+      case 'probe': return t('migration.stageProbe');
+      case 'enumerate-labels': return t('migration.stageLabels');
+      case 'check-deposits-all': return t('migration.stageDeposits');
+      case 'derive-new-passkey': return t('migration.stageDerive');
       case 'sweep-label': {
         if (confirmedLabels.length > 1) {
           return `Moving your ${sweepDetail} (${currentLabelIndex + 1} of ${confirmedLabels.length})...`;
         }
         return `Moving your ${sweepDetail}...`;
       }
-      case 'switch': return 'Finishing up...';
+      case 'switch': return t('migration.stageSwitch');
       default: return '';
     }
   })();

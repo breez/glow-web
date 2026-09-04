@@ -368,7 +368,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 isSyncing ? 'opacity-0' : 'opacity-100'
               }`}
             >
-              Balance
+              {t('labels.balance')}
               {/* Amber chip + swap glyph so the suffix reads as a
                   currency-switch control, not part of the label (#300).
                   Hover never fires on touch; active: is the mobile

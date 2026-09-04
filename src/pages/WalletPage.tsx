@@ -205,7 +205,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const handleSuccessfulSend = useCallback((lightningAddress?: string) => {
     if (lightningAddress) {
       setTimeout(() => {
-        showToast('info', 'Save as contact?', lightningAddress, {
+        showToast('info', t('wallet.saveAsContact'), lightningAddress, {
           label: t('actions.save'),
           onClick: () => {
             setSaveContactSession(s => s + 1);

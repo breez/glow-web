@@ -308,7 +308,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               <>
                 <PaymentInfoRow
                   label={t('paymentDetails.successAction')}
-                  value={payment.details.lnurlPayInfo.rawSuccessAction.type || 'Unknown'}
+                  value={payment.details.lnurlPayInfo.rawSuccessAction.type || t('labels.unknown')}
                 />
                 {payment.details.lnurlPayInfo.rawSuccessAction.type === 'message' && 
                   payment.details.lnurlPayInfo.rawSuccessAction.data && (

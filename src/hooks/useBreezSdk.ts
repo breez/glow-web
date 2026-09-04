@@ -48,6 +48,7 @@ import { clearPin, isAppLockSupported } from '../services/appLock';
 import { hasConversionInFlight } from '../contexts/WalletContext';
 import { isConversionPayment } from '../utils/paymentDescription';
 import { unsettledDeposits } from '../utils/depositHelpers';
+import { useTranslation } from 'react-i18next';
 
 // ============================================
 // Payment filtering
@@ -222,6 +223,7 @@ export interface BreezSdkActions {
 export function useBreezSdk(
   showToast: (type: 'success' | 'error' | 'info', title: string, message?: string) => void,
 ): BreezSdkState & BreezSdkActions {
+  const { t } = useTranslation(['critical', 'common']);
   // Core state
   const [sdk, setSdk] = useState<BreezSdk | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -292,12 +294,12 @@ export function useBreezSdk(
       return true;
     } catch (e) {
       logger.error(LogCategory.SDK, 'Error refreshing wallet data', { error: formatError(e) });
-      setError('Failed to refresh wallet data.');
+      setError(t('startup.refreshFailed'));
       return false;
     } finally {
       if (showLoading) setIsLoading(false);
     }
-  }, [sdkRef]);
+  }, [sdkRef, t]);
 
   const fetchUnclaimedDeposits = useCallback(async () => {
     const s = sdkRef.current;
@@ -384,7 +386,7 @@ export function useBreezSdk(
       // Same reasoning as the send celebration above: with the sheet gone
       // there is nothing else to tell the user the payment did not go out.
       if (event.payment.paymentType === 'send' && !isSendSheetOpen()) {
-        showToastRef.current('error', 'Payment Failed', 'The payment did not go through. Your funds were not sent.');
+        showToastRef.current('error', t('send.failed'), t('send.result.notSentBody'));
       }
     } else if (event.type === 'paymentMetadataUpdated') {
       // A cross-chain receive lands as a plain Spark transfer and is marked as
@@ -404,7 +406,7 @@ export function useBreezSdk(
       fetchUnclaimedDeposits();
     } else if (event.type === 'unclaimedDeposits') {
       logger.warn(LogCategory.PAYMENT, 'Claim deposits failed', { remaining: event.unclaimedDeposits.length });
-      showToastRef.current('error', 'Failed to Claim Deposits', `${event.unclaimedDeposits.length} deposits could not be claimed`);
+      showToastRef.current('error', t('deposit.claimFailed'), t('deposit.countNotClaimed', { count: event.unclaimedDeposits.length }));
       fetchUnclaimedDeposits();
     }
 
@@ -456,7 +458,7 @@ export function useBreezSdk(
         // Only a missing key gets this message. Any other config error takes
         // the connect failure path, so onboarding does not carry on unconnected.
         if (import.meta.env.VITE_BREEZ_API_KEY) throw e;
-        showToast('error', 'Missing API Key', formatError(e));
+        showToast('error', t('common:startupFailure.missingApiKey'), formatError(e));
         setIsLoading(false);
         return;
       }
@@ -508,8 +510,8 @@ export function useBreezSdk(
             // it look like the app forgot the account on restart.
             showToast(
               'error',
-              'Could not save to this device',
-              'You may be asked to sign in again the next time you open Glow.',
+              t('startup.saveFailed'),
+              t('startup.saveFailedBody'),
             );
           }
         } else if (passkeyLabel != null) {
@@ -573,13 +575,13 @@ export function useBreezSdk(
         setSdk(null);
       }
 
-      setError('Failed to connect wallet. Please try again.');
+      setError(t('startup.connectFailed'));
       setIsSyncing(false);
       setIsLoading(false);
       setConfig(null);
       throw e;
     }
-  }, [sdk, showToast]);
+  }, [sdk, showToast, t]);
 
   const handleLogout = useCallback(async () => {
     setIsLoading(true);
@@ -652,7 +654,7 @@ export function useBreezSdk(
     setIsLoading(false);
     setStartupState('no-wallet');
     clearNetworkOverride();
-    showToast('success', 'Successfully logged out');
+    showToast('success', t('common:logout.done'));
   }, [sdk, showToast]);
 
   const adoptMigratedSdk = useCallback(async (newSdk: BreezSdk, label: string): Promise<void> => {
@@ -949,7 +951,7 @@ export function useBreezSdk(
         await connectWallet(response.wallet.seed, false, response.wallet.label);
       } catch (e) {
         logger.error(LogCategory.AUTH, 'Web passkey retry failed', { error: formatError(e) });
-        setError('Failed to authenticate with passkey. Please try again.');
+        setError(t('startup.passkeyAuthFailed'));
         setStartupState('native-locked');
         setIsLoading(false);
       } finally {
@@ -996,18 +998,18 @@ export function useBreezSdk(
             break;
           case 'BIOMETRIC_LOCKOUT':
             setError(
-              'Biometric unlock is locked. Unlock your device with your passcode and try again.',
+              t('common:biometry.lockout'),
             );
             setStartupState('native-locked');
             break;
           case 'KEY_INVALIDATED':
             // Voided by a new biometric enrollment. Wipe + re-onboard.
             await secureStorage.clearSeed().catch(() => { /* best-effort */ });
-            setError('Your biometric enrollment changed. Please set up your wallet again.');
+            setError(t('startup.biometryChanged'));
             setStartupState('no-wallet');
             break;
           case 'BIOMETRIC_NOT_ENROLLED':
-            setError('Biometric authentication is not set up on this device.');
+            setError(t('startup.biometryNotSetUp'));
             setStartupState('no-wallet');
             break;
           case 'BIOMETRIC_UNAVAILABLE':
@@ -1016,7 +1018,7 @@ export function useBreezSdk(
             // of routing back to welcome (which would look like the
             // wallet was lost).
             setError(
-              'Biometric authentication is unavailable. Please enable Face ID / Touch ID / fingerprint for Glow in your device settings and try again.',
+              t('startup.biometryUnavailable'),
             );
             setStartupState('native-locked');
             break;
@@ -1026,7 +1028,7 @@ export function useBreezSdk(
           case 'NOT_SUPPORTED':
           case 'UNKNOWN':
           default:
-            setError('Unable to unlock wallet. Please try again.');
+            setError(t('startup.unlockFailed'));
             setStartupState('native-locked');
             break;
         }
@@ -1034,13 +1036,13 @@ export function useBreezSdk(
         logger.error(LogCategory.SDK, 'Unexpected error retrying unlock', {
           error: formatError(e),
         });
-        setError('Unable to unlock wallet. Please try again.');
+        setError(t('startup.unlockFailed'));
         setStartupState('native-locked');
       }
     } finally {
       retryUnlockInFlightRef.current = false;
     }
-  }, [connectWallet]);
+  }, [connectWallet, t]);
 
   const handleBuyBitcoin = useCallback(async (provider: BuyBitcoinProvider) => {
     if (!sdk) return;
@@ -1079,7 +1081,7 @@ export function useBreezSdk(
       // Close the blank tab if the SDK call failed
       newTab?.close();
       logger.error(LogCategory.SDK, 'Failed to open Buy Bitcoin', { error: formatError(e) });
-      showToast('error', 'Buy Bitcoin', 'Failed to open purchase page. Please try again.');
+      showToast('error', t('common:buy.title'), t('common:buy.openFailed'));
     }
   }, [sdk, showToast]);
 
@@ -1231,7 +1233,7 @@ export function useBreezSdk(
           const vaultEmpty = e instanceof SecureStorageError
             && (e.code === 'NO_STORED_SEED' || e.code === 'KEY_INVALIDATED');
           if (!vaultEmpty) {
-            setError('Could not reconnect. Please try again.');
+            setError(t('startup.reconnectFailed'));
             setStartupState('native-locked');
           }
         }
@@ -1250,7 +1252,7 @@ export function useBreezSdk(
             await connectWallet({ type: 'mnemonic', mnemonic: savedMnemonic }, false);
           } catch (e) {
             logger.error(LogCategory.SDK, 'Failed to connect with saved mnemonic', { error: formatError(e) });
-            setError('Failed to connect with saved mnemonic. Please try again.');
+            setError(t('startup.mnemonicConnectFailed'));
             // Deliberately keep the mnemonic: a failed connect is a
             // network/SDK outcome, not proof the seed is bad, and
             // clearing it here lost the only copy on the device.
@@ -1282,7 +1284,7 @@ export function useBreezSdk(
             wallet = result.wallet;
           } catch (e) {
             logger.error(LogCategory.AUTH, 'Passkey authentication failed', { error: formatError(e) });
-            setError('Failed to authenticate with passkey. Please try again.');
+            setError(t('startup.passkeyAuthFailed'));
             setStartupState('native-locked');
             setIsLoading(false);
           }
@@ -1291,7 +1293,7 @@ export function useBreezSdk(
               await connectWallet(wallet.seed, false, wallet.label);
             } catch (e) {
               logger.error(LogCategory.SDK, 'Failed to connect after passkey auth', { error: formatError(e) });
-              setError('Failed to connect wallet. Please try again.');
+              setError(t('startup.connectFailed'));
               setStartupState('native-locked');
               setIsLoading(false);
             }
@@ -1418,7 +1420,7 @@ export function useBreezSdk(
         })
         .catch(e => {
           logger.error(LogCategory.SDK, 'Failed to add wallet event listener', { error: formatError(e) });
-          setError('Failed to set up event listeners.');
+          setError(t('startup.listenersFailed'));
         });
 
       return () => {
@@ -1430,7 +1432,7 @@ export function useBreezSdk(
         }
       };
     }
-  }, [isConnected, sdk, handleSdkEvent]);
+  }, [isConnected, sdk, handleSdkEvent, t]);
 
   return {
     // State

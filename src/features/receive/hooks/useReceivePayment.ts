@@ -13,6 +13,7 @@ export interface InvoiceAmount {
 }
 import { LIGHTNING_INVOICE_MIN_SATS } from '../../../constants/receive';
 import { formatWithSpaces } from '../../../utils/formatNumber';
+import { useTranslation } from 'react-i18next';
 
 export interface UseReceivePaymentReturn {
   // State
@@ -68,6 +69,7 @@ export interface UseReceivePaymentReturn {
 }
 
 export function useReceivePayment(): UseReceivePaymentReturn {
+  const { t } = useTranslation('common');
   const wallet = useWallet();
 
   const [activeTab, setActiveTab] = useState<PaymentMethod>('lightning');
@@ -144,11 +146,11 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       setSparkAddress(receiveResponse.paymentRequest);
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to generate Spark address', { error: formatError(err) });
-      setError(`Failed to generate Spark address: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(`Failed to generate Spark address: ${err instanceof Error ? err.message : t('labels.unknownError')}`);
     } finally {
       setSparkLoading(false);
     }
-  }, [wallet, sparkAddress, sparkLoading]);
+  }, [wallet, sparkAddress, sparkLoading, t]);
 
   const generateBitcoinAddress = useCallback(async () => {
     if (bitcoinAddress || bitcoinLoading) return;
@@ -160,11 +162,11 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       setBitcoinAddress(receiveResponse.paymentRequest);
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to generate Bitcoin address', { error: formatError(err) });
-      setError(`Failed to generate Bitcoin address: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(`Failed to generate Bitcoin address: ${err instanceof Error ? err.message : t('labels.unknownError')}`);
     } finally {
       setBitcoinLoading(false);
     }
-  }, [wallet, bitcoinAddress, bitcoinLoading]);
+  }, [wallet, bitcoinAddress, bitcoinLoading, t]);
 
   const generateBolt11Invoice = useCallback(async () => {
     logger.info(LogCategory.PAYMENT, 'Starting invoice generation', {
@@ -180,7 +182,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     // close to the SDK call. Errors here skip the loading-step flash
     // and just set `error` so the panel stays open with the message.
     if (amountSats === null) {
-      setError('Please enter a valid amount');
+      setError(t('receive.invalidAmountEntry'));
       return;
     }
     if (amountSats < BigInt(LIGHTNING_INVOICE_MIN_SATS)) {
@@ -190,7 +192,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
 
     const amountSatsForSdk = toSdkAmountNumber(amountSats);
     if (amountSatsForSdk === null) {
-      setError('Invalid amount');
+      setError(t('receive.invalidAmount'));
       return;
     }
 
@@ -225,7 +227,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       setCurrentStep('qr');
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to generate invoice', { error: formatError(err) });
-      setError(`Failed to generate invoice: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(`Failed to generate invoice: ${err instanceof Error ? err.message : t('labels.unknownError')}`);
       setCurrentStep('input');
       setShowAmountPanel(true);
     } finally {

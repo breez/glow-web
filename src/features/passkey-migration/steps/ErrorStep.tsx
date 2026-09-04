@@ -1,6 +1,7 @@
 import React from 'react';
 import { PrimaryButton, SecondaryButton } from '@/components/ui/buttons';
 import { AlertCard } from '@/components/AlertCard';
+import { useTranslation } from 'react-i18next';
 
 interface ErrorStepProps {
   error: string | null;
@@ -11,19 +12,21 @@ interface ErrorStepProps {
 }
 
 /** Failure screen with Retry + Cancel, plus an optional fresh-start action. */
-const ErrorStep: React.FC<ErrorStepProps> = ({ error, onRetry, onCancel, onStartOver }) => (
+const ErrorStep: React.FC<ErrorStepProps> = ({ error, onRetry, onCancel, onStartOver }) => {
+  const { t } = useTranslation(['critical', 'common']);
+  return (
   <>
-    <AlertCard variant="error" title="Migration failed">
-      <p className="text-sm text-spark-text-secondary">{error ?? 'Something went wrong.'}</p>
+    <AlertCard variant="error" title={t('migration.failed')}>
+      <p className="text-sm text-spark-text-secondary">{error ?? t('migration.failedBody')}</p>
     </AlertCard>
     <div className="flex flex-col gap-3 mt-4">
-      <PrimaryButton onClick={onRetry}>Retry</PrimaryButton>
+      <PrimaryButton onClick={onRetry}>{t('common:actions.retry')}</PrimaryButton>
       {onStartOver && (
-        <SecondaryButton onClick={onStartOver}>Create a new passkey</SecondaryButton>
+        <SecondaryButton onClick={onStartOver}>{t('migration.createNewPasskey')}</SecondaryButton>
       )}
-      <SecondaryButton onClick={onCancel}>Cancel</SecondaryButton>
+      <SecondaryButton onClick={onCancel}>{t('common:actions.cancel')}</SecondaryButton>
     </div>
   </>
-);
-
+  );
+};
 export default ErrorStep;

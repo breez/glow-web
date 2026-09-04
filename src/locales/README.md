@@ -53,6 +53,14 @@ send screen is worse than an English one.
 - **Currency and protocol names.** Bitcoin, USD, LNURL, Lightning.
 - **The credential timestamp label**, which is deliberately English and
   ASCII-only because it is stored on the relying party.
+- **Log messages.** They are read by whoever is debugging a report, not by the
+  person who filed it, and a log in a language the reader does not speak is
+  worse than useless.
+- **Errors thrown for developers**, such as the vault's internal failures. Each
+  is mapped to a translated message at the call site that shows it.
+- **Strings matched against SDK error text.** A couple of branches test whether
+  an SDK message contains a phrase; translating the phrase would break the
+  match.
 
 ## Notes for translators
 
