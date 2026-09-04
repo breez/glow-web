@@ -21,7 +21,7 @@ import { buildConnectConfig } from './buildConnectConfig';
 import { logger, LogCategory, logSdkMessage } from '../services/logger';
 import { formatError } from '../utils/formatError';
 import { isStandalonePwa, openExternalUrl } from '../utils/externalLink';
-import { INSTANT_CLAIM_SUBMITTED_TOAST, splitClaimedDeposits } from '../utils/depositClaimQuote';
+import { INSTANT_CLAIM_SUBMITTED_TOAST, forgetAnnouncedClaims, splitClaimedDeposits, takeUnannouncedClaims } from '../utils/depositClaimQuote';
 import { isDepositRejected, clearRejectedDeposits } from '../services/depositState';
 import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, ensureSparkPrivateMode, isDevMode, type BuyBitcoinProvider } from '../services/settings';
 import { wipeAllLocalData } from '../services/accountDeletion';
@@ -396,11 +396,16 @@ export function useBreezSdk(
       // An instant (0-conf) claim fires this event on submission, before the
       // funds are credited, so it can't share the settled copy.
       const { submitted, settled } = splitClaimedDeposits(event.claimedDeposits);
-      logger.info(LogCategory.PAYMENT, 'Deposits claimed', { settled, submitted });
+      const announcing = takeUnannouncedClaims(submitted);
+      logger.info(LogCategory.PAYMENT, 'Deposits claimed', {
+        settled,
+        submitted: submitted.length,
+        announcing: announcing.length,
+      });
       if (settled > 0) {
         showToastRef.current('success', 'Deposits Claimed Successfully', `${settled} deposits were claimed`);
       }
-      if (submitted > 0) {
+      if (announcing.length > 0) {
         showToastRef.current('success', INSTANT_CLAIM_SUBMITTED_TOAST.title, INSTANT_CLAIM_SUBMITTED_TOAST.detail);
       }
       refreshWalletData(false);
@@ -640,6 +645,7 @@ export function useBreezSdk(
     clearStableRestorePrompted();
     clearRejectedDeposits();
     shownPaymentIdsRef.current.clear();
+    forgetAnnouncedClaims();
     setIsConnected(false);
     setIsSyncing(false);
     setWalletInfo(null);
@@ -682,6 +688,7 @@ export function useBreezSdk(
     setPasskeyMode(label, SHARED_RP_ID ?? defaultRpId);
     markLabelUsed(label);
     shownPaymentIdsRef.current.clear();
+    forgetAnnouncedClaims();
     setCelebrationPayment(null);
 
     try {
@@ -758,6 +765,7 @@ export function useBreezSdk(
     setCachedStableTicker(null);
     clearStableRestorePrompted();
     shownPaymentIdsRef.current.clear();
+    forgetAnnouncedClaims();
 
     if (secureStorage.isSupported()) {
       try {
@@ -909,6 +917,7 @@ export function useBreezSdk(
     setCachedStableTicker(null);
     clearStableRestorePrompted();
     shownPaymentIdsRef.current.clear();
+    forgetAnnouncedClaims();
     setIsLoading(false);
   }, [sdk]);
 

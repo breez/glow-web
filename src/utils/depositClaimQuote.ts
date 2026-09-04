@@ -72,12 +72,50 @@ export function isClaimInFlight(status: InstantClaimStatus | undefined): boolean
   return status?.type === 'submitted';
 }
 
+/** Identifies a deposit across events, which carry records rather than ids. */
+function depositOutpoint(deposit: DepositInfo): string {
+  return `${deposit.txid}:${deposit.vout}`;
+}
+
 /**
- * How many of a `claimedDeposits` batch are credited and how many are only
- * submitted. Background sync reports both through the one event, and an early
- * claim in it has not credited anything yet, so the two need different copy.
+ * Outpoints whose submitted claim has already been announced. Sync keeps
+ * reporting a claim until it settles, and the sheet announces its own manual
+ * claim, so without a marker both doors lead to the same repeated toast. Lives
+ * for the session; `forgetAnnouncedClaims` clears it when the wallet changes.
  */
-export function splitClaimedDeposits(claimed: DepositInfo[]): { submitted: number; settled: number } {
-  const submitted = claimed.filter(d => isClaimInFlight(d.instantClaimStatus)).length;
-  return { submitted, settled: claimed.length - submitted };
+const announcedClaims = new Set<string>();
+
+function claimAlreadyAnnounced(deposit: DepositInfo): boolean {
+  return announcedClaims.has(depositOutpoint(deposit));
+}
+
+/**
+ * The submitted claims worth announcing, marked as they are taken. Reading and
+ * marking are one step because sync repeats a claim until it settles, so a
+ * caller that read first and marked later would announce the same claim twice.
+ */
+export function takeUnannouncedClaims(submitted: DepositInfo[]): DepositInfo[] {
+  const fresh = submitted.filter(d => !claimAlreadyAnnounced(d));
+  fresh.forEach(markClaimAnnounced);
+  return fresh;
+}
+
+export function markClaimAnnounced(deposit: DepositInfo): void {
+  announcedClaims.add(depositOutpoint(deposit));
+}
+
+export function forgetAnnouncedClaims(): void {
+  announcedClaims.clear();
+}
+
+/**
+ * Splits a `claimedDeposits` batch into the credited and the merely submitted.
+ * Background sync reports both through the one event, and an early claim in it
+ * has not credited anything yet, so the two need different copy. The submitted
+ * come back whole because sync repeats them while they settle, and telling one
+ * apart from the same one again needs the outpoint.
+ */
+export function splitClaimedDeposits(claimed: DepositInfo[]): { submitted: DepositInfo[]; settled: number } {
+  const submitted = claimed.filter(d => isClaimInFlight(d.instantClaimStatus));
+  return { submitted, settled: claimed.length - submitted.length };
 }

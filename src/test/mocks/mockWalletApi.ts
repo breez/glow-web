@@ -185,6 +185,9 @@ export function createMockClient(overrides?: Partial<BreezSdk>): BreezSdk {
     // Unclaimed deposits
     listUnclaimedDeposits: vi.fn().mockResolvedValue({ deposits: [] as DepositInfo[] }),
     claimDeposit: vi.fn().mockResolvedValue({ payment: createMockPayment('receive') }),
+    // Rejects by default: a deposit the operator will not front has no early
+    // route, which is the shape most callers want.
+    fetchClaimDepositQuote: vi.fn().mockRejectedValue(new Error('no quote')),
     refundDeposit: vi.fn().mockResolvedValue(undefined),
 
     // Info & data

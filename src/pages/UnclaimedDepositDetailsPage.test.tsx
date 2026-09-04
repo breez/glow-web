@@ -1,12 +1,29 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import type { ComponentProps } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { BreezSdk, DepositInfo, FetchClaimDepositQuoteResponse } from '@breeztech/breez-sdk-spark';
 import { WalletProvider } from '@/contexts/WalletContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
 import { saveSettings } from '@/services/settings';
-import { CLAIM_SUBMITTED_LINE } from '@/utils/depositClaimQuote';
+import { CLAIM_SUBMITTED_LINE, forgetAnnouncedClaims, takeUnannouncedClaims } from '@/utils/depositClaimQuote';
 import UnclaimedDepositDetailsPage from './UnclaimedDepositDetailsPage';
+
+type SubscribeToSdkEvents = NonNullable<ComponentProps<typeof WalletProvider>['subscribeToSdkEvents']>;
+type SdkEventHandler = Parameters<SubscribeToSdkEvents>[0];
+
+/** Captures the sheet's event handler so a test can drive a sync itself. */
+function eventStream() {
+  const handlers = new Set<SdkEventHandler>();
+  const subscribe: SubscribeToSdkEvents = h => {
+    handlers.add(h);
+    return () => handlers.delete(h);
+  };
+  return {
+    subscribe,
+    emitSynced: () => handlers.forEach(h => h({ type: 'synced' } as Parameters<SdkEventHandler>[0])),
+  };
+}
 
 function depositWithFee(requiredFeeSats: number): DepositInfo {
   return {
@@ -95,16 +112,12 @@ function quote(overrides: Partial<FetchClaimDepositQuoteResponse> = {}): FetchCl
   };
 }
 
-function renderSheet(deposit: DepositInfo, client?: BreezSdk) {
+function renderSheet(deposit: DepositInfo, client?: BreezSdk, subscribeToSdkEvents?: SubscribeToSdkEvents) {
   const onChanged = vi.fn();
   const mockClient = client ?? createMockClient();
-  if (!vi.mocked(mockClient.fetchClaimDepositQuote)?.mock) {
-    (mockClient as unknown as { fetchClaimDepositQuote: unknown }).fetchClaimDepositQuote =
-      vi.fn().mockResolvedValue(quote());
-  }
   render(
     <ToastProvider>
-      <WalletProvider client={mockClient} isConnected>
+      <WalletProvider client={mockClient} isConnected subscribeToSdkEvents={subscribeToSdkEvents}>
         <UnclaimedDepositDetailsPage deposit={deposit} onBack={vi.fn()} onChanged={onChanged} />
       </WalletProvider>
     </ToastProvider>
@@ -143,8 +156,9 @@ function setPriorityClaim(enabled: boolean) {
 
 function withQuote(q: FetchClaimDepositQuoteResponse | Error) {
   const client = createMockClient();
-  (client as unknown as { fetchClaimDepositQuote: unknown }).fetchClaimDepositQuote =
-    q instanceof Error ? vi.fn().mockRejectedValue(q) : vi.fn().mockResolvedValue(q);
+  const quoting = vi.mocked(client.fetchClaimDepositQuote);
+  if (q instanceof Error) quoting.mockRejectedValue(q);
+  else quoting.mockResolvedValue(q);
   // The deposit stays listed: an empty list means it was claimed elsewhere, and
   // the sheet rightly stands down on that rather than reporting a failure.
   vi.mocked(client.listUnclaimedDeposits).mockResolvedValue({ deposits: [makeDeposit()] });
@@ -153,6 +167,7 @@ function withQuote(q: FetchClaimDepositQuoteResponse | Error) {
 
 beforeEach(() => {
   localStorage.clear();
+  forgetAnnouncedClaims();
   // The choice sits behind a dev setting while it is being tested, so the suite
   // below opts in. The gate itself is covered separately.
   setPriorityClaim(true);
@@ -206,6 +221,168 @@ describe('a confirming deposit with both routes on offer', () => {
     expect(feeRow('Network fee')).toContain('~');
   });
 
+  it('re-prices when a block lands, so the route unlocks without reopening', async () => {
+    const client = withQuote(quote({ confirmations: 0 }));
+    const stream = eventStream();
+    renderSheet(makeDeposit(), client, stream.subscribe);
+
+    // Early unlocks at depth 1, and the deposit is at 0: nothing to claim yet.
+    await screen.findByText('Priority');
+    expect(screen.getByText('Waiting for 1 confirmation.')).toBeInTheDocument();
+
+    vi.mocked(client.fetchClaimDepositQuote).mockResolvedValue(quote({ confirmations: 1 }));
+    stream.emitSynced();
+
+    await waitFor(() => expect(screen.queryByText('Waiting for 1 confirmation.')).toBeNull());
+    expect(button('Claim now')).toBeEnabled();
+  });
+
+  it('does not re-price under a claim already sent', async () => {
+    const client = withQuote(quote());
+    const stream = eventStream();
+    // Never settles: the claim stays in flight for the whole test.
+    vi.mocked(client.claimDeposit).mockReturnValue(new Promise(() => {}));
+    renderSheet(makeDeposit(), client, stream.subscribe);
+
+    fireEvent.click(await screen.findByText('Claim now'));
+    await screen.findByText('Processing...');
+    const quotesBefore = vi.mocked(client.fetchClaimDepositQuote).mock.calls.length;
+
+    stream.emitSynced();
+    await waitFor(() => expect(screen.getByText('Processing...')).toBeInTheDocument());
+    expect(vi.mocked(client.fetchClaimDepositQuote).mock.calls).toHaveLength(quotesBefore);
+  });
+
+  it('stands down when background sync claims the deposit under the sheet', async () => {
+    const client = withQuote(quote());
+    const stream = eventStream();
+    const { onChanged } = renderSheet(makeDeposit(), client, stream.subscribe);
+    await screen.findByText('Priority');
+
+    // Claimed elsewhere: it has left the unclaimed set entirely.
+    vi.mocked(client.listUnclaimedDeposits).mockResolvedValue({ deposits: [] });
+    stream.emitSynced();
+
+    // Closing is the honest move: the routes on screen no longer apply.
+    await waitFor(() => expect(onChanged).toHaveBeenCalled());
+  });
+
+  it('surfaces a refused automatic claim when the deposit matures under the sheet', async () => {
+    const client = withQuote(quote());
+    const stream = eventStream();
+    renderSheet(makeDeposit(), client, stream.subscribe);
+    await screen.findByText('Priority');
+
+    // It matures with the sheet open and the automatic claim trips the ceiling.
+    vi.mocked(client.listUnclaimedDeposits).mockResolvedValue({
+      deposits: [makeDeposit({
+        isMature: true,
+        claimError: {
+          type: 'maxDepositClaimFeeExceeded',
+          tx: 'a'.repeat(64), vout: 0,
+          requiredFeeSats: 512, requiredFeeRateSatPerVbyte: 4,
+        },
+      })],
+    });
+    stream.emitSynced();
+
+    await waitFor(() => expect(button('Approve')).toBeInTheDocument());
+    expect(screen.getByText('Network fee').parentElement).toHaveTextContent('512');
+    // The approve panel owns the sheet: no route button still offering a claim.
+    expect(queryButton('Claim now')).toBeNull();
+  });
+
+  it('does not let a sync re-announce a claim the sheet already toasted', async () => {
+    const client = withQuote(quote());
+    vi.mocked(client.claimDeposit).mockResolvedValue({});
+    const { onChanged } = renderSheet(makeDeposit(), client);
+
+    fireEvent.click(await screen.findByText('Claim now'));
+    await waitFor(() => expect(onChanged).toHaveBeenCalled());
+
+    // Sync reports the same outpoint as submitted; it is no longer news.
+    expect(takeUnannouncedClaims([makeDeposit()])).toEqual([]);
+  });
+
+  it('does not re-read under an approval already sent', async () => {
+    const client = withQuote(quote());
+    const stream = eventStream();
+    renderSheet(makeDeposit(), client, stream.subscribe);
+    await screen.findByText('Priority');
+
+    vi.mocked(client.listUnclaimedDeposits).mockResolvedValue({
+      deposits: [makeDeposit({
+        isMature: true,
+        claimError: {
+          type: 'maxDepositClaimFeeExceeded',
+          tx: 'a'.repeat(64), vout: 0,
+          requiredFeeSats: 512, requiredFeeRateSatPerVbyte: 4,
+        },
+      })],
+    });
+    stream.emitSynced();
+    await waitFor(() => expect(button('Approve')).toBeInTheDocument());
+
+    vi.mocked(client.claimDeposit).mockReturnValue(new Promise(() => {}));
+    fireEvent.click(button('Approve'));
+    await screen.findByText('Processing...');
+    const readsBefore = vi.mocked(client.listUnclaimedDeposits).mock.calls.length;
+
+    stream.emitSynced();
+    await waitFor(() => expect(screen.getByText('Processing...')).toBeInTheDocument());
+    expect(vi.mocked(client.listUnclaimedDeposits).mock.calls).toHaveLength(readsBefore);
+  });
+
+  it('keeps the last good quote when a re-price fails', async () => {
+    const client = withQuote(quote());
+    vi.mocked(client.claimDeposit).mockRejectedValue(new Error('network unreachable'));
+    // Prices once on open, then the re-quote behind the failed claim fails too.
+    vi.mocked(client.fetchClaimDepositQuote)
+      .mockResolvedValueOnce(quote())
+      .mockRejectedValue(new Error('quote unavailable'));
+    renderSheet(makeDeposit(), client);
+
+    fireEvent.click(await screen.findByText('Claim now'));
+    await screen.findByText('network unreachable');
+    // The options came from the first quote and still describe the deposit.
+    expect(queryButton(/^Priority/)).not.toBeNull();
+    expect(queryButton(/^Standard/)).not.toBeNull();
+  });
+
+  it('leaves a deposit at maturity depth to the automatic claim', async () => {
+    // Deep enough for Standard, which is not the user's to commit: the SDK
+    // claims it at maturity, so offering a button would only race that.
+    renderSheet(makeDeposit(), withQuote(quote({ confirmations: 3 })));
+
+    await screen.findByText('Standard');
+    fireEvent.click(button(/^Standard/));
+    expect(screen.getByText('This transfer will be claimed automatically.')).toBeInTheDocument();
+    expect(queryButton(/^Claim/)).toBeNull();
+  });
+
+  it('still commits the early route itself', async () => {
+    renderSheet(makeDeposit(), withQuote(quote({ confirmations: 3 })));
+
+    await screen.findByText('Priority');
+    expect(button('Claim now')).toBeEnabled();
+    expect(screen.queryByText('This transfer will be claimed automatically.')).toBeNull();
+  });
+
+  it('reports a claim already in flight as submitted, not as a failure', async () => {
+    const client = withQuote(quote());
+    vi.mocked(client.claimDeposit).mockRejectedValue(
+      new Error('deposit claim in progress for a...a:0'),
+    );
+    vi.mocked(client.listUnclaimedDeposits).mockResolvedValue({
+      deposits: [makeDeposit({ instantClaimStatus: { type: 'submitted', claimId: 'c' } })],
+    });
+    renderSheet(makeDeposit(), client);
+
+    fireEvent.click(await screen.findByText('Claim now'));
+    await screen.findByText(CLAIM_SUBMITTED_LINE);
+    expect(screen.queryByText(/in progress/)).toBeNull();
+  });
+
   it('drops the previous route failure when the other is chosen', async () => {
     const client = withQuote(quote());
     vi.mocked(client.claimDeposit).mockRejectedValue(new Error('network unreachable'));
@@ -217,6 +394,24 @@ describe('a confirming deposit with both routes on offer', () => {
     fireEvent.click(screen.getByText('Standard'));
     // It priced the route that is no longer selected.
     expect(screen.queryByText('network unreachable')).not.toBeInTheDocument();
+  });
+
+  it('drops the previous route re-price when the other is chosen', async () => {
+    const client = withQuote(quote());
+    vi.mocked(client.claimDeposit).mockRejectedValue(new Error('Max deposit claim fee exceeded'));
+    vi.mocked(client.fetchClaimDepositQuote)
+      .mockResolvedValueOnce(quote())
+      .mockResolvedValue(quote({
+        instant: { confirmationsRequired: 1, creditAmountSats: 91_000, feeSats: 9_000,
+          feeRateSatPerVbyte: 9, isEstimate: false },
+      }));
+    renderSheet(makeDeposit(), client);
+
+    fireEvent.click(await screen.findByText('Claim now'));
+    await screen.findByText('Fee changed');
+
+    fireEvent.click(button(/^Standard/));
+    expect(screen.queryByText('Fee changed')).not.toBeInTheDocument();
   });
 
   it('defaults to the early route and prices the breakdown against it', async () => {
@@ -325,8 +520,14 @@ describe('a deposit the provider will not front', () => {
     renderSheet(makeDeposit(), withQuote(noEarly));
 
     await screen.findByText('Priority');
-    expect(button(/^Priority/)).toBeDisabled();
+    // aria-disabled rather than disabled, so it still reads as a route that
+    // exists and is unavailable instead of vanishing from the group.
+    expect(button(/^Priority/)).toHaveAttribute('aria-disabled', 'true');
     expect(button(/^Priority/)).toHaveTextContent('Not available');
+    // Still inert: tapping it must not steal the selection from Standard.
+    fireEvent.click(button(/^Priority/));
+    expect(button(/^Priority/)).toHaveAttribute('aria-checked', 'false');
+    expect(button(/^Standard/)).toHaveAttribute('aria-checked', 'true');
     // Waiting is still priced, so the screen says what the claim will cost.
     expect(button(/^Standard/)).toHaveTextContent('198');
     expect(screen.getByText('Network fee').parentElement).toHaveTextContent('198');
@@ -369,6 +570,23 @@ describe('a claim already in flight', () => {
     expect(screen.queryByText('Priority')).not.toBeInTheDocument();
     // No point pricing a deposit whose claim is already settling.
     expect(client.fetchClaimDepositQuote).not.toHaveBeenCalled();
+  });
+
+  it('withdraws the options when a sync reports the claim as submitted', async () => {
+    const client = withQuote(quote());
+    const stream = eventStream();
+    renderSheet(makeDeposit(), client, stream.subscribe);
+    await screen.findByText('Priority');
+
+    vi.mocked(client.listUnclaimedDeposits).mockResolvedValue({
+      deposits: [makeDeposit({ instantClaimStatus: { type: 'submitted', claimId: 'c' } })],
+    });
+    stream.emitSynced();
+
+    // The quote is still loaded: only the in-flight status hides the choice.
+    await screen.findByText(CLAIM_SUBMITTED_LINE);
+    expect(screen.queryByText('Priority')).not.toBeInTheDocument();
+    expect(queryButton(/^Claim/)).toBeNull();
   });
 
   it('still reports it once the deposit confirms, the SDK skipping it either way', () => {

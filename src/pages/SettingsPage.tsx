@@ -410,7 +410,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
           )}
 
-          {/* Priority Deposit Claim (temporary, while the feature is tested) */}
+          {/* TEMPORARY: the dev gate for the priority deposit claim, removed at launch. */}
           {isDevMode && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
               <div className="flex items-center justify-between gap-3">
