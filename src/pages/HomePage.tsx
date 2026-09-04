@@ -5,6 +5,7 @@ import { safeAreaTop, safeAreaBottom } from '@/utils/safeAreaInsets';
 import { useStatusBarColor } from '@/hooks/useStatusBarColor';
 import { STATUS_BAR_DARK } from '@/utils/statusBarManager';
 import { canSilentlyDetectPasskey } from '@/services/passkeyPrfProvider';
+import { useTranslation } from 'react-i18next';
 
 interface HomePageProps {
   onRestoreWallet: () => void;
@@ -33,6 +34,7 @@ const HomePage: React.FC<HomePageProps> = ({
   onCreatePasskey,
   prfAvailable,
 }) => {
+  const { t } = useTranslation('common');
   // Landing page sits on a flat spark-dark background, so pin the
   // system bars to the same solid tone while we're shown.
   useStatusBarColor(STATUS_BAR_DARK);
@@ -138,7 +140,7 @@ const HomePage: React.FC<HomePageProps> = ({
 
         {/* Tagline */}
         <p className="text-spark-text-muted text-sm font-display text-center mb-12">
-          Powered by Breez SDK
+          {t('app.poweredBy')}
         </p>
 
         {/* CTA Buttons */}
@@ -157,14 +159,14 @@ const HomePage: React.FC<HomePageProps> = ({
                   data-testid="get-started-button"
                   className="button w-full py-4 text-base tracking-wider"
                 >
-                  Get Started
+                  {t('actions.getStarted')}
                 </button>
 
                 <button
                   onClick={() => setShowMnemonicFlow(true)}
                   className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors w-full text-center py-2"
                 >
-                  Use Recovery Phrase Instead
+                  {t('onboarding.useRecoveryPhrase')}
                 </button>
               </>
             ) : (
@@ -194,7 +196,7 @@ const HomePage: React.FC<HomePageProps> = ({
                   data-testid="create-passkey-button"
                   className="button w-full py-4 text-base tracking-wider"
                 >
-                  Create Passkey
+                  {t('onboarding.createPasskey')}
                 </button>
 
                 <button
@@ -202,14 +204,14 @@ const HomePage: React.FC<HomePageProps> = ({
                   data-testid="signin-passkey-button"
                   className="button-secondary w-full py-4 rounded-xl font-display font-semibold text-sm tracking-wide"
                 >
-                  Use Existing Passkey
+                  {t('onboarding.useExistingPasskey')}
                 </button>
 
                 <button
                   onClick={() => setShowMnemonicFlow(true)}
                   className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors w-full text-center py-2"
                 >
-                  Use Recovery Phrase Instead
+                  {t('onboarding.useRecoveryPhrase')}
                 </button>
               </>
             )
@@ -221,7 +223,7 @@ const HomePage: React.FC<HomePageProps> = ({
                 data-testid="create-wallet-button"
                 className="button w-full py-4 text-base tracking-wider"
               >
-                Get Started
+                {t('actions.getStarted')}
               </button>
 
               <button
@@ -229,7 +231,7 @@ const HomePage: React.FC<HomePageProps> = ({
                 data-testid="restore-wallet-button"
                 className="button-secondary w-full py-4 rounded-xl font-display font-semibold text-sm tracking-wide"
               >
-                Restore from Backup
+                {t('pages.restoreFromBackup')}
               </button>
 
               {/* Toggle back to passkey if PRF available */}
@@ -238,7 +240,7 @@ const HomePage: React.FC<HomePageProps> = ({
                   onClick={() => setShowMnemonicFlow(false)}
                   className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors w-full text-center py-2"
                 >
-                  Use Passkey Instead
+                  {t('onboarding.usePasskeyInstead')}
                 </button>
               )}
             </>

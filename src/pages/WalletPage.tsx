@@ -35,6 +35,7 @@ import { useStatusBarColor } from '../hooks/useStatusBarColor';
 import { paymentIdentifierLabel } from '../hooks/useContacts';
 import { STATUS_BAR_WALLET_GLASS } from '../utils/statusBarManager';
 import { onDeepLink } from '../utils/deepLink';
+import { useTranslation } from 'react-i18next';
 
 interface WalletPageProps {
   walletInfo: GetInfoResponse | null;
@@ -73,6 +74,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   network,
   onDepositChanged,
 }) => {
+  const { t } = useTranslation('common');
   const wallet = useWallet();
   const { showToast } = useToast();
 
@@ -222,8 +224,8 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const handleSuccessfulSend = useCallback((lightningAddress?: string) => {
     if (lightningAddress) {
       setTimeout(() => {
-        showToast('info', 'Save as contact?', paymentIdentifierLabel(lightningAddress), {
-          label: 'Save',
+        showToast('info', t('wallet.saveAsContact'), paymentIdentifierLabel(lightningAddress), {
+          label: t('actions.save'),
           onClick: () => {
             setSaveContactSession(s => s + 1);
             setSaveContactAddress(lightningAddress);
@@ -231,7 +233,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
         });
       }, 500);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   const handleSendDialogClose = useCallback(() => {
     setIsSendDialogOpen(false);
@@ -426,14 +428,14 @@ const WalletPage: React.FC<WalletPageProps> = ({
           data-testid="send-button"
         >
           <ArrowUpIcon />
-          <span>Send</span>
+          <span>{t('wallet.send')}</span>
         </button>
 
         {/* QR Scanner button - viewfinder style */}
         <button
           onClick={() => setIsQrScannerOpen(true)}
           className="qr-scanner-button"
-          aria-label="Scan QR Code"
+          aria-label={t('a11y.scanQr')}
           data-testid="scan-button"
         >
           <span className="qr-corner qr-corner--tl" />
@@ -450,7 +452,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
           data-testid="receive-button"
         >
           <ArrowDownIcon />
-          <span>Receive</span>
+          <span>{t('wallet.receive')}</span>
         </button>
       </div>
 
