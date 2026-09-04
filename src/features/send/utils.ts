@@ -1,21 +1,26 @@
 import type { SendInput } from '@/types/domain';
 import { isValidLightningAddress } from '@/hooks/useContacts';
 import type { LnurlPayRequestDetails, LnurlAuthRequestDetails, LnurlWithdrawRequestDetails, SendPaymentMethod } from '@breeztech/breez-sdk-spark';
+import i18n from 'i18next';
 
 /** Who a prepared payment pays, for the confirm step. Read from the prepare
- *  response, not the raw input, so the row shows what the SDK resolved. */
+ *  response, not the raw input, so the row shows what the SDK resolved.
+ *
+ *  Reaches i18next directly rather than through the hook: these are plain
+ *  functions. Callers render inside components that do use the hook, so a
+ *  language change still repaints them. */
 export function getSendDestination(method: SendPaymentMethod): { label: string; value: string } {
   switch (method.type) {
     case 'bitcoinAddress':
-      return { label: 'To address', value: method.address.address };
+      return { label: i18n.t('critical:send.toAddress'), value: method.address.address };
     case 'sparkAddress':
-      return { label: 'To Spark address', value: method.address };
+      return { label: i18n.t('critical:send.toSparkAddress'), value: method.address };
     case 'sparkInvoice':
-      return { label: 'To Spark invoice', value: method.sparkInvoiceDetails.invoice };
+      return { label: i18n.t('critical:send.toSparkInvoice'), value: method.sparkInvoiceDetails.invoice };
     case 'bolt11Invoice':
-      return { label: 'To invoice', value: method.invoiceDetails.invoice.bolt11 };
+      return { label: i18n.t('critical:send.toInvoice'), value: method.invoiceDetails.invoice.bolt11 };
     case 'crossChainAddress':
-      return { label: 'To address', value: method.recipientAddress };
+      return { label: i18n.t('critical:send.toAddress'), value: method.recipientAddress };
   }
 }
 
@@ -23,24 +28,24 @@ export function getPaymentMethodName(input: SendInput | null): string {
   if (!input) return '';
   switch (input.parsedInput.type) {
     case 'bolt11Invoice':
-      return 'Lightning Invoice';
+      return i18n.t('common:methods.lightningInvoice');
     case 'sparkAddress':
-      return 'Spark Address';
+      return i18n.t('common:methods.sparkAddress');
     case 'bitcoinAddress':
-      return 'Bitcoin Address';
+      return i18n.t('common:methods.bitcoinAddress');
     case 'lnurlPay':
-      return 'LNURL Pay';
+      return i18n.t('common:methods.lnurlPay');
     case 'lightningAddress':
-      return 'Lightning Address';
+      return i18n.t('common:methods.lightningAddress');
     case 'lnurlAuth':
-      return 'LNURL Auth';
+      return i18n.t('common:methods.lnurlAuth');
     case 'lnurlWithdraw':
       // Withdraw pulls funds into this wallet, so the dialog reads as a receive.
-      return 'Receive';
+      return i18n.t('common:methods.receive');
     case 'crossChainAddress':
-      return 'Send USD';
+      return i18n.t('common:methods.sendUsd');
     default:
-      return 'Payment';
+      return i18n.t('common:methods.payment');
   }
 }
 

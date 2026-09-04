@@ -7,6 +7,7 @@ import { formatError } from '../../../utils/formatError';
 import { formatWithSpaces } from '../../../utils/formatNumber';
 import ProcessingStep from '../steps/ProcessingStep';
 import { SatAmount } from '../../../components/SatAmount';
+import { useTranslation } from 'react-i18next';
 
 // Seconds the SDK waits for the withdrawal to settle before returning. The SDK
 // bounds the wait, so the await resolves with the outcome (a settled payment or
@@ -25,6 +26,7 @@ interface LnurlWithdrawWorkflowProps {
 }
 
 const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, onBack, onWithdraw, onDone }) => {
+  const { t } = useTranslation(['critical', 'common']);
   // LNURL bounds are in msat; this wallet receives whole sats. Round the floor up
   // and the ceiling down so any chosen amount stays inside the server's msat
   // window, and require at least 1 sat. If no whole sat fits that window (a
@@ -60,7 +62,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
   const inlineError = isFixed || unserviceable || amount === ''
     ? null
     : !isInteger
-      ? 'Enter a whole number of sats'
+      ? t('send.withdraw.wholeSats')
       : amountNum < minSats
         ? `Amount must be at least ₿${formatWithSpaces(minSats)}`
         : amountNum > maxSats
@@ -81,7 +83,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
         return;
       }
       // Completion window elapsed without settlement.
-      setError('The payment did not arrive in time. Please try again.');
+      setError(t('send.withdraw.timedOut'));
       setIsWaiting(false);
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'LNURL withdraw failed', { error: formatError(err) });
@@ -106,7 +108,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="block text-sm font-medium text-spark-text-primary">
-            Amount to receive
+            {t('send.withdraw.amountToReceive')}
           </label>
           {!isFixed && !unserviceable && (
             <span className="text-xs text-spark-text-secondary">
@@ -117,7 +119,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
 
         {unserviceable ? (
           <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-secondary text-sm text-center">
-            This withdraw link has no valid amount this wallet can receive.
+            {t('send.withdraw.noValidAmount')}
           </div>
         ) : isFixed ? (
           <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary flex items-center justify-center text-2xl font-semibold">
