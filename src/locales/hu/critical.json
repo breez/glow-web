@@ -1,0 +1,35 @@
+{
+  "backup": {
+    "pinReason": "Biztonsági mentés feloldása",
+    "passkeyProtected": {
+      "title": "Azonosítókulccsal védve",
+      "body": "A helyreállítási kifejezés az azonosítókulcsból származik. Másik eszközön való visszaállításhoz használja az azonosítókulcsot vagy az alábbi helyreállítási kifejezést."
+    },
+    "passkeyUnavailable": {
+      "title": "Az azonosítókulcs nem érhető el",
+      "body": "A helyreállítási kifejezés az azonosítókulcsból származik. Enélkül a kifejezés nem nyerhető vissza ezen az eszközön. A megtekintéshez jelentkezzen be olyan eszközön, ahol az azonosítókulcs még elérhető."
+    },
+    "notFound": {
+      "title": "Nincs biztonsági mentés",
+      "body": "Ezen az eszközön nem található helyreállítási kifejezés."
+    },
+    "reveal": {
+      "title": "Koppintson a kifejezés megjelenítéséhez",
+      "busyTitle": "Hitelesítés…",
+      "hintPasskey": "Azonosítókulcsos hitelesítést igényel",
+      "hintPasskeyBusy": "Végezze el az azonosítókulcsos hitelesítést",
+      "hintBiometric": "{{method}} szükséges",
+      "hintBiometricBusy": "Végezze el a következő hitelesítést: {{method}}",
+      "hintRevealed": "Győződjön meg róla, hogy senki sem látja",
+      "hintDeviceStored": "Biztonságosan tárolva ezen az eszközön",
+      "methodFallback": "biometrikus hitelesítés",
+      "methodFallbackShort": "biometrikus"
+    },
+    "phraseLabel": "Helyreállítási kifejezés"
+  },
+  "errors": {
+    "deriveFailed": "A helyreállítási kifejezés nem állítható elő",
+    "retrieveFailed": "A helyreállítási kifejezés nem nyerhető vissza",
+    "authFailed": "A hitelesítés sikertelen"
+  }
+}

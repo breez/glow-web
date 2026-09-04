@@ -1,0 +1,19 @@
+{
+  "actions": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "continue": "Continue",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "done": "Done",
+    "getStarted": "Get Started",
+    "hide": "Hide"
+  },
+  "biometry": {
+    "faceId": "Face ID",
+    "touchId": "Touch ID"
+  },
+  "pages": {
+    "backup": "Backup"
+  }
+}

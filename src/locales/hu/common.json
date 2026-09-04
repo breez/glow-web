@@ -1,0 +1,19 @@
+{
+  "actions": {
+    "cancel": "Mégse",
+    "close": "Bezárás",
+    "continue": "Folytatás",
+    "copy": "Másolás",
+    "copied": "Másolva!",
+    "done": "Kész",
+    "getStarted": "Kezdés",
+    "hide": "Elrejtés"
+  },
+  "biometry": {
+    "faceId": "Face ID",
+    "touchId": "Touch ID"
+  },
+  "pages": {
+    "backup": "Biztonsági mentés"
+  }
+}
