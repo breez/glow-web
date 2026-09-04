@@ -23,6 +23,15 @@ export interface UseLightningAddress {
 }
 
 const UNSUPPORTED_MESSAGE = 'Lightning addresses are not available in this environment.';
+// The SDK surfaces every failure here as one opaque string — an unreachable
+// LNURL server reads as `TypeError: Load failed`, a registration rate limit
+// and a name lost in a race both read as `Network error (status ...)`. None of
+// that is actionable, so the user gets one generic line and the raw error goes
+// to the log viewer via the `logger.error` calls below.
+// ponytail: one message for every failure; split it per case once the SDK
+// gives us a typed error to branch on.
+const LOAD_FAILED_MESSAGE = "Couldn't load your Lightning address. Please try again.";
+const SAVE_FAILED_MESSAGE = "Couldn't save your Lightning address. Please try again.";
 
 export const useLightningAddress = (): UseLightningAddress => {
   const wallet = useWallet();
@@ -112,7 +121,7 @@ export const useLightningAddress = (): UseLightningAddress => {
       if (err instanceof Error && /lnurl server is not configured/i.test(err.message)) {
         markUnsupported();
       } else {
-        setError(`Failed to load Lightning address: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setError(LOAD_FAILED_MESSAGE);
       }
     } finally {
       setIsLoading(false);
@@ -194,7 +203,7 @@ export const useLightningAddress = (): UseLightningAddress => {
       if (err instanceof Error && /lnurl server is not configured/i.test(err.message)) {
         markUnsupported();
       } else {
-        setError(`Failed to save Lightning address: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setError(SAVE_FAILED_MESSAGE);
       }
     } finally {
       setIsLoading(false);
