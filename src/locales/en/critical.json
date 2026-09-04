@@ -1,0 +1,35 @@
+{
+  "backup": {
+    "pinReason": "Unlock Backup",
+    "passkeyProtected": {
+      "title": "Passkey Protected",
+      "body": "Your recovery phrase is derived from your passkey. To restore on another device, use your passkey or the recovery phrase below."
+    },
+    "passkeyUnavailable": {
+      "title": "Passkey Unavailable",
+      "body": "Your recovery phrase is derived from your passkey. Without it, the phrase cannot be retrieved on this device. Sign in on a device where the passkey is still available to view it."
+    },
+    "notFound": {
+      "title": "No Backup Found",
+      "body": "Could not find a recovery phrase on this device."
+    },
+    "reveal": {
+      "title": "Tap to reveal phrase",
+      "busyTitle": "Authenticating...",
+      "hintPasskey": "Requires passkey authentication",
+      "hintPasskeyBusy": "Complete passkey authentication",
+      "hintBiometric": "Requires {{method}}",
+      "hintBiometricBusy": "Complete {{method}} authentication",
+      "hintRevealed": "Make sure no one is watching",
+      "hintDeviceStored": "Stored securely on this device",
+      "methodFallback": "biometric authentication",
+      "methodFallbackShort": "biometric"
+    },
+    "phraseLabel": "Recovery Phrase"
+  },
+  "errors": {
+    "deriveFailed": "Could not derive recovery phrase",
+    "retrieveFailed": "Could not retrieve recovery phrase",
+    "authFailed": "Failed to authenticate"
+  }
+}

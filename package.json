@@ -47,11 +47,13 @@
     "@scure/base": "^2.3.0",
     "@scure/bip32": "^2.3.0",
     "bip39": "^3.1.0",
+    "i18next": "^26.4.2",
     "jszip": "^3.10.1",
     "motion": "^12.40.0",
     "qr-scanner": "^1.4.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-i18next": "^17.0.13",
     "react-modal-sheet": "^5.6.0",
     "react-qr-code": "^2.0.12",
     "zxing-wasm": "^3.1.4"

@@ -15,6 +15,7 @@ import { startDeepLinks } from '@/utils/deepLink';
 import { logStartupDeviceInfo } from '@/utils/deviceInfo';
 import { startSdkInit } from '@/services/sdkReady';
 import { prfAvailability } from '@/services/passkeyService';
+import { initI18n, warmupSample } from '@/services/i18n';
 
 // Strip the SDK's script-set User-Agent before the SDK (or anything else)
 // issues a request. stripUserAgentFetch.ts explains why it is still needed.
@@ -208,18 +209,11 @@ initWebViewportManager();
  * it, so the fonts are in flight and `fonts.ready` waits for them. The race is
  * a safety bound: a font that never resolves must not strand the splash
  * forever. The fonts are local, so in practice this resolves in tens of ms.
+ *
+ * One weight per family is enough: these are variable faces spanning 200-800,
+ * so every weight the UI asks for resolves to the same file.
  */
-const BUNDLED_FACES = [
-  '300 1rem "Plus Jakarta Sans"',
-  '400 1rem "Plus Jakarta Sans"',
-  '500 1rem "Plus Jakarta Sans"',
-  '600 1rem "Plus Jakarta Sans"',
-  '700 1rem "Plus Jakarta Sans"',
-  '800 1rem "Plus Jakarta Sans"',
-  '400 1rem "JetBrains Mono"',
-  '500 1rem "JetBrains Mono"',
-  '600 1rem "JetBrains Mono"',
-];
+const BUNDLED_FAMILIES = ['Plus Jakarta Sans', 'Manrope', 'JetBrains Mono'];
 
 async function fontsSettled(): Promise<void> {
   if (!document.fonts) return;
@@ -229,8 +223,13 @@ async function fontsSettled(): Promise<void> {
   // for a moment when the home screen first paints, under font-display: block.
   // These are local and small, so warming all of them costs tens of ms of
   // splash that is already on screen.
+  // The sample decides which subsets are fetched, because the faces carry a
+  // unicode-range. Latin alone leaves the active language's own subset to load
+  // on first paint, where font-display: block renders it as nothing. A family
+  // with no face covering the sample loads nothing, so this is free for Latin.
+  const sample = warmupSample();
   const warm = Promise.all(
-    BUNDLED_FACES.map((f) => document.fonts.load(f).catch(() => undefined)),
+    BUNDLED_FAMILIES.map((f) => document.fonts.load(`400 1rem "${f}"`, sample).catch(() => undefined)),
   ).then(() => document.fonts.ready);
 
   await Promise.race([
@@ -429,6 +428,13 @@ async function init() {
   try {
     handOffNativeSplash();
     logger.info(LogCategory.UI, 'Initializing application');
+
+    // Awaited before the first render, not after: resolving the language needs
+    // a bridge call and a lazily-fetched bundle, and rendering ahead of it
+    // would paint English and then swap the whole UI a frame later. The splash
+    // is already covering this.
+    const language = await initI18n();
+    logger.info(LogCategory.UI, 'Language resolved', { language });
     // Startup debugging breadcrumb: what hardware / OS / build this ran on.
     void logStartupDeviceInfo();
 
