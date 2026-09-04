@@ -257,7 +257,8 @@
     "account": "Fiók",
     "deleteAccountGuide": "Hogyan töröld a fiókodat",
     "invalidAmount": "Adj meg érvényes összeget",
-    "invalidFeeRate": "Adj meg érvényes díjszabást"
+    "invalidFeeRate": "Adj meg érvényes díjszabást",
+    "language": "Nyelv"
   },
   "onboarding": {
     "useRecoveryPhrase": "Inkább a helyreállítási kifejezést használom",
