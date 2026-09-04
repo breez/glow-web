@@ -1,18 +1,120 @@
 {
   "backup": {
     "passkeyProtected": {
-      "body": "A helyreállítási kifejezés az azonosítókulcsból származik. Másik eszközön való visszaállításhoz használja az azonosítókulcsot vagy az alábbi helyreállítási kifejezést."
+      "body": "A helyreállítási kifejezésed az azonosítókulcsodból származik. Ha másik eszközön szeretnéd visszaállítani, használd az azonosítókulcsot vagy az alábbi helyreállítási kifejezést."
     },
     "passkeyUnavailable": {
-      "body": "A helyreállítási kifejezés az azonosítókulcsból származik. Enélkül a kifejezés nem nyerhető vissza ezen az eszközön. A megtekintéshez jelentkezzen be olyan eszközön, ahol az azonosítókulcs még elérhető."
+      "body": "A helyreállítási kifejezésed az azonosítókulcsodból származik. Enélkül a kifejezés nem nyerhető vissza ezen az eszközön. A megtekintéshez jelentkezz be olyan eszközön, ahol az azonosítókulcs még elérhető."
     },
     "notFound": {
       "body": "Ezen az eszközön nem található helyreállítási kifejezés."
     },
     "reveal": {
-      "hintRevealed": "Győződjön meg róla, hogy senki sem látja",
+      "hintRevealed": "Győződj meg róla, hogy senki sem látja",
       "hintDeviceStored": "Biztonságosan tárolva ezen az eszközön"
     },
     "phraseLabel": "Helyreállítási kifejezés"
+  },
+  "logout": {
+    "confirmPasskey": "A kijelentkezés törli az összes Glow-adatot erről az eszközről. Az azonosítókulcsodra lesz szükséged, hogy újra hozzáférj a pénzedhez.",
+    "confirmMnemonic": "A kijelentkezés törli az összes Glow-adatot erről az eszközről. Győződj meg róla, hogy elmentetted a helyreállítási kifejezésedet: szükséged lesz rá, hogy újra hozzáférj a pénzedhez."
+  },
+  "pinReset": {
+    "bodyPasskey": "A PIN-kód nem állítható helyre. Csak úgy juthatsz vissza, ha törlöd az összes Glow-adatot erről az eszközről, és újra bejelentkezel az azonosítókulcsoddal.",
+    "bodyMnemonic": "A PIN-kód nem állítható helyre. Csak úgy juthatsz vissza, ha törlöd az összes Glow-adatot erről az eszközről, és visszaállítod a helyreállítási kifejezésedből. Győződj meg róla, hogy elmentetted.",
+    "confirm": "Törlés",
+    "deviceOwnerReason": "Az összes Glow-adat törlése"
+  },
+  "stableBalance": {
+    "toUsd": "A BTC-egyenleged USD-re lesz átváltva.",
+    "toBtc": "Az USD-egyenleged vissza lesz váltva BTC-re.",
+    "convertToUsd": "Átváltás USD-re",
+    "convertToBtc": "Átváltás BTC-re",
+    "conversionFee": "Átváltási díj:",
+    "feeUnavailable": "A díj nem becsülhető meg",
+    "disclaimerBody": "Az egyenleged USD-ben van tartva. A beérkező BTC automatikusan USD-re váltódik, a kimenő fizetések pedig vissza BTC-re. Az átváltási küszöb alatti összegek visszajáróként maradnak, amíg fel nem gyűlnek."
+  },
+  "send": {
+    "sendAll": "Összes küldése",
+    "enterAmount": "Add meg az összeget satsban",
+    "exceedsBalance": "Az összeg meghaladja az elérhető egyenleget",
+    "balanceUpdating": "Az egyenleg frissül. Próbáld újra egy pillanat múlva.",
+    "invalidAmount": "Adj meg érvényes összeget",
+    "invalidDestination": "Érvénytelen fizetési cél",
+    "youAreSending": "Ezt küldöd",
+    "recipientGets": "A címzett kapja",
+    "insufficientFunds": "Nincs elég fedezet",
+    "conversionAmount": "Átváltási összeg",
+    "conversionFee": "Átváltási díj",
+    "toAddress": "Erre a címre",
+    "toSparkAddress": "Erre a Spark-címre",
+    "toSparkInvoice": "Erre a Spark-számlára",
+    "toInvoice": "Erre a számlára",
+    "crossChain": {
+      "amountTooSmall": "Az összeg túl kicsi ehhez az útvonalhoz.",
+      "amountTooLarge": "Az összeg túl nagy ehhez az útvonalhoz.",
+      "amountTooSmallHint": "Ez az összeg túl kicsi az elérhető útvonalakhoz. Próbálj nagyobb összeget küldeni.",
+      "amountTooLargeHint": "Ez az összeg túl nagy az elérhető útvonalakhoz. Próbálj kisebb összeget küldeni."
+    },
+    "withdraw": {
+      "noValidAmount": "Ez a kifizetési link nem tartalmaz olyan érvényes összeget, amelyet a Glow fogadni tud.",
+      "wholeSats": "Egész számot adj meg satsban"
+    },
+    "enterAmountIn": "Add meg az összeget ebben: {{currency}}",
+    "amountRange": "{{min}} és {{max}} sats között"
+  },
+  "generate": {
+    "title": "Tartsd titokban",
+    "body": "Írd le ezeket a szavakat sorrendben. Ez az egyetlen biztonsági mentésed, amellyel visszaszerezheted a pénzedet.",
+    "warning": "Soha ne oszd meg a helyreállítási kifejezésedet. Aki ismeri ezeket a szavakat, hozzáfér a pénzedhez.",
+    "copyToClipboard": "Másolás a vágólapra",
+    "saved": "Elmentettem a kifejezésemet"
+  },
+  "restore": {
+    "body": "Add meg a 12 vagy 24 szavas helyreállítási kifejezésedet a Glow visszaállításához. A szavakat szóközzel válaszd el.",
+    "placeholder": "szó1 szó2 szó3 ...",
+    "invalidLength": "Adj meg érvényes, 12 vagy 24 szavas helyreállítási kifejezést",
+    "invalidPhrase": "Érvénytelen helyreállítási kifejezés. Ellenőrizd a szavakat, és próbáld újra."
+  },
+  "unlock": {
+    "eraseTitle": "Törlés és újrakezdés",
+    "eraseAction": "Törlés és újrakezdés",
+    "erase": "Törlés",
+    "eraseReason": "Az összes Glow-adat törlése",
+    "eraseBodyPasskey": "Ezzel törlöd az összes Glow-adatot erről az eszközről. Az azonosítókulcsodra lesz szükséged, hogy újra hozzáférj a pénzedhez.",
+    "eraseBodyMnemonic": "Ezzel törlöd az összes Glow-adatot erről az eszközről. Győződj meg róla, hogy elmentetted a helyreállítási kifejezésedet: szükséged lesz rá, hogy újra hozzáférj a pénzedhez."
+  },
+  "refund": {
+    "destinationBody": "Add meg azt a Bitcoin-címet, amelyre a visszatérítést kéred.",
+    "refund": "Visszatérítés",
+    "amount": "Összeg",
+    "networkFee": "Hálózati díj"
+  },
+  "deposit": {
+    "amount": "Összeg",
+    "networkFee": "Hálózati díj",
+    "feeChanged": "A hálózati díj megváltozott",
+    "approveOrReject": "Hagyd jóvá az átutalás igényléséhez, vagy utasítsd el a visszatérítés elindításához.",
+    "canReject": "Az elutasítással visszatérítést indíthatsz helyette.",
+    "feeRose": "A díj <amount/> összegre emelkedett, miközben megerősítetted. Hagyd jóvá az igényléshez az új díjjal."
+  },
+  "passkey": {
+    "confirmDeleted": "Megerősítem, hogy ezt az azonosítókulcsot törölték.",
+    "confirmDeletedHint": "Nem kötelező. Ha bizonytalan vagy, jelölés nélkül folytasd."
+  },
+  "migration": {
+    "switchFailed": "Nem sikerült befejezni az átállást az új azonosítókulcsodra. A pénzed biztonságban van. Próbáld újra.",
+    "keepWindowOpen": "Hagyd nyitva ezt az ablakot",
+    "verifyMultipleTimes": "A migráció során többször kérni fogjuk, hogy igazold a személyazonosságodat: egyszer minden migrált címkéhez, majd még néhányszor az új azonosítókulcs létrehozásához. Hagyd nyitva ezt az ablakot, amíg a migráció be nem fejeződik.",
+    "explainBody": "Létrehozunk egy új azonosítókulcsot, és automatikusan átvisszük a pénzedet. A folyamat során néhányszor kérni fogjuk, hogy igazold a személyazonosságodat.",
+    "singleTransaction": "A pénzed egyetlen tranzakcióban kerül átutalásra. A fizetési előzményeid nem kerülnek át.",
+    "doneBody": "A pénzed átkerült az új azonosítókulcsodra.",
+    "addressPending_one": "Ezt a Lightning-címet nem sikerült átvinni:",
+    "addressPending_other": "Ezeket a Lightning-címeket nem sikerült átvinni:",
+    "addressPendingBody_one": "Az erre a címre küldött fizetések továbbra is a régi azonosítókulcsodra érkeznek, amíg az átvitel be nem fejeződik.",
+    "addressPendingBody_other": "Az ezekre a címekre küldött fizetések továbbra is a régi azonosítókulcsodra érkeznek, amíg az átvitelek be nem fejeződnek.",
+    "explainFirstTime": "Ha a Glow egy korábbi verziójával hoztad létre az azonosítókulcsodat, létrehozunk egy újat, és automatikusan átvisszük a pénzedet. Ha most használod először a Glow-t, válaszd a <skip/> lehetőséget a folytatáshoz.",
+    "migrateLabels_one": "Átvisszük a címkédet az új azonosítókulcsodra.",
+    "migrateLabels_other": "Mind a(z) {{count}} címkédet átvisszük az új azonosítókulcsodra."
   }
 }
