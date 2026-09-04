@@ -87,9 +87,13 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
   // sourced from a prepare response so in practice this never exceeds the
   // cap; if it somehow did, treat as insufficient funds.
   const totalSats = toSats(total);
-  const insufficientBalance = totalSats === null
+  // The prepare-failed render has no fee and no conversion estimate to check
+  // against, so the check reduces to "amount > sat balance" and reports
+  // insufficient funds for a wallet holding its balance in a token. Skip it:
+  // the prepare error is the one worth showing, and send is disabled anyway.
+  const insufficientBalance = !disableConfirm && (totalSats === null
     ? true
-    : balance.checkInsufficientFunds({ totalSats, conversionEstimate });
+    : balance.checkInsufficientFunds({ totalSats, conversionEstimate }));
   const balanceError = insufficientBalance ? 'Insufficient funds' : null;
 
   // Token-formatted values from conversion estimate
