@@ -120,7 +120,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setCurrentStep('workflow');
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to prepare payment', { error: formatError(err) });
-      setError(`Failed to prepare payment ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(`Failed to prepare payment: ${err instanceof Error ? err.message : 'Unknown error'}`);
       // Clear any stale response so the confirm step renders its prepare-failed
       // fallback (error + disabled send) instead of an old success render.
       setPrepareResponse(null);

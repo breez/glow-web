@@ -4,9 +4,12 @@ import { WalletProvider } from '@/contexts/WalletContext';
 import { FiatDataProvider } from '@/contexts/FiatDataContext';
 import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
-import ConfirmStep from './ConfirmStep';
+import ConfirmStep, { type ConfirmStepProps } from './ConfirmStep';
 
-function renderConfirmStep(destination?: { label: string; value: string }) {
+function renderConfirmStep(
+  destination?: { label: string; value: string },
+  overrides?: Partial<ConfirmStepProps>,
+) {
   render(
     <WalletProvider client={createMockClient()} isConnected>
       <FiatDataProvider>
@@ -19,6 +22,7 @@ function renderConfirmStep(destination?: { label: string; value: string }) {
             error={null}
             isLoading={false}
             onConfirm={vi.fn()}
+            {...overrides}
           />
         </StableBalanceProvider>
       </FiatDataProvider>
@@ -41,5 +45,23 @@ describe('ConfirmStep destination', () => {
   it('renders without a destination when prepare produced no payment method', () => {
     renderConfirmStep(undefined);
     expect(screen.queryByTestId('send-destination')).toBeNull();
+  });
+});
+
+describe('ConfirmStep prepare failure', () => {
+  it('shows the prepare error, not a balance verdict it cannot make', () => {
+    // Sat balance below the amount is the normal state for a wallet holding
+    // its balance in a token: the sat funding comes from a conversion the
+    // failed prepare never got to quote.
+    renderConfirmStep(undefined, {
+      feesSat: null,
+      balanceSats: 0,
+      error: 'Failed to prepare payment: no route to destination',
+      disableConfirm: true,
+    });
+
+    expect(screen.getByText(/no route to destination/)).toBeInTheDocument();
+    expect(screen.queryByText('Insufficient funds')).toBeNull();
+    expect(screen.getByTestId('send-confirm-button')).toBeDisabled();
   });
 });
