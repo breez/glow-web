@@ -29,6 +29,7 @@ import {
   BiometryInfo,
 } from '@/services/secureStorage';
 import { logger, LogCategory } from '@/services/logger';
+import { useTranslation } from 'react-i18next';
 
 type View =
   | 'loading'
@@ -43,6 +44,7 @@ interface SecurityPageProps {
 }
 
 const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
+  const { t } = useTranslation('common');
   const [view, setView] = useState<View>('loading');
   const [autoLock, setAutoLock] = useState<number>(120);
   const [biometricGate, setBiometricGate] = useState(false);
@@ -97,7 +99,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
     }
     if (pin !== firstPinRef.current) {
       firstPinRef.current = null;
-      setFlowError('PINs do not match. Try again.');
+      setFlowError(t('security.pinMismatch'));
       setPinStep('enter');
       return null;
     }
@@ -122,14 +124,14 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
     try {
       // Confirm the user can actually pass the prompt before enabling,
       // mirroring Misty's enable flow.
-      await authenticateBiometric(`Enable ${biometry?.label ?? 'biometric'} unlock`);
+      await authenticateBiometric(t('security.enableBiometricReason', { method: biometry?.label ?? t('biometry.generic') }));
       await setBiometricGateEnabled(true);
       setBiometricGate(true);
     } catch (e) {
       const code = (e as { code?: string }).code;
       logger.warn(LogCategory.AUTH, 'Enable biometric gate failed', { code });
       if (code !== 'USER_CANCELLED') {
-        setOptionsError('Biometric authentication is not available. Check your device settings.');
+        setOptionsError(t('security.biometricUnavailable'));
       }
     }
   };
@@ -138,7 +140,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
     setOptionsError(null);
     try {
       // Passcode-allowed prompt: succeeding clears the OS lockout.
-      await authenticateDeviceOwner('Re-enable biometric unlock');
+      await authenticateDeviceOwner(t('security.reEnableReason'));
       const status = await getBiometryStatus();
       setBiometry(status.info);
       setBiometryLockedOut(status.lockedOut);
@@ -146,7 +148,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
       const code = (e as { code?: string }).code;
       logger.warn(LogCategory.AUTH, 'Biometry lockout recovery failed', { code });
       if (code !== 'USER_CANCELLED') {
-        setOptionsError('Could not unlock biometrics. Check your device settings.');
+        setOptionsError(t('security.biometricUnlockFailed'));
       }
     }
   };
@@ -161,7 +163,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
         );
 
       case 'gate':
-        return <PinGate reason="Unlock Lock Screen settings" onUnlocked={() => setView('options')} />;
+        return <PinGate reason={t('security.gateReason')} onUnlocked={() => setView('options')} />;
 
       case 'no-pin':
         return (
@@ -174,7 +176,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
               >
                 <div className="flex items-center gap-3">
                   <ShieldCheckIcon size="md" />
-                  <span>Create PIN</span>
+                  <span>{t('security.createPin')}</span>
                 </div>
                 <ChevronRightIcon size="md" />
               </button>
@@ -187,8 +189,8 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
         const isChange = view === 'change-pin';
         const title =
           pinStep === 'enter'
-            ? isChange ? 'Enter your new PIN' : 'Choose a PIN'
-            : isChange ? 'Confirm your new PIN' : 'Confirm your PIN';
+            ? isChange ? t('security.enterNewPin') : t('security.choosePin')
+            : isChange ? t('security.confirmNewPin') : t('security.confirmPin');
         return (
           <PinScreenLayout
             className="pt-8 pb-14"
@@ -211,14 +213,14 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
             <div className="flex items-center justify-between px-4 py-3 border border-spark-border rounded-xl">
               <div className="flex items-center gap-3">
                 <ShieldCheckIcon size="md" className="text-spark-text-secondary" />
-                <span className="text-sm font-medium text-spark-text-primary">Deactivate PIN</span>
+                <span className="text-sm font-medium text-spark-text-primary">{t('security.deactivatePin')}</span>
               </div>
               <Switch checked={true} onChange={() => { void handleDeactivatePin(); }} />
             </div>
 
             {/* Lock automatically */}
             <div className="flex items-center justify-between gap-3 px-4 py-3 border border-spark-border rounded-xl">
-              <span className="text-sm font-medium text-spark-text-primary">Lock Automatically</span>
+              <span className="text-sm font-medium text-spark-text-primary">{t('security.lockAutomatically')}</span>
               <select
                 value={autoLock}
                 onChange={(e) => {
@@ -227,7 +229,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
                   void setAutoLockSeconds(seconds);
                 }}
                 className="bg-spark-surface border border-spark-border rounded-xl px-3 py-2 text-spark-text-primary text-sm focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20"
-                aria-label="Lock automatically"
+                aria-label={t('a11y.lockAutomatically')}
               >
                 {AUTO_LOCK_OPTIONS_SECONDS.map((seconds) => (
                   <option className="bg-spark-surface" key={seconds} value={seconds}>
@@ -243,7 +245,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
               type="button"
               onClick={() => startPinFlow('change-pin')}
             >
-              <span>Change PIN</span>
+              <span>{t('security.changePin')}</span>
               <ChevronRightIcon size="md" />
             </button>
 
@@ -260,9 +262,9 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
                 <div className="flex items-center gap-3 text-left">
                   <FingerprintIcon size="md" />
                   <div>
-                    <span className="block text-spark-text-primary">Biometric Unlock Locked</span>
+                    <span className="block text-spark-text-primary">{t('security.biometricLockedTitle')}</span>
                     <span className="block text-xs text-spark-text-muted">
-                      Too many failed attempts. Tap to unlock with your passcode.
+                      {t('security.biometricLockedBody')}
                     </span>
                   </div>
                 </div>
@@ -278,7 +280,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
                     ? <FaceIdIcon size="md" className="text-spark-text-secondary" />
                     : <FingerprintIcon size="md" className="text-spark-text-secondary" />}
                   <span className="text-sm font-medium text-spark-text-primary">
-                    {`Enable ${biometry.label.replace(/\b\w/g, (c) => c.toUpperCase())}`}
+                    {t('security.enableBiometric', { method: biometry.label.replace(/\b\w/g, (c) => c.toUpperCase()) })}
                   </span>
                 </div>
                 <Switch checked={biometricGate} onChange={() => { void handleToggleBiometric(); }} />
@@ -295,7 +297,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
   };
 
   return (
-    <SlideInPage title="Lock Screen" onClose={onBack} slideFrom="left">
+    <SlideInPage title={t('pages.lockScreen')} onClose={onBack} slideFrom="left">
       {/* min-h-full + flexed chain so the PIN views (gate, create,
           change) can split the viewport 1/3 header / 2/3 input; the
           list views just flow from the top as before. p-4 keeps the

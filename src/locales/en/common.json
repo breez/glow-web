@@ -26,7 +26,10 @@
     "save": "Save",
     "saving": "Saving...",
     "scan": "Scan",
-    "tryAgain": "Try Again"
+    "tryAgain": "Try Again",
+    "export": "Export",
+    "exporting": "Exporting...",
+    "preparing": "Preparing..."
   },
   "labels": {
     "address": "Address",
@@ -35,7 +38,9 @@
     "genericError": "An error occurred",
     "amount": "Amount",
     "networkFee": "Network fee",
-    "unknownError": "Unknown error"
+    "unknownError": "Unknown error",
+    "mainnetOnly": "Mainnet only",
+    "fiatLoadFailed": "Failed to load currencies. Please try again."
   },
   "a11y": {
     "goBack": "Go back",
@@ -49,15 +54,22 @@
     "clearSearch": "Clear search",
     "searchContacts": "Search contacts",
     "clearContact": "Clear contact",
-    "copyThing": "Copy {{label}}"
+    "copyThing": "Copy {{label}}",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "lockAutomatically": "Lock automatically"
   },
   "biometry": {
     "faceId": "Face ID",
-    "touchId": "Touch ID"
+    "touchId": "Touch ID",
+    "generic": "biometric"
   },
   "pages": {
     "backup": "Backup",
-    "settings": "Settings"
+    "settings": "Settings",
+    "fiatCurrencies": "Fiat Currencies",
+    "buyBitcoin": "Buy Bitcoin",
+    "lockScreen": "Lock Screen"
   },
   "menu": {
     "settings": "Settings",
@@ -177,5 +189,54 @@
     "receive": "Receive",
     "sendUsd": "Send USD",
     "payment": "Payment"
+  },
+  "security": {
+    "gateReason": "Unlock Lock Screen settings",
+    "createPin": "Create PIN",
+    "changePin": "Change PIN",
+    "deactivatePin": "Deactivate PIN",
+    "lockAutomatically": "Lock Automatically",
+    "choosePin": "Choose a PIN",
+    "confirmPin": "Confirm your PIN",
+    "enterNewPin": "Enter your new PIN",
+    "confirmNewPin": "Confirm your new PIN",
+    "pinMismatch": "PINs do not match. Try again.",
+    "biometricLockedTitle": "Biometric Unlock Locked",
+    "biometricLockedBody": "Too many failed attempts. Tap to unlock with your passcode.",
+    "biometricUnavailable": "Biometric authentication is not available. Check your device settings.",
+    "biometricUnlockFailed": "Could not unlock biometrics. Check your device settings.",
+    "enableBiometric": "Enable {{method}}",
+    "enableBiometricReason": "Enable {{method}} unlock",
+    "reEnableReason": "Re-enable biometric unlock"
+  },
+  "settings": {
+    "security": "Security",
+    "backup": "Backup",
+    "recoveryPhrase": "Recovery Phrase",
+    "display": "Display",
+    "automaticClaims": "Automatic Claims",
+    "automaticClaimsBody": "On-chain deposits are claimed automatically while the network fee stays under this limit.",
+    "maxFeeType": "Max fee type",
+    "feeFixed": "Fixed",
+    "feeRate": "Rate",
+    "feeNetworkLeeway": "Network + leeway",
+    "passkey": "Passkey",
+    "passkeyAndLabels": "Passkey & Labels",
+    "diagnostics": "Diagnostics",
+    "downloadLogs": "Download Logs",
+    "database": "Database",
+    "exportDatabase": "Export Database",
+    "exportDatabaseGate": "Export database",
+    "exportDatabaseBody": "This saves your full payment history, including invoices and contacts, to a file you can share. Only do this if you were asked for it, and only send it to someone you trust.",
+    "network": "Network",
+    "networkChangeNote": "Changing network will reload the app and reconnect.",
+    "preferSpark": "Prefer Spark",
+    "preferSparkBody": "Use Spark address over Lightning invoice when available",
+    "syncSettings": "Sync Settings",
+    "customDomain": "Custom domain",
+    "account": "Account",
+    "deleteAccountGuide": "How to delete your account",
+    "invalidAmount": "Please enter a valid amount",
+    "invalidFeeRate": "Please enter a valid fee rate"
   }
 }
