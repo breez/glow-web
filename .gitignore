@@ -21,3 +21,5 @@ coverage/
 .claude/worktrees/
 .DS_Store
 .playwright-mcp/
+
+.planning/debug/
