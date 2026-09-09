@@ -5,6 +5,7 @@ import { formatError } from '@/utils/formatError';
 import { toSdkAmountNumber, type Sats } from '../../../types/sats';
 import type { PaymentMethod, ReceiveStep } from '../../../types/domain';
 import { LIGHTNING_INVOICE_MIN_SATS } from '../../../constants/receive';
+import { formatWithSpaces } from '../../../utils/formatNumber';
 
 export interface UseReceivePaymentReturn {
   // State
@@ -165,7 +166,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       return;
     }
     if (amountSats < BigInt(LIGHTNING_INVOICE_MIN_SATS)) {
-      setError(`Amount must be at least ₿${LIGHTNING_INVOICE_MIN_SATS.toLocaleString()}`);
+      setError(`Amount must be at least ₿${formatWithSpaces(LIGHTNING_INVOICE_MIN_SATS)}`);
       return;
     }
 
