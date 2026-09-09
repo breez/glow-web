@@ -265,12 +265,14 @@ citing a heuristic at someone.
 
 **Copy**
 
-- The app's own furniture is Title Case: the page title in the app bar
-  and every CTA label. "Unilateral Exit", "Get Quote", "Build Exit",
-  "Done". All eleven page titles in the app already read this way.
-- Content is sentence case: section headings, card and dialog titles,
-  body, field labels, helper text. "Sign-in failed", "Try a normal
-  withdrawal first", "Switch label?".
+- Labels are Title Case, prose is sentence case. A label names a thing:
+  the page title in the app bar, a CTA, a dialog that names the action.
+  "Unilateral Exit", "Build Exit", "Delete Contact", "Export Database".
+  All eleven page titles already read this way.
+- Anything phrased as a sentence or a question keeps sentence case, even
+  as a title: "Switch label?", "Erase and start over", "Sign-in failed",
+  "Try a normal withdrawal first". So do section headings, body, field
+  labels and helper text.
 - A sentence earns its place by telling the user something the screen
   cannot. On the exit quote screen "To start the process you need to pay
   the exit fee. These are the mining fees required to move the Spark tree
@@ -330,7 +332,9 @@ citing a heuristic at someone.
   to the shell's app bar, and a primary action belongs in the shell's
   `footer`, which is pinned above the safe area. A CTA inside the scroll
   area moves with the content, and a CTA that moves is one the user has to
-  hunt for. `GetRefundPage` is the page still doing it inline.
+  hunt for. `GetRefundPage` predates this and keeps its buttons inline;
+  it is old enough that moving them risks more than it fixes, so read it
+  as debt, not as the pattern to copy.
 - Tap targets are at least 44px on their short side, and the primary CTA
   keeps the full width at the bottom of the screen, where the thumb is
   (Fitts, 1954; Apple HIG; WCAG 2.5.5).
