@@ -5,6 +5,25 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 
+// CLAUDE.md conventions that keep drifting back in. Kept as data so the
+// files exempted from one of them still get the others.
+const NO_TO_LOCALE_STRING = {
+    selector:
+        "CallExpression[callee.property.name='toLocaleString']:not([callee.object.type='NewExpression'])",
+    message:
+        'Format amounts with formatWithSpaces (src/utils/formatNumber.ts): toLocaleString adds commas. Dates are fine, add an eslint-disable if the receiver is a Date held in a variable.',
+};
+const NO_RED = {
+    selector: 'Literal[value=/-red-[0-9]|#[eE][fF]4444/]',
+    message:
+        'The UI has no red, even for errors: use spark-primary or the spark-warn-* tokens.',
+};
+const NO_INLINE_SVG = {
+    selector: "JSXOpeningElement[name.name='svg']",
+    message:
+        'Icons live in src/components/Icons.tsx as named components, not inline.',
+};
+
 export default [
     {
         ignores: [
@@ -56,12 +75,30 @@ export default [
             'react-hooks/refs': 'warn',
             'react-hooks/immutability': 'warn',
             'react-hooks/preserve-manual-memoization': 'warn',
+            'no-restricted-syntax': [
+                'error',
+                NO_TO_LOCALE_STRING,
+                NO_RED,
+                NO_INLINE_SVG,
+            ],
         },
     },
     {
         files: ['*.config.ts', 'src/test/**/*.ts'],
         languageOptions: {
             globals: { ...globals.node },
+        },
+    },
+    {
+        // Icons.tsx is where icons belong; the other two are animations
+        // internal to one component, which CLAUDE.md exempts.
+        files: [
+            'src/components/Icons.tsx',
+            'src/components/LoadingSpinner.tsx',
+            'src/features/send/steps/ProcessingStep.tsx',
+        ],
+        rules: {
+            'no-restricted-syntax': ['error', NO_TO_LOCALE_STRING, NO_RED],
         },
     },
     {
