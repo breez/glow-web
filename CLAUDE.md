@@ -194,8 +194,34 @@ Call `markPasskeyUsed()` after any successful PRF ceremony to update `passkeyLas
 ## UI Conventions
 
 The other UI sections are structural: which component to reuse, where to
-register a screen. These are the editorial notes QA sends back on every
+register a screen. These are the editorial ones QA sends back on every
 new flow (PR #404).
+
+They come from a short list of established principles. Name the principle
+when reviewing a screen: it settles an argument that taste cannot.
+
+- **Visibility of system status** (Nielsen, 1994). Every wait shows a
+  labelled state, and anything past ~400ms shows progress (Doherty &
+  Thadani, IBM, 1982).
+- **Speak the user's language** (Nielsen, 1994). Copy says what happened
+  and what to do, from where the user stands.
+- **Consistency** (Nielsen, 1994; Jakob's Law, Nielsen, 2000). One helper
+  and one component per pattern, so one thing never takes two shapes.
+- **Error prevention** (Nielsen, 1994; Norman, 2013). An irreversible
+  action gets a step that stops it, not a sentence that warns about it.
+- **Recognition over recall** (Nielsen, 1994). What the user is acting on
+  is on screen at the moment they act.
+- **Aesthetic and minimalist design** (Nielsen, 1994). Every element on a
+  screen competes with the one that matters.
+- **Isolation effect** (von Restorff, 1933). The item that differs is the
+  item that is remembered: one accent, one focus.
+- **Chunking** (Miller, 1956; Cowan, 2001). Grouped digits are read in
+  one pass, which is what the space separator buys.
+- **Proximity and common region** (Wertheimer, 1923; Palmer, 1992). What
+  belongs together sits together: cause above effect, close enough to see
+  both at once.
+- **Fitts's law and Hick's law** (Fitts, 1954; Hick, 1952). Fewer, larger
+  targets: two options beat five, and 44px is the floor.
 
 **Copy**
 
@@ -212,6 +238,10 @@ new flow (PR #404).
   wallet, to pay mining fees. Not part of what you receive" lists
   mechanics and leaves them to work out what it means for them. Say what
   they have to do, and what it costs them.
+- An error names what the user was doing and what to do next, in one
+  voice: "Could not create the invoice. Please try again." Not "Failed to
+  create invoice", which is the system reporting its own state and leaves
+  them nowhere to go.
 
 **Chrome**
 
@@ -230,6 +260,14 @@ new flow (PR #404).
   emphasis left. Give it to the amount being confirmed or the action the
   user came for; everything else is `spark-text-primary` /
   `spark-text-secondary` / `spark-text-muted`, in that order.
+- No state rides on color or motion alone. A state worth showing gets a
+  word: the failed and processing chips in `TransactionList` are the
+  pattern, the unlabelled pulsing dot beside a pending payment is not
+  (WCAG 1.4.1).
+- Text the user has to read holds 4.5:1 against its surface (WCAG 1.4.3).
+  `spark-text-primary` is 19:1 and `spark-text-secondary` 9.5:1, both
+  fine. `spark-text-muted` is 3.8:1, so it is for a label beside content,
+  never the content itself.
 
 **Layout**
 
@@ -247,6 +285,9 @@ new flow (PR #404).
   ETA, fee) spend triple the height on a choice that turns on two
   numbers, so put the numbers on the row. Every row a screen does not
   have is a row nobody has to read.
+- Tap targets are at least 44px on their short side, and the primary CTA
+  keeps the full width at the bottom of the screen, where the thumb is
+  (Fitts, 1954; Apple HIG; WCAG 2.5.5).
 - Some positions are fixed: on the settings page the Account section
   stays last, above the version line. New sections go above it.
 
@@ -256,6 +297,10 @@ new flow (PR #404).
   `src/components/ui/index.tsx` first: buttons, rows, tabs, dialogs,
   sheets and alerts are already there, and `spark-*` holds the colors. If
   nothing fits, that is worth raising, not worth a local one-off.
+- One format, one helper: `SatAmount` and `formatWithSpaces` for amounts,
+  `truncateAddress` for addresses (`start...end`, never a CSS `truncate`,
+  which eats the tail the user checks). A formatter written inside a
+  component is how the second shape starts, so export it instead.
 
 ## Colors: no red
 
