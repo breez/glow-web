@@ -191,6 +191,28 @@ Call `markPasskeyUsed()` after any successful PRF ceremony to update `passkeyLas
 - Production builds require npm-published SDK version
 - Type check: `npx tsc --noEmit`
 
+## UI Copy and Emphasis
+
+The sections below say which component to reuse. This one says what it
+says and what it highlights. QA raises these on every new flow (PR #404).
+
+- **CTAs use Title Case.** "Get Quote", "Try Again", "Done". Every button,
+  in every flow. Sentence case is for body text, field labels, helper text
+  and headings.
+- **A sentence earns its place by telling the user something the screen
+  cannot.** On the exit quote screen "To start the process you need to pay
+  the exit fee. These are the mining fees required to move the Spark tree
+  on-chain." stays: it says why the money leaves. Under an address field
+  "Every exited sat is swept to this address" goes, and under a fee slider
+  "A higher rate costs more" goes: the control already said it. Default to
+  no sentence. Delete it and read the screen without it before keeping it.
+- **Use the accent, and use it for one thing.** A screen with no
+  `spark-primary` on it reads unfinished, and a screen where several
+  elements are amber has no emphasis left. Give it to the amount the user
+  is confirming, or the action they came to take. Everything else is
+  `spark-text-primary` / `spark-text-secondary` / `spark-text-muted`, in
+  that order of importance.
+
 ## Colors: no red
 
 The UI deliberately does not use red, even for destructive, warning, or
