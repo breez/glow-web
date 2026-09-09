@@ -197,31 +197,69 @@ The other UI sections are structural: which component to reuse, where to
 register a screen. These are the editorial ones QA sends back on every
 new flow (PR #404).
 
-They come from a short list of established principles. Name the principle
-when reviewing a screen: it settles an argument that taste cannot.
+They rest on five kinds of authority, and the tier decides who wins when
+two of them disagree. A measurement beats a heuristic, a heuristic beats a
+preference, and a preference everyone follows still beats a coin flip.
 
-- **Visibility of system status** (Nielsen, 1994). Every wait shows a
-  labelled state, and anything past ~400ms shows progress (Doherty &
-  Thadani, IBM, 1982).
-- **Speak the user's language** (Nielsen, 1994). Copy says what happened
-  and what to do, from where the user stands.
-- **Consistency** (Nielsen, 1994; Jakob's Law, Nielsen, 2000). One helper
-  and one component per pattern, so one thing never takes two shapes.
-- **Error prevention** (Nielsen, 1994; Norman, 2013). An irreversible
-  action gets a step that stops it, not a sentence that warns about it.
-- **Recognition over recall** (Nielsen, 1994). What the user is acting on
-  is on screen at the moment they act.
-- **Aesthetic and minimalist design** (Nielsen, 1994). Every element on a
-  screen competes with the one that matters.
+**Testable.** Pass or fail, and a machine can tell which.
+
+- **WCAG 2.2** (W3C, 2023). 1.4.1 nothing rides on color alone. 1.4.3
+  text holds 4.5:1, 1.4.11 controls hold 3:1. 2.5.8 targets are 24px and
+  2.5.5 wants 44. 2.3.3 motion respects the OS setting. 3.3.8 never makes
+  the user transcribe or memorise to authenticate, so paste always works.
+- **Core Web Vitals** (Google; INP replaced FID in 2024). A tap answers
+  inside 200ms or shows that it heard. The modern, measurable form of the
+  400ms response threshold (Doherty & Thadani, IBM, 1982).
+
+**Predictive.** Models that give a number before the screen exists.
+
+- **Fitts's law** (Fitts, 1954). Time to hit a target falls with its size
+  and nearness, so the primary action is large and at the bottom.
+- **How phones are actually held** (Hoober, 2013; 1,333 observations:
+  49% one-handed, 36% cradled). Design the bottom third for one thumb,
+  and keep irreversible actions out of its sweep.
+
+**Evidence, applied by analogy.** The findings are solid; the jump to a
+screen is ours to defend.
+
+- **Cognitive load** (Sweller, 1988 onward). Cut what the task does not
+  need. This is one decision, one row.
+- **Chunking** (Miller, 1956; Cowan, 2001). Grouped digits read in one
+  pass, which is what the space separator buys.
 - **Isolation effect** (von Restorff, 1933). The item that differs is the
-  item that is remembered: one accent, one focus.
-- **Chunking** (Miller, 1956; Cowan, 2001). Grouped digits are read in
-  one pass, which is what the space separator buys.
-- **Proximity and common region** (Wertheimer, 1923; Palmer, 1992). What
-  belongs together sits together: cause above effect, close enough to see
-  both at once.
-- **Fitts's law and Hick's law** (Fitts, 1954; Hick, 1952). Fewer, larger
-  targets: two options beat five, and 44px is the floor.
+  one remembered: one accent, one focus.
+- **Proximity and common region** (Wertheimer, 1923; Palmer, 1992). Cause
+  above effect, close enough to take in together.
+- **Credibility is judged on appearance** (Fogg et al., 2003; 2,684
+  people, 46% of credibility comments were about visual design). A screen
+  that looks unlike the rest of the app reads as less safe, so in a wallet
+  consistency is a security property, not a finish.
+- **What goes wrong in crypto wallets** (Eskandari et al., 2015;
+  Krombholz et al., 2016; Mai et al., SOUPS 2020; Voskobojnikov et al.,
+  CHI 2021). People hold wrong mental models of where funds sit and what
+  can be undone, and they lose money at backup and recovery. So: say what
+  is irreversible before the action, name every state in words, and build
+  recovery as a first-class flow.
+
+**Inspection vocabulary.** Names for recurring notes. Two reviewers using
+these agree on 5% to 65% of what they find (Hertzum & Jacobsen, 2003), so
+they frame a concern, they do not settle it.
+
+- **Nielsen's heuristics** (Nielsen, 1994): visibility of system status,
+  speak the user's language, consistency and standards, error prevention,
+  recognition over recall, aesthetic and minimalist design.
+- **No deceptive patterns** (Brignull, 2023; Mathur et al., 2019; Gray et
+  al., 2018; EU DSA Art. 25). No confirmshaming, no manufactured urgency,
+  no pre-ticked consent. The one that bites self-custody is obstruction:
+  leaving has to be as easy as arriving, which is what the account
+  deletion guide and the unilateral exit are for.
+- **Inclusive design** (Microsoft, 2016). The limit is usually
+  situational, not permanent: one hand full, bright sun, a hurry, a panic.
+
+**House style.** Ours. No research behind it, binding anyway, because
+consistency is the whole of the argument. The groups below are this tier:
+casing, copy length, no decorative icons, no red. Do not dress them up by
+citing a heuristic at someone.
 
 **Copy**
 
