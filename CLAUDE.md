@@ -231,10 +231,30 @@ new flow (PR #404).
   user came for; everything else is `spark-text-primary` /
   `spark-text-secondary` / `spark-text-muted`, in that order.
 
+**Layout**
+
+- A new tab or sheet matches the ones beside it. Padding and height come
+  from the container: `BottomSheetCard` already gives its content
+  `px-6 pt-3` and the safe-area bottom pad, so content adds no outer
+  padding of its own and sets no fixed height. The height rules are in
+  Bottom Sheets below.
+- Put a control above what it changes. Switching Priority to Standard
+  rewrites the fee breakdown, so the switch goes above the breakdown: a
+  user who has scrolled past a number should never be the one to notice
+  it moved. The name for this is visibility of system status; in a layout
+  it comes down to cause above effect, close enough to see both at once.
+- One decision, one row. Priority and Standard as three-row cards (name,
+  ETA, fee) spend triple the height on a choice that turns on two
+  numbers, so put the numbers on the row. Every row a screen does not
+  have is a row nobody has to read.
+- Some positions are fixed: on the settings page the Account section
+  stays last, above the version line. New sections go above it.
+
 **Reuse**
 
-- A new screen should need no new component, color or text style. Take
-  what exists from `src/components/ui` and the `spark-*` tokens. If
+- A new screen should need no new component, color or text style. Read
+  `src/components/ui/index.tsx` first: buttons, rows, tabs, dialogs,
+  sheets and alerts are already there, and `spark-*` holds the colors. If
   nothing fits, that is worth raising, not worth a local one-off.
 
 ## Colors: no red

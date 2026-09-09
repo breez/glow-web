@@ -525,7 +525,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           {/* Account deletion (App Store 5.1.1(v)): opens the guide
               explaining how to delete the account (logout wipes the
               device) and remove the passkey. Reachable without dev
-              mode. */}
+              mode. Stays the last section: new ones go above it. */}
           <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
             <h3 className="font-display font-semibold text-spark-text-primary mb-3">Account</h3>
             <button
