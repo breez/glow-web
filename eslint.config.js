@@ -13,11 +13,22 @@ const NO_TO_LOCALE_STRING = {
     message:
         'Format amounts with formatWithSpaces (src/utils/formatNumber.ts): toLocaleString adds commas. Dates are fine, add an eslint-disable if the receiver is a Date held in a variable.',
 };
-const NO_RED = {
-    selector: 'Literal[value=/-red-[0-9]|#[eE][fF]4444/]',
-    message:
-        'The UI has no red, even for errors: use spark-primary or the spark-warn-* tokens.',
-};
+// Class strings live in both plain literals and template literals, so a
+// class-name rule has to look at both.
+const inClassStrings = (pattern, message) => [
+    { selector: `Literal[value=${pattern}]`, message },
+    { selector: `TemplateElement[value.raw=${pattern}]`, message },
+];
+const NO_RED = inClassStrings(
+    '/-red-[0-9]|#[eE][fF]4444/',
+    'The UI has no red, even for errors: use spark-primary or the spark-warn-* tokens.',
+);
+// Tailwind's stock palette, minus red (NO_RED says more about that one)
+// and minus white/black, which the app does use as primitives.
+const NO_OFF_PALETTE = inClassStrings(
+    '/(^|[^A-Za-z-])(bg|text|border|ring|from|via|to|fill|stroke|divide|placeholder|accent|caret|shadow|outline|decoration)-(slate|gray|zinc|neutral|stone|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}/',
+    'Colors come from the spark-* tokens, not from Tailwind\'s stock palette.',
+);
 const NO_INLINE_SVG = {
     selector: "JSXOpeningElement[name.name='svg']",
     message:
@@ -78,7 +89,8 @@ export default [
             'no-restricted-syntax': [
                 'error',
                 NO_TO_LOCALE_STRING,
-                NO_RED,
+                ...NO_RED,
+                ...NO_OFF_PALETTE,
                 NO_INLINE_SVG,
             ],
         },
@@ -98,7 +110,12 @@ export default [
             'src/features/send/steps/ProcessingStep.tsx',
         ],
         rules: {
-            'no-restricted-syntax': ['error', NO_TO_LOCALE_STRING, NO_RED],
+            'no-restricted-syntax': [
+                'error',
+                NO_TO_LOCALE_STRING,
+                ...NO_RED,
+                ...NO_OFF_PALETTE,
+            ],
         },
     },
     {
