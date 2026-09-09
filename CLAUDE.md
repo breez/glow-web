@@ -191,27 +191,51 @@ Call `markPasskeyUsed()` after any successful PRF ceremony to update `passkeyLas
 - Production builds require npm-published SDK version
 - Type check: `npx tsc --noEmit`
 
-## UI Copy and Emphasis
+## UI Conventions
 
-The sections below say which component to reuse. This one says what it
-says and what it highlights. QA raises these on every new flow (PR #404).
+The other UI sections are structural: which component to reuse, where to
+register a screen. These are the editorial notes QA sends back on every
+new flow (PR #404).
 
-- **CTAs use Title Case.** "Get Quote", "Try Again", "Done". Every button,
-  in every flow. Sentence case is for body text, field labels, helper text
-  and headings.
-- **A sentence earns its place by telling the user something the screen
-  cannot.** On the exit quote screen "To start the process you need to pay
+**Copy**
+
+- CTAs use Title Case: "Get Quote", "Build Exit", "Try Again", "Done".
+  Sentence case is for everything else, headings and card titles included.
+- A sentence earns its place by telling the user something the screen
+  cannot. On the exit quote screen "To start the process you need to pay
   the exit fee. These are the mining fees required to move the Spark tree
   on-chain." stays: it says why the money leaves. Under an address field
   "Every exited sat is swept to this address" goes, and under a fee slider
   "A higher rate costs more" goes: the control already said it. Default to
-  no sentence. Delete it and read the screen without it before keeping it.
-- **Use the accent, and use it for one thing.** A screen with no
-  `spark-primary` on it reads unfinished, and a screen where several
-  elements are amber has no emphasis left. Give it to the amount the user
-  is confirming, or the action they came to take. Everything else is
-  `spark-text-primary` / `spark-text-secondary` / `spark-text-muted`, in
-  that order of importance.
+  no sentence, and read the screen without it before keeping it.
+- Write from where the user stands, not from the system. "From another
+  wallet, to pay mining fees. Not part of what you receive" lists
+  mechanics and leaves them to work out what it means for them. Say what
+  they have to do, and what it costs them.
+
+**Chrome**
+
+- No decorative icons: not above a feature page's title, which already
+  says what the page is, and not in an `AlertCard`, where a generic glyph
+  repeats the title and narrows the body. Icons that carry meaning stay:
+  a row chevron, a copy button, a payment method.
+- A secondary action can take its own row under the primary CTA instead
+  of sitting beside it. Give the primary the width when the choice is not
+  symmetric.
+- Every amount goes through `SatAmount`, hero displays included. A
+  missing ₿ or a hand-grouped number is the first thing QA sees. The
+  amount rules are below.
+- Use the accent for one thing. A screen with no `spark-primary` reads
+  unfinished, and a screen where several elements are amber has no
+  emphasis left. Give it to the amount being confirmed or the action the
+  user came for; everything else is `spark-text-primary` /
+  `spark-text-secondary` / `spark-text-muted`, in that order.
+
+**Reuse**
+
+- A new screen should need no new component, color or text style. Take
+  what exists from `src/components/ui` and the `spark-*` tokens. If
+  nothing fits, that is worth raising, not worth a local one-off.
 
 ## Colors: no red
 
