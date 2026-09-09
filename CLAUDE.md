@@ -203,10 +203,12 @@ preference, and a preference everyone follows still beats a coin flip.
 
 **Testable.** Pass or fail, and a machine can tell which.
 
-- **WCAG 2.2** (W3C, 2023). 1.4.1 nothing rides on color alone. 1.4.3
-  text holds 4.5:1, 1.4.11 controls hold 3:1. 2.5.8 targets are 24px and
-  2.5.5 wants 44. 2.3.3 motion respects the OS setting. 3.3.8 never makes
-  the user transcribe or memorise to authenticate, so paste always works.
+- **WCAG 2.2** (W3C, 2023). 1.4.1 nothing rides on color alone. 2.5.8
+  targets are 24px and 2.5.5 wants 44. 3.3.8 never makes the user
+  transcribe or memorise to authenticate, so paste always works. Text
+  contrast (1.4.3) and reduced motion (2.3.3) are open: both need a token
+  or stylesheet change first, so they get their own PR. Do not write
+  rules for them here.
 - **Core Web Vitals** (Google; INP replaced FID in 2024). A tap answers
   inside 200ms or shows that it heard. The modern, measurable form of the
   400ms response threshold (Doherty & Thadani, IBM, 1982).
@@ -263,8 +265,12 @@ citing a heuristic at someone.
 
 **Copy**
 
-- CTAs use Title Case: "Get Quote", "Build Exit", "Try Again", "Done".
-  Sentence case is for everything else, headings and card titles included.
+- The app's own furniture is Title Case: the page title in the app bar
+  and every CTA label. "Unilateral Exit", "Get Quote", "Build Exit",
+  "Done". All eleven page titles in the app already read this way.
+- Content is sentence case: section headings, card and dialog titles,
+  body, field labels, helper text. "Sign-in failed", "Try a normal
+  withdrawal first", "Switch label?".
 - A sentence earns its place by telling the user something the screen
   cannot. On the exit quote screen "To start the process you need to pay
   the exit fee. These are the mining fees required to move the Spark tree
@@ -302,10 +308,6 @@ citing a heuristic at someone.
   word: the failed and processing chips in `TransactionList` are the
   pattern, the unlabelled pulsing dot beside a pending payment is not
   (WCAG 1.4.1).
-- Text the user has to read holds 4.5:1 against its surface (WCAG 1.4.3).
-  `spark-text-primary` is 19:1 and `spark-text-secondary` 9.5:1, both
-  fine. `spark-text-muted` is 3.8:1, so it is for a label beside content,
-  never the content itself.
 
 **Layout**
 
@@ -323,6 +325,12 @@ citing a heuristic at someone.
   ETA, fee) spend triple the height on a choice that turns on two
   numbers, so put the numbers on the row. Every row a screen does not
   have is a row nobody has to read.
+- A full page uses one of the two shells rather than its own scaffolding:
+  `PageLayout` or `SlideInPage` (`src/components/layout/`). Back belongs
+  to the shell's app bar, and a primary action belongs in the shell's
+  `footer`, which is pinned above the safe area. A CTA inside the scroll
+  area moves with the content, and a CTA that moves is one the user has to
+  hunt for. `GetRefundPage` is the page still doing it inline.
 - Tap targets are at least 44px on their short side, and the primary CTA
   keeps the full width at the bottom of the screen, where the thumb is
   (Fitts, 1954; Apple HIG; WCAG 2.5.5).
