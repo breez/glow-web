@@ -194,8 +194,8 @@ Call `markPasskeyUsed()` after any successful PRF ceremony to update `passkeyLas
 ## UI Conventions
 
 The other UI sections are structural: which component to reuse, where to
-register a screen. These are the editorial ones QA sends back on every
-new flow (PR #404).
+register a screen. These are the editorial ones, collected from design
+review so a decision gets made once and then applies to every flow.
 
 They rest on five kinds of authority, and the tier decides who wins when
 two of them disagree. A measurement beats a heuristic, a heuristic beats a
@@ -260,8 +260,8 @@ they frame a concern, they do not settle it.
 
 **House style.** Ours. No research behind it, binding anyway, because
 consistency is the whole of the argument. The groups below are this tier:
-casing, copy length, no decorative icons, no red. Do not dress them up by
-citing a heuristic at someone.
+casing, copy length, no decorative icons, no red. They are preferences, so
+argue them as preferences: a citation adds nothing here.
 
 **Copy**
 
@@ -299,8 +299,8 @@ citing a heuristic at someone.
   of sitting beside it. Give the primary the width when the choice is not
   symmetric.
 - Every amount goes through `SatAmount`, hero displays included. A
-  missing ₿ or a hand-grouped number is the first thing QA sees. The
-  amount rules are below.
+  missing ₿ or a hand-grouped number is the first thing anyone notices on
+  a screen about money. The amount rules are below.
 - Use the accent for one thing. A screen with no `spark-primary` reads
   unfinished, and a screen where several elements are amber has no
   emphasis left. Give it to the amount being confirmed or the action the
@@ -332,9 +332,9 @@ citing a heuristic at someone.
   to the shell's app bar, and a primary action belongs in the shell's
   `footer`, which is pinned above the safe area. A CTA inside the scroll
   area moves with the content, and a CTA that moves is one the user has to
-  hunt for. `GetRefundPage` predates this and keeps its buttons inline;
-  it is old enough that moving them risks more than it fixes, so read it
-  as debt, not as the pattern to copy.
+  hunt for. `GetRefundPage` predates the shells and keeps its buttons
+  inline. Moving them now risks more than it gains, so it stays as it is
+  and new flows follow the shells instead.
 - Tap targets are at least 44px on their short side, and the primary CTA
   keeps the full width at the bottom of the screen, where the thumb is
   (Fitts, 1954; Apple HIG; WCAG 2.5.5).
