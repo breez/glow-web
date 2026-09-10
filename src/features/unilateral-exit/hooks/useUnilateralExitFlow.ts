@@ -257,19 +257,22 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     await refreshQuote();
   }, [refreshQuote]);
 
+  // The index, not the plan: every engine pass emits a new plan object, and
+  // the page re-runs unlock whenever this callback changes.
+  const planFundingIndex = plan?.fundingAddressIndex;
   const unlock = useCallback(async () => {
     if (!walletKey) return;
     setUnlockError(null);
     try {
       const mnemonic = await readWalletMnemonic({ interactive: true });
       mnemonicRef.current = mnemonic;
-      const index = plan?.fundingAddressIndex ?? readFundingIndex(walletKey);
+      const index = planFundingIndex ?? readFundingIndex(walletKey);
       setFundingKey(deriveFundingKey(mnemonic, network, index));
       setPhase('fund');
     } catch (e) {
       setUnlockError(message(e));
     }
-  }, [walletKey, network, plan]);
+  }, [walletKey, network, planFundingIndex]);
 
   const confirmedUtxos = useMemo(() => fundingUtxos.filter(utxo => utxo.confirmed), [fundingUtxos]);
   const fundedSat = confirmedUtxos.reduce((total, utxo) => total + utxo.value, 0);
