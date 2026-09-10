@@ -517,6 +517,21 @@ describe('blocksToFinish for a matured step', () => {
   });
 });
 
+describe('savePlan when the snapshot outgrows storage', () => {
+  it('keeps the plan without the snapshot rather than losing the exit', () => {
+    // The first write, the whole plan, is the one that does not fit.
+    vi.mocked(localStorage.setItem).mockImplementationOnce(() => {
+      throw new DOMException('quota', 'QuotaExceededError');
+    });
+    const owner = { identityPubkey: 'snapshot-owner', network: 'regtest' };
+    savePlan(owner, plan([tx({ txid: 'a' })], { exitStateSnapshot: 'huge-snapshot' }));
+
+    const kept = loadPlan(owner);
+    expect(kept?.exit.transactions[0].txid).toBe('a');
+    expect(kept?.exitStateSnapshot).toBeUndefined();
+  });
+});
+
 describe('destinationAddressOf', () => {
   const address = { type: 'bitcoinAddress', address: 'bcrt1qdest', network: 'regtest', source: {} } as const;
 

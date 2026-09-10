@@ -10,7 +10,7 @@ import type {
 import type { ChainClient } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { outputTotalSat } from '@/utils/rawTx';
-import { loadExitState, restoreExitState } from './exitState';
+import { loadExitState, restoreExitState, saveExitState } from './exitState';
 import { deriveFundingKey, MnemonicNeedsPasskeyError, readWalletMnemonic } from './funding';
 
 /**
@@ -84,8 +84,28 @@ export function applyExitCheck(
 export function savePlan(wallet: WalletKey, plan: UnilateralExitPlan): void {
   try {
     localStorage.setItem(storageKey(wallet), JSON.stringify(plan));
+    return;
   } catch (e) {
     logger.error(LogCategory.SDK, 'Failed to persist recovery plan', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+  // The snapshot can outgrow localStorage. Losing the plan would lose the exit,
+  // so it is kept without the snapshot, which moves to the rolling backup that
+  // a restore falls back to and that nothing refreshes while the exit runs.
+  // ponytail: retried on every save while too big; keep the snapshot in
+  // IndexedDB from the start if that ever costs.
+  if (!plan.exitStateSnapshot) return;
+  const { exitStateSnapshot, ...rest } = plan;
+  try {
+    localStorage.setItem(storageKey(wallet), JSON.stringify(rest));
+    void saveExitState(wallet.identityPubkey, exitStateSnapshot).catch(e =>
+      logger.error(LogCategory.SDK, 'Failed to move the exit snapshot to the rolling backup', {
+        error: e instanceof Error ? e.message : String(e),
+      }),
+    );
+  } catch (e) {
+    logger.error(LogCategory.SDK, 'Failed to persist recovery plan without its snapshot', {
       error: e instanceof Error ? e.message : String(e),
     });
   }
