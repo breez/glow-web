@@ -149,6 +149,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   const [feeChoice, setFeeChoice] = useState<FeeChoice>('medium');
   const [quote, setQuote] = useState<PrepareUnilateralExitResponse | null>(null);
   const [isQuoting, setIsQuoting] = useState(false);
+  const quoteRequest = useRef(0);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [fundingKey, setFundingKey] = useState<FundingKey | null>(null);
   const [fundingUtxos, setFundingUtxos] = useState<ChainUtxo[]>([]);
@@ -220,6 +221,8 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
 
   const refreshQuote = useCallback(async () => {
     if (effectiveFeeRate <= 0) return;
+    // Back is open while a quote is out, so a slower, older one can land last.
+    const request = ++quoteRequest.current;
     setIsQuoting(true);
     setQuoteError(null);
     setRequiredFundingSat(null);
@@ -237,13 +240,15 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
           ? { type: 'specific', leafIds: plan.exit.leaves.map(leaf => leaf.leafId) }
           : { type: 'auto' },
       });
+      if (request !== quoteRequest.current) return;
       setQuote(prepared);
     } catch (e) {
+      if (request !== quoteRequest.current) return;
       logger.error(LogCategory.SDK, 'Failed to quote unilateral exit', { error: message(e) });
       setQuoteError(message(e));
       setQuote(null);
     } finally {
-      setIsQuoting(false);
+      if (request === quoteRequest.current) setIsQuoting(false);
     }
   }, [wallet, destination, effectiveFeeRate, walletKey, plan]);
 
