@@ -225,6 +225,7 @@ const AppContent: React.FC = () => {
     switch (currentScreen) {
       case 'settings':
       case 'getRefund':
+      case 'unilateralExit':
         setUserScreen('wallet');
         return true;
       case 'backup':
@@ -232,8 +233,7 @@ const AppContent: React.FC = () => {
       case 'fiatCurrencies':
       case 'buyProviders':
       case 'passkeySettings':
-      case 'unilateralExit':
-        setUserScreen('wallet');
+        setUserScreen('settings');
         return true;
       case 'passkeyManagement':
       case 'labels':
