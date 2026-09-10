@@ -5,6 +5,7 @@ import {
   broadcastReadyTransactions,
   checkExit,
   clearPlan,
+  destinationAddressOf,
   exitStages,
   hasFixedFeeBudget,
   isReady,
@@ -513,6 +514,24 @@ describe('blocksToFinish for a matured step', () => {
   it("does not count a ready step's timelock again", () => {
     // Ready means the sdk has already seen the timelock pass: one block to confirm is left.
     expect(blocksToFinish([tx({ txid: 'r', kind: 'refund', csvTimelockBlocks: 2000 })], 100)).toBe(1);
+  });
+});
+
+describe('destinationAddressOf', () => {
+  const address = { type: 'bitcoinAddress', address: 'bcrt1qdest', network: 'regtest', source: {} } as const;
+
+  it('takes a plain address as it is', () => {
+    expect(destinationAddressOf(address as never)).toBe('bcrt1qdest');
+  });
+
+  it('takes the address out of a scanned bitcoin: URI', () => {
+    const uri = { type: 'bip21', uri: 'bitcoin:bcrt1qdest?amount=1', extras: [], paymentMethods: [address] };
+    expect(destinationAddressOf(uri as never)).toBe('bcrt1qdest');
+  });
+
+  it('refuses anything that names no on-chain address', () => {
+    expect(destinationAddressOf({ type: 'bip21', uri: 'bitcoin:?lightning=lnbc1', extras: [], paymentMethods: [] } as never)).toBeUndefined();
+    expect(destinationAddressOf(null)).toBeUndefined();
   });
 });
 

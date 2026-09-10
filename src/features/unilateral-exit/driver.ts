@@ -2,6 +2,7 @@ import { singleKeyCpfpSigner } from '@breeztech/breez-sdk-spark';
 import type {
   BreezSdk,
   CheckUnilateralExitResponse,
+  InputType,
   PrepareUnilateralExitResponse,
   UnilateralExitResponse,
   UnilateralExitTransaction,
@@ -213,6 +214,13 @@ export const isReady = (tx: UnilateralExitTransaction): boolean => tx.status.typ
  */
 export const hasFixedFeeBudget = (plan: UnilateralExitPlan): boolean =>
   plan.exit.transactions.some(tx => tx.kind === 'fanOut' && tx.status.type === 'confirmed');
+
+/** The on-chain address a destination names. A scanned receive QR is a BIP21 URI, and the exit sweeps to the address in it. */
+export function destinationAddressOf(parsed: InputType | null): string | undefined {
+  if (parsed?.type === 'bitcoinAddress') return parsed.address;
+  if (parsed?.type !== 'bip21') return undefined;
+  return parsed.paymentMethods.flatMap(method => (method.type === 'bitcoinAddress' ? [method.address] : []))[0];
+}
 
 /** What a build said it needs: the sdk's error reaches the page only as its message. */
 export function requiredFundingOf(error: string): number | null {

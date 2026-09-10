@@ -11,6 +11,7 @@ import {
   planFromExitResponse,
   quotedSweepFeeSat,
   rebuildExit,
+  destinationAddressOf,
   requiredFundingOf,
   willReceiveSat,
   type WalletKey,
@@ -207,10 +208,12 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
       return;
     }
     const parsed = await wallet.parse(trimmed).catch(() => null);
-    if (parsed?.type !== 'bitcoinAddress') {
+    const address = destinationAddressOf(parsed);
+    if (!address) {
       setDestinationError('That is not an on-chain Bitcoin address');
       return;
     }
+    setDestination(address);
     setDestinationError(null);
     setPhase('fee');
   }, [destination, wallet]);
