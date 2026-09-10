@@ -16,6 +16,7 @@ import { Keyboard } from '@capacitor/keyboard';
 import { useStatusBarColor } from '../../../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE } from '../../../utils/statusBarManager';
 import { useBackButton } from '../../../hooks/useBackButton';
+import { useLatest } from '../../../hooks/useLatest';
 import { BottomSheetCardContext, SheetFullSnapContext } from './BottomSheetCardContext';
 
 /**
@@ -311,10 +312,14 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
 
   // Wire the Android hardware back button to close the sheet while
   // it's open, via the shared LIFO stack so nested sheets dismiss
-  // topmost-first. No-op on non-native platforms.
-  useBackButton(() => {
-    dismiss();
-  }, isOpen);
+  // topmost-first. No-op on non-native platforms. The handler is stable:
+  // re-pushed on every render, it would jump above a handler registered
+  // after it, such as a page's step-back inside the sheet.
+  const latestDismiss = useLatest(dismiss);
+  const onBackButton = useCallback(() => {
+    latestDismiss.current();
+  }, [latestDismiss]);
+  useBackButton(onBackButton, isOpen);
 
   // System bar tinting on native: nav bar matches the sheet surface
   // for the whole time it's open (the card always meets the nav bar);
