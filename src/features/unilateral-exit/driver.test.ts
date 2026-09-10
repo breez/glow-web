@@ -509,6 +509,13 @@ describe('nextAction', () => {
   });
 });
 
+describe('blocksToFinish for a matured step', () => {
+  it("does not count a ready step's timelock again", () => {
+    // Ready means the sdk has already seen the timelock pass: one block to confirm is left.
+    expect(blocksToFinish([tx({ txid: 'r', kind: 'refund', csvTimelockBlocks: 2000 })], 100)).toBe(1);
+  });
+});
+
 describe('requiredFundingOf', () => {
   it("reads the amount out of the sdk's shortfall error", () => {
     expect(requiredFundingOf('Insufficient CPFP funding: need at least 5898 sats')).toBe(5898);

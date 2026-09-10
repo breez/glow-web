@@ -179,12 +179,15 @@ export function blocksToFinish(all: UnilateralExitTransaction[], tipHeight: numb
       after.set(tx.txid, 0);
       continue;
     }
-    // A started timelock counts down from the height the sdk gives; one that
-    // has not started lies wholly ahead of whatever its dependency waits on.
+    // A ready step's timelock has matured; a started one counts down from the
+    // height the sdk gives; one not yet started lies wholly ahead of whatever
+    // its dependency waits on.
     const timelock =
-      tx.status.type === 'waitingForTimelock' && tx.status.spendableAtHeight !== undefined
-        ? Math.max(0, tx.status.spendableAtHeight - tipHeight)
-        : (tx.csvTimelockBlocks ?? 0);
+      tx.status.type === 'ready'
+        ? 0
+        : tx.status.type === 'waitingForTimelock' && tx.status.spendableAtHeight !== undefined
+          ? Math.max(0, tx.status.spendableAtHeight - tipHeight)
+          : (tx.csvTimelockBlocks ?? 0);
     const waits = tx.dependsOn.map(id => after.get(id) ?? 0);
     const blocks = (waits.length > 0 ? Math.max(...waits) : 0) + timelock + 1;
 
