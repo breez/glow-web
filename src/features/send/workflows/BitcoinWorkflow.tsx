@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { SendPaymentMethod, ConversionEstimate } from '@breeztech/breez-sdk-spark';
 import type { PaymentStep } from '../../../types/domain';
-import { PrimaryButton } from '../../../components/ui';
+import { PrimaryButton, SecondaryButton } from '../../../components/ui';
 import { RadioCheckIcon } from '../../../components/Icons';
 import ConfirmStep from '../steps/ConfirmStep';
 import { SatAmount } from '../../../components/SatAmount';
@@ -86,9 +86,9 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, f
             </div>
           </div>
           <div className="flex gap-3">
-            <PrimaryButton onClick={onBack} className="flex-1 bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-lg" disabled={false}>
+            <SecondaryButton onClick={onBack} className="flex-1">
               Back
-            </PrimaryButton>
+            </SecondaryButton>
             <PrimaryButton
               onClick={() => setStep('confirm')}
               className="flex-1"

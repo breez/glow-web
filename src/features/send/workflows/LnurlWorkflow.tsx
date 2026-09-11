@@ -288,7 +288,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
           </label>
           {!isTokenMode && (
             <span className="text-xs text-spark-text-secondary">
-              {minSats.toLocaleString('en-US').replace(/,/g, ' ')} – {maxSats.toLocaleString('en-US').replace(/,/g, ' ')}
+              {formatWithSpaces(minSats)} – {formatWithSpaces(maxSats)}
             </span>
           )}
         </div>
@@ -303,7 +303,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
             }}
             placeholder={isTokenMode && config
               ? `Enter amount in ${config.currencyCode}`
-              : `Between ${minSats.toLocaleString('en-US').replace(/,/g, ' ')} and ${maxSats.toLocaleString('en-US').replace(/,/g, ' ')} sats`
+              : `Between ${formatWithSpaces(minSats)} and ${formatWithSpaces(maxSats)} sats`
             }
             className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed"
             disabled={isLoading}

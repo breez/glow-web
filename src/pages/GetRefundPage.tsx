@@ -388,9 +388,9 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                 </div>
 
                 <div className="flex gap-3">
-                  <PrimaryButton onClick={() => setRefundStep('address')} className="flex-1 bg-gray-600 hover:bg-gray-700 text-white" disabled={false}>
+                  <SecondaryButton onClick={() => setRefundStep('address')} className="flex-1">
                     Back
-                  </PrimaryButton>
+                  </SecondaryButton>
                   <PrimaryButton
                     onClick={() => setRefundStep('confirm')}
                     disabled={!selectedFeeRate}

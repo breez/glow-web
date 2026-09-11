@@ -191,6 +191,172 @@ Call `markPasskeyUsed()` after any successful PRF ceremony to update `passkeyLas
 - Production builds require npm-published SDK version
 - Type check: `npx tsc --noEmit`
 
+## UI Conventions
+
+The other UI sections are structural: which component to reuse, where to
+register a screen. These are the editorial ones, collected from design
+review so a decision gets made once and then applies to every flow.
+
+They rest on five kinds of authority, and the tier decides who wins when
+two of them disagree. A measurement beats a heuristic, a heuristic beats a
+preference, and a preference everyone follows still beats a coin flip.
+
+**Testable.** Pass or fail, and a machine can tell which.
+
+- **WCAG 2.2** (W3C, 2023). 1.4.1 nothing rides on color alone. 2.5.8
+  targets are 24px and 2.5.5 wants 44. 3.3.8 never makes the user
+  transcribe or memorise to authenticate, so paste always works. Text
+  contrast (1.4.3) and reduced motion (2.3.3) are open: both need a token
+  or stylesheet change first, so they get their own PR. Do not write
+  rules for them here.
+- **Core Web Vitals** (Google; INP replaced FID in 2024). A tap answers
+  inside 200ms or shows that it heard. The modern, measurable form of the
+  400ms response threshold (Doherty & Thadani, IBM, 1982).
+
+**Predictive.** Models that give a number before the screen exists.
+
+- **Fitts's law** (Fitts, 1954). Time to hit a target falls with its size
+  and nearness, so the primary action is large and at the bottom.
+- **How phones are actually held** (Hoober, 2013; 1,333 observations:
+  49% one-handed, 36% cradled). Design the bottom third for one thumb,
+  and keep irreversible actions out of its sweep.
+
+**Evidence, applied by analogy.** The findings are solid; the jump to a
+screen is ours to defend.
+
+- **Cognitive load** (Sweller, 1988 onward). Cut what the task does not
+  need. This is one decision, one row.
+- **Chunking** (Miller, 1956; Cowan, 2001). Grouped digits read in one
+  pass, which is what the space separator buys.
+- **Isolation effect** (von Restorff, 1933). The item that differs is the
+  one remembered: one accent, one focus.
+- **Proximity and common region** (Wertheimer, 1923; Palmer, 1992). Cause
+  above effect, close enough to take in together.
+- **Credibility is judged on appearance** (Fogg et al., 2003; 2,684
+  people, 46% of credibility comments were about visual design). A screen
+  that looks unlike the rest of the app reads as less safe, so in a wallet
+  consistency is a security property, not a finish.
+- **What goes wrong in crypto wallets** (Eskandari et al., 2015;
+  Krombholz et al., 2016; Mai et al., SOUPS 2020; Voskobojnikov et al.,
+  CHI 2021). People hold wrong mental models of where funds sit and what
+  can be undone, and they lose money at backup and recovery. So: say what
+  is irreversible before the action, name every state in words, and build
+  recovery as a first-class flow.
+
+**Inspection vocabulary.** Names for recurring notes. Two reviewers using
+these agree on 5% to 65% of what they find (Hertzum & Jacobsen, 2003), so
+they frame a concern, they do not settle it.
+
+- **Nielsen's heuristics** (Nielsen, 1994): visibility of system status,
+  speak the user's language, consistency and standards, error prevention,
+  recognition over recall, aesthetic and minimalist design.
+- **No deceptive patterns** (Brignull, 2023; Mathur et al., 2019; Gray et
+  al., 2018; EU DSA Art. 25). No confirmshaming, no manufactured urgency,
+  no pre-ticked consent. The one that bites self-custody is obstruction:
+  leaving has to be as easy as arriving, which is what the account
+  deletion guide and the unilateral exit are for.
+- **Inclusive design** (Microsoft, 2016). The limit is usually
+  situational, not permanent: one hand full, bright sun, a hurry, a panic.
+
+**House style.** Ours. No research behind it, binding anyway, because
+consistency is the whole of the argument. The groups below are this tier:
+casing, copy length, no decorative icons, no red. They are preferences, so
+argue them as preferences: a citation adds nothing here.
+
+**Copy**
+
+- Labels are Title Case, prose is sentence case. A label names a thing:
+  the page title in the app bar, a CTA, a dialog that names the action.
+  "Unilateral Exit", "Build Exit", "Delete Contact", "Export Database".
+  All eleven page titles already read this way.
+- Anything phrased as a sentence or a question keeps sentence case, even
+  as a title: "Switch label?", "Erase and start over", "Sign-in failed",
+  "Try a normal withdrawal first". So do section headings, body, field
+  labels and helper text.
+- A sentence earns its place by telling the user something the screen
+  cannot. On the exit quote screen "To start the process you need to pay
+  the exit fee. These are the mining fees required to move the Spark tree
+  on-chain." stays: it says why the money leaves. Under an address field
+  "Every exited sat is swept to this address" goes, and under a fee slider
+  "A higher rate costs more" goes: the control already said it. Default to
+  no sentence, and read the screen without it before keeping it.
+- Write from where the user stands, not from the system. "From another
+  wallet, to pay mining fees. Not part of what you receive" lists
+  mechanics and leaves them to work out what it means for them. Say what
+  they have to do, and what it costs them.
+- An error names what the user was doing and what to do next, in one
+  voice: "Could not create the invoice. Please try again." Not "Failed to
+  create invoice", which is the system reporting its own state and leaves
+  them nowhere to go.
+
+**Chrome**
+
+- No decorative icons: not above a feature page's title, which already
+  says what the page is, and not in an `AlertCard`, where a generic glyph
+  repeats the title and narrows the body. Icons that carry meaning stay:
+  a row chevron, a copy button, a payment method.
+- A secondary action can take its own row under the primary CTA instead
+  of sitting beside it. Give the primary the width when the choice is not
+  symmetric.
+- Every amount goes through `SatAmount`, hero displays included. A
+  missing ₿ or a hand-grouped number is the first thing anyone notices on
+  a screen about money. The amount rules are below.
+- Use the accent for one thing. A screen with no `spark-primary` reads
+  unfinished, and a screen where several elements are amber has no
+  emphasis left. Give it to the amount being confirmed or the action the
+  user came for; everything else is `spark-text-primary` /
+  `spark-text-secondary` / `spark-text-muted`, in that order.
+- No state rides on color or motion alone. A state worth showing gets a
+  word: the failed and processing chips in `TransactionList` are the
+  pattern, the unlabelled pulsing dot beside a pending payment is not
+  (WCAG 1.4.1).
+
+**Layout**
+
+- A new tab or sheet matches the ones beside it. Padding and height come
+  from the container: `BottomSheetCard` already gives its content
+  `px-6 pt-3` and the safe-area bottom pad, so content adds no outer
+  padding of its own and sets no fixed height. The height rules are in
+  Bottom Sheets below.
+- Put a control above what it changes. Switching Priority to Standard
+  rewrites the fee breakdown, so the switch goes above the breakdown: a
+  user who has scrolled past a number should never be the one to notice
+  it moved. The name for this is visibility of system status; in a layout
+  it comes down to cause above effect, close enough to see both at once.
+- One decision, one row. Priority and Standard as three-row cards (name,
+  ETA, fee) spend triple the height on a choice that turns on two
+  numbers, so put the numbers on the row. Every row a screen does not
+  have is a row nobody has to read.
+- A full page uses one of the two shells rather than its own scaffolding:
+  `PageLayout` or `SlideInPage` (`src/components/layout/`). Back belongs
+  to the shell's app bar, and a primary action belongs in the shell's
+  `footer`, which is pinned above the safe area. A CTA inside the scroll
+  area moves with the content, and a CTA that moves is one the user has to
+  hunt for. `GetRefundPage` predates the shells and keeps its buttons
+  inline. Moving them now risks more than it gains, so it stays as it is
+  and new flows follow the shells instead.
+- Tap targets are at least 44px on their short side, and the primary CTA
+  keeps the full width at the bottom of the screen, where the thumb is
+  (Fitts, 1954; Apple HIG; WCAG 2.5.5).
+- Nothing hides behind hover or long-press. A touch screen has no hover
+  (`hover: none`, Media Queries Level 4), and a long-press shows nothing
+  until someone happens to try it, so neither is a phone UI. If a control
+  needs explaining, the screen says it with a visible label. Hover styling
+  on a control is fine as feedback.
+- Some positions are fixed: on the settings page the Account section
+  stays last, above the version line. New sections go above it.
+
+**Reuse**
+
+- A new screen should need no new component, color or text style. Read
+  `src/components/ui/index.tsx` first: buttons, rows, tabs, dialogs,
+  sheets and alerts are already there, and `spark-*` holds the colors. If
+  nothing fits, that is worth raising, not worth a local one-off.
+- One format, one helper: `SatAmount` and `formatWithSpaces` for amounts,
+  `truncateAddress` for addresses (`start...end`, never a CSS `truncate`,
+  which eats the tail the user checks). A formatter written inside a
+  component is how the second shape starts, so export it instead.
+
 ## Colors: no red
 
 The UI deliberately does not use red, even for destructive, warning, or
