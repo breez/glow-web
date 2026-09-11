@@ -48,11 +48,17 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
   if (!isSuccess) {
     // Auth failure: use ErrorMessageBox card style
     if (operationType === 'auth') {
+      // The SDK's "Network error" means Glow never read the service's reply,
+      // not that the service refused. A service that sends no CORS headers
+      // still gets the login, and the WebView only hides its answer.
+      const unconfirmed = error?.includes('Network error:');
       return (
         <div className="space-y-5">
           <ErrorMessageBox
-            title={getTitle()}
-            error={error || getDefaultErrorMessage()}
+            title={unconfirmed ? 'Authentication Not Confirmed' : getTitle()}
+            error={unconfirmed
+              ? "Glow couldn't read the service's reply, so it can't confirm the login. Check the site to see if it went through."
+              : error || getDefaultErrorMessage()}
           />
           <PrimaryButton onClick={onClose} className="w-full">
             Close
