@@ -6,6 +6,7 @@ import type {
   PrepareSendPaymentResponse,
 } from '@breeztech/breez-sdk-spark';
 import { PrimaryButton, SecondaryButton } from '../../../components/ui';
+import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardContext';
 import { SpinnerIcon } from '../../../components/Icons';
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
 import { CrossChainAssetStep } from '../../../components/crossChain/CrossChainAssetStep';
@@ -252,6 +253,9 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
     }
   };
 
+  // The asset and chain steps lend their own.
+  useSheetBack(step === 'provider' ? goBackFromProvider : step === 'confirm' ? goBackFromConfirm : undefined);
+
   const handleSend = () => {
     if (!prepareResponse) return;
     const response = prepareResponse;
@@ -389,24 +393,19 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                 </PrimaryButton>
               </>
             ) : (
-              <>
-                <SecondaryButton onClick={goBackFromProvider} className="flex-1">
-                  Back
-                </SecondaryButton>
-                <PrimaryButton
-                  onClick={() => {
-                    const pq = pendingProvider ? providerQuotes.get(pendingProvider) : null;
-                    if (pq?.response) {
-                      setPrepareResponse(pq.response);
-                      setStep('confirm');
-                    }
-                  }}
-                  className="flex-1"
-                  disabled={!pendingProvider}
-                >
-                  Continue
-                </PrimaryButton>
-              </>
+              <PrimaryButton
+                onClick={() => {
+                  const pq = pendingProvider ? providerQuotes.get(pendingProvider) : null;
+                  if (pq?.response) {
+                    setPrepareResponse(pq.response);
+                    setStep('confirm');
+                  }
+                }}
+                className="flex-1"
+                disabled={!pendingProvider}
+              >
+                Continue
+              </PrimaryButton>
             )}
           </div>
         </div>
@@ -465,14 +464,9 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
             </div>
           )}
 
-          <div className="flex gap-3">
-            <SecondaryButton onClick={goBackFromConfirm} className="flex-1">
-              Back
-            </SecondaryButton>
-            <PrimaryButton onClick={handleSend} className="flex-1" disabled={false}>
-              Send
-            </PrimaryButton>
-          </div>
+          <PrimaryButton onClick={handleSend} className="w-full">
+            Send
+          </PrimaryButton>
         </>
       )}
 

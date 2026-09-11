@@ -1,5 +1,6 @@
 import React from 'react';
-import { CopyableRow, PrimaryButton, SecondaryButton, FormError } from '../../../components/ui';
+import { CopyableRow, PrimaryButton, FormError } from '../../../components/ui';
+import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardContext';
 import { FeeBreakdownCard, SimpleFeeBreakdown } from '../../../components/FeeBreakdownCard';
 import { SpinnerIcon } from '../../../components/Icons';
 import { SatAmount } from '../../../components/SatAmount';
@@ -38,6 +39,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
   const stableBalance = useStableBalance();
   const isTokenMode = stableBalance.isActive && !!stableBalance.displayConfig && !!conversionEstimate;
   const balance = useBalanceValidation(isTokenMode, undefined, balanceSats, tokenBalance);
+  useSheetBack(isLoading ? undefined : onBack);
 
   const amount = Number(amountSats || 0n);
   const fee = Number(feesSat || 0);
@@ -101,29 +103,21 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
 
       <FormError error={balanceError || error} />
 
-      {/* Action buttons */}
-      <div className="flex gap-3">
-        {onBack && (
-          <SecondaryButton onClick={onBack} disabled={isLoading} className="flex-1">
-            Back
-          </SecondaryButton>
+      <PrimaryButton
+        onClick={onConfirm}
+        disabled={isLoading || insufficientBalance || disableConfirm}
+        className="w-full"
+        data-testid="send-confirm-button"
+      >
+        {isLoading ? (
+          <span className="flex items-center justify-center gap-2">
+            <SpinnerIcon size="md" />
+            Processing...
+          </span>
+        ) : (
+          'Send'
         )}
-        <PrimaryButton
-          onClick={onConfirm}
-          disabled={isLoading || insufficientBalance || disableConfirm}
-          className={onBack ? 'flex-1' : 'w-full'}
-          data-testid="send-confirm-button"
-        >
-          {isLoading ? (
-            <span className="flex items-center justify-center gap-2">
-              <SpinnerIcon size="md" />
-              Processing...
-            </span>
-          ) : (
-            'Send'
-          )}
-        </PrimaryButton>
-      </div>
+      </PrimaryButton>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import type { ConversionOptions } from '@breeztech/breez-sdk-spark';
-import { FormError, PrimaryButton, SecondaryButton } from '../../../components/ui';
+import { FormError, PrimaryButton } from '../../../components/ui';
+import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardContext';
 import { SpinnerIcon } from '../../../components/Icons';
 import { formatQuickAmount, pickQuickAmounts } from '../../../utils/tokenFormatting';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
@@ -59,6 +60,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
 
   const balance = useBalanceValidation(isTokenMode, setIsTokenMode, balanceSats, tokenBalance, fiatOverride);
   const hasPendingConversion = useHasPendingConversion();
+  useSheetBack(isLoading ? undefined : onBack);
 
   const [feesIncluded, setFeesIncluded] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -283,24 +285,18 @@ const AmountStep: React.FC<AmountStepProps> = ({
 
       <FormError error={inlineBalanceError || localError || error} />
 
-      {/* Action buttons */}
-      <div className="flex gap-3">
-        <SecondaryButton onClick={onBack} disabled={isLoading} className="flex-1">
-          Back
-        </SecondaryButton>
-        <PrimaryButton
-          onClick={handleNext}
-          disabled={isLoading || !validAmount || !!inlineBalanceError}
-          className="flex-1"
-        >
-          {isLoading ? (
-            <span className="flex items-center justify-center gap-2">
-              <SpinnerIcon />
-              Processing...
-            </span>
-          ) : 'Continue'}
-        </PrimaryButton>
-      </div>
+      <PrimaryButton
+        onClick={handleNext}
+        disabled={isLoading || !validAmount || !!inlineBalanceError}
+        className="w-full"
+      >
+        {isLoading ? (
+          <span className="flex items-center justify-center gap-2">
+            <SpinnerIcon />
+            Processing...
+          </span>
+        ) : 'Continue'}
+      </PrimaryButton>
     </div>
   );
 };

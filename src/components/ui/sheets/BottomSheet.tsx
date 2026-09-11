@@ -17,7 +17,12 @@ import { useStatusBarColor } from '../../../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE } from '../../../utils/statusBarManager';
 import { useBackButton } from '../../../hooks/useBackButton';
 import { useLatest } from '../../../hooks/useLatest';
-import { BottomSheetCardContext, SheetFullSnapContext } from './BottomSheetCardContext';
+import {
+  BottomSheetCardContext,
+  SetSheetBackContext,
+  SheetBackContext,
+  SheetFullSnapContext,
+} from './BottomSheetCardContext';
 
 /**
  * Bottom sheet adapter over react-modal-sheet.
@@ -560,6 +565,7 @@ export interface BottomSheetCardProps {
 export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
   ({ children, className = '' }, ref) => {
     const [cardEl, setCardEl] = useState<HTMLDivElement | null>(null);
+    const [stepBack, setStepBack] = useState<(() => void) | null>(null);
     const reportHeight = useContext(ContentMeasureContext);
     const clearancePx = useContext(KeyboardClearanceContext);
     const handleRef = useRef<HTMLDivElement | null>(null);
@@ -667,7 +673,11 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
             className={`bottom-sheet-content-pad px-6 pt-3 ${className}`}
           >
             <BottomSheetCardContext.Provider value={cardEl}>
-              {children}
+              <SetSheetBackContext.Provider value={setStepBack}>
+                <SheetBackContext.Provider value={stepBack}>
+                  {children}
+                </SheetBackContext.Provider>
+              </SetSheetBackContext.Provider>
             </BottomSheetCardContext.Provider>
           </div>
         </Sheet.Content>

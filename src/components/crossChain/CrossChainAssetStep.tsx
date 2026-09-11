@@ -1,6 +1,6 @@
 import React from 'react';
-import { useSheetFullSnap } from '../ui/sheets/BottomSheetCardContext';
-import { PrimaryButton, SecondaryButton } from '../ui';
+import { useSheetBack, useSheetFullSnap } from '../ui/sheets/BottomSheetCardContext';
+import { PrimaryButton } from '../ui';
 import CryptoIcon from '../CryptoIcon';
 import { crossChainCardClass } from '../../utils/crossChainRoutes';
 
@@ -25,6 +25,7 @@ export const CrossChainAssetStep: React.FC<CrossChainAssetStepProps> = ({
   error,
 }) => {
   const isSheetFull = useSheetFullSnap();
+  useSheetBack(onBack);
   return (
   <div
     className="flex flex-col"
@@ -54,11 +55,8 @@ export const CrossChainAssetStep: React.FC<CrossChainAssetStepProps> = ({
         </div>
       </div>
     )}
-    <div className="flex gap-3 shrink-0 pt-2">
-      <SecondaryButton onClick={onBack} className="flex-1">
-        Back
-      </SecondaryButton>
-      <PrimaryButton onClick={onContinue} className="flex-1" disabled={!pending}>
+    <div className="shrink-0 pt-2">
+      <PrimaryButton onClick={onContinue} className="w-full" disabled={!pending}>
         Continue
       </PrimaryButton>
     </div>

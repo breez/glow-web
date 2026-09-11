@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { LnurlWithdrawRequestDetails, LnurlWithdrawResponse } from '@breeztech/breez-sdk-spark';
-import { FormError, PrimaryButton, SecondaryButton } from '../../../components/ui';
+import { FormError, PrimaryButton } from '../../../components/ui';
+import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardContext';
 import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
 import { formatWithSpaces } from '../../../utils/formatNumber';
@@ -38,6 +39,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
   const [amount, setAmount] = useState<string>(String(maxSats));
   const [error, setError] = useState<string | null>(null);
   const [isWaiting, setIsWaiting] = useState(false);
+  useSheetBack(isWaiting ? undefined : onBack);
 
   const description = parsed.defaultDescription?.trim();
   const sourceHost = useMemo(() => {
@@ -137,14 +139,9 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
 
       <FormError error={inlineError || error} />
 
-      <div className="flex gap-3">
-        <SecondaryButton onClick={onBack} className="flex-1">
-          Back
-        </SecondaryButton>
-        <PrimaryButton onClick={onReceive} disabled={!validAmount} className="flex-1">
-          Receive
-        </PrimaryButton>
-      </div>
+      <PrimaryButton onClick={onReceive} disabled={!validAmount} className="w-full">
+        Receive
+      </PrimaryButton>
     </div>
   );
 };
