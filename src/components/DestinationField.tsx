@@ -1,20 +1,25 @@
-import React, { useRef } from 'react';
+import React, { useId, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
 import { SimpleAlert } from '@/components/AlertCard';
 import { ClipboardIcon, QrCodeIcon } from '@/components/Icons';
 import { logger, LogCategory } from '@/services/logger';
 import { dismissKeyboard } from '@/utils/keyboard';
-import type { DestinationFields } from '../hooks/useUnilateralExitFlow';
 
-/** The send flow's quick actions, so the two address fields read as one control. */
+/** The send flow's quick actions, so the address fields read as one control. */
 const quickAction =
   'flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-spark-surface border border-spark-border rounded-xl ' +
   'text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light transition-colors';
 
-export const DestinationStep: React.FC<
-  DestinationFields & { onSubmit: () => void; onScanQr: () => void }
-> = ({ destination, onChange, error, onSubmit, onScanQr }) => {
+/** An on-chain destination field with Paste and Scan, for the exit and refund flows. */
+export const DestinationField: React.FC<{
+  destination: string;
+  onChange: (value: string) => void;
+  error: string | null;
+  onSubmit: () => void;
+  onScanQr: () => void;
+}> = ({ destination, onChange, error, onSubmit, onScanQr }) => {
+  const id = useId();
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handlePaste = async () => {
@@ -44,7 +49,7 @@ export const DestinationStep: React.FC<
     <div className="flex flex-col gap-4">
       <div>
         <label
-          htmlFor="unilateral-exit-destination"
+          htmlFor={id}
           className="block text-sm font-medium text-spark-text-primary mb-2"
         >
           Destination
@@ -52,7 +57,7 @@ export const DestinationStep: React.FC<
         {/* A textarea so a long address wraps instead of scrolling sideways,
             with Enter submitting: this field never takes a second line. */}
         <textarea
-          id="unilateral-exit-destination"
+          id={id}
           ref={inputRef}
           value={destination}
           onChange={event => onChange(event.target.value)}

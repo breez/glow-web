@@ -13,7 +13,7 @@ import { useBackButton } from '@/hooks/useBackButton';
 import { isPinEnabled } from '@/services/appLock';
 import { canContinueFromQuote, useUnilateralExitFlow } from '@/features/unilateral-exit/hooks/useUnilateralExitFlow';
 import { IntroStep } from '@/features/unilateral-exit/steps/IntroStep';
-import { DestinationStep } from '@/features/unilateral-exit/steps/DestinationStep';
+import { DestinationField } from '@/components/DestinationField';
 import { FeeStep } from '@/features/unilateral-exit/steps/FeeStep';
 import { QuoteStep } from '@/features/unilateral-exit/steps/QuoteStep';
 import { FundStep, FundingStatus } from '@/features/unilateral-exit/steps/FundStep';
@@ -170,7 +170,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
             {flow.phase === 'intro' && <IntroStep />}
 
             {flow.phase === 'destination' && (
-              <DestinationStep
+              <DestinationField
                 {...flow.destination}
                 onSubmit={() => void flow.submitDestination()}
                 onScanQr={() => setIsScanning(true)}

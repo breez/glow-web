@@ -1,13 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import type { DepositInfo, Fee, SdkEvent } from '@breeztech/breez-sdk-spark';
-import { LoadingSpinner, PrimaryButton, SecondaryButton, FormInput, BottomSheetContainer, BottomSheetCard, DialogHeader, CollapsibleCodeField, PaymentInfoCard } from '../components/ui';
+import { LoadingSpinner, PrimaryButton, BottomSheetContainer, BottomSheetCard, DialogHeader, CollapsibleCodeField, CopyableRow, PaymentInfoCard } from '../components/ui';
 import { AlertCard, SimpleAlert } from '../components/AlertCard';
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
-import { CloseIcon, CheckIcon } from '../components/Icons';
+import { CheckIcon } from '../components/Icons';
 import { FeeRateSelector, type FeeSpeed } from '../components/FeeRateSelector';
 import { isDepositRejected, removeRejectedDeposit } from '../services/depositState';
 import { SatAmount } from '../components/SatAmount';
+import { DestinationField } from '../components/DestinationField';
+import QrScannerDialog from '../components/QrScannerDialog';
+import ResultStep from '../features/send/steps/ResultStep';
+import { destinationAddressOf } from '../utils/destinationAddress';
+import { truncateAddress } from '../utils/crossChainFormat';
 import { explorerTxUrl } from '../utils/explorer';
 import SlideInPage from '@/components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
@@ -31,10 +36,11 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   const [isRefundFlowOpen, setIsRefundFlowOpen] = useState<boolean>(false);
   const [refundStep, setRefundStep] = useState<RefundStep>('address');
   const [destination, setDestination] = useState<string>('');
+  const [destinationError, setDestinationError] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState<boolean>(false);
   const [selectedFeeRate, setSelectedFeeRate] = useState<FeeSpeed | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [refundError, setRefundError] = useState<string | null>(null);
-  const [refundSuccess, setRefundSuccess] = useState<boolean>(false);
   const [refundTxId, setRefundTxId] = useState<string | null>(null);
   const [isTxIdVisible, setIsTxIdVisible] = useState<boolean>(false);
 
@@ -135,9 +141,9 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   const openRefundFlow = (deposit: DepositInfo) => {
     setSelectedDeposit(deposit);
     setDestination('');
+    setDestinationError(null);
     setSelectedFeeRate(null);
     setRefundError(null);
-    setRefundSuccess(false);
     setRefundTxId(null);
     setRefundStep('address');
     setIsRefundFlowOpen(true);
@@ -148,8 +154,17 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     setSelectedDeposit(null);
   };
 
-  const handleContinueToFeeSelection = () => {
-    if (!selectedDeposit || !destination.trim()) return;
+  // The exit flow's parse: a scanned receive QR is a BIP21 URI.
+  const handleContinueToFeeSelection = async () => {
+    const trimmed = destination.trim();
+    if (!selectedDeposit || !trimmed) return;
+    const address = destinationAddressOf(await wallet.parse(trimmed).catch(() => null));
+    if (!address) {
+      setDestinationError('That is not an on-chain Bitcoin address');
+      return;
+    }
+    setDestination(address);
+    setDestinationError(null);
     setRefundStep('fee');
   };
 
@@ -167,7 +182,6 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
       // Remove from rejected list after successful refund
       removeRejectedDeposit(selectedDeposit.txid, selectedDeposit.vout);
 
-      setRefundSuccess(true);
       setRefundTxId(result.txId || null);
       setRefundStep('result');
 
@@ -299,7 +313,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
       <BottomSheetContainer isOpen={isRefundFlowOpen} onClose={closeRefundFlow} zIndex={70} showBackdrop>
         <BottomSheetCard>
           <DialogHeader
-            title={refundStep === 'result' ? (refundSuccess ? 'Refund Sent' : 'Refund Failed') : 'Refund to Bitcoin'}
+            title="Refund to Bitcoin"
             onClose={closeRefundFlow}
             onBack={
               refundStep === 'fee' ? () => setRefundStep('address')
@@ -312,34 +326,21 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
             {/* Step 1: Address Input */}
             {refundStep === 'address' && (
               <>
-                <div>
-                  <label className="block text-sm font-medium text-spark-text-secondary mb-2">
-                    Destination
-                  </label>
-                  <FormInput
-                    id="refund-destination"
-                    type="text"
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    placeholder="bc1q..."
-                  />
-                  <p className="text-spark-text-muted text-xs mt-2">
-                    Enter the Bitcoin address where you want to receive the refund.
-                  </p>
-                </div>
+                <DestinationField
+                  destination={destination}
+                  onChange={setDestination}
+                  error={destinationError}
+                  onSubmit={() => void handleContinueToFeeSelection()}
+                  onScanQr={() => setIsScanning(true)}
+                />
 
-                <div className="flex gap-3">
-                  <SecondaryButton onClick={closeRefundFlow} className="flex-1">
-                    Cancel
-                  </SecondaryButton>
-                  <PrimaryButton
-                    onClick={handleContinueToFeeSelection}
-                    disabled={!selectedDeposit || !destination.trim()}
-                    className="flex-1"
-                  >
-                    Continue
-                  </PrimaryButton>
-                </div>
+                <PrimaryButton
+                  onClick={() => void handleContinueToFeeSelection()}
+                  disabled={!selectedDeposit || !destination.trim()}
+                  className="w-full"
+                >
+                  Continue
+                </PrimaryButton>
               </>
             )}
 
@@ -365,7 +366,8 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
             {/* Step 3: Confirm */}
             {refundStep === 'confirm' && selectedDeposit && (
               <>
-                {/* Breakdown */}
+                <CopyableRow label="To address" value={destination} display={truncateAddress(destination, 32)} />
+
                 <FeeBreakdownCard
                   items={[
                     { label: 'Amount', value: selectedDeposit.amountSats },
@@ -399,36 +401,8 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
 
             {/* Step 5: Result */}
             {refundStep === 'result' && (
-              <>
-                <div className="text-center py-4">
-                  {refundSuccess ? (
-                    <>
-                      <div className="w-16 h-16 rounded-full bg-spark-success/20 flex items-center justify-center mx-auto mb-4">
-                        <CheckIcon size="xl" className="text-spark-success" />
-                      </div>
-                      <h3 className="font-display font-semibold text-spark-text-primary text-lg mb-2">
-                        Refund Broadcast
-                      </h3>
-                      <p className="text-spark-text-muted text-sm">
-                        Your refund has been sent to the Bitcoin network.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-16 h-16 rounded-full bg-spark-primary/20 flex items-center justify-center mx-auto mb-4">
-                        <CloseIcon size="xl" className="text-spark-primary" />
-                      </div>
-                      <h3 className="font-display font-semibold text-spark-text-primary text-lg mb-2">
-                        Refund Failed
-                      </h3>
-                      <p className="text-spark-primary text-sm">
-                        {refundError || 'An error occurred while processing your refund.'}
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                {refundSuccess && refundTxId && (
+              <ResultStep result="success" error={null} onClose={closeRefundFlow} operationType="refund">
+                {refundTxId && (
                   <PaymentInfoCard>
                     <CollapsibleCodeField
                       label="Transaction ID"
@@ -439,15 +413,22 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                     />
                   </PaymentInfoCard>
                 )}
-
-                <PrimaryButton onClick={closeRefundFlow} className="w-full">
-                  Done
-                </PrimaryButton>
-              </>
+              </ResultStep>
             )}
           </div>
         </BottomSheetCard>
       </BottomSheetContainer>
+
+      {/* Over the refund sheet, which is itself over the page. */}
+      <QrScannerDialog
+        isOpen={isScanning}
+        zIndex={80}
+        onClose={() => setIsScanning(false)}
+        onScan={scanned => {
+          setDestination(scanned.trim());
+          setIsScanning(false);
+        }}
+      />
     </SlideInPage>
   );
 };

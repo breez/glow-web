@@ -35,10 +35,9 @@ async function renderPage() {
 }
 
 // The deposit card behind the sheet has its own Continue button: scope
-// to the step's action row.
-function sheetButton(label: string) {
-  const actions = screen.getByText('Cancel').parentElement as HTMLElement;
-  return within(actions).getByText(label);
+// to the sheet.
+function refundSheet() {
+  return within(screen.getByText('Refund to Bitcoin').closest('.react-modal-sheet-root') as HTMLElement);
 }
 
 // SlideInPage wraps the page in a z-60 opaque overlay. The sheet
@@ -74,21 +73,21 @@ describe('GetRefundPage address step', () => {
     const { destination } = await renderPage();
     fireEvent.change(destination, { target: { value: 'bc1qdest' } });
 
-    const continueButton = sheetButton('Continue');
+    const continueButton = refundSheet().getByText('Continue');
     expect(continueButton).toBeEnabled();
 
     fireEvent.click(continueButton);
     expect(await screen.findByText('Select Fee Rate')).toBeInTheDocument();
   });
 
-  it('disables Continue after Cancel clears the selected deposit', async () => {
+  it('disables Continue after closing clears the selected deposit', async () => {
     const { destination } = await renderPage();
     fireEvent.change(destination, { target: { value: 'bc1qdest' } });
 
-    // Cancel nulls selectedDeposit, but the sheet body stays mounted
+    // Closing nulls selectedDeposit, but the sheet body stays mounted
     // through the close animation and keeps the typed destination.
-    fireEvent.click(sheetButton('Cancel'));
+    fireEvent.click(refundSheet().getByLabelText('Close'));
 
-    expect(sheetButton('Continue')).toBeDisabled();
+    expect(refundSheet().getByText('Continue')).toBeDisabled();
   });
 });
