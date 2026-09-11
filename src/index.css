@@ -275,15 +275,16 @@
   }
   /* The receive QR card turning between Lightning and on-chain, in two
      halves: the code swaps while the card is edge-on. The edge beside the
-     dock goes back first, as if the tap pushed it. */
+     dock goes back first, as if the tap pushed it. `--qr-turn` is 1 when
+     the dock sits right of the card. */
   @keyframes qr-turn-out {
     to {
-      transform: perspective(900px) rotateY(-90deg);
+      transform: perspective(900px) rotateY(calc(var(--qr-turn, -1) * 90deg));
     }
   }
   @keyframes qr-turn-in {
     from {
-      transform: perspective(900px) rotateY(90deg);
+      transform: perspective(900px) rotateY(calc(var(--qr-turn, -1) * -90deg));
     }
   }
   /* Wrong-PIN feedback: the dots row shudders horizontally, iOS
