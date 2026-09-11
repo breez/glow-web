@@ -248,6 +248,49 @@ export function requiredFundingOf(error: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
+export interface Funding {
+  sat: number;
+  inputs: number;
+}
+
+/**
+ * What a build counts as sent to the exit fee address: the exit's own funding
+ * until one of its transactions confirms, since the sdk replaces an unconfirmed
+ * spender rather than building on it, plus every confirmed coin there.
+ * ponytail: mirrors the sdk's rules; take the figure from the sdk once its
+ * shortfall error reports what it counted.
+ */
+export function sentFunding(
+  plan: UnilateralExitPlan | null,
+  confirmed: { txid: string; vout: number; value: number }[],
+): Funding {
+  const own = plan && !plan.exit.transactions.some(tx => tx.status.type === 'confirmed') ? plan.exit.fundingInputs : [];
+  const coins = new Map([...own, ...confirmed].map(coin => [`${coin.txid}:${coin.vout}`, coin.value]));
+  return { sat: [...coins.values()].reduce((total, value) => total + value, 0), inputs: coins.size };
+}
+
+/** A signed P2WPKH input: each coin at the exit fee address is one more for the build to pay for. */
+const P2WPKH_INPUT_VBYTES = 68;
+
+export interface TopUp {
+  /** What the address needs at the new rate, the coin still to send included. */
+  neededSat: number;
+  sentSat: number;
+  stillToSendSat: number;
+}
+
+/**
+ * What to send after a build fell short. The sdk sized `required` on the inputs
+ * that build had, so each coin sent since, and the one still to send, adds its
+ * own input fee.
+ */
+export function topUpFor(required: Funding, sent: Funding, feeRateSatPerVbyte: number): TopUp {
+  const inputFeeSat = Math.ceil(P2WPKH_INPUT_VBYTES * feeRateSatPerVbyte);
+  const neededNowSat = required.sat + inputFeeSat * Math.max(0, sent.inputs - required.inputs);
+  const neededSat = sent.sat >= neededNowSat ? neededNowSat : neededNowSat + inputFeeSat;
+  return { neededSat, sentSat: sent.sat, stillToSendSat: Math.max(0, neededSat - sent.sat) };
+}
+
 export interface PlanProgress {
   confirmed: number;
   total: number;
