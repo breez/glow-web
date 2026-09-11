@@ -16,7 +16,7 @@ import {
 } from '../../components/ui';
 
 import type { PaymentMethod } from '../../types/domain';
-import { isCrossChainEnabled } from '../../services/settings';
+import { getSettings, isCrossChainEnabled } from '../../services/settings';
 import { useLightningAddress } from './hooks/useLightningAddress';
 import { useReceivePayment } from './hooks/useReceivePayment';
 import { formatWithSpaces } from '../../utils/formatNumber';
@@ -202,6 +202,10 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     // Cleared, so a QR replacing its placeholder does not turn in again.
     later(320, () => setTurning(null));
   };
+  // Dev-mode trial of the mirrored layout: dock right of the code, caption left.
+  const dockRight = getSettings().receiveDockRight === true;
+  const dock = <SideDock mode={btcMode} onChange={switchBtcMode} />;
+  const caption = <SideCaption shown={shownMode} mode={btcMode} onChange={switchBtcMode} />;
   // Narrow phones get a smaller code so the dock clears the frame.
   const qrSize = window.innerWidth < 375 ? 184 : 200;
   const qrCardClassName = `${turning === 'out' ? 'animate-qr-turn-out' : turning === 'in' ? 'animate-qr-turn-in' : ''} motion-reduce:animate-none`;
@@ -284,10 +288,10 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
                         {isBtcTab && (
                           <div className="flex flex-col items-center gap-6">
                             {/* Dock, code, caption: the grid keeps the code centered between them. */}
-                            <div className="-mx-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center self-stretch">
-                              <SideDock mode={btcMode} onChange={switchBtcMode} />
+                            <div className={`-mx-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center self-stretch ${dockRight ? '[--qr-turn:1]' : ''}`}>
+                              {dockRight ? caption : dock}
                               {btcView('qr')}
-                              <SideCaption shown={shownMode} mode={btcMode} onChange={switchBtcMode} />
+                              {dockRight ? dock : caption}
                             </div>
                             {btcView('details')}
                           </div>

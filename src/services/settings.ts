@@ -67,6 +67,8 @@ export interface UserSettings {
   lnurlDomain?: string;
   preferSparkOverLightning?: boolean;
   crossChainEnabled?: boolean;
+  /** Dev-mode layout trial: the receive side dock sits right of the QR. */
+  receiveDockRight?: boolean;
   /**
    * TEMPORARY: gates the priority deposit claim while it is being tested.
    * Absent means off, so the deposit sheet behaves as it did before it.
@@ -203,6 +205,7 @@ export function getSettings(): UserSettings {
       lnurlDomain: typeof parsed.lnurlDomain === 'string' ? parsed.lnurlDomain : undefined,
       preferSparkOverLightning: typeof parsed.preferSparkOverLightning === 'boolean' ? parsed.preferSparkOverLightning : undefined,
       crossChainEnabled: typeof parsed.crossChainEnabled === 'boolean' ? parsed.crossChainEnabled : undefined,
+      receiveDockRight: typeof parsed.receiveDockRight === 'boolean' ? parsed.receiveDockRight : undefined,
       priorityDepositClaimEnabled:
         typeof parsed.priorityDepositClaimEnabled === 'boolean' ? parsed.priorityDepositClaimEnabled : undefined,
     };

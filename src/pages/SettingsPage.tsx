@@ -99,6 +99,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     setCrossChainEnabled(next);
     saveSettings({ ...getSettings(), crossChainEnabled: next });
   };
+  const [receiveDockRight, setReceiveDockRight] = useState<boolean>(() => getSettings().receiveDockRight === true);
+  const toggleReceiveDockRight = () => {
+    const next = !receiveDockRight;
+    setReceiveDockRight(next);
+    saveSettings({ ...getSettings(), receiveDockRight: next });
+  };
   const [isDownloadingLogs, setIsDownloadingLogs] = useState<boolean>(false);
   const [isExportingDb, setIsExportingDb] = useState<boolean>(false);
 
@@ -434,6 +440,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 <Switch
                   checked={crossChainEnabled}
                   onChange={toggleCrossChain}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Receive dock side: a layout trial */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <span className="font-display font-medium text-spark-text-primary block">Receive dock on the right</span>
+                  <span className="text-sm text-spark-text-muted">Move the Lightning / on-chain switch to the right of the QR</span>
+                </div>
+                <Switch
+                  checked={receiveDockRight}
+                  onChange={toggleReceiveDockRight}
                 />
               </div>
             </div>
