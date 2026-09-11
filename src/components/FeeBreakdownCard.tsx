@@ -19,6 +19,8 @@ export interface FeeBreakdownItem {
   emphasis?: boolean;
   /** Marks a sat figure that is an estimate. */
   approximate?: boolean;
+  /** Marks a figure taken off the one above it, with a minus sign. */
+  subtract?: boolean;
 }
 
 export interface FeeBreakdownCardProps {
@@ -58,7 +60,12 @@ export const FeeBreakdownCard: React.FC<FeeBreakdownCardProps> = ({
             <span className={`font-mono text-sm ${item.highlight ? 'font-bold text-spark-primary' : item.emphasis ? 'font-semibold text-spark-text-primary' : 'text-spark-text-primary'}`}>
               {useRawStrings || typeof item.value === 'string'
                 ? String(item.value)
-                : Number(item.value) === 0 ? '0' : <SatAmount sats={item.value} approximate={item.approximate} />
+                : Number(item.value) === 0 ? '0' : (
+                  <>
+                    {item.subtract && '−'}
+                    <SatAmount sats={item.value} approximate={item.approximate} />
+                  </>
+                )
               }
             </span>
           </div>

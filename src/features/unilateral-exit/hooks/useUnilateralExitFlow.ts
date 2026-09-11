@@ -13,7 +13,11 @@ import {
   rebuildExit,
   destinationAddressOf,
   requiredFundingOf,
+  sentFunding,
+  topUpFor,
   willReceiveSat,
+  type Funding,
+  type TopUp,
   type WalletKey,
 } from '../driver';
 import { getUnilateralExitState, setUnilateralExitPlan, type UnilateralExitEngineState } from '../engine';
@@ -80,15 +84,20 @@ export interface QuoteFields {
 export interface FundingFields {
   address: string;
   requiredSat: number;
-  fundedSat: number;
   isFunded: boolean;
   hasPendingDeposit: boolean;
   /** An exit already under way keeps its funding address, and what it holds pays for the rest. */
   isResuming: boolean;
-  /** What the last build at this quote said it needs at the address, or null before one fails for want of it. */
-  requiredFundingSat: number | null;
+  /** What to send after a build at this quote fell short, or null before one does. */
+  topUp: TopUp | null;
   /** More at the address cannot pay a higher fee: see `hasFixedFeeBudget`. */
   isFeeBudgetFixed: boolean;
+  /** The quote's rate, which the build pays. */
+  feeRate: number;
+  /** The rate a resumed exit runs at until the build replaces it. */
+  currentFeeRate: number | null;
+  /** When the quote the figures come from was taken, in ms. */
+  quotedAt: number | null;
 }
 
 /**
@@ -155,9 +164,12 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   const [fundingUtxos, setFundingUtxos] = useState<ChainUtxo[]>([]);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [buildError, setBuildError] = useState<string | null>(null);
-  // Only the build knows what a resumed exit still needs, and it says so by
-  // refusing. Held for this quote's rate, so a new quote clears it.
-  const [requiredFundingSat, setRequiredFundingSat] = useState<number | null>(null);
+  // Only the build knows what an exit still needs, and it says so by refusing.
+  // Held with the inputs it had, for this quote's rate, so a new quote clears it.
+  const [shortfall, setShortfall] = useState<Funding | null>(null);
+  const [quotedAt, setQuotedAt] = useState<number | null>(null);
+  // A resumed exit tries its build once per quote before asking for anything.
+  const triedQuote = useRef<PrepareUnilateralExitResponse | null>(null);
   const mnemonicRef = useRef<string | null>(null);
 
   useEffect(() => () => {
@@ -225,7 +237,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     const request = ++quoteRequest.current;
     setIsQuoting(true);
     setQuoteError(null);
-    setRequiredFundingSat(null);
+    setShortfall(null);
     try {
       // Quoted against the backed-up leaf data, not only what the operators still report.
       if (walletKey) {
@@ -242,6 +254,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
       });
       if (request !== quoteRequest.current) return;
       setQuote(prepared);
+      setQuotedAt(Date.now());
     } catch (e) {
       if (request !== quoteRequest.current) return;
       logger.error(LogCategory.SDK, 'Failed to quote unilateral exit', { error: message(e) });
@@ -278,6 +291,8 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   const fundedSat = confirmedUtxos.reduce((total, utxo) => total + utxo.value, 0);
   const isResuming = plan !== null;
   const isFeeBudgetFixed = plan !== null && hasFixedFeeBudget(plan);
+  const sent = useMemo(() => sentFunding(plan, confirmedUtxos), [plan, confirmedUtxos]);
+  const topUp = shortfall && quote ? topUpFor(shortfall, sent, quote.feeRateSatPerVbyte) : null;
   // A resumed exit is not held to a fresh exit's price: most of what the quote
   // covers is already on-chain, and only the build knows what is really needed.
   // A fresh exit's quote is a lower bound too. Once a build has said what it
@@ -285,10 +300,9 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   // amount there helps and only a new quote can.
   const isFunded =
     quote !== null &&
-    (isResuming
-      ? confirmedUtxos.length > 0 &&
-        (requiredFundingSat === null || (!isFeeBudgetFixed && fundedSat >= requiredFundingSat))
-      : fundedSat >= Math.max(quote.singleUtxoFundingSat, requiredFundingSat ?? 0));
+    (topUp
+      ? !isFeeBudgetFixed && topUp.stillToSendSat === 0
+      : isResuming || fundedSat >= quote.singleUtxoFundingSat);
 
   const build = useCallback(async () => {
     if (!walletKey || !quote || !fundingKey || !mnemonicRef.current) return;
@@ -335,12 +349,21 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to build unilateral exit', { error: message(e) });
       setBuildError(message(e));
-      setRequiredFundingSat(requiredFundingOf(message(e)));
+      const required = requiredFundingOf(message(e));
+      setShortfall(required === null ? null : { sat: required, inputs: sent.inputs });
       setPhase('fund');
     } finally {
       release();
     }
-  }, [wallet, walletKey, quote, fundingKey, confirmedUtxos, network, plan, isResuming]);
+  }, [wallet, walletKey, quote, fundingKey, confirmedUtxos, sent, network, plan, isResuming]);
+
+  // What a resumed exit already holds may pay the new rate, and only a build can
+  // tell. So it tries once, and the step asks for more only when that falls short.
+  useEffect(() => {
+    if (phase !== 'fund' || !isResuming || !quote || triedQuote.current === quote) return;
+    triedQuote.current = quote;
+    void build();
+  }, [phase, isResuming, quote, build]);
 
   // Keeps the destination and the leaves, and re-enters at the fee step: the
   // reason to rebuild by hand is almost always to pay more.
@@ -399,12 +422,14 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     funding: fundingKey && {
       address: fundingKey.address,
       requiredSat: quote?.singleUtxoFundingSat ?? 0,
-      fundedSat,
       isFunded,
       hasPendingDeposit: fundingUtxos.some(utxo => !utxo.confirmed),
       isResuming,
-      requiredFundingSat,
+      topUp,
       isFeeBudgetFixed,
+      feeRate: quote?.feeRateSatPerVbyte ?? 0,
+      currentFeeRate: plan?.feeRateSatPerVbyte ?? null,
+      quotedAt,
     },
     submitDestination,
     submitFee,

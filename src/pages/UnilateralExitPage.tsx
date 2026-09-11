@@ -16,7 +16,7 @@ import { IntroStep } from '@/features/unilateral-exit/steps/IntroStep';
 import { DestinationStep } from '@/features/unilateral-exit/steps/DestinationStep';
 import { FeeStep } from '@/features/unilateral-exit/steps/FeeStep';
 import { QuoteStep } from '@/features/unilateral-exit/steps/QuoteStep';
-import { FundStep } from '@/features/unilateral-exit/steps/FundStep';
+import { FundStep, FundingStatus } from '@/features/unilateral-exit/steps/FundStep';
 import { TrackerView } from '@/features/unilateral-exit/TrackerView';
 import { sweepTxid } from '@/features/unilateral-exit/archive';
 
@@ -111,14 +111,21 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
         );
       case 'fund':
         return (
-          <PrimaryButton
+          <>
+            {flow.funding?.topUp && !flow.funding.isFeeBudgetFixed && flow.funding.topUp.stillToSendSat > 0 && (
+              <div className="mb-4">
+                <FundingStatus {...flow.funding} />
+              </div>
+            )}
+            <PrimaryButton
             onClick={() => void flow.build()}
             disabled={!flow.funding?.isFunded}
             className="w-full"
             data-testid="unilateral-exit-build"
           >
-            Exit Spark
-          </PrimaryButton>
+            {flow.funding?.isResuming ? 'Continue Exit' : 'Exit Spark'}
+            </PrimaryButton>
+          </>
         );
       default:
         return null;
