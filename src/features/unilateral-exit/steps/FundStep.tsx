@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCard } from '@/components/AlertCard';
 import { FeeBreakdownCard } from '@/components/FeeBreakdownCard';
-import { CopyableText, ErrorMessageBox, QRCodeContainer } from '@/components/ui';
+import { CopyableText, ErrorMessageBox, PrimaryButton, QRCodeContainer } from '@/components/ui';
 import { SatAmount } from '@/components/SatAmount';
 import { CheckIcon, ClockIcon } from '@/components/Icons';
 import { useToast } from '@/contexts/ToastContext';
@@ -38,7 +38,14 @@ export const FundingStatus: React.FC<
   );
 };
 
-export const FundStep: React.FC<FundingFields & { error: string | null }> = ({
+export const FundStep: React.FC<
+  FundingFields & {
+    error: string | null;
+    /** A resumed exit's top-up opens on what it costs, and shows where to pay once asked. */
+    isPaying: boolean;
+    onTopUp: () => void;
+  }
+> = ({
   address,
   requiredSat,
   isFunded,
@@ -49,6 +56,8 @@ export const FundStep: React.FC<FundingFields & { error: string | null }> = ({
   feeRate,
   currentFeeRate,
   error,
+  isPaying,
+  onTopUp,
 }) => {
   const { showToast } = useToast();
 
@@ -120,40 +129,65 @@ export const FundStep: React.FC<FundingFields & { error: string | null }> = ({
 
   if (topUp) {
     if (topUp.stillToSendSat === 0) return receipt;
+    const breakdown = (
+      <FeeBreakdownCard
+        items={[
+          { label: `Exit fee at ${feeRate} sat/vB`, value: topUp.neededSat },
+          { label: "You've already sent", value: topUp.sentSat, subtract: true },
+          { label: 'Still to send', value: topUp.stillToSendSat, highlight: true },
+        ]}
+      />
+    );
+    const ask = (label: string) => (
+      <div className="text-center py-2">
+        <p className="text-spark-text-muted text-sm mb-2">{label}</p>
+        <SatAmount sats={topUp.stillToSendSat} className="text-4xl font-bold text-spark-text-primary" />
+      </div>
+    );
+
+    // Waiting costs nothing, so a resumed exit shows what continuing now costs
+    // before it shows anywhere to pay.
+    if (isResuming && !isPaying) {
+      return (
+        <div className="space-y-4">
+          {breakdown}
+          <AlertCard variant="warning" title={feesRose ? 'Network fees went up' : 'The exit needs more'}>
+            <p className="text-sm">
+              {feesRose
+                ? `Your exit started at ${currentFeeRate} sat/vB and continues on its own once fees drop, but they can also keep rising. To continue now at ${feeRate} sat/vB, top up the exit fee address.`
+                : `At ${feeRate} sat/vB, the exit needs more at its fee address.`}
+            </p>
+            <div className="mt-3">
+              <PrimaryButton onClick={onTopUp} className="w-full" data-testid="unilateral-exit-top-up">
+                Top Up to Continue
+              </PrimaryButton>
+            </div>
+          </AlertCard>
+        </div>
+      );
+    }
+
+    if (isResuming) {
+      return (
+        <div className="space-y-4">
+          {ask('Send to Continue Exit')}
+          {paymentTarget}
+        </div>
+      );
+    }
+
+    // A fresh exit cannot start without it, so there is no choice to make first.
     return (
       <div className="space-y-4">
-        <div className="text-center py-2">
-          <p className="text-spark-text-muted text-sm mb-2">
-            {isResuming ? 'Send to Continue Exit' : 'Send to Exit Spark'}
-          </p>
-          <SatAmount sats={topUp.stillToSendSat} className="text-4xl font-bold text-spark-text-primary" />
-        </div>
-
+        {ask('Send to Exit Spark')}
         {paymentTarget}
-
-        <FeeBreakdownCard
-          items={[
-            { label: `Exit fee at ${feeRate} sat/vB`, value: topUp.neededSat },
-            { label: "You've already sent", value: topUp.sentSat, subtract: true },
-            { label: 'Still to send', value: topUp.stillToSendSat, highlight: true },
-          ]}
-        />
-
-        {feesRose ? (
-          <AlertCard variant="warning" title="Network fees went up">
-            <p className="text-sm">
-              Your exit started at {currentFeeRate} sat/vB and continues on its own once fees drop, but
-              they can also keep rising. Sending the amount above continues it now at {feeRate} sat/vB.
-            </p>
-          </AlertCard>
-        ) : (
-          <AlertCard variant="warning" title="The exit needs more">
-            <p className="text-sm">
-              At {feeRate} sat/vB, building the exit takes more than its quote. Sending the amount above
-              starts it.
-            </p>
-          </AlertCard>
-        )}
+        {breakdown}
+        <AlertCard variant="warning" title="The exit needs more">
+          <p className="text-sm">
+            At {feeRate} sat/vB, building the exit takes more than its quote. Sending the amount above
+            starts it.
+          </p>
+        </AlertCard>
       </div>
     );
   }

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { FundStep, FundingStatus } from './FundStep';
 
 const props = {
@@ -14,6 +14,8 @@ const props = {
   currentFeeRate: null,
   quotedAt: null,
   error: null,
+  isPaying: false,
+  onTopUp: () => {},
 };
 const resumed = { ...props, isResuming: true, feeRate: 42, currentFeeRate: 24 };
 const topUp = { neededSat: 7_856, sentSat: 3_000, stillToSendSat: 4_856 };
@@ -35,23 +37,31 @@ describe('FundStep', () => {
     expect(screen.queryByText(/5 898/)).not.toBeInTheDocument();
   });
 
-  it('offers a top-up as optional, and shows how its figures add up', () => {
+  it('shows what continuing now costs before anywhere to pay, since waiting is free', () => {
+    const onTopUp = vi.fn();
     render(
       <FundStep
         {...resumed}
         topUp={topUp}
-        quotedAt={Date.now() - 90_000}
+        onTopUp={onTopUp}
         error="Insufficient CPFP funding: need at least 5000 sats"
       />,
     );
-    expect(screen.getByText('Send to Continue Exit')).toBeInTheDocument();
-    expect(screen.getByText('Network fees went up')).toBeInTheDocument();
-    expect(screen.getByText(/continues on its own once fees drop/)).toHaveTextContent(/continues it now at 42 sat\/vB/);
     expect(screen.getByText('Exit fee at 42 sat/vB')).toBeInTheDocument();
     expect(screen.getByText("You've already sent").parentElement).toHaveTextContent('−');
+    expect(screen.getByText('Network fees went up')).toBeInTheDocument();
+    expect(screen.getByText(/continues on its own once fees drop/)).toHaveTextContent(/To continue now at 42 sat\/vB/);
+    expect(screen.queryByTestId('unilateral-exit-funding-address')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Insufficient CPFP funding/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('unilateral-exit-top-up'));
+    expect(onTopUp).toHaveBeenCalled();
+  });
+
+  it('asks for the amount, with where to send it, once the user chooses to top up', () => {
+    render(<FundStep {...resumed} topUp={topUp} isPaying />);
+    expect(screen.getByText('Send to Continue Exit')).toBeInTheDocument();
     expect(screen.getAllByText(/4 856/).length).toBeGreaterThan(0);
     expect(screen.getByTestId('unilateral-exit-funding-address')).toBeInTheDocument();
-    expect(screen.queryByText(/Insufficient CPFP funding/)).not.toBeInTheDocument();
   });
 
   it('turns into the receipt once the address holds enough', () => {

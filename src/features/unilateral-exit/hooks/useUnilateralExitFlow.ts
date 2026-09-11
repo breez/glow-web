@@ -32,6 +32,7 @@ export type UnilateralExitPhase =
   | 'quote'
   | 'unlock'
   | 'fund'
+  | 'topUp'
   | 'building'
   | 'tracker';
 
@@ -41,6 +42,7 @@ const BACK: Partial<Record<UnilateralExitPhase, UnilateralExitPhase>> = {
   quote: 'fee',
   unlock: 'quote',
   fund: 'quote',
+  topUp: 'fund',
 };
 
 export type FeeChoice = 'slow' | 'medium' | 'fast';
@@ -194,7 +196,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   }, [phase, feeRates, chain]);
 
   useEffect(() => {
-    if (phase !== 'fund' || !fundingKey) return;
+    if ((phase !== 'fund' && phase !== 'topUp') || !fundingKey) return;
     let cancelled = false;
     const check = async () => {
       try {

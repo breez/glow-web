@@ -110,11 +110,19 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
           </PrimaryButton>
         );
       case 'fund':
+      case 'topUp': {
+        const funding = flow.funding;
+        const isWaiting = !!funding?.topUp && funding.topUp.stillToSendSat > 0;
+        // A resumed exit's top-up starts from the box that explains it, and one
+        // its fee coins cannot pay has no action here at all.
+        if (funding?.isResuming && funding.topUp && (funding.isFeeBudgetFixed || (flow.phase === 'fund' && isWaiting))) {
+          return null;
+        }
         return (
           <>
-            {flow.funding?.topUp && !flow.funding.isFeeBudgetFixed && flow.funding.topUp.stillToSendSat > 0 && (
+            {funding && isWaiting && !funding.isFeeBudgetFixed && (
               <div className="mb-4">
-                <FundingStatus {...flow.funding} />
+                <FundingStatus {...funding} />
               </div>
             )}
             <PrimaryButton
@@ -127,6 +135,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
             </PrimaryButton>
           </>
         );
+      }
       default:
         return null;
     }
@@ -183,8 +192,13 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
               </>
             )}
 
-            {flow.phase === 'fund' && flow.funding && (
-              <FundStep {...flow.funding} error={flow.buildError} />
+            {(flow.phase === 'fund' || flow.phase === 'topUp') && flow.funding && (
+              <FundStep
+                {...flow.funding}
+                error={flow.buildError}
+                isPaying={flow.phase === 'topUp'}
+                onTopUp={() => flow.goTo('topUp')}
+              />
             )}
 
             {flow.phase === 'building' && (
