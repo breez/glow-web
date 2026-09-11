@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import { BottomSheetContainer, BottomSheetCard } from './BottomSheet';
 
 // Behavior tests for gestures/keyboard live upstream in
@@ -14,6 +15,7 @@ describe('BottomSheetContainer (react-modal-sheet adapter)', () => {
       </BottomSheetContainer>,
     );
     expect(await screen.findByText('sheet body')).toBeInTheDocument();
+    await waitForSheetOpen();
   });
 
   it('renders no content while closed', () => {
