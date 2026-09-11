@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, type ReactNode } from 'react';
 import { PrimaryButton, ErrorMessageBox } from '../../../components/ui';
 import { CloseIcon } from '../../../components/Icons';
 import GlowLogo from '../../../components/GlowLogo';
@@ -9,10 +9,12 @@ export interface ResultStepProps {
   error: string | null;
   onClose: () => void;
   /** Operation type to customize messaging (default: 'payment') */
-  operationType?: 'payment' | 'auth';
+  operationType?: 'payment' | 'auth' | 'refund';
+  /** Shown on success between the description and Done, e.g. a transaction ID. */
+  children?: ReactNode;
 }
 
-const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operationType = 'payment' }) => {
+const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operationType = 'payment', children }) => {
   const isSuccess = result === 'success';
   const [starsAnimating, setStarsAnimating] = useState(false);
 
@@ -28,6 +30,9 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
     if (operationType === 'auth') {
       return isSuccess ? 'Authenticated!' : 'Authentication Failed';
     }
+    if (operationType === 'refund') {
+      return isSuccess ? 'Refund Sent!' : 'Refund Failed';
+    }
     return isSuccess ? 'Payment Sent!' : 'Payment Failed';
   };
 
@@ -35,12 +40,18 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
     if (operationType === 'auth') {
       return 'You have successfully authenticated with the service.';
     }
+    if (operationType === 'refund') {
+      return 'Your refund has been sent to the Bitcoin network.';
+    }
     return 'Your payment has been successfully sent to the recipient.';
   };
 
   const getDefaultErrorMessage = () => {
     if (operationType === 'auth') {
       return 'There was an error during authentication. Please try again.';
+    }
+    if (operationType === 'refund') {
+      return 'There was an error processing your refund. Please try again.';
     }
     return 'There was an error processing your payment. Please try again.';
   };
@@ -122,6 +133,8 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
       <p className="text-spark-text-secondary text-center max-w-xs mb-8">
         {getSuccessDescription()}
       </p>
+
+      {children && <div className="w-full mb-8">{children}</div>}
 
       {/* Action button */}
       <PrimaryButton onClick={onClose} className="min-w-[200px]">

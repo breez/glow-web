@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import type { BreezSdk, DepositInfo } from '@breeztech/breez-sdk-spark';
 import { WalletProvider } from '@/contexts/WalletContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
@@ -20,6 +20,7 @@ async function renderPage() {
   client.listUnclaimedDeposits = vi
     .fn()
     .mockResolvedValue({ deposits: [DEPOSIT] });
+  client.refundDeposit = vi.fn().mockResolvedValue({ txId: 'b'.repeat(64), txHex: '00' });
 
   render(
     <WalletProvider client={client} isConnected>
@@ -31,14 +32,13 @@ async function renderPage() {
   fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
   const destination = await screen.findByPlaceholderText('bc1q...');
   await waitForSheetOpen();
-  return { destination };
+  return { destination, client };
 }
 
 // The deposit card behind the sheet has its own Continue button: scope
-// to the step's action row.
-function sheetButton(label: string) {
-  const actions = screen.getByText('Cancel').parentElement as HTMLElement;
-  return within(actions).getByText(label);
+// to the sheet.
+function refundSheet() {
+  return within(screen.getByText('Refund to Bitcoin').closest('.react-modal-sheet-root') as HTMLElement);
 }
 
 // SlideInPage wraps the page in a z-60 opaque overlay. The sheet
@@ -74,21 +74,43 @@ describe('GetRefundPage address step', () => {
     const { destination } = await renderPage();
     fireEvent.change(destination, { target: { value: 'bc1qdest' } });
 
-    const continueButton = sheetButton('Continue');
+    const continueButton = refundSheet().getByText('Continue');
     expect(continueButton).toBeEnabled();
 
     fireEvent.click(continueButton);
     expect(await screen.findByText('Select Fee Rate')).toBeInTheDocument();
   });
 
-  it('disables Continue after Cancel clears the selected deposit', async () => {
+  it('disables Continue after closing clears the selected deposit', async () => {
     const { destination } = await renderPage();
     fireEvent.change(destination, { target: { value: 'bc1qdest' } });
 
-    // Cancel nulls selectedDeposit, but the sheet body stays mounted
+    // Closing nulls selectedDeposit, but the sheet body stays mounted
     // through the close animation and keeps the typed destination.
-    fireEvent.click(sheetButton('Cancel'));
+    fireEvent.click(refundSheet().getByLabelText('Close'));
 
-    expect(sheetButton('Continue')).toBeDisabled();
+    expect(refundSheet().getByText('Continue')).toBeDisabled();
+  });
+});
+
+describe('GetRefundPage fee', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('pays the picked speed at the current rate as a fixed fee', async () => {
+    const { destination, client } = await renderPage();
+    fireEvent.change(destination, { target: { value: 'bc1qdest' } });
+    fireEvent.click(refundSheet().getByText('Continue'));
+
+    // The mock's half-hour rate is 15 sat/vB: 1 665 sats over a 111 vB refund, shown as 1 700.
+    fireEvent.click(await refundSheet().findByRole('button', { name: /^Medium/ }));
+    fireEvent.click(refundSheet().getByText('Continue'));
+    fireEvent.click(await refundSheet().findByText('Refund'));
+
+    await waitFor(() =>
+      expect(client.refundDeposit).toHaveBeenCalledWith(
+        expect.objectContaining({ destinationAddress: 'bc1qdest', fee: { type: 'fixed', amount: 1700 } }),
+      ),
+    );
+    expect(await refundSheet().findByText('Refund Sent!')).toBeInTheDocument();
   });
 });

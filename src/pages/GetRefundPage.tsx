@@ -1,13 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import type { DepositInfo, Fee, SdkEvent } from '@breeztech/breez-sdk-spark';
-import { LoadingSpinner, PrimaryButton, SecondaryButton, FormInput, BottomSheetContainer, BottomSheetCard, DialogHeader, CollapsibleCodeField, PaymentInfoCard } from '../components/ui';
+import { LoadingSpinner, PrimaryButton, BottomSheetContainer, BottomSheetCard, DialogHeader, CollapsibleCodeField, CopyableRow, PaymentInfoCard } from '../components/ui';
 import { AlertCard, SimpleAlert } from '../components/AlertCard';
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
-import { CloseIcon, CheckIcon } from '../components/Icons';
+import { CheckIcon } from '../components/Icons';
 import { FeeRateSelector, type FeeSpeed } from '../components/FeeRateSelector';
 import { isDepositRejected, removeRejectedDeposit } from '../services/depositState';
 import { SatAmount } from '../components/SatAmount';
+import { DestinationField } from '../components/DestinationField';
+import QrScannerDialog from '../components/QrScannerDialog';
+import ProcessingStep from '../features/send/steps/ProcessingStep';
+import ResultStep from '../features/send/steps/ResultStep';
+import { destinationAddressOf } from '../utils/destinationAddress';
+import { truncateAddress } from '../utils/crossChainFormat';
 import { explorerTxUrl } from '../utils/explorer';
 import SlideInPage from '@/components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
@@ -18,6 +24,17 @@ interface GetRefundPageProps {
 }
 
 type RefundStep = 'address' | 'fee' | 'confirm' | 'processing' | 'result';
+
+// A refund spends the deposit's one taproot input to one output: 111 vB when
+// that output is taproot or P2WSH, less for other address types. Pricing at
+// the largest size never pays below the rate picked.
+const REFUND_VSIZE = 111;
+
+/** Up to two significant figures (111 to 120, 1 665 to 1 700): round, and never below the rate. */
+const roundUpFee = (sats: number) => {
+  const step = Math.max(10, 10 ** (String(Math.ceil(sats)).length - 2));
+  return Math.ceil(sats / step) * step;
+};
 
 const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirection = 'left' }) => {
   const wallet = useWallet();
@@ -31,19 +48,16 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   const [isRefundFlowOpen, setIsRefundFlowOpen] = useState<boolean>(false);
   const [refundStep, setRefundStep] = useState<RefundStep>('address');
   const [destination, setDestination] = useState<string>('');
+  const [destinationError, setDestinationError] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState<boolean>(false);
   const [selectedFeeRate, setSelectedFeeRate] = useState<FeeSpeed | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [refundError, setRefundError] = useState<string | null>(null);
-  const [refundSuccess, setRefundSuccess] = useState<boolean>(false);
   const [refundTxId, setRefundTxId] = useState<string | null>(null);
   const [isTxIdVisible, setIsTxIdVisible] = useState<boolean>(false);
 
-  // Fee estimates (simplified - in real implementation, get from SDK)
-  const feeEstimates = {
-    slow: 500,
-    medium: 1000,
-    fast: 2000
-  };
+  const [feeRates, setFeeRates] = useState<Record<FeeSpeed, number> | null>(null);
+  const [feeRatesError, setFeeRatesError] = useState<string | null>(null);
 
   // State for expandable transaction ID fields in examples
   const [expandedTxIds, setExpandedTxIds] = useState<Record<string, boolean>>({});
@@ -135,9 +149,9 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   const openRefundFlow = (deposit: DepositInfo) => {
     setSelectedDeposit(deposit);
     setDestination('');
+    setDestinationError(null);
     setSelectedFeeRate(null);
     setRefundError(null);
-    setRefundSuccess(false);
     setRefundTxId(null);
     setRefundStep('address');
     setIsRefundFlowOpen(true);
@@ -148,10 +162,42 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     setSelectedDeposit(null);
   };
 
-  const handleContinueToFeeSelection = () => {
-    if (!selectedDeposit || !destination.trim()) return;
+  // The exit flow's parse: a scanned receive QR is a BIP21 URI.
+  const handleContinueToFeeSelection = async () => {
+    const trimmed = destination.trim();
+    if (!selectedDeposit || !trimmed) return;
+    const address = destinationAddressOf(await wallet.parse(trimmed).catch(() => null));
+    if (!address) {
+      setDestinationError('That is not an on-chain Bitcoin address');
+      return;
+    }
+    setDestination(address);
+    setDestinationError(null);
     setRefundStep('fee');
+    void loadFeeRates();
   };
+
+  // Current rates on every visit from the address step, as the exit flow reads them.
+  const loadFeeRates = async () => {
+    setFeeRates(null);
+    setFeeRatesError(null);
+    try {
+      const fees = await wallet.recommendedFees();
+      setFeeRates({
+        slow: Math.max(1, fees.hourFee),
+        medium: Math.max(1, fees.halfHourFee),
+        fast: Math.max(1, fees.fastestFee),
+      });
+    } catch (e) {
+      logger.error(LogCategory.PAYMENT, 'Failed to read fee rates for a refund', {
+        error: e instanceof Error ? e.message : String(e),
+      });
+      setFeeRatesError("Couldn't read the current fee rates. Go back and try again.");
+    }
+  };
+
+  // Paid as a fixed amount, so confirm shows the exact fee and what arrives.
+  const feeFor = (speed: FeeSpeed) => (feeRates ? roundUpFee(feeRates[speed] * REFUND_VSIZE) : 0);
 
   const handleRefund = async () => {
     if (!selectedDeposit || !selectedFeeRate || !destination.trim()) return;
@@ -161,13 +207,12 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     setRefundStep('processing');
 
     try {
-      const fee: Fee = { type: 'fixed', amount: feeEstimates[selectedFeeRate] };
+      const fee: Fee = { type: 'fixed', amount: feeFor(selectedFeeRate) };
       const result = await wallet.refundDeposit({ txid: selectedDeposit.txid, vout: selectedDeposit.vout, destinationAddress: destination.trim(), fee });
 
       // Remove from rejected list after successful refund
       removeRejectedDeposit(selectedDeposit.txid, selectedDeposit.vout);
 
-      setRefundSuccess(true);
       setRefundTxId(result.txId || null);
       setRefundStep('result');
 
@@ -183,10 +228,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     }
   };
 
-  const getSelectedFee = () => {
-    if (!selectedFeeRate) return 0;
-    return feeEstimates[selectedFeeRate];
-  };
+  const getSelectedFee = () => (selectedFeeRate ? feeFor(selectedFeeRate) : 0);
 
   const getRefundAmount = () => {
     if (!selectedDeposit) return 0;
@@ -299,7 +341,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
       <BottomSheetContainer isOpen={isRefundFlowOpen} onClose={closeRefundFlow} zIndex={70} showBackdrop>
         <BottomSheetCard>
           <DialogHeader
-            title={refundStep === 'result' ? (refundSuccess ? 'Refund Sent' : 'Refund Failed') : 'Refund to Bitcoin'}
+            title="Refund to Bitcoin"
             onClose={closeRefundFlow}
             onBack={
               refundStep === 'fee' ? () => setRefundStep('address')
@@ -312,49 +354,44 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
             {/* Step 1: Address Input */}
             {refundStep === 'address' && (
               <>
-                <div>
-                  <label className="block text-sm font-medium text-spark-text-secondary mb-2">
-                    Destination
-                  </label>
-                  <FormInput
-                    id="refund-destination"
-                    type="text"
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    placeholder="bc1q..."
-                  />
-                  <p className="text-spark-text-muted text-xs mt-2">
-                    Enter the Bitcoin address where you want to receive the refund.
-                  </p>
-                </div>
+                <DestinationField
+                  destination={destination}
+                  onChange={setDestination}
+                  error={destinationError}
+                  onSubmit={() => void handleContinueToFeeSelection()}
+                  onScanQr={() => setIsScanning(true)}
+                />
 
-                <div className="flex gap-3">
-                  <SecondaryButton onClick={closeRefundFlow} className="flex-1">
-                    Cancel
-                  </SecondaryButton>
-                  <PrimaryButton
-                    onClick={handleContinueToFeeSelection}
-                    disabled={!selectedDeposit || !destination.trim()}
-                    className="flex-1"
-                  >
-                    Continue
-                  </PrimaryButton>
-                </div>
+                <PrimaryButton
+                  onClick={() => void handleContinueToFeeSelection()}
+                  disabled={!selectedDeposit || !destination.trim()}
+                  className="w-full"
+                >
+                  Continue
+                </PrimaryButton>
               </>
             )}
 
             {/* Step 2: Fee Selection */}
             {refundStep === 'fee' && (
               <>
-                <FeeRateSelector
-                  selected={selectedFeeRate}
-                  onSelect={setSelectedFeeRate}
-                  detail={speed => <SatAmount sats={feeEstimates[speed]} />}
-                />
+                {feeRatesError ? (
+                  <SimpleAlert variant="error">{feeRatesError}</SimpleAlert>
+                ) : feeRates ? (
+                  <FeeRateSelector
+                    selected={selectedFeeRate}
+                    onSelect={setSelectedFeeRate}
+                    detail={speed => <SatAmount sats={feeFor(speed)} />}
+                  />
+                ) : (
+                  <div className="py-8 flex justify-center">
+                    <LoadingSpinner text="Reading current fee rates..." />
+                  </div>
+                )}
 
                 <PrimaryButton
                   onClick={() => setRefundStep('confirm')}
-                  disabled={!selectedFeeRate}
+                  disabled={!selectedFeeRate || !feeRates}
                   className="w-full"
                 >
                   Continue
@@ -365,7 +402,8 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
             {/* Step 3: Confirm */}
             {refundStep === 'confirm' && selectedDeposit && (
               <>
-                {/* Breakdown */}
+                <CopyableRow label="To address" value={destination} display={truncateAddress(destination, 32)} />
+
                 <FeeBreakdownCard
                   items={[
                     { label: 'Amount', value: selectedDeposit.amountSats },
@@ -391,44 +429,12 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
             )}
 
             {/* Step 4: Processing */}
-            {refundStep === 'processing' && (
-              <div className="py-8 flex flex-col items-center justify-center">
-                <LoadingSpinner text="Processing refund..." />
-              </div>
-            )}
+            {refundStep === 'processing' && <ProcessingStep />}
 
             {/* Step 5: Result */}
             {refundStep === 'result' && (
-              <>
-                <div className="text-center py-4">
-                  {refundSuccess ? (
-                    <>
-                      <div className="w-16 h-16 rounded-full bg-spark-success/20 flex items-center justify-center mx-auto mb-4">
-                        <CheckIcon size="xl" className="text-spark-success" />
-                      </div>
-                      <h3 className="font-display font-semibold text-spark-text-primary text-lg mb-2">
-                        Refund Broadcast
-                      </h3>
-                      <p className="text-spark-text-muted text-sm">
-                        Your refund has been sent to the Bitcoin network.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-16 h-16 rounded-full bg-spark-primary/20 flex items-center justify-center mx-auto mb-4">
-                        <CloseIcon size="xl" className="text-spark-primary" />
-                      </div>
-                      <h3 className="font-display font-semibold text-spark-text-primary text-lg mb-2">
-                        Refund Failed
-                      </h3>
-                      <p className="text-spark-primary text-sm">
-                        {refundError || 'An error occurred while processing your refund.'}
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                {refundSuccess && refundTxId && (
+              <ResultStep result="success" error={null} onClose={closeRefundFlow} operationType="refund">
+                {refundTxId && (
                   <PaymentInfoCard>
                     <CollapsibleCodeField
                       label="Transaction ID"
@@ -439,15 +445,22 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                     />
                   </PaymentInfoCard>
                 )}
-
-                <PrimaryButton onClick={closeRefundFlow} className="w-full">
-                  Done
-                </PrimaryButton>
-              </>
+              </ResultStep>
             )}
           </div>
         </BottomSheetCard>
       </BottomSheetContainer>
+
+      {/* Over the refund sheet, which is itself over the page. */}
+      <QrScannerDialog
+        isOpen={isScanning}
+        zIndex={80}
+        onClose={() => setIsScanning(false)}
+        onScan={scanned => {
+          setDestination(scanned.trim());
+          setIsScanning(false);
+        }}
+      />
     </SlideInPage>
   );
 };
