@@ -4,6 +4,7 @@ import type { BreezSdk, DepositInfo } from '@breeztech/breez-sdk-spark';
 import { WalletProvider } from '@/contexts/WalletContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
 import { rejectDeposit } from '@/services/depositState';
+import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import GetRefundPage from './GetRefundPage';
 
 const DEPOSIT: DepositInfo = {
@@ -29,13 +30,12 @@ async function renderPage() {
   // Card Continue opens the refund sheet on the address step.
   fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
   const destination = await screen.findByPlaceholderText('bc1q...');
+  await waitForSheetOpen();
   return { destination };
 }
 
-// react-modal-sheet keeps its root visibility:hidden until the open
-// animation runs, which it never does here. That empties every
-// accessible name inside the sheet, so role queries cannot reach these
-// buttons: match on text and scope to the step's action row.
+// The deposit card behind the sheet has its own Continue button: scope
+// to the step's action row.
 function sheetButton(label: string) {
   const actions = screen.getByText('Cancel').parentElement as HTMLElement;
   return within(actions).getByText(label);

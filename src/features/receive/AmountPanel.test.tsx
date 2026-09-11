@@ -6,10 +6,11 @@ import { FiatDataProvider } from '@/contexts/FiatDataContext';
 import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
 import { saveFiatSettings, setDisplayFiatCurrency } from '@/services/settings';
+import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import AmountPanel from './AmountPanel';
 
 // Mock rates put BTC at $100,000 and €92,000, so $1 = 1,000 sats.
-function renderAmountPanel(client?: BreezSdk) {
+async function renderAmountPanel(client?: BreezSdk) {
   const setAmountSats = vi.fn();
   const mockClient = client ?? createMockClient();
   render(
@@ -32,6 +33,7 @@ function renderAmountPanel(client?: BreezSdk) {
       </FiatDataProvider>
     </WalletProvider>
   );
+  await waitForSheetOpen();
   return { setAmountSats, client: mockClient };
 }
 
@@ -42,7 +44,7 @@ describe('AmountPanel fiat entry (no stable balance)', () => {
   });
 
   it('converts typed dollars to sats', async () => {
-    const { setAmountSats } = renderAmountPanel();
+    const { setAmountSats } = await renderAmountPanel();
 
     // The switcher appears once the USD rate loads.
     fireEvent.click(await screen.findByRole('button', { name: '₿' }));
@@ -55,7 +57,7 @@ describe('AmountPanel fiat entry (no stable balance)', () => {
     saveFiatSettings({ selectedCurrencies: ['USD', 'EUR'] });
     // What the header writes when the user taps the balance to cycle to EUR.
     setDisplayFiatCurrency('EUR');
-    const { setAmountSats } = renderAmountPanel();
+    const { setAmountSats } = await renderAmountPanel();
 
     fireEvent.click(await screen.findByRole('button', { name: '₿' }));
     fireEvent.change(screen.getByTestId('invoice-amount-input'), { target: { value: '5' } });
@@ -68,7 +70,7 @@ describe('AmountPanel fiat entry (no stable balance)', () => {
   it('falls back to the top of the list when that currency is deselected', async () => {
     setDisplayFiatCurrency('EUR');
     saveFiatSettings({ selectedCurrencies: ['USD'] });
-    const { setAmountSats } = renderAmountPanel();
+    const { setAmountSats } = await renderAmountPanel();
 
     fireEvent.click(await screen.findByRole('button', { name: '₿' }));
     fireEvent.change(screen.getByTestId('invoice-amount-input'), { target: { value: '5' } });
@@ -80,7 +82,7 @@ describe('AmountPanel fiat entry (no stable balance)', () => {
     const client = createMockClient({
       listFiatRates: vi.fn().mockResolvedValue({ rates: [] }),
     } as unknown as Partial<BreezSdk>);
-    renderAmountPanel(client);
+    await renderAmountPanel(client);
 
     await waitFor(() => expect(client.listFiatRates).toHaveBeenCalled());
     expect(screen.queryByRole('button', { name: '₿' })).toBeNull();

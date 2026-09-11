@@ -7,6 +7,7 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import { FiatDataProvider } from '@/contexts/FiatDataContext';
 import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
+import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import SendPaymentDialog from './SendPaymentDialog';
 
 const ADDRESS = 'alice@example.com';
@@ -26,7 +27,7 @@ function payRequest(address?: string) {
 }
 
 /** Renders the sheet with `parse` pinned to one destination shape. */
-function renderSend(parsed: unknown, contacts: unknown[] = []) {
+async function renderSend(parsed: unknown, contacts: unknown[] = []) {
   const client = createMockClient() as unknown as BreezSdk;
   client.parse = vi.fn().mockResolvedValue(parsed as InputType);
   client.listContacts = vi.fn().mockResolvedValue(contacts);
@@ -50,6 +51,7 @@ function renderSend(parsed: unknown, contacts: unknown[] = []) {
     </ToastProvider>,
   );
 
+  await waitForSheetOpen();
   return { onSuccessfulSend };
 }
 
@@ -71,7 +73,7 @@ async function payAndClose(input: string) {
 // address offers the save that the same address typed by hand does (#366).
 describe('save-as-contact prompt after a send', () => {
   it('offers to save a lightning address', async () => {
-    const { onSuccessfulSend } = renderSend({
+    const { onSuccessfulSend } = await renderSend({
       type: 'lightningAddress',
       address: ADDRESS,
       payRequest: payRequest(ADDRESS),
@@ -82,14 +84,14 @@ describe('save-as-contact prompt after a send', () => {
   });
 
   it('offers to save an LNURL that resolves to a lightning address', async () => {
-    const { onSuccessfulSend } = renderSend({ type: 'lnurlPay', ...payRequest(ADDRESS) });
+    const { onSuccessfulSend } = await renderSend({ type: 'lnurlPay', ...payRequest(ADDRESS) });
 
     await payAndClose(LNURL);
     expect(onSuccessfulSend).toHaveBeenCalledWith(ADDRESS);
   });
 
   it('saves the resolved address, not the raw input', async () => {
-    const { onSuccessfulSend } = renderSend({
+    const { onSuccessfulSend } = await renderSend({
       type: 'lightningAddress',
       address: ADDRESS,
       payRequest: payRequest(ADDRESS),
@@ -102,7 +104,7 @@ describe('save-as-contact prompt after a send', () => {
   });
 
   it('stays quiet when the address is already a contact', async () => {
-    const { onSuccessfulSend } = renderSend(
+    const { onSuccessfulSend } = await renderSend(
       { type: 'lnurlPay', ...payRequest(ADDRESS) },
       [{ id: 'c1', name: 'Alice', paymentIdentifier: ADDRESS.toUpperCase() }],
     );
@@ -114,7 +116,7 @@ describe('save-as-contact prompt after a send', () => {
   // A scanned QR yields a bech32 blob with no `address`, which is the case
   // QA hit: the confirm step showed the bare domain and nothing was offered.
   it('offers to save a scanned LNURL whose address is only in metadata', async () => {
-    const { onSuccessfulSend } = renderSend({
+    const { onSuccessfulSend } = await renderSend({
       type: 'lnurlPay',
       ...payRequest(undefined),
       metadataStr: '[["text/plain","Tips"],["text/identifier","alice@example.com"]]',
@@ -125,7 +127,7 @@ describe('save-as-contact prompt after a send', () => {
   });
 
   it('shows the resolved address on the confirm step, not the domain', async () => {
-    renderSend({
+    await renderSend({
       type: 'lnurlPay',
       ...payRequest(undefined),
       metadataStr: '[["text/identifier","alice@example.com"]]',
@@ -141,7 +143,7 @@ describe('save-as-contact prompt after a send', () => {
   });
 
   it('falls back to the domain when the LNURL is not an address', async () => {
-    renderSend({ type: 'lnurlPay', ...payRequest(undefined) });
+    await renderSend({ type: 'lnurlPay', ...payRequest(undefined) });
 
     fireEvent.change(await screen.findByTestId('payment-input'), { target: { value: LNURL } });
     fireEvent.click(screen.getByTestId('continue-button'));
@@ -153,7 +155,7 @@ describe('save-as-contact prompt after a send', () => {
   });
 
   it('names the recipient on the amount step of a scanned LNURL', async () => {
-    renderSend({
+    await renderSend({
       type: 'lnurlPay',
       ...payRequest(undefined),
       metadataStr: '[["text/plain","Tips"],["text/identifier","alice@example.com"]]',
@@ -166,7 +168,7 @@ describe('save-as-contact prompt after a send', () => {
   });
 
   it('names an existing contact when a scanned LNURL resolves to one', async () => {
-    renderSend(
+    await renderSend(
       {
         type: 'lnurlPay',
         ...payRequest(undefined),
@@ -182,7 +184,7 @@ describe('save-as-contact prompt after a send', () => {
   });
 
   it('stays quiet for a bare LNURL that resolves to no address', async () => {
-    const { onSuccessfulSend } = renderSend({ type: 'lnurlPay', ...payRequest(undefined) });
+    const { onSuccessfulSend } = await renderSend({ type: 'lnurlPay', ...payRequest(undefined) });
 
     await payAndClose(LNURL);
     expect(onSuccessfulSend).not.toHaveBeenCalled();
