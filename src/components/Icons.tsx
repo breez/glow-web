@@ -276,6 +276,14 @@ export const LightningBoltIcon: React.FC<IconProps> = ({ className = '', size = 
   </svg>
 );
 
+// Inset viewBox: an outlined chain at full size reads larger than the solid bolt beside it.
+export const ChainLinkIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) => (
+  <svg className={`${sizeClasses[size]} ${className}`} fill="none" viewBox="-1 -1 26 26" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </svg>
+);
+
 export const WalletIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) => (
   <svg className={`${sizeClasses[size]} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />

@@ -229,6 +229,8 @@
   --animate-spin-slow: spin 3s linear infinite;
   --animate-bounce-subtle: bounce-subtle 2s ease-in-out infinite;
   --animate-pin-shake: pin-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  --animate-qr-turn-out: qr-turn-out 160ms cubic-bezier(0.3, 0, 0.8, 0.15) forwards;
+  --animate-qr-turn-in: qr-turn-in 160ms cubic-bezier(0.05, 0.7, 0.1, 1);
 
   --backdrop-blur-xs: 2px;
 
@@ -269,6 +271,18 @@
     }
     50% {
       transform: translateY(-5px);
+    }
+  }
+  /* The receive QR card turning between Lightning and on-chain, in two
+     halves: the code swaps while the card is edge-on. */
+  @keyframes qr-turn-out {
+    to {
+      transform: perspective(900px) rotateY(90deg);
+    }
+  }
+  @keyframes qr-turn-in {
+    from {
+      transform: perspective(900px) rotateY(-90deg);
     }
   }
   /* Wrong-PIN feedback: the dots row shudders horizontally, iOS

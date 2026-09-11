@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '../../contexts/ToastContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
@@ -26,7 +26,8 @@ import LightningAddressDisplay from './LightningAddressDisplay';
 import LightningAddressEditSheet from './LightningAddressEditSheet';
 import CrossChainReceiveWorkflow from './workflows/CrossChainReceiveWorkflow';
 import AmountPanel from './AmountPanel';
-import { ArrowDownIcon, LightningBoltIcon } from '../../components/Icons';
+import { SideCaption, SideDock, type BtcMode } from './SideDock';
+import { ArrowDownIcon } from '../../components/Icons';
 import { holdIdleLock } from '@/services/appLock';
 
 interface ReceivePaymentDialogProps {
@@ -167,6 +168,64 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
   // upstream; the receive flow is still being polished).
   const showUsdTab = isCrossChainEnabled();
 
+  // The BTC tab shows Lightning or on-chain, reusing those two tab states.
+  const isBtcTab = receive.activeTab === 'lightning' || receive.activeTab === 'bitcoin';
+  const btcMode: BtcMode = receive.activeTab === 'bitcoin' ? 'bitcoin' : 'lightning';
+  // The card lags the dock by half a turn: it swaps codes while edge-on.
+  const [shownMode, setShownMode] = useState<BtcMode>(btcMode);
+  const [turning, setTurning] = useState<'out' | 'in' | null>(null);
+  const turnTimers = useRef<number[]>([]);
+  useEffect(() => () => turnTimers.current.forEach(clearTimeout), []);
+  const switchBtcMode = (mode: BtcMode) => {
+    handleTabChange(mode);
+    turnTimers.current.forEach(clearTimeout);
+    turnTimers.current = [];
+    const later = (ms: number, fn: () => void) => turnTimers.current.push(window.setTimeout(fn, ms));
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShownMode(mode);
+      setTurning(null);
+      return;
+    }
+    if (mode === shownMode) {
+      // Switched back before the swap: turn the same card back in.
+      if (turning === 'out') {
+        setTurning('in');
+        later(160, () => setTurning(null));
+      }
+      return;
+    }
+    setTurning('out');
+    later(160, () => {
+      setShownMode(mode);
+      setTurning('in');
+    });
+    // Cleared, so a QR replacing its placeholder does not turn in again.
+    later(320, () => setTurning(null));
+  };
+  // Narrow phones get a smaller code so the dock clears the frame.
+  const qrSize = window.innerWidth < 375 ? 184 : 200;
+  const qrCardClassName = `${turning === 'out' ? 'animate-qr-turn-out' : turning === 'in' ? 'animate-qr-turn-in' : ''} motion-reduce:animate-none`;
+  const btcView = (section: 'qr' | 'details') => (shownMode === 'lightning' ? (
+    <LightningAddressDisplay
+      address={lightningAddress}
+      isLoading={lightningAddressLoading}
+      isSupported={isLightningAddressSupported}
+      onEdit={() => beginEditLightningAddress(lightningAddress)}
+      onCustomizeAmount={() => receive.setShowAmountPanel(true)}
+      section={section}
+      qrSize={qrSize}
+      qrCardClassName={qrCardClassName}
+    />
+  ) : (
+    <BitcoinAddressDisplay
+      address={receive.bitcoinAddress}
+      isLoading={receive.bitcoinLoading}
+      section={section}
+      qrSize={qrSize}
+      qrCardClassName={qrCardClassName}
+    />
+  ));
+
   const getQRTitle = () => {
     switch (receive.activeTab) {
       case 'lightning': return 'Lightning Invoice';
@@ -198,22 +257,19 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
 
           {isContentReady ? (
             <TabContainer>
-              <TabList>
-                <Tab isActive={receive.activeTab === 'lightning'} onClick={() => handleTabChange('lightning')} data-testid="lightning-tab">
-                  <LightningBoltIcon size="sm" />
-                  Lightning
-                </Tab>
-                <Tab isActive={receive.activeTab === 'bitcoin'} onClick={() => handleTabChange('bitcoin')} data-testid="bitcoin-tab">
-                  <span className="font-bold text-sm">₿</span>
-                  Bitcoin
-                </Tab>
-                {showUsdTab && (
+              {/* One tab would be a bar with nothing to pick, so BTC stands alone. */}
+              {showUsdTab && (
+                <TabList>
+                  <Tab isActive={isBtcTab} onClick={() => { if (!isBtcTab) { handleTabChange('lightning'); setShownMode('lightning'); } }} data-testid="btc-tab">
+                    <span className="font-bold text-sm">₿</span>
+                    BTC
+                  </Tab>
                   <Tab isActive={receive.activeTab === 'usd'} onClick={() => handleTabChange('usd')} data-testid="usd-tab">
                     <span className="font-bold text-sm">$</span>
                     USD
                   </Tab>
-                )}
-              </TabList>
+                </TabList>
+              )}
 
               {/* The USD tab sits outside StepContainer: its steps size to their
                   own content (matching the cross-chain send flow), so the 280px
@@ -225,22 +281,20 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
                   <>
                     {receive.currentStep === 'input' && (
                       <div className="pt-6">
-                        {receive.activeTab === 'lightning' && (
-                          <LightningAddressDisplay
-                            address={lightningAddress}
-                            isLoading={lightningAddressLoading}
-                            isSupported={isLightningAddressSupported}
-                            onEdit={() => beginEditLightningAddress(lightningAddress)}
-                            onCustomizeAmount={() => receive.setShowAmountPanel(true)}
-                          />
+                        {isBtcTab && (
+                          <div className="flex flex-col items-center gap-6">
+                            {/* Dock, code, caption: the grid keeps the code centered between them. */}
+                            <div className="-mx-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center self-stretch">
+                              <SideDock mode={btcMode} onChange={switchBtcMode} />
+                              {btcView('qr')}
+                              <SideCaption shown={shownMode} mode={btcMode} onChange={switchBtcMode} />
+                            </div>
+                            {btcView('details')}
+                          </div>
                         )}
 
                         {receive.activeTab === 'spark' && (
                           <SparkAddressDisplay address={receive.sparkAddress} isLoading={receive.sparkLoading} />
-                        )}
-
-                        {receive.activeTab === 'bitcoin' && (
-                          <BitcoinAddressDisplay address={receive.bitcoinAddress} isLoading={receive.bitcoinLoading} />
                         )}
                       </div>
                     )}

@@ -29,7 +29,7 @@ import { STATUS_BAR_DIALOG_SCRIM } from '../../utils/statusBarManager';
 // ============================================
 
 // QR Code (lazy-loadable, contains react-qr-code dependency)
-export { QRCodeContainer } from './QRCodeContainer';
+export { QRCodeContainer, QrPlaceholder } from './QRCodeContainer';
 
 // Buttons
 export { PrimaryButton, SecondaryButton, TextButton, FloatingIconButton } from './buttons';
