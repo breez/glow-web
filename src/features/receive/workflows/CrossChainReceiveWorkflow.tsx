@@ -37,7 +37,7 @@ import { formatError } from '@/utils/formatError';
 
 type WorkflowStep = 'amount' | 'loading' | 'asset' | 'chain' | 'provider' | 'generating' | 'result';
 
-const QUICK_USD_AMOUNTS = [5, 10, 20];
+const QUICK_USD_AMOUNTS = [10, 50, 200];
 
 const CrossChainReceiveWorkflow: React.FC = () => {
   const wallet = useWallet();

@@ -107,12 +107,9 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     setAmountInput(String(quickAmount));
   };
 
-  // Receive has no balance to scale against, so both denominations offer fixed
-  // points of value, held to that value by the rate. A sat request reaches
-  // further up than a fiat one.
-  const quickAmounts = isTokenMode
-    ? fixedQuickAmounts(quickAmountScale, [5, 10, 20])
-    : fixedQuickAmounts(quickAmountScale, [1, 10, 100]);
+  // Receive has no balance to scale against, so both denominations offer the
+  // same fixed points of value, held to that value by the rate.
+  const quickAmounts = fixedQuickAmounts(quickAmountScale, [10, 50, 200]);
 
   // Mirrors the guard in `useReceivePayment.generateBolt11Invoice` so
   // the UI disables the Generate button + Enter-to-submit path for
