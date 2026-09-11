@@ -155,9 +155,13 @@ export function useSendPayment(): UseSendPaymentReturn {
       let effective = parseResult;
       let prefillAmountSat: number | undefined;
       if (parseResult.type === 'bip21') {
-        const method = parseResult.paymentMethods.find(
-          (m) => m.type === 'bitcoinAddress' || m.type === 'sparkAddress' || m.type === 'bolt11Invoice',
-        );
+        // Parser order is not a preference (the address always comes first).
+        // Lightning wins, and Bolt11Workflow still settles it over Spark when
+        // the invoice allows. A bare Spark address ranks last, below on-chain,
+        // since Glow does not surface Spark to users.
+        const method = (['bolt11Invoice', 'bitcoinAddress', 'sparkAddress'] as const)
+          .map((type) => parseResult.paymentMethods.find((m) => m.type === type))
+          .find(Boolean);
         if (!method) {
           setError('Invalid payment destination');
           setCurrentStep('input');

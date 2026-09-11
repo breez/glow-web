@@ -66,4 +66,24 @@ describe('processInput destinations', () => {
       ),
     );
   });
+
+  const onchain = { type: 'bitcoinAddress', address: 'bc1qtest' };
+  const spark = { type: 'sparkAddress', address: 'sp1test' };
+
+  it.each([
+    { rail: 'Lightning', methods: [onchain, spark, bolt11Details(BOLT11)], paid: BOLT11 },
+    { rail: 'on-chain', methods: [spark, onchain], paid: 'bc1qtest' },
+  ])('pays a unified BIP21 over $rail whatever order the parser lists it in', async ({ methods, paid }) => {
+    const { client, result } = renderSendPayment(
+      async (uri) => ({ type: 'bip21', uri, amountSat: 1000, paymentMethods: methods }) as unknown as InputType,
+    );
+
+    await act(() => result.current.processInput('bitcoin:bc1qtest?amount=0.00001'));
+
+    await waitFor(() =>
+      expect(client.prepareSendPayment).toHaveBeenCalledWith(
+        expect.objectContaining({ paymentRequest: { type: 'input', input: paid } }),
+      ),
+    );
+  });
 });
