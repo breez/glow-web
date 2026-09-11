@@ -164,15 +164,16 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
   };
 
   // Gated on the dev-only "Receive USD" toggle (cross-chain send is always-on
-  // upstream; the receive flow is still being polished).
-  const showUsdTab = isCrossChainEnabled();
+  // upstream; the receive flow is still being polished). The flow opens from
+  // the Bitcoin tab: both are onchain deposits, so they share one tab.
+  const showUsdReceive = isCrossChainEnabled();
+  const [showUsdRequest, setShowUsdRequest] = useState(false);
 
   const getQRTitle = () => {
     switch (receive.activeTab) {
       case 'lightning': return 'Lightning Invoice';
       case 'spark': return 'Spark Address';
       case 'bitcoin': return 'Bitcoin Address';
-      case 'usd': return 'USD Transfer';
       default: return 'Payment Request';
     }
   };
@@ -207,68 +208,57 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
                   <span className="font-bold text-sm">₿</span>
                   Bitcoin
                 </Tab>
-                {showUsdTab && (
-                  <Tab isActive={receive.activeTab === 'usd'} onClick={() => handleTabChange('usd')} data-testid="usd-tab">
-                    <span className="font-bold text-sm">$</span>
-                    USD
-                  </Tab>
-                )}
               </TabList>
 
-              {/* The USD tab sits outside StepContainer: its steps size to their
-                  own content (matching the cross-chain send flow), so the 280px
-                  floor would pad the short ones out with dead space. */}
-              {receive.activeTab === 'usd' ? (
-                <CrossChainReceiveWorkflow key={`usd-${receive.resetCount}`} />
-              ) : (
-                <StepContainer>
-                  <>
-                    {receive.currentStep === 'input' && (
-                      <div className="pt-6">
-                        {receive.activeTab === 'lightning' && (
-                          <LightningAddressDisplay
-                            address={lightningAddress}
-                            isLoading={lightningAddressLoading}
-                            isEditing={isEditingLightningAddress}
-                            editValue={lightningAddressEditValue}
-                            error={lightningAddressError}
-                            isSupported={isLightningAddressSupported}
-                            supportMessage={lightningAddressSupportMessage}
-                            onEdit={() => beginEditLightningAddress(lightningAddress)}
-                            onSave={handleSaveLightningAddress}
-                            onCancel={() => cancelEditLightningAddress()}
-                            onEditValueChange={setLightningAddressEditValue}
-                            onCustomizeAmount={() => receive.setShowAmountPanel(true)}
-                          />
-                        )}
-
-                        {receive.activeTab === 'spark' && (
-                          <SparkAddressDisplay address={receive.sparkAddress} isLoading={receive.sparkLoading} />
-                        )}
-
-                        {receive.activeTab === 'bitcoin' && (
-                          <BitcoinAddressDisplay address={receive.bitcoinAddress} isLoading={receive.bitcoinLoading} />
-                        )}
-                      </div>
-                    )}
-
-                    {receive.currentStep === 'loading' && (
-                      <div className="flex flex-col items-center justify-center h-40" data-testid="invoice-generation-loading">
-                        <LoadingSpinner text={`Generating ${getQRTitle().toLowerCase()}...`} />
-                      </div>
-                    )}
-
-                    {receive.currentStep === 'qr' && (
-                      <QRCodeDisplay
-                        paymentData={receive.paymentData}
-                        feeSats={receive.feeSats}
-                        title={getQRTitle()}
-                        description={getQRDescription()}
+              <StepContainer>
+                {receive.currentStep === 'input' && (
+                  <div className="pt-6">
+                    {receive.activeTab === 'lightning' && (
+                      <LightningAddressDisplay
+                        address={lightningAddress}
+                        isLoading={lightningAddressLoading}
+                        isEditing={isEditingLightningAddress}
+                        editValue={lightningAddressEditValue}
+                        error={lightningAddressError}
+                        isSupported={isLightningAddressSupported}
+                        supportMessage={lightningAddressSupportMessage}
+                        onEdit={() => beginEditLightningAddress(lightningAddress)}
+                        onSave={handleSaveLightningAddress}
+                        onCancel={() => cancelEditLightningAddress()}
+                        onEditValueChange={setLightningAddressEditValue}
+                        onCustomizeAmount={() => receive.setShowAmountPanel(true)}
                       />
                     )}
-                  </>
-                </StepContainer>
-              )}
+
+                    {receive.activeTab === 'spark' && (
+                      <SparkAddressDisplay address={receive.sparkAddress} isLoading={receive.sparkLoading} />
+                    )}
+
+                    {receive.activeTab === 'bitcoin' && (
+                      <BitcoinAddressDisplay
+                        address={receive.bitcoinAddress}
+                        isLoading={receive.bitcoinLoading}
+                        onReceiveUsd={showUsdReceive ? () => setShowUsdRequest(true) : undefined}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {receive.currentStep === 'loading' && (
+                  <div className="flex flex-col items-center justify-center h-40" data-testid="invoice-generation-loading">
+                    <LoadingSpinner text={`Generating ${getQRTitle().toLowerCase()}...`} />
+                  </div>
+                )}
+
+                {receive.currentStep === 'qr' && (
+                  <QRCodeDisplay
+                    paymentData={receive.paymentData}
+                    feeSats={receive.feeSats}
+                    title={getQRTitle()}
+                    description={getQRDescription()}
+                  />
+                )}
+              </StepContainer>
             </TabContainer>
           ) : lightningAddress ? (
             // Placeholder matched to the Lightning-tab QR view when
@@ -325,6 +315,17 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
         onClose={receive.closeAmountPanel}
         resetCount={receive.resetCount}
       />
+
+      <BottomSheetContainer isOpen={isOpen && showUsdRequest} onClose={() => setShowUsdRequest(false)} showBackdrop>
+        <BottomSheetCard>
+          <DialogHeader
+            title="Receive USD"
+            onClose={() => setShowUsdRequest(false)}
+            icon={<ArrowDownIcon />}
+          />
+          <CrossChainReceiveWorkflow />
+        </BottomSheetCard>
+      </BottomSheetContainer>
     </>
   );
 };

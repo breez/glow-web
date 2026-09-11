@@ -1,14 +1,16 @@
 import React from 'react';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { QRCodeContainer, CopyableText } from '../../components/ui';
+import { QRCodeContainer, CopyableText, TextButton } from '../../components/ui';
 import { useToast } from '../../contexts/ToastContext';
 
 interface Props {
   address: string | null;
   isLoading: boolean;
+  /** Opens the USDC/USDT request sheet. Absent while that flow is gated off. */
+  onReceiveUsd?: () => void;
 }
 
-const BitcoinAddressDisplay: React.FC<Props> = ({ address, isLoading }) => {
+const BitcoinAddressDisplay: React.FC<Props> = ({ address, isLoading, onReceiveUsd }) => {
   const { showToast } = useToast();
 
   if (isLoading || !address) {
@@ -34,8 +36,14 @@ const BitcoinAddressDisplay: React.FC<Props> = ({ address, isLoading }) => {
           data-testid="bitcoin-address-text"
         />
 
-        {/* Spacer to match Lightning tab height */}
-        <div className="mt-2 h-6" aria-hidden="true" />
+        {onReceiveUsd ? (
+          <TextButton onClick={onReceiveUsd} className="mt-2 mb-[0.75em] cursor-pointer" data-testid="receive-usd-button">
+            Create USD request →
+          </TextButton>
+        ) : (
+          // Spacer to match Lightning tab height
+          <div className="mt-2 h-6" aria-hidden="true" />
+        )}
       </div>
     </div>
   );

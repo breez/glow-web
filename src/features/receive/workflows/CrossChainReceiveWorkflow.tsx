@@ -227,11 +227,10 @@ const CrossChainReceiveWorkflow: React.FC = () => {
   };
 
   // Steps are content-sized: the sheet re-measures and re-snaps per step, so a
-  // short step is not padded out to the tallest one. `pt-6` is the step padding
-  // the other receive tabs use. The selection lists cap themselves against the
-  // viewport (see CrossChainAssetStep) rather than against this container.
+  // short step is not padded out to the tallest one. The selection lists cap
+  // themselves against the viewport (see CrossChainAssetStep).
   return (
-    <div className="pt-6">
+    <>
       {/* Step 1: Amount */}
       {step === 'amount' && (
         <div>
@@ -252,7 +251,6 @@ const CrossChainReceiveWorkflow: React.FC = () => {
               placeholder="Enter amount in USD"
               className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all"
               data-testid="cross-chain-receive-amount-input"
-              autoFocus
             />
 
             {/* Quick amount buttons */}
@@ -407,7 +405,7 @@ const CrossChainReceiveWorkflow: React.FC = () => {
           )}
         </div>
       )}
-    </div>
+    </>
   );
 };
 
