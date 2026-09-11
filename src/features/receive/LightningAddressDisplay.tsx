@@ -1,7 +1,7 @@
 import React from 'react';
 import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { SimpleAlert } from '../../components/AlertCard';
+import { AlertCard } from '../../components/AlertCard';
 import { QRCodeContainer, PrimaryButton, CopyableText, TextButton } from '../../components/ui';
 import { useToast } from '../../contexts/ToastContext';
 import { EditIcon } from '../../components/Icons';
@@ -10,7 +10,6 @@ export interface LightningAddressDisplayProps {
   address: LightningAddressInfo | null;
   isLoading: boolean;
   isSupported: boolean;
-  supportMessage: string | null;
   /** Opens the edit sheet, which also creates the first address. */
   onEdit: () => void;
   onCustomizeAmount: () => void;
@@ -31,7 +30,6 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   address,
   isLoading,
   isSupported,
-  supportMessage,
   onEdit,
   onCustomizeAmount,
 }) => {
@@ -40,16 +38,11 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   if (!isSupported) {
     return (
       <div className="pt-4 space-y-6 flex flex-col items-center text-center">
-        <SimpleAlert
-          variant="info"
-          className="w-full text-left"
-          dataTestId="lightning-address-unsupported"
-        >
-          <h3 className="font-display text-lg font-semibold text-spark-text-primary mb-2">Lightning Address</h3>
-          <p className="text-spark-text-secondary text-sm">
-            {supportMessage ?? 'Lightning addresses are not available in this environment.'}
+        <AlertCard variant="info" title="Lightning addresses unavailable" className="w-full text-left">
+          <p className="text-spark-text-secondary text-sm" data-testid="lightning-address-unsupported">
+            They&apos;re not supported in this environment.
           </p>
-        </SimpleAlert>
+        </AlertCard>
 
         <div className="w-full flex justify-center">
           <TextButton
@@ -71,7 +64,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   // `getLightningAddress() → null`, auto-registers a random
   // username, then re-fetches. `isLoading=true` and `address=null`
   // for the full lookup→register→re-lookup span — without this
-  // branch the user saw the `!address && !isEditing` fallback
+  // branch the user saw the `!address` fallback
   // ("Create Lightning Address" button) flash during auto-creation,
   // which is confusing because they didn't ask to create anything.
   //

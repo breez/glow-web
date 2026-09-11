@@ -13,7 +13,6 @@ export interface UseLightningAddress {
   editValue: string;
   error: string | null;
   isSupported: boolean;
-  supportMessage: string | null;
   load: () => Promise<void>;
   beginEdit: (currentAddress?: LightningAddressInfo | null) => void;
   cancelEdit: () => void;
@@ -22,7 +21,6 @@ export interface UseLightningAddress {
   reset: () => void;
 }
 
-const UNSUPPORTED_MESSAGE = 'Lightning addresses are not available in this environment.';
 // The SDK surfaces every failure here as one opaque string — an unreachable
 // LNURL server reads as `TypeError: Load failed`, a registration rate limit
 // and a name lost in a race both read as `Network error (status ...)`. None of
@@ -39,7 +37,7 @@ export const useLightningAddress = (): UseLightningAddress => {
   const [address, setAddress] = useState<LightningAddressInfo | null>(null);
   // Default to `true` so the first paint of the Receive sheet shows
   // the Lightning-address loading spinner instead of the
-  // `!address && !isEditing` fallback ("Create Lightning Address"
+  // `!address` fallback ("Create Lightning Address"
   // button). Without this, users briefly see the Create button flash
   // between the sheet opening and `load()`'s `setIsLoading(true)`
   // landing on the next tick — confusing on first-launch passkey
@@ -50,11 +48,9 @@ export const useLightningAddress = (): UseLightningAddress => {
   const [editValue, setEditValue] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isSupported, setIsSupported] = useState<boolean>(true);
-  const [supportMessage, setSupportMessage] = useState<string | null>(null);
 
   const markUnsupported = useCallback(() => {
     setIsSupported(false);
-    setSupportMessage(UNSUPPORTED_MESSAGE);
     setIsEditing(false);
     setEditValue('');
     setError(null);
@@ -79,12 +75,7 @@ export const useLightningAddress = (): UseLightningAddress => {
   const loadInFlightRef = useRef(false);
 
   const load = useCallback(async () => {
-    if (!isSupported) {
-      if (!supportMessage) {
-        setSupportMessage(UNSUPPORTED_MESSAGE);
-      }
-      return;
-    }
+    if (!isSupported) return;
     // Already loaded from a prior call — skip the SDK roundtrip.
     // `load()` fires on every Receive-dialog open + every Lightning
     // tab switch; without this short-circuit each reopening pays
@@ -127,7 +118,7 @@ export const useLightningAddress = (): UseLightningAddress => {
       setIsLoading(false);
       loadInFlightRef.current = false;
     }
-  }, [wallet, isSupported, markUnsupported, supportMessage, addressRef]);
+  }, [wallet, isSupported, markUnsupported, addressRef]);
 
   // Pre-load the Lightning address as soon as the hook mounts (which
   // happens on WalletPage mount, well before the user taps Receive).
@@ -223,7 +214,6 @@ export const useLightningAddress = (): UseLightningAddress => {
     editValue,
     error,
     isSupported,
-    supportMessage,
     load,
     beginEdit,
     cancelEdit,

@@ -119,7 +119,6 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     editValue: lightningAddressEditValue,
     error: lightningAddressError,
     isSupported: isLightningAddressSupported,
-    supportMessage: lightningAddressSupportMessage,
     load: loadLightningAddress,
     beginEdit: beginEditLightningAddress,
     cancelEdit: cancelEditLightningAddress,
@@ -231,7 +230,6 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
                             address={lightningAddress}
                             isLoading={lightningAddressLoading}
                             isSupported={isLightningAddressSupported}
-                            supportMessage={lightningAddressSupportMessage}
                             onEdit={() => beginEditLightningAddress(lightningAddress)}
                             onCustomizeAmount={() => receive.setShowAmountPanel(true)}
                           />
