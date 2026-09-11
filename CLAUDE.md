@@ -338,6 +338,11 @@ argue them as preferences: a citation adds nothing here.
 - Tap targets are at least 44px on their short side, and the primary CTA
   keeps the full width at the bottom of the screen, where the thumb is
   (Fitts, 1954; Apple HIG; WCAG 2.5.5).
+- Nothing hides behind hover or long-press. A touch screen has no hover
+  (`hover: none`, Media Queries Level 4), and a long-press shows nothing
+  until someone happens to try it, so neither is a phone UI. If a control
+  needs explaining, the screen says it with a visible label. Hover styling
+  on a control is fine as feedback.
 - Some positions are fixed: on the settings page the Account section
   stays last, above the version line. New sections go above it.
 
