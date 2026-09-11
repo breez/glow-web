@@ -274,15 +274,16 @@
     }
   }
   /* The receive QR card turning between Lightning and on-chain, in two
-     halves: the code swaps while the card is edge-on. */
+     halves: the code swaps while the card is edge-on. The edge beside the
+     dock goes back first, as if the tap pushed it. */
   @keyframes qr-turn-out {
     to {
-      transform: perspective(900px) rotateY(90deg);
+      transform: perspective(900px) rotateY(-90deg);
     }
   }
   @keyframes qr-turn-in {
     from {
-      transform: perspective(900px) rotateY(-90deg);
+      transform: perspective(900px) rotateY(90deg);
     }
   }
   /* Wrong-PIN feedback: the dots row shudders horizontally, iOS
