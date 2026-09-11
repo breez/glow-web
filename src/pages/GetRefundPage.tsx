@@ -10,6 +10,7 @@ import { isDepositRejected, removeRejectedDeposit } from '../services/depositSta
 import { SatAmount } from '../components/SatAmount';
 import { DestinationField } from '../components/DestinationField';
 import QrScannerDialog from '../components/QrScannerDialog';
+import ProcessingStep from '../features/send/steps/ProcessingStep';
 import ResultStep from '../features/send/steps/ResultStep';
 import { destinationAddressOf } from '../utils/destinationAddress';
 import { truncateAddress } from '../utils/crossChainFormat';
@@ -422,11 +423,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
             )}
 
             {/* Step 4: Processing */}
-            {refundStep === 'processing' && (
-              <div className="py-8 flex flex-col items-center justify-center">
-                <LoadingSpinner text="Processing refund..." />
-              </div>
-            )}
+            {refundStep === 'processing' && <ProcessingStep />}
 
             {/* Step 5: Result */}
             {refundStep === 'result' && (
