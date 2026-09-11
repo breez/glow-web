@@ -6,10 +6,12 @@ import {
   checkExit,
   clearPlan,
   exitStages,
+  hasFixedFeeBudget,
   isReady,
   loadPlan,
   nextAction,
   planFromExitResponse,
+  requiredFundingOf,
   planProgress,
   quotedSweepFeeSat,
   savePlan,
@@ -63,10 +65,9 @@ describe('applyExitCheck', () => {
     expect(next.refusals).toEqual({});
   });
 
-  it('sets the phase and clears a stale check error', () => {
-    const next = applyExitCheck(plan([tx({ txid: 'a' })], { lastCheckError: 'esplora down' }), checked([{ txid: 'a' }]), 'complete');
+  it('sets the phase', () => {
+    const next = applyExitCheck(plan([tx({ txid: 'a' })]), checked([{ txid: 'a' }]), 'complete');
     expect(next.phase).toBe('complete');
-    expect(next.lastCheckError).toBeUndefined();
   });
 });
 
@@ -390,7 +391,6 @@ describe('advanceUnilateralExit', () => {
       '02abc',
     );
     expect(next.phase).toBe('redo');
-    expect(next.lastCheckError).toBeUndefined();
     localStorage.removeItem('passkeyLabel');
   });
 
@@ -403,7 +403,6 @@ describe('advanceUnilateralExit', () => {
     });
     const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain(), driver, '02abc');
     expect(next.phase).toBe('redo');
-    expect(next.lastCheckError).toMatch(/recovery phrase/);
   });
 
   it('keeps going on the set it holds when the check fails', async () => {
@@ -414,7 +413,6 @@ describe('advanceUnilateralExit', () => {
     });
     const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain(), failing);
     expect(next.exit.transactions).toHaveLength(1);
-    expect(next.lastCheckError).toMatch(/unavailable/);
   });
 
   it('sends nothing once the exit is complete', async () => {
@@ -508,5 +506,26 @@ describe('nextAction', () => {
 
   it('ignores a timelock whose starting height could not be read', () => {
     expect(nextAction([tx({ txid: 'c', status: locked() })], 100)).toBeNull();
+  });
+});
+
+describe('requiredFundingOf', () => {
+  it("reads the amount out of the sdk's shortfall error", () => {
+    expect(requiredFundingOf('Insufficient CPFP funding: need at least 5898 sats')).toBe(5898);
+  });
+
+  it('is null for any other failure', () => {
+    expect(requiredFundingOf('signing failed')).toBeNull();
+  });
+});
+
+describe('hasFixedFeeBudget', () => {
+  it('holds once the fan-out that splits the exit fee has confirmed', () => {
+    expect(hasFixedFeeBudget(plan([tx({ txid: 'f', kind: 'fanOut', status: confirmed(10) })]))).toBe(true);
+  });
+
+  it('does not while the fan-out is still to confirm, or there is none', () => {
+    expect(hasFixedFeeBudget(plan([tx({ txid: 'f', kind: 'fanOut' })]))).toBe(false);
+    expect(hasFixedFeeBudget(plan([tx({ txid: 'n', kind: 'node', status: confirmed(10) })]))).toBe(false);
   });
 });

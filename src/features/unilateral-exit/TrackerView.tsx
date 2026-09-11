@@ -2,12 +2,22 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { BackupActions, ExitActionRow } from './BackupCard';
 import { AlertCard } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
-import { CollapsibleSection, PrimaryButton } from '@/components/ui';
+import { CollapsibleCodeField, CollapsibleSection, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { RefreshIcon } from '@/components/Icons';
 import { blocksToFinish, exitStages, nextAction, planProgress } from './driver';
 import type { NextAction, PlanProgress, UnilateralExitPlan } from './driver';
 import { formatDaysLeft } from '@/utils/blockTime';
 import { formatWithSpaces } from '@/utils/formatNumber';
+
+/** The node's or the SDK's own words, folded away: support needs them, the user rarely does. */
+const ErrorDetails: React.FC<{ text: string; testId: string }> = ({ text, testId }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-2" data-testid={testId}>
+      <CollapsibleCodeField label="Details" value={text} isVisible={open} onToggle={() => setOpen(v => !v)} />
+    </div>
+  );
+};
 
 /** One labelled figure. No icon and no marker: the label is the whole story. */
 const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
@@ -65,13 +75,13 @@ const ExitSummary: React.FC<{
       ? 'Waiting for confirmations'
       : next.blocks > 0
         ? 'Waiting for timelock'
-        : `Sending ${next.transactions === 1 ? 'the next step' : `${next.transactions} steps`}`;
+        : `Sending ${next.transactions === 1 ? 'a transaction' : `${next.transactions} transactions`}`;
 
   return (
     <div className="space-y-6">
       <div className="text-center py-4">
         <p className="text-spark-text-muted text-sm mb-2">
-          {plan.phase === 'redo' ? 'This exit needs rebuilding' : 'Processing'}
+          {plan.phase === 'redo' ? 'Paused' : 'Processing'}
         </p>
         <SatAmount
           sats={stages.willReceive}
@@ -115,12 +125,16 @@ export const TrackerView: React.FC<{
   plan: UnilateralExitPlan;
   tipHeight: number | null;
   isAdvancing: boolean;
+  /** Opens the wizard, for a new fee rate. */
   onRebuild: () => void;
-}> = ({ plan, tipHeight, isAdvancing, onRebuild }) => {
+  /** Rebuilds a diverged exit in place, at its own fee rate. */
+  onContinue?: () => void;
+  isContinuing?: boolean;
+  continueError?: string | null;
+}> = ({ plan, tipHeight, isAdvancing, onRebuild, onContinue, isContinuing = false, continueError = null }) => {
   const { transactions } = plan.exit;
   const [advanced, setAdvanced] = useState(false);
   const progress = useMemo(() => planProgress(plan), [plan]);
-  const refusal = Object.values(plan.refusals)[0];
   const next = useMemo(
     () => (tipHeight === null ? null : nextAction(transactions, tipHeight)),
     [transactions, tipHeight],
@@ -140,38 +154,34 @@ export const TrackerView: React.FC<{
         isAdvancing={isAdvancing}
       />
 
-      {plan.phase === 'active' && refusal && (
-        <AlertCard variant="warning" title="The network refused a step">
-          <p className="text-xs font-mono break-all" data-testid="unilateral-exit-refusal">
-            {refusal}
-          </p>
-          <p className="text-sm mt-2">
-            Glow keeps retrying, and another copy of the step may confirm instead. If this
-            persists, rebuild the exit at a higher fee.
-          </p>
-        </AlertCard>
-      )}
-
       {plan.phase === 'redo' && (
-        <AlertCard variant="warning" title="Rebuild to keep going">
+        <AlertCard variant="warning" title="Your exit needs an update">
           <p className="text-sm">
-            The blockchain no longer matches the transactions saved here. Your money is safe:
-            it is still in the tree, or already in an output you control.
+            Part of your exit already went through, so the remaining transactions need an update.
+            Your money is safe.
           </p>
-          <div className="mt-3">
-            <PrimaryButton onClick={onRebuild} className="w-full" data-testid="unilateral-exit-rebuild">
-              Rebuild the Exit
+          {continueError && (
+            <>
+              <p className="text-sm mt-2">Glow could not continue the exit.</p>
+              <ErrorDetails text={continueError} testId="unilateral-exit-continue-error" />
+            </>
+          )}
+          <div className="mt-3 space-y-2">
+            <PrimaryButton
+              onClick={onContinue ?? onRebuild}
+              disabled={isContinuing}
+              className="w-full"
+              data-testid="unilateral-exit-rebuild"
+            >
+              {isContinuing ? 'Rebuilding...' : 'Continue Exit'}
             </PrimaryButton>
+            {/* When the exit's own fee rate no longer works, the wizard can pick another. */}
+            {continueError && (
+              <SecondaryButton onClick={onRebuild} className="w-full" data-testid="unilateral-exit-rebuild-wizard">
+                Choose a Different Fee
+              </SecondaryButton>
+            )}
           </div>
-        </AlertCard>
-      )}
-
-      {plan.lastCheckError && (
-        <AlertCard variant="warning" title="Cannot read the exit right now">
-          <p className="text-sm">
-            Glow could not reach the blockchain to check on this exit, so what you see may be out
-            of date. It keeps trying.
-          </p>
         </AlertCard>
       )}
 

@@ -32,12 +32,15 @@ export interface UnilateralExitPlan {
   quotedSweepFeeSat: number;
   /** The sdk's latest word on the exit, handed back to `checkUnilateralExit` unchanged. */
   exit: UnilateralExitResponse;
-  /** Why the network last refused a step, by txid. Cleared once it is accepted or confirms. */
+  /**
+   * Why the network last refused each transaction, by txid, for diagnostics. The
+   * tracker shows none: Glow retries a refusal on every check. Cleared once the
+   * transaction is accepted or confirms.
+   */
   refusals: Record<string, string>;
   phase: ExitPhase;
   /** Frozen when the exit was built: the operators stop reporting the leaves it moves. */
   exitStateSnapshot?: string;
-  lastCheckError?: string;
 }
 
 const PLAN_VERSION = 4;
@@ -74,7 +77,7 @@ export function applyExitCheck(
   const refusals = Object.fromEntries(
     Object.entries(plan.refusals).filter(([txid]) => open.has(txid)),
   );
-  return { ...plan, exit: checked, refusals, phase, lastCheckError: undefined };
+  return { ...plan, exit: checked, refusals, phase };
 }
 
 export function savePlan(wallet: WalletKey, plan: UnilateralExitPlan): void {
@@ -200,6 +203,20 @@ export type ExitSdk = Pick<
 /** The sdk resolves this against the chain tip, timelock included. */
 export const isReady = (tx: UnilateralExitTransaction): boolean => tx.status.type === 'ready';
 
+/**
+ * Whether each branch is down to the fee coin the fan-out gave it. From then on
+ * a rebuild cannot draw on the exit fee address, so more there cannot pay a
+ * higher fee.
+ */
+export const hasFixedFeeBudget = (plan: UnilateralExitPlan): boolean =>
+  plan.exit.transactions.some(tx => tx.kind === 'fanOut' && tx.status.type === 'confirmed');
+
+/** What a build said it needs: the sdk's error reaches the page only as its message. */
+export function requiredFundingOf(error: string): number | null {
+  const match = /need at least (\d+) sats/i.exec(error);
+  return match ? Number(match[1]) : null;
+}
+
 export interface PlanProgress {
   confirmed: number;
   total: number;
@@ -256,16 +273,22 @@ export async function checkExit(plan: UnilateralExitPlan, sdk: ExitSdk): Promise
  * destination, fee rate and funding. Null when there is nothing left to build,
  * which leaves the stored exit as it was.
  *
- * Runs from a background pass, so it never asks for the recovery phrase: a
- * wallet that keeps none on the device throws, and the tracker offers the
- * rebuild as a button the user presses.
+ * A background pass never asks for the recovery phrase: a wallet that keeps
+ * none on the device throws, and the tracker offers the rebuild as a button.
+ * The button passes `interactive`, since its tap is what lets a passkey
+ * prompt run. The phrase is read first, while that tap is still fresh.
  */
 export async function rebuildExit(
   plan: UnilateralExitPlan,
   sdk: ExitSdk,
   identityPubkey: string,
+  { interactive = false }: { interactive?: boolean } = {},
 ): Promise<UnilateralExitPlan | null> {
-  const key = deriveFundingKey(await readWalletMnemonic(), plan.network, plan.fundingAddressIndex);
+  const key = deriveFundingKey(
+    await readWalletMnemonic({ interactive }),
+    plan.network,
+    plan.fundingAddressIndex,
+  );
   await restoreExitState(sdk, plan, await loadExitState(identityPubkey).catch(() => null));
 
   // Named, not reselected: `auto` can drop a leaf that is part-way out.
@@ -327,11 +350,9 @@ export async function advanceUnilateralExit(
     try {
       next = await checkExit(next, sdk);
     } catch (e) {
-      // Kept on the plan, not only logged: an exit that silently stops reading
-      // the chain looks identical to one that is stuck.
+      // Not shown: the next pass tries again, and the log keeps the reason.
       const error = e instanceof Error ? e.message : String(e);
       logger.warn(LogCategory.SDK, `Failed to read the exit back from the sdk: ${error}`);
-      next = { ...next, lastCheckError: error };
     }
   }
 
@@ -346,7 +367,6 @@ export async function advanceUnilateralExit(
       if (e instanceof MnemonicNeedsPasskeyError) return { plan: next, tipHeight };
       const error = e instanceof Error ? e.message : String(e);
       logger.warn(LogCategory.SDK, `Failed to rebuild the exit: ${error}`);
-      next = { ...next, lastCheckError: error };
     }
   }
 

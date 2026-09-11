@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { TrackerView } from './TrackerView';
 
 // The backup card reads the connected wallet; the tracker itself works off the
@@ -113,16 +113,40 @@ describe('what the exit is worth right now', () => {
 
   it('says it is rebuilding rather than moving when the chain diverged', () => {
     renderTracker(plan([tx({ txid: 'a' })], { phase: 'redo' }));
-    expect(screen.getByText('This exit needs rebuilding')).toBeInTheDocument();
+    expect(screen.getByText('Paused')).toBeInTheDocument();
   });
 });
 
 describe('TrackerView', () => {
-  it('offers a rebuild when the chain no longer matches the exit', () => {
+  it('continues a diverged exit in place, without the wizard', () => {
     const onRebuild = vi.fn();
-    renderTracker(plan([tx({ txid: 'a' })], { phase: 'redo' }), 1000, onRebuild);
-    expect(screen.getByText('Rebuild to keep going')).toBeInTheDocument();
-    screen.getByTestId('unilateral-exit-rebuild').click();
+    const onContinue = vi.fn();
+    render(
+      <TrackerView plan={plan([tx({ txid: 'a' })], { phase: 'redo' })} tipHeight={1000} isAdvancing={false} onRebuild={onRebuild} onContinue={onContinue} />,
+    );
+    expect(screen.getByText('Your exit needs an update')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('unilateral-exit-rebuild'));
+    expect(onContinue).toHaveBeenCalled();
+    expect(onRebuild).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('unilateral-exit-rebuild-wizard')).not.toBeInTheDocument();
+  });
+
+  it('offers the wizard when continuing in place fails', () => {
+    const onRebuild = vi.fn();
+    render(
+      <TrackerView
+        plan={plan([tx({ txid: 'a' })], { phase: 'redo' })}
+        tipHeight={1000}
+        isAdvancing={false}
+        onRebuild={onRebuild}
+        onContinue={vi.fn()}
+        continueError="Insufficient CPFP funding: need at least 5000 sats"
+      />,
+    );
+    expect(screen.getByText('Glow could not continue the exit.')).toBeInTheDocument();
+    fireEvent.click(within(screen.getByTestId('unilateral-exit-continue-error')).getByText('Details'));
+    expect(screen.getByTestId('unilateral-exit-continue-error')).toHaveTextContent('need at least 5000 sats');
+    fireEvent.click(screen.getByTestId('unilateral-exit-rebuild-wizard'));
     expect(onRebuild).toHaveBeenCalled();
   });
 
@@ -139,22 +163,6 @@ describe('TrackerView', () => {
   it('drops the fee bump once the chain has diverged, since a rebuild is already offered', () => {
     renderTracker(plan([tx({ txid: 'a' })], { phase: 'redo' }));
     expect(screen.queryByTestId('unilateral-exit-bump-fee')).not.toBeInTheDocument();
-  });
-
-  it('shows why the network refused a step, since nothing else will', () => {
-    renderTracker(plan([tx({ txid: 'a' })], { refusals: { a: 'min relay fee not met, 0 < 110' } }));
-    expect(screen.getByText('The network refused a step')).toBeInTheDocument();
-    expect(screen.getByTestId('unilateral-exit-refusal')).toHaveTextContent('min relay fee not met');
-  });
-
-  it('drops the refusal once the exit is being rebuilt anyway', () => {
-    renderTracker(plan([tx({ txid: 'a' })], { phase: 'redo', refusals: { a: 'txn-mempool-conflict' } }));
-    expect(screen.queryByText('The network refused a step')).not.toBeInTheDocument();
-  });
-
-  it('says so when it cannot reach the chain to check on the exit', () => {
-    renderTracker(plan([tx({ txid: 'a' })], { lastCheckError: 'esplora down' }));
-    expect(screen.getByText('Cannot read the exit right now')).toBeInTheDocument();
   });
 
   it('keeps an off-device copy reachable, since only this device holds what an exit needs', () => {

@@ -195,6 +195,9 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
                 tipHeight={flow.engine.tipHeight}
                 isAdvancing={flow.engine.isAdvancing}
                 onRebuild={flow.rebuild}
+                onContinue={() => void flow.continueExit()}
+                isContinuing={flow.isContinuing}
+                continueError={flow.continueError}
               />
             )}
 

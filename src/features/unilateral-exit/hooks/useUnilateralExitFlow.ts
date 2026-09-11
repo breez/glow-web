@@ -6,7 +6,15 @@ import { holdIdleLock } from '@/services/appLock';
 import { createChainClient } from '@/services/chain';
 import type { ChainUtxo, FeeRates } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
-import { planFromExitResponse, quotedSweepFeeSat, willReceiveSat, type WalletKey } from '../driver';
+import {
+  hasFixedFeeBudget,
+  planFromExitResponse,
+  quotedSweepFeeSat,
+  rebuildExit,
+  requiredFundingOf,
+  willReceiveSat,
+  type WalletKey,
+} from '../driver';
 import { getUnilateralExitState, setUnilateralExitPlan, type UnilateralExitEngineState } from '../engine';
 import { loadExitState, restoreExitState } from '../exitState';
 import { bumpFundingIndex, deriveFundingKey, readFundingIndex, readWalletMnemonic, type FundingKey } from '../funding';
@@ -76,6 +84,10 @@ export interface FundingFields {
   hasPendingDeposit: boolean;
   /** An exit already under way keeps its funding address, and what it holds pays for the rest. */
   isResuming: boolean;
+  /** What the last build at this quote said it needs at the address, or null before one fails for want of it. */
+  requiredFundingSat: number | null;
+  /** More at the address cannot pay a higher fee: see `hasFixedFeeBudget`. */
+  isFeeBudgetFixed: boolean;
 }
 
 /**
@@ -105,6 +117,10 @@ export interface UnilateralExitFlow {
   build: () => Promise<void>;
   buildError: string | null;
   rebuild: () => void;
+  /** Rebuilds a diverged exit in place, at its own fee rate, without the wizard. */
+  continueExit: () => Promise<void>;
+  isContinuing: boolean;
+  continueError: string | null;
   goTo: (phase: UnilateralExitPhase) => void;
   back: () => void;
 }
@@ -137,6 +153,9 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   const [fundingUtxos, setFundingUtxos] = useState<ChainUtxo[]>([]);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [buildError, setBuildError] = useState<string | null>(null);
+  // Only the build knows what a resumed exit still needs, and it says so by
+  // refusing. Held for this quote's rate, so a new quote clears it.
+  const [requiredFundingSat, setRequiredFundingSat] = useState<number | null>(null);
   const mnemonicRef = useRef<string | null>(null);
 
   useEffect(() => () => {
@@ -200,6 +219,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     if (effectiveFeeRate <= 0) return;
     setIsQuoting(true);
     setQuoteError(null);
+    setRequiredFundingSat(null);
     try {
       // Quoted against the backed-up leaf data, not only what the operators still report.
       if (walletKey) {
@@ -246,10 +266,18 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   const confirmedUtxos = useMemo(() => fundingUtxos.filter(utxo => utxo.confirmed), [fundingUtxos]);
   const fundedSat = confirmedUtxos.reduce((total, utxo) => total + utxo.value, 0);
   const isResuming = plan !== null;
+  const isFeeBudgetFixed = plan !== null && hasFixedFeeBudget(plan);
   // A resumed exit is not held to a fresh exit's price: most of what the quote
   // covers is already on-chain, and only the build knows what is really needed.
+  // A fresh exit's quote is a lower bound too. Once a build has said what it
+  // needs, the address has to hold it, unless the fee coins are fixed, when no
+  // amount there helps and only a new quote can.
   const isFunded =
-    quote !== null && (isResuming ? confirmedUtxos.length > 0 : fundedSat >= quote.singleUtxoFundingSat);
+    quote !== null &&
+    (isResuming
+      ? confirmedUtxos.length > 0 &&
+        (requiredFundingSat === null || (!isFeeBudgetFixed && fundedSat >= requiredFundingSat))
+      : fundedSat >= Math.max(quote.singleUtxoFundingSat, requiredFundingSat ?? 0));
 
   const build = useCallback(async () => {
     if (!walletKey || !quote || !fundingKey || !mnemonicRef.current) return;
@@ -296,6 +324,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to build unilateral exit', { error: message(e) });
       setBuildError(message(e));
+      setRequiredFundingSat(requiredFundingOf(message(e)));
       setPhase('fund');
     } finally {
       release();
@@ -308,8 +337,31 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     setQuote(null);
     setQuoteError(null);
     setBuildError(null);
+    // The rates read when the page opened can be hours old by now.
+    setFeeRates(null);
     setPhase('fee');
   }, []);
+
+  // The redo card's button: the rebuild the engine runs on its own, from a tap.
+  // A diverged exit needs no new fee rate or funding, so the wizard would only
+  // add steps, and the tap is what lets a passkey wallet sign.
+  const [isContinuing, setIsContinuing] = useState(false);
+  const [continueError, setContinueError] = useState<string | null>(null);
+  const continueExit = useCallback(async () => {
+    if (!plan || !walletKey) return;
+    setIsContinuing(true);
+    setContinueError(null);
+    try {
+      const rebuilt = await rebuildExit(plan, wallet, walletKey.identityPubkey, { interactive: true });
+      if (rebuilt) setUnilateralExitPlan(walletKey, rebuilt);
+      else setContinueError('Nothing is left to rebuild. The exit updates on its next check.');
+    } catch (e) {
+      logger.error(LogCategory.SDK, 'Failed to continue unilateral exit', { error: message(e) });
+      setContinueError(message(e));
+    } finally {
+      setIsContinuing(false);
+    }
+  }, [plan, wallet, walletKey]);
 
   const back = useCallback(() => setPhase(current => BACK[current] ?? current), []);
 
@@ -340,6 +392,8 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
       isFunded,
       hasPendingDeposit: fundingUtxos.some(utxo => !utxo.confirmed),
       isResuming,
+      requiredFundingSat,
+      isFeeBudgetFixed,
     },
     submitDestination,
     submitFee,
@@ -348,6 +402,9 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     build,
     buildError,
     rebuild,
+    continueExit,
+    isContinuing,
+    continueError,
     goTo: setPhase,
     back,
   };
