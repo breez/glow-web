@@ -6,7 +6,6 @@ import type {
 } from '@breeztech/breez-sdk-spark';
 import {
   PrimaryButton,
-  SecondaryButton,
   QRCodeContainer,
   CopyableText,
   FormError,
@@ -18,7 +17,7 @@ import { useWallet } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { useCrossChainRouteGroups } from '../../../hooks/useCrossChainRouteGroups';
-import { useSheetFullSnap } from '../../../components/ui/sheets/BottomSheetCardContext';
+import { useSheetBack, useSheetFullSnap } from '../../../components/ui/sheets/BottomSheetCardContext';
 import {
   assetDisplayName,
   assetMatchesGroup,
@@ -187,6 +186,9 @@ const CrossChainReceiveWorkflow: React.FC = () => {
     }
   };
 
+  // The asset and chain steps lend their own.
+  useSheetBack(step === 'provider' ? goBackFromProvider : undefined);
+
   // Received amount lands as a stable token (USDB) or as BTC sats, depending on
   // the SDK's auto-pick. `route.decimals` is the *source* asset, so it can't be
   // reused here — branch on `tokenIdentifier` and format the destination asset.
@@ -342,16 +344,13 @@ const CrossChainReceiveWorkflow: React.FC = () => {
               ))}
             </div>
           </div>
-          <div className="flex gap-3 shrink-0 pt-2">
-            <SecondaryButton onClick={goBackFromProvider} className="flex-1">
-              Back
-            </SecondaryButton>
+          <div className="shrink-0 pt-2">
             <PrimaryButton
               onClick={() => {
                 const r = routesForSelection.find(x => x.provider === pendingProvider);
                 if (r) generateOrder(r);
               }}
-              className="flex-1"
+              className="w-full"
               disabled={!pendingProvider}
             >
               Continue

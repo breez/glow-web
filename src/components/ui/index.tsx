@@ -1,4 +1,4 @@
-import React, { ReactNode, forwardRef } from 'react';
+import React, { ReactNode, forwardRef, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { logger, LogCategory } from '@/services/logger';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -18,6 +18,7 @@ import {
   BackIcon,
 } from '../Icons';
 import { AlertCard } from '../AlertCard';
+import { SheetBackContext } from './sheets/BottomSheetCardContext';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useStatusBarColor } from '../../hooks/useStatusBarColor';
 import { STATUS_BAR_DIALOG_SCRIM } from '../../utils/statusBarManager';
@@ -103,31 +104,36 @@ export const DialogHeader: React.FC<{
   onClose: () => void;
   onBack?: () => void;
   icon?: ReactNode;
-}> = ({ title, onClose, onBack, icon }) => (
-  <div className="flex justify-center items-center mb-5 relative px-8">
-    {onBack && (
+}> = ({ title, onClose, onBack, icon }) => {
+  // Without an explicit onBack, the step on screen can lend one (useSheetBack).
+  const stepBack = useContext(SheetBackContext);
+  const back = onBack ?? stepBack;
+  return (
+    <div className="flex justify-center items-center mb-5 relative px-8">
+      {back && (
+        <button
+          onClick={back}
+          aria-label="Back"
+          className="absolute left-0 top-1/2 -translate-y-1/2 py-2 pl-6 pr-2 -ml-6 text-spark-text-muted hover:text-spark-text-primary transition-colors rounded-lg hover:bg-white/5"
+        >
+          <BackIcon />
+        </button>
+      )}
+      <div className="flex items-center gap-2 min-w-0 max-w-full">
+        {icon && <span className="text-spark-primary shrink-0">{icon}</span>}
+        <h2 className="font-display text-lg font-bold text-spark-text-primary truncate">{title}</h2>
+        {icon && <span className="w-5 h-5 shrink-0" aria-hidden="true" />}
+      </div>
       <button
-        onClick={onBack}
-        aria-label="Back"
-        className="absolute left-0 top-1/2 -translate-y-1/2 py-2 pl-6 pr-2 -ml-6 text-spark-text-muted hover:text-spark-text-primary transition-colors rounded-lg hover:bg-white/5"
+        onClick={onClose}
+        aria-label="Close"
+        className="absolute right-0 top-1/2 -translate-y-1/2 py-2 pl-2 pr-6 -mr-6 text-spark-text-muted hover:text-spark-primary-light transition-colors rounded-lg hover:bg-white/5"
       >
-        <BackIcon />
+        <CloseIcon />
       </button>
-    )}
-    <div className="flex items-center gap-2 min-w-0 max-w-full">
-      {icon && <span className="text-spark-primary shrink-0">{icon}</span>}
-      <h2 className="font-display text-lg font-bold text-spark-text-primary truncate">{title}</h2>
-      {icon && <span className="w-5 h-5 shrink-0" aria-hidden="true" />}
     </div>
-    <button
-      onClick={onClose}
-      aria-label="Close"
-      className="absolute right-0 top-1/2 -translate-y-1/2 py-2 pl-2 pr-6 -mr-6 text-spark-text-muted hover:text-spark-primary-light transition-colors rounded-lg hover:bg-white/5"
-    >
-      <CloseIcon />
-    </button>
-  </div>
-);
+  );
+};
 
 
 // ============================================

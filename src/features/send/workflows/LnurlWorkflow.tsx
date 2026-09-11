@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import type { LnurlPayRequestDetails, PrepareLnurlPayRequest, PrepareLnurlPayResponse } from '@breeztech/breez-sdk-spark';
 import type { PaymentStep } from '../../../types/domain';
-import { FormError, PrimaryButton, SecondaryButton } from '../../../components/ui';
+import { FormError, PrimaryButton } from '../../../components/ui';
+import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardContext';
 import ConfirmStep from '../steps/ConfirmStep';
 import { logger, LogCategory } from '@/services/logger';
 import { SpinnerIcon } from '@/components/Icons';
@@ -237,6 +238,9 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     return prepareResponse.conversionEstimate;
   }, [prepareResponse]);
 
+  // The confirm step's ConfirmStep lends its own.
+  useSheetBack(step === 'amount' && !isLoading ? onBack : undefined);
+
   if (step === 'confirm' && prepareResponse) {
     const confirmAmountSats = isSendAllToken
       ? BigInt(prepareResponse.amountSats)
@@ -401,20 +405,14 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
 
       <FormError error={inlineBalanceError || error} />
 
-      {/* Action buttons */}
-      <div className="flex gap-3">
-        <SecondaryButton onClick={onBack} disabled={isLoading} className="flex-1">
-          Back
-        </SecondaryButton>
-        <PrimaryButton onClick={onAmountNext} disabled={isLoading || !validAmount || !!inlineBalanceError} className="flex-1">
-          {isLoading ? (
-            <span className="flex items-center justify-center gap-2">
-              <SpinnerIcon />
-              Processing...
-            </span>
-          ) : 'Continue'}
-        </PrimaryButton>
-      </div>
+      <PrimaryButton onClick={onAmountNext} disabled={isLoading || !validAmount || !!inlineBalanceError} className="w-full">
+        {isLoading ? (
+          <span className="flex items-center justify-center gap-2">
+            <SpinnerIcon />
+            Processing...
+          </span>
+        ) : 'Continue'}
+      </PrimaryButton>
     </div>
   );
 };

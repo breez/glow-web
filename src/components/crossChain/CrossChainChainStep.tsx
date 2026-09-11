@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import type { CrossChainRoutePair } from '@breeztech/breez-sdk-spark';
-import { PrimaryButton, SecondaryButton } from '../ui';
+import { PrimaryButton } from '../ui';
 import CryptoIcon from '../CryptoIcon';
 import { ChevronDownIcon, CopyIcon, CheckIcon } from '../Icons';
 import { crossChainCardClass } from '../../utils/crossChainRoutes';
 import { formatChainName } from '../../utils/crossChainFormat';
 import { copyToClipboard } from '../../utils/clipboard';
-import { useSheetFullSnap } from '../ui/sheets/BottomSheetCardContext';
+import { useSheetBack, useSheetFullSnap } from '../ui/sheets/BottomSheetCardContext';
 
 interface CrossChainChainStepProps {
   /** One representative route per chain group, in display order. */
@@ -38,6 +38,7 @@ export const CrossChainChainStep: React.FC<CrossChainChainStepProps> = ({
   const [expandedChain, setExpandedChain] = useState<string | null>(null);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const isSheetFull = useSheetFullSnap();
+  useSheetBack(onBack);
 
   return (
     <div
@@ -102,11 +103,8 @@ export const CrossChainChainStep: React.FC<CrossChainChainStepProps> = ({
           );
         })}
       </div>
-      <div className="flex gap-3 shrink-0 pt-2">
-        <SecondaryButton onClick={onBack} className="flex-1">
-          Back
-        </SecondaryButton>
-        <PrimaryButton onClick={onContinue} className="flex-1" disabled={!pending}>
+      <div className="shrink-0 pt-2">
+        <PrimaryButton onClick={onContinue} className="w-full" disabled={!pending}>
           Continue
         </PrimaryButton>
       </div>

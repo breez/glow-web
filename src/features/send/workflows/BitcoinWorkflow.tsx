@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import type { SendPaymentMethod, ConversionEstimate } from '@breeztech/breez-sdk-spark';
 import type { PaymentStep } from '../../../types/domain';
 import { PrimaryButton } from '../../../components/ui';
-import { RadioCheckIcon } from '../../../components/Icons';
+import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardContext';
+import { FeeRateSelector, type FeeSpeed } from '../../../components/FeeRateSelector';
 import ConfirmStep from '../steps/ConfirmStep';
 import { SatAmount } from '../../../components/SatAmount';
 import { getSendDestination } from '../utils';
@@ -21,7 +22,9 @@ interface BitcoinWorkflowProps {
 const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, feesIncluded, conversionEstimate, balanceSats, tokenBalance, onBack, onSend }) => {
   const [step, setStep] = useState<PaymentStep>('fee');
   // Fee selection happens here; processing/result are handled by parent
-  const [selectedFeeRate, setSelectedFeeRate] = useState<'fast' | 'medium' | 'slow' | null>(null);
+  const [selectedFeeRate, setSelectedFeeRate] = useState<FeeSpeed | null>(null);
+  // The confirm step's ConfirmStep lends its own.
+  useSheetBack(step === 'fee' ? onBack : undefined);
 
   const handleSend = async () => {
     if (!selectedFeeRate) return;
@@ -30,11 +33,11 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, f
 
   // Compute fees from prepared response and selected rate
   const fq = method.feeQuote;
-  let feesSat: number | null = null;
-  if (selectedFeeRate) {
-    const selected = selectedFeeRate === 'fast' ? fq.speedFast : selectedFeeRate === 'medium' ? fq.speedMedium : fq.speedSlow;
-    feesSat = selected.l1BroadcastFeeSat + selected.userFeeSat;
-  }
+  const feeFor = (speed: FeeSpeed) => {
+    const quote = speed === 'fast' ? fq.speedFast : speed === 'medium' ? fq.speedMedium : fq.speedSlow;
+    return quote.l1BroadcastFeeSat + quote.userFeeSat;
+  };
+  const feesSat = selectedFeeRate ? feeFor(selectedFeeRate) : null;
 
   return (
     <>
@@ -42,61 +45,19 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, f
       {step === 'fee' && (
         <>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-[rgb(var(--text-white))] mb-2">Select Fee Rate</label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setSelectedFeeRate('slow')}
-                className={`relative flex-1 p-3 rounded-lg border text-sm font-medium transition-colors ${selectedFeeRate === 'slow'
-                  ? 'bg-[rgb(var(--primary-blue))] text-white border-[rgb(var(--primary-blue))] ring-2 ring-[rgb(var(--primary-blue))]'
-                  : 'bg-[rgb(var(--card-bg))] text-[rgb(var(--text-white))] border-[rgb(var(--card-border))] hover:border-[rgb(var(--primary-blue))]'
-                  }`}
-              >
-                {selectedFeeRate === 'slow' && (
-                  <RadioCheckIcon className="absolute top-2 right-2" />
-                )}
-                <div>Slow</div>
-                <div className="text-xs opacity-70"><SatAmount sats={fq.speedSlow.l1BroadcastFeeSat + fq.speedSlow.userFeeSat} /></div>
-              </button>
-              <button
-                onClick={() => setSelectedFeeRate('medium')}
-                className={`relative flex-1 p-3 rounded-lg border text-sm font-medium transition-colors ${selectedFeeRate === 'medium'
-                  ? 'bg-[rgb(var(--primary-blue))] text-white border-[rgb(var(--primary-blue))] ring-2 ring-[rgb(var(--primary-blue))]'
-                  : 'bg-[rgb(var(--card-bg))] text-[rgb(var(--text-white))] border-[rgb(var(--card-border))] hover:border-[rgb(var(--primary-blue))]'
-                  }`}
-              >
-                {selectedFeeRate === 'medium' && (
-                  <RadioCheckIcon className="absolute top-2 right-2" />
-                )}
-                <div>Medium</div>
-                <div className="text-xs opacity-70"><SatAmount sats={fq.speedMedium.l1BroadcastFeeSat + fq.speedMedium.userFeeSat} /></div>
-              </button>
-              <button
-                onClick={() => setSelectedFeeRate('fast')}
-                className={`relative flex-1 p-3 rounded-lg border text-sm font-medium transition-colors ${selectedFeeRate === 'fast'
-                  ? 'bg-[rgb(var(--primary-blue))] text-white border-[rgb(var(--primary-blue))] ring-2 ring-[rgb(var(--primary-blue))]'
-                  : 'bg-[rgb(var(--card-bg))] text-[rgb(var(--text-white))] border-[rgb(var(--card-border))] hover:border-[rgb(var(--primary-blue))]'
-                  }`}
-              >
-                {selectedFeeRate === 'fast' && (
-                  <RadioCheckIcon className="absolute top-2 right-2" />
-                )}
-                <div>Fast</div>
-                <div className="text-xs opacity-70"><SatAmount sats={fq.speedFast.l1BroadcastFeeSat + fq.speedFast.userFeeSat} /></div>
-              </button>
-            </div>
+            <FeeRateSelector
+              selected={selectedFeeRate}
+              onSelect={setSelectedFeeRate}
+              detail={speed => <SatAmount sats={feeFor(speed)} />}
+            />
           </div>
-          <div className="flex gap-3">
-            <PrimaryButton onClick={onBack} className="flex-1 bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-lg" disabled={false}>
-              Back
-            </PrimaryButton>
-            <PrimaryButton
-              onClick={() => setStep('confirm')}
-              className="flex-1"
-              disabled={!selectedFeeRate}
-            >
-              Continue
-            </PrimaryButton>
-          </div>
+          <PrimaryButton
+            onClick={() => setStep('confirm')}
+            className="w-full"
+            disabled={!selectedFeeRate}
+          >
+            Continue
+          </PrimaryButton>
         </>
       )}
 

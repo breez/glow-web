@@ -4,7 +4,8 @@ import type { DepositInfo, Fee, SdkEvent } from '@breeztech/breez-sdk-spark';
 import { LoadingSpinner, PrimaryButton, SecondaryButton, FormInput, BottomSheetContainer, BottomSheetCard, DialogHeader, CollapsibleCodeField, PaymentInfoCard } from '../components/ui';
 import { AlertCard, SimpleAlert } from '../components/AlertCard';
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
-import { CloseIcon, CheckIcon, RadioCheckIcon } from '../components/Icons';
+import { CloseIcon, CheckIcon } from '../components/Icons';
+import { FeeRateSelector, type FeeSpeed } from '../components/FeeRateSelector';
 import { isDepositRejected, removeRejectedDeposit } from '../services/depositState';
 import { SatAmount } from '../components/SatAmount';
 import { explorerTxUrl } from '../utils/explorer';
@@ -30,7 +31,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   const [isRefundFlowOpen, setIsRefundFlowOpen] = useState<boolean>(false);
   const [refundStep, setRefundStep] = useState<RefundStep>('address');
   const [destination, setDestination] = useState<string>('');
-  const [selectedFeeRate, setSelectedFeeRate] = useState<'fast' | 'medium' | 'slow' | null>(null);
+  const [selectedFeeRate, setSelectedFeeRate] = useState<FeeSpeed | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [refundError, setRefundError] = useState<string | null>(null);
   const [refundSuccess, setRefundSuccess] = useState<boolean>(false);
@@ -300,6 +301,11 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
           <DialogHeader
             title={refundStep === 'result' ? (refundSuccess ? 'Refund Sent' : 'Refund Failed') : 'Refund to Bitcoin'}
             onClose={closeRefundFlow}
+            onBack={
+              refundStep === 'fee' ? () => setRefundStep('address')
+                : refundStep === 'confirm' ? () => setRefundStep('fee')
+                  : undefined
+            }
           />
 
           <div className="space-y-6">
@@ -340,65 +346,19 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
             {/* Step 2: Fee Selection */}
             {refundStep === 'fee' && (
               <>
-                <div>
-                  <label className="block text-sm font-medium text-[rgb(var(--text-white))] mb-2">
-                    Select Fee Rate
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      onClick={() => setSelectedFeeRate('slow')}
-                      className={`relative p-3 rounded-lg border text-sm font-medium transition-colors ${selectedFeeRate === 'slow'
-                        ? 'bg-[rgb(var(--primary-blue))] text-white border-[rgb(var(--primary-blue))] ring-2 ring-[rgb(var(--primary-blue))]'
-                        : 'bg-[rgb(var(--card-bg))] text-[rgb(var(--text-white))] border-[rgb(var(--card-border))] hover:border-[rgb(var(--primary-blue))]'
-                        }`}
-                    >
-                      {selectedFeeRate === 'slow' && (
-                        <RadioCheckIcon className="absolute top-2 right-2" />
-                      )}
-                      <div>Slow</div>
-                      <div className="text-xs opacity-70"><SatAmount sats={feeEstimates.slow} /></div>
-                    </button>
-                    <button
-                      onClick={() => setSelectedFeeRate('medium')}
-                      className={`relative p-3 rounded-lg border text-sm font-medium transition-colors ${selectedFeeRate === 'medium'
-                        ? 'bg-[rgb(var(--primary-blue))] text-white border-[rgb(var(--primary-blue))] ring-2 ring-[rgb(var(--primary-blue))]'
-                        : 'bg-[rgb(var(--card-bg))] text-[rgb(var(--text-white))] border-[rgb(var(--card-border))] hover:border-[rgb(var(--primary-blue))]'
-                        }`}
-                    >
-                      {selectedFeeRate === 'medium' && (
-                        <RadioCheckIcon className="absolute top-2 right-2" />
-                      )}
-                      <div>Medium</div>
-                      <div className="text-xs opacity-70"><SatAmount sats={feeEstimates.medium} /></div>
-                    </button>
-                    <button
-                      onClick={() => setSelectedFeeRate('fast')}
-                      className={`relative p-3 rounded-lg border text-sm font-medium transition-colors ${selectedFeeRate === 'fast'
-                        ? 'bg-[rgb(var(--primary-blue))] text-white border-[rgb(var(--primary-blue))] ring-2 ring-[rgb(var(--primary-blue))]'
-                        : 'bg-[rgb(var(--card-bg))] text-[rgb(var(--text-white))] border-[rgb(var(--card-border))] hover:border-[rgb(var(--primary-blue))]'
-                        }`}
-                    >
-                      {selectedFeeRate === 'fast' && (
-                        <RadioCheckIcon className="absolute top-2 right-2" />
-                      )}
-                      <div>Fast</div>
-                      <div className="text-xs opacity-70"><SatAmount sats={feeEstimates.fast} /></div>
-                    </button>
-                  </div>
-                </div>
+                <FeeRateSelector
+                  selected={selectedFeeRate}
+                  onSelect={setSelectedFeeRate}
+                  detail={speed => <SatAmount sats={feeEstimates[speed]} />}
+                />
 
-                <div className="flex gap-3">
-                  <PrimaryButton onClick={() => setRefundStep('address')} className="flex-1 bg-gray-600 hover:bg-gray-700 text-white" disabled={false}>
-                    Back
-                  </PrimaryButton>
-                  <PrimaryButton
-                    onClick={() => setRefundStep('confirm')}
-                    disabled={!selectedFeeRate}
-                    className="flex-1"
-                  >
-                    Continue
-                  </PrimaryButton>
-                </div>
+                <PrimaryButton
+                  onClick={() => setRefundStep('confirm')}
+                  disabled={!selectedFeeRate}
+                  className="w-full"
+                >
+                  Continue
+                </PrimaryButton>
               </>
             )}
 
@@ -420,18 +380,13 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                   </AlertCard>
                 )}
 
-                <div className="flex gap-3">
-                  <SecondaryButton onClick={() => setRefundStep('fee')} className="flex-1">
-                    Back
-                  </SecondaryButton>
-                  <PrimaryButton
-                    onClick={handleRefund}
-                    disabled={isProcessing}
-                    className="flex-1"
-                  >
-                    Refund
-                  </PrimaryButton>
-                </div>
+                <PrimaryButton
+                  onClick={handleRefund}
+                  disabled={isProcessing}
+                  className="w-full"
+                >
+                  Refund
+                </PrimaryButton>
               </>
             )}
 
