@@ -101,14 +101,14 @@ describe('GetRefundPage fee', () => {
     fireEvent.change(destination, { target: { value: 'bc1qdest' } });
     fireEvent.click(refundSheet().getByText('Continue'));
 
-    // The mock's half-hour rate is 15 sat/vB, over a 111 vB refund.
+    // The mock's half-hour rate is 15 sat/vB: 1 665 sats over a 111 vB refund, shown as 1 700.
     fireEvent.click(await refundSheet().findByRole('button', { name: /^Medium/ }));
     fireEvent.click(refundSheet().getByText('Continue'));
     fireEvent.click(await refundSheet().findByText('Refund'));
 
     await waitFor(() =>
       expect(client.refundDeposit).toHaveBeenCalledWith(
-        expect.objectContaining({ destinationAddress: 'bc1qdest', fee: { type: 'fixed', amount: 1665 } }),
+        expect.objectContaining({ destinationAddress: 'bc1qdest', fee: { type: 'fixed', amount: 1700 } }),
       ),
     );
     expect(await refundSheet().findByText('Refund Sent!')).toBeInTheDocument();

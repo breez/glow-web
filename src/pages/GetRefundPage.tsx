@@ -30,6 +30,12 @@ type RefundStep = 'address' | 'fee' | 'confirm' | 'processing' | 'result';
 // the largest size never pays below the rate picked.
 const REFUND_VSIZE = 111;
 
+/** Up to two significant figures (111 to 120, 1 665 to 1 700): round, and never below the rate. */
+const roundUpFee = (sats: number) => {
+  const step = Math.max(10, 10 ** (String(Math.ceil(sats)).length - 2));
+  return Math.ceil(sats / step) * step;
+};
+
 const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirection = 'left' }) => {
   const wallet = useWallet();
 
@@ -191,7 +197,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   };
 
   // Paid as a fixed amount, so confirm shows the exact fee and what arrives.
-  const feeFor = (speed: FeeSpeed) => (feeRates ? Math.ceil(feeRates[speed] * REFUND_VSIZE) : 0);
+  const feeFor = (speed: FeeSpeed) => (feeRates ? roundUpFee(feeRates[speed] * REFUND_VSIZE) : 0);
 
   const handleRefund = async () => {
     if (!selectedDeposit || !selectedFeeRate || !destination.trim()) return;
