@@ -1,24 +1,17 @@
 import React from 'react';
 import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { SimpleAlert } from '../../components/AlertCard';
-import { QRCodeContainer, PrimaryButton, SecondaryButton, FormError, CopyableText, TextButton } from '../../components/ui';
+import { AlertCard } from '../../components/AlertCard';
+import { QRCodeContainer, PrimaryButton, CopyableText, TextButton } from '../../components/ui';
 import { useToast } from '../../contexts/ToastContext';
-import { EditIcon, LightningBoltIcon } from '../../components/Icons';
-import { dismissKeyboard } from '../../utils/keyboard';
+import { EditIcon } from '../../components/Icons';
 
 export interface LightningAddressDisplayProps {
   address: LightningAddressInfo | null;
   isLoading: boolean;
-  isEditing: boolean;
-  editValue: string;
-  error: string | null;
   isSupported: boolean;
-  supportMessage: string | null;
+  /** Opens the edit sheet, which also creates the first address. */
   onEdit: () => void;
-  onSave: () => void;
-  onCancel: () => void;
-  onEditValueChange: (value: string) => void;
   onCustomizeAmount: () => void;
 }
 
@@ -33,113 +26,11 @@ const EditButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   </button>
 );
 
-// Separate component to handle keyboard visibility
-interface EditingFormProps {
-  address: LightningAddressInfo | null;
-  editValue: string;
-  error: string | null;
-  isLoading: boolean;
-  onEditValueChange: (value: string) => void;
-  onCancel: () => void;
-  onSave: () => void;
-}
-
-const EditingForm: React.FC<EditingFormProps> = ({
-  address,
-  editValue,
-  error,
-  isLoading,
-  onEditValueChange,
-  onCancel,
-  onSave,
-}) => {
-  return (
-    <div className="pt-2 space-y-5">
-      {/* Header with icon */}
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-14 h-14 rounded-2xl bg-spark-primary/20 flex items-center justify-center">
-          <LightningBoltIcon className="w-7 h-7 text-spark-primary" />
-        </div>
-        <h3 className="font-display text-lg font-semibold text-spark-text-primary">
-          {address ? 'Edit Address' : 'Create Address'}
-        </h3>
-      </div>
-
-      {/* Input with suffix */}
-      <div className="space-y-4">
-        <div className="flex items-center bg-spark-dark border border-spark-border rounded-xl overflow-hidden focus-within:border-spark-primary transition-all">
-          <textarea
-            value={editValue}
-            onChange={(e) => onEditValueChange(e.target.value.toLowerCase().replace(/[^a-z0-9\n]/g, '').replace(/\n/g, ''))}
-            onKeyDown={async (e) => {
-              // Last and only field in this form — Enter submits
-              // via the same path as the Save button. Soft keyboard
-              // shows "Done" via enterKeyHint.
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                if (!isLoading && editValue.trim()) {
-                  await dismissKeyboard();
-                  onSave();
-                } else {
-                  // Empty / invalid input: still retract the
-                  // keyboard so the user can see the Save button.
-                  await dismissKeyboard();
-                }
-              }
-            }}
-            enterKeyHint="done"
-            inputMode="text"
-            // A textarea (not an input) to keep Android's autofill bar away,
-            // so it soft-wraps a long username onto a second row. wrap="off"
-            // makes it scroll horizontally like a single-line field (#328).
-            wrap="off"
-            autoCapitalize="none"
-            autoCorrect="off"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder="satoshi"
-            disabled={isLoading}
-            rows={1}
-            className="flex-1 min-w-0 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-hidden resize-none"
-          />
-          <span className="shrink-0 px-4 py-3 text-spark-text-muted font-medium text-sm">
-            @breez.tips
-          </span>
-        </div>
-
-        <FormError error={error} />
-      </div>
-
-      {/* Action buttons */}
-      <div className="flex gap-3 justify-center pt-2 pb-4">
-        <SecondaryButton onClick={onCancel} className="flex-1">
-          Cancel
-        </SecondaryButton>
-        <PrimaryButton
-          onClick={onSave}
-          disabled={isLoading || !editValue.trim()}
-          className="flex-1"
-          data-testid="save-address-button"
-        >
-          {isLoading ? <LoadingSpinner size="small" /> : 'Save'}
-        </PrimaryButton>
-      </div>
-    </div>
-  );
-};
-
 const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   address,
   isLoading,
-  isEditing,
-  editValue,
-  error,
   isSupported,
-  supportMessage,
   onEdit,
-  onSave,
-  onCancel,
-  onEditValueChange,
   onCustomizeAmount,
 }) => {
   const { showToast } = useToast();
@@ -147,16 +38,11 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   if (!isSupported) {
     return (
       <div className="pt-4 space-y-6 flex flex-col items-center text-center">
-        <SimpleAlert
-          variant="info"
-          className="w-full text-left"
-          dataTestId="lightning-address-unsupported"
-        >
-          <h3 className="font-display text-lg font-semibold text-spark-text-primary mb-2">Lightning Address</h3>
-          <p className="text-spark-text-secondary text-sm">
-            {supportMessage ?? 'Lightning addresses are not available in this environment.'}
+        <AlertCard variant="info" title="Lightning addresses unavailable" className="w-full text-left">
+          <p className="text-spark-text-secondary text-sm" data-testid="lightning-address-unsupported">
+            They&apos;re not supported in this environment.
           </p>
-        </SimpleAlert>
+        </AlertCard>
 
         <div className="w-full flex justify-center">
           <TextButton
@@ -178,7 +64,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
   // `getLightningAddress() → null`, auto-registers a random
   // username, then re-fetches. `isLoading=true` and `address=null`
   // for the full lookup→register→re-lookup span — without this
-  // branch the user saw the `!address && !isEditing` fallback
+  // branch the user saw the `!address` fallback
   // ("Create Lightning Address" button) flash during auto-creation,
   // which is confusing because they didn't ask to create anything.
   //
@@ -196,7 +82,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
     );
   }
 
-  if (!address && !isEditing) {
+  if (!address) {
     return (
       <div className="pt-4 space-y-6 flex flex-col items-center">
         <div className="text-center">
@@ -217,20 +103,6 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
           </TextButton>
         </div>
       </div>
-    );
-  }
-
-  if (isEditing) {
-    return (
-      <EditingForm
-        address={address}
-        editValue={editValue}
-        error={error}
-        isLoading={isLoading}
-        onEditValueChange={onEditValueChange}
-        onCancel={onCancel}
-        onSave={onSave}
-      />
     );
   }
 

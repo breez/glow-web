@@ -23,6 +23,7 @@ import { formatWithSpaces } from '../../utils/formatNumber';
 import SparkAddressDisplay from './SparkAddressDisplay';
 import BitcoinAddressDisplay from './BitcoinAddressDisplay';
 import LightningAddressDisplay from './LightningAddressDisplay';
+import LightningAddressEditSheet from './LightningAddressEditSheet';
 import CrossChainReceiveWorkflow from './workflows/CrossChainReceiveWorkflow';
 import AmountPanel from './AmountPanel';
 import { ArrowDownIcon, LightningBoltIcon } from '../../components/Icons';
@@ -118,7 +119,6 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     editValue: lightningAddressEditValue,
     error: lightningAddressError,
     isSupported: isLightningAddressSupported,
-    supportMessage: lightningAddressSupportMessage,
     load: loadLightningAddress,
     beginEdit: beginEditLightningAddress,
     cancelEdit: cancelEditLightningAddress,
@@ -229,15 +229,8 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
                           <LightningAddressDisplay
                             address={lightningAddress}
                             isLoading={lightningAddressLoading}
-                            isEditing={isEditingLightningAddress}
-                            editValue={lightningAddressEditValue}
-                            error={lightningAddressError}
                             isSupported={isLightningAddressSupported}
-                            supportMessage={lightningAddressSupportMessage}
                             onEdit={() => beginEditLightningAddress(lightningAddress)}
-                            onSave={handleSaveLightningAddress}
-                            onCancel={() => cancelEditLightningAddress()}
-                            onEditValueChange={setLightningAddressEditValue}
                             onCustomizeAmount={() => receive.setShowAmountPanel(true)}
                           />
                         )}
@@ -324,6 +317,17 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
         onCreateInvoice={receive.generateBolt11Invoice}
         onClose={receive.closeAmountPanel}
         resetCount={receive.resetCount}
+      />
+
+      <LightningAddressEditSheet
+        isOpen={isOpen && isEditingLightningAddress}
+        address={lightningAddress}
+        editValue={lightningAddressEditValue}
+        error={lightningAddressError}
+        isLoading={lightningAddressLoading}
+        onEditValueChange={setLightningAddressEditValue}
+        onSave={handleSaveLightningAddress}
+        onClose={cancelEditLightningAddress}
       />
     </>
   );
