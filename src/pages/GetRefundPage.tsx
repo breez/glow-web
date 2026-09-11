@@ -24,6 +24,11 @@ interface GetRefundPageProps {
 
 type RefundStep = 'address' | 'fee' | 'confirm' | 'processing' | 'result';
 
+// A refund spends the deposit's one taproot input to one output: 111 vB when
+// that output is taproot or P2WSH, less for other address types. Pricing at
+// the largest size never pays below the rate picked.
+const REFUND_VSIZE = 111;
+
 const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirection = 'left' }) => {
   const wallet = useWallet();
 
@@ -44,12 +49,8 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   const [refundTxId, setRefundTxId] = useState<string | null>(null);
   const [isTxIdVisible, setIsTxIdVisible] = useState<boolean>(false);
 
-  // Fee estimates (simplified - in real implementation, get from SDK)
-  const feeEstimates = {
-    slow: 500,
-    medium: 1000,
-    fast: 2000
-  };
+  const [feeRates, setFeeRates] = useState<Record<FeeSpeed, number> | null>(null);
+  const [feeRatesError, setFeeRatesError] = useState<string | null>(null);
 
   // State for expandable transaction ID fields in examples
   const [expandedTxIds, setExpandedTxIds] = useState<Record<string, boolean>>({});
@@ -166,7 +167,30 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     setDestination(address);
     setDestinationError(null);
     setRefundStep('fee');
+    void loadFeeRates();
   };
+
+  // Current rates on every visit from the address step, as the exit flow reads them.
+  const loadFeeRates = async () => {
+    setFeeRates(null);
+    setFeeRatesError(null);
+    try {
+      const fees = await wallet.recommendedFees();
+      setFeeRates({
+        slow: Math.max(1, fees.hourFee),
+        medium: Math.max(1, fees.halfHourFee),
+        fast: Math.max(1, fees.fastestFee),
+      });
+    } catch (e) {
+      logger.error(LogCategory.PAYMENT, 'Failed to read fee rates for a refund', {
+        error: e instanceof Error ? e.message : String(e),
+      });
+      setFeeRatesError("Couldn't read the current fee rates. Go back and try again.");
+    }
+  };
+
+  // Paid as a fixed amount, so confirm shows the exact fee and what arrives.
+  const feeFor = (speed: FeeSpeed) => (feeRates ? Math.ceil(feeRates[speed] * REFUND_VSIZE) : 0);
 
   const handleRefund = async () => {
     if (!selectedDeposit || !selectedFeeRate || !destination.trim()) return;
@@ -176,7 +200,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     setRefundStep('processing');
 
     try {
-      const fee: Fee = { type: 'fixed', amount: feeEstimates[selectedFeeRate] };
+      const fee: Fee = { type: 'fixed', amount: feeFor(selectedFeeRate) };
       const result = await wallet.refundDeposit({ txid: selectedDeposit.txid, vout: selectedDeposit.vout, destinationAddress: destination.trim(), fee });
 
       // Remove from rejected list after successful refund
@@ -197,10 +221,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     }
   };
 
-  const getSelectedFee = () => {
-    if (!selectedFeeRate) return 0;
-    return feeEstimates[selectedFeeRate];
-  };
+  const getSelectedFee = () => (selectedFeeRate ? feeFor(selectedFeeRate) : 0);
 
   const getRefundAmount = () => {
     if (!selectedDeposit) return 0;
@@ -347,15 +368,23 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
             {/* Step 2: Fee Selection */}
             {refundStep === 'fee' && (
               <>
-                <FeeRateSelector
-                  selected={selectedFeeRate}
-                  onSelect={setSelectedFeeRate}
-                  detail={speed => <SatAmount sats={feeEstimates[speed]} />}
-                />
+                {feeRatesError ? (
+                  <SimpleAlert variant="error">{feeRatesError}</SimpleAlert>
+                ) : feeRates ? (
+                  <FeeRateSelector
+                    selected={selectedFeeRate}
+                    onSelect={setSelectedFeeRate}
+                    detail={speed => <SatAmount sats={feeFor(speed)} />}
+                  />
+                ) : (
+                  <div className="py-8 flex justify-center">
+                    <LoadingSpinner text="Reading current fee rates..." />
+                  </div>
+                )}
 
                 <PrimaryButton
                   onClick={() => setRefundStep('confirm')}
-                  disabled={!selectedFeeRate}
+                  disabled={!selectedFeeRate || !feeRates}
                   className="w-full"
                 >
                   Continue

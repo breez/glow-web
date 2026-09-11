@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import type { BreezSdk, DepositInfo } from '@breeztech/breez-sdk-spark';
 import { WalletProvider } from '@/contexts/WalletContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
@@ -20,6 +20,7 @@ async function renderPage() {
   client.listUnclaimedDeposits = vi
     .fn()
     .mockResolvedValue({ deposits: [DEPOSIT] });
+  client.refundDeposit = vi.fn().mockResolvedValue({ txId: 'b'.repeat(64), txHex: '00' });
 
   render(
     <WalletProvider client={client} isConnected>
@@ -31,7 +32,7 @@ async function renderPage() {
   fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
   const destination = await screen.findByPlaceholderText('bc1q...');
   await waitForSheetOpen();
-  return { destination };
+  return { destination, client };
 }
 
 // The deposit card behind the sheet has its own Continue button: scope
@@ -89,5 +90,27 @@ describe('GetRefundPage address step', () => {
     fireEvent.click(refundSheet().getByLabelText('Close'));
 
     expect(refundSheet().getByText('Continue')).toBeDisabled();
+  });
+});
+
+describe('GetRefundPage fee', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('pays the picked speed at the current rate as a fixed fee', async () => {
+    const { destination, client } = await renderPage();
+    fireEvent.change(destination, { target: { value: 'bc1qdest' } });
+    fireEvent.click(refundSheet().getByText('Continue'));
+
+    // The mock's half-hour rate is 15 sat/vB, over a 111 vB refund.
+    fireEvent.click(await refundSheet().findByRole('button', { name: /^Medium/ }));
+    fireEvent.click(refundSheet().getByText('Continue'));
+    fireEvent.click(await refundSheet().findByText('Refund'));
+
+    await waitFor(() =>
+      expect(client.refundDeposit).toHaveBeenCalledWith(
+        expect.objectContaining({ destinationAddress: 'bc1qdest', fee: { type: 'fixed', amount: 1665 } }),
+      ),
+    );
+    expect(await refundSheet().findByText('Refund Sent!')).toBeInTheDocument();
   });
 });
