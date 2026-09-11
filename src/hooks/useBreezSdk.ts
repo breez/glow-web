@@ -447,6 +447,9 @@ export function useBreezSdk(
       try {
         cfg = buildConnectConfig();
       } catch (e) {
+        // Only a missing key gets this message. Any other config error takes
+        // the connect failure path, so onboarding does not carry on unconnected.
+        if (import.meta.env.VITE_BREEZ_API_KEY) throw e;
         showToast('error', 'Missing API Key', formatError(e));
         setIsLoading(false);
         return;

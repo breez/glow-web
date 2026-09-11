@@ -39,6 +39,24 @@ export async function captureExitState(
   }
 }
 
+/**
+ * A listener that takes a fresh backup when an exit lands. A finished exit
+ * leaves a backup describing leaves it has since spent, and the engine marks
+ * the landing by archiving the exit and releasing its plan. The first state it
+ * sees is only a baseline, so loading an existing archive does not count.
+ */
+export function backUpWhenExitLands(
+  sdk: ExitStateExporter,
+  save: (exitState: string) => Promise<void>,
+): (state: { plan: UnilateralExitPlan | null; archive: readonly unknown[] }) => void {
+  let archived: number | null = null;
+  return ({ plan, archive }) => {
+    const landed = archived !== null && archive.length > archived;
+    archived = archive.length;
+    if (landed) void captureExitState(sdk, plan, save);
+  };
+}
+
 /** Importing only adds data the wallet lacks, so a failure is not a reason to stop. */
 export async function restoreExitState(
   sdk: ExitStateImporter,

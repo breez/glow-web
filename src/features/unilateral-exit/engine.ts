@@ -29,6 +29,9 @@ let wallet: WalletKey | null = null;
 let chain: ChainClient | null = null;
 let sdk: ExitSdk | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;
+// Bumped whenever the wallet or its plan is replaced. A pass that started under
+// an older generation is for something no longer current, so it must not write.
+let generation = 0;
 const listeners = new Set<Listener>();
 
 const emit = (next: Partial<UnilateralExitEngineState>): void => {
@@ -62,32 +65,36 @@ export async function advanceNow(): Promise<void> {
     return;
   }
 
+  const passGeneration = generation;
+  const passWallet = wallet;
   emit({ isAdvancing: true });
   try {
     const { plan, tipHeight } = await advanceUnilateralExit(
       state.plan,
       chain,
       sdk ?? undefined,
-      wallet.identityPubkey,
+      passWallet.identityPubkey,
     );
+    // Whoever replaced the wallet or plan while this pass was out owns the state now.
+    if (generation !== passGeneration) return;
     // A finished exit hands its slot back: the record lives in the archive from
     // here, and the wizard has to be free to quote the next one.
     if (plan.phase === 'complete') {
-      const archive = archiveExit(wallet, plan);
-      clearPlan(wallet);
+      const archive = archiveExit(passWallet, plan);
+      clearPlan(passWallet);
       emit({ plan: null, archive, tipHeight, isAdvancing: false });
       stopPolling();
       return;
     }
 
-    savePlan(wallet, plan);
+    savePlan(passWallet, plan);
     emit({ plan, tipHeight, isAdvancing: false });
     if (plan.phase !== 'active') stopPolling();
   } catch (e) {
     logger.warn(LogCategory.SDK, 'Recovery engine pass failed', {
       error: e instanceof Error ? e.message : String(e),
     });
-    emit({ isAdvancing: false });
+    if (generation === passGeneration) emit({ isAdvancing: false });
   }
 }
 
@@ -100,6 +107,7 @@ export function startUnilateralExitEngine(
   client: ChainClient = createChainClient(target.network),
   driver?: ExitSdk | null,
 ): void {
+  generation++;
   wallet = target;
   chain = client;
   sdk = driver ?? null;
@@ -111,6 +119,7 @@ export function startUnilateralExitEngine(
 }
 
 export function stopUnilateralExitEngine(): void {
+  generation++;
   stopPolling();
   wallet = null;
   chain = null;
@@ -122,7 +131,10 @@ export function stopUnilateralExitEngine(): void {
 export function setUnilateralExitPlan(target: WalletKey, plan: UnilateralExitPlan): void {
   savePlan(target, plan);
   if (wallet?.identityPubkey !== target.identityPubkey || wallet.network !== target.network) return;
-  emit({ plan });
+  // A pass still out for the old plan is discarded when it lands, so this one
+  // does not wait for it.
+  generation++;
+  emit({ plan, isAdvancing: false });
   startPolling();
   void advanceNow();
 }

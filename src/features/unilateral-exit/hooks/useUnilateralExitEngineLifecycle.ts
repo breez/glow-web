@@ -1,4 +1,4 @@
-import { captureExitState, saveExitState } from '../exitState';
+import { backUpWhenExitLands, captureExitState, saveExitState } from '../exitState';
 import { useEffect, useState } from 'react';
 import type { BreezSdk, SdkEvent } from '@breeztech/breez-sdk-spark';
 import {
@@ -41,16 +41,11 @@ export function useUnilateralExitEngineLifecycle(
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
 
-  // A finished exit leaves a backup describing leaves it has since spent, so a
-  // fresh one is taken the moment it completes.
   useEffect(() => {
     if (!sdk || !identityPubkey) return;
-    let backedUp = false;
-    return subscribeUnilateralExit(({ plan }) => {
-      if (plan?.phase !== 'complete' || backedUp) return;
-      backedUp = true;
-      void captureExitState(sdk, plan, state => saveExitState(identityPubkey, state));
-    });
+    return subscribeUnilateralExit(
+      backUpWhenExitLands(sdk, state => saveExitState(identityPubkey, state)),
+    );
   }, [sdk, identityPubkey]);
 
   // Once the operators stop serving them, the leaves an exit is built from

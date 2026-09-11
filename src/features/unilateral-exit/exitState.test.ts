@@ -1,4 +1,4 @@
-import { captureExitState, exitStateForExit, restoreExitState } from './exitState';
+import { backUpWhenExitLands, captureExitState, exitStateForExit, restoreExitState } from './exitState';
 import { plan } from './testFixtures';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -77,5 +77,29 @@ describe('restoreExitState', () => {
   it('lets an exit proceed even if the import fails', async () => {
     const client = { importUnilateralExitState: vi.fn(async () => { throw new Error('corrupt'); }) };
     await expect(restoreExitState(client, null, 'rolling')).resolves.toBeUndefined();
+  });
+});
+
+describe('backUpWhenExitLands', () => {
+  const setup = () => {
+    const save = vi.fn(async () => undefined);
+    const sdk = { exportUnilateralExitState: vi.fn(async () => ({ exitState: 'fresh' })) };
+    return { save, sdk, listener: backUpWhenExitLands(sdk as never, save) };
+  };
+  const flush = () => new Promise(resolve => setTimeout(resolve, 0));
+
+  it('takes a fresh backup when an exit lands in the archive', async () => {
+    const { save, listener } = setup();
+    listener({ plan: plan([]), archive: [] });
+    listener({ plan: null, archive: [{ id: 'sweep' }] });
+    await flush();
+    expect(save).toHaveBeenCalledWith('fresh');
+  });
+
+  it('does not count the archive it finds on start as a landing', async () => {
+    const { save, listener } = setup();
+    listener({ plan: null, archive: [{ id: 'sweep' }] });
+    await flush();
+    expect(save).not.toHaveBeenCalled();
   });
 });

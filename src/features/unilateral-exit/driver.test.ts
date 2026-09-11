@@ -5,6 +5,7 @@ import {
   broadcastReadyTransactions,
   checkExit,
   clearPlan,
+  destinationAddressOf,
   exitStages,
   hasFixedFeeBudget,
   isReady,
@@ -506,6 +507,46 @@ describe('nextAction', () => {
 
   it('ignores a timelock whose starting height could not be read', () => {
     expect(nextAction([tx({ txid: 'c', status: locked() })], 100)).toBeNull();
+  });
+});
+
+describe('blocksToFinish for a matured step', () => {
+  it("does not count a ready step's timelock again", () => {
+    // Ready means the sdk has already seen the timelock pass: one block to confirm is left.
+    expect(blocksToFinish([tx({ txid: 'r', kind: 'refund', csvTimelockBlocks: 2000 })], 100)).toBe(1);
+  });
+});
+
+describe('savePlan when the snapshot outgrows storage', () => {
+  it('keeps the plan without the snapshot rather than losing the exit', () => {
+    // The first write, the whole plan, is the one that does not fit.
+    vi.mocked(localStorage.setItem).mockImplementationOnce(() => {
+      throw new DOMException('quota', 'QuotaExceededError');
+    });
+    const owner = { identityPubkey: 'snapshot-owner', network: 'regtest' };
+    savePlan(owner, plan([tx({ txid: 'a' })], { exitStateSnapshot: 'huge-snapshot' }));
+
+    const kept = loadPlan(owner);
+    expect(kept?.exit.transactions[0].txid).toBe('a');
+    expect(kept?.exitStateSnapshot).toBeUndefined();
+  });
+});
+
+describe('destinationAddressOf', () => {
+  const address = { type: 'bitcoinAddress', address: 'bcrt1qdest', network: 'regtest', source: {} } as const;
+
+  it('takes a plain address as it is', () => {
+    expect(destinationAddressOf(address as never)).toBe('bcrt1qdest');
+  });
+
+  it('takes the address out of a scanned bitcoin: URI', () => {
+    const uri = { type: 'bip21', uri: 'bitcoin:bcrt1qdest?amount=1', extras: [], paymentMethods: [address] };
+    expect(destinationAddressOf(uri as never)).toBe('bcrt1qdest');
+  });
+
+  it('refuses anything that names no on-chain address', () => {
+    expect(destinationAddressOf({ type: 'bip21', uri: 'bitcoin:?lightning=lnbc1', extras: [], paymentMethods: [] } as never)).toBeUndefined();
+    expect(destinationAddressOf(null)).toBeUndefined();
   });
 });
 

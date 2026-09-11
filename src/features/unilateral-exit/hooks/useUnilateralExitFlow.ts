@@ -11,6 +11,7 @@ import {
   planFromExitResponse,
   quotedSweepFeeSat,
   rebuildExit,
+  destinationAddressOf,
   requiredFundingOf,
   willReceiveSat,
   type WalletKey,
@@ -148,6 +149,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   const [feeChoice, setFeeChoice] = useState<FeeChoice>('medium');
   const [quote, setQuote] = useState<PrepareUnilateralExitResponse | null>(null);
   const [isQuoting, setIsQuoting] = useState(false);
+  const quoteRequest = useRef(0);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [fundingKey, setFundingKey] = useState<FundingKey | null>(null);
   const [fundingUtxos, setFundingUtxos] = useState<ChainUtxo[]>([]);
@@ -207,16 +209,20 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
       return;
     }
     const parsed = await wallet.parse(trimmed).catch(() => null);
-    if (parsed?.type !== 'bitcoinAddress') {
+    const address = destinationAddressOf(parsed);
+    if (!address) {
       setDestinationError('That is not an on-chain Bitcoin address');
       return;
     }
+    setDestination(address);
     setDestinationError(null);
     setPhase('fee');
   }, [destination, wallet]);
 
   const refreshQuote = useCallback(async () => {
     if (effectiveFeeRate <= 0) return;
+    // Back is open while a quote is out, so a slower, older one can land last.
+    const request = ++quoteRequest.current;
     setIsQuoting(true);
     setQuoteError(null);
     setRequiredFundingSat(null);
@@ -234,13 +240,15 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
           ? { type: 'specific', leafIds: plan.exit.leaves.map(leaf => leaf.leafId) }
           : { type: 'auto' },
       });
+      if (request !== quoteRequest.current) return;
       setQuote(prepared);
     } catch (e) {
+      if (request !== quoteRequest.current) return;
       logger.error(LogCategory.SDK, 'Failed to quote unilateral exit', { error: message(e) });
       setQuoteError(message(e));
       setQuote(null);
     } finally {
-      setIsQuoting(false);
+      if (request === quoteRequest.current) setIsQuoting(false);
     }
   }, [wallet, destination, effectiveFeeRate, walletKey, plan]);
 
@@ -249,19 +257,22 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     await refreshQuote();
   }, [refreshQuote]);
 
+  // The index, not the plan: every engine pass emits a new plan object, and
+  // the page re-runs unlock whenever this callback changes.
+  const planFundingIndex = plan?.fundingAddressIndex;
   const unlock = useCallback(async () => {
     if (!walletKey) return;
     setUnlockError(null);
     try {
       const mnemonic = await readWalletMnemonic({ interactive: true });
       mnemonicRef.current = mnemonic;
-      const index = plan?.fundingAddressIndex ?? readFundingIndex(walletKey);
+      const index = planFundingIndex ?? readFundingIndex(walletKey);
       setFundingKey(deriveFundingKey(mnemonic, network, index));
       setPhase('fund');
     } catch (e) {
       setUnlockError(message(e));
     }
-  }, [walletKey, network, plan]);
+  }, [walletKey, network, planFundingIndex]);
 
   const confirmedUtxos = useMemo(() => fundingUtxos.filter(utxo => utxo.confirmed), [fundingUtxos]);
   const fundedSat = confirmedUtxos.reduce((total, utxo) => total + utxo.value, 0);

@@ -45,7 +45,10 @@ async function deleteExportedFiles(): Promise<void> {
     const { files } = await Filesystem.readdir({ path: '', directory: Directory.Cache });
     await Promise.allSettled(
       files
-        .filter((f) => f.name.endsWith('_glow_logs.zip') || f.name.endsWith('_sdk_state.json'))
+        .filter((f) =>
+          f.name.endsWith('_glow_logs.zip') ||
+          f.name.endsWith('_sdk_state.json') ||
+          f.name.endsWith('_glow_unilateral_exit_backup.zip'))
         .map((f) => Filesystem.deleteFile({ path: f.name, directory: Directory.Cache })),
     );
   } catch { /* best-effort */ }

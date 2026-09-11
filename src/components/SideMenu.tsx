@@ -9,6 +9,8 @@ import { safeAreaTop, safeAreaBottom } from '../utils/safeAreaInsets';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE, STATUS_BAR_DIALOG_SCRIM } from '../utils/statusBarManager';
 import { useBackButton } from '../hooks/useBackButton';
+import { SimpleAlert } from './AlertCard';
+import { useUnilateralExitEngineState } from '../features/unilateral-exit/hooks/useUnilateralExitEngineLifecycle';
 import GlowLogo from './GlowLogo';
 
 // App Store Review Guidelines 5.1.1(i) requires the privacy policy to be
@@ -92,6 +94,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
   }, showLogoutConfirm);
 
   const isPasskey = isPasskeyMode();
+  const isExitInProgress = useUnilateralExitEngineState().plan !== null;
 
   // Stars animate after the 300ms slide-in delay. Derived from isOpen
   // so close flips it off immediately without a reset in an effect.
@@ -307,6 +310,15 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                       How to remove your passkey
                       <ExternalLinkIcon size="xs" />
                     </button>
+                  )}
+
+                  {/* Logout wipes the plan and the backup an exit needs, and the
+                      phrase alone cannot finish it: only saved exit data can. */}
+                  {isExitInProgress && (
+                    <SimpleAlert variant="warning" hideIcon className="mb-6 text-left">
+                      A unilateral exit is in progress, and logging out deletes what it needs to
+                      finish. Save its exit data first, from the exit&apos;s Advanced section.
+                    </SimpleAlert>
                   )}
 
                   <div className="flex gap-3">

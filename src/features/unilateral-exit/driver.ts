@@ -2,6 +2,7 @@ import { singleKeyCpfpSigner } from '@breeztech/breez-sdk-spark';
 import type {
   BreezSdk,
   CheckUnilateralExitResponse,
+  InputType,
   PrepareUnilateralExitResponse,
   UnilateralExitResponse,
   UnilateralExitTransaction,
@@ -9,7 +10,7 @@ import type {
 import type { ChainClient } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { outputTotalSat } from '@/utils/rawTx';
-import { loadExitState, restoreExitState } from './exitState';
+import { loadExitState, restoreExitState, saveExitState } from './exitState';
 import { deriveFundingKey, MnemonicNeedsPasskeyError, readWalletMnemonic } from './funding';
 
 /**
@@ -83,8 +84,28 @@ export function applyExitCheck(
 export function savePlan(wallet: WalletKey, plan: UnilateralExitPlan): void {
   try {
     localStorage.setItem(storageKey(wallet), JSON.stringify(plan));
+    return;
   } catch (e) {
     logger.error(LogCategory.SDK, 'Failed to persist recovery plan', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+  // The snapshot can outgrow localStorage. Losing the plan would lose the exit,
+  // so it is kept without the snapshot, which moves to the rolling backup that
+  // a restore falls back to and that nothing refreshes while the exit runs.
+  // ponytail: retried on every save while too big; keep the snapshot in
+  // IndexedDB from the start if that ever costs.
+  if (!plan.exitStateSnapshot) return;
+  const { exitStateSnapshot, ...rest } = plan;
+  try {
+    localStorage.setItem(storageKey(wallet), JSON.stringify(rest));
+    void saveExitState(wallet.identityPubkey, exitStateSnapshot).catch(e =>
+      logger.error(LogCategory.SDK, 'Failed to move the exit snapshot to the rolling backup', {
+        error: e instanceof Error ? e.message : String(e),
+      }),
+    );
+  } catch (e) {
+    logger.error(LogCategory.SDK, 'Failed to persist recovery plan without its snapshot', {
       error: e instanceof Error ? e.message : String(e),
     });
   }
@@ -179,12 +200,15 @@ export function blocksToFinish(all: UnilateralExitTransaction[], tipHeight: numb
       after.set(tx.txid, 0);
       continue;
     }
-    // A started timelock counts down from the height the sdk gives; one that
-    // has not started lies wholly ahead of whatever its dependency waits on.
+    // A ready step's timelock has matured; a started one counts down from the
+    // height the sdk gives; one not yet started lies wholly ahead of whatever
+    // its dependency waits on.
     const timelock =
-      tx.status.type === 'waitingForTimelock' && tx.status.spendableAtHeight !== undefined
-        ? Math.max(0, tx.status.spendableAtHeight - tipHeight)
-        : (tx.csvTimelockBlocks ?? 0);
+      tx.status.type === 'ready'
+        ? 0
+        : tx.status.type === 'waitingForTimelock' && tx.status.spendableAtHeight !== undefined
+          ? Math.max(0, tx.status.spendableAtHeight - tipHeight)
+          : (tx.csvTimelockBlocks ?? 0);
     const waits = tx.dependsOn.map(id => after.get(id) ?? 0);
     const blocks = (waits.length > 0 ? Math.max(...waits) : 0) + timelock + 1;
 
@@ -210,6 +234,13 @@ export const isReady = (tx: UnilateralExitTransaction): boolean => tx.status.typ
  */
 export const hasFixedFeeBudget = (plan: UnilateralExitPlan): boolean =>
   plan.exit.transactions.some(tx => tx.kind === 'fanOut' && tx.status.type === 'confirmed');
+
+/** The on-chain address a destination names. A scanned receive QR is a BIP21 URI, and the exit sweeps to the address in it. */
+export function destinationAddressOf(parsed: InputType | null): string | undefined {
+  if (parsed?.type === 'bitcoinAddress') return parsed.address;
+  if (parsed?.type !== 'bip21') return undefined;
+  return parsed.paymentMethods.flatMap(method => (method.type === 'bitcoinAddress' ? [method.address] : []))[0];
+}
 
 /** What a build said it needs: the sdk's error reaches the page only as its message. */
 export function requiredFundingOf(error: string): number | null {

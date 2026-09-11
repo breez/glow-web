@@ -70,3 +70,53 @@ describe('pollIntervalMs', () => {
     expect(pollIntervalMs('regtest')).toBe(5_000);
   });
 });
+
+describe('a pass that outlives its plan', () => {
+  // A chain whose tip reads wait until released, so a pass can be held open.
+  const held = () => {
+    const pending: Array<(height: number) => void> = [];
+    const client: ChainClient = { ...chain, tipHeight: () => new Promise(resolve => pending.push(resolve)) };
+    return { client, pending };
+  };
+  const settle = async () => {
+    for (let i = 0; i < 5; i++) await new Promise(resolve => setTimeout(resolve, 0));
+  };
+  const firstTxid = () => loadPlan(wallet)?.exit.transactions[0]?.txid;
+
+  beforeEach(() => {
+    localStorage.clear();
+    stopUnilateralExitEngine();
+  });
+
+  it('does not write over a plan rebuilt while it was out', async () => {
+    const { client, pending } = held();
+    setUnilateralExitPlan(wallet, plan([tx({ txid: 'old' })], { network: 'regtest' }));
+    startUnilateralExitEngine(wallet, client);
+    setUnilateralExitPlan(wallet, plan([tx({ txid: 'new' })], { network: 'regtest' }));
+
+    pending[0](101);
+    await settle();
+    expect(firstTxid()).toBe('new');
+    expect(getUnilateralExitState().plan?.exit.transactions[0].txid).toBe('new');
+
+    // The rebuilt plan got a pass of its own, which does write.
+    pending[1](102);
+    await settle();
+    expect(getUnilateralExitState().tipHeight).toBe(102);
+    expect(firstTxid()).toBe('new');
+  });
+
+  it("does not write one wallet's plan under another started while it was out", async () => {
+    const { client, pending } = held();
+    const other = { identityPubkey: 'other', network: 'regtest' };
+    setUnilateralExitPlan(wallet, plan([tx({ txid: 'old' })], { network: 'regtest' }));
+    startUnilateralExitEngine(wallet, client);
+    stopUnilateralExitEngine();
+    startUnilateralExitEngine(other, chain);
+
+    pending[0](101);
+    await settle();
+    expect(loadPlan(other)).toBeNull();
+    expect(getUnilateralExitState().plan).toBeNull();
+  });
+});
