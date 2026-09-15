@@ -66,7 +66,6 @@ export interface UserSettings {
   syncIntervalSecs?: number;
   lnurlDomain?: string;
   preferSparkOverLightning?: boolean;
-  crossChainEnabled?: boolean;
   /**
    * TEMPORARY: gates the priority deposit claim while it is being tested.
    * Absent means off, so the deposit sheet behaves as it did before it.
@@ -202,7 +201,6 @@ export function getSettings(): UserSettings {
       syncIntervalSecs: typeof parsed.syncIntervalSecs === 'number' ? parsed.syncIntervalSecs : undefined,
       lnurlDomain: typeof parsed.lnurlDomain === 'string' ? parsed.lnurlDomain : undefined,
       preferSparkOverLightning: typeof parsed.preferSparkOverLightning === 'boolean' ? parsed.preferSparkOverLightning : undefined,
-      crossChainEnabled: typeof parsed.crossChainEnabled === 'boolean' ? parsed.crossChainEnabled : undefined,
       priorityDepositClaimEnabled:
         typeof parsed.priorityDepositClaimEnabled === 'boolean' ? parsed.priorityDepositClaimEnabled : undefined,
     };
@@ -219,14 +217,6 @@ export function saveSettings(settings: UserSettings): void {
 /** TEMPORARY: whether the priority deposit claim is offered. Off by default. */
 export function isPriorityDepositClaimEnabled(): boolean {
   return getSettings().priorityDepositClaimEnabled === true;
-}
-
-/**
- * Stored cross-chain flag. Send is always enabled regardless; this remains the
- * persisted toggle reserved for gating cross-chain receive.
- */
-export function isCrossChainEnabled(): boolean {
-  return getSettings().crossChainEnabled === true;
 }
 
 /**
