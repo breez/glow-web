@@ -91,14 +91,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     if (typeof cfg.preferSparkOverLightning === 'boolean') return cfg.preferSparkOverLightning;
     return false;
   });
-  // Gates the cross-chain "USD" tab in Receive. Persisted immediately on toggle
-  // so `isCrossChainEnabled()` picks it up without waiting for the fee-panel Save.
-  const [crossChainEnabled, setCrossChainEnabled] = useState<boolean>(() => getSettings().crossChainEnabled === true);
-  const toggleCrossChain = () => {
-    const next = !crossChainEnabled;
-    setCrossChainEnabled(next);
-    saveSettings({ ...getSettings(), crossChainEnabled: next });
-  };
   const [isDownloadingLogs, setIsDownloadingLogs] = useState<boolean>(false);
   const [isExportingDb, setIsExportingDb] = useState<boolean>(false);
 
@@ -138,7 +130,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     }
     // Carry the stored settings through: the fields below are the only ones
     // this page edits, and rebuilding the object without them dropped
-    // whatever the rest of the app had written, crossChainEnabled included.
+    // whatever the rest of the app had written.
     const updated: UserSettings = {
       ...current,
       depositMaxFee,
@@ -418,22 +410,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 <Switch
                   checked={preferSparkOverLightning}
                   onChange={() => setPreferSparkOverLightning(!preferSparkOverLightning)}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Receive USD (cross-chain) — in review */}
-          {isDevMode && (
-            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <span className="font-display font-medium text-spark-text-primary block">Receive USD</span>
-                  <span className="text-sm text-spark-text-muted">Enable receiving USDC/USDT payments</span>
-                </div>
-                <Switch
-                  checked={crossChainEnabled}
-                  onChange={toggleCrossChain}
                 />
               </div>
             </div>

@@ -16,7 +16,6 @@ import {
 } from '../../components/ui';
 
 import type { PaymentMethod } from '../../types/domain';
-import { isCrossChainEnabled } from '../../services/settings';
 import { useLightningAddress } from './hooks/useLightningAddress';
 import { useReceivePayment } from './hooks/useReceivePayment';
 import { formatWithSpaces } from '../../utils/formatNumber';
@@ -164,10 +163,6 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     return `'${username}@${domain}' will stop receiving payments.\n\nDo you want to proceed?`;
   };
 
-  // Gated on the dev-only "Receive USD" toggle (cross-chain send is always-on
-  // upstream; the receive flow is still being polished).
-  const showUsdTab = isCrossChainEnabled();
-
   // The BTC tab shows Lightning or on-chain, reusing those two tab states.
   const isBtcTab = receive.activeTab === 'lightning' || receive.activeTab === 'bitcoin';
   const btcMode: BtcMode = receive.activeTab === 'bitcoin' ? 'bitcoin' : 'lightning';
@@ -257,19 +252,16 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
 
           {isContentReady ? (
             <TabContainer>
-              {/* One tab would be a bar with nothing to pick, so BTC stands alone. */}
-              {showUsdTab && (
-                <TabList>
-                  <Tab isActive={isBtcTab} onClick={() => { if (!isBtcTab) { handleTabChange('lightning'); setShownMode('lightning'); } }} data-testid="btc-tab">
-                    <span className="font-bold text-sm">₿</span>
-                    BTC
-                  </Tab>
-                  <Tab isActive={receive.activeTab === 'usd'} onClick={() => handleTabChange('usd')} data-testid="usd-tab">
-                    <span className="font-bold text-sm">$</span>
-                    USD
-                  </Tab>
-                </TabList>
-              )}
+              <TabList>
+                <Tab isActive={isBtcTab} onClick={() => { if (!isBtcTab) { handleTabChange('lightning'); setShownMode('lightning'); } }} data-testid="btc-tab">
+                  <span className="font-bold text-sm">₿</span>
+                  BTC
+                </Tab>
+                <Tab isActive={receive.activeTab === 'usd'} onClick={() => handleTabChange('usd')} data-testid="usd-tab">
+                  <span className="font-bold text-sm">$</span>
+                  USD
+                </Tab>
+              </TabList>
 
               {/* The USD tab sits outside StepContainer: its steps size to their
                   own content (matching the cross-chain send flow), so the 280px
