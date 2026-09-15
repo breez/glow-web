@@ -19,8 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # App-minted token instead of a PAT: issues it creates still fire the
-      # sdk-upgrade label trigger, and the app key never expires.
+      # App-minted token instead of a PAT: the app key never expires.
       - uses: actions/create-github-app-token@v2
         id: app-token
         with:
