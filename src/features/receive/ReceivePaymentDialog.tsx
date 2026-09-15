@@ -202,8 +202,8 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     // Cleared, so a QR replacing its placeholder does not turn in again.
     later(320, () => setTurning(null));
   };
-  // Narrow phones get a smaller code so the dock clears the frame.
-  const qrSize = window.innerWidth < 375 ? 184 : 200;
+  // Under 400px the code shrinks so the switch clears it inside the sheet padding.
+  const qrSize = window.innerWidth < 400 ? 184 : 200;
   const qrCardClassName = `${turning === 'out' ? 'animate-qr-turn-out' : turning === 'in' ? 'animate-qr-turn-in' : ''} motion-reduce:animate-none`;
   const btcView = (section: 'qr' | 'details') => (shownMode === 'lightning' ? (
     <LightningAddressDisplay
