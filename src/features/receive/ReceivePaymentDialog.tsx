@@ -284,7 +284,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
                         {isBtcTab && (
                           <div className="flex flex-col items-center gap-6">
                             {/* Dock, code, caption: the grid keeps the code centered between them. */}
-                            <div className="-mx-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center justify-items-center self-stretch">
+                            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center justify-items-center self-stretch">
                               <SideDock mode={btcMode} onChange={switchBtcMode} />
                               {btcView('qr')}
                               <SideCaption shown={shownMode} mode={btcMode} onChange={switchBtcMode} />
