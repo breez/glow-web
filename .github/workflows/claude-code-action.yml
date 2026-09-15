@@ -16,6 +16,9 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
+      # claude-code-action mints its GitHub token from an OIDC token, so it
+      # fails at setup without this, whichever way it authenticates.
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -47,6 +50,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
