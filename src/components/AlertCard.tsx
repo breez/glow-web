@@ -2,15 +2,11 @@ import React, { ReactNode } from 'react';
 import { WarningIcon, CheckCircleIcon, ErrorIcon, InfoIcon } from './Icons';
 
 /**
- * AlertCard - Reusable alert/notification card with icon, title, and content.
+ * AlertCard - Reusable alert/notification card with a title and content.
  * Use for displaying errors, warnings, success messages, or informational content.
  *
  * @example
- * <AlertCard
- *   variant="warning"
- *   title="Claim Failed"
- *   icon={<WarningIcon size="md" />}
- * >
+ * <AlertCard variant="warning" title="Claim failed">
  *   <p>The claim could not be processed.</p>
  *   <p className="mt-2">You can reject to process a refund instead.</p>
  * </AlertCard>
