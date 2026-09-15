@@ -67,7 +67,18 @@ jobs:
           COUNT=$(gh issue list --label sdk-upgrade --state all --search "$LATEST in:title" --json number --jq 'length')
           [ "$COUNT" -gt 0 ] && echo "Issue for $LATEST already exists." && exit 0
 
-          gh issue create \
+          NEW=$(gh issue create \
             --title "chore: upgrade @breeztech/breez-sdk-spark to $LATEST" \
             --label "sdk-upgrade" \
-            --body "$BODY"
+            --body "$BODY")
+          NEW=${NEW##*/}
+
+          # Only the newest version is worth upgrading to, so the older asks
+          # close instead of piling up. Matched on this check's own title, not
+          # on the label alone, so an issue a person filed stays open. Titles
+          # come from the API rather than the search index, which lags.
+          gh issue list --label sdk-upgrade --state open --json number,title \
+            --jq ".[] | select(.title | startswith(\"chore: upgrade @breeztech/breez-sdk-spark to\")) | select(.number != $NEW) | .number" |
+          while read -r OLD; do
+            gh issue close "$OLD" --reason "not planned" --comment "Superseded by #$NEW."
+          done
