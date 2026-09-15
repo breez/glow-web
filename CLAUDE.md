@@ -297,7 +297,8 @@ argue them as preferences: a citation adds nothing here.
   a row chevron, a copy button, a payment method.
 - A secondary action can take its own row under the primary CTA instead
   of sitting beside it. Give the primary the width when the choice is not
-  symmetric.
+  symmetric. In a sheet, Back is not a button at all: pass the handler to
+  `useSheetBack` and it becomes the header arrow.
 - Every amount goes through `SatAmount`, hero displays included. A
   missing ₿ or a hand-grouped number is the first thing anyone notices on
   a screen about money. The amount rules are below.
@@ -323,18 +324,18 @@ argue them as preferences: a citation adds nothing here.
   user who has scrolled past a number should never be the one to notice
   it moved. The name for this is visibility of system status; in a layout
   it comes down to cause above effect, close enough to see both at once.
-- One decision, one row. Priority and Standard as three-row cards (name,
-  ETA, fee) spend triple the height on a choice that turns on two
-  numbers, so put the numbers on the row. Every row a screen does not
-  have is a row nobody has to read.
+- One decision, one row. `FeeRateSelector` is the shape: the options sit
+  side by side, each one a label and a single line of detail. Stacking
+  name, ETA and fee spends triple the height on a choice that turns on
+  two numbers. Every row a screen does not have is a row nobody reads.
 - A full page uses one of the two shells rather than its own scaffolding:
   `PageLayout` or `SlideInPage` (`src/components/layout/`). Back belongs
   to the shell's app bar, and a primary action belongs in the shell's
   `footer`, which is pinned above the safe area. A CTA inside the scroll
   area moves with the content, and a CTA that moves is one the user has to
-  hunt for. `GetRefundPage` predates the shells and keeps its buttons
-  inline. Moving them now risks more than it gains, so it stays as it is
-  and new flows follow the shells instead.
+  hunt for. `GetRefundPage` is the exception: it opens in `SlideInPage`
+  but renders its buttons inline. New flows follow the shells rather than
+  copy it.
 - Tap targets are at least 44px on their short side, and the primary CTA
   keeps the full width at the bottom of the screen, where the thumb is
   (Fitts, 1954; Apple HIG; WCAG 2.5.5).
