@@ -44,6 +44,10 @@ jobs:
   # QA keeps raising the same copy notes on every new flow, so read them
   # off CLAUDE.md before a person does. Lint has the mechanical rules;
   # this job only has the ones that need eyes.
+  #
+  # The action refuses to run when this file differs from the copy on the
+  # default branch, so a PR that edits it gets a silent skip and a green
+  # check. Changes here can only be tested after they merge.
   ui-review:
     if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
     runs-on: ubuntu-latest
