@@ -332,18 +332,29 @@ export async function setNativeStableTicker(ticker: string | null): Promise<void
 }
 
 // Stable Balance restore prompt (one-time per wallet)
-const STABLE_RESTORE_PROMPTED_KEY = 'stable_balance_restore_prompted';
+// The USD balance (token base units) last answered on this device, by the
+// restore prompt or a mode switch. It replaced a one-time flag that silenced the
+// prompt for good, even after another device converted the balance to USD.
+const STABLE_RESTORE_ACKNOWLEDGED_KEY = 'stable_balance_restore_acknowledged';
+const LEGACY_STABLE_RESTORE_PROMPTED_KEY = 'stable_balance_restore_prompted';
 
-export function hasPromptedStableRestore(): boolean {
-  return getCachedItem(STABLE_RESTORE_PROMPTED_KEY) === 'true';
+export function getStableRestoreAcknowledged(): bigint | null {
+  const value = getCachedItem(STABLE_RESTORE_ACKNOWLEDGED_KEY);
+  if (value === null) return null;
+  try {
+    return BigInt(value);
+  } catch {
+    return null;
+  }
 }
 
-export function setStableRestorePrompted(): void {
-  setCachedItem(STABLE_RESTORE_PROMPTED_KEY, 'true');
+export function setStableRestoreAcknowledged(balance: bigint): void {
+  setCachedItem(STABLE_RESTORE_ACKNOWLEDGED_KEY, balance.toString());
 }
 
 export function clearStableRestorePrompted(): void {
-  removeCachedItem(STABLE_RESTORE_PROMPTED_KEY);
+  removeCachedItem(STABLE_RESTORE_ACKNOWLEDGED_KEY);
+  removeCachedItem(LEGACY_STABLE_RESTORE_PROMPTED_KEY);
 }
 
 /** Ordered list of enabled providers. Providers not in the list are disabled. */

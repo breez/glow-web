@@ -86,10 +86,11 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
     }));
   }, [stableBalance]);
 
-  // Acknowledge the restore prompt on dismiss so it doesn't re-open
-  // within the same shouldPrompt window.
+  // Every close answers for the USD held right now: dismissing the prompt, or
+  // switching modes, whose conversion back to sats may still be running. Only
+  // USD beyond that balance prompts again.
   const closeToggleFlow = useCallback(() => {
-    if (restorePrompt.shouldPrompt) restorePrompt.markPrompted();
+    restorePrompt.markPrompted();
     setUserToggle(null);
     setAutoOpened(false);
   }, [restorePrompt]);
