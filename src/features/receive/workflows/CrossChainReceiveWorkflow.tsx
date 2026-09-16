@@ -254,7 +254,6 @@ const CrossChainReceiveWorkflow: React.FC = () => {
               placeholder="Enter amount in USD"
               className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all"
               data-testid="cross-chain-receive-amount-input"
-              autoFocus
             />
 
             {/* Quick amount buttons */}
