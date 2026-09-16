@@ -35,16 +35,17 @@ export const SideDock: React.FC<{ mode: BtcMode; onChange: (mode: BtcMode) => vo
 
 /**
  * Names the code on screen. The margin switches too, with no visual cue:
- * the dock stays the one visible control.
+ * the dock stays the one visible control. The negative end margin cancels the
+ * trailing letter-spacing, so the middle letter sits level with the dock's middle.
  */
 export const SideCaption: React.FC<{ shown: BtcMode; mode: BtcMode; onChange: (mode: BtcMode) => void }> = ({ shown, mode, onChange }) => (
   <button
     type="button"
     onClick={() => onChange(other(mode))}
     aria-label={`Switch to ${LABEL[other(mode)]}`}
-    className="flex w-11 items-center justify-end self-stretch justify-self-end rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-spark-primary/60"
+    className="flex w-11 items-center justify-center self-stretch rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-spark-primary/60"
   >
-    <span className="text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase [writing-mode:vertical-rl]">
+    <span className="-mb-[0.1em] text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase [writing-mode:vertical-rl]">
       {LABEL[shown]}
     </span>
   </button>
