@@ -91,6 +91,9 @@ const AppContent: React.FC = () => {
   // picker on the first click of a fresh-user onboarding. Read by
   // PasskeyPage as the `skipDetection` prop.
   const [passkeySkipDetection, setPasskeySkipDetection] = useState(false);
+  // Set when a failed passkey attempt falls back to a recovery phrase, so
+  // Get Started does not recommend the passkey that just failed.
+  const [passkeyFailed, setPasskeyFailed] = useState(false);
   // Passkey-RP migration modal state.
   const [migrationModalOpen, setMigrationModalOpen] = useState(false);
   // Sticky: stays true after the first open so the lazy modal remains mounted
@@ -409,6 +412,7 @@ const AppContent: React.FC = () => {
             onRequestMigrationCheck={requestMigrationCheck}
             onUseRecoveryPhrase={() => {
               setPasskeySdkConnected(false);
+              setPasskeyFailed(true);
               setUserScreen('generate');
             }}
           />
@@ -584,6 +588,7 @@ const AppContent: React.FC = () => {
             onBack={() => setUserScreen('home')}
             error={sdk.error}
             onClearError={sdk.clearError}
+            recommendPasskey={sdk.prfAvailable && !passkeyFailed}
           />
         );
 

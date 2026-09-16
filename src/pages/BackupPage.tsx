@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { WarningIcon, PasskeyIcon } from '../components/Icons';
+import { WebSecurityNotice } from '../components/WebSecurityNotice';
 import SlideInPage from '../components/layout/SlideInPage';
 import { PinGate } from '../components/PinEntry';
 import { LoadingSpinner } from '../components/ui';
@@ -264,6 +265,8 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               </div>
             </div>
           )}
+
+          {!isPasskey && mnemonic && <WebSecurityNotice />}
 
           {/* Reveal button (passkey mode, happy path). After a failed
               passkey attempt, the fallback card below replaces this

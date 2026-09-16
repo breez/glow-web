@@ -4,6 +4,7 @@ import { PrimaryButton } from '../components/ui';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PageLayout from '../components/layout/PageLayout';
 import { AlertCard } from '../components/AlertCard';
+import { WebSecurityNotice } from '../components/WebSecurityNotice';
 import { CheckIcon, CopyIcon } from '../components/Icons';
 import { logger, LogCategory } from '@/services/logger';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -13,12 +14,14 @@ interface GeneratePageProps {
   onBack: () => void;
   error: string | null;
   onClearError: () => void;
+  recommendPasskey?: boolean;
 }
 
 const GeneratePage: React.FC<GeneratePageProps> = ({
   onMnemonicConfirmed,
   onBack,
-  onClearError
+  onClearError,
+  recommendPasskey = false,
 }) => {
   const [mnemonic, setMnemonic] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -136,6 +139,8 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
             Never share your recovery phrase. Anyone with these words can access your funds.
           </p>
         </AlertCard>
+
+        <WebSecurityNotice recommendPasskey={recommendPasskey} />
 
         <div className="flex-1" />
       </div>
