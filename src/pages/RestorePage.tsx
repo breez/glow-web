@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PageLayout from '../components/layout/PageLayout';
 import { PrimaryButton } from '../components/ui';
 import { SimpleAlert } from '../components/AlertCard';
+import { WebSecurityNotice } from '../components/WebSecurityNotice';
 import { useScreenCaptureProtection } from '@/utils/screenSecurity';
 
 interface RestorePageProps {
@@ -85,6 +86,8 @@ const RestorePage: React.FC<RestorePageProps> = ({
             {error}
           </SimpleAlert>
         )}
+
+        <WebSecurityNotice />
 
         <div className="flex-1" />
       </div>

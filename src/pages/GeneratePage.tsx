@@ -4,6 +4,7 @@ import { PrimaryButton } from '../components/ui';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PageLayout from '../components/layout/PageLayout';
 import { AlertCard } from '../components/AlertCard';
+import { WebSecurityNotice } from '../components/WebSecurityNotice';
 import { CheckIcon, CopyIcon } from '../components/Icons';
 import { logger, LogCategory } from '@/services/logger';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -136,6 +137,8 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
             Never share your recovery phrase. Anyone with these words can access your funds.
           </p>
         </AlertCard>
+
+        <WebSecurityNotice />
 
         <div className="flex-1" />
       </div>
