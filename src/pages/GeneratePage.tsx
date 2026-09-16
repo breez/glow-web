@@ -14,12 +14,14 @@ interface GeneratePageProps {
   onBack: () => void;
   error: string | null;
   onClearError: () => void;
+  recommendPasskey?: boolean;
 }
 
 const GeneratePage: React.FC<GeneratePageProps> = ({
   onMnemonicConfirmed,
   onBack,
-  onClearError
+  onClearError,
+  recommendPasskey = false,
 }) => {
   const [mnemonic, setMnemonic] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -138,7 +140,7 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
           </p>
         </AlertCard>
 
-        <WebSecurityNotice />
+        <WebSecurityNotice recommendPasskey={recommendPasskey} />
 
         <div className="flex-1" />
       </div>

@@ -20,27 +20,37 @@ const STORE_BADGES = [
 // it in the device-only vault, so this does not render there.
 const isWeb = !Capacitor.isNativePlatform();
 
-export const WebSecurityNotice: React.FC = () =>
+interface WebSecurityNoticeProps {
+  /** Recommend a passkey instead of the Glow app. */
+  recommendPasskey?: boolean;
+}
+
+export const WebSecurityNotice: React.FC<WebSecurityNoticeProps> = ({ recommendPasskey = false }) =>
   isWeb ? (
     <AlertCard variant="warning" title="Security Notice">
       <p className="text-spark-text-secondary text-sm">
-        Harmful browser extensions, or anyone with access to this device, could take your funds, and stolen funds can't be recovered. Use Glow on the web with caution, and use the Glow app for a secure environment.
+        {recommendPasskey
+          ? 'For your safety, we recommend using a passkey instead.'
+          : 'For your safety, we recommend the Glow app.'}{' '}
+        A recovery phrase on the web is less secure, and there is a chance your money will be lost. Use a recovery phrase on the web only if you are willing to take this risk.
       </p>
-      <div className="grid grid-cols-2 gap-2 mt-3">
-        {STORE_BADGES.map(({ href, src, alt }) => (
-          <a
-            key={href}
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => {
-              e.preventDefault();
-              void openExternalUrl(href);
-            }}
-          >
-            <img src={src} alt={alt} className="w-full h-auto" />
-          </a>
-        ))}
-      </div>
+      {!recommendPasskey && (
+        <div className="grid grid-cols-2 gap-2 mt-3">
+          {STORE_BADGES.map(({ href, src, alt }) => (
+            <a
+              key={href}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                e.preventDefault();
+                void openExternalUrl(href);
+              }}
+            >
+              <img src={src} alt={alt} className="w-full h-auto" />
+            </a>
+          ))}
+        </div>
+      )}
     </AlertCard>
   ) : null;
