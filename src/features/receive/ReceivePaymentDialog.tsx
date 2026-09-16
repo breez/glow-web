@@ -197,7 +197,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     // Cleared, so a QR replacing its placeholder does not turn in again.
     later(320, () => setTurning(null));
   };
-  // Under 400px the code shrinks so the switch clears it inside the sheet padding.
+  // Under 400px the code shrinks so the switch and label have room beside its corners.
   const qrSize = window.innerWidth < 400 ? 184 : 200;
   const qrCardClassName = `${turning === 'out' ? 'animate-qr-turn-out' : turning === 'in' ? 'animate-qr-turn-in' : ''} motion-reduce:animate-none`;
   const btcView = (section: 'qr' | 'details') => (shownMode === 'lightning' ? (
@@ -275,8 +275,9 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
                       <div className="pt-6">
                         {isBtcTab && (
                           <div className="flex flex-col items-center gap-6">
-                            {/* Dock, code, caption: the grid keeps the code centered between them. */}
-                            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center self-stretch">
+                            {/* Dock, code, caption. The row runs edge to edge and its gaps match the corners' 12px overhang,
+                                so the dock and caption center between the sheet edge and the corners. */}
+                            <div className="-mx-6 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-3 items-center justify-items-center self-stretch">
                               <SideDock mode={btcMode} onChange={switchBtcMode} />
                               {btcView('qr')}
                               <SideCaption shown={shownMode} mode={btcMode} onChange={switchBtcMode} />
