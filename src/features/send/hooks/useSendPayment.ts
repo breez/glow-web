@@ -191,7 +191,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       // exact sats output.
       const invoiceSats =
         effective.type === 'bolt11Invoice' && effective.amountMsat && effective.amountMsat > 0
-          ? Math.floor(effective.amountMsat / 1000)
+          ? Math.ceil(effective.amountMsat / 1000)
           : undefined;
       const fixedSats =
         invoiceSats ?? (prefillAmountSat && prefillAmountSat > 0 ? prefillAmountSat : undefined);
