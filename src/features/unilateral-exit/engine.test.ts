@@ -11,7 +11,7 @@ import {
   stopUnilateralExitEngine,
 } from './engine';
 import { loadPendingExit, loadPlan } from './driver';
-import { deriveFundingKey, readFundingIndex } from './funding';
+import { deriveFundingKey } from './funding';
 import { checked, coin, confirmed, MNEMONIC, pendingExit, plan, prepared, sdk, tx } from './testFixtures';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChainClient, ChainUtxo } from '@/services/chain';
@@ -163,8 +163,6 @@ describe('an exit waiting on its fee', () => {
     expect(getUnilateralExitState().plan?.exit.transactions[0].txid).toBe('fan');
     expect(getUnilateralExitState().pending).toBeNull();
     expect(loadPendingExit(wallet)).toBeNull();
-    // The next exit gets a fresh address; this one's coins are spent.
-    expect(readFundingIndex(wallet)).toBe(1);
   });
 
   it('ignores a tap before the fee has confirmed', async () => {
@@ -221,7 +219,7 @@ describe('an exit waiting on its fee', () => {
     expect(getUnilateralExitState().plan).not.toBeNull();
   });
 
-  it('survives a reload, and forgets the exit once cancelled, keeping the address for the next', () => {
+  it('survives a reload, and forgets the exit once cancelled', () => {
     setPendingExit(wallet, pendingExit());
     startUnilateralExitEngine(wallet, chain);
     expect(getUnilateralExitState().pending).toEqual(pendingExit());
@@ -229,6 +227,5 @@ describe('an exit waiting on its fee', () => {
     cancelPendingExit();
     expect(getUnilateralExitState().pending).toBeNull();
     expect(loadPendingExit(wallet)).toBeNull();
-    expect(readFundingIndex(wallet)).toBe(0);
   });
 });

@@ -5,7 +5,6 @@ import { sha256 } from '@noble/hashes/sha2';
 import { bech32, hex } from '@scure/base';
 import { HDKey } from '@scure/bip32';
 import { mnemonicToSeedSync, validateMnemonic } from 'bip39';
-import type { WalletKey } from './driver';
 
 export interface FundingKey {
   address: string;
@@ -58,21 +57,6 @@ export function deriveFundingKey(mnemonic: string, network: string, index: numbe
     publicKeyHex: toHex(node.publicKey),
     secretKey: node.privateKey,
   };
-}
-
-const key = ({ identityPubkey, network }: WalletKey): string =>
-  `unilateral-exit-funding-index:${identityPubkey.slice(0, 16)}:${network}`;
-
-export function readFundingIndex(wallet: WalletKey): number {
-  const raw = localStorage.getItem(key(wallet));
-  const parsed = raw === null ? 0 : Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
-}
-
-export function bumpFundingIndex(wallet: WalletKey): number {
-  const next = readFundingIndex(wallet) + 1;
-  localStorage.setItem(key(wallet), String(next));
-  return next;
 }
 
 export class MnemonicUnavailableError extends Error {

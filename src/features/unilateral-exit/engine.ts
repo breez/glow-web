@@ -12,7 +12,7 @@ import {
   startExit,
 } from './driver';
 import { archiveExit, loadArchive, type ArchivedExit } from './archive';
-import { bumpFundingIndex, type FundingKey } from './funding';
+import type { FundingKey } from './funding';
 import type { ExitSdk, PendingExit, UnilateralExitPlan, WalletKey } from './driver';
 
 const POLL_SECS_MAINNET = 30;
@@ -128,7 +128,6 @@ export async function startPendingExit(): Promise<void> {
       case 'started':
         // In this order, so stopping part-way never loses the exit or its coins.
         setUnilateralExitPlan(passWallet, outcome.plan);
-        bumpFundingIndex(passWallet);
         clearPendingExit(passWallet);
         heldKey = null;
         emit({ pending: null, pendingCoins: [], isStarting: false });

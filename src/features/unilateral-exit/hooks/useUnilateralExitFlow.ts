@@ -28,7 +28,7 @@ import {
   type UnilateralExitEngineState,
 } from '../engine';
 import { loadExitState, restoreExitState } from '../exitState';
-import { deriveFundingKey, readFundingIndex, readWalletMnemonic, type FundingKey } from '../funding';
+import { deriveFundingKey, readWalletMnemonic, type FundingKey } from '../funding';
 import { useUnilateralExitEngineState } from './useUnilateralExitEngineLifecycle';
 
 /** `fund`, `topUp` and `building` raise the fee of an exit under way. A fresh exit's fee is paid on `pending`. */
@@ -293,7 +293,9 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     setUnlockError(null);
     try {
       const mnemonic = await readWalletMnemonic({ interactive: true });
-      const index = planFundingIndex ?? readFundingIndex(walletKey);
+      // Every exit pays from the same address, so coins one exit leaves there
+      // count toward the next. An exit under way keeps the index it was built with.
+      const index = planFundingIndex ?? 0;
       const key = deriveFundingKey(mnemonic, network, index);
       if (planFundingIndex !== undefined) {
         mnemonicRef.current = mnemonic;
@@ -302,7 +304,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
         return;
       }
       // Saved before anything is paid, so closing the sheet keeps the address
-      // and the amount. The address stays the same until an exit is built.
+      // and the amount.
       setPendingExit(
         walletKey,
         {
