@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { parseCrossChainAmount, formatCrossChainAmount } from './crossChainFormat';
+import type { Payment } from '@breeztech/breez-sdk-spark';
+import {
+  parseCrossChainAmount,
+  formatCrossChainAmount,
+  getCrossChainDestination,
+} from './crossChainFormat';
 
 describe('parseCrossChainAmount', () => {
   it('scales a whole dollar value', () => {
@@ -33,5 +38,52 @@ describe('parseCrossChainAmount', () => {
       expect(formatCrossChainAmount(parseCrossChainAmount(value, decimals), decimals))
         .toBe(String(Number(value)));
     }
+  });
+});
+
+const crossChainPayment = (convInfo: unknown): Payment => ({
+  id: 'p1',
+  paymentType: 'send',
+  status: 'completed',
+  amount: 1000n,
+  fees: 0n,
+  timestamp: 0,
+  method: 'spark',
+  details: { type: 'spark', conversionInfo: convInfo },
+} as Payment);
+
+describe('getCrossChainDestination', () => {
+  const orchestra = {
+    type: 'orchestra',
+    chain: 'Solana',
+    recipientAddress: '8kBoWYZadELjg8dgS2c5DXyapr8y8fsGY2HZWsaagguz',
+    estimatedOut: '1030000',
+    assetDecimals: 6,
+    status: 'completed',
+    orderId: 'o1',
+    quoteId: 'q1',
+  };
+
+  it('surfaces the external tx hash', () => {
+    const dest = getCrossChainDestination(crossChainPayment({ ...orchestra, externalTxHash: '5jQ8f' }));
+    expect(dest.externalTxHash).toBe('5jQ8f');
+  });
+
+  it('leaves it undefined before the external leg broadcasts', () => {
+    expect(getCrossChainDestination(crossChainPayment(orchestra)).externalTxHash).toBeUndefined();
+  });
+
+  // Boltz has no such field, so the rest of the destination must still resolve.
+  it('leaves it undefined for boltz', () => {
+    const dest = getCrossChainDestination(crossChainPayment({
+      ...orchestra,
+      type: 'boltz',
+      swapId: 's1',
+      invoice: 'lnbc1',
+      invoiceAmountSats: 1000,
+      maxSlippageBps: 50,
+    }));
+    expect(dest.externalTxHash).toBeUndefined();
+    expect(dest.chainName).toBe('Solana');
   });
 });
