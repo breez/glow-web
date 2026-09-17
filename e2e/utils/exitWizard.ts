@@ -100,13 +100,24 @@ export const driveWizardToTracker = async (
   await expect(page.getByTestId('unilateral-exit-funding-address')).toBeVisible({
     timeout: TIMEOUTS.UI_ACTION,
   });
+
+  // The exit is saved once its fee address shows, so it outlives the app and
+  // its row in the wallet list reopens where to pay.
+  await page.reload();
+  const row = page.getByTestId('unilateral-exit-entry');
+  await expect(row).toContainText('Waiting for exit fee', { timeout: TIMEOUTS.WALLET_LOAD });
+  await row.click();
+  await expect(page.getByTestId('unilateral-exit-funding-address')).toBeVisible({
+    timeout: TIMEOUTS.UI_ACTION,
+  });
+
   await sendToAddress(funding, 0.0002);
   await mineBlocks(1);
 
-  // The funding step commits the exit: there is no summary screen between.
-  const build = page.getByTestId('unilateral-exit-build');
-  await expect(build).toBeEnabled({ timeout: TIMEOUTS.BALANCE_SYNC });
-  await build.click();
+  // Paying does not start the exit: the user does, once the fee has confirmed.
+  const start = page.getByTestId('unilateral-exit-start-exit');
+  await expect(start).toBeVisible({ timeout: TIMEOUTS.BALANCE_SYNC });
+  await start.click();
   await expect(page.getByTestId('unilateral-exit-tracker')).toBeVisible({
     timeout: TIMEOUTS.PAYMENT,
   });

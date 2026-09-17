@@ -55,13 +55,15 @@ npm run regtest:address
 address as the destination and pick a fee rate.
 
 **3. Pay the miners.** Exit transactions are pre-signed with no fee, so a
-separate coin pays for them. The app shows an address and an amount.
+separate coin pays for them. The app shows an address and an amount, and keeps
+both in the wallet list if you close the sheet.
 
 ```
 npm run regtest:send -- <funding address> <sats>
 ```
 
-**4. Build.** The app signs everything and sends what is ready.
+**4. Build.** Once that coin confirms, press Exit Spark. The app signs everything
+and sends what is ready. `regtest:send` mines the block for the coin.
 
 **5. Mine.** Nothing moves until blocks pass, and the refunds need about 1,950.
 

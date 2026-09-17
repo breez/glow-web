@@ -18,9 +18,23 @@ import {
   planProgress,
   quotedSweepFeeSat,
   savePlan,
+  startExit,
   willReceiveSat,
 } from './driver';
-import { blocked, checked, confirmed, locked, plan, prepared, ready, sdk, tx } from './testFixtures';
+import {
+  blocked,
+  checked,
+  coin as feeCoin,
+  confirmed,
+  locked,
+  MNEMONIC,
+  pendingExit,
+  plan,
+  prepared,
+  ready,
+  sdk,
+  tx,
+} from './testFixtures';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CheckUnilateralExitRequest, UnilateralExitVerdict } from '@breeztech/breez-sdk-spark';
 import type { ChainClient } from '@/services/chain';
@@ -604,6 +618,60 @@ describe('topUpFor', () => {
       stillToSendSat: 5_440,
     });
   });
+
+  it("asks a quote for its own figure, whose single coin is already priced in, and prices a second one", () => {
+    expect(topUpFor({ sat: 5_898, inputs: 1 }, { sat: 0, inputs: 0 }, 2).stillToSendSat).toBe(5_898);
+    expect(topUpFor({ sat: 5_898, inputs: 1 }, { sat: 3_000, inputs: 1 }, 2).stillToSendSat).toBe(3_034);
+  });
+});
+
+describe('startExit', () => {
+  beforeEach(() => {
+    localStorage.setItem('walletMnemonic', MNEMONIC);
+  });
+
+  it('quotes what the wallet holds now and builds it from the confirmed fee coins', async () => {
+    const prepareUnilateralExit = vi.fn(async () => prepared({ sweepFeeSat: 180 }));
+    const unilateralExit = vi.fn(async () => checked([{ txid: 'fan', kind: 'fanOut' }]));
+    const outcome = await startExit(
+      pendingExit({ fundingAddressIndex: 3 }),
+      [feeCoin(5_898)],
+      sdk({ prepareUnilateralExit, unilateralExit }),
+      '02abc',
+    );
+
+    // Not the leaves the first quote picked: a payment since could have spent one.
+    expect(prepareUnilateralExit).toHaveBeenCalledWith(expect.objectContaining({ selection: { type: 'auto' }, feeRateSatPerVbyte: 2 }));
+    expect(unilateralExit).toHaveBeenCalledWith(
+      expect.objectContaining({ fundingInputs: [expect.objectContaining({ txid: 'coin-5898', value: 5_898 })] }),
+      expect.anything(),
+    );
+    expect(outcome.type).toBe('started');
+    if (outcome.type !== 'started') return;
+    expect(outcome.plan).toMatchObject({ fundingAddressIndex: 3, quotedSweepFeeSat: 180, exitStateSnapshot: 'snapshot' });
+    expect(outcome.plan.exit.transactions[0].txid).toBe('fan');
+  });
+
+  it('reports what the build says it still needs, sized on the coins it had', async () => {
+    const driver = sdk({
+      prepareUnilateralExit: async () => prepared(),
+      unilateralExit: async () => {
+        throw new Error('Insufficient CPFP funding: need at least 6400 sats');
+      },
+    });
+    expect(await startExit(pendingExit(), [feeCoin(5_898)], driver, '02abc')).toEqual({
+      type: 'short',
+      required: { sat: 6_400, inputs: 1 },
+    });
+  });
+
+  it('builds nothing once the wallet holds nothing worth its fee', async () => {
+    const unilateralExit = vi.fn(async () => checked([]));
+    const driver = sdk({ prepareUnilateralExit: async () => prepared({ leaves: [] }), unilateralExit });
+    expect(await startExit(pendingExit(), [feeCoin(5_898)], driver, '02abc')).toEqual({ type: 'nothingToExit' });
+    expect(unilateralExit).not.toHaveBeenCalled();
+  });
+
 });
 
 describe('hasFixedFeeBudget', () => {

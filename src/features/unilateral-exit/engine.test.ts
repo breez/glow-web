@@ -1,8 +1,20 @@
-import { dismissUnilateralExitPlan, getUnilateralExitState, pollIntervalMs, setUnilateralExitPlan, startUnilateralExitEngine, stopUnilateralExitEngine } from './engine';
-import { loadPlan } from './driver';
-import { confirmed, plan, tx } from './testFixtures';
+import {
+  advanceNow,
+  cancelPendingExit,
+  dismissUnilateralExitPlan,
+  getUnilateralExitState,
+  pollIntervalMs,
+  setPendingExit,
+  setUnilateralExitPlan,
+  startPendingExit,
+  startUnilateralExitEngine,
+  stopUnilateralExitEngine,
+} from './engine';
+import { loadPendingExit, loadPlan } from './driver';
+import { deriveFundingKey } from './funding';
+import { checked, coin, confirmed, MNEMONIC, pendingExit, plan, prepared, sdk, tx } from './testFixtures';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ChainClient } from '@/services/chain';
+import type { ChainClient, ChainUtxo } from '@/services/chain';
 
 const wallet = { identityPubkey: 'pubkey', network: 'regtest' };
 
@@ -118,5 +130,102 @@ describe('a pass that outlives its plan', () => {
     await settle();
     expect(loadPlan(other)).toBeNull();
     expect(getUnilateralExitState().plan).toBeNull();
+  });
+});
+
+describe('an exit waiting on its fee', () => {
+  const holding = (coins: ChainUtxo[]): ChainClient => ({ ...chain, addressUtxos: async () => coins });
+  const building = () => {
+    const unilateralExit = vi.fn(async () => checked([{ txid: 'fan', kind: 'fanOut' }]));
+    return { unilateralExit, driver: sdk({ prepareUnilateralExit: async () => prepared(), unilateralExit }) };
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    stopUnilateralExitEngine();
+    localStorage.setItem('walletMnemonic', MNEMONIC);
+  });
+
+  afterEach(() => {
+    stopUnilateralExitEngine();
+  });
+
+  it('does not start when its fee confirms, only when the user taps', async () => {
+    const { unilateralExit, driver } = building();
+    startUnilateralExitEngine(wallet, holding([coin(5_898)]), driver);
+    setPendingExit(wallet, pendingExit());
+
+    await vi.waitFor(() => expect(getUnilateralExitState().pendingCoins).toHaveLength(1));
+    await advanceNow();
+    expect(unilateralExit).not.toHaveBeenCalled();
+
+    await startPendingExit();
+    expect(getUnilateralExitState().plan?.exit.transactions[0].txid).toBe('fan');
+    expect(getUnilateralExitState().pending).toBeNull();
+    expect(loadPendingExit(wallet)).toBeNull();
+  });
+
+  it('ignores a tap before the fee has confirmed', async () => {
+    const { unilateralExit, driver } = building();
+    startUnilateralExitEngine(wallet, holding([coin(5_898, false)]), driver);
+    setPendingExit(wallet, pendingExit());
+
+    await vi.waitFor(() => expect(getUnilateralExitState().pendingCoins).toHaveLength(1));
+    await startPendingExit();
+    expect(unilateralExit).not.toHaveBeenCalled();
+  });
+
+  it('asks for what the build says it still needs', async () => {
+    const unilateralExit = vi.fn(async () => {
+      throw new Error('Insufficient CPFP funding: need at least 6400 sats');
+    });
+    startUnilateralExitEngine(wallet, holding([coin(5_898)]), sdk({ prepareUnilateralExit: async () => prepared(), unilateralExit }));
+    setPendingExit(wallet, pendingExit());
+
+    await vi.waitFor(() => expect(getUnilateralExitState().pendingCoins).toHaveLength(1));
+    await startPendingExit();
+    expect(loadPendingExit(wallet)?.required).toEqual({ sat: 6_400, inputs: 1 });
+    expect(getUnilateralExitState().pending?.required.sat).toBe(6_400);
+    expect(getUnilateralExitState().startError).toBeNull();
+  });
+
+  it('keeps why a start failed, so the user can try again', async () => {
+    const driver = sdk({
+      prepareUnilateralExit: async () => prepared(),
+      unilateralExit: async () => {
+        throw new Error('chain service unreachable');
+      },
+    });
+    startUnilateralExitEngine(wallet, holding([coin(5_898)]), driver);
+    setPendingExit(wallet, pendingExit());
+
+    await vi.waitFor(() => expect(getUnilateralExitState().pendingCoins).toHaveLength(1));
+    await startPendingExit();
+    expect(getUnilateralExitState().startError).toBe('chain service unreachable');
+    expect(getUnilateralExitState().isStarting).toBe(false);
+    expect(getUnilateralExitState().pending).not.toBeNull();
+  });
+
+  it('starts with the key the wizard derived, without a second sign-in', async () => {
+    localStorage.removeItem('walletMnemonic');
+    localStorage.setItem('passkeyLabel', 'Default');
+    const key = deriveFundingKey(MNEMONIC, 'regtest', 0);
+    const { driver } = building();
+    startUnilateralExitEngine(wallet, holding([coin(5_898)]), driver);
+    setPendingExit(wallet, pendingExit({ fundingAddress: key.address }), key);
+
+    await vi.waitFor(() => expect(getUnilateralExitState().pendingCoins).toHaveLength(1));
+    await startPendingExit();
+    expect(getUnilateralExitState().plan).not.toBeNull();
+  });
+
+  it('survives a reload, and forgets the exit once cancelled', () => {
+    setPendingExit(wallet, pendingExit());
+    startUnilateralExitEngine(wallet, chain);
+    expect(getUnilateralExitState().pending).toEqual(pendingExit());
+
+    cancelPendingExit();
+    expect(getUnilateralExitState().pending).toBeNull();
+    expect(loadPendingExit(wallet)).toBeNull();
   });
 });

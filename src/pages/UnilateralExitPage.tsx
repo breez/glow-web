@@ -16,9 +16,11 @@ import { IntroStep } from '@/features/unilateral-exit/steps/IntroStep';
 import { DestinationField } from '@/components/DestinationField';
 import { FeeStep } from '@/features/unilateral-exit/steps/FeeStep';
 import { QuoteStep } from '@/features/unilateral-exit/steps/QuoteStep';
-import { FundStep, FundingStatus } from '@/features/unilateral-exit/steps/FundStep';
+import { FundStep, FundingStatus, PendingExitStep } from '@/features/unilateral-exit/steps/FundStep';
 import { TrackerView } from '@/features/unilateral-exit/TrackerView';
 import { sweepTxid } from '@/features/unilateral-exit/archive';
+import { cancelPendingExit, startPendingExit } from '@/features/unilateral-exit/engine';
+import { isPendingFunded } from '@/features/unilateral-exit/driver';
 
 interface UnilateralExitPageProps {
   network: string;
@@ -35,6 +37,9 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
   const { unlock } = flow;
   const [gate, setGate] = useState<'pin' | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  // A sheet that opens on the tracker is one the user came back to. One that
+  // moves to it has just started the exit.
+  const [openedOnTracker] = useState(() => flow.phase === 'tracker');
   useEffect(() => {
     if (flow.phase !== 'unlock') return;
     let cancelled = false;
@@ -109,29 +114,44 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
             Continue
           </PrimaryButton>
         );
+      case 'pending': {
+        // Paying never starts the exit: coins an earlier attempt left at the
+        // shared address can already cover the fee, so the user decides.
+        const { pending, pendingCoins, nothingToExit, isStarting } = flow.engine;
+        if (!pending || nothingToExit || isStarting || !isPendingFunded(pending, pendingCoins)) return null;
+        return (
+          <PrimaryButton
+            onClick={() => void startPendingExit()}
+            className="w-full"
+            data-testid="unilateral-exit-start-exit"
+          >
+            Exit Spark
+          </PrimaryButton>
+        );
+      }
       case 'fund':
       case 'topUp': {
         const funding = flow.funding;
         const isWaiting = !!funding?.topUp && funding.topUp.stillToSendSat > 0;
-        // A resumed exit's top-up starts from the box that explains it, and one
-        // its fee coins cannot pay has no action here at all.
-        if (funding?.isResuming && funding.topUp && (funding.isFeeBudgetFixed || (flow.phase === 'fund' && isWaiting))) {
+        // A top-up starts from the box that explains it, and one its fee coins
+        // cannot pay has no action here at all.
+        if (funding?.topUp && (funding.isFeeBudgetFixed || (flow.phase === 'fund' && isWaiting))) {
           return null;
         }
         return (
           <>
             {funding && isWaiting && !funding.isFeeBudgetFixed && (
               <div className="mb-4">
-                <FundingStatus {...funding} />
+                <FundingStatus quotedAt={funding.quotedAt} />
               </div>
             )}
             <PrimaryButton
-            onClick={() => void flow.build()}
-            disabled={!flow.funding?.isFunded}
-            className="w-full"
-            data-testid="unilateral-exit-build"
-          >
-            {flow.funding?.isResuming ? 'Continue Exit' : 'Exit Spark'}
+              onClick={() => void flow.build()}
+              disabled={!flow.funding?.isFunded}
+              className="w-full"
+              data-testid="unilateral-exit-build"
+            >
+              Continue Exit
             </PrimaryButton>
           </>
         );
@@ -192,6 +212,17 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
               </>
             )}
 
+            {flow.phase === 'pending' && flow.engine.pending && (
+              <PendingExitStep
+                pending={flow.engine.pending}
+                coins={flow.engine.pendingCoins}
+                nothingToExit={flow.engine.nothingToExit}
+                isStarting={flow.engine.isStarting}
+                startError={flow.engine.startError}
+                onCancel={cancelPendingExit}
+              />
+            )}
+
             {(flow.phase === 'fund' || flow.phase === 'topUp') && flow.funding && (
               <FundStep
                 {...flow.funding}
@@ -202,11 +233,8 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
             )}
 
             {flow.phase === 'building' && (
-              <div className="py-16 flex flex-col items-center justify-center gap-4">
+              <div className="py-16 flex justify-center">
                 <LoadingSpinner text="Building and signing the exit..." />
-                <p className="text-spark-text-muted text-xs text-center">
-                  Keep this window open until it finishes.
-                </p>
               </div>
             )}
 
@@ -219,6 +247,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
                 onContinue={() => void flow.continueExit()}
                 isContinuing={flow.isContinuing}
                 continueError={flow.continueError}
+                justStarted={!openedOnTracker}
               />
             )}
 

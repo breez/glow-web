@@ -131,7 +131,9 @@ export const TrackerView: React.FC<{
   onContinue?: () => void;
   isContinuing?: boolean;
   continueError?: string | null;
-}> = ({ plan, tipHeight, isAdvancing, onRebuild, onContinue, isContinuing = false, continueError = null }) => {
+  /** The exit started while this sheet was open, so nothing has said yet that it can close. */
+  justStarted?: boolean;
+}> = ({ plan, tipHeight, isAdvancing, onRebuild, onContinue, isContinuing = false, continueError = null, justStarted = false }) => {
   const { transactions } = plan.exit;
   const [advanced, setAdvanced] = useState(false);
   const progress = useMemo(() => planProgress(plan), [plan]);
@@ -153,6 +155,14 @@ export const TrackerView: React.FC<{
         progress={progress}
         isAdvancing={isAdvancing}
       />
+
+      {/* The engine only runs while the app is open, so leaving the sheet is
+          fine but leaving Glow for good is not. */}
+      {justStarted && plan.phase === 'active' && (
+        <p className="text-spark-text-muted text-xs text-center text-balance">
+          You can close this. Open Glow regularly until the exit finishes.
+        </p>
+      )}
 
       {plan.phase === 'redo' && (
         <AlertCard variant="warning" title="Your exit needs an update">

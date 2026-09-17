@@ -58,8 +58,8 @@ rate. Offer that at any point, not only when something has gone wrong.
 
 | | |
 |---|---|
-| `driver.ts` | what an exit is, what it is worth, and one pass over it: check, rebuild if needed, send what is ready |
-| `engine.ts` | runs passes for as long as the app is open |
+| `driver.ts` | what an exit is, what it is worth, how a paid one starts, and one pass over it: check, rebuild if needed, send what is ready |
+| `engine.ts` | watches a saved exit's fee address, starts the exit when the user asks, then runs passes for as long as the app is open |
 | `funding.ts` | the key and address the fees are paid from |
 | `exitState.ts` | the rolling on-device copy of the leaf data an exit needs |
 | `backup.ts` | that copy as a file the user keeps, and reads back |

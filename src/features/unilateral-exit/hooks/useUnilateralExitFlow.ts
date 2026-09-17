@@ -8,6 +8,7 @@ import type { ChainUtxo, FeeRates } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import {
   hasFixedFeeBudget,
+  isWorthExiting,
   planFromExitResponse,
   quotedSweepFeeSat,
   rebuildExit,
@@ -20,17 +21,23 @@ import {
   type TopUp,
   type WalletKey,
 } from '../driver';
-import { getUnilateralExitState, setUnilateralExitPlan, type UnilateralExitEngineState } from '../engine';
+import {
+  setPendingExit,
+  setUnilateralExitPlan,
+  type UnilateralExitEngineState,
+} from '../engine';
 import { loadExitState, restoreExitState } from '../exitState';
-import { bumpFundingIndex, deriveFundingKey, readFundingIndex, readWalletMnemonic, type FundingKey } from '../funding';
+import { deriveFundingKey, readWalletMnemonic, type FundingKey } from '../funding';
 import { useUnilateralExitEngineState } from './useUnilateralExitEngineLifecycle';
 
+/** `fund`, `topUp` and `building` raise the fee of an exit under way. A fresh exit's fee is paid on `pending`. */
 export type UnilateralExitPhase =
   | 'intro'
   | 'destination'
   | 'fee'
   | 'quote'
   | 'unlock'
+  | 'pending'
   | 'fund'
   | 'topUp'
   | 'building'
@@ -83,20 +90,17 @@ export interface QuoteFields {
   leftBehindSat: number;
 }
 
+/** An exit under way keeps its funding address, and what it holds pays for the rest. */
 export interface FundingFields {
   address: string;
-  requiredSat: number;
   isFunded: boolean;
-  hasPendingDeposit: boolean;
-  /** An exit already under way keeps its funding address, and what it holds pays for the rest. */
-  isResuming: boolean;
   /** What to send after a build at this quote fell short, or null before one does. */
   topUp: TopUp | null;
   /** More at the address cannot pay a higher fee: see `hasFixedFeeBudget`. */
   isFeeBudgetFixed: boolean;
   /** The quote's rate, which the build pays. */
   feeRate: number;
-  /** The rate a resumed exit runs at until the build replaces it. */
+  /** The rate the exit runs at until the build replaces it. */
   currentFeeRate: number | null;
   /** When the quote the figures come from was taken, in ms. */
   quotedAt: number | null;
@@ -107,15 +111,14 @@ export interface FundingFields {
  * end for each of these, and the page's call to action follows it.
  */
 export function canContinueFromQuote(fields: QuoteFields): boolean {
-  if (fields.isQuoting || fields.error) return false;
-  if (!fields.quote || fields.quote.leaves.length === 0) return false;
-  return fields.quote.totalFeeSat < fields.quote.recoverableValueSat && fields.willReceiveSat > 0;
+  if (fields.isQuoting || fields.error || !fields.quote) return false;
+  return isWorthExiting(fields.quote, fields.willReceiveSat);
 }
 
 export interface UnilateralExitFlow {
   phase: UnilateralExitPhase;
   engine: UnilateralExitEngineState;
-  /** False on the first step and on the tracker, where back leaves the flow. */
+  /** False where back leaves the flow: the first step, and an exit already saved. */
   canGoBack: boolean;
   destination: DestinationFields;
   fee: FeeFields;
@@ -148,13 +151,24 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   const balanceSat = Number(info?.balanceSats ?? 0);
   const chain = useMemo(() => createChainClient(network), [network]);
   const engine = useUnilateralExitEngineState();
-  const plan = engine.plan;
+  const { plan, pending } = engine;
 
-  // An exit under way opens on its tracker; the wizard is entered from there.
+  // A saved exit decides where the sheet opens: one under way on its tracker,
+  // one waiting on its fee on where to pay it. The engine moves it from one to
+  // the other, so these steps follow it rather than holding their own place.
   const [step, setPhase] = useState<UnilateralExitPhase>('intro');
-  const phase: UnilateralExitPhase = step === 'intro' && plan ? 'tracker' : step;
-  // A rebuild re-enters the wizard; retyping the address is a chance to get it wrong.
-  const [destination, setDestination] = useState(() => getUnilateralExitState().plan?.destination ?? '');
+  const phase: UnilateralExitPhase =
+    step === 'intro' || step === 'pending' || step === 'tracker'
+      ? plan
+        ? 'tracker'
+        : pending
+          ? 'pending'
+          : 'intro'
+      : step;
+  // A rebuild re-enters the wizard; retyping the address is a chance to get it
+  // wrong. A sheet opened while the exit waits on its fee can rebuild it once it
+  // starts, so a pending exit seeds the address too.
+  const [destination, setDestination] = useState(() => (plan ?? pending)?.destination ?? '');
   const [destinationError, setDestinationError] = useState<string | null>(null);
   const [feeRates, setFeeRates] = useState<FeeRates | null>(null);
   const [feeChoice, setFeeChoice] = useState<FeeChoice>('medium');
@@ -276,38 +290,53 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   // the page re-runs unlock whenever this callback changes.
   const planFundingIndex = plan?.fundingAddressIndex;
   const unlock = useCallback(async () => {
-    if (!walletKey) return;
+    if (!walletKey || !quote) return;
     setUnlockError(null);
     try {
       const mnemonic = await readWalletMnemonic({ interactive: true });
-      mnemonicRef.current = mnemonic;
-      const index = planFundingIndex ?? readFundingIndex(walletKey);
-      setFundingKey(deriveFundingKey(mnemonic, network, index));
-      setPhase('fund');
+      // Every exit pays from the same address, so coins one exit leaves there
+      // count toward the next. An exit under way keeps the index it was built with.
+      const index = planFundingIndex ?? 0;
+      const key = deriveFundingKey(mnemonic, network, index);
+      if (planFundingIndex !== undefined) {
+        mnemonicRef.current = mnemonic;
+        setFundingKey(key);
+        setPhase('fund');
+        return;
+      }
+      // Saved before anything is paid, so closing the sheet keeps the address
+      // and the amount.
+      setPendingExit(
+        walletKey,
+        {
+          network,
+          destination: quote.destination,
+          feeRateSatPerVbyte: quote.feeRateSatPerVbyte,
+          fundingAddressIndex: index,
+          fundingAddress: key.address,
+          required: { sat: quote.singleUtxoFundingSat, inputs: 1 },
+          willReceiveSat: willReceiveSat(quote),
+        },
+        key,
+      );
+      setPhase('pending');
     } catch (e) {
       setUnlockError(message(e));
     }
-  }, [walletKey, network, planFundingIndex]);
+  }, [walletKey, quote, network, planFundingIndex]);
 
   const confirmedUtxos = useMemo(() => fundingUtxos.filter(utxo => utxo.confirmed), [fundingUtxos]);
-  const fundedSat = confirmedUtxos.reduce((total, utxo) => total + utxo.value, 0);
-  const isResuming = plan !== null;
   const isFeeBudgetFixed = plan !== null && hasFixedFeeBudget(plan);
   const sent = useMemo(() => sentFunding(plan, confirmedUtxos), [plan, confirmedUtxos]);
   const topUp = shortfall && quote ? topUpFor(shortfall, sent, quote.feeRateSatPerVbyte) : null;
-  // A resumed exit is not held to a fresh exit's price: most of what the quote
-  // covers is already on-chain, and only the build knows what is really needed.
-  // A fresh exit's quote is a lower bound too. Once a build has said what it
-  // needs, the address has to hold it, unless the fee coins are fixed, when no
-  // amount there helps and only a new quote can.
-  const isFunded =
-    quote !== null &&
-    (topUp
-      ? !isFeeBudgetFixed && topUp.stillToSendSat === 0
-      : isResuming || fundedSat >= quote.singleUtxoFundingSat);
+  // An exit under way is not held to its quote: most of what the quote covers
+  // is already on-chain, and only the build knows what is really needed. Once a
+  // build has said what it needs, the address has to hold it, unless the fee
+  // coins are fixed, when no amount there helps and only a new quote can.
+  const isFunded = quote !== null && (topUp ? !isFeeBudgetFixed && topUp.stillToSendSat === 0 : true);
 
   const build = useCallback(async () => {
-    if (!walletKey || !quote || !fundingKey || !mnemonicRef.current) return;
+    if (!walletKey || !plan || !quote || !fundingKey || !mnemonicRef.current) return;
     setPhase('building');
     setBuildError(null);
     const release = holdIdleLock();
@@ -322,7 +351,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
         value: utxo.value,
         pubkey: fundingKey.publicKeyHex,
       }));
-      const fundingInputs = mergeFunding(plan?.exit.fundingInputs ?? [], fresh);
+      const fundingInputs = mergeFunding(plan.exit.fundingInputs, fresh);
       await restoreExitState(wallet, plan, await loadExitState(walletKey.identityPubkey));
       const response = await wallet.unilateralExit(
         { prepared: quote, fundingInputs },
@@ -332,7 +361,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
       // reporting them, so a later export is worth less. An exit already
       // holding a snapshot keeps it.
       const exitStateSnapshot =
-        plan?.exitStateSnapshot ??
+        plan.exitStateSnapshot ??
         (await wallet
           .exportUnilateralExitState()
           .then(r => r.exitState)
@@ -341,11 +370,10 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
         network,
         destination: quote.destination,
         feeRateSatPerVbyte: quote.feeRateSatPerVbyte,
-        fundingAddressIndex: plan?.fundingAddressIndex ?? readFundingIndex(walletKey),
+        fundingAddressIndex: plan.fundingAddressIndex,
         quotedSweepFeeSat: quotedSweepFeeSat(quote, plan),
       });
       setUnilateralExitPlan(walletKey, { ...built, exitStateSnapshot });
-      if (!isResuming) bumpFundingIndex(walletKey);
       mnemonicRef.current = null;
       setPhase('tracker');
     } catch (e) {
@@ -357,15 +385,15 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     } finally {
       release();
     }
-  }, [wallet, walletKey, quote, fundingKey, confirmedUtxos, sent, network, plan, isResuming]);
+  }, [wallet, walletKey, quote, fundingKey, confirmedUtxos, sent, network, plan]);
 
   // What a resumed exit already holds may pay the new rate, and only a build can
   // tell. So it tries once, and the step asks for more only when that falls short.
   useEffect(() => {
-    if (phase !== 'fund' || !isResuming || !quote || triedQuote.current === quote) return;
+    if (phase !== 'fund' || !quote || triedQuote.current === quote) return;
     triedQuote.current = quote;
     void build();
-  }, [phase, isResuming, quote, build]);
+  }, [phase, quote, build]);
 
   // Keeps the destination and the leaves, and re-enters at the fee step: the
   // reason to rebuild by hand is almost always to pay more.
@@ -404,7 +432,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   return {
     phase,
     engine,
-    /** False on the first step and on the tracker, where back leaves the flow. */
+    /** False where back leaves the flow: the first step, and an exit already saved. */
     canGoBack: BACK[phase] !== undefined,
     destination: { destination, onChange: setDestination, error: destinationError },
     fee: {
@@ -423,10 +451,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     },
     funding: fundingKey && {
       address: fundingKey.address,
-      requiredSat: quote?.singleUtxoFundingSat ?? 0,
       isFunded,
-      hasPendingDeposit: fundingUtxos.some(utxo => !utxo.confirmed),
-      isResuming,
       topUp,
       isFeeBudgetFixed,
       feeRate: quote?.feeRateSatPerVbyte ?? 0,

@@ -1,5 +1,6 @@
 import { formatBlockWait } from '@/utils/blockTime';
-import { nextAction, planProgress, willReceiveSat } from './driver';
+import { formatWithSpaces } from '@/utils/formatNumber';
+import { isPendingFunded, nextAction, pendingTopUp, planProgress, willReceiveSat, type PendingExit } from './driver';
 import type { ArchivedExit } from './archive';
 import type { UnilateralExitEngineState } from './engine';
 
@@ -34,6 +35,23 @@ const activeSubtitle = (state: UnilateralExitEngineState): string | null => {
   return blocks === null ? processed : `${processed}, next ${formatBlockWait(blocks)}`;
 };
 
+/** What the row says while the exit waits on its fee, so the list answers what to do next. */
+const pendingText = (
+  state: UnilateralExitEngineState,
+  pending: PendingExit,
+): Pick<UnilateralExitEntry, 'title' | 'subtitle'> => {
+  const coins = state.pendingCoins;
+  if (state.nothingToExit) return { title: 'Nothing to exit', subtitle: 'Open to cancel it.' };
+
+  const stillToSend = pendingTopUp(pending, coins).stillToSendSat;
+  if (stillToSend > 0) {
+    const amount = `₿${formatWithSpaces(stillToSend)}`;
+    return { title: 'Waiting for exit fee', subtitle: coins.length > 0 ? `Send ${amount} more` : `Send ${amount} to start` };
+  }
+  if (!isPendingFunded(pending, coins)) return { title: 'Exit fee sent', subtitle: 'Waiting for a confirmation' };
+  return { title: 'Exit fee received', subtitle: 'Open to start it.' };
+};
+
 const archivedEntry = (exit: ArchivedExit): UnilateralExitEntry => ({
   id: exit.id,
   // The same words a withdrawal gets, since that is what landed on-chain.
@@ -50,7 +68,13 @@ const archivedEntry = (exit: ArchivedExit): UnilateralExitEntry => ({
  */
 export function unilateralExitEntries(state: UnilateralExitEngineState): UnilateralExitEntry[] {
   const archived = state.archive.map(archivedEntry);
-  const plan = state.plan;
+  const { plan, pending } = state;
+  if (!plan && pending) {
+    return [
+      { id: 'pending', ...pendingText(state, pending), amountSat: pending.willReceiveSat, isActive: true },
+      ...archived,
+    ];
+  }
   if (!plan || plan.phase === 'complete') return archived;
 
   return [
