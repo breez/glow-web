@@ -173,3 +173,23 @@ describe('TrackerView', () => {
     expect(screen.getByTestId('unilateral-exit-backup-save')).toBeInTheDocument();
   });
 });
+
+describe('the note once an exit starts', () => {
+  const running = twoLeaves([tx({ txid: 'r', kind: 'refund' })]);
+
+  it('says the sheet can close when the exit just started here, and not when the user came back to it', () => {
+    const { rerender } = render(
+      <TrackerView plan={running} tipHeight={1000} isAdvancing={false} onRebuild={vi.fn()} justStarted />,
+    );
+    expect(screen.getByText(/You can close this/)).toBeInTheDocument();
+    rerender(<TrackerView plan={running} tipHeight={1000} isAdvancing={false} onRebuild={vi.fn()} />);
+    expect(screen.queryByText(/You can close this/)).not.toBeInTheDocument();
+  });
+
+  it('leaves a paused exit to its own card', () => {
+    render(
+      <TrackerView plan={{ ...running, phase: 'redo' }} tipHeight={1000} isAdvancing={false} onRebuild={vi.fn()} justStarted />,
+    );
+    expect(screen.queryByText(/You can close this/)).not.toBeInTheDocument();
+  });
+});

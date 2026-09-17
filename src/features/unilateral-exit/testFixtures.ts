@@ -4,7 +4,30 @@ import type {
   UnilateralExitResponse,
   UnilateralExitTransaction,
 } from '@breeztech/breez-sdk-spark';
-import type { ExitSdk, UnilateralExitPlan } from './driver';
+import type { ChainUtxo } from '@/services/chain';
+import type { ExitSdk, PendingExit, UnilateralExitPlan } from './driver';
+
+/** The phrase the fee key derives from in tests that start or rebuild an exit. */
+export const MNEMONIC = 'legal winner thank year wave sausage worth useful legal winner thank yellow';
+
+/** An exit quoted at 2 sat/vB for 5 898 sats of fee, nothing paid yet. */
+export const pendingExit = (over: Partial<PendingExit> = {}): PendingExit => ({
+  network: 'regtest',
+  destination: 'bcrt1qdest',
+  feeRateSatPerVbyte: 2,
+  fundingAddressIndex: 0,
+  fundingAddress: 'bcrt1qfund',
+  required: { sat: 5_898, inputs: 1 },
+  willReceiveSat: 94_000,
+  ...over,
+});
+
+export const coin = (value: number, confirmed = true, txid = `coin-${value}`): ChainUtxo => ({
+  txid,
+  vout: 0,
+  value,
+  confirmed,
+});
 
 export const confirmed = (blockHeight?: number): ExitTransactionStatus => ({
   type: 'confirmed',
@@ -96,5 +119,6 @@ export const sdk = (over: Partial<ExitSdk> = {}): ExitSdk => ({
   }),
   prepareUnilateralExit: async () => prepared({ leaves: [] }),
   unilateralExit: async () => checked([]),
+  exportUnilateralExitState: async () => ({ exitState: 'snapshot' }),
   ...over,
 });

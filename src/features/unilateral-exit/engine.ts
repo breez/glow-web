@@ -1,8 +1,19 @@
-import { createChainClient, type ChainClient } from '@/services/chain';
+import { createChainClient, type ChainClient, type ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
-import { advanceUnilateralExit, clearPlan, loadPlan, savePlan } from './driver';
+import {
+  advanceUnilateralExit,
+  clearPendingExit,
+  clearPlan,
+  loadPendingExit,
+  isPendingFunded,
+  loadPlan,
+  savePendingExit,
+  savePlan,
+  startExit,
+} from './driver';
 import { archiveExit, loadArchive, type ArchivedExit } from './archive';
-import type { ExitSdk, UnilateralExitPlan, WalletKey } from './driver';
+import { bumpFundingIndex, type FundingKey } from './funding';
+import type { ExitSdk, PendingExit, UnilateralExitPlan, WalletKey } from './driver';
 
 const POLL_SECS_MAINNET = 30;
 const POLL_SECS_REGTEST = 5;
@@ -16,6 +27,15 @@ export function pollIntervalMs(network: string): number {
 
 export interface UnilateralExitEngineState {
   plan: UnilateralExitPlan | null;
+  /** An exit waiting on its fee. Never held alongside `plan`. */
+  pending: PendingExit | null;
+  /** What the pending exit's fee address holds, confirmed or not. */
+  pendingCoins: ChainUtxo[];
+  /** A start found nothing in the wallet worth its exit fee at the exit's rate. */
+  nothingToExit: boolean;
+  isStarting: boolean;
+  /** Why the last start failed, for the user to try again. */
+  startError: string | null;
   /** Exits that already finished, newest first. Outlives the plan slot. */
   archive: ArchivedExit[];
   tipHeight: number | null;
@@ -24,7 +44,19 @@ export interface UnilateralExitEngineState {
 
 type Listener = (state: UnilateralExitEngineState) => void;
 
-let state: UnilateralExitEngineState = { plan: null, archive: [], tipHeight: null, isAdvancing: false };
+const idle: UnilateralExitEngineState = {
+  plan: null,
+  pending: null,
+  pendingCoins: [],
+  nothingToExit: false,
+  isStarting: false,
+  startError: null,
+  archive: [],
+  tipHeight: null,
+  isAdvancing: false,
+};
+
+let state: UnilateralExitEngineState = idle;
 let wallet: WalletKey | null = null;
 let chain: ChainClient | null = null;
 let sdk: ExitSdk | null = null;
@@ -32,6 +64,9 @@ let timer: ReturnType<typeof setInterval> | null = null;
 // Bumped whenever the wallet or its plan is replaced. A pass that started under
 // an older generation is for something no longer current, so it must not write.
 let generation = 0;
+// The key the wizard derived, so a passkey wallet starts without a second
+// prompt while the app stays open. Never stored.
+let heldKey: FundingKey | null = null;
 const listeners = new Set<Listener>();
 
 const emit = (next: Partial<UnilateralExitEngineState>): void => {
@@ -58,8 +93,65 @@ export function subscribeUnilateralExit(listener: Listener): () => void {
   return () => listeners.delete(listener);
 }
 
+/** Reads what the pending exit's fee address holds. Nothing starts without the user. */
+async function watchPending(): Promise<void> {
+  const pending = state.pending;
+  if (!chain || !pending) return;
+  const passGeneration = generation;
+  try {
+    const coins = await chain.addressUtxos(pending.fundingAddress);
+    if (generation === passGeneration) emit({ pendingCoins: coins });
+  } catch (e) {
+    logger.warn(LogCategory.SDK, 'Failed to read the exit fee address', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+}
+
+/**
+ * Starts the pending exit from the user's tap, with the coins the address was
+ * last read to hold. Nothing awaits before the key is read, so a passkey
+ * prompt still counts as the tap's.
+ */
+export async function startPendingExit(): Promise<void> {
+  const pending = state.pending;
+  if (!wallet || !sdk || !pending || state.isStarting || !isPendingFunded(pending, state.pendingCoins)) return;
+  const passGeneration = generation;
+  const passWallet = wallet;
+  const confirmed = state.pendingCoins.filter(coin => coin.confirmed);
+  emit({ isStarting: true, startError: null, nothingToExit: false });
+  try {
+    const key = heldKey?.address === pending.fundingAddress ? heldKey : undefined;
+    const outcome = await startExit(pending, confirmed, sdk, passWallet.identityPubkey, key);
+    if (generation !== passGeneration) return;
+    switch (outcome.type) {
+      case 'started':
+        // In this order, so stopping part-way never loses the exit or its coins.
+        setUnilateralExitPlan(passWallet, outcome.plan);
+        bumpFundingIndex(passWallet);
+        clearPendingExit(passWallet);
+        heldKey = null;
+        emit({ pending: null, pendingCoins: [], isStarting: false });
+        return;
+      case 'short': {
+        const next = { ...pending, required: outcome.required };
+        savePendingExit(passWallet, next);
+        emit({ pending: next, isStarting: false });
+        return;
+      }
+      case 'nothingToExit':
+        emit({ nothingToExit: true, isStarting: false });
+    }
+  } catch (e) {
+    const error = e instanceof Error ? e.message : String(e);
+    logger.error(LogCategory.SDK, 'Failed to start the unilateral exit', { error });
+    if (generation === passGeneration) emit({ startError: error, isStarting: false });
+  }
+}
+
 export async function advanceNow(): Promise<void> {
-  if (!wallet || !chain || !state.plan || state.isAdvancing) return;
+  if (!state.plan) return watchPending();
+  if (!wallet || !chain || state.isAdvancing) return;
   if (state.plan.phase !== 'active') {
     stopPolling();
     return;
@@ -100,7 +192,7 @@ export async function advanceNow(): Promise<void> {
 
 /**
  * Without `driver` a pass only re-sends what it already holds: it cannot read
- * the exit back, rebuild it, or learn that it has finished.
+ * the exit back, rebuild it, learn that it has finished, or start a pending one.
  */
 export function startUnilateralExitEngine(
   target: WalletKey,
@@ -111,8 +203,12 @@ export function startUnilateralExitEngine(
   wallet = target;
   chain = client;
   sdk = driver ?? null;
-  emit({ plan: loadPlan(target), archive: loadArchive(target) });
-  if (!state.plan) return;
+  const plan = loadPlan(target);
+  // Left behind by a start that saved its plan and stopped before clearing it.
+  if (plan) clearPendingExit(target);
+  const pending = plan ? null : loadPendingExit(target);
+  emit({ ...idle, plan, pending, archive: loadArchive(target) });
+  if (!plan && !pending) return;
 
   void advanceNow();
   startPolling();
@@ -124,7 +220,7 @@ export function stopUnilateralExitEngine(): void {
   wallet = null;
   chain = null;
   sdk = null;
-  emit({ plan: null, archive: [], tipHeight: null, isAdvancing: false });
+  emit(idle);
 }
 
 /** Stores the plan for `target` and, if the engine is running for it, starts driving it. */
@@ -137,6 +233,30 @@ export function setUnilateralExitPlan(target: WalletKey, plan: UnilateralExitPla
   emit({ plan, isAdvancing: false });
   startPolling();
   void advanceNow();
+}
+
+/**
+ * Stores a fresh exit before its fee is paid and starts watching the address.
+ * `key` is held in memory only, for the start.
+ */
+export function setPendingExit(target: WalletKey, pending: PendingExit, key?: FundingKey): void {
+  savePendingExit(target, pending);
+  heldKey = key ?? null;
+  if (wallet?.identityPubkey !== target.identityPubkey || wallet.network !== target.network) return;
+  generation++;
+  emit({ pending, pendingCoins: [], nothingToExit: false, startError: null, isStarting: false });
+  startPolling();
+  void advanceNow();
+}
+
+/** Coins already at the fee address stay there, and the next exit uses the same address. */
+export function cancelPendingExit(): void {
+  if (!wallet) return;
+  generation++;
+  stopPolling();
+  clearPendingExit(wallet);
+  heldKey = null;
+  emit({ pending: null, pendingCoins: [], nothingToExit: false, startError: null, isStarting: false });
 }
 
 export function dismissUnilateralExitPlan(): void {

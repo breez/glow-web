@@ -2,15 +2,16 @@ import { singleKeyCpfpSigner } from '@breeztech/breez-sdk-spark';
 import type {
   BreezSdk,
   CheckUnilateralExitResponse,
+  CpfpInput,
   PrepareUnilateralExitResponse,
   UnilateralExitResponse,
   UnilateralExitTransaction,
 } from '@breeztech/breez-sdk-spark';
-import type { ChainClient } from '@/services/chain';
+import type { ChainClient, ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { outputTotalSat } from '@/utils/rawTx';
 import { loadExitState, restoreExitState, saveExitState } from './exitState';
-import { deriveFundingKey, MnemonicNeedsPasskeyError, readWalletMnemonic } from './funding';
+import { deriveFundingKey, MnemonicNeedsPasskeyError, readWalletMnemonic, type FundingKey } from './funding';
 
 /**
  * `complete` is the sdk's `done` verdict. `redo` is its `redo`: the chain no
@@ -127,6 +128,50 @@ export function clearPlan(wallet: WalletKey): void {
 }
 
 /**
+ * An exit saved when its fee address is first shown, before anything is built.
+ * The user starts it once confirmed coins at the address pay for it.
+ */
+export interface PendingExit {
+  network: string;
+  destination: string;
+  feeRateSatPerVbyte: number;
+  fundingAddressIndex: number;
+  fundingAddress: string;
+  /** The quote's figure, until a start that fell short replaces it with the build's. */
+  required: Funding;
+  /** What the quote said would arrive, shown until the exit is built. */
+  willReceiveSat: number;
+}
+
+const pendingKey = ({ identityPubkey, network }: WalletKey): string =>
+  `unilateral-exit-pending:${identityPubkey.slice(0, 16)}:${network}`;
+
+export function savePendingExit(wallet: WalletKey, pending: PendingExit): void {
+  try {
+    localStorage.setItem(pendingKey(wallet), JSON.stringify(pending));
+  } catch (e) {
+    logger.error(LogCategory.SDK, 'Failed to persist the pending unilateral exit', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+}
+
+export function loadPendingExit(wallet: WalletKey): PendingExit | null {
+  const raw = localStorage.getItem(pendingKey(wallet));
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as PendingExit;
+    return typeof parsed?.fundingAddress === 'string' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingExit(wallet: WalletKey): void {
+  localStorage.removeItem(pendingKey(wallet));
+}
+
+/**
  * The sweep fee an exit is held to. A rebuild is quoted on the refunds it has
  * left to sweep, so an earlier quote stays the floor; a quote at a higher rate
  * replaces it.
@@ -156,6 +201,12 @@ export function willReceiveSat(
   const swept = sweep?.status.type === 'confirmed' ? outputTotalSat(sweep.txHex) : null;
   return swept ?? Math.max(0, exit.exit.recoverableValueSat - exit.quotedSweepFeeSat);
 }
+
+/** Whether a quote moves anything worth more than it costs to move. */
+export const isWorthExiting = (
+  quote: PrepareUnilateralExitResponse,
+  receiveSat: number = willReceiveSat(quote),
+): boolean => quote.leaves.length > 0 && quote.totalFeeSat < quote.recoverableValueSat && receiveSat > 0;
 
 /**
  * Where the money is. A leaf sits in Spark until its refund is on-chain, then
@@ -220,7 +271,11 @@ export function blocksToFinish(all: UnilateralExitTransaction[], tipHeight: numb
 /** The slice of the sdk a pass drives. */
 export type ExitSdk = Pick<
   BreezSdk,
-  'checkUnilateralExit' | 'prepareUnilateralExit' | 'unilateralExit' | 'importUnilateralExitState'
+  | 'checkUnilateralExit'
+  | 'prepareUnilateralExit'
+  | 'unilateralExit'
+  | 'importUnilateralExitState'
+  | 'exportUnilateralExitState'
 >;
 
 /** The sdk resolves this against the chain tip, timelock included. */
@@ -276,13 +331,82 @@ export interface TopUp {
 /**
  * What to send after a build fell short. The sdk sized `required` on the inputs
  * that build had, so each coin sent since, and the one still to send, adds its
- * own input fee.
+ * own input fee. A quote is sized on the one coin it assumes, so its first coin
+ * adds nothing.
  */
 export function topUpFor(required: Funding, sent: Funding, feeRateSatPerVbyte: number): TopUp {
   const inputFeeSat = Math.ceil(P2WPKH_INPUT_VBYTES * feeRateSatPerVbyte);
   const neededNowSat = required.sat + inputFeeSat * Math.max(0, sent.inputs - required.inputs);
-  const neededSat = sent.sat >= neededNowSat ? neededNowSat : neededNowSat + inputFeeSat;
+  const nextCoinSat = sent.inputs < required.inputs ? 0 : inputFeeSat;
+  const neededSat = sent.sat >= neededNowSat ? neededNowSat : neededNowSat + nextCoinSat;
   return { neededSat, sentSat: sent.sat, stillToSendSat: Math.max(0, neededSat - sent.sat) };
+}
+
+/** What a pending exit's fee address still needs. Unconfirmed coins count, so a payment on its way is not asked for twice. */
+export const pendingTopUp = (pending: PendingExit, coins: ChainUtxo[]): TopUp =>
+  topUpFor(pending.required, sentFunding(null, coins), pending.feeRateSatPerVbyte);
+
+/** Whether the confirmed coins at the fee address pay for the exit, so it can be started. */
+export const isPendingFunded = (pending: PendingExit, coins: ChainUtxo[]): boolean =>
+  pendingTopUp(pending, coins.filter(coin => coin.confirmed)).stillToSendSat === 0;
+
+export type StartOutcome =
+  | { type: 'started'; plan: UnilateralExitPlan }
+  | { type: 'short'; required: Funding }
+  | { type: 'nothingToExit' };
+
+/**
+ * Builds a pending exit from its confirmed fee coins, on the user's tap. It
+ * quotes again first, so it exits what the wallet holds now: a payment or a
+ * leaf swap since the first quote would fail a build that names the leaves
+ * that quote picked.
+ *
+ * The key is read before anything else, while the tap is fresh enough for a
+ * passkey prompt. `key` is one the wizard already derived.
+ */
+export async function startExit(
+  pending: PendingExit,
+  coins: ChainUtxo[],
+  sdk: ExitSdk,
+  identityPubkey: string,
+  key?: FundingKey,
+): Promise<StartOutcome> {
+  const { network, destination, feeRateSatPerVbyte, fundingAddressIndex } = pending;
+  const { publicKeyHex, secretKey } =
+    key ?? deriveFundingKey(await readWalletMnemonic({ interactive: true }), network, fundingAddressIndex);
+  await restoreExitState(sdk, null, await loadExitState(identityPubkey).catch(() => null));
+
+  const quote = await sdk.prepareUnilateralExit({
+    feeRateSatPerVbyte,
+    fundingKind: { type: 'p2wpkh' },
+    destination,
+    selection: { type: 'auto' },
+  });
+  if (!isWorthExiting(quote)) return { type: 'nothingToExit' };
+
+  const fundingInputs: CpfpInput[] = coins.map(({ txid, vout, value }) => ({
+    type: 'p2wpkh',
+    txid,
+    vout,
+    value,
+    pubkey: publicKeyHex,
+  }));
+  let exit: UnilateralExitResponse;
+  try {
+    exit = await sdk.unilateralExit({ prepared: quote, fundingInputs }, singleKeyCpfpSigner(secretKey));
+  } catch (e) {
+    const required = requiredFundingOf(e instanceof Error ? e.message : String(e));
+    if (required === null) throw e;
+    return { type: 'short', required: { sat: required, inputs: coins.length } };
+  }
+
+  // Frozen now: from here the operators stop reporting the leaves this exit moves.
+  const exitStateSnapshot = await sdk
+    .exportUnilateralExitState()
+    .then(r => r.exitState)
+    .catch(() => undefined);
+  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quote.sweepFeeSat };
+  return { type: 'started', plan: { ...planFromExitResponse(exit, meta), exitStateSnapshot } };
 }
 
 export interface PlanProgress {
