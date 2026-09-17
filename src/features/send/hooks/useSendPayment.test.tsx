@@ -67,6 +67,20 @@ describe('processInput destinations', () => {
     );
   });
 
+  it('prepares an invoice with a sub-sat amount rounded up, as the SDK requires', async () => {
+    const { client, result } = renderSendPayment(
+      async (input) => ({ ...(bolt11Details(input) as object), amountMsat: 654_321 }) as InputType,
+    );
+
+    await act(() => result.current.processInput(BOLT11));
+
+    await waitFor(() =>
+      expect(client.prepareSendPayment).toHaveBeenCalledWith(
+        expect.objectContaining({ paymentRequest: { type: 'input', input: BOLT11 }, amount: 655n }),
+      ),
+    );
+  });
+
   const onchain = { type: 'bitcoinAddress', address: 'bc1qtest' };
   const spark = { type: 'sparkAddress', address: 'sp1test' };
 
