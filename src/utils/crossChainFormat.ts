@@ -69,6 +69,8 @@ export interface CrossChainDestination {
   deliveredAmount?: bigint;
   /** Decimals of the delivered asset, for formatting `deliveredAmount`. */
   assetDecimals?: number;
+  /** Tx hash on the external chain, once that leg has broadcast. Orchestra only. */
+  externalTxHash?: string;
 }
 
 /**
@@ -95,6 +97,7 @@ export function getCrossChainDestination(payment: Payment): CrossChainDestinatio
     dest.assetDecimals = convInfo.assetDecimals;
     const delivered = convInfo.deliveredAmount ?? convInfo.estimatedOut;
     if (delivered) dest.deliveredAmount = BigInt(delivered);
+    if (convInfo.type === 'orchestra') dest.externalTxHash = convInfo.externalTxHash;
   }
 
   // Prefer the final conversion's destination side — it carries the settled

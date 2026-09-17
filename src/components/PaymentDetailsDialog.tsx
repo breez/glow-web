@@ -11,7 +11,7 @@ import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
 import { getPaymentDescription, getProviderDisplayName, isCrossChainPayment } from '../utils/paymentDescription';
 import { formatChainName, getCrossChainDestination, formatReceiveAmount } from '../utils/crossChainFormat';
-import { explorerTxUrl } from '../utils/explorer';
+import { explorerTxUrl, chainExplorerTxUrl } from '../utils/explorer';
 
 interface PaymentDetailsDialogProps {
   optionalPayment: Payment | null;
@@ -34,6 +34,7 @@ const getDefaultVisibleFields = () => ({
   lnurlDomain: false,
   conversionDetails: false,
   recipientAddress: false,
+  externalTxHash: false,
 });
 
 const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPayment, onClose }) => {
@@ -132,6 +133,19 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
     return `${formatReceiveAmount(BigInt(xc.from.amount), xc.from.asset.decimals)} ${xc.from.asset.ticker}`;
   })();
 
+  // The external leg's own transaction: the payout on the destination chain for
+  // a send, the sender's deposit on the source chain for a receive. Absent
+  // until that leg broadcasts, and only orchestra reports it.
+  const externalTxRow = dest?.externalTxHash ? (
+    <CollapsibleCodeField
+      label="Transaction ID"
+      value={dest.externalTxHash}
+      isVisible={visibleFields.externalTxHash}
+      onToggle={() => toggleField('externalTxHash')}
+      href={dest.chainName ? chainExplorerTxUrl(dest.chainName, dest.externalTxHash) : undefined}
+    />
+  ) : null;
+
   return (
     <BottomSheetContainer isOpen={optionalPayment != null} onClose={onClose}>
       <BottomSheetCard>
@@ -167,6 +181,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                 {dest.chainName && (
                   <PaymentInfoRow label="Network" value={formatChainName(dest.chainName)} />
                 )}
+                {externalTxRow}
               </>
             )}
             {dest && !isReceive && (
@@ -188,6 +203,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                     onToggle={() => toggleField('recipientAddress')}
                   />
                 )}
+                {externalTxRow}
               </>
             )}
 
