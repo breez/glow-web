@@ -47,6 +47,7 @@ import { isSendSheetOpen } from '../features/send/sendSheetVisibility';
 import { clearPin, isAppLockSupported } from '../services/appLock';
 import { hasConversionInFlight } from '../contexts/WalletContext';
 import { isConversionPayment } from '../utils/paymentDescription';
+import { unsettledDeposits } from '../utils/depositHelpers';
 
 // ============================================
 // Payment filtering
@@ -303,7 +304,7 @@ export function useBreezSdk(
     if (!s) return false;
     try {
       const result = await s.listUnclaimedDeposits({});
-      const deposits = result.deposits;
+      const deposits = unsettledDeposits(result.deposits);
       setUnclaimedDeposits(deposits);
       setHasRejectedDeposits(deposits.some(d => isDepositRejected(d.txid, d.vout)));
       return true;
@@ -549,7 +550,7 @@ export function useBreezSdk(
       void (async () => {
         try {
           const result = await connectedSdk!.listUnclaimedDeposits({});
-          const deposits = result.deposits;
+          const deposits = unsettledDeposits(result.deposits);
           setUnclaimedDeposits(deposits);
           setHasRejectedDeposits(deposits.some(d => isDepositRejected(d.txid, d.vout)));
         } catch (e) {
@@ -701,9 +702,9 @@ export function useBreezSdk(
     setIsLoading(false);
 
     try {
-      const result = await newSdk.listUnclaimedDeposits({});
-      setUnclaimedDeposits(result.deposits);
-      setHasRejectedDeposits(result.deposits.some(d => isDepositRejected(d.txid, d.vout)));
+      const deposits = unsettledDeposits((await newSdk.listUnclaimedDeposits({})).deposits);
+      setUnclaimedDeposits(deposits);
+      setHasRejectedDeposits(deposits.some(d => isDepositRejected(d.txid, d.vout)));
     } catch (e) {
       logger.warn(LogCategory.SDK, 'Failed to load deposits for migrated wallet', { error: formatError(e) });
     }
@@ -800,9 +801,9 @@ export function useBreezSdk(
       markLabelUsed(wallet.label);
 
       try {
-        const result = await connectedSdk.listUnclaimedDeposits({});
-        setUnclaimedDeposits(result.deposits);
-        setHasRejectedDeposits(result.deposits.some(d => isDepositRejected(d.txid, d.vout)));
+        const deposits = unsettledDeposits((await connectedSdk.listUnclaimedDeposits({})).deposits);
+        setUnclaimedDeposits(deposits);
+        setHasRejectedDeposits(deposits.some(d => isDepositRejected(d.txid, d.vout)));
       } catch (e) {
         logger.warn(LogCategory.SDK, `Deposit fetch failed after ${what} switch`, {
           error: formatError(e),

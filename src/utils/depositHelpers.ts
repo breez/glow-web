@@ -8,6 +8,14 @@ export interface ExtendedPayment extends Payment {
 }
 
 /**
+ * Drops deposits a claim has already taken. The SDK keeps one listed until the
+ * provider spends its output, but its credit has arrived as a payment by then.
+ */
+export function unsettledDeposits(deposits: DepositInfo[]): DepositInfo[] {
+  return deposits.filter(d => d.instantClaimStatus?.type !== 'claimed');
+}
+
+/**
  * Convert unclaimed deposits to payment-like objects for display in the transaction list
  * Only includes deposits that have NOT been rejected
  */
