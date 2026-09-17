@@ -4,6 +4,7 @@ import {
   mergeDepositsWithTransactions,
   isUnclaimedDepositPayment,
   depositNeedsAction,
+  unsettledDeposits,
   ExtendedPayment,
 } from './depositHelpers';
 import type { Payment, DepositInfo } from '@breeztech/breez-sdk-spark';
@@ -198,6 +199,18 @@ describe('depositHelpers', () => {
       expect(depositNeedsAction(deposit({ isMature: true }))).toBe(false);
       expect(depositNeedsAction(deposit({ isMature: false, claimError: { type: 'generic', message: 'x' } as DepositInfo['claimError'] }))).toBe(false);
       expect(depositNeedsAction({ id: 'p' } as ExtendedPayment)).toBe(false);
+    });
+  });
+
+  describe('unsettledDeposits', () => {
+    it('drops a deposit a claim has taken, and keeps one still settling', () => {
+      const deposits = [
+        { txid: 'waiting', vout: 0, amountSats: 1 },
+        { txid: 'settling', vout: 0, amountSats: 1, instantClaimStatus: { type: 'submitted', claimId: 'c' } },
+        { txid: 'claimed', vout: 0, amountSats: 1, instantClaimStatus: { type: 'claimed' } },
+      ] as DepositInfo[];
+
+      expect(unsettledDeposits(deposits).map(d => d.txid)).toEqual(['waiting', 'settling']);
     });
   });
 });

@@ -15,6 +15,7 @@ import ResultStep from '../features/send/steps/ResultStep';
 import { destinationAddressOf } from '../utils/destinationAddress';
 import { truncateAddress } from '../utils/crossChainFormat';
 import { explorerTxUrl } from '../utils/explorer';
+import { unsettledDeposits } from '../utils/depositHelpers';
 import SlideInPage from '@/components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
 
@@ -70,7 +71,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   // Pure fetch: returns the sorted list, leaves setState to callers so
   // the mount effect can commit post-await.
   const fetchRejectedDeposits = useCallback(async (): Promise<DepositInfo[]> => {
-    const list = (await wallet.listUnclaimedDeposits({})).deposits;
+    const list = unsettledDeposits((await wallet.listUnclaimedDeposits({})).deposits);
     // Only show deposits that have been rejected
     const rejectedDeposits = list.filter(d => isDepositRejected(d.txid, d.vout));
 

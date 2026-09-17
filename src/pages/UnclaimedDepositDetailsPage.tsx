@@ -31,6 +31,7 @@ import {
 } from '../utils/depositClaimQuote';
 import { useSheetFullSnap } from '../components/ui/sheets/BottomSheetCardContext';
 import { useLatest } from '../hooks/useLatest';
+import { unsettledDeposits } from '../utils/depositHelpers';
 import { logger, LogCategory } from '@/services/logger';
 
 interface UnclaimedDepositDetailsPageProps {
@@ -83,7 +84,7 @@ type FreshDeposit =
 
 async function findFreshDeposit(wallet: BreezSdk, deposit: DepositInfo): Promise<FreshDeposit> {
   try {
-    const { deposits } = await wallet.listUnclaimedDeposits({});
+    const deposits = unsettledDeposits((await wallet.listUnclaimedDeposits({})).deposits);
     const fresh = deposits.find(d => d.txid === deposit.txid && d.vout === deposit.vout);
     return fresh ? { kind: 'found', deposit: fresh } : { kind: 'gone' };
   } catch (e) {

@@ -31,6 +31,7 @@ import {
   type MigrationSession,
 } from '@/services/passkeyMigrationService';
 import { formatError } from '@/utils/formatError';
+import { unsettledDeposits } from '@/utils/depositHelpers';
 import { useLatest } from '@/hooks/useLatest';
 import type { LnAddressFailure, MigrationEntry, MigrationOutcome, MigrationPhase } from '../types';
 
@@ -310,7 +311,7 @@ export function useMigrationFlow({
           try {
             const info = await sdk.getInfo({ ensureSynced: true });
             if (cancelled) return;
-            const depositCount = (await sdk.listUnclaimedDeposits({})).deposits.length;
+            const depositCount = unsettledDeposits((await sdk.listUnclaimedDeposits({})).deposits).length;
             if (cancelled) return;
             logger.info(LogCategory.AUTH, 'Migration check-deposits-all: label state', {
               label,
