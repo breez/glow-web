@@ -7,7 +7,6 @@ import {
   clearPlan,
   destinationAddressOf,
   exitStages,
-  hasFixedFeeBudget,
   isReady,
   loadPlan,
   nextAction,
@@ -672,15 +671,4 @@ describe('startExit', () => {
     expect(unilateralExit).not.toHaveBeenCalled();
   });
 
-});
-
-describe('hasFixedFeeBudget', () => {
-  it('holds once the fan-out that splits the exit fee has confirmed', () => {
-    expect(hasFixedFeeBudget(plan([tx({ txid: 'f', kind: 'fanOut', status: confirmed(10) })]))).toBe(true);
-  });
-
-  it('does not while the fan-out is still to confirm, or there is none', () => {
-    expect(hasFixedFeeBudget(plan([tx({ txid: 'f', kind: 'fanOut' })]))).toBe(false);
-    expect(hasFixedFeeBudget(plan([tx({ txid: 'n', kind: 'node', status: confirmed(10) })]))).toBe(false);
-  });
 });

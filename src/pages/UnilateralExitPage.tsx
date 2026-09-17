@@ -133,14 +133,11 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
       case 'topUp': {
         const funding = flow.funding;
         const isWaiting = !!funding?.topUp && funding.topUp.stillToSendSat > 0;
-        // A top-up starts from the box that explains it, and one its fee coins
-        // cannot pay has no action here at all.
-        if (funding?.topUp && (funding.isFeeBudgetFixed || (flow.phase === 'fund' && isWaiting))) {
-          return null;
-        }
+        // A top-up starts from the box that explains it.
+        if (flow.phase === 'fund' && isWaiting) return null;
         return (
           <>
-            {funding && isWaiting && !funding.isFeeBudgetFixed && (
+            {funding && isWaiting && (
               <div className="mb-4">
                 <FundingStatus quotedAt={funding.quotedAt} />
               </div>

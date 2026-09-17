@@ -52,7 +52,9 @@ nothing from the user and an exit left alone for days would otherwise stall.
 
 **Let them pay more.** A rebuild reuses the fee rate it was quoted at, so an
 exit that has stopped confirming because fees rose needs a new quote at a higher
-rate. Offer that at any point, not only when something has gone wrong.
+rate. Offer that at any point, not only when something has gone wrong. A
+confirmed fan-out does not cap it: pass the exit's funding back with the new
+coins, and the sdk spends them together, fanning out again if it has to.
 
 ## Reading this folder
 

@@ -281,14 +281,6 @@ export type ExitSdk = Pick<
 /** The sdk resolves this against the chain tip, timelock included. */
 export const isReady = (tx: UnilateralExitTransaction): boolean => tx.status.type === 'ready';
 
-/**
- * Whether each branch is down to the fee coin the fan-out gave it. From then on
- * a rebuild cannot draw on the exit fee address, so more there cannot pay a
- * higher fee.
- */
-export const hasFixedFeeBudget = (plan: UnilateralExitPlan): boolean =>
-  plan.exit.transactions.some(tx => tx.kind === 'fanOut' && tx.status.type === 'confirmed');
-
 export { destinationAddressOf } from '@/utils/destinationAddress';
 
 /** What a build said it needs: the sdk's error reaches the page only as its message. */

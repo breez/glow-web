@@ -7,7 +7,6 @@ import { createChainClient } from '@/services/chain';
 import type { ChainUtxo, FeeRates } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import {
-  hasFixedFeeBudget,
   isWorthExiting,
   planFromExitResponse,
   quotedSweepFeeSat,
@@ -96,8 +95,6 @@ export interface FundingFields {
   isFunded: boolean;
   /** What to send after a build at this quote fell short, or null before one does. */
   topUp: TopUp | null;
-  /** More at the address cannot pay a higher fee: see `hasFixedFeeBudget`. */
-  isFeeBudgetFixed: boolean;
   /** The quote's rate, which the build pays. */
   feeRate: number;
   /** The rate the exit runs at until the build replaces it. */
@@ -326,14 +323,12 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   }, [walletKey, quote, network, planFundingIndex]);
 
   const confirmedUtxos = useMemo(() => fundingUtxos.filter(utxo => utxo.confirmed), [fundingUtxos]);
-  const isFeeBudgetFixed = plan !== null && hasFixedFeeBudget(plan);
   const sent = useMemo(() => sentFunding(plan, confirmedUtxos), [plan, confirmedUtxos]);
   const topUp = shortfall && quote ? topUpFor(shortfall, sent, quote.feeRateSatPerVbyte) : null;
   // An exit under way is not held to its quote: most of what the quote covers
   // is already on-chain, and only the build knows what is really needed. Once a
-  // build has said what it needs, the address has to hold it, unless the fee
-  // coins are fixed, when no amount there helps and only a new quote can.
-  const isFunded = quote !== null && (topUp ? !isFeeBudgetFixed && topUp.stillToSendSat === 0 : true);
+  // build has said what it needs, the address has to hold it.
+  const isFunded = quote !== null && (!topUp || topUp.stillToSendSat === 0);
 
   const build = useCallback(async () => {
     if (!walletKey || !plan || !quote || !fundingKey || !mnemonicRef.current) return;
@@ -453,7 +448,6 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
       address: fundingKey.address,
       isFunded,
       topUp,
-      isFeeBudgetFixed,
       feeRate: quote?.feeRateSatPerVbyte ?? 0,
       currentFeeRate: plan?.feeRateSatPerVbyte ?? null,
       quotedAt,
