@@ -6,6 +6,9 @@ import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { getTokenBalance } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
+import { isSpendingPaused } from '@/features/unilateral-exit/engine';
+
+const SPENDING_PAUSED = 'You can send again once your unilateral exit finishes.';
 
 /** The destination string inside a parsed input, or null for the types that
  *  are paid through their own workflow rather than a prepared destination. */
@@ -199,8 +202,16 @@ export function useSendPayment(): UseSendPaymentReturn {
         effective.type === 'bolt11Invoice' ||
         effective.type === 'bitcoinAddress' ||
         effective.type === 'sparkAddress';
+      const spends =
+        isPayableAmountType ||
+        effective.type === 'crossChainAddress' ||
+        effective.type === 'lnurlPay' ||
+        effective.type === 'lightningAddress';
 
-      if (isPayableAmountType && fixedSats !== undefined) {
+      if (spends && isSpendingPaused()) {
+        setError(SPENDING_PAUSED);
+        setCurrentStep('input');
+      } else if (isPayableAmountType && fixedSats !== undefined) {
         // Stay on the input step so the scanned or pasted destination is on
         // screen and Continue is a deliberate tap. Continue re-enters here
         // without the flag and prepares as usual.
@@ -304,6 +315,8 @@ export function useSendPayment(): UseSendPaymentReturn {
     }
 
     try {
+      // Checked again here: an exit can start while this sheet is open.
+      if (isSpendingPaused()) throw new Error(SPENDING_PAUSED);
       await wallet.sendPayment({ prepareResponse, options });
       setPaymentResult('success');
     } catch (err) {
@@ -352,6 +365,10 @@ export function useSendPayment(): UseSendPaymentReturn {
     }
 
     try {
+      // A login spends nothing, so only a payment is held back by an exit.
+      if (parsedInputType !== 'lnurlAuth' && isSpendingPaused()) {
+        throw new Error(SPENDING_PAUSED);
+      }
       await runner();
       setPaymentResult('success');
     } catch (err) {
@@ -366,7 +383,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setIsLoading(false);
       setCurrentStep('result');
     }
-  }, [wallet]);
+  }, [wallet, parsedInputType]);
 
   const reset = useCallback(() => {
     setCurrentStep('input');

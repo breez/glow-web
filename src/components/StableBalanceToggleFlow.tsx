@@ -10,6 +10,7 @@ import { logger, LogCategory } from '../services/logger';
 import StableBalanceDisclaimer from './StableBalanceDisclaimer';
 import { useLatest } from '../hooks/useLatest';
 import StableBalanceFeeConfirm from './StableBalanceFeeConfirm';
+import { isSpendingPaused } from '../features/unilateral-exit/engine';
 
 type FlowStep = 'disclaimer' | 'estimating' | 'confirm' | 'executing';
 
@@ -40,6 +41,11 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
 
   const startEstimation = useCallback(async () => {
     setError(null);
+    if (direction === 'toToken' && isSpendingPaused()) {
+      setError('You can switch to USD once your unilateral exit finishes.');
+      setStep('confirm');
+      return;
+    }
 
     try {
       // The rate sizes the conversion's minimum output below, so it is fetched

@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { InputType } from '@breeztech/breez-sdk-spark';
 import { WalletProvider } from '@/contexts/WalletContext';
@@ -7,6 +7,12 @@ import { FiatDataProvider } from '@/contexts/FiatDataContext';
 import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
 import { useSendPayment } from './useSendPayment';
+import {
+  setUnilateralExitPlan,
+  startUnilateralExitEngine,
+  stopUnilateralExitEngine,
+} from '@/features/unilateral-exit/engine';
+import { plan, tx } from '@/features/unilateral-exit/testFixtures';
 
 const BOLT11 = 'lnbc100n1test';
 
@@ -85,5 +91,46 @@ describe('processInput destinations', () => {
         expect.objectContaining({ paymentRequest: { type: 'input', input: paid } }),
       ),
     );
+  });
+});
+
+describe('while a unilateral exit runs', () => {
+  const exitWallet = { identityPubkey: 'pubkey', network: 'regtest' };
+
+  beforeEach(() => {
+    const chain = {
+      feeRates: async () => ({ slow: 1, medium: 1, fast: 1 }),
+      addressUtxos: async () => [],
+      tipHeight: async () => 100,
+      broadcast: async () => undefined,
+      broadcastPackage: async () => undefined,
+    };
+    startUnilateralExitEngine(exitWallet, chain);
+    // Paused on a rebuild, so the engine holds the exit without driving it.
+    setUnilateralExitPlan(exitWallet, plan([tx({ txid: 'a' })], { network: 'regtest', phase: 'redo' }));
+  });
+
+  afterEach(() => {
+    stopUnilateralExitEngine();
+    localStorage.clear();
+  });
+
+  it('refuses a payment before it reaches an amount or a fee', async () => {
+    const { client, result } = renderSendPayment(async (input) => bolt11Details(input));
+
+    await act(() => result.current.processInput(BOLT11));
+
+    expect(result.current.error).toBe('You can send again once your unilateral exit finishes.');
+    expect(result.current.currentStep).toBe('input');
+    expect(client.prepareSendPayment).not.toHaveBeenCalled();
+  });
+
+  it('still takes an LNURL withdraw, which pays the wallet rather than spending from it', async () => {
+    const { result } = renderSendPayment(async () => ({ type: 'lnurlWithdraw' }) as unknown as InputType);
+
+    await act(() => result.current.processInput('lnurl1withdraw'));
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.currentStep).toBe('workflow');
   });
 });

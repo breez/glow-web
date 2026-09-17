@@ -52,6 +52,13 @@ const stopPolling = (): void => {
 
 export const getUnilateralExitState = (): UnilateralExitEngineState => state;
 
+/**
+ * Spending from Spark is off from the moment an exit is built until it lands:
+ * its leaves stay spendable until they are on-chain, and an exit that loses one
+ * cannot be rebuilt.
+ */
+export const isSpendingPaused = (): boolean => state.plan !== null;
+
 export function subscribeUnilateralExit(listener: Listener): () => void {
   listeners.add(listener);
   listener(state);
