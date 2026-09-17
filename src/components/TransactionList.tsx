@@ -176,6 +176,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
     // Confirmed, and the claim that follows is under way. The row leaves for
     // Payments once that lands, so the chip names the work, not the milestone.
     const isProcessing = !needsAction && deposit?.isMature === true;
+    const isConfirming = deposit?.isMature === false;
     const subtitle = needsAction
       ? 'Tap to claim'
       : deposit
@@ -221,13 +222,15 @@ const TransactionList: React.FC<TransactionListProps> = ({
             )}
           </div>
           {/* min-h holds the line when there is no subtitle, so a row without
-              one keeps its title on the same baseline as every other row. */}
-          <div className="flex items-center gap-1 text-xs text-spark-text-muted mt-0.5 min-h-4">
+              one keeps its title on the same baseline as every other row. A
+              chip's box reaches the bottom of its line where a date's text
+              leaves space, so a chip row adds that space back under it. */}
+          <div className={`flex items-center gap-1 text-xs text-spark-text-muted mt-0.5 min-h-4 ${isProcessing || isConfirming ? 'pb-1' : ''}`}>
             {/* The call to action borrows the amount's color so the row gains
                 no color of its own. */}
-            {isProcessing && (
+            {(isProcessing || isConfirming) && (
               <span className="px-1.5 py-0.5 rounded-sm bg-spark-text-muted/15 text-[10px] leading-3 font-medium uppercase">
-                Processing
+                {isProcessing ? 'Processing' : 'Confirming'}
               </span>
             )}
             {subtitle && <span className={needsAction ? amountClass : ''}>{subtitle}</span>}
