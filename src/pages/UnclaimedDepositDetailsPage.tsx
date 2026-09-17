@@ -16,7 +16,7 @@ import { AlertCard } from '../components/AlertCard';
 import { SatAmount } from '../components/SatAmount';
 import { forgetClaimFee, readClaimFee, rejectDeposit, rememberClaimFee, removeRejectedDeposit } from '../services/depositState';
 import { explorerTxUrl } from '../utils/explorer';
-import { getSettings, isPriorityDepositClaimEnabled } from '../services/settings';
+import { getSettings } from '../services/settings';
 import { formatWithSpaces } from '../utils/formatNumber';
 import {
   CLAIM_SUBMITTED_LINE,
@@ -396,11 +396,6 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
 
   useEffect(() => {
     if (!deposit || deposit.isMature || isClaimInFlightStatus(deposit.instantClaimStatus)) return;
-    // TEMPORARY: gated on the dev setting while the feature is being tested.
-    // Skipping the quote is the whole gate, since the options, the breakdown and
-    // the claim button all render off it: without one the sheet is what it was
-    // before this feature. Remove this line to ship the choice to everyone.
-    if (!isPriorityDepositClaimEnabled()) return;
     // loadQuote awaits the SDK before it sets anything, so nothing is written during this render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadQuote(deposit);
@@ -437,10 +432,6 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
         // Nothing left to price once it matures: the SDK claims it itself, and
         // the approve panel is priced off the record rather than off a quote.
         if (found.deposit.isMature) return;
-        // TEMPORARY: the same dev gate as the quote effect above, and it goes
-        // with it. Kept out of the subscribe so a gated sheet still stands down
-        // when the deposit settles.
-        if (!isPriorityDepositClaimEnabled()) return;
         await loadQuote(found.deposit);
       })();
     });
