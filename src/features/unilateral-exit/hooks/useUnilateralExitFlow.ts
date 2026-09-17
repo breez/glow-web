@@ -22,7 +22,6 @@ import {
   type WalletKey,
 } from '../driver';
 import {
-  getUnilateralExitState,
   setPendingExit,
   setUnilateralExitPlan,
   type UnilateralExitEngineState,
@@ -166,8 +165,10 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
           ? 'pending'
           : 'intro'
       : step;
-  // A rebuild re-enters the wizard; retyping the address is a chance to get it wrong.
-  const [destination, setDestination] = useState(() => getUnilateralExitState().plan?.destination ?? '');
+  // A rebuild re-enters the wizard; retyping the address is a chance to get it
+  // wrong. A sheet opened while the exit waits on its fee can rebuild it once it
+  // starts, so a pending exit seeds the address too.
+  const [destination, setDestination] = useState(() => (plan ?? pending)?.destination ?? '');
   const [destinationError, setDestinationError] = useState<string | null>(null);
   const [feeRates, setFeeRates] = useState<FeeRates | null>(null);
   const [feeChoice, setFeeChoice] = useState<FeeChoice>('medium');
