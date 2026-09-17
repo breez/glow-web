@@ -76,7 +76,7 @@ const PaymentTarget: React.FC<{ address: string; amountSat: number }> = ({ addre
 // is paid, so the step becomes the receipt instead. What it waits on sits
 // under the title, as a result's detail line does.
 const Receipt: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
-  <div className="py-6 flex flex-col items-center">
+  <div className="pt-6 flex flex-col items-center">
     <div className="relative mb-4">
       <div className="absolute inset-0 w-20 h-20 rounded-full blur-xl bg-spark-success/30" />
       <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-spark-success/20 border-2 border-spark-success">
