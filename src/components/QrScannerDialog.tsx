@@ -157,9 +157,11 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
             />
 
             {/* Scan overlay — pinned to the square video container so the
-                corner brackets always align with the visible camera feed. */}
+                corner brackets always align with the visible camera feed.
+                They frame the middle two thirds, the part qr-scanner reads,
+                so a code that fills them is never cut off. */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-64 h-64 relative">
+              <div className="h-2/3 aspect-square relative">
                 {/* Corner brackets */}
                 <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-spark-primary rounded-tl-lg" />
                 <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-spark-primary rounded-tr-lg" />
