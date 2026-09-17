@@ -157,14 +157,6 @@ async function turnOnInstant() {
 const queryInstantRow = () => screen.queryByTestId('delivery-speed');
 const findInstantRow = () => screen.findByTestId('delivery-speed');
 
-/** The temporary dev setting that gates the priority claim. */
-function setPriorityClaim(enabled: boolean) {
-  saveSettings({
-    depositMaxFee: { type: 'rate', satPerVbyte: 1 },
-    priorityDepositClaimEnabled: enabled,
-  });
-}
-
 function withQuote(q: FetchClaimDepositQuoteResponse | Error) {
   const client = createMockClient();
   const quoting = vi.mocked(client.fetchClaimDepositQuote);
@@ -179,9 +171,6 @@ function withQuote(q: FetchClaimDepositQuoteResponse | Error) {
 beforeEach(() => {
   localStorage.clear();
   forgetAnnouncedClaims();
-  // The choice sits behind a dev setting while it is being tested, so the suite
-  // below opts in. The gate itself is covered separately.
-  setPriorityClaim(true);
 });
 
 describe('a confirming deposit with both routes on offer', () => {
@@ -557,7 +546,7 @@ describe('a confirming deposit with both routes on offer', () => {
 // ceiling, so a fee above it means approval, not an automatic claim.
 describe('a wait the fee ceiling will not cover', () => {
   it('warns before the refusal instead of promising a claim it cannot make', async () => {
-    saveSettings({ depositMaxFee: { type: 'fixed', amount: 400 }, priorityDepositClaimEnabled: true });
+    saveSettings({ depositMaxFee: { type: 'fixed', amount: 400 } });
     const dear = quote({
       mature: { confirmationsRequired: 3, creditAmountSats: 99_400, feeSats: 600,
         feeRateSatPerVbyte: 5, isEstimate: true },
@@ -576,7 +565,7 @@ describe('a wait the fee ceiling will not cover', () => {
   // the warning at the boundary would spend that window promising the claim it
   // is about to refuse, which is the promise the warning exists to avoid.
   it('keeps warning once the deposit matures, until the claim is actually refused', async () => {
-    saveSettings({ depositMaxFee: { type: 'fixed', amount: 400 }, priorityDepositClaimEnabled: true });
+    saveSettings({ depositMaxFee: { type: 'fixed', amount: 400 } });
     const dear = quote({
       mature: { confirmationsRequired: 3, creditAmountSats: 99_400, feeSats: 600,
         feeRateSatPerVbyte: 5, isEstimate: true },
@@ -871,20 +860,6 @@ describe('a deposit claimed while the sheet was working', () => {
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
     expect(screen.queryByText('already claimed')).not.toBeInTheDocument();
     expect(screen.queryByText(/fee changed from/)).toBeNull();
-  });
-});
-
-describe('the dev setting that gates it', () => {
-  it('offers nothing and asks for no quote while it is off', async () => {
-    setPriorityClaim(false);
-    const client = withQuote(quote());
-    await renderSheet(makeDeposit(), client);
-
-    // Falls back to what the sheet was before the feature.
-    await waitFor(() => expect(screen.getByText(/Waiting for 3 confirmations/)).toBeInTheDocument());
-    expect(client.fetchClaimDepositQuote).not.toHaveBeenCalled();
-    expect(queryInstantRow()).toBeNull();
-    expect(queryButton('Claim Now')).toBeNull();
   });
 });
 

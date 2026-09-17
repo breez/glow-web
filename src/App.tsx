@@ -35,7 +35,7 @@ const PasskeySettingsPage = lazy(() => import('./pages/PasskeySettingsPage'));
 const PasskeyManagementPage = lazy(() => import('./pages/PasskeyManagementPage'));
 const LabelsPage = lazy(() => import('./pages/LabelsPage'));
 const PasskeyLocalStatePage = lazy(() => import('./pages/PasskeyLocalStatePage'));
-// Dev-gated recovery flow. Code-split so the BIP32 derivation and the
+// Recovery flow. Code-split so the BIP32 derivation and the
 // chain-watching engine load only when the flow is first opened.
 const UnilateralExitPage = lazy(() => import('./pages/UnilateralExitPage'));
 // Code-split the rare legacy->shared passkey migration: its modal + service load

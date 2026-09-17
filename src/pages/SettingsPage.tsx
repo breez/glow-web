@@ -80,9 +80,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     if (typeof cfg.lnurlDomain === 'string') return cfg.lnurlDomain;
     return '';
   });
-  const [priorityDepositClaim, setPriorityDepositClaim] = useState<boolean>(
-    () => getSettings().priorityDepositClaimEnabled === true,
-  );
   const [preferSparkOverLightning, setPreferSparkOverLightning] = useState<boolean>(() => {
     const s = getSettings();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SDK config type doesn't expose all fields
@@ -140,7 +137,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             syncIntervalSecs: syncIntervalSecs !== '' ? Math.max(0, Math.floor(Number(syncIntervalSecs))) : undefined,
             lnurlDomain: lnurlDomain !== '' ? lnurlDomain : undefined,
             preferSparkOverLightning,
-            priorityDepositClaimEnabled: priorityDepositClaim,
           }
         : {}),
     };
@@ -415,22 +411,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
           )}
 
-          {/* TEMPORARY: the dev gate for the priority deposit claim, removed at launch. */}
-          {isDevMode && (
-            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <span className="font-display font-medium text-spark-text-primary block">Priority deposit claim</span>
-                  <span className="text-sm text-spark-text-muted">Offer to claim a BTC deposit before it confirms</span>
-                </div>
-                <Switch
-                  checked={priorityDepositClaim}
-                  onChange={() => setPriorityDepositClaim(!priorityDepositClaim)}
-                />
-              </div>
-            </div>
-          )}
-
           {/* Sync Settings */}
           {isDevMode && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
@@ -470,33 +450,31 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
           )}
 
-          {isDevMode && (
-            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-              <h3 className="font-display font-semibold text-spark-text-primary mb-1">Unilateral Exit</h3>
-              <p className="text-sm text-spark-text-muted mb-3">
-                Move your balance on-chain without Spark operators.
-              </p>
-              <button
-                className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-warn-border rounded-xl text-spark-warn-text hover:bg-white/5 transition-colors"
-                type="button"
-                onClick={onOpenUnilateralExit}
-                data-testid="settings-unilateral-exit"
-              >
-                <div className="flex items-center gap-3">
-                  <LogoutIcon size="md" />
-                  <span>Start Unilateral Exit</span>
-                </div>
-                <ChevronRightIcon size="md" />
-              </button>
-              {/* The warning belongs with the decision to start, so it is here
-                  rather than on the first screen of the flow it introduces.
-                  Under the button, where it reads as the caveat on pressing it
-                  rather than part of the description above. */}
-              <p className="text-xs text-spark-primary mt-2">
-                Use this only if Spark stops operating. This is a last-resort action.
-              </p>
-            </div>
-          )}
+          <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+            <h3 className="font-display font-semibold text-spark-text-primary mb-1">Unilateral Exit</h3>
+            <p className="text-sm text-spark-text-muted mb-3">
+              Move your balance on-chain without Spark operators.
+            </p>
+            <button
+              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-warn-border rounded-xl text-spark-warn-text hover:bg-white/5 transition-colors"
+              type="button"
+              onClick={onOpenUnilateralExit}
+              data-testid="settings-unilateral-exit"
+            >
+              <div className="flex items-center gap-3">
+                <LogoutIcon size="md" />
+                <span>Start Unilateral Exit</span>
+              </div>
+              <ChevronRightIcon size="md" />
+            </button>
+            {/* The warning belongs with the decision to start, so it is here
+                rather than on the first screen of the flow it introduces.
+                Under the button, where it reads as the caveat on pressing it
+                rather than part of the description above. */}
+            <p className="text-xs text-spark-primary mt-2">
+              Use this only if Spark stops operating. This is a last-resort action.
+            </p>
+          </div>
 
           {/* Account deletion (App Store 5.1.1(v)): opens the guide
               explaining how to delete the account (logout wipes the
