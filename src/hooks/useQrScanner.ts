@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import QrScanner from 'qr-scanner';
+import QrScanner from '@/utils/qrScanner';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { hapticLight } from '@/utils/haptics';
