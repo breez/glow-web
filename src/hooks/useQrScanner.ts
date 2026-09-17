@@ -24,6 +24,21 @@ export interface UseQrScannerReturn {
   clearError: () => void;
 }
 
+/** qr-scanner's default region (a centered square two thirds of the shorter
+ *  side), decoded at full resolution. The default shrinks it to 400px, which
+ *  leaves too few pixels per module to read a long bolt11 invoice. */
+export function fullResolutionScanRegion(video: HTMLVideoElement): QrScanner.ScanRegion {
+  const size = Math.round((2 / 3) * Math.min(video.videoWidth, video.videoHeight));
+  return {
+    x: Math.round((video.videoWidth - size) / 2),
+    y: Math.round((video.videoHeight - size) / 2),
+    width: size,
+    height: size,
+    downScaledWidth: size,
+    downScaledHeight: size,
+  };
+}
+
 /**
  * Hook to manage QR code scanning with camera controls
  * Encapsulates all scanner state and logic for reusability
@@ -97,6 +112,7 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
           // at once looks like a rendering bug (two overlapping squares).
           highlightScanRegion: false,
           highlightCodeOutline: false,
+          calculateScanRegion: fullResolutionScanRegion,
           preferredCamera: facingMode,
           maxScansPerSecond: 5,
         }
