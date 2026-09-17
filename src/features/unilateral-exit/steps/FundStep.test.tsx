@@ -12,7 +12,6 @@ const props = {
   address: 'bcrt1qfund',
   isFunded: false,
   topUp: null,
-  isFeeBudgetFixed: false,
   feeRate: 42,
   currentFeeRate: 24,
   quotedAt: null,
@@ -66,12 +65,6 @@ describe('FundStep', () => {
     expect(screen.getByText('Exit fee received')).toBeInTheDocument();
     expect(screen.queryByTestId('unilateral-exit-funding-address')).not.toBeInTheDocument();
     expect(screen.queryByText('Still to send')).not.toBeInTheDocument();
-  });
-
-  it('points to a lower rate once the fee coins are fixed, since more money cannot help', () => {
-    render(<FundStep {...props} topUp={topUp} isFeeBudgetFixed />);
-    expect(screen.getByText(/sending more cannot raise it/)).toBeInTheDocument();
-    expect(screen.queryByTestId('unilateral-exit-funding-address')).not.toBeInTheDocument();
   });
 });
 

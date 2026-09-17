@@ -113,19 +113,7 @@ export const FundStep: React.FC<
     isPaying: boolean;
     onTopUp: () => void;
   }
-> = ({ address, topUp, isFeeBudgetFixed, feeRate, currentFeeRate, error, isPaying, onTopUp }) => {
-  if (topUp && isFeeBudgetFixed) {
-    return (
-      <AlertCard variant="warning" title="Network fees went up">
-        <p className="text-sm">
-          Your exit started at {currentFeeRate} sat/vB, and its fee is fixed now, so sending more
-          cannot raise it. It continues on its own once fees drop, or you can go back and choose a
-          lower rate.
-        </p>
-      </AlertCard>
-    );
-  }
-
+> = ({ address, topUp, feeRate, currentFeeRate, error, isPaying, onTopUp }) => {
   // The build is tried before anything is asked for, so without a top-up there
   // is nothing to pay here: only a failure to explain.
   if (!topUp) {
