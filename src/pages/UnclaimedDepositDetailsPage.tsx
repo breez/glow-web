@@ -21,6 +21,7 @@ import { formatWithSpaces } from '../utils/formatNumber';
 import {
   CLAIM_SUBMITTED_LINE,
   INSTANT_CLAIM_SUBMITTED_TOAST,
+  autoClaimsEarly,
   blocksToWait,
   earlyOption,
   formatWait,
@@ -146,6 +147,11 @@ const INSTANT_OFFER_ID = 'instant-claim-offer';
  * One delivery speed. A full-width row rather than a half-width tile: the names
  * are what distinguish the two, so they get the space, and the fees line up in
  * one column down the right where they can be compared.
+ *
+ * Dimming means one thing only: this outcome is not on offer. A route that is
+ * merely waiting for depth stays a normal row, because the user may pick it and
+ * it is a wait rather than a refusal. Carrying both meanings in one treatment
+ * left a selected row drawn as if it were dead.
  */
 const SpeedOption: React.FC<{
   label: string;
@@ -153,18 +159,17 @@ const SpeedOption: React.FC<{
   feeSats: number;
   isEstimate: boolean;
   selected: boolean;
-  /** Priced and named, but not yet claimable: shown so the route is known to be
-   *  coming, disabled because claiming below its floor is refused. */
-  locked?: boolean;
+  /** Not something the user can have: shown so the fees can still be compared. */
+  unavailable?: boolean;
   onSelect: () => void;
-}> = ({ label, detail, feeSats, isEstimate, selected, locked = false, onSelect }) => (
+}> = ({ label, detail, feeSats, isEstimate, selected, unavailable = false, onSelect }) => (
   <button
     role="radio"
     aria-checked={selected}
-    aria-disabled={locked}
-    onClick={locked ? undefined : onSelect}
+    aria-disabled={unavailable}
+    onClick={unavailable ? undefined : onSelect}
     className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border text-left transition-colors ${
-      locked
+      unavailable
         ? 'bg-spark-dark border-spark-border opacity-60 cursor-default'
         : selected
           ? 'bg-spark-primary/10 border-spark-primary'
@@ -213,12 +218,11 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   );
   const [instantError, setInstantError] = useState<string | null>(null);
   const [quote, setQuote] = useState<FetchClaimDepositQuoteResponse | null>(null);
-  // Set once pricing has failed, so a quote still in flight shows no sentence.
-  const [quoteFailed, setQuoteFailed] = useState<boolean>(false);
   // The fee a rejected claim was quoted at, so the re-price can name what moved.
   const [instantFeeFrom, setInstantFeeFrom] = useState<number | null>(null);
-  // Which delivery speed is selected. Standard by default: it is what happens
-  // anyway, so the paid route is never armed without being asked for.
+  // Which delivery speed the user has asked for. Standard by default: it is
+  // what happens anyway, so the paid route is never armed without being asked
+  // for. Overridden below when waiting is not actually on offer.
   const [instantOn, setInstantOn] = useState<boolean>(false);
   // Read by the sync listener, which must not re-price under a claim already
   // sent: the sheet would restate the fee, and could drop the button, while the
@@ -242,18 +246,27 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   const earlyReady = early !== null && isClaimable(early, confirmations);
   // The offer worth putting a switch beside, when there is one to take.
   const offer = early && quote && !isClaimInFlight
-    ? { option: early, premiumSats: early.feeSats - quote.mature.feeSats, locked: !earlyReady }
+    ? { option: early, ready: earlyReady }
     : null;
-  // Which fee is being priced: the provider's spread once the user has asked
-  // for it, or the onchain claim fee the matured path calls "Network fee".
-  // A locked route can never be the chosen one, and a re-price can raise the
-  // floor above the deposit's depth after it was picked, so readiness is read
-  // here rather than trusted from the tap that set it.
-  const chosenIsEarly = offer !== null && !offer.locked && instantOn;
+  const maxFee = getSettings().depositMaxFee;
+  // The SDK is going to take the early route whatever this sheet says, so
+  // waiting is not a choice the user has and must not be offered as one. Only a
+  // fixed ceiling is a sat figure that can be compared: a rate needs the size
+  // of a claim transaction that has not been built, so those keep the choice.
+  const autoEarly = autoClaimsEarly(quote, maxFee);
+  // What is selected, which is what the breakdown prices. A route still short
+  // of its depth counts: it is a wait, not a refusal. Derived rather than
+  // seeded into `instantOn` so the two can never disagree, which would leave
+  // Standard selected on a screen where Standard is unavailable.
+  const earlySelected = offer !== null && (autoEarly || instantOn);
+  // What can be sent now. Read here rather than trusted from the tap that set
+  // it: a re-price can raise the floor above the deposit's depth after it was
+  // picked.
+  const canClaimEarly = earlySelected && offer.ready;
   // Waiting is still worth pricing without an early route: the breakdown then
   // shows what the automatic claim will cost.
   const chosen: ClaimDepositQuote | null = quote
-    ? (chosenIsEarly && early ? early : quote.mature)
+    ? (earlySelected && early ? early : quote.mature)
     : null;
   // A submitted claim is never re-quoted, so the breakdown would otherwise show
   // the deposit and nothing about what it cost. The receipt is the figure the
@@ -261,6 +274,8 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   const receipt = deposit && isClaimInFlight ? readClaimFee(deposit.txid, deposit.vout) : null;
   /** Choosing a speed, refused mid-flight so the route cannot change under it. */
   const chooseSpeed = (early: boolean) => { if (!isProcessing) setInstantOn(early); };
+  /** The paid row names what it is: a route that has not opened yet is not instant. */
+  const earlyLabel = offer?.ready ? 'Instant delivery' : 'Expedited delivery';
   // Null once the automatic claim is due, which is a different sentence.
   const matureWait = quote ? formatWait(blocksToWait(quote.mature, confirmations)) : null;
   // Deep enough that the SDK's own claim is due rather than pending. Without
@@ -268,11 +283,11 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   // front, which is a different thing entirely.
   const matureDue = quote !== null && blocksToWait(quote.mature, confirmations) === 0;
   // The automatic claim runs only while the fee stays under the configured
-  // ceiling, so promising it outright is a promise the SDK may refuse. A fixed
-  // ceiling is a sat figure we can compare now; the rate types depend on the
-  // tx at claim time, so those keep the plain sentence.
-  const maxFee = getSettings().depositMaxFee;
+  // ceiling, so promising it outright is a promise the SDK may refuse. Silent
+  // under an early claim, though: both can be true of one quote, and the approve
+  // panel is never reached when the SDK claims long before maturity.
   const overCeiling = quote !== null
+    && !autoEarly
     && maxFee.type === 'fixed'
     && quote.mature.feeSats > maxFee.amount
     ? maxFee.amount
@@ -300,7 +315,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   // ready early route speaks through its own button, so it needs no line.
   // Only draw the scroll fade when something is actually under it: on the states
   // that fit, an unconditional one dims the last card for no reason.
-  const moreBelow = useMoreBelow(scrollRef, [quote, instantOn, instantFeeFrom, instantError, requiredFeeSats, claimError, isClaimInFlight]);
+  const moreBelow = useMoreBelow(scrollRef, [quote, earlySelected, instantFeeFrom, instantError, requiredFeeSats, claimError, isClaimInFlight]);
   const statusLine = isClaimInFlight
     // Says what the toast said, so reopening the sheet mid-settlement reports
     // the claim rather than showing an amount and nothing else.
@@ -314,8 +329,11 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
       ? `The fee is above your ₿${formatWithSpaces(overCeiling)} limit. You will be asked to approve this claim.`
       : !isConfirming
         ? 'This transfer will be claimed automatically.'
+        // Nothing until the quote lands. The depth a deposit matures at is not
+        // the depth the early route opens at, so any figure named here is one
+        // the next render contradicts.
         : !quote
-          ? (quoteFailed ? 'Waiting for 3 confirmations.' : null)
+          ? null
           // The group names both speeds and both waits, so a line under it
           // repeating either would only say the same thing twice.
           : offer !== null
@@ -384,7 +402,6 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
     try {
       const fresh = await wallet.fetchClaimDepositQuote({ txid: target.txid, vout: target.vout });
       setQuote(fresh);
-      setQuoteFailed(false);
       return fresh;
     } catch (e) {
       // Keeps the last good quote. Clearing it would strip the options, the
@@ -393,7 +410,6 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
       logger.warn(LogCategory.PAYMENT, 'Failed to quote deposit claim', {
         error: e instanceof Error ? e.message : String(e),
       });
-      setQuoteFailed(true);
       return null;
     }
   }, [wallet]);
@@ -446,7 +462,10 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   }, [txid, vout, depositRef, dismissAsSettledRef, loadQuote, subscribeToSdkEvents, wallet]);
 
   const handleQuotedClaim = async () => {
-    if (!deposit || !chosen) return;
+    // Only ever reached through the claim button, which is disabled under both
+    // Standard and a route short of its depth. Restated because the SDK refuses
+    // a claim below an option's floor, and a stale tap must not get there.
+    if (!deposit || !chosen || !canClaimEarly) return;
     setInstantError(null);
     setInstantFeeFrom(null);
     setIsProcessing(true);
@@ -591,18 +610,18 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                       detail={matureWait ?? 'Claimed automatically'}
                       feeSats={quote.mature.feeSats}
                       isEstimate={quote.mature.isEstimate}
-                      selected={!chosenIsEarly}
+                      selected={!earlySelected}
+                      unavailable={autoEarly}
                       onSelect={() => chooseSpeed(false)}
                     />
                     <SpeedOption
-                      label="Instant delivery"
-                      detail={offer.locked
-                        ? `Unlocks in ${formatWait(blocksToWait(offer.option, confirmations))}`
-                        : 'Arrives in seconds'}
+                      label={earlyLabel}
+                      detail={offer.ready
+                        ? 'Arrives in seconds'
+                        : `Unlocks in ${formatWait(blocksToWait(offer.option, confirmations))}`}
                       feeSats={offer.option.feeSats}
                       isEstimate={offer.option.isEstimate}
-                      selected={chosenIsEarly}
-                      locked={offer.locked}
+                      selected={earlySelected}
                       onSelect={() => chooseSpeed(true)}
                     />
                   </div>
@@ -621,9 +640,9 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                       { label: 'Amount', value: depositAmount },
                       // Same estimate caveat as the row above: an unpriced
                       // maturity fee is marked, not presented as firm.
-                      // The one row the checkbox above changes, so it is lifted
+                      // The one row the group above changes, so it is lifted
                       // without taking the accent that marks what lands.
-                      { label: chosenIsEarly ? 'Delivery fee' : 'Network fee', value: chosen.feeSats, approximate: chosen.isEstimate, emphasis: chosenIsEarly },
+                      { label: earlySelected ? 'Delivery fee' : 'Network fee', value: chosen.feeSats, approximate: chosen.isEstimate, emphasis: earlySelected },
                       { label: 'You receive', value: chosen.creditAmountSats, highlight: true },
                     ]
                   : [{ label: 'Amount', value: depositAmount, highlight: true }]}
@@ -664,14 +683,17 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
             {/* Only the early route is the user's to commit: waiting is claimed
                 at maturity by the SDK, so the button is inert under Standard
                 rather than absent, which would leave the group deciding
-                nothing. A recorded fee means that automatic claim has already
-                run and been refused, so the approve panel below owns the sheet. */}
+                nothing. It is inert for the same reason under a route that has
+                not reached its depth; the row above says what it is waiting
+                for, and repeating that here would say it twice. A recorded fee
+                means that automatic claim has already run and been refused, so
+                the approve panel below owns the sheet. */}
             {isConfirming && !isClaimInFlight && offer !== null && requiredFeeSats === null && !claimError && (
               // Described by the group rather than labelled with a price, so the
               // label stays the plain action and a screen reader still hears it.
               <PrimaryButton
                 onClick={handleQuotedClaim}
-                disabled={isProcessing || !chosenIsEarly}
+                disabled={isProcessing || !canClaimEarly}
                 aria-describedby={INSTANT_OFFER_ID}
                 className="w-full"
               >

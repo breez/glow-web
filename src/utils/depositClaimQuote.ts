@@ -1,4 +1,4 @@
-import type { ClaimDepositQuote, DepositInfo, FetchClaimDepositQuoteResponse, InstantClaimStatus } from '@breeztech/breez-sdk-spark';
+import type { ClaimDepositQuote, DepositInfo, FetchClaimDepositQuoteResponse, InstantClaimStatus, MaxFee } from '@breeztech/breez-sdk-spark';
 
 /**
  * Copy for a submitted early claim. Shared because the SDK raises no event for a
@@ -59,6 +59,30 @@ export function earlyOption(quote: FetchClaimDepositQuoteResponse | null): Claim
   // one sync cycle at many times the fee the SDK is about to pay anyway.
   if (blocksToWait(quote.mature, quote.confirmations) === 0) return null;
   return quote.instant;
+}
+
+/**
+ * The limit in sats, or null when it cannot be named. Only a fixed limit is
+ * already a sat figure: the rate types are sat-per-vbyte and mean nothing
+ * without the size of a claim transaction that has not been built yet.
+ */
+function claimCeilingSats(maxFee: MaxFee): number | null {
+  return maxFee.type === 'fixed' ? maxFee.amount : null;
+}
+
+/**
+ * True when the SDK will take the early route on its own, so the wait is not
+ * on offer and the fee the user is shown has to be the early one. Deliberately
+ * not gated on the deposit's current depth: the point is to say what will
+ * happen, and a route that unlocks a block from now still will.
+ */
+export function autoClaimsEarly(
+  quote: FetchClaimDepositQuoteResponse | null,
+  maxFee: MaxFee,
+): boolean {
+  const early = earlyOption(quote);
+  const ceiling = claimCeilingSats(maxFee);
+  return early !== null && ceiling !== null && early.feeSats <= ceiling;
 }
 
 /**
