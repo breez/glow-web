@@ -5,6 +5,7 @@ import { logger, LogCategory } from '@/services/logger';
 import CollapsingWalletHeader from '../components/CollapsingWalletHeader';
 import SideMenu from '../components/SideMenu';
 import TransactionList from '../components/TransactionList';
+import PullToRefresh from '../components/PullToRefresh';
 import { GetInfoResponse, Payment, DepositInfo, Network } from '@breeztech/breez-sdk-spark';
 import type { BuyBitcoinProvider } from '../services/settings';
 import { ArrowUpIcon, QrCodeIcon, ArrowDownIcon } from '../components/Icons';
@@ -117,6 +118,16 @@ const WalletPage: React.FC<WalletPageProps> = ({
   }, []);
 
   const transactionsContainerRef = useRef<HTMLDivElement>(null);
+
+  // A forced sync rather than the 60s timer's, so a deposit sent from another
+  // device shows at once. The synced event it fires refreshes the list.
+  const syncNow = useCallback(async () => {
+    try {
+      await wallet.syncWallet({});
+    } catch (e) {
+      logger.warn(LogCategory.SDK, 'Pull to refresh failed', { error: e instanceof Error ? e.message : String(e) });
+    }
+  }, [wallet]);
 
   const exitState = useUnilateralExitEngineState();
   const exitEntries = useMemo(() => unilateralExitEntries(exitState), [exitState]);
@@ -284,6 +295,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
         className="grow overflow-y-auto relative z-0 scrollbar-hidden"
         onScroll={handleScroll}
       >
+        <PullToRefresh scrollerRef={transactionsContainerRef} onRefresh={syncNow} />
         <TransactionList
           transactions={mergeDepositsWithTransactions(transactions, unclaimedDeposits)}
           onPaymentSelected={handlePaymentSelected}
