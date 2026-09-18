@@ -163,7 +163,7 @@ const SpeedOption: React.FC<{
     aria-checked={selected}
     aria-disabled={locked}
     onClick={locked ? undefined : onSelect}
-    className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border text-left transition-colors ${
+    className={`w-full flex items-center justify-between gap-3 p-4 rounded-2xl border text-left transition-colors ${
       locked
         ? 'bg-spark-dark border-spark-border opacity-60 cursor-default'
         : selected
@@ -539,8 +539,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
           <div className="relative flex-1 min-h-0 flex flex-col">
           <div ref={scrollRef} className="space-y-3 flex-1 min-h-0 overflow-y-auto overscroll-y-none touch-pan-y">
           {/* Which transfer this is, before anything priced about it. */}
-          {/* py-3 so it stands as tall as the speed rows below it. */}
-          <PaymentInfoCard compact className="py-3">
+          <PaymentInfoCard compact>
             <CollapsibleCodeField
               label="Transaction ID"
               value={deposit.txid}
