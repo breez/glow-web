@@ -382,15 +382,15 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
               </div>
             </div>
           )}
-          <div className="flex gap-3 shrink-0 pt-2">
+          <div className="flex flex-col gap-3 shrink-0 pt-2">
             {allProvidersFailed ? (
               <>
-                <SecondaryButton onClick={onBack} className="flex-1">
-                  Change Amount
-                </SecondaryButton>
-                <PrimaryButton onClick={() => prepareAllProviders(routesForSelection)} className="flex-1">
+                <PrimaryButton onClick={() => prepareAllProviders(routesForSelection)} className="w-full">
                   Try Again
                 </PrimaryButton>
+                <SecondaryButton onClick={onBack} className="w-full">
+                  Change Amount
+                </SecondaryButton>
               </>
             ) : (
               <PrimaryButton
@@ -401,7 +401,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                     setStep('confirm');
                   }
                 }}
-                className="flex-1"
+                className="w-full"
                 disabled={!pendingProvider}
               >
                 Continue
