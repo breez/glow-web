@@ -146,7 +146,7 @@ export const PaymentInfoCard: React.FC<{
   compact?: boolean;
   className?: string;
 }> = ({ children, compact = false, className = "" }) => (
-  <div className={`bg-spark-dark/50 border border-spark-border rounded-2xl ${compact ? 'p-4' : 'p-5'} space-y-4 ${className}`}>
+  <div className={`bg-spark-dark/50 border border-spark-border rounded-2xl ${compact ? 'px-4 py-3' : 'p-5'} space-y-4 ${className}`}>
     {children}
   </div>
 );
