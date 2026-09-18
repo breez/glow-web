@@ -142,7 +142,8 @@ export const DialogHeader: React.FC<{
 
 export const PaymentInfoCard: React.FC<{
   children: ReactNode;
-  /** Tighter padding, for a card holding a single row rather than a list. */
+  /** Tighter padding, for a card holding a single row rather than a list. Set
+   *  to an option row's own inset, so a card stacked with one lines up. */
   compact?: boolean;
   className?: string;
 }> = ({ children, compact = false, className = "" }) => (

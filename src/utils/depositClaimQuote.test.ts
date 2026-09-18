@@ -7,6 +7,7 @@ import {
   markClaimAnnounced,
   takeUnannouncedClaims,
   INSTANT_CLAIM_SUBMITTED_TOAST,
+  autoClaimsEarly,
   blocksToWait,
   earlyOption,
   formatWait,
@@ -175,5 +176,46 @@ describe('announced claims', () => {
     takeUnannouncedClaims([d]);
     forgetAnnouncedClaims();
     expect(takeUnannouncedClaims([d])).toEqual([d]);
+  });
+});
+
+// What the SDK does with a deposit is decided by the configured limit, not by
+// the sheet, so the sheet has to be able to read that decision to avoid showing
+// a route the SDK is about to overrule.
+describe('predicting the automatic early claim', () => {
+  const covered = () => quoteOf(option(1, 300), option(3, 198), 0);
+
+  it('sees the claim coming when the fee is inside a fixed limit', () => {
+    expect(autoClaimsEarly(covered(), { type: 'fixed', amount: 500 })).toBe(true);
+  });
+
+  it('counts a fee exactly at the limit as covered, as the SDK does', () => {
+    expect(autoClaimsEarly(covered(), { type: 'fixed', amount: 300 })).toBe(true);
+  });
+
+  it('leaves the choice alone when the fee is above the limit', () => {
+    expect(autoClaimsEarly(covered(), { type: 'fixed', amount: 200 })).toBe(false);
+  });
+
+  // Not gated on the deposit's current depth: the point is to say what will
+  // happen, and a route that opens a block from now still will.
+  it('predicts it before the route has opened', () => {
+    const deep = quoteOf(option(2, 300), option(3, 198), 0);
+    expect(autoClaimsEarly(deep, { type: 'fixed', amount: 500 })).toBe(true);
+  });
+
+  it('predicts nothing for a deposit the provider will not front', () => {
+    expect(autoClaimsEarly(quoteOf(null, option(3, 198), 0), { type: 'fixed', amount: 500 }))
+      .toBe(false);
+    expect(autoClaimsEarly(null, { type: 'fixed', amount: 500 })).toBe(false);
+  });
+
+  // A rate is sat-per-vbyte and means nothing without the size of a claim
+  // transaction that has not been built. Guessing would be worse than the
+  // unchanged screen, which offers the choice rather than pre-empting it.
+  it('declines to predict against a limit that is not in sats', () => {
+    expect(autoClaimsEarly(covered(), { type: 'rate', satPerVbyte: 1 })).toBe(false);
+    expect(autoClaimsEarly(covered(), { type: 'networkRecommended', leewaySatPerVbyte: 0 }))
+      .toBe(false);
   });
 });

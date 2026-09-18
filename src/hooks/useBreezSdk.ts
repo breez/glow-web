@@ -362,6 +362,13 @@ export function useBreezSdk(
         }
       }
       refreshWalletData(false);
+    } else if (event.type === 'newDeposits') {
+      // The earliest the app hears about a deposit, well before a sync reports
+      // it, so this is what puts one on screen while it is still unconfirmed.
+      logger.info(LogCategory.PAYMENT, 'New deposits event: refreshing deposits', {
+        count: event.newDeposits.length,
+      });
+      fetchUnclaimedDeposits();
     } else if (event.type === 'paymentPending') {
       logger.info(LogCategory.PAYMENT, 'Payment pending event received', {
         paymentId: event.payment.id,

@@ -147,10 +147,13 @@ function button(name: string | RegExp): HTMLButtonElement {
   return found;
 }
 
-/** Picking Instant is what arms the claim button, so most tests start here. */
+/** The paid row, under whichever name its current state gives it. */
+const PAID_ROW = /^(Instant|Expedited) delivery/;
+
+/** Picking the paid route is what arms the claim button, so most tests start here. */
 async function turnOnInstant() {
   await screen.findByTestId('delivery-speed');
-  fireEvent.click(button(/^Instant delivery/));
+  fireEvent.click(button(PAID_ROW));
 }
 
 /** The delivery speed group, present only when both speeds are on offer. */
@@ -171,20 +174,6 @@ function withQuote(q: FetchClaimDepositQuoteResponse | Error) {
 beforeEach(() => {
   localStorage.clear();
   forgetAnnouncedClaims();
-});
-
-describe('a confirming deposit while it is priced', () => {
-  it('says nothing about confirmations until pricing fails', async () => {
-    let fail!: (e: Error) => void;
-    const client = createMockClient();
-    vi.mocked(client.fetchClaimDepositQuote).mockReturnValue(new Promise((_, reject) => { fail = reject; }));
-    vi.mocked(client.listUnclaimedDeposits).mockResolvedValue({ deposits: [makeDeposit()] });
-    await renderSheet(makeDeposit(), client);
-
-    expect(screen.queryByText('Waiting for 3 confirmations.')).toBeNull();
-    fail(new Error('no quote'));
-    expect(await screen.findByText('Waiting for 3 confirmations.')).toBeInTheDocument();
-  });
 });
 
 describe('a confirming deposit with both routes on offer', () => {
@@ -251,33 +240,35 @@ describe('a confirming deposit with both routes on offer', () => {
     const stream = eventStream();
     await renderSheet(makeDeposit(), client, stream.subscribe);
 
-    // Early unlocks at depth 1, and the deposit is at 0: priced but not takeable.
+    // Early unlocks at depth 1, and the deposit is at 0: choosable, and named
+    // for the wait rather than for an immediacy it cannot deliver yet.
     await findInstantRow();
-    expect(button(/^Instant delivery/)).toHaveAttribute('aria-disabled', 'true');
-    expect(button(/^Instant delivery/)).toHaveTextContent('Unlocks in 1 confirmation');
+    expect(button(PAID_ROW)).toHaveTextContent('Expedited delivery');
+    expect(button(PAID_ROW)).toHaveTextContent('Unlocks in 1 confirmation');
+    await turnOnInstant();
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
+    expect(button('Claim')).toBeDisabled();
 
     vi.mocked(client.fetchClaimDepositQuote).mockResolvedValue(quote({ confirmations: 1 }));
     stream.emitSynced();
 
-    // The block lands and the route becomes selectable, without reopening.
-    await waitFor(() =>
-      expect(button(/^Instant delivery/)).toHaveAttribute('aria-disabled', 'false'));
-    expect(button('Claim')).toBeDisabled();
-    await turnOnInstant();
-    expect(button('Claim')).toBeEnabled();
+    // The block lands and the pick becomes claimable, without reopening.
+    await waitFor(() => expect(button('Claim')).toBeEnabled());
+    expect(button(PAID_ROW)).toHaveTextContent('Instant delivery');
+    expect(button(PAID_ROW)).toHaveTextContent('Arrives in seconds');
   });
 
   // The provider re-quotes on every sync, so the depth it wants can rise after
-  // the paid route was picked. Claiming against a floor above the deposit's
-  // depth throws, so the pick cannot survive the route locking under it.
-  it('falls back to waiting when a re-price locks the route after it was picked', async () => {
+  // the paid route was picked. That is a longer wait rather than a refusal, so
+  // the pick stands and only the claim is withheld.
+  it('holds the pick but withholds the claim when a re-price moves the floor', async () => {
     const client = withQuote(quote({ confirmations: 1 }));
     const stream = eventStream();
     await renderSheet(makeDeposit(), client, stream.subscribe);
 
     await turnOnInstant();
     expect(button('Claim')).toBeEnabled();
-    expect(button(/^Instant delivery/)).toHaveAttribute('aria-checked', 'true');
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
 
     // Same depth, but the provider now wants two confirmations rather than one.
     vi.mocked(client.fetchClaimDepositQuote).mockResolvedValue(quote({
@@ -288,11 +279,10 @@ describe('a confirming deposit with both routes on offer', () => {
     stream.emitSynced();
 
     await waitFor(() => expect(button('Claim')).toBeDisabled());
-    expect(button(/^Standard delivery/)).toHaveAttribute('aria-checked', 'true');
-    expect(button(/^Instant delivery/)).toHaveAttribute('aria-checked', 'false');
-    // Priced as waiting, not at the spread it can no longer buy.
-    expect(screen.getByText('Network fee')).toBeInTheDocument();
-    expect(screen.queryByText('Delivery fee')).toBeNull();
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
+    expect(button(PAID_ROW)).toHaveTextContent('Unlocks in 1 confirmation');
+    // Still priced at what was picked, which is what the wait is now for.
+    expect(screen.getByText('Delivery fee')).toBeInTheDocument();
   });
 
   it('does not re-price under a claim already sent', async () => {
@@ -556,6 +546,66 @@ describe('a confirming deposit with both routes on offer', () => {
   });
 });
 
+// Roy's report: the sheet had Standard selected for nine minutes and then the
+// SDK paid the early fee. Waiting was never on offer, so it must not be shown
+// as a choice, and the fee on screen has to be the one that will be charged.
+describe('an early route the limit already covers', () => {
+  const cheap = () => quote({
+    confirmations: 0,
+    instant: { confirmationsRequired: 1, creditAmountSats: 99_653, feeSats: 347,
+      feeRateSatPerVbyte: 4, isEstimate: false },
+  });
+
+  beforeEach(() => saveSettings({ depositMaxFee: { type: 'fixed', amount: 500 } }));
+
+  it('picks the route the SDK will take, and prices it', async () => {
+    await renderSheet(makeDeposit(), withQuote(cheap()));
+
+    await findInstantRow();
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByText('Delivery fee').parentElement).toHaveTextContent('347');
+  });
+
+  // Dimmed rather than merely unselected: the user cannot have this outcome,
+  // and leaving it tappable would offer a choice that changes nothing.
+  it('stands the wait down instead of offering a choice that is not one', async () => {
+    await renderSheet(makeDeposit(), withQuote(cheap()));
+
+    await findInstantRow();
+    const standard = button(/^Standard delivery/);
+    expect(standard).toHaveAttribute('aria-disabled', 'true');
+    expect(standard).toHaveAttribute('aria-checked', 'false');
+    // Said in words, not by dimming alone.
+    expect(standard).toHaveTextContent('Not available');
+
+    fireEvent.click(standard);
+    expect(standard).toHaveAttribute('aria-checked', 'false');
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
+  });
+
+  // Both can be true of one quote. The approve panel is never reached, because
+  // the SDK claims early long before maturity.
+  it('drops the maturity warning it would otherwise contradict', async () => {
+    const overBoth = cheap();
+    overBoth.mature = { confirmationsRequired: 3, creditAmountSats: 99_400, feeSats: 600,
+      feeRateSatPerVbyte: 5, isEstimate: true };
+    await renderSheet(makeDeposit(), withQuote(overBoth));
+
+    await findInstantRow();
+    expect(screen.queryByText(/will be asked to approve/)).toBeNull();
+  });
+
+  it('leaves the choice alone once the fee outgrows the limit', async () => {
+    saveSettings({ depositMaxFee: { type: 'fixed', amount: 200 } });
+    await renderSheet(makeDeposit(), withQuote(cheap()));
+
+    await findInstantRow();
+    expect(button(/^Standard delivery/)).toHaveAttribute('aria-checked', 'true');
+    expect(button(/^Standard delivery/)).toHaveAttribute('aria-disabled', 'false');
+    expect(button(/^Standard delivery/)).not.toHaveTextContent('Not available');
+  });
+});
+
 // The automatic claim runs only while the fee stays under the configured
 // ceiling, so a fee above it means approval, not an automatic claim.
 describe('a wait the fee ceiling will not cover', () => {
@@ -705,18 +755,21 @@ describe('an early route that has not unlocked yet', () => {
     },
   });
 
-  // Shown, so the route is known to be coming and at what price, but not
-  // selectable: claiming below its floor is refused. It is also the only thing
-  // telling this state apart from one the provider will not front at all.
-  it('prices the route while it is still locked, without offering it', async () => {
+  // A wait is not a refusal, so the row is an ordinary choosable one. Dimming
+  // is reserved for an outcome the user cannot have, and spending it here left
+  // this state looking like one the provider will not front at all.
+  it('offers the route at full strength and withholds only the claim', async () => {
     await renderSheet(makeDeposit(), withQuote(notYet()));
 
     await findInstantRow();
-    const locked = button(/^Instant delivery/);
-    expect(locked).toHaveAttribute('aria-disabled', 'true');
-    expect(locked).toHaveTextContent('Unlocks in 1 confirmation');
+    const waiting = button(PAID_ROW);
+    expect(waiting).toHaveAttribute('aria-disabled', 'false');
+    expect(waiting).toHaveTextContent('Expedited delivery');
+    expect(waiting).toHaveTextContent('Unlocks in 1 confirmation');
 
-    fireEvent.click(locked);
+    fireEvent.click(waiting);
+    expect(waiting).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByText('Delivery fee')).toBeInTheDocument();
     expect(button('Claim')).toBeDisabled();
   });
 });
@@ -878,10 +931,14 @@ describe('a deposit claimed while the sheet was working', () => {
 });
 
 describe('when the quote cannot be fetched', () => {
+  // Nothing is said about depth before a quote lands. The maturity threshold is
+  // not the depth the early route opens at, so a figure named here is one the
+  // next render contradicts, which is the stale dialog QA saw flash.
   it('falls back to plain waiting rather than a broken offer', async () => {
     await renderSheet(makeDeposit(), withQuote(new Error('offline')));
 
-    await waitFor(() => expect(screen.getByText(/Waiting for 3 confirmations/)).toBeInTheDocument());
+    await waitFor(() => expect(queryInstantRow()).toBeNull());
+    expect(screen.queryByText(/confirmations/)).toBeNull();
     expect(queryButton('Claim')).toBeNull();
   });
 });
