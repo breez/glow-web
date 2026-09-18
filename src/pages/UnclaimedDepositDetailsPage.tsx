@@ -163,7 +163,7 @@ const SpeedOption: React.FC<{
     aria-checked={selected}
     aria-disabled={locked}
     onClick={locked ? undefined : onSelect}
-    className={`w-full flex items-center justify-between gap-3 p-4 rounded-2xl border text-left transition-colors ${
+    className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border text-left transition-colors ${
       locked
         ? 'bg-spark-dark border-spark-border opacity-60 cursor-default'
         : selected
