@@ -5,6 +5,9 @@ import { useLatest } from '../hooks/useLatest';
 /** Pull distance, after the drag's resistance, that refreshes on release. */
 export const PULL_TRIGGER_PX = 64;
 const PULL_MAX_PX = 96;
+/** Capped like the foreground resync: a refresh that never settles would hold
+ *  the spinner and refuse every later pull. */
+export const REFRESH_CAP_MS = 30_000;
 
 /**
  * Pull down on `scrollerRef` to refresh. Only a drag that starts with the list
@@ -25,6 +28,7 @@ const PullToRefresh: React.FC<{
     let startY: number | null = null;
     let distance = 0;
     let busy = false;
+    let cap: ReturnType<typeof setTimeout> | undefined;
 
     const start = (e: TouchEvent) => {
       startY = !busy && el.scrollTop <= 0 ? e.touches[0].clientY : null;
@@ -53,10 +57,14 @@ const PullToRefresh: React.FC<{
       if (distance < PULL_TRIGGER_PX) return;
       busy = true;
       setRefreshing(true);
-      void onRefreshRef.current().finally(() => {
-        busy = false;
-        setRefreshing(false);
-      });
+      const capped = new Promise<void>(resolve => { cap = setTimeout(resolve, REFRESH_CAP_MS); });
+      void Promise.race([onRefreshRef.current(), capped])
+        .catch(() => undefined)
+        .finally(() => {
+          clearTimeout(cap);
+          busy = false;
+          setRefreshing(false);
+        });
     };
 
     el.addEventListener('touchstart', start, { passive: true });
@@ -64,6 +72,7 @@ const PullToRefresh: React.FC<{
     el.addEventListener('touchend', end);
     el.addEventListener('touchcancel', cancel);
     return () => {
+      clearTimeout(cap);
       el.removeEventListener('touchstart', start);
       el.removeEventListener('touchmove', move);
       el.removeEventListener('touchend', end);

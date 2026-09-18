@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { useRef } from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import PullToRefresh from './PullToRefresh';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import PullToRefresh, { REFRESH_CAP_MS } from './PullToRefresh';
 
 function Harness({ onRefresh }: { onRefresh: () => Promise<unknown> }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -30,6 +30,27 @@ describe('PullToRefresh', () => {
 
     drag(list, 100, 300);
     await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(1));
+  });
+
+  it('lets go of a refresh that never settles, so the next pull works', async () => {
+    vi.useFakeTimers();
+    try {
+      const onRefresh = vi.fn(() => new Promise<void>(() => {}));
+      render(<Harness onRefresh={onRefresh} />);
+      const list = screen.getByTestId('list');
+
+      drag(list, 100, 300);
+      expect(onRefresh).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('status')).toHaveAttribute('aria-label', 'Refreshing');
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(REFRESH_CAP_MS); });
+      expect(screen.queryByRole('status')).toBeNull();
+
+      drag(list, 100, 300);
+      expect(onRefresh).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('ignores a pull that starts with the list scrolled down', () => {
