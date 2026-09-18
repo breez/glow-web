@@ -159,7 +159,8 @@ const SpeedOption: React.FC<{
   feeSats: number;
   isEstimate: boolean;
   selected: boolean;
-  /** Not something the user can have: shown so the fees can still be compared. */
+  /** Not something the user can have: shown so the fees can still be compared.
+   *  Its detail says so in words, so the state does not rest on dimming alone. */
   unavailable?: boolean;
   onSelect: () => void;
 }> = ({ label, detail, feeSats, isEstimate, selected, unavailable = false, onSelect }) => (
@@ -184,7 +185,7 @@ const SpeedOption: React.FC<{
       </span>
       <span className="min-w-0">
         <span className="block font-display font-medium text-spark-text-primary">{label}</span>
-        <span className="block text-xs text-spark-text-muted mt-1">{detail}</span>
+        <span className="block text-xs text-spark-text-muted mt-1">{unavailable ? 'Not available' : detail}</span>
       </span>
     </span>
     <span className="shrink-0 text-sm text-spark-text-secondary whitespace-nowrap">

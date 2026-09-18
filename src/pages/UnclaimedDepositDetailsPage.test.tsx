@@ -575,6 +575,8 @@ describe('an early route the limit already covers', () => {
     const standard = button(/^Standard delivery/);
     expect(standard).toHaveAttribute('aria-disabled', 'true');
     expect(standard).toHaveAttribute('aria-checked', 'false');
+    // Said in words, not by dimming alone.
+    expect(standard).toHaveTextContent('Not available');
 
     fireEvent.click(standard);
     expect(standard).toHaveAttribute('aria-checked', 'false');
@@ -600,6 +602,7 @@ describe('an early route the limit already covers', () => {
     await findInstantRow();
     expect(button(/^Standard delivery/)).toHaveAttribute('aria-checked', 'true');
     expect(button(/^Standard delivery/)).toHaveAttribute('aria-disabled', 'false');
+    expect(button(/^Standard delivery/)).not.toHaveTextContent('Not available');
   });
 });
 
