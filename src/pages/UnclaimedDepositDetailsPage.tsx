@@ -163,7 +163,7 @@ const SpeedOption: React.FC<{
     aria-checked={selected}
     aria-disabled={locked}
     onClick={locked ? undefined : onSelect}
-    className={`w-full flex items-center justify-between gap-3 p-3 rounded-2xl border text-left transition-colors ${
+    className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border text-left transition-colors ${
       locked
         ? 'bg-spark-dark border-spark-border opacity-60 cursor-default'
         : selected
@@ -179,7 +179,7 @@ const SpeedOption: React.FC<{
       </span>
       <span className="min-w-0">
         <span className="block font-display font-medium text-spark-text-primary">{label}</span>
-        <span className="block text-xs text-spark-text-muted mt-0.5">{detail}</span>
+        <span className="block text-xs text-spark-text-muted mt-1">{detail}</span>
       </span>
     </span>
     <span className="shrink-0 text-sm text-spark-text-secondary whitespace-nowrap">
@@ -213,6 +213,8 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   );
   const [instantError, setInstantError] = useState<string | null>(null);
   const [quote, setQuote] = useState<FetchClaimDepositQuoteResponse | null>(null);
+  // Set once pricing has failed, so a quote still in flight shows no sentence.
+  const [quoteFailed, setQuoteFailed] = useState<boolean>(false);
   // The fee a rejected claim was quoted at, so the re-price can name what moved.
   const [instantFeeFrom, setInstantFeeFrom] = useState<number | null>(null);
   // Which delivery speed is selected. Standard by default: it is what happens
@@ -313,7 +315,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
       : !isConfirming
         ? 'This transfer will be claimed automatically.'
         : !quote
-          ? 'Waiting for 3 confirmations.'
+          ? (quoteFailed ? 'Waiting for 3 confirmations.' : null)
           // The group names both speeds and both waits, so a line under it
           // repeating either would only say the same thing twice.
           : offer !== null
@@ -382,6 +384,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
     try {
       const fresh = await wallet.fetchClaimDepositQuote({ txid: target.txid, vout: target.vout });
       setQuote(fresh);
+      setQuoteFailed(false);
       return fresh;
     } catch (e) {
       // Keeps the last good quote. Clearing it would strip the options, the
@@ -390,6 +393,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
       logger.warn(LogCategory.PAYMENT, 'Failed to quote deposit claim', {
         error: e instanceof Error ? e.message : String(e),
       });
+      setQuoteFailed(true);
       return null;
     }
   }, [wallet]);
@@ -535,7 +539,8 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
           <div className="relative flex-1 min-h-0 flex flex-col">
           <div ref={scrollRef} className="space-y-3 flex-1 min-h-0 overflow-y-auto overscroll-y-none touch-pan-y">
           {/* Which transfer this is, before anything priced about it. */}
-          <PaymentInfoCard compact>
+          {/* py-3 so it stands as tall as the speed rows below it. */}
+          <PaymentInfoCard compact className="py-3">
             <CollapsibleCodeField
               label="Transaction ID"
               value={deposit.txid}
@@ -677,7 +682,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                     Processing...
                   </span>
                 ) : (
-                  'Claim Now'
+                  'Claim'
                 )}
               </PrimaryButton>
             )}

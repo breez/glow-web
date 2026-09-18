@@ -173,6 +173,20 @@ beforeEach(() => {
   forgetAnnouncedClaims();
 });
 
+describe('a confirming deposit while it is priced', () => {
+  it('says nothing about confirmations until pricing fails', async () => {
+    let fail!: (e: Error) => void;
+    const client = createMockClient();
+    vi.mocked(client.fetchClaimDepositQuote).mockReturnValue(new Promise((_, reject) => { fail = reject; }));
+    vi.mocked(client.listUnclaimedDeposits).mockResolvedValue({ deposits: [makeDeposit()] });
+    await renderSheet(makeDeposit(), client);
+
+    expect(screen.queryByText('Waiting for 3 confirmations.')).toBeNull();
+    fail(new Error('no quote'));
+    expect(await screen.findByText('Waiting for 3 confirmations.')).toBeInTheDocument();
+  });
+});
+
 describe('a confirming deposit with both routes on offer', () => {
   it('prices both without being asked, the quote being a pure read', async () => {
     const client = withQuote(quote());
@@ -202,7 +216,7 @@ describe('a confirming deposit with both routes on offer', () => {
     await findInstantRow();
     expect(button(/^Standard delivery/)).toHaveAttribute('aria-checked', 'true');
     expect(button(/^Instant delivery/)).toHaveAttribute('aria-checked', 'false');
-    expect(button('Claim Now')).toBeDisabled();
+    expect(button('Claim')).toBeDisabled();
   });
 
   it('marks the estimated fee and leaves the quoted one bare', async () => {
@@ -248,9 +262,9 @@ describe('a confirming deposit with both routes on offer', () => {
     // The block lands and the route becomes selectable, without reopening.
     await waitFor(() =>
       expect(button(/^Instant delivery/)).toHaveAttribute('aria-disabled', 'false'));
-    expect(button('Claim Now')).toBeDisabled();
+    expect(button('Claim')).toBeDisabled();
     await turnOnInstant();
-    expect(button('Claim Now')).toBeEnabled();
+    expect(button('Claim')).toBeEnabled();
   });
 
   // The provider re-quotes on every sync, so the depth it wants can rise after
@@ -262,7 +276,7 @@ describe('a confirming deposit with both routes on offer', () => {
     await renderSheet(makeDeposit(), client, stream.subscribe);
 
     await turnOnInstant();
-    expect(button('Claim Now')).toBeEnabled();
+    expect(button('Claim')).toBeEnabled();
     expect(button(/^Instant delivery/)).toHaveAttribute('aria-checked', 'true');
 
     // Same depth, but the provider now wants two confirmations rather than one.
@@ -273,7 +287,7 @@ describe('a confirming deposit with both routes on offer', () => {
     }));
     stream.emitSynced();
 
-    await waitFor(() => expect(button('Claim Now')).toBeDisabled());
+    await waitFor(() => expect(button('Claim')).toBeDisabled());
     expect(button(/^Standard delivery/)).toHaveAttribute('aria-checked', 'true');
     expect(button(/^Instant delivery/)).toHaveAttribute('aria-checked', 'false');
     // Priced as waiting, not at the spread it can no longer buy.
@@ -289,7 +303,7 @@ describe('a confirming deposit with both routes on offer', () => {
     await renderSheet(makeDeposit(), client, stream.subscribe);
 
     await turnOnInstant();
-    fireEvent.click(button('Claim Now'));
+    fireEvent.click(button('Claim'));
     await screen.findByText('Processing...');
     const quotesBefore = vi.mocked(client.fetchClaimDepositQuote).mock.calls.length;
 
@@ -334,7 +348,7 @@ describe('a confirming deposit with both routes on offer', () => {
     await waitFor(() => expect(button('Approve')).toBeInTheDocument());
     expect(screen.getByText('Network fee').parentElement).toHaveTextContent('512');
     // The approve panel owns the sheet: no route button still offering a claim.
-    expect(queryButton('Claim Now')).toBeNull();
+    expect(queryButton('Claim')).toBeNull();
   });
 
   it('does not let a sync re-announce a claim the sheet already toasted', async () => {
@@ -343,7 +357,7 @@ describe('a confirming deposit with both routes on offer', () => {
     const { onChanged } = await renderSheet(makeDeposit(), client);
 
     await turnOnInstant();
-    fireEvent.click(button('Claim Now'));
+    fireEvent.click(button('Claim'));
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
 
     // Sync reports the same outpoint as submitted; it is no longer news.
@@ -389,7 +403,7 @@ describe('a confirming deposit with both routes on offer', () => {
     await renderSheet(makeDeposit(), client);
 
     await turnOnInstant();
-    fireEvent.click(button('Claim Now'));
+    fireEvent.click(button('Claim'));
     await screen.findByText('network unreachable');
     // The row came from the first quote and still describes the deposit.
     expect(queryInstantRow()).not.toBeNull();
@@ -428,7 +442,7 @@ describe('a confirming deposit with both routes on offer', () => {
     await renderSheet(makeDeposit(), client);
 
     await turnOnInstant();
-    fireEvent.click(button('Claim Now'));
+    fireEvent.click(button('Claim'));
     await screen.findByText(CLAIM_SUBMITTED_LINE);
     expect(screen.queryByText(/in progress/)).toBeNull();
   });
@@ -484,10 +498,10 @@ describe('a confirming deposit with both routes on offer', () => {
     await renderSheet(makeDeposit(), client);
 
     await turnOnInstant();
-    expect(button('Claim Now')).toBeEnabled();
+    expect(button('Claim')).toBeEnabled();
 
     fireEvent.click(button(/^Standard delivery/));
-    expect(button('Claim Now')).toBeDisabled();
+    expect(button('Claim')).toBeDisabled();
     expect(screen.getByText('Network fee').parentElement).toHaveTextContent('198');
     expect(client.claimDeposit).not.toHaveBeenCalled();
   });
@@ -507,7 +521,7 @@ describe('a confirming deposit with both routes on offer', () => {
     await renderSheet(makeDeposit(), withQuote(quote()));
 
     await turnOnInstant();
-    const cta = button('Claim Now');
+    const cta = button('Claim');
     expect(cta.textContent).not.toMatch(/3 200|3 002/);
     // Described by the whole offer, so the route and its price are both read out.
     expect(document.getElementById(cta.getAttribute('aria-describedby') ?? ''))
@@ -519,7 +533,7 @@ describe('a confirming deposit with both routes on offer', () => {
     await renderSheet(makeDeposit(), client);
 
     await turnOnInstant();
-    fireEvent.click(button('Claim Now'));
+    fireEvent.click(button('Claim'));
 
     await waitFor(() => expect(client.claimDeposit).toHaveBeenCalled());
     // Below the quoted fee the SDK declines the route and waits for maturity.
@@ -535,7 +549,7 @@ describe('a confirming deposit with both routes on offer', () => {
     const { onChanged } = await renderSheet(makeDeposit(), client);
 
     await turnOnInstant();
-    fireEvent.click(button('Claim Now'));
+    fireEvent.click(button('Claim'));
 
     expect(await screen.findByText('Claim Submitted')).toBeInTheDocument();
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
@@ -615,7 +629,7 @@ describe('a fee that rises between quoting and claiming', () => {
     await renderSheet(makeDeposit(), client);
 
     await turnOnInstant();
-    fireEvent.click(button('Claim Now'));
+    fireEvent.click(button('Claim'));
 
     // A failed tap, reported like any other failed tap, naming the figure it
     // moved from: the row and the breakdown below already carry the new one.
@@ -645,7 +659,7 @@ describe('a fee that rises between quoting and claiming', () => {
     await turnOnInstant();
     expect(cap()).toBe('74dvh');
 
-    fireEvent.click(button('Claim Now'));
+    fireEvent.click(button('Claim'));
     await screen.findByText(/did not go through/);
     expect(cap()).toBe('74dvh');
   });
@@ -661,7 +675,7 @@ describe('a fee that rises between quoting and claiming', () => {
     await renderSheet(makeDeposit(), client);
 
     await turnOnInstant();
-    fireEvent.click(button('Claim Now'));
+    fireEvent.click(button('Claim'));
 
     const line = await screen.findByText(/Your claim did not go through/);
     // The same inline treatment a raw decline gets, and no icon of its own.
@@ -675,7 +689,7 @@ describe('a fee that rises between quoting and claiming', () => {
     await renderSheet(makeDeposit(), client);
 
     await turnOnInstant();
-    fireEvent.click(button('Claim Now'));
+    fireEvent.click(button('Claim'));
 
     expect(await screen.findByText('network unreachable')).toBeInTheDocument();
     expect(screen.queryByText(/fee changed from/)).toBeNull();
@@ -703,7 +717,7 @@ describe('an early route that has not unlocked yet', () => {
     expect(locked).toHaveTextContent('Unlocks in 1 confirmation');
 
     fireEvent.click(locked);
-    expect(button('Claim Now')).toBeDisabled();
+    expect(button('Claim')).toBeDisabled();
   });
 });
 
@@ -757,7 +771,7 @@ describe('a claim already in flight', () => {
 
     const first = await renderSheet(makeDeposit(), client);
     await turnOnInstant();
-    fireEvent.click(button('Claim Now'));
+    fireEvent.click(button('Claim'));
     await waitFor(() => expect(first.onChanged).toHaveBeenCalled());
     cleanup();
 
@@ -777,7 +791,7 @@ describe('a claim already in flight', () => {
     await renderSheet(inFlight(), client);
 
     expect(screen.getByText(CLAIM_SUBMITTED_LINE)).toBeInTheDocument();
-    expect(queryButton('Claim Now')).toBeNull();
+    expect(queryButton('Claim')).toBeNull();
     expect(queryInstantRow()).toBeNull();
     // No point pricing a deposit whose claim is already settling.
     expect(client.fetchClaimDepositQuote).not.toHaveBeenCalled();
@@ -841,7 +855,7 @@ describe('a route the background sync passed over', () => {
 
     expect(await findInstantRow()).toBeInTheDocument();
     await turnOnInstant();
-    expect(button('Claim Now')).toBeInTheDocument();
+    expect(button('Claim')).toBeInTheDocument();
     expect(screen.queryByText(/above your limit/)).not.toBeInTheDocument();
   });
 });
@@ -855,7 +869,7 @@ describe('a deposit claimed while the sheet was working', () => {
     const { onChanged } = await renderSheet(makeDeposit(), client);
 
     await turnOnInstant();
-    fireEvent.click(button('Claim Now'));
+    fireEvent.click(button('Claim'));
 
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
     expect(screen.queryByText('already claimed')).not.toBeInTheDocument();
@@ -868,6 +882,6 @@ describe('when the quote cannot be fetched', () => {
     await renderSheet(makeDeposit(), withQuote(new Error('offline')));
 
     await waitFor(() => expect(screen.getByText(/Waiting for 3 confirmations/)).toBeInTheDocument());
-    expect(queryButton('Claim Now')).toBeNull();
+    expect(queryButton('Claim')).toBeNull();
   });
 });
