@@ -186,8 +186,21 @@ const CrossChainReceiveWorkflow: React.FC = () => {
     }
   };
 
+  // Back from the deposit address to the choice that produced it. The order
+  // already made just expires unpaid.
+  const goBackFromResult = () => {
+    setReceiveResult(null);
+    setSelectedRoute(null);
+    setAmountCopied(false);
+    if (routesForSelection.length > 1) {
+      setStep('provider');
+    } else {
+      goBackFromProvider();
+    }
+  };
+
   // The asset and chain steps lend their own.
-  useSheetBack(step === 'provider' ? goBackFromProvider : undefined);
+  useSheetBack(step === 'provider' ? goBackFromProvider : step === 'result' ? goBackFromResult : undefined);
 
   // Received amount lands as a stable token (USDB) or as BTC sats, depending on
   // the SDK's auto-pick. `route.decimals` is the *source* asset, so it can't be
@@ -358,9 +371,14 @@ const CrossChainReceiveWorkflow: React.FC = () => {
         </div>
       )}
 
-      {/* Step 5: Result */}
+      {/* Step 5: Result. Capped like the selection lists: content past 90% of
+          the viewport stops the sheet fitting it, which left a short screen's
+          deposit address below the fold. */}
       {step === 'result' && receiveResult && selectedRoute && (
-        <div className="pb-2 flex flex-col items-center gap-4">
+        <div
+          className="pb-2 flex flex-col items-center gap-4 overflow-y-auto overscroll-y-none touch-pan-y min-h-0"
+          style={{ maxHeight: isSheetFull ? '85dvh' : '60dvh' }}
+        >
           {/* Amount the sender transfers — the copyable hero (copies the bare
               number). The $ already signals dollars; the coin sits in the subtitle. */}
           <div className="text-center">
