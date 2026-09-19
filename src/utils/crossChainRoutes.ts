@@ -56,10 +56,12 @@ export function crossChainCardClass(active = false): string {
 }
 
 /** Map a route quote/order error to a short user-facing message; `fallback` is
- *  used when the error isn't a recognized amount rejection. A rate drift is a
- *  quote the network's fees took too large a share of. */
+ *  used when the error isn't recognized. A rate drift is a quote the network's
+ *  fees took too large a share of. */
 export function crossChainFriendlyError(err: unknown, fallback: string): string {
   const raw = err instanceof Error ? err.message : 'Unknown error';
+  if (raw.includes('Cross-chain route temporarily unavailable')) return 'This network is temporarily unavailable. Try again in a moment.';
+  if (raw.includes('Cross-chain route not supported')) return "This network isn't available. Try another network.";
   if (raw.includes('Amount too small')) return 'Amount too small for this route.';
   if (raw.includes('Amount too large')) return 'Amount too large for this route.';
   if (raw.includes('rate drift')) return 'Amount too small for this network. Try a larger amount or another network.';
