@@ -4,6 +4,7 @@ import JSZip from 'jszip';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { isShareCancel } from '@/utils/share';
 
 const getAllLogs = (): string => {
   return logger.getLogsAsString();
@@ -133,7 +134,7 @@ export const exportDatabaseState = async (identityPubkey: string, network: strin
           await navigator.share({ files: [file], title: 'Glow SDK Database Export' });
           return;
         } catch (e) {
-          if ((e as Error).name === 'AbortError') return;
+          if (isShareCancel(e)) return;
         }
       }
     }
@@ -205,7 +206,10 @@ export const shareOrDownloadZip = async (
       await shareFileNative(blob, filename, title);
       return;
     } catch (e) {
-      if ((e as Error).name === 'AbortError') return;
+      // A dismissed sheet is not a failure: falling through would open a
+      // second one over the first, or start a download the user did not ask
+      // for.
+      if (isShareCancel(e)) return;
       logger.warn(LogCategory.UI, 'Native share failed, falling back to browser path', {
         error: e instanceof Error ? e.message : String(e),
       });
@@ -220,7 +224,7 @@ export const shareOrDownloadZip = async (
         await navigator.share({ files: [file], title });
         return;
       } catch (e) {
-        if ((e as Error).name === 'AbortError') return;
+        if (isShareCancel(e)) return;
         // Share failed (e.g., desktop browser) — fall through to download
       }
     }
