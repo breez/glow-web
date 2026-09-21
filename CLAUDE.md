@@ -311,12 +311,11 @@ argue them as preferences: a citation adds nothing here.
   word: the failed and processing chips in `TransactionList` are the
   pattern, the unlabelled pulsing dot beside a pending payment is not
   (WCAG 1.4.1).
-- No success toast for what the screen in front of the user already says.
-  An instant claim reports itself in the sheet the user is looking at and
-  again in the payments list, so the toast over the top was the same news
-  a third time, and it went. Toasts carry what no screen is carrying: a
-  copy confirmation, a failure, or something that lands while the user is
-  somewhere else.
+- No success toast for money arriving or a claim going through. The
+  balance and the payments list carry it, and a payment arriving gets the
+  celebration, so a toast on top is the same news again over a screen
+  already showing it. Toasts carry what no screen does: a copy
+  confirmation, or a failure.
 
 **Layout**
 
