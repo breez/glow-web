@@ -1254,10 +1254,37 @@ main {
   contain-intrinsic-size: 0 64px;
 }
 
-/* QR Code container */
+/* The receive QR card turning out while the code it will land on is still
+   loading. Fast off the mark so the tap is answered at once, then a creep
+   through the last few degrees: the card reads as a turn still in progress for
+   as long as the wait runs, and never as a screen that stopped responding. A
+   transition rather than a keyframe animation, because what ends the wait is
+   the code arriving, at no fixed time. */
+.qr-turn-wait {
+  transform: perspective(900px) rotateY(-89deg);
+  transition: transform 900ms cubic-bezier(0.1, 0.8, 0.2, 1);
+}
+
+/* Closes the last degree once the code lands, so the swap always happens at
+   edge-on. Swapping from part-way through the wait instead would jump the card
+   from part-width to the zero-width start of the turn in, which reads as a
+   flash. The target differs from the wait's by a degree on purpose: a
+   transition only retimes when its end value changes, so an identical target
+   would keep creeping at the wait's pace. */
+.qr-turn-close {
+  transform: perspective(900px) rotateY(-90deg);
+  transition: transform 120ms linear;
+}
+
+/* The QR card, and the placeholder holding its footprint while a code loads:
+   one padding between them, so the slot cannot resize when the code lands. */
+.qr-container,
+.qr-placeholder {
+  padding: 16px;
+}
+
 .qr-container {
   background: #fff;
-  padding: 16px;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }

@@ -29,6 +29,17 @@ import { SideCaption, SideDock, type BtcMode } from './SideDock';
 import { ArrowDownIcon } from '../../components/Icons';
 import { holdIdleLock } from '@/services/appLock';
 
+/**
+ * How long the card takes to turn out while it waits for a code, matching
+ * `.qr-turn-wait` in index.css. Doubles as the deadline: past it the card
+ * would be sitting edge-on, so it turns in on the placeholder instead and the
+ * spinner carries the rest of the wait.
+ */
+const TURN_WAIT_MS = 900;
+
+/** The last degree of that turn, once the code lands. Matches `.qr-turn-close`. */
+const TURN_CLOSE_MS = 120;
+
 interface ReceivePaymentDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -135,6 +146,22 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Warm the on-chain address while the Lightning code is on screen, so the
+  // switch has nothing left to wait for. It matters most on the first open
+  // after a restart, where the SDK call is at its slowest and the user is
+  // reading the Lightning code for a second or more before reaching for the
+  // switch. Deferred past the sheet's enter animation for the same reason the
+  // content itself is (see `isContentReady` above): the call is main-thread
+  // work and the sheet is still sliding up. Costs one address rotation per
+  // open even when the user never switches — harmless, because rotating
+  // archives the previous address rather than invalidating it.
+  useEffect(() => {
+    if (!isContentReady) return;
+    const id = window.setTimeout(() => { void receive.generateBitcoinAddress(); }, 300);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isContentReady]);
+
   // Re-trigger bitcoin address generation after reset clears the address
   useEffect(() => {
     if (isOpen && receive.activeTab === 'bitcoin' && !receive.bitcoinAddress && !receive.bitcoinLoading && !receive.error) {
@@ -168,25 +195,74 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
   const btcMode: BtcMode = receive.activeTab === 'bitcoin' ? 'bitcoin' : 'lightning';
   // The card lags the dock by half a turn: it swaps codes while edge-on.
   const [shownMode, setShownMode] = useState<BtcMode>(btcMode);
-  const [turning, setTurning] = useState<'out' | 'in' | null>(null);
+  const [turning, setTurning] = useState<'out' | 'close' | 'in' | null>(null);
+  // Set while the card turns out slowly because the code it will land on is
+  // still loading. The turn starts on the tap either way — what changes is
+  // that this one creeps the last few degrees instead of snapping to edge-on,
+  // so the wait reads as a turn still going rather than as a stall. Whatever
+  // ends the wait — the address, a failed fetch, or the deadline — closes the
+  // turn from there and lands the card on what it found.
+  const [pendingMode, setPendingMode] = useState<BtcMode | null>(null);
   const turnTimers = useRef<number[]>([]);
   useEffect(() => () => turnTimers.current.forEach(clearTimeout), []);
-  const switchBtcMode = (mode: BtcMode) => {
-    handleTabChange(mode);
+  const clearTurnTimers = () => {
     turnTimers.current.forEach(clearTimeout);
     turnTimers.current = [];
-    const later = (ms: number, fn: () => void) => turnTimers.current.push(window.setTimeout(fn, ms));
+  };
+  const later = (ms: number, fn: () => void) => turnTimers.current.push(window.setTimeout(fn, ms));
+  const turnIn = (mode: BtcMode) => {
+    clearTurnTimers();
+    setPendingMode(null);
+    setShownMode(mode);
+    setTurning('in');
+    // Cleared, so a QR replacing its placeholder does not turn in again.
+    later(160, () => setTurning(null));
+  };
+  // Finishes a wait: closes the last degree of the turn, then turns in. The
+  // swap has to happen at edge-on — from part-way through the wait the card
+  // would jump from part-width to the zero-width start of the turn in, which
+  // reads as a flash, or as the card turning more than once.
+  const closeTurn = (mode: BtcMode) => {
+    clearTurnTimers();
+    setPendingMode(null);
+    setTurning('close');
+    later(TURN_CLOSE_MS, () => turnIn(mode));
+  };
+  // The on-chain code completes the turn as soon as it lands. So does a failed
+  // fetch: the request settles one way or the other, so the wait always ends
+  // on its own, and the deadline below is only there to keep the card off its
+  // edge, not to rescue a hung promise.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the address is an external async value, and completing the turn on its arrival is the whole point
+    if (pendingMode === 'bitcoin' && (receive.bitcoinAddress || receive.error)) closeTurn('bitcoin');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingMode, receive.bitcoinAddress, receive.error]);
+  const switchBtcMode = (mode: BtcMode) => {
+    handleTabChange(mode);
+    clearTurnTimers();
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setPendingMode(null);
       setShownMode(mode);
       setTurning(null);
       return;
     }
     if (mode === shownMode) {
-      // Switched back before the swap: turn the same card back in.
+      // Switched back before the swap: turn the same card back in. Out of a
+      // wait that means finishing the turn first, same as any other ending.
+      if (pendingMode) {
+        closeTurn(mode);
+        return;
+      }
+      setPendingMode(null);
       if (turning === 'out') {
         setTurning('in');
         later(160, () => setTurning(null));
       }
+      return;
+    }
+    if (mode === 'bitcoin' && !receive.bitcoinAddress) {
+      setPendingMode(mode);
+      later(TURN_WAIT_MS, () => turnIn(mode));
       return;
     }
     setTurning('out');
@@ -199,7 +275,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
   };
   // Under 400px the code shrinks so the switch and label have room beside its corners.
   const qrSize = window.innerWidth < 400 ? 184 : 200;
-  const qrCardClassName = `${turning === 'out' ? 'animate-qr-turn-out' : turning === 'in' ? 'animate-qr-turn-in' : ''} motion-reduce:animate-none`;
+  const qrCardClassName = `${turning === 'out' ? 'animate-qr-turn-out' : turning === 'close' ? 'qr-turn-close' : turning === 'in' ? 'animate-qr-turn-in' : pendingMode ? 'qr-turn-wait' : ''} motion-reduce:animate-none`;
   const btcView = (section: 'qr' | 'details') => (shownMode === 'lightning' ? (
     <LightningAddressDisplay
       address={lightningAddress}
