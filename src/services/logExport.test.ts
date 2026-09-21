@@ -33,3 +33,34 @@ describe('getAllLogsAsZip', () => {
     ]);
   });
 });
+
+describe('shareOrDownloadZip on a native platform', () => {
+  it('stops when the user dismisses the share sheet', async () => {
+    vi.doMock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => true } }));
+    vi.doMock('@capacitor/filesystem', () => ({
+      Filesystem: { writeFile: async () => ({ uri: 'file:///cache/x.zip' }) },
+      Directory: { Cache: 'CACHE' },
+    }));
+    // What both plugins reject with when the sheet is dismissed: a plain
+    // message, no AbortError name.
+    vi.doMock('@capacitor/share', () => ({
+      Share: { share: async () => { throw new Error('Share canceled'); } },
+    }));
+    const webShare = vi.fn(async () => {});
+    vi.stubGlobal('navigator', { ...navigator, share: webShare, canShare: () => true });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    vi.resetModules();
+    const { shareOrDownloadZip } = await import('./logExport');
+    await shareOrDownloadZip(new Blob(['z']), 'x.zip', 'Glow');
+
+    expect(webShare).not.toHaveBeenCalled();
+    expect(click).not.toHaveBeenCalled();
+
+    click.mockRestore();
+    vi.unstubAllGlobals();
+    vi.doUnmock('@capacitor/core');
+    vi.doUnmock('@capacitor/filesystem');
+    vi.doUnmock('@capacitor/share');
+  });
+});

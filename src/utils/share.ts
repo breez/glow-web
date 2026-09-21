@@ -10,9 +10,17 @@ export const canShare = (): boolean =>
   Capacitor.isNativePlatform() || (typeof navigator !== 'undefined' && !!navigator.share);
 
 /**
- * Share plain text. A dismissed sheet resolves: web rejects with `AbortError`
- * and the native plugin with a "canceled" message, neither worth surfacing.
- * Rejects only on a real failure.
+ * A sheet the user dismissed. The web rejects with `AbortError`, the native
+ * plugin with "Share canceled" and no name, so a name test alone reads a
+ * dismissal as a failure and sends the caller down its fallback path.
+ */
+export function isShareCancel(err: unknown): boolean {
+  const e = err as Error | undefined;
+  return e?.name === 'AbortError' || /cancel/i.test(e?.message ?? '');
+}
+
+/**
+ * Share plain text. A dismissed sheet resolves, rejects only on a real failure.
  */
 export async function shareText(title: string, text: string): Promise<void> {
   try {
@@ -22,8 +30,6 @@ export async function shareText(title: string, text: string): Promise<void> {
       await navigator.share({ title, text });
     }
   } catch (err) {
-    const name = (err as Error).name;
-    const message = (err as Error).message ?? '';
-    if (name !== 'AbortError' && !/cancel/i.test(message)) throw err;
+    if (!isShareCancel(err)) throw err;
   }
 }
