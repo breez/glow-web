@@ -9,7 +9,7 @@ import type {
   InstantClaimStatus,
   MaxFee,
 } from '@breeztech/breez-sdk-spark';
-import { BottomSheetContainer, BottomSheetCard, DialogHeader, PrimaryButton, SecondaryButton, PaymentInfoCard, CollapsibleCodeField } from '../components/ui';
+import { BottomSheetContainer, BottomSheetCard, DialogHeader, PrimaryButton, SecondaryButton, PaymentInfoCard, CollapsibleCodeField, LoadingSpinner } from '../components/ui';
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
 import { SpinnerIcon } from '../components/Icons';
 import { AlertCard } from '../components/AlertCard';
@@ -618,12 +618,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                       each, 8px apart), so the sheet is the same height before
                       and after and nothing moves under the reader when the
                       prices land. */}
-                  <div className="w-full min-h-[9.25rem] flex items-center justify-center gap-3 rounded-2xl border border-spark-border bg-spark-dark">
-                    <SpinnerIcon size="sm" className="shrink-0 text-spark-primary" />
-                    <span className="font-display font-medium text-spark-text-secondary">
-                      Checking delivery options
-                    </span>
-                  </div>
+                  <LoadingSpinner text="Checking delivery options" className="min-h-[9.25rem]" />
                 </div>
               )}
 
