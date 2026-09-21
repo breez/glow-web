@@ -174,6 +174,7 @@ Device-level keys (`passkeyService.ts`):
 - `passkeyPendingSwitchFromCredentialId`: the cred we were signed in with before a switch attempt, used by the switch-recovery branch in `PasskeyPage`
 - `passkeyAaguid:<credId>` / `passkeyBackupEligible:<credId>`: provider AAGUID + BE flag captured at create time, drives the provider icon + sync indicator in the management page
 - `passkeyLabelLastUsed:<label>`: per-label last-used timestamp, surfaces on `LabelsPage` as a relative hint
+- `passkeyCheckSnoozedUntil`: when a launch may go through the passkey again; written when the periodic re-auth does not go through
 
 Per-credential metadata keys (`passkeyMetadata.ts`):
 
