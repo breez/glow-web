@@ -6,8 +6,7 @@ import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { getTokenBalance } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
-import { selectedNetwork } from '@/services/sdkConnect';
-import { foreignAddressNetwork, foreignNetworkMessage } from '@/utils/destinationAddress';
+import { destinationErrorMessage } from '@/utils/destinationAddress';
 
 /** The destination string inside a parsed input, or null for the types that
  *  are paid through their own workflow rather than a prepared destination. */
@@ -173,14 +172,6 @@ export function useSendPayment(): UseSendPaymentReturn {
         prefillAmountSat = parseResult.amountSat;
       }
 
-      const network = selectedNetwork();
-      const foreign = foreignAddressNetwork(effective, network);
-      if (foreign) {
-        setError(foreignNetworkMessage(foreign, network));
-        setCurrentStep('input');
-        return;
-      }
-
       // prepareSendPayment gets the bare destination the parser resolved, never
       // the text it came in. The SDK parses what it is handed but then decodes
       // the invoice from that same string, so a wrapper the parser accepts (a
@@ -239,7 +230,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       }
     } catch (err) {
       logger.warn(LogCategory.PAYMENT, 'Failed to parse payment input', { error: formatError(err) });
-      setError('Invalid payment destination');
+      setError(destinationErrorMessage(err, 'Invalid payment destination'));
     } finally {
       setIsLoading(false);
     }

@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { singleKeyCpfpSigner } from '@breeztech/breez-sdk-spark';
-import type { CpfpInput, PrepareUnilateralExitResponse } from '@breeztech/breez-sdk-spark';
+import type { CpfpInput, InputType, PrepareUnilateralExitResponse } from '@breeztech/breez-sdk-spark';
 import { useWallet, useWalletInfo } from '@/contexts/WalletContext';
 import { holdIdleLock } from '@/services/appLock';
 import { createChainClient } from '@/services/chain';
 import type { ChainUtxo, FeeRates } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
-import { selectedNetwork } from '@/services/sdkConnect';
-import { foreignAddressNetwork, foreignNetworkMessage } from '@/utils/destinationAddress';
+import { destinationErrorMessage } from '@/utils/destinationAddress';
 import {
   isWorthExiting,
   planFromExitResponse,
@@ -235,16 +234,10 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
       setDestinationError('Enter a Bitcoin address');
       return;
     }
-    const parsed = await wallet.parse(trimmed).catch(() => null);
-    const address = destinationAddressOf(parsed);
+    const parsed = await wallet.parse(trimmed).catch(e => e as unknown);
+    const address = parsed instanceof Error ? undefined : destinationAddressOf(parsed as InputType);
     if (!address) {
-      setDestinationError('That is not an on-chain Bitcoin address');
-      return;
-    }
-    const network = selectedNetwork();
-    const foreign = foreignAddressNetwork(parsed, network);
-    if (foreign) {
-      setDestinationError(foreignNetworkMessage(foreign, network));
+      setDestinationError(destinationErrorMessage(parsed, 'That is not an on-chain Bitcoin address'));
       return;
     }
     setDestination(address);

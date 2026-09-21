@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { InputType } from '@breeztech/breez-sdk-spark';
-import { destinationAddressOf, foreignAddressNetwork, foreignNetworkMessage } from './destinationAddress';
+import type { BreezSdk } from '@breeztech/breez-sdk-spark';
+import {
+  ForeignNetworkError,
+  destinationAddressOf,
+  foreignAddressNetwork,
+  foreignNetworkMessage,
+  withNetworkCheckedParse,
+} from './destinationAddress';
 
 const address = (value: string, network: string): InputType =>
   ({ type: 'bitcoinAddress', address: value, network, source: { type: 'bitcoinAddress' } }) as unknown as InputType;
@@ -39,5 +46,27 @@ describe('foreignNetworkMessage', () => {
     expect(foreignNetworkMessage('bitcoin', 'regtest')).toBe(
       'That is a mainnet address. Enter a regtest Bitcoin address.',
     );
+  });
+});
+
+describe('withNetworkCheckedParse', () => {
+  const client = (parsed: InputType) =>
+    ({
+      parse: async () => parsed,
+      getInfo: async () => ({ balanceSats: 7 }),
+    }) as unknown as BreezSdk;
+
+  it('refuses a destination from another network', async () => {
+    const wallet = withNetworkCheckedParse(client(address('tb1qtestnet', 'testnet3')), 'mainnet');
+    await expect(wallet.parse('tb1qtestnet')).rejects.toBeInstanceOf(ForeignNetworkError);
+    await expect(wallet.parse('tb1qtestnet')).rejects.toThrow(
+      'That is a testnet address. Enter a mainnet Bitcoin address.',
+    );
+  });
+
+  it('passes everything else through', async () => {
+    const wallet = withNetworkCheckedParse(client(address('bc1qmainnet', 'bitcoin')), 'mainnet');
+    expect(await wallet.parse('bc1qmainnet')).toMatchObject({ address: 'bc1qmainnet' });
+    expect(await wallet.getInfo({})).toMatchObject({ balanceSats: 7 });
   });
 });

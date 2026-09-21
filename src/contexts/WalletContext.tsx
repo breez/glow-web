@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import type { BreezSdk, GetInfoResponse, Payment } from '@breeztech/breez-sdk-spark';
 import type { SdkEventHandler, SdkEventUnsubscribe } from '../hooks/useBreezSdk';
+import { selectedNetwork } from '../services/sdkConnect';
+import { withNetworkCheckedParse } from '../utils/destinationAddress';
 
 /**
  * How long a `pending` conversion status is trusted to mean "in flight".
@@ -57,7 +59,11 @@ export const WalletProvider: React.FC<{
   subscribeToSdkEvents?: SubscribeToSdkEvents;
 }> = ({ children, client, isConnected = false, subscribeToSdkEvents = noopSubscribe }) => {
   const value = useMemo(
-    () => ({ sdk: client, isConnected, subscribeToSdkEvents }),
+    () => ({
+      sdk: client && withNetworkCheckedParse(client, selectedNetwork()),
+      isConnected,
+      subscribeToSdkEvents,
+    }),
     [client, isConnected, subscribeToSdkEvents]
   );
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
