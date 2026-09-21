@@ -219,6 +219,9 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   );
   const [instantError, setInstantError] = useState<string | null>(null);
   const [quote, setQuote] = useState<FetchClaimDepositQuoteResponse | null>(null);
+  // Only the first pricing, and only while it is out: a failed one leaves the
+  // sheet on plain waiting rather than on a promise it cannot keep.
+  const [isPricing, setIsPricing] = useState<boolean>(true);
   // The fee a rejected claim was quoted at, so the re-price can name what moved.
   const [instantFeeFrom, setInstantFeeFrom] = useState<number | null>(null);
   // Which delivery speed the user has asked for. Standard by default: it is
@@ -412,6 +415,8 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
         error: e instanceof Error ? e.message : String(e),
       });
       return null;
+    } finally {
+      setIsPricing(false);
     }
   }, [wallet]);
 
@@ -602,6 +607,26 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
               {/* Both speeds, named, in one group. Waiting takes no action, but
                   it is what the deposit does, and leaving it unnamed left the
                   paid route as the only thing on screen with a name. */}
+              {/* Pricing is a network read, so the speeds land a moment after
+                  the sheet does. Holding their place and saying what is
+                  happening keeps the card from growing under the user with
+                  nothing on screen to account for it. */}
+              {isConfirming && isPricing && !quote && (
+                <div id={INSTANT_OFFER_ID} data-testid="delivery-speed-pending" className="space-y-2">
+                  <span className="block text-sm text-spark-text-secondary">Speed</span>
+                  {/* 9.25rem is the two option rows it stands in for (70px
+                      each, 8px apart), so the sheet is the same height before
+                      and after and nothing moves under the reader when the
+                      prices land. */}
+                  <div className="w-full min-h-[9.25rem] flex items-center justify-center gap-3 rounded-2xl border border-spark-border bg-spark-dark">
+                    <SpinnerIcon size="sm" className="shrink-0 text-spark-primary" />
+                    <span className="font-display font-medium text-spark-text-secondary">
+                      Checking delivery options
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {offer && quote && (
                 <div id={INSTANT_OFFER_ID} data-testid="delivery-speed" className="space-y-2">
                   <span className="block text-sm text-spark-text-secondary">Speed</span>
@@ -646,6 +671,12 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                       { label: earlySelected ? 'Delivery fee' : 'Network fee', value: chosen.feeSats, approximate: chosen.isEstimate, emphasis: earlySelected },
                       { label: 'You receive', value: chosen.creditAmountSats, highlight: true },
                     ]
+                  : isPricing
+                  ? [
+                      { label: 'Amount', value: depositAmount },
+                      { label: 'Network fee', pending: true },
+                      { label: 'You receive', pending: true, highlight: true },
+                    ]
                   : [{ label: 'Amount', value: depositAmount, highlight: true }]}
               />
 
@@ -689,7 +720,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
                 for, and repeating that here would say it twice. A recorded fee
                 means that automatic claim has already run and been refused, so
                 the approve panel below owns the sheet. */}
-            {isConfirming && !isClaimInFlight && offer !== null && requiredFeeSats === null && !claimError && (
+            {isConfirming && !isClaimInFlight && (offer !== null || (isPricing && !quote)) && requiredFeeSats === null && !claimError && (
               // Described by the group rather than labelled with a price, so the
               // label stays the plain action and a screen reader still hears it.
               <PrimaryButton
