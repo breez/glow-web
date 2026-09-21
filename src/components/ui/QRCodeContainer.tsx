@@ -1,5 +1,6 @@
 import React from 'react';
 import { QRCode } from 'react-qr-code';
+import LoadingSpinner from '../LoadingSpinner';
 
 const Corners: React.FC = () => (
   <div className="absolute -inset-3 pointer-events-none">
@@ -30,23 +31,19 @@ export const QRCodeContainer: React.FC<QrFrameProps & { value: string }> = ({ va
   </div>
 );
 
-/** Holds a QR's place while its value loads: the same frame and card, with a sweep where the code goes. */
+/**
+ * Holds a QR's place while its value loads: the frame's corners stay put and a
+ * spinner sits where the code goes. No white card behind it — an empty one
+ * reads as a code that failed to draw, where a spinner on the sheet reads as
+ * what it is. Keeps the card's footprint so nothing shifts when the code lands.
+ */
 export const QrPlaceholder: React.FC<QrFrameProps> = ({ size = 200, className = '', cardClassName = '' }) => (
   <div className={`relative ${className}`} aria-hidden="true">
     <Corners />
-    <div className={`qr-container relative overflow-hidden ${cardClassName}`}>
-      <div className="relative" style={{ width: size, height: size }}>
-        {['top-0 left-0', 'top-0 right-0', 'bottom-0 left-0'].map((corner) => (
-          <div key={corner} className={`absolute ${corner} w-[21%] h-[21%] rounded-lg border-[6px] border-spark-border/15`} />
-        ))}
+    <div className={`p-4 ${cardClassName}`}>
+      <div className="flex items-center justify-center" style={{ width: size, height: size }}>
+        <LoadingSpinner />
       </div>
-      <div
-        className="absolute inset-0 animate-[shimmer_2s_linear_infinite] motion-reduce:animate-none"
-        style={{
-          backgroundImage: 'linear-gradient(110deg, transparent 35%, color-mix(in srgb, var(--spark-primary) 22%, transparent) 50%, transparent 65%)',
-          backgroundSize: '200% 100%',
-        }}
-      />
     </div>
   </div>
 );

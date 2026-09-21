@@ -15,7 +15,8 @@ const BitcoinAddressDisplay: React.FC<Props> = ({ address, isLoading, section, q
   const { showToast } = useToast();
 
   if (section === 'qr') {
-    // A placeholder, not a spinner: the card's turn already covers most of the wait.
+    // Rarely seen: the address is prefetched on open and the turn waits for it.
+    // This is the long-tail fallback, where the turn ran out before it landed.
     return !isLoading && address
       ? <QRCodeContainer value={address} size={qrSize} cardClassName={qrCardClassName} />
       : <QrPlaceholder size={qrSize} cardClassName={qrCardClassName} />;
