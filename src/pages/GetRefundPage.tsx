@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useWallet } from '../contexts/WalletContext';
-import type { DepositInfo, Fee, SdkEvent } from '@breeztech/breez-sdk-spark';
+import type { DepositInfo, Fee, InputType, SdkEvent } from '@breeztech/breez-sdk-spark';
 import { LoadingSpinner, PrimaryButton, BottomSheetContainer, BottomSheetCard, DialogHeader, CollapsibleCodeField, CopyableRow, PaymentInfoCard } from '../components/ui';
 import { AlertCard, SimpleAlert } from '../components/AlertCard';
 import { FeeBreakdownCard } from '../components/FeeBreakdownCard';
@@ -12,7 +12,7 @@ import { DestinationField } from '../components/DestinationField';
 import QrScannerDialog from '../components/QrScannerDialog';
 import ProcessingStep from '../features/send/steps/ProcessingStep';
 import ResultStep from '../features/send/steps/ResultStep';
-import { destinationAddressOf } from '../utils/destinationAddress';
+import { destinationAddressOf, destinationErrorMessage } from '../utils/destinationAddress';
 import { truncateAddress } from '../utils/crossChainFormat';
 import { explorerTxUrl } from '../utils/explorer';
 import { unsettledDeposits } from '../utils/depositHelpers';
@@ -167,9 +167,10 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
   const handleContinueToFeeSelection = async () => {
     const trimmed = destination.trim();
     if (!selectedDeposit || !trimmed) return;
-    const address = destinationAddressOf(await wallet.parse(trimmed).catch(() => null));
+    const parsed = await wallet.parse(trimmed).catch(e => e as unknown);
+    const address = parsed instanceof Error ? undefined : destinationAddressOf(parsed as InputType);
     if (!address) {
-      setDestinationError('That is not an on-chain Bitcoin address');
+      setDestinationError(destinationErrorMessage(parsed, 'That is not an on-chain Bitcoin address'));
       return;
     }
     setDestination(address);

@@ -92,10 +92,13 @@ export function createMockClient(overrides?: Partial<BreezSdk>): BreezSdk {
       }
       // Bitcoin address
       if (input.startsWith('bc1') || input.startsWith('tb1') || input.startsWith('bcrt1')) {
+        // The network follows the prefix, as the SDK's parser reports it: flows
+        // refuse an address from another network (#450).
+        const network = input.startsWith('bcrt1') ? 'regtest' : input.startsWith('tb1') ? 'testnet3' : 'bitcoin';
         return {
           type: 'bitcoinAddress',
           address: input,
-          network: 'regtest',
+          network,
         } as unknown as InputType;
       }
       // Lightning address

@@ -6,6 +6,7 @@ import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { getTokenBalance } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
+import { destinationErrorMessage } from '@/utils/destinationAddress';
 
 /** The destination string inside a parsed input, or null for the types that
  *  are paid through their own workflow rather than a prepared destination. */
@@ -229,7 +230,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       }
     } catch (err) {
       logger.warn(LogCategory.PAYMENT, 'Failed to parse payment input', { error: formatError(err) });
-      setError('Invalid payment destination');
+      setError(destinationErrorMessage(err, 'Invalid payment destination'));
     } finally {
       setIsLoading(false);
     }
