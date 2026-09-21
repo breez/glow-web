@@ -1276,10 +1276,15 @@ main {
   transition: transform 120ms linear;
 }
 
-/* QR Code container */
+/* The QR card, and the placeholder holding its footprint while a code loads:
+   one padding between them, so the slot cannot resize when the code lands. */
+.qr-container,
+.qr-placeholder {
+  padding: 16px;
+}
+
 .qr-container {
   background: #fff;
-  padding: 16px;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }

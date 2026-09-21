@@ -40,7 +40,7 @@ export const QRCodeContainer: React.FC<QrFrameProps & { value: string }> = ({ va
 export const QrPlaceholder: React.FC<QrFrameProps> = ({ size = 200, className = '', cardClassName = '' }) => (
   <div className={`relative ${className}`} aria-hidden="true">
     <Corners />
-    <div className={`p-4 ${cardClassName}`}>
+    <div className={`qr-placeholder ${cardClassName}`}>
       <div className="flex items-center justify-center" style={{ width: size, height: size }}>
         <LoadingSpinner />
       </div>
