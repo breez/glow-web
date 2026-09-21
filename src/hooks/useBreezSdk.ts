@@ -388,15 +388,12 @@ export function useBreezSdk(
       }
     } else if (event.type === 'claimedDeposits') {
       // An instant (0-conf) claim fires this event on submission, before the
-      // funds are credited, so it can't share the settled copy.
+      // funds are credited, so the log counts the two apart.
       const { submitted, settled } = splitClaimedDeposits(event.claimedDeposits);
       logger.info(LogCategory.PAYMENT, 'Deposits claimed', {
         settled,
         submitted: submitted.length,
       });
-      if (settled > 0) {
-        showToastRef.current('success', 'Deposits Claimed Successfully', `${settled} deposits were claimed`);
-      }
       refreshWalletData(false);
       fetchUnclaimedDeposits();
     } else if (event.type === 'unclaimedDeposits') {
