@@ -176,6 +176,33 @@ beforeEach(() => {
   forgetAnnouncedClaims();
 });
 
+describe('while the speeds are still being priced', () => {
+  it('says so where they will land, rather than letting the card grow unannounced', async () => {
+    const client = createMockClient();
+    let priced: (q: FetchClaimDepositQuoteResponse) => void = () => {};
+    vi.mocked(client.fetchClaimDepositQuote).mockReturnValue(
+      new Promise<FetchClaimDepositQuoteResponse>(resolve => { priced = resolve; }),
+    );
+    vi.mocked(client.listUnclaimedDeposits).mockResolvedValue({ deposits: [makeDeposit()] });
+    await renderSheet(makeDeposit(), client);
+
+    expect(await screen.findByTestId('delivery-speed-pending')).toHaveTextContent('Checking delivery options');
+    expect(queryInstantRow()).toBeNull();
+
+    priced(quote());
+
+    expect(await findInstantRow()).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByTestId('delivery-speed-pending')).toBeNull());
+  });
+
+  it('stands down when the pricing fails, rather than waiting on it forever', async () => {
+    await renderSheet(makeDeposit(), withQuote(new Error('offline')));
+
+    await waitFor(() => expect(screen.queryByTestId('delivery-speed-pending')).toBeNull());
+    expect(queryButton('Claim')).toBeNull();
+  });
+});
+
 describe('a confirming deposit with both routes on offer', () => {
   it('prices both without being asked, the quote being a pure read', async () => {
     const client = withQuote(quote());

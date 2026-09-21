@@ -8,7 +8,10 @@ import { SatAmount } from './SatAmount';
 
 export interface FeeBreakdownItem {
   label: string;
-  value: number | bigint | string;
+  value?: number | bigint | string;
+  /** No figure yet: the row keeps its place with a dash, so a card doesn't
+   *  grow a row under the reader once the number lands. */
+  pending?: boolean;
   unit?: string;
   highlight?: boolean;
   /**
@@ -58,9 +61,11 @@ export const FeeBreakdownCard: React.FC<FeeBreakdownCardProps> = ({
               {item.label}
             </span>
             <span className={`font-mono text-sm ${item.highlight ? 'font-bold text-spark-primary' : item.emphasis ? 'font-semibold text-spark-text-primary' : 'text-spark-text-primary'}`}>
-              {useRawStrings || typeof item.value === 'string'
+              {item.pending
+                ? <span className="text-spark-text-muted">&mdash;</span>
+                : useRawStrings || typeof item.value === 'string'
                 ? String(item.value)
-                : Number(item.value) === 0 ? '0' : (
+                : item.value === undefined || Number(item.value) === 0 ? '0' : (
                   <>
                     {item.subtract && '−'}
                     <SatAmount sats={item.value} approximate={item.approximate} />
