@@ -25,6 +25,7 @@ import {
   chainGroupKey as chainGroupKeyWith,
   crossChainCardClass,
   crossChainFriendlyError,
+  landsInThisWallet,
 } from '../../../utils/crossChainRoutes';
 import { formatChainName, formatReceiveAmount, formatCrossChainAmount, parseCrossChainAmount } from '../../../utils/crossChainFormat';
 import { copyToClipboard } from '../../../utils/clipboard';
@@ -125,11 +126,16 @@ const CrossChainReceiveWorkflow: React.FC = () => {
     }
   }, [selectChain]);
 
+  const stableTokenIdentifier = stableBalance.isActive ? stableBalance.tokenIdentifier : null;
+
   const fetchRoutes = useCallback(async () => {
     setStep('loading');
     setError(null);
     try {
-      const fetched = await wallet.getCrossChainRoutes({ type: 'receive' });
+      const listed = await wallet.getCrossChainRoutes({ type: 'receive' });
+      // In sats mode a route that only lands a token fails on every receive,
+      // and its funds would be ones Glow can't show or spend anyway.
+      const fetched = listed?.filter(route => landsInThisWallet(route, stableTokenIdentifier));
       if (!fetched || fetched.length === 0) {
         setError('No cross-chain routes available right now');
         setStep('amount');
@@ -147,7 +153,7 @@ const CrossChainReceiveWorkflow: React.FC = () => {
       setError(`Failed to fetch routes: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setStep('amount');
     }
-  }, [wallet, selectAsset]);
+  }, [wallet, selectAsset, stableTokenIdentifier]);
 
   // Back navigation — respect skipped steps
   const goBackToAmount = () => {

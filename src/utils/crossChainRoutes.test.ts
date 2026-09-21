@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { crossChainFriendlyError } from './crossChainRoutes';
+import type { CrossChainRoutePair } from '@breeztech/breez-sdk-spark';
+import { crossChainFriendlyError, landsInThisWallet } from './crossChainRoutes';
 
 describe('crossChainFriendlyError', () => {
   it('turns a quote the fees took too much of into a next step', () => {
@@ -15,5 +16,25 @@ describe('crossChainFriendlyError', () => {
       .toBe('This network is temporarily unavailable. Try again in a moment.');
     expect(crossChainFriendlyError(refused, 'Failed to create request.'))
       .toBe("This network isn't available. Try another network.");
+  });
+});
+
+describe('landsInThisWallet', () => {
+  const USDB = 'btkn1usdb';
+  const route = (...assets: ({ type: 'bitcoin' } | { type: 'token'; tokenIdentifier: string })[]) =>
+    ({ acceptedAssets: assets.map(asset => ({ asset })) }) as unknown as CrossChainRoutePair;
+
+  it('keeps a route that lands bitcoin', () => {
+    expect(landsInThisWallet(route({ type: 'bitcoin' }), null)).toBe(true);
+    expect(landsInThisWallet(route({ type: 'bitcoin' }), USDB)).toBe(true);
+  });
+
+  it('drops a token-only route in sats mode', () => {
+    expect(landsInThisWallet(route({ type: 'token', tokenIdentifier: USDB }), null)).toBe(false);
+  });
+
+  it('keeps a token-only route once the USD balance holds that token', () => {
+    expect(landsInThisWallet(route({ type: 'token', tokenIdentifier: USDB }), USDB)).toBe(true);
+    expect(landsInThisWallet(route({ type: 'token', tokenIdentifier: 'btkn1other' }), USDB)).toBe(false);
   });
 });
