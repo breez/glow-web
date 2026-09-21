@@ -77,8 +77,11 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
     ? 'Unlock with passkey'
     : !isBiometricTier ? 'Try Again'
       : biometry ? `Unlock with ${biometry.label}` : 'Unlock';
+  // No line for the passkey: the button under it already says to unlock
+  // with the passkey, and the error card above it says why this screen
+  // is here at all.
   const unlockDescription = isPasskeyUnlock
-    ? 'Glow is locked. Unlock with your passkey to continue.'
+    ? null
     : !isBiometricTier ? 'Glow could not start up. Please try again.'
       : 'Glow is locked. Unlock with your biometric to continue.';
   const UnlockIcon = isPasskeyUnlock
@@ -99,9 +102,11 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
             <h1 className="font-display text-2xl font-bold text-spark-text-primary">
               Welcome back
             </h1>
-            <p className="text-sm text-spark-text-secondary text-center">
-              {unlockDescription}
-            </p>
+            {unlockDescription && (
+              <p className="text-sm text-spark-text-secondary text-center">
+                {unlockDescription}
+              </p>
+            )}
           </div>
 
           {/* Error banner */}
