@@ -1,20 +1,7 @@
 import type { ClaimDepositQuote, DepositInfo, FetchClaimDepositQuoteResponse, InstantClaimStatus, MaxFee } from '@breeztech/breez-sdk-spark';
 
-/**
- * Copy for a submitted early claim. Shared because the SDK raises no event for a
- * manual claim, so the sheet announces that one itself while background sync
- * announces its own: one wording, two callers.
- */
-export const INSTANT_CLAIM_SUBMITTED_TOAST = {
-  title: 'Claim Submitted',
-  detail: 'Funds will arrive shortly',
-} as const;
-
-/**
- * The same confirmation for the sheet, which stays open behind the toast and can
- * be reopened later. Composed from the toast so the two cannot drift apart.
- */
-export const CLAIM_SUBMITTED_LINE = `Claim submitted. ${INSTANT_CLAIM_SUBMITTED_TOAST.detail}.`;
+/** What the sheet says once an early claim is in, until the funds land. */
+export const CLAIM_SUBMITTED_LINE = 'Claim submitted. Funds will arrive shortly.';
 
 /**
  * Blocks still to wait before an option can be claimed. `confirmationsRequired`
@@ -99,42 +86,6 @@ export function selectOption(quote: FetchClaimDepositQuoteResponse | null): Clai
 /** True while a claim is in flight, during which the SDK refuses a second one. */
 export function isClaimInFlight(status: InstantClaimStatus | undefined): boolean {
   return status?.type === 'submitted';
-}
-
-/** Identifies a deposit across events, which carry records rather than ids. */
-function depositOutpoint(deposit: DepositInfo): string {
-  return `${deposit.txid}:${deposit.vout}`;
-}
-
-/**
- * Outpoints whose submitted claim has already been announced. Sync keeps
- * reporting a claim until it settles, and the sheet announces its own manual
- * claim, so without a marker both doors lead to the same repeated toast. Lives
- * for the session; `forgetAnnouncedClaims` clears it when the wallet changes.
- */
-const announcedClaims = new Set<string>();
-
-function claimAlreadyAnnounced(deposit: DepositInfo): boolean {
-  return announcedClaims.has(depositOutpoint(deposit));
-}
-
-/**
- * The submitted claims worth announcing, marked as they are taken. Reading and
- * marking are one step because sync repeats a claim until it settles, so a
- * caller that read first and marked later would announce the same claim twice.
- */
-export function takeUnannouncedClaims(submitted: DepositInfo[]): DepositInfo[] {
-  const fresh = submitted.filter(d => !claimAlreadyAnnounced(d));
-  fresh.forEach(markClaimAnnounced);
-  return fresh;
-}
-
-export function markClaimAnnounced(deposit: DepositInfo): void {
-  announcedClaims.add(depositOutpoint(deposit));
-}
-
-export function forgetAnnouncedClaims(): void {
-  announcedClaims.clear();
 }
 
 /**

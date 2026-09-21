@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useWallet, useSdkEvents } from '../contexts/WalletContext';
-import { useToast } from '../contexts/ToastContext';
 import type {
   BreezSdk,
   ClaimDepositQuote,
@@ -20,13 +19,11 @@ import { getSettings } from '../services/settings';
 import { formatWithSpaces } from '../utils/formatNumber';
 import {
   CLAIM_SUBMITTED_LINE,
-  INSTANT_CLAIM_SUBMITTED_TOAST,
   autoClaimsEarly,
   blocksToWait,
   earlyOption,
   formatWait,
   isClaimInFlight as isClaimInFlightStatus,
-  markClaimAnnounced,
   isClaimable,
   selectOption,
 } from '../utils/depositClaimQuote';
@@ -201,7 +198,6 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
 }) => {
   const wallet = useWallet();
   const subscribeToSdkEvents = useSdkEvents();
-  const { showToast } = useToast();
 
   // Seeded from the record and kept current by handleClaim's retries and by the
   // sync listener below, either of which can turn a confirming deposit into one
@@ -493,8 +489,6 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
           feeSats: chosen.feeSats,
           creditAmountSats: chosen.creditAmountSats,
         });
-        markClaimAnnounced(deposit);
-        showToast('success', INSTANT_CLAIM_SUBMITTED_TOAST.title, INSTANT_CLAIM_SUBMITTED_TOAST.detail);
       }
       onChanged?.();
       handleClose();
