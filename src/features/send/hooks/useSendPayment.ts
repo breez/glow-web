@@ -6,6 +6,8 @@ import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { getTokenBalance } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
+import { selectedNetwork } from '@/services/sdkConnect';
+import { foreignAddressNetwork, foreignNetworkMessage } from '@/utils/destinationAddress';
 
 /** The destination string inside a parsed input, or null for the types that
  *  are paid through their own workflow rather than a prepared destination. */
@@ -169,6 +171,14 @@ export function useSendPayment(): UseSendPaymentReturn {
         }
         effective = method;
         prefillAmountSat = parseResult.amountSat;
+      }
+
+      const network = selectedNetwork();
+      const foreign = foreignAddressNetwork(effective, network);
+      if (foreign) {
+        setError(foreignNetworkMessage(foreign, network));
+        setCurrentStep('input');
+        return;
       }
 
       // prepareSendPayment gets the bare destination the parser resolved, never

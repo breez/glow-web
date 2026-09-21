@@ -67,6 +67,18 @@ describe('processInput destinations', () => {
     );
   });
 
+  it('refuses an address from another network before preparing (#450)', async () => {
+    const { client, result } = renderSendPayment(
+      async (address) => ({ type: 'bitcoinAddress', address, network: 'testnet3' }) as unknown as InputType,
+    );
+
+    await act(() => result.current.processInput('tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'));
+
+    expect(result.current.error).toBe('That is a testnet address. Enter a mainnet Bitcoin address.');
+    expect(result.current.currentStep).toBe('input');
+    expect(client.prepareSendPayment).not.toHaveBeenCalled();
+  });
+
   it('prepares an invoice with a sub-sat amount rounded up, as the SDK requires', async () => {
     const { client, result } = renderSendPayment(
       async (input) => ({ ...(bolt11Details(input) as object), amountMsat: 654_321 }) as InputType,

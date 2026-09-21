@@ -6,6 +6,8 @@ import { holdIdleLock } from '@/services/appLock';
 import { createChainClient } from '@/services/chain';
 import type { ChainUtxo, FeeRates } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
+import { selectedNetwork } from '@/services/sdkConnect';
+import { foreignAddressNetwork, foreignNetworkMessage } from '@/utils/destinationAddress';
 import {
   isWorthExiting,
   planFromExitResponse,
@@ -237,6 +239,12 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     const address = destinationAddressOf(parsed);
     if (!address) {
       setDestinationError('That is not an on-chain Bitcoin address');
+      return;
+    }
+    const network = selectedNetwork();
+    const foreign = foreignAddressNetwork(parsed, network);
+    if (foreign) {
+      setDestinationError(foreignNetworkMessage(foreign, network));
       return;
     }
     setDestination(address);

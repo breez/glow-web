@@ -44,13 +44,18 @@ function applyLocalCluster(config: Config, network: Network): boolean {
   return true;
 }
 
+/** The network this session connects on. Settings switches it by reloading with
+ *  the parameter set, so the URL is what the SDK is connected to. */
+export function selectedNetwork(): Network {
+  return (new URLSearchParams(window.location.search).get('network') ?? 'mainnet') as Network;
+}
+
 /**
  * Build a Breez SDK Config from environment and persisted user settings.
  * Pure function — no side effects beyond reading env vars and localStorage.
  */
 export function buildConnectConfig(overrideNetwork?: Network): Config {
-  const urlParams = new URLSearchParams(window.location.search);
-  const network = (overrideNetwork ?? (urlParams.get('network') ?? 'mainnet')) as Network;
+  const network = overrideNetwork ?? selectedNetwork();
   const config: Config = defaultConfig(network);
   config.apiKey = import.meta.env.VITE_BREEZ_API_KEY;
 
