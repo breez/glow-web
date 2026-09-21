@@ -1,12 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { DepositInfo } from '@breeztech/breez-sdk-spark';
 import type { ClaimDepositQuote, FetchClaimDepositQuoteResponse } from '@breeztech/breez-sdk-spark';
 import {
   CLAIM_SUBMITTED_LINE,
-  forgetAnnouncedClaims,
-  markClaimAnnounced,
-  takeUnannouncedClaims,
-  INSTANT_CLAIM_SUBMITTED_TOAST,
   autoClaimsEarly,
   blocksToWait,
   earlyOption,
@@ -17,7 +13,6 @@ import {
   splitClaimedDeposits,
 } from './depositClaimQuote';
 
-beforeEach(() => forgetAnnouncedClaims());
 
 const option = (confirmationsRequired: number, feeSats = 100): ClaimDepositQuote =>
   ({ confirmationsRequired, feeSats, creditAmountSats: 1_000 - feeSats, isEstimate: false }) as ClaimDepositQuote;
@@ -52,9 +47,8 @@ describe('the claimedDeposits split', () => {
 });
 
 describe('submitted-claim copy', () => {
-  it('says the same thing in the sheet as in the toast', () => {
-    // Composed from the toast so the two cannot drift apart.
-    expect(CLAIM_SUBMITTED_LINE).toContain(INSTANT_CLAIM_SUBMITTED_TOAST.detail);
+  it('tells the user the funds are on their way', () => {
+    expect(CLAIM_SUBMITTED_LINE).toBe('Claim submitted. Funds will arrive shortly.');
   });
 });
 
@@ -142,40 +136,6 @@ describe('isClaimInFlight', () => {
     expect(isClaimInFlight({ type: 'submitted', claimId: 'c' })).toBe(true);
     expect(isClaimInFlight({ type: 'declined' })).toBe(false);
     expect(isClaimInFlight(undefined)).toBe(false);
-  });
-});
-
-describe('announced claims', () => {
-  it('hands a claim over exactly once, however often sync repeats it', () => {
-    const d = deposit(true);
-    expect(takeUnannouncedClaims([d])).toEqual([d]);
-    expect(takeUnannouncedClaims([d])).toEqual([]);
-  });
-
-  it('keys on the outpoint, so a second vout is its own claim', () => {
-    const d = deposit(true);
-    takeUnannouncedClaims([d]);
-    expect(takeUnannouncedClaims([{ ...d, vout: 1 }])).toHaveLength(1);
-  });
-
-  it('passes over one the sheet announced itself', () => {
-    const d = deposit(true);
-    markClaimAnnounced(d);
-    expect(takeUnannouncedClaims([d])).toEqual([]);
-  });
-
-  it('separates the new from the repeated within one batch', () => {
-    const first = deposit(true);
-    const second = { ...first, vout: 1 };
-    takeUnannouncedClaims([first]);
-    expect(takeUnannouncedClaims([first, second])).toEqual([second]);
-  });
-
-  it('forgets everything when the wallet changes', () => {
-    const d = deposit(true);
-    takeUnannouncedClaims([d]);
-    forgetAnnouncedClaims();
-    expect(takeUnannouncedClaims([d])).toEqual([d]);
   });
 });
 

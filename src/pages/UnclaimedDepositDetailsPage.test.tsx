@@ -6,7 +6,7 @@ import { WalletProvider } from '@/contexts/WalletContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
 import { saveSettings } from '@/services/settings';
-import { CLAIM_SUBMITTED_LINE, forgetAnnouncedClaims, takeUnannouncedClaims } from '@/utils/depositClaimQuote';
+import { CLAIM_SUBMITTED_LINE } from '@/utils/depositClaimQuote';
 import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import UnclaimedDepositDetailsPage from './UnclaimedDepositDetailsPage';
 
@@ -173,7 +173,6 @@ function withQuote(q: FetchClaimDepositQuoteResponse | Error) {
 
 beforeEach(() => {
   localStorage.clear();
-  forgetAnnouncedClaims();
 });
 
 describe('while the speeds are still being priced', () => {
@@ -368,18 +367,6 @@ describe('a confirming deposit with both routes on offer', () => {
     expect(queryButton('Claim')).toBeNull();
   });
 
-  it('does not let a sync re-announce a claim the sheet already toasted', async () => {
-    const client = withQuote(quote());
-    vi.mocked(client.claimDeposit).mockResolvedValue({});
-    const { onChanged } = await renderSheet(makeDeposit(), client);
-
-    await turnOnInstant();
-    fireEvent.click(button('Claim'));
-    await waitFor(() => expect(onChanged).toHaveBeenCalled());
-
-    // Sync reports the same outpoint as submitted; it is no longer news.
-    expect(takeUnannouncedClaims([makeDeposit()])).toEqual([]);
-  });
 
   it('does not re-read under an approval already sent', async () => {
     const client = withQuote(quote());
@@ -559,17 +546,17 @@ describe('a confirming deposit with both routes on offer', () => {
     });
   });
 
-  it('announces an early claim, which settles asynchronously', async () => {
+  it('reports an early claim through the caller, not a toast', async () => {
     const client = withQuote(quote());
-    // No payment: claimed early, so nothing else reports it.
+    // No payment: claimed early, so it settles after the sheet has gone.
     vi.mocked(client.claimDeposit).mockResolvedValue({});
     const { onChanged } = await renderSheet(makeDeposit(), client);
 
     await turnOnInstant();
     fireEvent.click(button('Claim'));
 
-    expect(await screen.findByText('Claim Submitted')).toBeInTheDocument();
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
+    expect(screen.queryByText('Claim Submitted')).toBeNull();
   });
 });
 
