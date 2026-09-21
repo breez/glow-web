@@ -65,3 +65,13 @@ export function crossChainFriendlyError(err: unknown, fallback: string): string 
   if (raw.includes('rate drift')) return 'Amount too small for this network. Try a larger amount or another network.';
   return fallback;
 }
+
+/** Whether a receive on this route lands where this wallet can show and spend
+ *  it: bitcoin, or the USD token while the USD balance is on. The SDK lists
+ *  every route the provider serves, including ones that land only a token,
+ *  which a receive here would fail on (breez/spark-sdk#1150). */
+export function landsInThisWallet(route: CrossChainRoutePair, stableTokenIdentifier: string | null): boolean {
+  return route.acceptedAssets.some(({ asset }) =>
+    asset.type === 'bitcoin'
+    || (asset.type === 'token' && asset.tokenIdentifier === stableTokenIdentifier));
+}
