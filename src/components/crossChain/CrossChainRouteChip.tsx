@@ -2,7 +2,6 @@ import React from 'react';
 import type { CrossChainRoutePair } from '@breeztech/breez-sdk-spark';
 import CryptoIcon from '../CryptoIcon';
 import { ChevronDownIcon } from '../Icons';
-import { crossChainCardClass } from '../../utils/crossChainRoutes';
 import { formatChainName } from '../../utils/crossChainFormat';
 
 interface CrossChainRouteChipProps {
@@ -28,12 +27,15 @@ export const CrossChainRouteChip: React.FC<CrossChainRouteChipProps> = ({
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`${crossChainCardClass()} flex items-center justify-between disabled:opacity-60`}
+    // Its own padding rather than the picker card's: this is a control that
+    // sits in a column of fields, so it answers to the amount input's height
+    // rather than to the list rows it opens.
+    className="w-full p-3 rounded-2xl border bg-spark-dark border-spark-border hover:border-spark-border-light transition-all flex items-center justify-between disabled:opacity-60"
     data-testid={testId}
   >
     {route && asset ? (
-      <span className="flex items-center gap-3">
-        <CryptoIcon chain={route.chain} size={32} />
+      <span className="flex items-center gap-2.5">
+        <CryptoIcon chain={route.chain} size={28} />
         <span className="font-display font-medium text-spark-text-primary">
           {asset} on {formatChainName(route.chain)}
         </span>

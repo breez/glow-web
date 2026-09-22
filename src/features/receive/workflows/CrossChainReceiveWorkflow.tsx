@@ -428,14 +428,15 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
           <div>
             {/* Above the amount: the network governs what the amount may be,
                 and a request is the same one nearly every time. */}
-            <CrossChainRouteChip
-              route={chipRoute}
-              asset={selectedAsset}
-              onClick={() => openPicker('amount')}
-              disabled={routes.length === 0}
-              data-testid="cross-chain-receive-route-chip"
-            />
-
+            <div className="mb-3">
+              <CrossChainRouteChip
+                route={chipRoute}
+                asset={selectedAsset}
+                onClick={() => openPicker('amount')}
+                disabled={routes.length === 0}
+                data-testid="cross-chain-receive-route-chip"
+              />
+            </div>
 
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-spark-text-primary">Amount</label>

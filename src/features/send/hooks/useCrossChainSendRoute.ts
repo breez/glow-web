@@ -5,8 +5,12 @@ import { useStableBalance } from '@/contexts/StableBalanceContext';
 import { getLastSendRoute, setLastSendRoute } from '@/services/settings';
 import { useCrossChainRouteGroups } from '@/hooks/useCrossChainRouteGroups';
 import {
+  assetDisplayName,
   assetMatchesGroup,
+  buildGroupLookup,
+  chainGroupKey as chainGroupKeyOf,
   formatUsdLimits,
+  routeNamedByDestination,
   sparkSideLimits,
 } from '@/utils/crossChainRoutes';
 import { logger, LogCategory } from '@/services/logger';
@@ -53,7 +57,20 @@ export function useCrossChainSendRoute(addressDetails: CrossChainAddressDetails 
         if (cancelled) return;
         setRoutes(fetched);
         const remembered = getLastSendRoute(address);
-        if (remembered) setChoice({ address, ...remembered });
+        if (remembered) {
+          setChoice({ address, ...remembered });
+          return;
+        }
+        // A destination that names its own network and token settles the
+        // choice without asking. Recorded like any other, since the chip
+        // shows it before the amount and it can still be changed there.
+        const lookup = buildGroupLookup(fetched);
+        const named = routeNamedByDestination(fetched, addressDetails, r => chainGroupKeyOf(r, lookup));
+        if (named) {
+          const choice = { asset: assetDisplayName(named.asset), chain: chainGroupKeyOf(named, lookup) };
+          setLastSendRoute(address, choice);
+          setChoice({ address, ...choice });
+        }
       })
       .catch(err => logger.warn(LogCategory.PAYMENT, 'Failed to fetch cross-chain send routes', { error: formatError(err) }));
     return () => { cancelled = true; };

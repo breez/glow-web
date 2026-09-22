@@ -182,7 +182,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
 
   const amountSection = (
     <div>
-        {routeChip && <div className="mb-4">{routeChip}</div>}
+        {routeChip && <div className="mb-3">{routeChip}</div>}
         <div className="flex items-center justify-between mb-2">
           <label className="block text-sm font-medium text-spark-text-primary">
             Amount

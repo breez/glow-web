@@ -11,22 +11,33 @@ import { getLastSendRoute } from '@/services/settings';
 import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import SendPaymentDialog from './SendPaymentDialog';
 
-const ADDRESS = '0xEA4C510da2E39183D99832A51e2892820Fc37AB5';
+// One address per test: `settings.ts` caches its reads in memory, so a
+// `localStorage.clear()` between tests does not unwrite what one recorded.
+const ADDRESSES = {
+  picked: '0xEA4C510da2E39183D99832A51e2892820Fc37AB1',
+  named: '0xEA4C510da2E39183D99832A51e2892820Fc37AB2',
+  bare: '0xEA4C510da2E39183D99832A51e2892820Fc37AB3',
+};
+
+const CHAINS: Record<string, string> = { base: '8453', arbitrum: '42161', polygon: '137' };
+const CONTRACTS: Record<string, string> = { USDC: '0xaf88USDC', USDT: '0xdAC1USDT' };
 
 const routeOn = (asset: string, chain: string): CrossChainRoutePair => ({
   provider: 'orchestra', chain, asset, decimals: 6, exactOutEligible: false,
+  chainId: CHAINS[chain], contractAddress: CONTRACTS[asset],
   acceptedAssets: [{ asset: { type: 'bitcoin' }, limits: { minUsdCents: 80, maxUsdCents: 8_980_000 } }],
   deliveryMethods: ['spark'],
 }) as unknown as CrossChainRoutePair;
 
-const openOnAmountStep = async () => {
+const openOnAmountStep = async (address: string, parsed?: Record<string, unknown>) => {
   const client = createMockClient() as unknown as BreezSdk;
   client.listContacts = vi.fn().mockResolvedValue([]);
   client.getCrossChainRoutes = vi.fn().mockResolvedValue([
-    routeOn('USDC', 'base'), routeOn('USDC', 'arbitrum'), routeOn('USDT', 'base'),
+    routeOn('USDC', 'base'), routeOn('USDC', 'arbitrum'),
+    routeOn('USDT', 'base'), routeOn('USDT', 'arbitrum'),
   ]);
   client.parse = vi.fn().mockResolvedValue({
-    type: 'crossChainAddress', address: ADDRESS, addressFamily: 'evm', chainId: 8453,
+    type: 'crossChainAddress', address, addressFamily: 'evm', ...parsed,
   });
   render(
     <ToastProvider>
@@ -46,7 +57,7 @@ const openOnAmountStep = async () => {
     </ToastProvider>,
   );
   await waitForSheetOpen();
-  fireEvent.change(await screen.findByTestId('payment-input'), { target: { value: ADDRESS } });
+  fireEvent.change(await screen.findByTestId('payment-input'), { target: { value: address } });
   fireEvent.click(screen.getByTestId('continue-button'));
   await screen.findByTestId('amount-input');
 };
@@ -55,7 +66,7 @@ describe('cross-chain send network choice', () => {
   beforeEach(() => localStorage.clear());
 
   it('picks the network before the amount and remembers it for the quote', async () => {
-    await openOnAmountStep();
+    await openOnAmountStep(ADDRESSES.picked);
 
     // Nothing remembered, so the chip has no network to name yet.
     const chip = await screen.findByTestId('cross-chain-send-route-chip');
@@ -73,6 +84,24 @@ describe('cross-chain send network choice', () => {
     expect(screen.getByTestId('send-amount-hint')).toHaveTextContent('$0.80 – $89 800');
 
     // Recorded, which is what lets the workflow skip straight to the quote.
-    expect(getLastSendRoute(ADDRESS)).toEqual({ asset: 'USDC', chain: 'base' });
+    expect(getLastSendRoute(ADDRESSES.picked)).toEqual({ asset: 'USDC', chain: 'base' });
+  });
+
+  it('takes the network and coin a destination names for itself', async () => {
+    // What a scanned cross-chain URI carries: the chain id and the token
+    // contract, which between them leave nothing to ask.
+    await openOnAmountStep(ADDRESSES.named, { chainId: 42161, contractAddress: '0xDAC1USDT' });
+
+    expect(await screen.findByTestId('cross-chain-send-route-chip'))
+      .toHaveTextContent('USDT on Arbitrum');
+    expect(getLastSendRoute(ADDRESSES.named)).toEqual({ asset: 'USDT', chain: 'arbitrum' });
+  });
+
+  it('still asks when a bare address leaves the network open', async () => {
+    await openOnAmountStep(ADDRESSES.bare);
+
+    expect(await screen.findByTestId('cross-chain-send-route-chip'))
+      .toHaveTextContent('Select network');
+    expect(getLastSendRoute(ADDRESSES.bare)).toBeNull();
   });
 });

@@ -108,3 +108,25 @@ export function formatUsdLimits(limits: CrossChainRouteLimits | null): string | 
   if (max !== undefined) return `Up to ${formatUsdCents(max)}`;
   return null;
 }
+
+/** The one route a destination names outright, or null when it names none or
+ *  leaves a choice open. A cross-chain URI carries the chain id and the token
+ *  contract, which between them settle both the network and the coin; a bare
+ *  address carries neither, and only its family narrows anything. */
+export function routeNamedByDestination(
+  routes: CrossChainRoutePair[],
+  details: { chainId?: number; contractAddress?: string },
+  groupKey: (route: CrossChainRoutePair) => string,
+): CrossChainRoutePair | null {
+  const contract = details.contractAddress?.toLowerCase();
+  const chainId = details.chainId === undefined ? undefined : String(details.chainId);
+  if (!contract && !chainId) return null;
+  const matching = routes.filter(r =>
+    (!contract || r.contractAddress?.toLowerCase() === contract)
+    && (!chainId || r.chainId === chainId));
+  if (matching.length === 0) return null;
+  // Several providers may serve the same pair; a choice is only open when the
+  // coin or the network still differs between them.
+  const groups = new Set(matching.map(r => `${assetDisplayName(r.asset)}|${groupKey(r)}`));
+  return groups.size === 1 ? matching[0] : null;
+}
