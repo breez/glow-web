@@ -20,6 +20,7 @@ import { useLatest } from '../../../hooks/useLatest';
 import {
   BottomSheetCardContext,
   SetSheetBackContext,
+  SetSheetOwnsScrollContext,
   SheetBackContext,
   SheetFullSnapContext,
 } from './BottomSheetCardContext';
@@ -566,6 +567,12 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
   ({ children, className = '' }, ref) => {
     const [cardEl, setCardEl] = useState<HTMLDivElement | null>(null);
     const [stepBack, setStepBack] = useState<(() => void) | null>(null);
+    // Content areas registered via useSheetOwnsScroll.
+    const [ownScrollers, setOwnScrollers] = useState(0);
+    const registerOwnScroller = useCallback(
+      (delta: number) => setOwnScrollers((n) => n + delta),
+      [],
+    );
     const reportHeight = useContext(ContentMeasureContext);
     const clearancePx = useContext(KeyboardClearanceContext);
     const handleRef = useRef<HTMLDivElement | null>(null);
@@ -644,6 +651,13 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
         <Sheet.Content
           scrollClassName="scrollbar-hidden"
           scrollRef={scrollerRef}
+          // A step with its own scroller (useSheetOwnsScroll) takes the
+          // drag off the content. The library suppresses the drag only for
+          // ITS scroller, which a step that caps an inner list leaves
+          // unscrollable, so without this the sheet reads every swipe over
+          // the list as a drag and the list moves only when the browser
+          // wins the race.
+          disableDrag={ownScrollers > 0}
           // Manual keyboard avoidance (avoidKeyboard is off on the
           // root): the container computes --keyboard-clearance from
           // the live keyboard inset plus the iOS accessory-bar
@@ -652,6 +666,15 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
           // scroll-padding is not honored by Safari's caret reveal).
           scrollStyle={{
             paddingBottom: 'var(--keyboard-clearance, 0px)',
+            // touch-action intersects down the ancestor chain, so the
+            // pan-down the library pairs with its drag clamps an inner
+            // list's pan-y to "downward only", leaving nothing to scroll
+            // with. Dropping the drag alone does not lift it: the library
+            // also writes pan-down imperatively, and stops maintaining it
+            // once its own scroller no longer overflows. Chromium enforces
+            // the directional value, WebKit ignores it, which is why this
+            // reads as flaky on iOS and immovable on Android.
+            ...(ownScrollers > 0 ? { touchAction: 'pan-y' } : null),
           }}
         >
           <div
@@ -673,11 +696,13 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
             className={`bottom-sheet-content-pad px-6 pt-3 ${className}`}
           >
             <BottomSheetCardContext.Provider value={cardEl}>
-              <SetSheetBackContext.Provider value={setStepBack}>
-                <SheetBackContext.Provider value={stepBack}>
-                  {children}
-                </SheetBackContext.Provider>
-              </SetSheetBackContext.Provider>
+              <SetSheetOwnsScrollContext.Provider value={registerOwnScroller}>
+                <SetSheetBackContext.Provider value={setStepBack}>
+                  <SheetBackContext.Provider value={stepBack}>
+                    {children}
+                  </SheetBackContext.Provider>
+                </SetSheetBackContext.Provider>
+              </SetSheetOwnsScrollContext.Provider>
             </BottomSheetCardContext.Provider>
           </div>
         </Sheet.Content>

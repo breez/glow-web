@@ -6,7 +6,7 @@ import type {
   PrepareSendPaymentResponse,
 } from '@breeztech/breez-sdk-spark';
 import { PrimaryButton, SecondaryButton } from '../../../components/ui';
-import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardContext';
+import { useSheetBack, useSheetOwnsScroll } from '../../../components/ui/sheets/BottomSheetCardContext';
 import { SpinnerIcon } from '../../../components/Icons';
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
 import { CrossChainAssetStep } from '../../../components/crossChain/CrossChainAssetStep';
@@ -255,6 +255,8 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
 
   // The asset and chain steps lend their own.
   useSheetBack(step === 'provider' ? goBackFromProvider : step === 'confirm' ? goBackFromConfirm : undefined);
+  // The provider list caps and scrolls itself, same as the asset / chain steps.
+  useSheetOwnsScroll(step === 'provider');
 
   const handleSend = () => {
     if (!prepareResponse) return;
@@ -326,7 +328,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
 
       {/* Step 4: Provider selection */}
       {step === 'provider' && (
-        <div className="flex flex-col" style={{ maxHeight: '60vh' }}>
+        <div className="flex flex-col" style={{ maxHeight: '60dvh' }}>
           {allProvidersFailed ? (
             <div className="mb-4 p-4 bg-spark-warn-surface border border-spark-warn-border rounded-xl">
               <p className="text-sm font-medium text-spark-warn-title mb-1">Couldn’t get a quote</p>
@@ -337,7 +339,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
               <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">
                 Select Provider for {selectedAsset} ({formatChainName(routesForSelection[0]?.chain ?? '')})
               </label>
-              <div className="space-y-2 overflow-y-auto min-h-0 pr-1">
+              <div className="space-y-2 overflow-y-auto overscroll-y-none touch-pan-y min-h-0 pr-1">
                 {visibleProviders.map((pq) => {
                   const key = pq.route.provider;
                   const pMethod = pq.response?.paymentMethod;
