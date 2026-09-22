@@ -309,7 +309,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
               ? `Enter amount in ${config.currencyCode}`
               : `Between ${formatWithSpaces(minSats)} and ${formatWithSpaces(maxSats)} sats`
             }
-            className={`${AMOUNT_FIELD_CLASS} pr-16 focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
+            className={`${AMOUNT_FIELD_CLASS} pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
             disabled={isLoading}
             readOnly={isSendAll}
             min={isTokenMode ? undefined : minSats}
@@ -396,7 +396,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Add a message..."
-            className={`${AMOUNT_FIELD_CLASS} focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 resize-none`}
+            className={`${AMOUNT_FIELD_CLASS} resize-none`}
             rows={3}
             maxLength={commentMaxLen}
             disabled={isLoading}

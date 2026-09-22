@@ -179,7 +179,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
               disabled={isLoading}
               maxLength={INVOICE_DESCRIPTION_MAX}
               rows={1}
-              className={`${AMOUNT_FIELD_CLASS} focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 resize-none`}
+              className={`${AMOUNT_FIELD_CLASS} resize-none`}
             />
           </div>
 
@@ -205,7 +205,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                 placeholder={isTokenMode ? '0.00' : '0'}
                 disabled={isLoading}
                 rows={1}
-                className={`${AMOUNT_FIELD_CLASS} focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 resize-none pr-16 font-mono`}
+                className={`${AMOUNT_FIELD_CLASS} resize-none pr-16 font-mono`}
                 data-testid="invoice-amount-input"
               />
               {tokenSymbol && (

@@ -460,7 +460,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                 }
               }}
               placeholder="Enter amount in USD"
-              className={`${AMOUNT_FIELD_CLASS} focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20`}
+              className={`${AMOUNT_FIELD_CLASS}`}
               data-testid="cross-chain-receive-amount-input"
             />
 

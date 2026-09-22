@@ -63,10 +63,12 @@ export interface FormInputProps {
  * The amount-entry field's shape: 58px tall, which is what a p-4 box around a
  * single line of base text measures. Every screen that asks for an amount
  * writes its own element, because they differ in the tag, the adornment and
- * the font, so the one thing they must agree on is held here. The focus colour
- * is not: send uses electric and receive uses the accent.
+ * the font, so what they must agree on is held here. The focus state is the
+ * accent rather than electric, which elsewhere means an outgoing payment and
+ * backs the info alert: a state has no business borrowing a colour that
+ * already says something else.
  */
-export const AMOUNT_FIELD_CLASS = 'w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted transition-all';
+export const AMOUNT_FIELD_CLASS = 'w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all';
 
 export const FormInput: React.FC<FormInputProps> = ({
   id,

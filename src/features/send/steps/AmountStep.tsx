@@ -212,7 +212,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
               }
             }}
             placeholder={isTokenMode && config ? `Enter amount in ${config.currencyCode}` : 'Enter amount in sats'}
-            className={`${AMOUNT_FIELD_CLASS} ${usdOnly ? '' : 'pr-16'} focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
+            className={`${AMOUNT_FIELD_CLASS} ${usdOnly ? '' : 'pr-16'} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
             disabled={isLoading}
             readOnly={isSendAll}
             min={isTokenMode ? undefined : 1}
