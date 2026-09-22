@@ -46,8 +46,11 @@ type WorkflowStep = 'amount' | 'loading' | 'asset' | 'chain' | 'provider' | 'gen
 
 const QUICK_USD_AMOUNTS = [10, 50, 200];
 
-/** Decimals Orchestra's fee asset uses, which is not the route's: it quotes
- *  every fee in USDC on Solana regardless of where the deposit lands. */
+/** Decimals the fee is quoted in, which is not the route's. Orchestra prices
+ *  a fee in an asset of its own choosing: USDC on Solana for most routes, USDC
+ *  on Arc or USDT on Arbitrum for others, and the choice also moves with the
+ *  destination. Every one observed across the route table uses 6, and the SDK
+ *  passes only the ticker, so 6 is what this assumes (breez/spark-sdk#1160). */
 const CROSS_CHAIN_FEE_DECIMALS = 6;
 
 interface CrossChainReceiveWorkflowProps {
@@ -370,12 +373,8 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
       </div>
     </div>
   ) : null;
-  // The fee is not in the route's units. Orchestra prices it in its own fee
-  // asset, which reports as USDC on Solana at 6 decimals whatever the route
-  // is, so a BSC route at 18 decimals renders the fee as a millionth of a cent
-  // if the route's scale is used. The SDK passes the figure through without
-  // its decimals, so 6 is assumed here and the ticker is stated alongside.
-  // An absent ticker means the fee is in sats.
+  // The fee is not in the route's units: a BSC route at 18 decimals renders it
+  // as a millionth of a cent that way. An absent ticker means sats.
   const resultFee = resultInfo
     ? resultInfo.serviceFeeAsset
       ? `${formatCrossChainAmount(BigInt(resultInfo.serviceFeeAmount), CROSS_CHAIN_FEE_DECIMALS)} ${assetDisplayName(resultInfo.serviceFeeAsset)}`
