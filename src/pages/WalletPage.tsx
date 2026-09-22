@@ -75,7 +75,14 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
   const [scannerOpenedFromSend, setScannerOpenedFromSend] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [tappedPayment, setTappedPayment] = useState<Payment | null>(null);
+  // Resolved against the live list so a payment that changes while its sheet
+  // is open (a cross-chain receive picking up its conversion info after it
+  // lands) is shown as it is now. The tap keeps the sheet up if a refresh
+  // pages the row out.
+  const selectedPayment = tappedPayment
+    ? transactions.find(p => p.id === tappedPayment.id) ?? tappedPayment
+    : null;
   const [selectedExitId, setSelectedExitId] = useState<string | null>(null);
   // The outpoint, not the record: held as a copy the deposit's maturity, fee
   // error and claim status all freeze at tap time, and the sheet spends its
@@ -157,7 +164,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
     if (isSendDialogOpen || isReceiveDialogOpen || selectedPayment || selectedDeposit) {
       setIsSendDialogOpen(false);
       setIsReceiveDialogOpen(false);
-      setSelectedPayment(null);
+      setTappedPayment(null);
       setSelectedOutpoint(null);
       return;
     }
@@ -168,12 +175,12 @@ const WalletPage: React.FC<WalletPageProps> = ({
       setSelectedOutpoint(`${payment.depositInfo.txid}:${payment.depositInfo.vout}`);
     } else {
       // Open regular payment details
-      setSelectedPayment(payment);
+      setTappedPayment(payment);
     }
   }, [dialogStateRef]);
 
   const handlePaymentDetailsClose = useCallback(() => {
-    setSelectedPayment(null);
+    setTappedPayment(null);
   }, []);
 
   const handleDepositDetailsClose = useCallback(() => {
