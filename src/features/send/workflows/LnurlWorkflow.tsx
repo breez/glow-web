@@ -382,7 +382,6 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
             </button>
           )}
         </div>
-        <FormError error={inlineBalanceError || error} />
       </div>
 
       {/* Optional comment */}
@@ -403,6 +402,12 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
           />
         </div>
       )}
+
+      {/* Above the CTA rather than inside the amount block: there it grew the
+          block and threw the spacing off against the comment beside it.
+          `FormError` renders nothing without an error, so the row costs no
+          gap when there is none. */}
+      <FormError error={inlineBalanceError || error} />
 
       <PrimaryButton onClick={onAmountNext} disabled={isLoading || !validAmount || !!inlineBalanceError} className="w-full">
         {isLoading ? (
