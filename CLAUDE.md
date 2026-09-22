@@ -311,6 +311,11 @@ argue them as preferences: a citation adds nothing here.
   word: the failed and processing chips in `TransactionList` are the
   pattern, the unlabelled pulsing dot beside a pending payment is not
   (WCAG 1.4.1).
+- No floating text. A sentence that has to be on screen gets a container:
+  an `AlertCard`, a row's detail line, a field's helper. Prose sitting loose
+  between cards belongs to nothing, reads as an afterthought, and is the
+  first thing to go stale when the screen around it changes. Ask first
+  whether the screen already says it, which it usually does.
 - No success toast for money arriving or a claim going through. The
   balance and the payments list carry it, and a payment arriving gets the
   celebration, so a toast on top is the same news again over a screen
