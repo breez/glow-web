@@ -33,8 +33,10 @@ export const CrossChainRouteChip: React.FC<CrossChainRouteChipProps> = ({
       disabled={disabled}
       // Its own padding rather than the picker card's: this is a control that
       // sits in a column of fields, so it answers to the amount input's height
-      // rather than to the list rows it opens.
-      className="w-full p-3 rounded-2xl border bg-spark-dark border-spark-border hover:border-spark-border-light transition-all flex items-center justify-between disabled:opacity-60"
+      // rather than to the list rows it opens. The height is held because only
+      // the named state carries a 32px icon, and the field below would shift
+      // when the routes land.
+      className="w-full p-3 min-h-[58px] rounded-2xl border bg-spark-dark border-spark-border hover:border-spark-border-light transition-all flex items-center justify-between disabled:opacity-60"
       data-testid={testId}
   >
       {chain && asset ? (
