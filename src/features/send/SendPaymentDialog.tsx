@@ -12,6 +12,7 @@ import LnurlAuthWorkflow from './workflows/LnurlAuthWorkflow';
 import LnurlWithdrawWorkflow, { LNURL_WITHDRAW_COMPLETION_TIMEOUT_SECS } from './workflows/LnurlWithdrawWorkflow';
 import CrossChainWorkflow from './workflows/CrossChainWorkflow';
 import AmountStep from './steps/AmountStep';
+import { useCrossChainSendHint } from './hooks/useCrossChainSendHint';
 import ConfirmStep from './steps/ConfirmStep';
 import ProcessingStep from './steps/ProcessingStep';
 import ResultStep from './steps/ResultStep';
@@ -36,6 +37,12 @@ interface SendPaymentDialogProps {
 const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, initialRawInput, onScanQr, onSuccessfulSend }) => {
   const wallet = useWallet();
   const send = useSendPayment();
+  // Stated on the amount field: a repeat recipient skips the network step, so
+  // this is where the network it settled on gets named, and the bounds mean
+  // nothing without it.
+  const crossChainHint = useCrossChainSendHint(
+    send.paymentInput?.parsedInput.type === 'crossChainAddress' ? send.paymentInput.parsedInput : null,
+  );
   const { findContactByAddress } = useContactsContext();
   const [showContactsView, setShowContactsView] = useState(false);
   const [selectedContactAddress, setSelectedContactAddress] = useState<string | null>(null);
@@ -203,7 +210,8 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 error={send.error}
                 onBack={backToInput}
                 onNext={send.onAmountNext}
-                amountFirst={send.paymentInput?.parsedInput.type === 'crossChainAddress'}
+                usdOnly={send.paymentInput?.parsedInput.type === 'crossChainAddress'}
+                amountHint={crossChainHint}
               />
             )}
 

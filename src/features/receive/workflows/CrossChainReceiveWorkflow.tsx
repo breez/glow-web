@@ -28,7 +28,7 @@ import {
   crossChainFriendlyError,
   formatUsdLimits,
   landsInThisWallet,
-  receiveLimitsFor,
+  sparkSideLimits,
 } from '../../../utils/crossChainRoutes';
 import { formatChainName, formatReceiveAmount, formatCrossChainAmount, formatUsdCents, parseCrossChainAmount, truncateAddress } from '../../../utils/crossChainFormat';
 import { copyToClipboard } from '../../../utils/clipboard';
@@ -96,7 +96,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   const stableTokenIdentifier = stableBalance.isActive ? stableBalance.tokenIdentifier : null;
   // What the provider will take on the chosen network. Shown beside the label
   // rather than in the placeholder so it survives the first keystroke.
-  const chipLimits = chipRoute ? receiveLimitsFor(chipRoute, stableTokenIdentifier) : null;
+  const chipLimits = chipRoute ? sparkSideLimits(chipRoute, stableTokenIdentifier) : null;
   const limitRange = formatUsdLimits(chipLimits);
 
   // The sender deposits in the source asset's base units. Source assets here
@@ -426,6 +426,28 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
       {step === 'amount' && (
         <div>
           <div>
+            {/* The network the sender pays on. A chip rather than a step of its
+                own: it is the same one nearly every time, and the amount is
+                the only part of a request that really changes. */}
+            <button
+              onClick={() => openPicker('amount')}
+              disabled={routes.length === 0}
+              className={`${crossChainCardClass()} mb-4 flex items-center justify-between disabled:opacity-60`}
+              data-testid="cross-chain-receive-route-chip"
+            >
+              {chipRoute ? (
+                <span className="flex items-center gap-3">
+                  <CryptoIcon chain={chipRoute.chain} size={32} />
+                  <span className="font-display font-medium text-spark-text-primary">
+                    {selectedAsset} on {formatChainName(chipRoute.chain)}
+                  </span>
+                </span>
+              ) : (
+                <span className="font-display font-medium text-spark-text-secondary">Select network</span>
+              )}
+              <ChevronDownIcon size="sm" className="text-spark-primary" />
+            </button>
+
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-spark-text-primary">Amount</label>
               {limitRange && (
@@ -471,27 +493,6 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
               })}
             </div>
 
-            {/* The network the sender pays on. A chip rather than a step of its
-                own: it is the same one nearly every time, and the amount is
-                the only part of a request that really changes. */}
-            <button
-              onClick={() => openPicker('amount')}
-              disabled={routes.length === 0}
-              className={`${crossChainCardClass()} mt-3 flex items-center justify-between disabled:opacity-60`}
-              data-testid="cross-chain-receive-route-chip"
-            >
-              {chipRoute ? (
-                <span className="flex items-center gap-3">
-                  <CryptoIcon chain={chipRoute.chain} size={32} />
-                  <span className="font-display font-medium text-spark-text-primary">
-                    {selectedAsset} on {formatChainName(chipRoute.chain)}
-                  </span>
-                </span>
-              ) : (
-                <span className="font-display font-medium text-spark-text-secondary">Select network</span>
-              )}
-              <ChevronDownIcon size="sm" className="text-spark-primary" />
-            </button>
           </div>
 
           <div className="space-y-4 pt-6">

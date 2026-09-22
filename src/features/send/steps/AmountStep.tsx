@@ -20,8 +20,12 @@ export interface AmountStepProps {
   error: string | null;
   onBack: () => void;
   onNext: (amount: bigint, feesIncluded?: boolean, tokenIdentifier?: string, conversionOptions?: ConversionOptions) => void;
-  /** Show amount input before destination (used for cross-chain) */
-  amountFirst?: boolean;
+  /** Cross-chain sends are denominated in USD only: the amount starts in it
+   *  and there is nothing to switch to. */
+  usdOnly?: boolean;
+  /** The route and its bounds, stated beside the label. Absent until a network
+   *  is known, which for a send is one this recipient was paid on before. */
+  amountHint?: string | null;
 }
 
 const AmountStep: React.FC<AmountStepProps> = ({
@@ -33,12 +37,13 @@ const AmountStep: React.FC<AmountStepProps> = ({
   error,
   onBack,
   onNext,
-  amountFirst = false,
+  usdOnly = false,
+  amountHint = null,
 }) => {
   // USD entry without a stable-balance token, funded from BTC. Cross-chain
-  // ("Send USD", amountFirst) starts in USD; plain BTC sends start in sats
+  // ("Send USD", usdOnly) starts in USD; plain BTC sends start in sats
   // with USD as a toggleable secondary option (#253).
-  const fiatOverride = useFiatOverride('USD', amountFirst);
+  const fiatOverride = useFiatOverride('USD', usdOnly);
 
   const input = useAmountInput({ initialAmount: amount, balanceSats, tokenBalance, fiatOverride });
   const {
@@ -138,8 +143,8 @@ const AmountStep: React.FC<AmountStepProps> = ({
     // Cross-chain funded from a token (USDB) balance: pass the amount in token
     // base units + tokenIdentifier so the workflow uses it directly instead of
     // round-tripping USD→sats→token (which loses ~sub-cent precision, e.g. $5 →
-    // 4 999 771). Only cross-chain (amountFirst); all other sends keep parseToSats.
-    if (amountFirst && isTokenMode && config && tokenIdentifier) {
+    // 4 999 771). Only cross-chain (usdOnly); all other sends keep parseToSats.
+    if (usdOnly && isTokenMode && config && tokenIdentifier) {
       onNext(
         BigInt(Math.round(parseFloat(localAmount) * 10 ** config.decimals)),
         feesIncluded,
@@ -175,9 +180,16 @@ const AmountStep: React.FC<AmountStepProps> = ({
 
   const amountSection = (
     <div>
-        <label className="block text-sm font-medium text-spark-text-primary mb-2">
-          Amount
-        </label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium text-spark-text-primary">
+            Amount
+          </label>
+          {amountHint && (
+            <span className="text-xs text-spark-text-secondary" data-testid="send-amount-hint">
+              {amountHint}
+            </span>
+          )}
+        </div>
         <div className="relative">
           <input
             type={isTokenMode ? 'text' : 'number'}
@@ -197,14 +209,14 @@ const AmountStep: React.FC<AmountStepProps> = ({
               }
             }}
             placeholder={isTokenMode && config ? `Enter amount in ${config.currencyCode}` : 'Enter amount in sats'}
-            className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed"
+            className={`w-full p-4 ${usdOnly ? '' : 'pr-16'} bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
             disabled={isLoading}
             readOnly={isSendAll}
             min={isTokenMode ? undefined : 1}
             data-testid="amount-input"
           />
-          {/* Cross-chain ("Send USD", amountFirst) is USD-only: no sats toggle. */}
-          {!amountFirst && tokenSymbol && (
+          {/* Cross-chain is USD-only: nothing to switch to. */}
+          {!usdOnly && tokenSymbol && (
             <CurrencySwitcher
               isTokenMode={isTokenMode}
               tokenSymbol={tokenSymbol}
@@ -214,7 +226,9 @@ const AmountStep: React.FC<AmountStepProps> = ({
           )}
         </div>
 
-        {/* Quick amount buttons */}
+        {/* Quick amount buttons. A balance under the smallest rung offers none,
+            so the row is dropped rather than left as an empty band of space. */}
+        {(quickAmounts.length > 0 || showSendAll) && (
         <div className="flex gap-2 mt-3">
           {quickAmounts.map((quickAmount) => {
             const isSelected = amountNum === quickAmount && !isSendAll;
@@ -276,12 +290,14 @@ const AmountStep: React.FC<AmountStepProps> = ({
             </button>
           )}
         </div>
+        )}
     </div>
   );
 
   return (
     <div className="space-y-5">
-      {amountFirst ? <>{amountSection}{destinationSection}</> : <>{destinationSection}{amountSection}</>}
+      {destinationSection}
+      {amountSection}
 
       <FormError error={inlineBalanceError || localError || error} />
 

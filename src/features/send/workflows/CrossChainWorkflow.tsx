@@ -5,7 +5,7 @@ import type {
   CrossChainRoutePair,
   PrepareSendPaymentResponse,
 } from '@breeztech/breez-sdk-spark';
-import { PrimaryButton, SecondaryButton } from '../../../components/ui';
+import { CopyableRow, PrimaryButton, SecondaryButton } from '../../../components/ui';
 import { useSheetBack, useSheetOwnsScroll } from '../../../components/ui/sheets/BottomSheetCardContext';
 import { SpinnerIcon } from '../../../components/Icons';
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
@@ -434,25 +434,43 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       {/* Step 5: Confirm */}
       {step === 'confirm' && quote && confirmedRoute && (
         <>
-          {/* Amount header */}
+          {/* The amount was asked for in USD, so that is what leads. What
+              actually leaves the wallet sits under it: `get_cross_chain_routes`
+              keeps USD-pegged destinations only, so the dollar figure holds for
+              every route this screen can reach. */}
           <div className="text-center py-4">
             <p className="text-spark-text-muted text-sm mb-2">You're sending</p>
-            <div className="flex items-baseline justify-center gap-2">
-              <span className="text-4xl font-mono font-bold text-spark-text-primary">
-                {effectiveTokenId && stableBalance.displayConfig ? (
-                  <span className="inline-flex items-center">
-                    <span className="text-[0.8em] opacity-70 mr-px">{stableBalance.displayConfig.symbol}</span>
-                    {formatTokenAmount(BigInt(quote.amountIn), { ...stableBalance.displayConfig, symbol: '', symbolPosition: 'after' })}
-                  </span>
-                ) : (
-                  <SatAmount sats={Number(quote.amountIn)} />
-                )}
-              </span>
-            </div>
+            <span className="text-4xl font-mono font-bold text-spark-text-primary">
+              ${formatReceiveAmount(BigInt(quote.assetAmountIn), confirmedRoute.decimals)}
+            </span>
+            <p className="text-sm text-spark-text-secondary mt-1 font-mono">
+              {effectiveTokenId && stableBalance.displayConfig ? (
+                <span className="inline-flex items-center">
+                  <span className="text-[0.8em] opacity-70 mr-px">{stableBalance.displayConfig.symbol}</span>
+                  {formatTokenAmount(BigInt(quote.amountIn), { ...stableBalance.displayConfig, symbol: '', symbolPosition: 'after' })}
+                </span>
+              ) : (
+                <SatAmount sats={Number(quote.amountIn)} />
+              )}
+            </p>
           </div>
 
           {/* Same rows, same order as the receive request: the card describes
               the far side of the route either way round. */}
+          {/* The address sits where the invoice does on a Lightning send: it
+              came from somewhere else, and this is the screen where it is
+              worth checking before the money goes. */}
+          <div className="mb-4">
+            <CopyableRow
+              label="To address"
+              value={quote.recipientAddress}
+              display={truncateAddress(quote.recipientAddress, 20)}
+            />
+          </div>
+
+          {/* The card is a ledger in the destination's own asset, since the
+              fee is quoted there and cannot be added to a sat figure:
+              `feeAmount` is exactly `assetAmountIn - estimatedOut`. */}
           <FeeBreakdownCard
             useRawStrings
             items={[
@@ -469,16 +487,12 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                 value: getProviderDisplayName(confirmedRoute.provider),
               },
               {
-                label: 'Address',
-                value: truncateAddress(quote.recipientAddress, 16),
-              },
-              {
-                label: 'Fees',
-                value: `${formatCrossChainAmount(BigInt(quote.feeAmount), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
+                label: 'Fee',
+                value: `−${formatCrossChainAmount(BigInt(quote.feeAmount), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
               },
               {
                 label: 'They receive',
-                value: `~${formatReceiveAmount(BigInt(quote.estimatedOut), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
+                value: `~${formatCrossChainAmount(BigInt(quote.estimatedOut), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
                 highlight: true,
               },
             ]}

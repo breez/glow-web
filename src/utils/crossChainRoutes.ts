@@ -79,11 +79,11 @@ export function landsInThisWallet(route: CrossChainRoutePair, stableTokenIdentif
     || (asset.type === 'token' && asset.tokenIdentifier === stableTokenIdentifier));
 }
 
-/** Limits for the asset a receive on this route will actually land in.
- *  Mirrors the SDK's own preference (the active stable token when the route
- *  takes it, otherwise bitcoin), since the bounds are published per accepted
- *  asset and the two can differ. */
-export function receiveLimitsFor(
+/** Limits for the Spark-side asset this route would use: the destination on a
+ *  receive, the source on a send. Mirrors the SDK's own preference, the active
+ *  stable token when the route takes it and otherwise bitcoin, since the
+ *  bounds are published per accepted asset and the two can differ. */
+export function sparkSideLimits(
   route: CrossChainRoutePair,
   stableTokenIdentifier: string | null,
 ): CrossChainRouteLimits | null {

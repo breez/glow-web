@@ -141,8 +141,8 @@ describe('AmountStep USD entry (no stable balance)', () => {
     expect(buttonLabels()).toEqual(expect.arrayContaining(['₿1 000', '₿2 000']));
   });
 
-  it('keeps cross-chain (amountFirst) USD-only with no toggle', async () => {
-    renderAmountStep({ amountFirst: true });
+  it('keeps cross-chain (usdOnly) USD-only with no toggle', async () => {
+    renderAmountStep({ usdOnly: true });
 
     expect(screen.getByTestId('amount-input')).toHaveAttribute(
       'placeholder',
