@@ -66,7 +66,10 @@ export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): Archiv
       completedAt: Date.now(),
       network: plan.network,
       exitedSat: plan.exit.recoverableValueSat,
-      exitFeePaidSat: funding.reduce((sum, input) => sum + input.value, 0),
+      // What the exit was quoted to need, not what the address holds: a rebuild
+      // takes in every confirmed coin there, the exit's own change included, so
+      // summing those counts the same sats twice.
+      exitFeePaidSat: plan.quotedExitFeeSat ?? funding.reduce((sum, input) => sum + input.value, 0),
       exitFeeAddress: keyed ? fundingAddressOf(keyed.pubkey, plan.network) : undefined,
     },
     ...existing,

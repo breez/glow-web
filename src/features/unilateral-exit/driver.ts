@@ -31,6 +31,11 @@ export interface UnilateralExitPlan {
    * funding pays do not reduce what arrives.
    */
   quotedSweepFeeSat: number;
+  /**
+   * What the exit was quoted to need at its fee address, from the build that
+   * produced this plan. Absent on a plan written before the field existed.
+   */
+  quotedExitFeeSat?: number;
   /** The sdk's latest word on the exit, handed back to `checkUnilateralExit` unchanged. */
   exit: UnilateralExitResponse;
   /**
@@ -57,6 +62,7 @@ export interface PlanMeta {
   feeRateSatPerVbyte: number;
   fundingAddressIndex: number;
   quotedSweepFeeSat: number;
+  quotedExitFeeSat?: number;
 }
 
 const storageKey = ({ identityPubkey, network }: WalletKey): string =>
@@ -397,7 +403,7 @@ export async function startExit(
     .exportUnilateralExitState()
     .then(r => r.exitState)
     .catch(() => undefined);
-  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quote.sweepFeeSat };
+  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quote.sweepFeeSat, quotedExitFeeSat: quote.singleUtxoFundingSat };
   return { type: 'started', plan: { ...planFromExitResponse(exit, meta), exitStateSnapshot } };
 }
 

@@ -90,6 +90,37 @@ describe('archiveExit', () => {
     });
   });
 
+  it('reports what the exit was quoted, not the coins a rebuild swept up', () => {
+    const key = deriveFundingKey(
+      'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about',
+      'regtest',
+      0,
+    );
+    const coin = (txid: string, value: number) => ({
+      type: 'p2wpkh' as const,
+      txid,
+      vout: 0,
+      value,
+      pubkey: key.publicKeyHex,
+    });
+    archiveExit(
+      wallet,
+      plan([tx({ txid: 'sweep-c', kind: 'sweep', txHex: '00', status: confirmed(10) })], {
+        phase: 'complete',
+        network: 'regtest',
+        quotedExitFeeSat: 58_534,
+        exit: {
+          recoverableValueSat: 600_000,
+          // The fee, the top-up, and change the exit's own transactions
+          // returned to the address: summing these counts sats twice.
+          fundingInputs: [coin('fee', 3_122), coin('top-up', 55_412), coin('change', 31_939)],
+        },
+      }),
+    );
+
+    expect(loadArchive(wallet)[0].exitFeePaidSat).toBe(58_534);
+  });
+
   it('ignores a plan that never built a sweep', () => {
     archiveExit(wallet, plan([tx({ txid: 'node-a' })], { phase: 'complete' }));
 
