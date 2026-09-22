@@ -36,7 +36,7 @@ import { formatChainName, formatReceiveAmount, formatCrossChainAmount, formatUsd
 import { copyToClipboard } from '../../../utils/clipboard';
 import { normalizeDecimalInput } from '../../../utils/decimalInput';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
-import { formatWithSpaces } from '../../../utils/formatNumber';
+import { formatWithSpaces, groupUsd } from '../../../utils/formatNumber';
 import { getProviderDisplayName } from '../../../utils/paymentDescription';
 import { getLastUsdReceiveRoute, setLastUsdReceiveRoute } from '@/services/settings';
 import { logger, LogCategory } from '@/services/logger';
@@ -341,9 +341,9 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
     const amount = BigInt(info.expectedReceivedAmount);
     if (info.tokenIdentifier) {
       if (stableBalance.tokenIdentifier === info.tokenIdentifier && stableBalance.displayConfig) {
-        return formatTokenAmount(amount, stableBalance.displayConfig);
+        return groupUsd(formatTokenAmount(amount, stableBalance.displayConfig));
       }
-      return `$${formatReceiveAmount(amount, 6)}`;
+      return `$${groupUsd(formatReceiveAmount(amount, 6))}`;
     }
     return `₿${formatWithSpaces(Number(amount))}`;
   };
@@ -359,8 +359,8 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
     ? formatCrossChainAmount(BigInt(resultInfo.depositAmount), selectedRoute.decimals)
     : usdInput;
   const resultDepositUsd = selectedRoute && resultInfo
-    ? `$${formatReceiveAmount(BigInt(resultInfo.depositAmount), selectedRoute.decimals)}`
-    : `$${usdInput}`;
+    ? `$${groupUsd(formatReceiveAmount(BigInt(resultInfo.depositAmount), selectedRoute.decimals))}`
+    : `$${groupUsd(usdInput)}`;
   // Stays mounted and opens on grid rows, which resolve to the code's own
   // height: a max-height transition would need a guessed ceiling, and easing
   // against one is what makes a disclosure look like it snaps. The padding
@@ -388,9 +388,8 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
     ? resultInfo.serviceFeeAsset
       ? (() => {
           const fee = BigInt(resultInfo.serviceFeeAmount);
-          const ticker = assetDisplayName(resultInfo.serviceFeeAsset);
           const cents = formatReceiveAmount(fee, CROSS_CHAIN_FEE_DECIMALS);
-          return fee > 0n && Number(cents) === 0 ? `< 0.01 ${ticker}` : `${cents} ${ticker}`;
+          return fee > 0n && Number(cents) === 0 ? '< 0.01' : groupUsd(cents);
         })()
       : `₿${formatWithSpaces(Number(resultInfo.serviceFeeAmount))}`
     : null;
@@ -643,8 +642,14 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                 },
                 // With the fee and what lands: the three figures answer each
                 // other, and the route above them is a different question.
-                { label: 'You asked for', value: `$${usdInput}` },
-                ...(resultFee ? [{ label: 'Fees', value: resultFee }] : []),
+                { label: 'You asked for', value: `$${groupUsd(usdInput)}` },
+                ...(resultFee
+                  ? [{
+                      label: 'Fees',
+                      value: resultFee,
+                      unit: resultInfo.serviceFeeAsset ? assetDisplayName(resultInfo.serviceFeeAsset) : undefined,
+                    }]
+                  : []),
                 { label: 'You receive', value: `~${formatReceived(resultInfo)}`, highlight: true },
               ]}
             />

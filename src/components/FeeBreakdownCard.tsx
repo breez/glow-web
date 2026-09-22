@@ -17,6 +17,7 @@ export interface FeeBreakdownItem {
   /** No figure yet: the row keeps its place with a dash, so a card doesn't
    *  grow a row under the reader once the number lands. */
   pending?: boolean;
+  /** Asset name for the figure, kept outside the tightened digits. */
   unit?: string;
   highlight?: boolean;
   /**
@@ -80,6 +81,7 @@ export const FeeBreakdownCard: React.FC<FeeBreakdownCardProps> = ({
                   </>
                 )
               }
+              {item.unit && <span> {item.unit}</span>}
             </span>
           </div>
           {item.expansion}

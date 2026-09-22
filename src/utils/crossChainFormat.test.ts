@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Payment } from '@breeztech/breez-sdk-spark';
+import { groupUsd } from './formatNumber';
 import {
   parseCrossChainAmount,
   formatCrossChainAmount,
@@ -85,5 +86,14 @@ describe('getCrossChainDestination', () => {
     }));
     expect(dest.externalTxHash).toBeUndefined();
     expect(dest.chainName).toBe('Solana');
+  });
+});
+
+describe('groupUsd', () => {
+  it('groups dollars with commas and leaves the fraction alone', () => {
+    expect(groupUsd('11049582.62')).toBe('11,049,582.62');
+    expect(groupUsd('11000000')).toBe('11,000,000');
+    expect(groupUsd('0.05036')).toBe('0.05036');
+    expect(groupUsd('999')).toBe('999');
   });
 });

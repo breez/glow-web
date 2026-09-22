@@ -79,7 +79,7 @@ describe('USD receive deposit address', () => {
     // and what lands, in the same rows the send confirm uses.
     expect(screen.getByText('Ask the sender for')).toBeInTheDocument();
     expect(screen.getByText('Solana')).toBeInTheDocument();
-    expect(screen.getByText('0.01 USDC')).toBeInTheDocument();
+    expect(screen.getByText('0.01')).toBeInTheDocument();
     expect(screen.getByText('~₿12 298')).toBeInTheDocument();
 
     // The code leads: on EVM it is the only artifact carrying the amount. It
@@ -124,9 +124,11 @@ describe('USD receive deposit address', () => {
     await screen.findByTestId('cross-chain-deposit-address');
 
     expect(screen.getByText('$50.68')).toBeInTheDocument();
-    expect(screen.getByText('0.05 USDC')).toBeInTheDocument();
+    expect(screen.getByText('0.05')).toBeInTheDocument();
+    // Dollars group with commas, and the ticker sits outside the figure.
+    expect(screen.getByText('$50.43')).toBeInTheDocument();
     // A fee under a cent states a bound rather than rounding away to nothing.
-    expect(screen.queryByText('0.00 USDC')).toBeNull();
+    expect(screen.queryByText('0.00')).toBeNull();
   });
 
   it('states the range beside the label and holds the amount to it', async () => {

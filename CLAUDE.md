@@ -404,7 +404,12 @@ setError(`Amount must be at least ₿${formatWithSpaces(minSats)}`);
 ```
 
 **Key rules:**
-- `formatWithSpaces` is the only separator. No commas, and no narrower space character: U+2009 is absent from JetBrains Mono, so a thin space silently draws from a fallback font
+- A sat amount groups with `formatWithSpaces` and nothing else. No narrower
+  space character: U+2009 is absent from JetBrains Mono, so a thin space
+  silently draws from a fallback font
+- A dollar amount groups with `groupUsd`, which uses commas and a dot for the
+  decimal, so a figure in dollars reads as one at a glance rather than as sats.
+  Commas also need none of the tightening below, having no cell of their own
 - The tightening exists because mono gives every space a full character cell, which makes an untightened separator read as a break in the number. It is calibrated for mono, so never put it on proportional text, where it would pull the groups into each other
 - Apply it only to digits. `word-spacing` hits every space in the element, so a ticker (`USDC`), a chain name, or a trailing label like "change" belongs outside the amount, as a sibling
 - Two displays are deliberately hand-rolled: the balance header positions ₿ absolutely and tightens via `.balance-display`, and the transaction list's token rows carry a per-asset symbol split off a pre-formatted string

@@ -16,6 +16,7 @@ import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { SatAmount } from '../../../components/SatAmount';
 import { useCrossChainRouteGroups } from '../../../hooks/useCrossChainRouteGroups';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
+import { groupUsd } from '../../../utils/formatNumber';
 import { getLastSendRoute, setLastSendRoute } from '@/services/settings';
 import { logger, LogCategory } from '@/services/logger';
 import { getProviderDisplayName } from '../../../utils/paymentDescription';
@@ -384,14 +385,14 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-spark-text-secondary">Receiving</span>
                             <span className="font-mono text-sm text-spark-text-primary">
-                              ~{formatReceiveAmount(BigInt(pQuote.estimatedOut), pq.route.decimals)} {pq.route.asset}
+                              ~{groupUsd(formatReceiveAmount(BigInt(pQuote.estimatedOut), pq.route.decimals))} {pq.route.asset}
                             </span>
                           </div>
                           <div className="border-t border-spark-border/50" />
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-spark-text-secondary">Fee</span>
                             <span className="font-mono text-sm text-spark-text-primary">
-                              {formatCrossChainAmount(BigInt(pQuote.feeAmount), pq.route.decimals)} {pq.route.asset}
+                              {groupUsd(formatCrossChainAmount(BigInt(pQuote.feeAmount), pq.route.decimals))} {pq.route.asset}
                             </span>
                           </div>
                         </div>
@@ -441,7 +442,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
           <div className="text-center py-4">
             <p className="text-spark-text-muted text-sm mb-2">You're sending</p>
             <span className="text-4xl font-mono font-bold text-spark-text-primary">
-              ${formatReceiveAmount(BigInt(quote.assetAmountIn), confirmedRoute.decimals)}
+              ${groupUsd(formatReceiveAmount(BigInt(quote.assetAmountIn), confirmedRoute.decimals))}
             </span>
             <p className="text-sm text-spark-text-secondary mt-1 font-mono">
               {effectiveTokenId && stableBalance.displayConfig ? (
@@ -488,11 +489,13 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
               },
               {
                 label: 'Fee',
-                value: `−${formatCrossChainAmount(BigInt(quote.feeAmount), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
+                value: `−${groupUsd(formatCrossChainAmount(BigInt(quote.feeAmount), confirmedRoute.decimals))}`,
+                unit: assetDisplayName(confirmedRoute.asset),
               },
               {
                 label: 'They receive',
-                value: `~${formatCrossChainAmount(BigInt(quote.estimatedOut), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
+                value: `~${groupUsd(formatCrossChainAmount(BigInt(quote.estimatedOut), confirmedRoute.decimals))}`,
+                unit: assetDisplayName(confirmedRoute.asset),
                 highlight: true,
               },
             ]}
