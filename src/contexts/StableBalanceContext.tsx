@@ -178,9 +178,11 @@ export const StableBalanceProvider: React.FC<StableBalanceProviderProps> = ({ ch
 
   const isActive = !!activeLabel && !!tokenIdentifier && !!displayConfig;
 
-  // Toggle stable balance via SDK user settings
+  // Toggle stable balance via SDK user settings. Throws on failure: the toggle
+  // flow shows the error and holds the user on the confirm step, and it can
+  // only do that if the failure reaches it.
   const toggleStableBalance = useCallback(async (label: string | null) => {
-    if (!sdk) return;
+    if (!sdk) throw new Error('the wallet is not connected');
     setIsToggling(true);
     try {
       if (label) {
@@ -198,10 +200,6 @@ export const StableBalanceProvider: React.FC<StableBalanceProviderProps> = ({ ch
         setCachedStableTicker(null);
         await setNativeStableTicker(null);
       }
-    } catch (e) {
-      logger.error(LogCategory.SDK, 'Failed to toggle stable balance', {
-        error: e instanceof Error ? e.message : String(e),
-      });
     } finally {
       setIsToggling(false);
     }
