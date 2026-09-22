@@ -97,6 +97,10 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
           </PrimaryButton>
         );
       case 'fee':
+        // The rates are what there is to choose between: until they load the
+        // step is a spinner, and a greyed button beside one reads as a tap that
+        // failed rather than as work under way.
+        if (!flow.fee.feeRates) return null;
         return (
           <PrimaryButton
             onClick={() => void flow.submitFee()}

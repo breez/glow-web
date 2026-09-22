@@ -279,6 +279,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
     !pq.loading && !!pq.response && pq.response.paymentMethod.type === 'crossChainAddress';
   const visibleProviders = providerList.filter(pq => pq.loading || isProviderReady(pq));
   const anyProviderLoading = providerList.some(pq => pq.loading);
+  const anyProviderReady = providerList.some(isProviderReady);
   const allProvidersFailed =
     providerList.length > 0 && !anyProviderLoading && !providerList.some(isProviderReady);
   const providerFailureReason = (() => {
@@ -394,7 +395,9 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                   Change Amount
                 </SecondaryButton>
               </>
-            ) : (
+            ) : anyProviderReady ? (
+              // Nothing to continue with while every card is still quoting, and
+              // a greyed button beside those spinners reads as a failed tap.
               <PrimaryButton
                 onClick={() => {
                   const pq = pendingProvider ? providerQuotes.get(pendingProvider) : null;
@@ -408,7 +411,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
               >
                 Continue
               </PrimaryButton>
-            )}
+            ) : null}
           </div>
         </div>
       )}
