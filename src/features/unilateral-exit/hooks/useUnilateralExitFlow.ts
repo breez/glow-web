@@ -390,14 +390,10 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
 
   // What a resumed exit already holds may pay the new rate, and only a build can
   // tell. So it tries once, and the step asks for more only when that falls short.
-  // What counts as already sent moves under it: the exit's own fee coin stops
-  // counting once one of its transactions confirms, and each coin sent since
-  // adds its own input fee. So the money at the address is part of the key, or
-  // the step keeps asking for the figure a stale build came back with.
-  // It cannot feed itself: a build leaves this phase on its first line and
-  // comes back only on failure, with the attempt recorded. The key is the
-  // amounts rather than the objects, since every engine pass emits a fresh
-  // plan, and with it a fresh `sent` and `build`.
+  // Keyed on what the address holds as well: a confirmation changes what counts
+  // as sent, and any payment, short or over, is worth another build. Amounts
+  // rather than objects, since every engine pass emits a fresh plan. It cannot
+  // feed itself: a build leaves this phase on its first line.
   useEffect(() => {
     if (phase !== 'fund' || !quote) return;
     const attempt = { quote, sat: sent.sat, inputs: sent.inputs };
