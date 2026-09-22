@@ -373,11 +373,19 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
       </div>
     </div>
   ) : null;
-  // The fee is not in the route's units: a BSC route at 18 decimals renders it
-  // as a millionth of a cent that way. An absent ticker means sats.
+  // Parsed at the fee asset's scale, which is not the route's: a BSC route at
+  // 18 decimals reads the figure as a millionth of a cent that way. Shown at
+  // cents, since the fee is a few of them and its exact precision is nobody's
+  // business; under a cent it reads as a bound rather than as nothing. An
+  // absent ticker means sats.
   const resultFee = resultInfo
     ? resultInfo.serviceFeeAsset
-      ? `${formatCrossChainAmount(BigInt(resultInfo.serviceFeeAmount), CROSS_CHAIN_FEE_DECIMALS)} ${assetDisplayName(resultInfo.serviceFeeAsset)}`
+      ? (() => {
+          const fee = BigInt(resultInfo.serviceFeeAmount);
+          const ticker = assetDisplayName(resultInfo.serviceFeeAsset);
+          const cents = formatReceiveAmount(fee, CROSS_CHAIN_FEE_DECIMALS);
+          return fee > 0n && Number(cents) === 0 ? `< 0.01 ${ticker}` : `${cents} ${ticker}`;
+        })()
       : `₿${formatWithSpaces(Number(resultInfo.serviceFeeAmount))}`
     : null;
   // Plain deposit address for copy/paste (MetaMask etc.). The QR keeps the

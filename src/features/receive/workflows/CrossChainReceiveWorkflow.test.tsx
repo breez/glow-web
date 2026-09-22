@@ -124,7 +124,9 @@ describe('USD receive deposit address', () => {
     await screen.findByTestId('cross-chain-deposit-address');
 
     expect(screen.getByText('$50.68')).toBeInTheDocument();
-    expect(screen.getByText('0.05036 USDC')).toBeInTheDocument();
+    expect(screen.getByText('0.05 USDC')).toBeInTheDocument();
+    // A fee under a cent states a bound rather than rounding away to nothing.
+    expect(screen.queryByText('0.00 USDC')).toBeNull();
   });
 
   it('states the range beside the label and holds the amount to it', async () => {
