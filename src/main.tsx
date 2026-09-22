@@ -383,7 +383,41 @@ function showWebAssemblyBlocked(): void {
   });
 }
 
+// THROWAWAY: ?claimtest=<ms> mounts the unclaimed-deposit sheet with a stubbed
+// quote that lands after <ms>, for screenshots of the pricing states.
+async function mountClaimTest(delayMs: number) {
+  const [{ default: UnclaimedDepositDetailsPage }, { WalletProvider }, { ToastProvider }] = await Promise.all([
+    import('@/pages/UnclaimedDepositDetailsPage'),
+    import('@/contexts/WalletContext'),
+    import('@/contexts/ToastContext'),
+  ]);
+  const deposit = { txid: 'a'.repeat(64), vout: 0, amountSats: 100_000, isMature: false } as never;
+  const quote = {
+    amountSats: 100_000,
+    confirmations: 1,
+    instant: { confirmationsRequired: 1, creditAmountSats: 96_800, feeSats: 3_200, feeRateSatPerVbyte: 4, isEstimate: false },
+    mature: { confirmationsRequired: 3, creditAmountSats: 99_802, feeSats: 198, feeRateSatPerVbyte: 2, isEstimate: true },
+  };
+  const client = {
+    fetchClaimDepositQuote: () => new Promise(resolve => setTimeout(() => resolve(quote), delayMs)),
+    listUnclaimedDeposits: async () => ({ deposits: [deposit] }),
+  } as never;
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <ToastProvider>
+      <WalletProvider client={client} isConnected>
+        <UnclaimedDepositDetailsPage deposit={deposit} onBack={() => {}} onChanged={() => {}} />
+      </WalletProvider>
+    </ToastProvider>,
+  );
+  await hideSplash();
+}
+
 async function init() {
+  const claimTest = new URLSearchParams(window.location.search).get('claimtest');
+  if (claimTest !== null) {
+    await mountClaimTest(Number(claimTest) || 1500);
+    return;
+  }
   // Lockdown Mode leaves the WebView running but takes WebAssembly with it, so
   // startup would otherwise paint a working-looking welcome screen and fail at
   // the first SDK call. Bail out here with something actionable instead.

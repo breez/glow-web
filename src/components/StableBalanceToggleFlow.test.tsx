@@ -41,7 +41,7 @@ describe('switching to USD', () => {
 
     fireEvent.click(await screen.findByText('Confirm'));
 
-    expect(await screen.findByText(/user settings unavailable/)).toBeInTheDocument();
+    expect(await screen.findByText('Could not switch to USD. Please try again.')).toBeInTheDocument();
     // The whole point: a failed switch must not report itself as done.
     expect(onComplete).not.toHaveBeenCalled();
   });

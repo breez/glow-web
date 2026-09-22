@@ -145,13 +145,19 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** One failure path for both ways in: name it, keep the sheet, let them retry. */
+  /** One failure path for both ways in: say what did not happen, keep the
+   *  sheet, let them try again. The provider's own wording goes to the log. */
   const showToggleFailure = useCallback((e: unknown) => {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    logger.error(LogCategory.SDK, 'Failed to toggle stable balance', { error: errorMsg });
-    setError(`Failed to switch: ${errorMsg}`);
+    logger.error(LogCategory.SDK, 'Failed to toggle stable balance', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+    setError(
+      direction === 'toToken'
+        ? 'Could not switch to USD. Please try again.'
+        : 'Could not switch to BTC. Please try again.',
+    );
     setStep('confirm');
-  }, []);
+  }, [direction]);
 
   const executeToggle = useCallback(async () => {
     logger.debug(LogCategory.SDK, 'executeToggle: starting', { direction, hasEstimate: !!conversionEstimate });
