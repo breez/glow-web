@@ -386,6 +386,12 @@ export function useBreezSdk(
       if (event.payment.paymentType === 'send' && !isSendSheetOpen()) {
         showToastRef.current('error', 'Payment Failed', 'The payment did not go through. Your funds were not sent.');
       }
+    } else if (event.type === 'paymentMetadataUpdated') {
+      // A cross-chain receive lands as a plain Spark transfer and is marked as
+      // cross-chain once the provider confirms the order, so the row needs
+      // reading again to pick up what it is.
+      logger.debug(LogCategory.PAYMENT, 'Payment metadata updated', { paymentId: event.payment.id });
+      refreshWalletData(false);
     } else if (event.type === 'claimedDeposits') {
       // An instant (0-conf) claim fires this event on submission, before the
       // funds are credited, so the log counts the two apart.
