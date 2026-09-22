@@ -212,14 +212,18 @@ const AmountStep: React.FC<AmountStepProps> = ({
               }
             }}
             placeholder={isTokenMode && config ? `Enter amount in ${config.currencyCode}` : 'Enter amount in sats'}
-            className={`${AMOUNT_FIELD_CLASS} ${usdOnly ? '' : 'pr-16'} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
+            className={`${AMOUNT_FIELD_CLASS} pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
             disabled={isLoading}
             readOnly={isSendAll}
             min={isTokenMode ? undefined : 1}
             data-testid="amount-input"
           />
-          {/* Cross-chain is USD-only: nothing to switch to. */}
-          {!usdOnly && tokenSymbol && (
+          {/* Cross-chain is USD-only, so the switch is held disabled rather
+              than dropped: a greyed control says there is nowhere to switch
+              to, where an empty corner says nothing. */}
+          {usdOnly ? (
+            <CurrencySwitcher isTokenMode tokenSymbol={config?.symbol ?? '$'} onSwitch={() => {}} disabled />
+          ) : tokenSymbol && (
             <CurrencySwitcher
               isTokenMode={isTokenMode}
               tokenSymbol={tokenSymbol}

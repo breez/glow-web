@@ -12,6 +12,7 @@ import {
 } from '../../../components/ui';
 import { SpinnerIcon, CopyIcon, CheckIcon, QrCodeIcon } from '../../../components/Icons';
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
+import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
 import { CrossChainRouteChip } from '../../../components/crossChain/CrossChainRouteChip';
 import { CrossChainAssetStep } from '../../../components/crossChain/CrossChainAssetStep';
 import { CrossChainChainStep } from '../../../components/crossChain/CrossChainChainStep';
@@ -44,6 +45,10 @@ import { formatError } from '@/utils/formatError';
 type WorkflowStep = 'amount' | 'loading' | 'asset' | 'chain' | 'provider' | 'generating' | 'result';
 
 const QUICK_USD_AMOUNTS = [10, 50, 200];
+
+/** Decimals Orchestra's fee asset uses, which is not the route's: it quotes
+ *  every fee in USDC on Solana regardless of where the deposit lands. */
+const CROSS_CHAIN_FEE_DECIMALS = 6;
 
 interface CrossChainReceiveWorkflowProps {
   /** Whether the USD tab is the one on screen. The workflow stays mounted
@@ -362,11 +367,15 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
       </div>
     </div>
   ) : null;
-  // Orchestra quotes the fee in the source asset, as the send confirm's fee row
-  // also assumes; an absent ticker means the fee is in sats.
-  const resultFee = resultInfo && selectedRoute
+  // The fee is not in the route's units. Orchestra prices it in its own fee
+  // asset, which reports as USDC on Solana at 6 decimals whatever the route
+  // is, so a BSC route at 18 decimals renders the fee as a millionth of a cent
+  // if the route's scale is used. The SDK passes the figure through without
+  // its decimals, so 6 is assumed here and the ticker is stated alongside.
+  // An absent ticker means the fee is in sats.
+  const resultFee = resultInfo
     ? resultInfo.serviceFeeAsset
-      ? `${formatCrossChainAmount(BigInt(resultInfo.serviceFeeAmount), selectedRoute.decimals)} ${assetDisplayName(resultInfo.serviceFeeAsset)}`
+      ? `${formatCrossChainAmount(BigInt(resultInfo.serviceFeeAmount), CROSS_CHAIN_FEE_DECIMALS)} ${assetDisplayName(resultInfo.serviceFeeAsset)}`
       : `₿${formatWithSpaces(Number(resultInfo.serviceFeeAmount))}`
     : null;
   // Plain deposit address for copy/paste (MetaMask etc.). The QR keeps the
@@ -447,6 +456,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                 </span>
               )}
             </div>
+            <div className="relative">
             <input
               type="text"
               inputMode="decimal"
@@ -460,9 +470,14 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                 }
               }}
               placeholder="Enter amount in USD"
-              className={`${AMOUNT_FIELD_CLASS}`}
+              className={`${AMOUNT_FIELD_CLASS} pr-16`}
               data-testid="cross-chain-receive-amount-input"
             />
+            {/* The same control the other amount fields carry, held disabled:
+                a request is denominated in USD and there is nothing to switch
+                to, which the greyed switch says better than its absence. */}
+            <CurrencySwitcher isTokenMode tokenSymbol="$" onSwitch={() => {}} disabled />
+            </div>
 
             {/* Quick amount buttons */}
             <div className="flex gap-2 mt-3">

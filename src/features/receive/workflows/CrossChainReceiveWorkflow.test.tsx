@@ -7,6 +7,7 @@ import { FiatDataProvider } from '@/contexts/FiatDataContext';
 import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
 import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
+import { setLastUsdReceiveRoute } from '@/services/settings';
 import ReceivePaymentDialog from '../ReceivePaymentDialog';
 
 const usdcOn = (chain: string, limits?: { minUsdCents?: number; maxUsdCents?: number }): CrossChainRoutePair => ({
@@ -60,6 +61,8 @@ const openUsdTab = async (client: BreezSdk) => {
 };
 
 describe('USD receive deposit address', () => {
+  // `settings.ts` caches its reads, so the remembered route is set through
+  // the service rather than written past it into localStorage.
   beforeEach(() => localStorage.clear());
 
   it('steps back to the amount from the header arrow', async () => {
@@ -93,8 +96,38 @@ describe('USD receive deposit address', () => {
     expect(screen.queryByTestId('cross-chain-deposit-address')).toBeNull();
   });
 
+  it('states the fee in its own asset, not the route\'s', async () => {
+    // BSC USDC is an 18-decimal route, while Orchestra prices its fee in USDC
+    // on Solana at 6. Formatting the fee at the route's scale turns five cents
+    // into a millionth of one.
+    setLastUsdReceiveRoute({ asset: 'USDC', chain: 'bsc' });
+    const client = createMockClient() as unknown as BreezSdk;
+    const bsc = { ...usdcOn('bsc'), decimals: 18 } as CrossChainRoutePair;
+    client.getCrossChainRoutes = vi.fn().mockResolvedValue([bsc]);
+    client.receivePayment = vi.fn().mockResolvedValue({
+      paymentRequest: '0x7182aaa',
+      fee: 0n,
+      crossChainInfo: {
+        depositAddress: '0x7182aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa3b9bb8',
+        depositAmount: '50680000000000000000',
+        expectedReceivedAmount: '58617',
+        destinationAsset: 'BTC',
+        serviceFeeAmount: '50360',
+        serviceFeeAsset: 'USDC',
+        expiresAt: 1_900_000_000,
+      },
+    });
+    await openUsdTab(client);
+    fireEvent.change(await screen.findByTestId('cross-chain-receive-amount-input'), { target: { value: '50.43' } });
+    fireEvent.click(screen.getByTestId('cross-chain-receive-continue'));
+    await screen.findByTestId('cross-chain-deposit-address');
+
+    expect(screen.getByText('$50.68')).toBeInTheDocument();
+    expect(screen.getByText('0.05036 USDC')).toBeInTheDocument();
+  });
+
   it('states the range beside the label and holds the amount to it', async () => {
-    localStorage.setItem('usd_receive_route', JSON.stringify({ asset: 'USDC', chain: 'solana' }));
+    setLastUsdReceiveRoute({ asset: 'USDC', chain: 'solana' });
     const client = withCrossChainReceive([usdcOn('solana', { minUsdCents: 80, maxUsdCents: 8_980_000 })]);
     await openUsdTab(client);
 
@@ -113,7 +146,7 @@ describe('USD receive deposit address', () => {
   });
 
   it('takes the tabs away once there is a request to lose', async () => {
-    localStorage.setItem('usd_receive_route', JSON.stringify({ asset: 'USDC', chain: 'solana' }));
+    setLastUsdReceiveRoute({ asset: 'USDC', chain: 'solana' });
     const client = withCrossChainReceive([usdcOn('solana'), usdcOn('base')]);
     await openUsdTab(client);
 
@@ -132,7 +165,7 @@ describe('USD receive deposit address', () => {
   });
 
   it('keeps the amount and network across a trip to the BTC tab', async () => {
-    localStorage.setItem('usd_receive_route', JSON.stringify({ asset: 'USDC', chain: 'solana' }));
+    setLastUsdReceiveRoute({ asset: 'USDC', chain: 'solana' });
     const client = withCrossChainReceive([usdcOn('solana'), usdcOn('base')]);
     await openUsdTab(client);
 
@@ -148,7 +181,7 @@ describe('USD receive deposit address', () => {
   });
 
   it('skips the picker when a network is remembered', async () => {
-    localStorage.setItem('usd_receive_route', JSON.stringify({ asset: 'USDC', chain: 'solana' }));
+    setLastUsdReceiveRoute({ asset: 'USDC', chain: 'solana' });
     const client = withCrossChainReceive([usdcOn('solana'), usdcOn('base')]);
     await openUsdTab(client);
 

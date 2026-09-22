@@ -141,14 +141,16 @@ describe('AmountStep USD entry (no stable balance)', () => {
     expect(buttonLabels()).toEqual(expect.arrayContaining(['₿1 000', '₿2 000']));
   });
 
-  it('keeps cross-chain (usdOnly) USD-only with no toggle', async () => {
+  it('holds cross-chain (usdOnly) to USD, with the switch disabled', async () => {
     renderAmountStep({ usdOnly: true });
 
     expect(screen.getByTestId('amount-input')).toHaveAttribute(
       'placeholder',
       'Enter amount in USD'
     );
+    // The unit is named rather than left to an empty corner, and the control
+    // that names it cannot be used: there is nothing to switch to.
+    expect(screen.getByRole('button', { name: '$' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: '₿' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '$' })).toBeNull();
   });
 });
