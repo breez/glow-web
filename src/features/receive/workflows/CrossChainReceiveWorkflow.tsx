@@ -441,7 +441,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   // the other receive tabs use. The selection lists cap themselves against the
   // viewport (see CrossChainAssetStep) rather than against this container.
   return (
-    <div className="pt-6">
+    <div className={step === 'amount' ? 'pt-6' : 'pt-4'}>
       {/* Step 1: Amount */}
       {step === 'amount' && (
         <div>

@@ -59,7 +59,7 @@ interface QRCodeDisplayProps {
 const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, amount }) => {
   const { showToast } = useToast();
   return (
-    <div className="pt-6 space-y-6 flex flex-col items-center">
+    <div className="pt-4 space-y-6 flex flex-col items-center">
       {amount && (
         <div className="text-center">
           <p className="text-spark-text-muted text-sm mb-2">Scan to pay</p>
