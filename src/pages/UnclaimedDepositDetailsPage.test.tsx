@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { ComponentProps } from 'react';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
-import type { BreezSdk, DepositInfo, FetchClaimDepositQuoteResponse } from '@breeztech/breez-sdk-spark';
+import type { BreezSdk, ClaimDeferredReason, ClaimDepositResponse, DepositInfo, FetchClaimDepositQuoteResponse } from '@breeztech/breez-sdk-spark';
 import { WalletProvider } from '@/contexts/WalletContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
@@ -25,6 +25,16 @@ function eventStream() {
     emitSynced: () => handlers.forEach(h => h({ type: 'synced' } as Parameters<SdkEventHandler>[0])),
   };
 }
+
+/**
+ * What claimDeposit resolves with. A declined early claim defers rather than
+ * throwing, and `payment` rides only on a settled one, so absence no longer
+ * distinguishes "settling asynchronously" from "nothing happened".
+ */
+const claimSubmitted = (): ClaimDepositResponse => ({ outcome: { type: 'submitted' } });
+const claimDeferred = (reason: ClaimDeferredReason): ClaimDepositResponse =>
+  ({ outcome: { type: 'deferred', reason } });
+const noEarlyClaim = (): ClaimDepositResponse => claimDeferred({ type: 'noEarlyClaimAvailable' });
 
 function depositWithFee(requiredFeeSats: number): DepositInfo {
   return {
@@ -116,17 +126,27 @@ function quote(overrides: Partial<FetchClaimDepositQuoteResponse> = {}): FetchCl
 }
 
 async function renderSheet(deposit: DepositInfo, client?: BreezSdk, subscribeToSdkEvents?: SubscribeToSdkEvents) {
+  // Two separate signals on purpose: the parent stands the sheet down on
+  // `onChanged` and leaves it up on `onRefresh`, so a test that conflates them
+  // cannot tell a recorded ceiling from a finished deposit.
   const onChanged = vi.fn();
+  const onRefresh = vi.fn();
+  const onBack = vi.fn();
   const mockClient = client ?? createMockClient();
   render(
     <ToastProvider>
       <WalletProvider client={mockClient} isConnected subscribeToSdkEvents={subscribeToSdkEvents}>
-        <UnclaimedDepositDetailsPage deposit={deposit} onBack={vi.fn()} onChanged={onChanged} />
+        <UnclaimedDepositDetailsPage
+          deposit={deposit}
+          onBack={onBack}
+          onChanged={onChanged}
+          onRefresh={onRefresh}
+        />
       </WalletProvider>
     </ToastProvider>
   );
   await waitForSheetOpen();
-  return { onChanged, client: mockClient };
+  return { onChanged, onRefresh, onBack, client: mockClient };
 }
 
 // Matches <button> elements by text, whatever their role, so one helper
@@ -173,6 +193,10 @@ function withQuote(q: FetchClaimDepositQuoteResponse | Error) {
 
 beforeEach(() => {
   localStorage.clear();
+  // settings.ts caches localStorage reads in a module-level Map that
+  // localStorage.clear() does not touch, so a ceiling set by one test is still
+  // there for the next. Restating the default is what actually resets it.
+  saveSettings({ depositMaxFee: { type: 'fixed', amount: 500 } });
 });
 
 describe('while the speeds are still being priced', () => {
@@ -224,13 +248,33 @@ describe('a confirming deposit with both routes on offer', () => {
     expect(group).toHaveTextContent('3 200');
   });
 
-  // Waiting is what happens anyway, so it is never armed without being asked for.
-  it('selects standard by default and leaves the button inert', async () => {
-    await renderSheet(makeDeposit(), withQuote(quote()));
+  // Waiting is what today's spread leaves, so it starts selected. Committing it
+  // is still offered: the 500 ceiling sits above the 198 the wait costs, and the
+  // spread falls with depth, so the room between them is room to be fronted in.
+  it('selects standard by default and asks for nothing', async () => {
+    const client = withQuote(quote());
+    await renderSheet(makeDeposit(), client);
 
     await findInstantRow();
     expect(button(/^Standard delivery/)).toHaveAttribute('aria-checked', 'true');
     expect(button(/^Instant delivery/)).toHaveAttribute('aria-checked', 'false');
+    // Nothing to press: the claim at maturity is not the user's to make.
+    expect(button('Claim')).toBeDisabled();
+
+    // Already what the ceiling delivers, so picking it is not an instruction.
+    fireEvent.click(button(/^Standard delivery/));
+    expect(client.claimDeposit).not.toHaveBeenCalled();
+  });
+
+  // Nothing left to close once the ceiling is already the cost of the wait.
+  it('goes inert once the ceiling leaves no room to front', async () => {
+    await renderSheet(
+      makeDeposit({ maxClaimFee: { type: 'fixed', amount: 198 } }),
+      withQuote(quote()),
+    );
+
+    await findInstantRow();
+    expect(button(/^Standard delivery/)).toHaveAttribute('aria-checked', 'true');
     expect(button('Claim')).toBeDisabled();
   });
 
@@ -273,7 +317,9 @@ describe('a confirming deposit with both routes on offer', () => {
     expect(button(PAID_ROW)).toHaveTextContent('Unlocks in 1 confirmation');
     await turnOnInstant();
     expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
-    expect(button('Claim')).toBeDisabled();
+    // The tap writes, so the button spins first and settles inert: recorded,
+    // with nothing left to do until the route reaches its depth.
+    await waitFor(() => expect(button('Claim')).toBeDisabled());
 
     vi.mocked(client.fetchClaimDepositQuote).mockResolvedValue(quote({ confirmations: 1 }));
     stream.emitSynced();
@@ -286,8 +332,8 @@ describe('a confirming deposit with both routes on offer', () => {
 
   // The provider re-quotes on every sync, so the depth it wants can rise after
   // the paid route was picked. That is a longer wait rather than a refusal, so
-  // the pick stands and only the claim is withheld.
-  it('holds the pick but withholds the claim when a re-price moves the floor', async () => {
+  // the pick stands and the tap falls back to recording the ceiling.
+  it('holds the pick and falls back to a commit when a re-price moves the floor', async () => {
     const client = withQuote(quote({ confirmations: 1 }));
     const stream = eventStream();
     await renderSheet(makeDeposit(), client, stream.subscribe);
@@ -304,6 +350,8 @@ describe('a confirming deposit with both routes on offer', () => {
     }));
     stream.emitSynced();
 
+    // A longer wait, not a refusal, so the pick stands and the button goes
+    // inert until the route reaches the depth it now wants.
     await waitFor(() => expect(button('Claim')).toBeDisabled());
     expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
     expect(button(PAID_ROW)).toHaveTextContent('Unlocks in 1 confirmation');
@@ -493,11 +541,10 @@ describe('a confirming deposit with both routes on offer', () => {
     expect(await findInstantRow()).toHaveTextContent('2 confirmations (~20 mins)');
   });
 
-  // Waiting needs no control to happen, but with none on screen the sheet
-  // offered the paid route and nothing beside it.
-  // Picking Standard again is the whole of "no thanks": it disarms the button
-  // and puts the wait back in the breakdown.
-  it('disarms again when standard is picked back', async () => {
+  // Picking Standard back is the whole of "no thanks": the wait goes back in the
+  // breakdown and nothing has been sent. The button stays live, now offering to
+  // close the room the ceiling leaves rather than to buy the front.
+  it('writes nothing when standard is picked back', async () => {
     const client = withQuote(quote());
     await renderSheet(makeDeposit(), client);
 
@@ -505,9 +552,11 @@ describe('a confirming deposit with both routes on offer', () => {
     expect(button('Claim')).toBeEnabled();
 
     fireEvent.click(button(/^Standard delivery/));
-    expect(button('Claim')).toBeDisabled();
     expect(screen.getByText('Network fee').parentElement).toHaveTextContent('198');
+    // Going out to the front and back asks for nothing: the selection is where
+    // it started and the deposit was never touched.
     expect(client.claimDeposit).not.toHaveBeenCalled();
+    expect(button('Claim')).toBeDisabled();
   });
 
   it('offers nothing to turn on when the provider will not front it', async () => {
@@ -548,8 +597,8 @@ describe('a confirming deposit with both routes on offer', () => {
 
   it('reports an early claim through the caller, not a toast', async () => {
     const client = withQuote(quote());
-    // No payment: claimed early, so it settles after the sheet has gone.
-    vi.mocked(client.claimDeposit).mockResolvedValue({});
+    // Claimed early, so it settles after the sheet has gone.
+    vi.mocked(client.claimDeposit).mockResolvedValue(claimSubmitted());
     const { onChanged } = await renderSheet(makeDeposit(), client);
 
     await turnOnInstant();
@@ -580,21 +629,28 @@ describe('an early route the limit already covers', () => {
     expect(screen.getByText('Delivery fee').parentElement).toHaveTextContent('347');
   });
 
-  // Dimmed rather than merely unselected: the user cannot have this outcome,
-  // and leaving it tappable would offer a choice that changes nothing.
-  it('stands the wait down instead of offering a choice that is not one', async () => {
-    await renderSheet(makeDeposit(), withQuote(cheap()));
+  // The fee on screen is kept honest by the default selection rather than by
+  // dimming: the paid row starts selected, because that is the route the
+  // ceiling will take. Waiting stays a choice, committing it being how the user
+  // refuses to have the deposit fronted.
+  it('leaves the wait pickable, the commit being how it is refused', async () => {
+    const client = withQuote(cheap());
+    vi.mocked(client.claimDeposit).mockResolvedValue(noEarlyClaim());
+    await renderSheet(makeDeposit(), client);
 
     await findInstantRow();
     const standard = button(/^Standard delivery/);
-    expect(standard).toHaveAttribute('aria-disabled', 'true');
     expect(standard).toHaveAttribute('aria-checked', 'false');
-    // Said in words, not by dimming alone.
-    expect(standard).toHaveTextContent('Not available');
+    expect(standard).not.toHaveTextContent('Not available');
+    // Nothing to commit while the selection is what the ceiling will do anyway.
+    expect(button('Claim')).toBeDisabled();
 
     fireEvent.click(standard);
-    expect(standard).toHaveAttribute('aria-checked', 'false');
-    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
+    expect(standard).toHaveAttribute('aria-checked', 'true');
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'false');
+    // The tap itself refuses the front, at the cost of the wait.
+    await waitFor(() => expect(vi.mocked(client.claimDeposit).mock.calls[0][0])
+      .toEqual({ txid: 'a'.repeat(64), vout: 0, maxFee: { type: 'fixed', amount: 198 } }));
   });
 
   // Both can be true of one quote. The approve panel is never reached, because
@@ -615,67 +671,9 @@ describe('an early route the limit already covers', () => {
 
     await findInstantRow();
     expect(button(/^Standard delivery/)).toHaveAttribute('aria-checked', 'true');
-    expect(button(/^Standard delivery/)).toHaveAttribute('aria-disabled', 'false');
     expect(button(/^Standard delivery/)).not.toHaveTextContent('Not available');
   });
 });
-
-// The automatic claim runs only while the fee stays under the configured
-// ceiling, so a fee above it means approval, not an automatic claim.
-describe('a wait the fee ceiling will not cover', () => {
-  it('warns before the refusal instead of promising a claim it cannot make', async () => {
-    saveSettings({ depositMaxFee: { type: 'fixed', amount: 400 } });
-    const dear = quote({
-      mature: { confirmationsRequired: 3, creditAmountSats: 99_400, feeSats: 600,
-        feeRateSatPerVbyte: 5, isEstimate: true },
-    });
-    delete dear.instant;
-    await renderSheet(makeDeposit(), withQuote(dear));
-
-    // Future tense, and no buttons: nothing is claimable yet. The panel with
-    // Approve and Reject is the state after the SDK has actually been refused.
-    const line = await screen.findByText(/will be asked to approve/);
-    expect(line).toHaveTextContent('400');
-    expect(screen.queryByText(/claimed automatically/i)).toBeNull();
-  });
-
-  // The SDK refuses on a sync after maturity, not at maturity itself. Dropping
-  // the warning at the boundary would spend that window promising the claim it
-  // is about to refuse, which is the promise the warning exists to avoid.
-  it('keeps warning once the deposit matures, until the claim is actually refused', async () => {
-    saveSettings({ depositMaxFee: { type: 'fixed', amount: 400 } });
-    const dear = quote({
-      mature: { confirmationsRequired: 3, creditAmountSats: 99_400, feeSats: 600,
-        feeRateSatPerVbyte: 5, isEstimate: true },
-    });
-    delete dear.instant;
-    const client = withQuote(dear);
-    const confirming = makeDeposit();
-
-    const { rerender } = render(
-      <ToastProvider>
-        <WalletProvider client={client} isConnected>
-          <UnclaimedDepositDetailsPage deposit={confirming} onBack={vi.fn()} />
-        </WalletProvider>
-      </ToastProvider>,
-    );
-    await waitForSheetOpen();
-    await screen.findByText(/will be asked to approve/);
-
-    // Matured, and the SDK has not refused it yet: no claimError on the record.
-    rerender(
-      <ToastProvider>
-        <WalletProvider client={client} isConnected>
-          <UnclaimedDepositDetailsPage deposit={makeDeposit({ isMature: true })} onBack={vi.fn()} />
-        </WalletProvider>
-      </ToastProvider>,
-    );
-
-    expect(screen.getByText(/will be asked to approve/)).toHaveTextContent('400');
-    expect(screen.queryByText(/claimed automatically/i)).toBeNull();
-  });
-});
-
 describe('a fee that rises between quoting and claiming', () => {
   const risen = () => quote({
     instant: {
@@ -769,22 +767,22 @@ describe('an early route that has not unlocked yet', () => {
     },
   });
 
-  // A wait is not a refusal, so the row is an ordinary choosable one. Dimming
-  // is reserved for an outcome the user cannot have, and spending it here left
-  // this state looking like one the provider will not front at all.
-  it('offers the route at full strength and withholds only the claim', async () => {
+  // A wait is not a refusal, so the row is an ordinary choosable one, and the
+  // tap is no longer inert: claimDeposit records the ceiling before it attempts
+  // anything, so committing now is what makes the next sync take this route.
+  it('offers the route at full strength and turns the claim into a commit', async () => {
     await renderSheet(makeDeposit(), withQuote(notYet()));
 
     await findInstantRow();
     const waiting = button(PAID_ROW);
-    expect(waiting).toHaveAttribute('aria-disabled', 'false');
     expect(waiting).toHaveTextContent('Expedited delivery');
     expect(waiting).toHaveTextContent('Unlocks in 1 confirmation');
 
     fireEvent.click(waiting);
     expect(waiting).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByText('Delivery fee')).toBeInTheDocument();
-    expect(button('Claim')).toBeDisabled();
+    // Recorded by the tap on the row; nothing is claimed until it opens.
+    await waitFor(() => expect(button('Claim')).toBeDisabled());
   });
 });
 
@@ -833,7 +831,7 @@ describe('a claim already in flight', () => {
   // different number, so the sheet remembers what it charged at submit time.
   it('prices a reopened sheet from what the claim actually cost', async () => {
     const client = withQuote(quote());
-    vi.mocked(client.claimDeposit).mockResolvedValue({});
+    vi.mocked(client.claimDeposit).mockResolvedValue(claimSubmitted());
     const submitted = makeDeposit({ instantClaimStatus: { type: 'submitted', claimId: 'c' } });
 
     const first = await renderSheet(makeDeposit(), client);
@@ -911,6 +909,392 @@ describe('an automatic claim that fails under the sheet', () => {
   });
 });
 
+// The SDK holds every automatic attempt to the deposit's own ceiling when it
+// carries one, ahead of the configured default and in both directions. Read off
+// the settings alone, the sheet offered waiting as a choice on a deposit the
+// SDK was about to front, and warned at the wrong figure on one held back.
+describe('a standing ceiling on the deposit', () => {
+  beforeEach(() => saveSettings({ depositMaxFee: { type: 'fixed', amount: 500 } }));
+
+  it('reads the route the SDK will take off the deposit, not off the settings', async () => {
+    await renderSheet(
+      makeDeposit({ maxClaimFee: { type: 'fixed', amount: 3_200 } }),
+      withQuote(quote({ confirmations: 0 })),
+    );
+
+    await findInstantRow();
+    // Config's 500 would never cover the 3 200 spread; the deposit's own does.
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByText('Delivery fee').parentElement).toHaveTextContent('3 200');
+  });
+
+  it('leaves the footer empty once the ceiling is what the selection asks for', async () => {
+    await renderSheet(
+      makeDeposit({ maxClaimFee: { type: 'fixed', amount: 3_200 } }),
+      withQuote(quote({ confirmations: 0 })),
+    );
+
+    await findInstantRow();
+    expect(button('Claim')).toBeDisabled();
+  });
+
+  // A rate is sat-per-vbyte and means nothing without the size of a claim
+  // transaction that has not been built, so there is no figure to name and no
+  // route to predict.
+  it('names nothing when the standing ceiling is not in sats', async () => {
+    await renderSheet(
+      makeDeposit({ maxClaimFee: { type: 'rate', satPerVbyte: 50 } }),
+      withQuote(quote({ confirmations: 0 })),
+    );
+
+    await findInstantRow();
+    expect(button(/^Standard delivery/)).toHaveAttribute('aria-checked', 'true');
+  });
+});
+
+// claimDeposit records the requested ceiling before it attempts anything, so a
+// tap at a depth the route has not reached is not wasted: it arms the ceiling,
+// and the next sync claims under it.
+describe('committing a route that has not unlocked', () => {
+  const notYetQuote = () => quote({ confirmations: 0 });
+
+  it('records the ceiling the quoted route needs', async () => {
+    const client = withQuote(notYetQuote());
+    vi.mocked(client.claimDeposit).mockResolvedValue(noEarlyClaim());
+    await renderSheet(makeDeposit(), client);
+
+    await turnOnInstant();
+
+    await waitFor(() => expect(client.claimDeposit).toHaveBeenCalled());
+    // The same call and the same argument as a claim that lands: the SDK
+    // decides which of the two happens, from the deposit's depth.
+    expect(vi.mocked(client.claimDeposit).mock.calls[0][0]).toEqual({
+      txid: 'a'.repeat(64), vout: 0, maxFee: { type: 'fixed', amount: 3_200 },
+    });
+  });
+
+  // A deferred claim is an ordinary outcome, not a failure: the ceiling it asked
+  // for stands, and the next automatic attempt is held to it.
+  it('reports the ceiling it recorded rather than a failure', async () => {
+    const client = withQuote(notYetQuote());
+    vi.mocked(client.claimDeposit).mockResolvedValue(noEarlyClaim());
+    await renderSheet(makeDeposit(), client);
+
+    await turnOnInstant();
+
+    // The tap records the ceiling the route needs, at the price on its row.
+    await waitFor(() => expect(vi.mocked(client.claimDeposit).mock.calls[0][0])
+      .toEqual({ txid: 'a'.repeat(64), vout: 0, maxFee: { type: 'fixed', amount: 3_200 } }));
+    expect(screen.queryByText(/Could not set this transfer up/)).toBeNull();
+    expect(screen.queryByText(/did not go through/)).toBeNull();
+    expect(button('Claim')).toBeDisabled();
+  });
+
+  // The break a deferred outcome invites: `payment` is absent on it as well as
+  // on a submitted claim, so reading absence as "submitted" reports a claim
+  // that never happened and stands the sheet down over a deposit still waiting.
+  it('does not report a claim that was only deferred', async () => {
+    const client = withQuote(notYetQuote());
+    vi.mocked(client.claimDeposit).mockResolvedValue(noEarlyClaim());
+    await renderSheet(makeDeposit(), client);
+
+    await turnOnInstant();
+
+    // Waits for the handler to settle rather than for the call to go out: the
+    // reporting happens in the continuation, so a sync point on the call alone
+    // asserts against a handler that has not run yet.
+    await waitFor(() => expect(button('Claim')).toBeDisabled());
+    // Read as submitted, the sheet would stand down over a deposit still
+    // waiting and report a claim that never happened.
+    expect(screen.queryByText(CLAIM_SUBMITTED_LINE)).toBeNull();
+    expect(await findInstantRow()).toBeInTheDocument();
+  });
+
+  // A provider that refused or could not be reached is not a depth that has yet
+  // to arrive: another confirmation does not address it, so it cannot be left
+  // reading as an ordinary wait.
+  it('says the front is unavailable when the provider declines it', async () => {
+    const client = withQuote(notYetQuote());
+    vi.mocked(client.claimDeposit).mockResolvedValue(
+      claimDeferred({ type: 'providerDeclined', message: 'ssp: upstream unavailable' }),
+    );
+    await renderSheet(makeDeposit(), client);
+
+    await turnOnInstant();
+
+    expect(await screen.findByText(/Early delivery is not available/)).toBeInTheDocument();
+    // The provider's own wording names its internals, so it stays in the log.
+    expect(screen.queryByText(/ssp: upstream unavailable/)).toBeNull();
+  });
+
+  // Choosing the wait asks for nothing the provider could decline, so its
+  // refusal to front the deposit is not news the user needs.
+  it('stays quiet when the provider declines a front nobody asked for', async () => {
+    saveSettings({ depositMaxFee: { type: 'fixed', amount: 5_000 } });
+    const client = withQuote(notYetQuote());
+    vi.mocked(client.claimDeposit).mockResolvedValue(
+      claimDeferred({ type: 'providerDeclined', message: 'ssp: upstream unavailable' }),
+    );
+    await renderSheet(makeDeposit(), client);
+
+    await findInstantRow();
+    // 3 200 sits under the 5 000 ceiling, so the front is the default and
+    // picking the wait is the instruction.
+    fireEvent.click(button(/^Standard delivery/));
+
+    await waitFor(() => expect(client.claimDeposit).toHaveBeenCalled());
+    expect(screen.queryByText(/Early delivery is not available/)).toBeNull();
+  });
+
+  // The fee moved above what was asked for between the quote and the tap. The
+  // reason carries what it would now cost, so this needs no inference.
+  it('reports a spread that outgrew the ceiling as the price having moved', async () => {
+    const client = withQuote(notYetQuote());
+    vi.mocked(client.claimDeposit).mockResolvedValue(
+      claimDeferred({ type: 'maxFeeExceeded', requiredFeeSats: 4_600, maxFeeSats: 3_200 }),
+    );
+    await renderSheet(makeDeposit(), client);
+
+    await turnOnInstant();
+
+    expect(await screen.findByText(/did not go through/)).toHaveTextContent('3 200');
+  });
+
+  it('claims outright when a block lands between the quote and the tap', async () => {
+    const client = withQuote(notYetQuote());
+    // Deep enough after all, so the SDK claims rather than deferring.
+    vi.mocked(client.claimDeposit).mockResolvedValue(claimSubmitted());
+    const { onChanged } = await renderSheet(makeDeposit(), client);
+
+    await turnOnInstant();
+
+    // Claimed rather than deferred, so the sheet stands down and leaves no
+    // ceiling line behind. Sync announces the claim, not this sheet (#459).
+    await waitFor(() => expect(onChanged).toHaveBeenCalled());
+  });
+
+  // A throw is now reserved for the states that really are stuck, so one still
+  // has to read as a failure rather than as a recorded instruction.
+  it('reports a genuine throw as a failure', async () => {
+    const client = withQuote(notYetQuote());
+    vi.mocked(client.claimDeposit).mockRejectedValue(new Error('Deposit claim already in progress'));
+    vi.mocked(client.listUnclaimedDeposits).mockResolvedValue({ deposits: [makeDeposit()] });
+    await renderSheet(makeDeposit(), client);
+
+    await turnOnInstant();
+
+    expect(await screen.findByText(/Could not set this transfer up/)).toBeInTheDocument();
+  });
+
+  // Committing the quoted fee here would only pin the ceiling down from the
+  // configured one, which already covers the route, and buy nothing.
+  it('stays inert when the configured ceiling already covers the route', async () => {
+    saveSettings({ depositMaxFee: { type: 'fixed', amount: 5_000 } });
+    await renderSheet(makeDeposit(), withQuote(notYetQuote()));
+
+    await findInstantRow();
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
+    expect(button('Claim')).toBeDisabled();
+  });
+});
+
+// The other direction: a ceiling low enough to refuse the front is how the user
+// declines to pay for it, even where the configured one would have paid.
+describe('committing the wait', () => {
+  const cheapEnough = () => quote({
+    confirmations: 0,
+    instant: { confirmationsRequired: 1, creditAmountSats: 99_653, feeSats: 347,
+      feeRateSatPerVbyte: 4, isEstimate: false },
+  });
+
+  beforeEach(() => saveSettings({ depositMaxFee: { type: 'fixed', amount: 500 } }));
+
+  it('commits the wait when the ceiling would otherwise front it', async () => {
+    const client = withQuote(cheapEnough());
+    vi.mocked(client.claimDeposit).mockResolvedValue(refusesTheFront());
+    await renderSheet(makeDeposit(), client);
+
+    await findInstantRow();
+    fireEvent.click(button(/^Standard delivery/));
+
+    await waitFor(() => expect(vi.mocked(client.claimDeposit).mock.calls[0][0])
+      .toEqual({ txid: 'a'.repeat(64), vout: 0, maxFee: { type: 'fixed', amount: 198 } }));
+  });
+
+  // Committing the wait asks for a ceiling the spread is meant to exceed, so the
+  // SDK reports maxFeeExceeded. That is this commit working, not a price
+  // that moved, which is the one reading that would turn it into a failure.
+  const refusesTheFront = () => claimDeferred(
+    { type: 'maxFeeExceeded', requiredFeeSats: 347, maxFeeSats: 198 },
+  );
+
+  // A ceiling set just under today's spread is above tomorrow's: the spread
+  // falls as the deposit gets deeper, so that deposit gets fronted a block
+  // later, which is exactly what choosing the wait refused. QA hit this with a
+  // 50 000 deposit whose 1 700 spread fell to 1 500 under a 1 699 ceiling.
+  it('records a ceiling the falling spread cannot slip under', async () => {
+    const client = withQuote(cheapEnough());
+    vi.mocked(client.claimDeposit).mockResolvedValue(refusesTheFront());
+    await renderSheet(makeDeposit(), client);
+
+    await findInstantRow();
+    fireEvent.click(button(/^Standard delivery/));
+
+    await waitFor(() => expect(client.claimDeposit).toHaveBeenCalled());
+    const sent = vi.mocked(client.claimDeposit).mock.calls[0][0].maxFee;
+    // The cost of the wait, not a shade under the route being skipped.
+    expect(sent).toEqual({ type: 'fixed', amount: 198 });
+    const spreadAtAnyDepth = [347, 300, 250, 199];
+    spreadAtAnyDepth.forEach(fee =>
+      expect(fee, 'the front stays refused as the spread falls').toBeGreaterThan(198));
+  });
+
+  it('records the cost of the wait rather than of the route skipped', async () => {
+    const client = withQuote(cheapEnough());
+    vi.mocked(client.claimDeposit).mockResolvedValue(refusesTheFront());
+    await renderSheet(makeDeposit(), client);
+
+    await findInstantRow();
+    fireEvent.click(button(/^Standard delivery/));
+
+    await waitFor(() => expect(client.claimDeposit).toHaveBeenCalled());
+    expect(vi.mocked(client.claimDeposit).mock.calls[0][0]).toEqual({
+      txid: 'a'.repeat(64), vout: 0, maxFee: { type: 'fixed', amount: 198 },
+    });
+  });
+
+  it('does not read the refused front as a price that moved', async () => {
+    const client = withQuote(cheapEnough());
+    vi.mocked(client.claimDeposit).mockResolvedValue(refusesTheFront());
+    await renderSheet(makeDeposit(), client);
+
+    await findInstantRow();
+    fireEvent.click(button(/^Standard delivery/));
+
+    await waitFor(() => expect(client.claimDeposit).toHaveBeenCalled());
+    expect(screen.queryByText(/did not go through/)).toBeNull();
+  });
+});
+
+// A matured deposit either settles or throws, so a deferred outcome there means
+// the approval moved nothing. Standing the sheet down would report an approval
+// that never happened.
+describe('an approval the SDK defers', () => {
+  it('keeps the panel up rather than reporting an approval that did nothing', async () => {
+    const client = createMockClient() as unknown as BreezSdk;
+    client.claimDeposit = vi.fn().mockResolvedValue(noEarlyClaim());
+    client.listUnclaimedDeposits = vi.fn().mockResolvedValue({ deposits: [depositWithFee(320)] });
+    const { onChanged } = await renderSheet(depositWithFee(320), client);
+
+    fireEvent.click(button('Approve'));
+
+    expect(await screen.findByText(/Could not claim this transfer yet/)).toBeInTheDocument();
+    expect(button('Approve')).toBeInTheDocument();
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+});
+// A spread just above the ceiling is not a wait the sheet can promise. The
+// provider's spread falls as the deposit gets deeper, so the next block can put
+// it under the ceiling and the deposit is fronted without being asked again.
+// QA hit this at 0 conf on a 10 000 deposit: a 697 spread against a 500 ceiling
+// read as "waiting" and left nothing to press.
+describe('a spread the ceiling does not cover yet', () => {
+  const justOver = () => quote({
+    amountSats: 10_000,
+    confirmations: 0,
+    instant: { confirmationsRequired: 0, creditAmountSats: 9_303, feeSats: 697,
+      feeRateSatPerVbyte: 7, isEstimate: false },
+    mature: { confirmationsRequired: 3, creditAmountSats: 9_802, feeSats: 198,
+      feeRateSatPerVbyte: 2, isEstimate: true },
+  });
+
+  it('still offers the front, which the ceiling does not cover today', async () => {
+    await renderSheet(makeDeposit({ amountSats: 10_000 }), withQuote(justOver()));
+
+    await findInstantRow();
+    fireEvent.click(button(/^Instant delivery/));
+    expect(button('Claim')).toBeEnabled();
+  });
+});
+
+// A reopened sheet seeds its selection from the deposit in the list it was
+// opened from, not from what the last sheet held: `instantOn` resets on mount.
+// So a recorded ceiling has to reach that list, or reopening offers the route
+// the user just refused.
+describe('reopening after committing the wait', () => {
+  const overDefault = () => quote({
+    amountSats: 10_000,
+    confirmations: 0,
+    instant: { confirmationsRequired: 1, creditAmountSats: 9_653, feeSats: 347,
+      feeRateSatPerVbyte: 4, isEstimate: false },
+    mature: { confirmationsRequired: 3, creditAmountSats: 9_901, feeSats: 99,
+      feeRateSatPerVbyte: 2, isEstimate: true },
+  });
+
+  // 347 sits under the 500 default, so the front is what happens and picking
+  // the wait is a real instruction.
+  beforeEach(() => saveSettings({ depositMaxFee: { type: 'fixed', amount: 500 } }));
+
+  it('tells the list about the ceiling it recorded', async () => {
+    const client = withQuote(overDefault());
+    vi.mocked(client.claimDeposit).mockResolvedValue(
+      claimDeferred({ type: 'maxFeeExceeded', requiredFeeSats: 347, maxFeeSats: 99 }),
+    );
+    const { onChanged, onRefresh } = await renderSheet(makeDeposit({ amountSats: 10_000 }), client);
+
+    await findInstantRow();
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(button(/^Standard delivery/));
+
+    await waitFor(() => expect(vi.mocked(client.claimDeposit).mock.calls[0][0])
+      .toEqual({ txid: 'a'.repeat(64), vout: 0, maxFee: { type: 'fixed', amount: 99 } }));
+    // Without this the list keeps a deposit carrying no ceiling at all.
+    await waitFor(() => expect(onRefresh).toHaveBeenCalled());
+    // And never the signal that stands the sheet down: the deposit is still
+    // waiting, so the user has to be left looking at it.
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+
+  it('leaves the sheet up while the deposit is still waiting', async () => {
+    const client = withQuote(overDefault());
+    vi.mocked(client.claimDeposit).mockResolvedValue(
+      claimDeferred({ type: 'maxFeeExceeded', requiredFeeSats: 347, maxFeeSats: 99 }),
+    );
+    const { onChanged, onBack } = await renderSheet(makeDeposit({ amountSats: 10_000 }), client);
+
+    await findInstantRow();
+    fireEvent.click(button(/^Standard delivery/));
+
+    await waitFor(() => expect(client.claimDeposit).toHaveBeenCalled());
+    expect(onChanged).not.toHaveBeenCalled();
+    expect(onBack).not.toHaveBeenCalled();
+    expect(await findInstantRow()).toBeInTheDocument();
+  });
+
+  it('keeps the wait selected when it is opened again', async () => {
+    cleanup();
+    // What the refreshed list now holds for this outpoint.
+    await renderSheet(
+      makeDeposit({ amountSats: 10_000, maxClaimFee: { type: 'fixed', amount: 99 } }),
+      withQuote(overDefault()),
+    );
+
+    await findInstantRow();
+    expect(button(/^Standard delivery/)).toHaveAttribute('aria-checked', 'true');
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('offers the front again when no ceiling reached the list', async () => {
+    cleanup();
+    // The regression: a stale copy reads the configured ceiling and re-offers
+    // the route that was refused.
+    await renderSheet(makeDeposit({ amountSats: 10_000 }), withQuote(overDefault()));
+
+    await findInstantRow();
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
+  });
+});
+
 describe('a route the background sync passed over', () => {
   it('offers it anyway, the quote being priced regardless of the ceiling', async () => {
     // A manual claim authorises the quoted fee itself, so a past decline against
@@ -923,7 +1307,7 @@ describe('a route the background sync passed over', () => {
     expect(await findInstantRow()).toBeInTheDocument();
     await turnOnInstant();
     expect(button('Claim')).toBeInTheDocument();
-    expect(screen.queryByText(/above your limit/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/limit\. You will be asked to approve/)).toBeNull();
   });
 });
 

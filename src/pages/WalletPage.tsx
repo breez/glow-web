@@ -186,6 +186,13 @@ const WalletPage: React.FC<WalletPageProps> = ({
     await refreshWalletData(false);
   }, [onDepositChanged, refreshWalletData]);
 
+  // The same refresh without standing the sheet down, for a deposit whose
+  // record moved while the user is still looking at it.
+  const handleDepositRefreshed = useCallback(async () => {
+    onDepositChanged?.();
+    await refreshWalletData(false);
+  }, [onDepositChanged, refreshWalletData]);
+
   const handleSuccessfulSend = useCallback((lightningAddress?: string) => {
     if (lightningAddress) {
       setTimeout(() => {
@@ -360,6 +367,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
           deposit={selectedDeposit}
           onBack={handleDepositDetailsClose}
           onChanged={handleDepositChanged}
+          onRefresh={handleDepositRefreshed}
         />
       )}
 

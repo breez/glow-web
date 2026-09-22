@@ -5,7 +5,10 @@ import {
   CLAIM_SUBMITTED_LINE,
   autoClaimsEarly,
   blocksToWait,
+  ceilingForWait,
+  claimCeilingSats,
   earlyOption,
+  earlyClaimCeiling,
   formatWait,
   isClaimable,
   isClaimInFlight,
@@ -177,5 +180,42 @@ describe('predicting the automatic early claim', () => {
     expect(autoClaimsEarly(covered(), { type: 'rate', satPerVbyte: 1 })).toBe(false);
     expect(autoClaimsEarly(covered(), { type: 'networkRecommended', leewaySatPerVbyte: 0 }))
       .toBe(false);
+  });
+});
+
+describe('the ceiling an early claim is held to', () => {
+  it('prefers the ceiling standing on the deposit to the configured one', () => {
+    expect(earlyClaimCeiling({ type: 'fixed', amount: 3_200 }, { type: 'fixed', amount: 500 }))
+      .toEqual({ type: 'fixed', amount: 3_200 });
+  });
+
+  // The direction nobody's intuition gets right, and true only of the early
+  // route: a standing ceiling below the configured default holds the deposit
+  // back from being fronted. The claim at maturity runs under whichever admits
+  // more, so it is not held back with it.
+  it('holds a deposit back from the front when its ceiling sits below the default', () => {
+    expect(earlyClaimCeiling({ type: 'fixed', amount: 100 }, { type: 'fixed', amount: 500 }))
+      .toEqual({ type: 'fixed', amount: 100 });
+  });
+
+  it('falls back to the configured ceiling when the deposit carries none', () => {
+    expect(earlyClaimCeiling(undefined, { type: 'fixed', amount: 500 }))
+      .toEqual({ type: 'fixed', amount: 500 });
+  });
+
+  it('reads a fixed ceiling in sats and declines to name the rate kinds', () => {
+    expect(claimCeilingSats({ type: 'fixed', amount: 500 })).toBe(500);
+    expect(claimCeilingSats({ type: 'rate', satPerVbyte: 1 })).toBeNull();
+    expect(claimCeilingSats({ type: 'networkRecommended', leewaySatPerVbyte: 0 })).toBeNull();
+  });
+
+  // Not derived from the early fee: the spread falls as the deposit gets
+  // deeper, so a ceiling set just under today's spread is above tomorrow's and
+  // fronts the deposit anyway, which is what choosing the wait refused.
+  // Low enough to refuse the front, and no lower: the claim at maturity runs
+  // under whichever ceiling admits more, so naming the wait's own cost keeps
+  // that claim covered even where the configured ceiling sits below it.
+  it('refuses the front at the cost of the wait itself', () => {
+    expect(ceilingForWait(option(3, 198))).toBe(198);
   });
 });
