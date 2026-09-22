@@ -158,39 +158,8 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
         />
 
         <div className="space-y-4">
-          {/* Description */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-spark-text-secondary text-sm font-medium">Description (optional)</label>
-              <span className="text-xs text-spark-text-secondary">{description.length}/{INVOICE_DESCRIPTION_MAX}</span>
-            </div>
-            <textarea
-              ref={descriptionInputRef}
-              enterKeyHint="done"
-              value={description}
-              onChange={(e) => setDescription(e.target.value.replace(/\n/g, ''))}
-              onKeyDown={async (e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  // Always retract the keyboard on Enter. Commit
-                  // only if the amount is valid and we're not
-                  // already generating.
-                  await dismissKeyboard();
-                  if (validAmount && !isLoading) {
-                    onCreateInvoice();
-                  }
-                }
-              }}
-              placeholder="What's this for?"
-              disabled={isLoading}
-              maxLength={INVOICE_DESCRIPTION_MAX}
-              rows={1}
-              className={`${AMOUNT_FIELD_CLASS} resize-none`}
-            />
-          </div>
-
-          <div>
-            <label className="block text-spark-text-secondary text-sm font-medium mb-2">
+            <label className="block text-sm font-medium text-spark-text-primary mb-2">
               Amount
             </label>
             <div className="relative">
@@ -248,6 +217,38 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
               </button>
             ))}
           </div>
+          {/* Description */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-spark-text-primary">Description (optional)</label>
+              <span className="text-xs text-spark-text-secondary">{description.length}/{INVOICE_DESCRIPTION_MAX}</span>
+            </div>
+            <textarea
+              ref={descriptionInputRef}
+              enterKeyHint="done"
+              value={description}
+              onChange={(e) => setDescription(e.target.value.replace(/\n/g, ''))}
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  // Always retract the keyboard on Enter. Commit
+                  // only if the amount is valid and we're not
+                  // already generating.
+                  await dismissKeyboard();
+                  if (validAmount && !isLoading) {
+                    onCreateInvoice();
+                  }
+                }
+              }}
+              placeholder="What's this for?"
+              disabled={isLoading}
+              maxLength={INVOICE_DESCRIPTION_MAX}
+              rows={3}
+              className={`${AMOUNT_FIELD_CLASS} resize-none`}
+            />
+          </div>
+
+
 
 
           <div data-testid="invoice-error-message">
