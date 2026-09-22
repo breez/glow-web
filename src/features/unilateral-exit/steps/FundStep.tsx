@@ -113,7 +113,7 @@ export const FundStep: React.FC<
     isPaying: boolean;
     onTopUp: () => void;
   }
-> = ({ address, topUp, feeRate, currentFeeRate, error, isPaying, onTopUp }) => {
+> = ({ address, topUp, feeRate, currentFeeRate, networkFloorFeeRate, error, isPaying, onTopUp }) => {
   // The build is tried before anything is asked for, so without a top-up there
   // is nothing to pay here: only a failure to explain.
   if (!topUp) {
@@ -131,7 +131,10 @@ export const FundStep: React.FC<
   // Waiting costs nothing, so the step shows what continuing now costs before
   // it shows anywhere to pay.
   if (!isPaying) {
-    const feesRose = currentFeeRate !== null && feeRate > currentFeeRate;
+    // Fees rose only if the network is now above the rate the exit was built
+    // at. A higher rate the user picked themselves is not the network's doing.
+    const feesRose =
+      currentFeeRate !== null && networkFloorFeeRate !== null && networkFloorFeeRate > currentFeeRate;
     return (
       <div className="space-y-4">
         <Breakdown topUp={topUp} feeRate={feeRate} />

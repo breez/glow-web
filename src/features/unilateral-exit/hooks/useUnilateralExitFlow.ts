@@ -100,6 +100,8 @@ export interface FundingFields {
   feeRate: number;
   /** The rate the exit runs at until the build replaces it. */
   currentFeeRate: number | null;
+  /** The slowest rate the network is taking, or null before the rates load. */
+  networkFloorFeeRate: number | null;
   /** When the quote the figures come from was taken, in ms. */
   quotedAt: number | null;
 }
@@ -183,7 +185,10 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   const [shortfall, setShortfall] = useState<Funding | null>(null);
   const [quotedAt, setQuotedAt] = useState<number | null>(null);
   // A resumed exit tries its build once per quote before asking for anything.
-  const triedQuote = useRef<PrepareUnilateralExitResponse | null>(null);
+  /** The last build attempt: its quote and the money that was at the address. */
+  const tried = useRef<{ quote: PrepareUnilateralExitResponse; sat: number; inputs: number } | null>(
+    null,
+  );
   const mnemonicRef = useRef<string | null>(null);
 
   useEffect(() => () => {
@@ -385,11 +390,23 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
 
   // What a resumed exit already holds may pay the new rate, and only a build can
   // tell. So it tries once, and the step asks for more only when that falls short.
+  // Keyed on what the address holds as well: a confirmation changes what counts
+  // as sent, and any payment, short or over, is worth another build. Amounts
+  // rather than objects, since every engine pass emits a fresh plan. It cannot
+  // feed itself: a build leaves this phase on its first line.
   useEffect(() => {
-    if (phase !== 'fund' || !quote || triedQuote.current === quote) return;
-    triedQuote.current = quote;
+    if (phase !== 'fund' || !quote) return;
+    const attempt = { quote, sat: sent.sat, inputs: sent.inputs };
+    if (
+      tried.current?.quote === attempt.quote &&
+      tried.current.sat === attempt.sat &&
+      tried.current.inputs === attempt.inputs
+    ) {
+      return;
+    }
+    tried.current = attempt;
     void build();
-  }, [phase, quote, build]);
+  }, [phase, quote, sent.sat, sent.inputs, build]);
 
   // Keeps the destination and the leaves, and re-enters at the fee step: the
   // reason to rebuild by hand is almost always to pay more.
@@ -451,6 +468,9 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
       topUp,
       feeRate: quote?.feeRateSatPerVbyte ?? 0,
       currentFeeRate: plan?.feeRateSatPerVbyte ?? null,
+      // The slowest rate the network is taking: above the exit's own rate, the
+      // exit is stalled by fees rather than by the rate the user just picked.
+      networkFloorFeeRate: feeRates?.slow ?? null,
       quotedAt,
     },
     submitDestination,

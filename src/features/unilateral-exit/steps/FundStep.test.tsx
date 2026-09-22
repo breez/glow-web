@@ -14,6 +14,7 @@ const props = {
   topUp: null,
   feeRate: 42,
   currentFeeRate: 24,
+  networkFloorFeeRate: 30,
   quotedAt: null,
   error: null,
   isPaying: false,
@@ -51,6 +52,14 @@ describe('FundStep', () => {
     expect(screen.queryByText(/Insufficient CPFP funding/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId('unilateral-exit-top-up'));
     expect(onTopUp).toHaveBeenCalled();
+  });
+
+  it('does not blame the network for a rate the user picked', () => {
+    // Exit built at 24, network still taking 24, the 42 is the user's own.
+    render(<FundStep {...props} networkFloorFeeRate={24} topUp={topUp} />);
+
+    expect(screen.getByText('The exit needs more')).toBeInTheDocument();
+    expect(screen.queryByText('Network fees went up')).toBeNull();
   });
 
   it('asks for the amount, with where to send it, once the user chooses to top up', () => {
