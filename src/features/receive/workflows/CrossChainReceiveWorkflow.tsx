@@ -619,7 +619,6 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
               useRawStrings
               className="w-full"
               items={[
-                { label: 'You asked for', value: `$${usdInput}` },
                 { label: 'Network', value: resultChainName },
                 { label: 'Asset', value: resultAssetName },
                 { label: 'Provider', value: getProviderDisplayName(selectedRoute.provider) },
@@ -628,6 +627,9 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                   node: depositAddressValue,
                   expansion: depositQr,
                 },
+                // With the fee and what lands: the three figures answer each
+                // other, and the route above them is a different question.
+                { label: 'You asked for', value: `$${usdInput}` },
                 ...(resultFee ? [{ label: 'Fees', value: resultFee }] : []),
                 { label: 'You receive', value: `~${formatReceived(resultInfo)}`, highlight: true },
               ]}
