@@ -36,7 +36,14 @@ import { logger, LogCategory } from '@/services/logger';
 interface UnclaimedDepositDetailsPageProps {
   deposit: DepositInfo | null;
   onBack: () => void;
+  /** The deposit is done with: refresh the list and stand this sheet down. */
   onChanged?: () => void;
+  /**
+   * The deposit's record moved but the sheet stays up. Separate from
+   * `onChanged` because that one closes the sheet, which a recorded ceiling
+   * must not: the sheet is still showing a deposit that is still waiting.
+   */
+  onRefresh?: () => void;
 }
 
 interface ClaimState {
@@ -189,6 +196,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   deposit,
   onBack,
   onChanged,
+  onRefresh,
 }) => {
   const wallet = useWallet();
   const subscribeToSdkEvents = useSdkEvents();
@@ -518,10 +526,21 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
           setInstantFeeFrom(requested);
           await loadQuote(deposit);
         }
-        // Deliberately not onChanged: nothing left the unclaimed set, and the
-        // parent finds this sheet's deposit by looking its outpoint up in that
-        // list, so a refetch is a chance to null it and close the sheet over a
-        // deposit that is still waiting.
+        // Only worth saying when the front was what was asked for: a provider
+        // that declined to front a deposit the user chose to wait for has
+        // refused nothing they wanted. The message is a diagnostic, not copy:
+        // it is the provider's own wording and names its internals.
+        if (early && outcome.reason.type === 'providerDeclined') {
+          logger.warn(LogCategory.PAYMENT, 'Provider declined to front the deposit', {
+            message: outcome.reason.message,
+          });
+          setInstantError('Early delivery is not available right now, so this transfer will be claimed automatically instead.');
+        }
+        // The recorded ceiling has to reach the list this sheet is opened from:
+        // a reopened sheet seeds its selection from that copy, so without this
+        // it reads the configured ceiling again and offers the route the user
+        // just refused. Not `onChanged`, which stands the sheet down.
+        onRefresh?.();
         return;
       }
       // Claimed ahead of maturity, settling asynchronously, so nothing else

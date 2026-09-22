@@ -126,17 +126,27 @@ function quote(overrides: Partial<FetchClaimDepositQuoteResponse> = {}): FetchCl
 }
 
 async function renderSheet(deposit: DepositInfo, client?: BreezSdk, subscribeToSdkEvents?: SubscribeToSdkEvents) {
+  // Two separate signals on purpose: the parent stands the sheet down on
+  // `onChanged` and leaves it up on `onRefresh`, so a test that conflates them
+  // cannot tell a recorded ceiling from a finished deposit.
   const onChanged = vi.fn();
+  const onRefresh = vi.fn();
+  const onBack = vi.fn();
   const mockClient = client ?? createMockClient();
   render(
     <ToastProvider>
       <WalletProvider client={mockClient} isConnected subscribeToSdkEvents={subscribeToSdkEvents}>
-        <UnclaimedDepositDetailsPage deposit={deposit} onBack={vi.fn()} onChanged={onChanged} />
+        <UnclaimedDepositDetailsPage
+          deposit={deposit}
+          onBack={onBack}
+          onChanged={onChanged}
+          onRefresh={onRefresh}
+        />
       </WalletProvider>
     </ToastProvider>
   );
   await waitForSheetOpen();
-  return { onChanged, client: mockClient };
+  return { onChanged, onRefresh, onBack, client: mockClient };
 }
 
 // Matches <button> elements by text, whatever their role, so one helper
@@ -1000,6 +1010,42 @@ describe('committing a route that has not unlocked', () => {
     expect(await findInstantRow()).toBeInTheDocument();
   });
 
+  // A provider that refused or could not be reached is not a depth that has yet
+  // to arrive: another confirmation does not address it, so it cannot be left
+  // reading as an ordinary wait.
+  it('says the front is unavailable when the provider declines it', async () => {
+    const client = withQuote(notYetQuote());
+    vi.mocked(client.claimDeposit).mockResolvedValue(
+      claimDeferred({ type: 'providerDeclined', message: 'ssp: upstream unavailable' }),
+    );
+    await renderSheet(makeDeposit(), client);
+
+    await turnOnInstant();
+
+    expect(await screen.findByText(/Early delivery is not available/)).toBeInTheDocument();
+    // The provider's own wording names its internals, so it stays in the log.
+    expect(screen.queryByText(/ssp: upstream unavailable/)).toBeNull();
+  });
+
+  // Choosing the wait asks for nothing the provider could decline, so its
+  // refusal to front the deposit is not news the user needs.
+  it('stays quiet when the provider declines a front nobody asked for', async () => {
+    saveSettings({ depositMaxFee: { type: 'fixed', amount: 5_000 } });
+    const client = withQuote(notYetQuote());
+    vi.mocked(client.claimDeposit).mockResolvedValue(
+      claimDeferred({ type: 'providerDeclined', message: 'ssp: upstream unavailable' }),
+    );
+    await renderSheet(makeDeposit(), client);
+
+    await findInstantRow();
+    // 3 200 sits under the 5 000 ceiling, so the front is the default and
+    // picking the wait is the instruction.
+    fireEvent.click(button(/^Standard delivery/));
+
+    await waitFor(() => expect(client.claimDeposit).toHaveBeenCalled());
+    expect(screen.queryByText(/Early delivery is not available/)).toBeNull();
+  });
+
   // The fee moved above what was asked for between the quote and the tap. The
   // reason carries what it would now cost, so this needs no inference.
   it('reports a spread that outgrew the ceiling as the price having moved', async () => {
@@ -1168,6 +1214,84 @@ describe('a spread the ceiling does not cover yet', () => {
     await findInstantRow();
     fireEvent.click(button(/^Instant delivery/));
     expect(button('Claim')).toBeEnabled();
+  });
+});
+
+// A reopened sheet seeds its selection from the deposit in the list it was
+// opened from, not from what the last sheet held: `instantOn` resets on mount.
+// So a recorded ceiling has to reach that list, or reopening offers the route
+// the user just refused.
+describe('reopening after committing the wait', () => {
+  const overDefault = () => quote({
+    amountSats: 10_000,
+    confirmations: 0,
+    instant: { confirmationsRequired: 1, creditAmountSats: 9_653, feeSats: 347,
+      feeRateSatPerVbyte: 4, isEstimate: false },
+    mature: { confirmationsRequired: 3, creditAmountSats: 9_901, feeSats: 99,
+      feeRateSatPerVbyte: 2, isEstimate: true },
+  });
+
+  // 347 sits under the 500 default, so the front is what happens and picking
+  // the wait is a real instruction.
+  beforeEach(() => saveSettings({ depositMaxFee: { type: 'fixed', amount: 500 } }));
+
+  it('tells the list about the ceiling it recorded', async () => {
+    const client = withQuote(overDefault());
+    vi.mocked(client.claimDeposit).mockResolvedValue(
+      claimDeferred({ type: 'maxFeeExceeded', requiredFeeSats: 347, maxFeeSats: 99 }),
+    );
+    const { onChanged, onRefresh } = await renderSheet(makeDeposit({ amountSats: 10_000 }), client);
+
+    await findInstantRow();
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(button(/^Standard delivery/));
+
+    await waitFor(() => expect(vi.mocked(client.claimDeposit).mock.calls[0][0])
+      .toEqual({ txid: 'a'.repeat(64), vout: 0, maxFee: { type: 'fixed', amount: 99 } }));
+    // Without this the list keeps a deposit carrying no ceiling at all.
+    await waitFor(() => expect(onRefresh).toHaveBeenCalled());
+    // And never the signal that stands the sheet down: the deposit is still
+    // waiting, so the user has to be left looking at it.
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+
+  it('leaves the sheet up while the deposit is still waiting', async () => {
+    const client = withQuote(overDefault());
+    vi.mocked(client.claimDeposit).mockResolvedValue(
+      claimDeferred({ type: 'maxFeeExceeded', requiredFeeSats: 347, maxFeeSats: 99 }),
+    );
+    const { onChanged, onBack } = await renderSheet(makeDeposit({ amountSats: 10_000 }), client);
+
+    await findInstantRow();
+    fireEvent.click(button(/^Standard delivery/));
+
+    await waitFor(() => expect(client.claimDeposit).toHaveBeenCalled());
+    expect(onChanged).not.toHaveBeenCalled();
+    expect(onBack).not.toHaveBeenCalled();
+    expect(await findInstantRow()).toBeInTheDocument();
+  });
+
+  it('keeps the wait selected when it is opened again', async () => {
+    cleanup();
+    // What the refreshed list now holds for this outpoint.
+    await renderSheet(
+      makeDeposit({ amountSats: 10_000, maxClaimFee: { type: 'fixed', amount: 99 } }),
+      withQuote(overDefault()),
+    );
+
+    await findInstantRow();
+    expect(button(/^Standard delivery/)).toHaveAttribute('aria-checked', 'true');
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('offers the front again when no ceiling reached the list', async () => {
+    cleanup();
+    // The regression: a stale copy reads the configured ceiling and re-offers
+    // the route that was refused.
+    await renderSheet(makeDeposit({ amountSats: 10_000 }), withQuote(overDefault()));
+
+    await findInstantRow();
+    expect(button(PAID_ROW)).toHaveAttribute('aria-checked', 'true');
   });
 });
 
