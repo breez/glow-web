@@ -159,10 +159,9 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
               autoCorrect="off"
               spellCheck={false}
               // Two lines at this width, which is what the field holds: a third
-              // was clipped. USDT is dropped rather than the lightning address,
-              // since a USDT address looks like the USDC one and carries no
-              // shape of its own.
-              placeholder='lnbc... / bc1... / sp1... / user@domain.com / USDC address'
+              // was clipped. The lightning address goes last so the wrap falls
+              // after the prefixes rather than inside the token pair.
+              placeholder='lnbc... / bc1... / sp1... / USDC or USDT address / user@domain.com'
               className="w-full h-full px-4 py-3 bg-spark-dark text-spark-text-primary placeholder-spark-text-muted focus:ring-0 resize-none font-mono text-sm border outline-hidden transition-all rounded-xl border-spark-border focus:border-spark-primary"
               disabled={isLoading}
               data-testid="payment-input"
