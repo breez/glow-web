@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import { SatAmount } from './SatAmount';
 
 /**
@@ -9,6 +9,11 @@ import { SatAmount } from './SatAmount';
 export interface FeeBreakdownItem {
   label: string;
   value?: number | bigint | string;
+  /** Rendered in place of `value`, for a row that carries its own controls.
+   *  Inherits the value column's mono styling. */
+  node?: ReactNode;
+  /** Full-width panel under this row, for what a control in it opens. */
+  expansion?: ReactNode;
   /** No figure yet: the row keeps its place with a dash, so a card doesn't
    *  grow a row under the reader once the number lands. */
   pending?: boolean;
@@ -56,12 +61,15 @@ export const FeeBreakdownCard: React.FC<FeeBreakdownCardProps> = ({
       {items.map((item, index) => (
         <React.Fragment key={item.label}>
           {index > 0 && <div className="border-t border-spark-border/50" />}
+          <div>
           <div className="flex justify-between items-center">
             <span className={`text-sm ${item.highlight ? 'text-spark-text-primary font-semibold' : item.emphasis ? 'text-spark-text-primary' : 'text-spark-text-secondary'}`}>
               {item.label}
             </span>
             <span className={`font-mono text-sm ${item.highlight ? 'font-bold text-spark-primary' : item.emphasis ? 'font-semibold text-spark-text-primary' : 'text-spark-text-primary'}`}>
-              {item.pending
+              {item.node
+                ? item.node
+                : item.pending
                 ? <span className="text-spark-text-muted">&mdash;</span>
                 : useRawStrings || typeof item.value === 'string'
                 ? String(item.value)
@@ -73,6 +81,8 @@ export const FeeBreakdownCard: React.FC<FeeBreakdownCardProps> = ({
                 )
               }
             </span>
+          </div>
+          {item.expansion}
           </div>
         </React.Fragment>
       ))}

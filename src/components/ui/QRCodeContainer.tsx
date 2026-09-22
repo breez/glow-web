@@ -16,15 +16,18 @@ interface QrFrameProps {
   className?: string;
   /** Applied to the white card alone, so it can move inside the fixed corners. */
   cardClassName?: string;
+  /** Framing brackets. Off where the code already sits inside a container of
+   *  its own, which frames it well enough and leaves no room for the overhang. */
+  corners?: boolean;
 }
 
 /**
  * QR Code display component with decorative corners.
  * Separated from barrel file to enable lazy loading of react-qr-code library.
  */
-export const QRCodeContainer: React.FC<QrFrameProps & { value: string }> = ({ value, size = 200, className = '', cardClassName = '' }) => (
+export const QRCodeContainer: React.FC<QrFrameProps & { value: string }> = ({ value, size = 200, className = '', cardClassName = '', corners = true }) => (
   <div className={`relative ${className}`}>
-    <Corners />
+    {corners && <Corners />}
     <div className={`qr-container ${cardClassName}`}>
       <QRCode value={value} size={size} />
     </div>

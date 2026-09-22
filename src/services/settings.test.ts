@@ -142,3 +142,36 @@ describe('deposit claim limit helpers', () => {
     expect(getSettings().depositMaxFeeByType).toBeUndefined();
   });
 });
+
+describe('remembered send routes', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+  });
+
+  it('answers per address and keeps the newest choice', async () => {
+    const { getLastSendRoute, setLastSendRoute } = await import('./settings');
+    setLastSendRoute('0xalice', { asset: 'USDC', chain: 'base' });
+    setLastSendRoute('0xbob', { asset: 'USDT', chain: 'polygon' });
+    setLastSendRoute('0xalice', { asset: 'USDC', chain: 'arbitrum' });
+
+    expect(getLastSendRoute('0xalice')).toEqual({ asset: 'USDC', chain: 'arbitrum' });
+    expect(getLastSendRoute('0xbob')).toEqual({ asset: 'USDT', chain: 'polygon' });
+    expect(getLastSendRoute('0xcarol')).toBeNull();
+  });
+
+  it('forgets the oldest address past the cap', async () => {
+    const { getLastSendRoute, setLastSendRoute } = await import('./settings');
+    for (let i = 0; i < 21; i++) {
+      setLastSendRoute(`0x${i}`, { asset: 'USDC', chain: 'base' });
+    }
+    expect(getLastSendRoute('0x0')).toBeNull();
+    expect(getLastSendRoute('0x20')).toEqual({ asset: 'USDC', chain: 'base' });
+  });
+
+  it('ignores a malformed entry rather than throwing', async () => {
+    localStorage.setItem('cross_chain_send_routes', '{"not":"an array"}');
+    const { getLastSendRoute } = await import('./settings');
+    expect(getLastSendRoute('0xalice')).toBeNull();
+  });
+});

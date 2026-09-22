@@ -1,4 +1,5 @@
 import type { Payment } from '@breeztech/breez-sdk-spark';
+import { formatWithSpaces } from './formatNumber';
 
 /** Truncate a long address/string to `start…end` form (default ~42 chars). */
 export function truncateAddress(addr: string, maxLen = 42): string {
@@ -54,6 +55,15 @@ export function formatReceiveAmount(amount: bigint, decimals: number): string {
   const scale = 10n ** BigInt(decimals - 2);
   const hundredths = (amount + scale / 2n) / scale;
   return `${hundredths / 100n}.${(hundredths % 100n).toString().padStart(2, '0')}`;
+}
+
+/** A USD-cent bound as an amount field shows it: "$0.80", "$89 800". */
+export function formatUsdCents(cents: number): string {
+  const whole = Math.trunc(cents / 100);
+  const rest = Math.abs(cents % 100);
+  return rest === 0
+    ? `$${formatWithSpaces(whole)}`
+    : `$${formatWithSpaces(whole)}.${String(rest).padStart(2, '0')}`;
 }
 
 export interface CrossChainDestination {

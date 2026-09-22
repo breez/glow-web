@@ -287,6 +287,75 @@ export function setCachedStableTicker(ticker: string | null): void {
   }
 }
 
+// Network the USD receive tab last asked to be paid on. Stored as the display
+// asset plus the chain group key rather than a route: routes come back fresh
+// from the SDK on every open, and a provider can drop out between them.
+const USD_RECEIVE_ROUTE_KEY = 'usd_receive_route';
+
+/** A cross-chain route as the UI remembers it: display asset and chain group. */
+export interface CrossChainRouteChoice {
+  asset: string;
+  chain: string;
+}
+
+function parseRouteChoice(raw: unknown): CrossChainRouteChoice | null {
+  const value = raw as Partial<CrossChainRouteChoice> | null;
+  return value && typeof value.asset === 'string' && typeof value.chain === 'string'
+    ? { asset: value.asset, chain: value.chain }
+    : null;
+}
+
+export function getLastUsdReceiveRoute(): CrossChainRouteChoice | null {
+  const raw = getCachedItem(USD_RECEIVE_ROUTE_KEY);
+  if (!raw) return null;
+  try {
+    return parseRouteChoice(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+export function setLastUsdReceiveRoute(route: CrossChainRouteChoice): void {
+  setCachedItem(USD_RECEIVE_ROUTE_KEY, JSON.stringify(route));
+}
+
+// Route last used to pay a given cross-chain address. Keyed by address, never
+// kept as one global preference: the network belongs to the recipient, and a
+// guess carried over from someone else would send to a chain they cannot
+// reach. Most recent first, capped so the list cannot grow without bound.
+const SEND_ROUTE_KEY = 'cross_chain_send_routes';
+const SEND_ROUTE_LIMIT = 20;
+
+interface StoredSendRoute extends CrossChainRouteChoice {
+  address: string;
+}
+
+function readSendRoutes(): StoredSendRoute[] {
+  const raw = getCachedItem(SEND_ROUTE_KEY);
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap(entry => {
+      const choice = parseRouteChoice(entry);
+      const address = (entry as { address?: unknown } | null)?.address;
+      return choice && typeof address === 'string' ? [{ ...choice, address }] : [];
+    });
+  } catch {
+    return [];
+  }
+}
+
+export function getLastSendRoute(address: string): CrossChainRouteChoice | null {
+  const found = readSendRoutes().find(entry => entry.address === address);
+  return found ? { asset: found.asset, chain: found.chain } : null;
+}
+
+export function setLastSendRoute(address: string, route: CrossChainRouteChoice): void {
+  const next = [{ address, ...route }, ...readSendRoutes().filter(entry => entry.address !== address)];
+  setCachedItem(SEND_ROUTE_KEY, JSON.stringify(next.slice(0, SEND_ROUTE_LIMIT)));
+}
+
 /**
  * Durable native mirror of the active stable ticker.
  *

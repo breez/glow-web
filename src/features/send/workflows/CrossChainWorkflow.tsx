@@ -16,6 +16,7 @@ import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { SatAmount } from '../../../components/SatAmount';
 import { useCrossChainRouteGroups } from '../../../hooks/useCrossChainRouteGroups';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
+import { getLastSendRoute, setLastSendRoute } from '@/services/settings';
 import { logger, LogCategory } from '@/services/logger';
 import { getProviderDisplayName } from '../../../utils/paymentDescription';
 import { truncateAddress, formatChainName, formatCrossChainAmount, formatReceiveAmount } from '../../../utils/crossChainFormat';
@@ -149,6 +150,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   // Advance from chain selection (chainKey is contract address or chain name, lowercased)
   const selectChain = useCallback((asset: string, chainKey: string, allRoutes: CrossChainRoutePair[]) => {
     setSelectedChain(chainKey);
+    setLastSendRoute(addressDetails.address, { asset, chain: chainKey });
     const lookup = buildGroupLookup(allRoutes);
     const matching = allRoutes.filter(r => assetMatchesGroup(r.asset, asset) && chainGroupKeyWith(r, lookup) === chainKey);
     if (matching.length === 1) {
@@ -173,7 +175,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       prepareAllProviders(matching);
       setStep('provider');
     }
-  }, [prepareRoute, prepareAllProviders]);
+  }, [prepareRoute, prepareAllProviders, addressDetails.address]);
 
   // Fetch routes on mount
   useEffect(() => {
@@ -193,6 +195,22 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
         }
 
         setRoutes(fetched);
+
+        // Paying the same recipient again goes straight to the quote: the
+        // route belongs to the address, and back from confirm reopens the
+        // picker. The fetch is already filtered to what this address can
+        // take, so a remembered route from a different chain cannot match.
+        const remembered = getLastSendRoute(addressDetails.address);
+        if (remembered) {
+          const lookup = buildGroupLookup(fetched);
+          const stillOffered = fetched.some(r =>
+            assetMatchesGroup(r.asset, remembered.asset) && chainGroupKeyWith(r, lookup) === remembered.chain);
+          if (stillOffered) {
+            setSelectedAsset(remembered.asset);
+            selectChain(remembered.asset, remembered.chain, fetched);
+            return;
+          }
+        }
 
         // Enter wizard — auto-skip steps with single option
         const assets = [...new Set(fetched
@@ -433,16 +451,18 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
             </div>
           </div>
 
+          {/* Same rows, same order as the receive request: the card describes
+              the far side of the route either way round. */}
           <FeeBreakdownCard
             useRawStrings
             items={[
               {
-                label: 'Receiving',
-                value: `~${formatReceiveAmount(BigInt(quote.estimatedOut), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
+                label: 'Network',
+                value: `${formatChainName(confirmedRoute.chain)}`,
               },
               {
-                label: 'Chain',
-                value: `${formatChainName(confirmedRoute.chain)}`,
+                label: 'Asset',
+                value: assetDisplayName(confirmedRoute.asset),
               },
               {
                 label: 'Provider',
@@ -453,8 +473,13 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                 value: truncateAddress(quote.recipientAddress, 20),
               },
               {
-                label: 'Fee',
+                label: 'Fees',
                 value: `${formatCrossChainAmount(BigInt(quote.feeAmount), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
+              },
+              {
+                label: 'They receive',
+                value: `~${formatReceiveAmount(BigInt(quote.estimatedOut), confirmedRoute.decimals)} ${confirmedRoute.asset}`,
+                highlight: true,
               },
             ]}
             className="mb-6"

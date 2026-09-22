@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   CrossChainReceiveInfo,
   CrossChainRoutePair,
@@ -7,10 +7,11 @@ import type {
 import {
   PrimaryButton,
   QRCodeContainer,
-  CopyableText,
   FormError,
 } from '../../../components/ui';
-import { SpinnerIcon, CopyIcon, CheckIcon } from '../../../components/Icons';
+import { SpinnerIcon, CopyIcon, CheckIcon, ChevronDownIcon, QrCodeIcon } from '../../../components/Icons';
+import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
+import CryptoIcon from '../../../components/CryptoIcon';
 import { CrossChainAssetStep } from '../../../components/crossChain/CrossChainAssetStep';
 import { CrossChainChainStep } from '../../../components/crossChain/CrossChainChainStep';
 import { useWallet } from '../../../contexts/WalletContext';
@@ -25,14 +26,17 @@ import {
   chainGroupKey as chainGroupKeyWith,
   crossChainCardClass,
   crossChainFriendlyError,
+  formatUsdLimits,
   landsInThisWallet,
+  receiveLimitsFor,
 } from '../../../utils/crossChainRoutes';
-import { formatChainName, formatReceiveAmount, formatCrossChainAmount, parseCrossChainAmount } from '../../../utils/crossChainFormat';
+import { formatChainName, formatReceiveAmount, formatCrossChainAmount, formatUsdCents, parseCrossChainAmount, truncateAddress } from '../../../utils/crossChainFormat';
 import { copyToClipboard } from '../../../utils/clipboard';
 import { normalizeDecimalInput } from '../../../utils/decimalInput';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
 import { formatWithSpaces } from '../../../utils/formatNumber';
 import { getProviderDisplayName } from '../../../utils/paymentDescription';
+import { getLastUsdReceiveRoute, setLastUsdReceiveRoute } from '@/services/settings';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 
@@ -40,7 +44,18 @@ type WorkflowStep = 'amount' | 'loading' | 'asset' | 'chain' | 'provider' | 'gen
 
 const QUICK_USD_AMOUNTS = [10, 50, 200];
 
-const CrossChainReceiveWorkflow: React.FC = () => {
+interface CrossChainReceiveWorkflowProps {
+  /** Whether the USD tab is the one on screen. The workflow stays mounted
+   *  either way, so a stray tap on BTC cannot throw away a quote, but it
+   *  renders nothing and lends the sheet neither a back arrow nor its scroll
+   *  while it is off screen. */
+  active: boolean;
+  /** Reports the resting state, the amount form, which is the only step this
+   *  flow is safe to walk away from. Off it the dialog takes the tabs away. */
+  onRestingChange?: (resting: boolean) => void;
+}
+
+const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ active, onRestingChange }) => {
   const wallet = useWallet();
   const stableBalance = useStableBalance();
   const { showToast } = useToast();
@@ -59,16 +74,30 @@ const CrossChainReceiveWorkflow: React.FC = () => {
   const [pendingChain, setPendingChain] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
   const [amountCopied, setAmountCopied] = useState(false);
+  const [addressCopied, setAddressCopied] = useState(false);
+  const [showDepositQr, setShowDepositQr] = useState(false);
+  // Where the picker hands back to. Reached from Continue it carries straight
+  // on into the order, as it did when it was a step of the flow; reached from
+  // the chip it is a detour, so it returns to the amount.
+  const [pickerReturn, setPickerReturn] = useState<'order' | 'amount'>('order');
 
   // The provider and result steps cap and scroll themselves, same as the
   // asset / chain steps do from inside their own components.
-  useSheetOwnsScroll(step === 'provider' || step === 'result');
+  useSheetOwnsScroll(active && (step === 'provider' || step === 'result'));
+
+  useEffect(() => { onRestingChange?.(step === 'amount'); }, [step, onRestingChange]);
 
   const { uniqueAssets, chainGroupKey, getChainsForAsset } = useCrossChainRouteGroups(routes);
   const chainsForAsset = selectedAsset ? getChainsForAsset(selectedAsset) : [];
   const routesForSelection = selectedAsset && selectedChain
     ? routes.filter(r => assetMatchesGroup(r.asset, selectedAsset) && chainGroupKey(r) === selectedChain)
     : [];
+  const chipRoute = routesForSelection[0] ?? null;
+  const stableTokenIdentifier = stableBalance.isActive ? stableBalance.tokenIdentifier : null;
+  // What the provider will take on the chosen network. Shown beside the label
+  // rather than in the placeholder so it survives the first keystroke.
+  const chipLimits = chipRoute ? receiveLimitsFor(chipRoute, stableTokenIdentifier) : null;
+  const limitRange = formatUsdLimits(chipLimits);
 
   // The sender deposits in the source asset's base units. Source assets here
   // are USD stablecoins, so the typed dollar value maps directly.
@@ -83,11 +112,9 @@ const CrossChainReceiveWorkflow: React.FC = () => {
   };
 
   // Single-step receive: create the order and surface the deposit address.
-  // `usdInput` is the deposit the sender sends (exact-in), not the amount the
-  // merchant receives. The SDK's crossChain receive has no exact-out / fees-
-  // included mode yet (route.exactOutEligible is a flag with no parameter to
-  // drive it), so the received amount comes back lower. Flip to merchant-enters-
-  // received-amount once the SDK supports it.
+  // `usdInput` is what the receiver ends up with, not what the sender sends:
+  // the SDK defaults to FeesExcluded and inflates the deposit to absorb the
+  // provider fee, so `crossChainInfo.depositAmount` comes back higher.
   const generateOrder = useCallback(async (route: CrossChainRoutePair) => {
     setSelectedRoute(route);
     setStep('generating');
@@ -113,6 +140,11 @@ const CrossChainReceiveWorkflow: React.FC = () => {
   // otherwise create the order directly (today routes are Orchestra-only).
   const selectChain = useCallback((asset: string, chainKey: string, allRoutes: CrossChainRoutePair[]) => {
     setSelectedChain(chainKey);
+    setLastUsdReceiveRoute({ asset, chain: chainKey });
+    if (pickerReturn === 'amount') {
+      setStep('amount');
+      return;
+    }
     const lookup = buildGroupLookup(allRoutes);
     const matching = allRoutes.filter(r => assetMatchesGroup(r.asset, asset) && chainGroupKeyWith(r, lookup) === chainKey);
     if (matching.length === 1) {
@@ -120,7 +152,7 @@ const CrossChainReceiveWorkflow: React.FC = () => {
     } else {
       setStep('provider');
     }
-  }, [generateOrder]);
+  }, [generateOrder, pickerReturn]);
 
   const selectAsset = useCallback((asset: string, allRoutes: CrossChainRoutePair[]) => {
     setSelectedAsset(asset);
@@ -134,17 +166,46 @@ const CrossChainReceiveWorkflow: React.FC = () => {
     }
   }, [selectChain]);
 
-  const stableTokenIdentifier = stableBalance.isActive ? stableBalance.tokenIdentifier : null;
+  const loadRoutes = useCallback(async (): Promise<CrossChainRoutePair[]> => {
+    const listed = await wallet.getCrossChainRoutes({ type: 'receive' });
+    // In sats mode a route that only lands a token fails on every receive,
+    // and its funds would be ones Glow can't show or spend anyway.
+    return listed?.filter(route => landsInThisWallet(route, stableTokenIdentifier)) ?? [];
+  }, [wallet, stableTokenIdentifier]);
+
+  // The chip needs the routes before the amount is typed: it names the network
+  // the request will use, and a remembered one only counts while the provider
+  // still serves it. Held until the tab is opened, since the workflow is mounted
+  // for the whole life of the sheet now. A failure here stays quiet, since
+  // Continue re-fetches and is where the user finds out.
+  const routesRequested = useRef(false);
+  useEffect(() => {
+    if (!active || routesRequested.current) return;
+    routesRequested.current = true;
+    let cancelled = false;
+    loadRoutes()
+      .then(fetched => {
+        if (cancelled || fetched.length === 0) return;
+        setRoutes(fetched);
+        const remembered = getLastUsdReceiveRoute();
+        if (!remembered) return;
+        const lookup = buildGroupLookup(fetched);
+        const still = fetched.some(r =>
+          assetMatchesGroup(r.asset, remembered.asset) && chainGroupKeyWith(r, lookup) === remembered.chain);
+        if (!still) return;
+        setSelectedAsset(remembered.asset);
+        setSelectedChain(remembered.chain);
+      })
+      .catch(err => logger.warn(LogCategory.PAYMENT, 'Failed to prefetch cross-chain receive routes', { error: formatError(err) }));
+    return () => { cancelled = true; };
+  }, [active, loadRoutes]);
 
   const fetchRoutes = useCallback(async () => {
     setStep('loading');
     setError(null);
     try {
-      const listed = await wallet.getCrossChainRoutes({ type: 'receive' });
-      // In sats mode a route that only lands a token fails on every receive,
-      // and its funds would be ones Glow can't show or spend anyway.
-      const fetched = listed?.filter(route => landsInThisWallet(route, stableTokenIdentifier));
-      if (!fetched || fetched.length === 0) {
+      const fetched = await loadRoutes();
+      if (fetched.length === 0) {
         setError('No cross-chain routes available right now');
         setStep('amount');
         return;
@@ -161,13 +222,11 @@ const CrossChainReceiveWorkflow: React.FC = () => {
       setError(`Failed to fetch routes: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setStep('amount');
     }
-  }, [wallet, selectAsset, stableTokenIdentifier]);
+  }, [loadRoutes, selectAsset]);
 
-  // Back navigation — respect skipped steps
-  const goBackToAmount = () => {
-    setSelectedAsset(null);
-    setSelectedChain(null);
-    setSelectedRoute(null);
+  // Leaving the picker keeps whatever the chip already named: it is a detour
+  // off the amount step now, not a step the flow passes through.
+  const cancelPicker = () => {
     setPendingAsset(null);
     setPendingChain(null);
     setPendingProvider(null);
@@ -176,15 +235,13 @@ const CrossChainReceiveWorkflow: React.FC = () => {
   };
 
   const goBackFromChain = () => {
-    setSelectedChain(null);
     setPendingChain(null);
     setError(null);
     if (uniqueAssets.length > 1) {
-      setSelectedAsset(null);
       setPendingAsset(null);
       setStep('asset');
     } else {
-      goBackToAmount();
+      cancelPicker();
     }
   };
 
@@ -192,7 +249,6 @@ const CrossChainReceiveWorkflow: React.FC = () => {
     setPendingProvider(null);
     setError(null);
     if (chainsForAsset.length > 1) {
-      setSelectedChain(null);
       setPendingChain(null);
       setStep('chain');
     } else {
@@ -200,21 +256,65 @@ const CrossChainReceiveWorkflow: React.FC = () => {
     }
   };
 
-  // Back from the deposit address to the choice that produced it. The order
-  // already made just expires unpaid.
+  // Back from the deposit address to the amount that made it. The network is
+  // changed from the chip there rather than by walking the picker backwards.
+  // The order already made just expires unpaid.
   const goBackFromResult = () => {
     setReceiveResult(null);
     setSelectedRoute(null);
     setAmountCopied(false);
+    setAddressCopied(false);
+    setShowDepositQr(false);
+    setStep('amount');
+  };
+
+  // Opens on the coin when there is a choice of them, otherwise straight on
+  // the network. With a single coin nothing has selected it on a first run,
+  // so the chain step is handed it here.
+  const openPicker = (returnTo: 'order' | 'amount') => {
+    setPickerReturn(returnTo);
+    setPendingAsset(selectedAsset);
+    setPendingChain(selectedChain);
+    setError(null);
+    if (uniqueAssets.length > 1) {
+      setStep('asset');
+      return;
+    }
+    if (uniqueAssets.length === 1) setSelectedAsset(uniqueAssets[0]);
+    setStep('chain');
+  };
+
+  // Creates the request when the chip already names a route, and falls back to
+  // the picker when nothing is remembered yet.
+  const handleContinue = () => {
+    const cents = Math.round(usdValue * 100);
+    if (chipLimits?.minUsdCents !== undefined && cents < chipLimits.minUsdCents) {
+      setError(`This network takes at least ${formatUsdCents(chipLimits.minUsdCents)}.`);
+      return;
+    }
+    if (chipLimits?.maxUsdCents !== undefined && cents > chipLimits.maxUsdCents) {
+      setError(`This network takes at most ${formatUsdCents(chipLimits.maxUsdCents)}.`);
+      return;
+    }
+    setError(null);
+    if (routesForSelection.length === 1) {
+      generateOrder(routesForSelection[0]);
+      return;
+    }
+    setPickerReturn('order');
     if (routesForSelection.length > 1) {
       setStep('provider');
-    } else {
-      goBackFromProvider();
+      return;
     }
+    if (routes.length > 0) {
+      openPicker('order');
+      return;
+    }
+    void fetchRoutes();
   };
 
   // The asset and chain steps lend their own.
-  useSheetBack(step === 'provider' ? goBackFromProvider : step === 'result' ? goBackFromResult : undefined);
+  useSheetBack(active ? (step === 'provider' ? goBackFromProvider : step === 'result' ? goBackFromResult : undefined) : undefined);
 
   // Received amount lands as a stable token (USDB) or as BTC sats, depending on
   // the SDK's auto-pick. `route.decimals` is the *source* asset, so it can't be
@@ -243,17 +343,78 @@ const CrossChainReceiveWorkflow: React.FC = () => {
   const resultDepositUsd = selectedRoute && resultInfo
     ? `$${formatReceiveAmount(BigInt(resultInfo.depositAmount), selectedRoute.decimals)}`
     : `$${usdInput}`;
+  // Stays mounted and opens on grid rows, which resolve to the code's own
+  // height: a max-height transition would need a guessed ceiling, and easing
+  // against one is what makes a disclosure look like it snaps. The padding
+  // lives on the inner wrapper so the closed state has no height at all.
+  const depositQr = receiveResult ? (
+    <div
+      className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
+        showDepositQr ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+      }`}
+      aria-hidden={!showDepositQr}
+    >
+      <div className="overflow-hidden">
+        <div className="flex justify-center pt-5 pb-3">
+          <QRCodeContainer value={receiveResult.paymentRequest} size={148} corners={false} />
+        </div>
+      </div>
+    </div>
+  ) : null;
+  // Orchestra quotes the fee in the source asset, as the send confirm's fee row
+  // also assumes; an absent ticker means the fee is in sats.
+  const resultFee = resultInfo && selectedRoute
+    ? resultInfo.serviceFeeAsset
+      ? `${formatCrossChainAmount(BigInt(resultInfo.serviceFeeAmount), selectedRoute.decimals)} ${assetDisplayName(resultInfo.serviceFeeAsset)}`
+      : `₿${formatWithSpaces(Number(resultInfo.serviceFeeAmount))}`
+    : null;
   // Plain deposit address for copy/paste (MetaMask etc.). The QR keeps the
   // EIP-681 URI so scanners auto-fill the amount; falls back to the URI if the
   // SDK omitted the structured info.
   const resultDepositAddress = resultInfo?.depositAddress ?? receiveResult?.paymentRequest ?? '';
-  const resultShareMessage = `Send ${resultDepositAmount} ${resultAssetName} on ${resultChainName} to ${resultDepositAddress}`;
+  const copyDepositAddress = () => {
+    void copyToClipboard(resultDepositAddress);
+    setAddressCopied(true);
+    setTimeout(() => setAddressCopied(false), 2000);
+    showToast('success', 'Address copied');
+  };
   const copyDepositAmount = () => {
     void copyToClipboard(resultDepositAmount);
     setAmountCopied(true);
     setTimeout(() => setAmountCopied(false), 2000);
     showToast('success', 'Amount copied');
   };
+
+  // The address carries its own controls, so it is a row in the breakdown
+  // rather than a block of its own: the code is what the sender scans, the
+  // copy is the bare address a withdrawal form wants. EVM puts the amount in
+  // the URI; Solana and Tron give back a bare address, so there they match.
+  const depositAddressValue = (
+    <span className="flex items-center gap-1">
+      <span className="truncate" title={resultDepositAddress} data-testid="cross-chain-deposit-address">
+        {truncateAddress(resultDepositAddress, 16)}
+      </span>
+      <button
+        onClick={() => setShowDepositQr(open => !open)}
+        aria-expanded={showDepositQr}
+        aria-label={showDepositQr ? 'Hide deposit address QR code' : 'Show deposit address QR code'}
+        className="shrink-0 p-1.5 -my-1.5 rounded-md hover:bg-white/5 transition-colors"
+      >
+        <QrCodeIcon size="sm" className="text-spark-text-secondary" />
+      </button>
+      <button
+        onClick={copyDepositAddress}
+        aria-label="Copy deposit address"
+        className="shrink-0 p-1.5 -my-1.5 rounded-md hover:bg-white/5 transition-colors"
+      >
+        {addressCopied
+          ? <CheckIcon size="sm" className="text-spark-success" />
+          : <CopyIcon size="sm" className="text-spark-text-secondary" />}
+      </button>
+    </span>
+  );
+
+  if (!active) return null;
 
   // Steps are content-sized: the sheet re-measures and re-snaps per step, so a
   // short step is not padded out to the tallest one. `pt-6` is the step padding
@@ -265,7 +426,14 @@ const CrossChainReceiveWorkflow: React.FC = () => {
       {step === 'amount' && (
         <div>
           <div>
-            <label className="block text-sm font-medium text-spark-text-primary mb-2">Amount</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-spark-text-primary">Amount</label>
+              {limitRange && (
+                <span className="text-xs text-spark-text-secondary" data-testid="cross-chain-receive-limits">
+                  {limitRange}
+                </span>
+              )}
+            </div>
             <input
               type="text"
               inputMode="decimal"
@@ -275,7 +443,7 @@ const CrossChainReceiveWorkflow: React.FC = () => {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  if (canContinue) fetchRoutes();
+                  if (canContinue) handleContinue();
                 }
               }}
               placeholder="Enter amount in USD"
@@ -302,11 +470,33 @@ const CrossChainReceiveWorkflow: React.FC = () => {
                 );
               })}
             </div>
+
+            {/* The network the sender pays on. A chip rather than a step of its
+                own: it is the same one nearly every time, and the amount is
+                the only part of a request that really changes. */}
+            <button
+              onClick={() => openPicker('amount')}
+              disabled={routes.length === 0}
+              className={`${crossChainCardClass()} mt-3 flex items-center justify-between disabled:opacity-60`}
+              data-testid="cross-chain-receive-route-chip"
+            >
+              {chipRoute ? (
+                <span className="flex items-center gap-3">
+                  <CryptoIcon chain={chipRoute.chain} size={32} />
+                  <span className="font-display font-medium text-spark-text-primary">
+                    {selectedAsset} on {formatChainName(chipRoute.chain)}
+                  </span>
+                </span>
+              ) : (
+                <span className="font-display font-medium text-spark-text-secondary">Select network</span>
+              )}
+              <ChevronDownIcon size="sm" className="text-spark-primary" />
+            </button>
           </div>
 
           <div className="space-y-4 pt-6">
             <FormError error={error} />
-            <PrimaryButton onClick={() => fetchRoutes()} className="w-full" disabled={!canContinue} data-testid="cross-chain-receive-continue">
+            <PrimaryButton onClick={handleContinue} className="w-full" disabled={!canContinue} data-testid="cross-chain-receive-continue">
               Continue
             </PrimaryButton>
           </div>
@@ -329,7 +519,7 @@ const CrossChainReceiveWorkflow: React.FC = () => {
           assets={uniqueAssets}
           pending={pendingAsset}
           onPendingChange={setPendingAsset}
-          onBack={goBackToAmount}
+          onBack={cancelPicker}
           onContinue={() => { if (pendingAsset) selectAsset(pendingAsset, routes); }}
           error={error}
         />
@@ -393,9 +583,10 @@ const CrossChainReceiveWorkflow: React.FC = () => {
           className="pb-2 flex flex-col items-center gap-4 overflow-y-auto overscroll-y-none touch-pan-y min-h-0"
           style={{ maxHeight: isSheetFull ? '85dvh' : '60dvh' }}
         >
-          {/* Amount the sender transfers — the copyable hero (copies the bare
-              number). The $ already signals dollars; the coin sits in the subtitle. */}
+          {/* The deposit, as an instruction to pass on: the label names who pays
+              it, the way the exit's funding step does. Copies the bare number. */}
           <div className="text-center">
+            <p className="text-spark-text-muted text-sm mb-2">Ask the sender for</p>
             <button
               onClick={copyDepositAmount}
               className="inline-flex items-center gap-2 group"
@@ -409,32 +600,31 @@ const CrossChainReceiveWorkflow: React.FC = () => {
                 ? <CheckIcon size="sm" className="text-spark-success" />
                 : <CopyIcon size="sm" className="text-spark-text-muted group-hover:text-spark-text-secondary transition-colors" />}
             </button>
-            <p className="text-sm text-spark-text-secondary mt-1">
-              {resultAssetName} on {resultChainName} · via {getProviderDisplayName(selectedRoute.provider)}
-            </p>
           </div>
 
-          <QRCodeContainer value={receiveResult.paymentRequest} />
-
-          <CopyableText
-            text={resultDepositAddress}
-            textToShare={resultShareMessage}
-            truncate
-            showShare
-            label="Deposit Address"
-            shareLabel="Deposit"
-            onCopied={() => showToast('success', 'Address copied')}
-            onShareError={() => showToast('error', 'Failed to share')}
-            data-testid="cross-chain-deposit-address"
-          />
-
-          {/* What lands in the wallet */}
+          {/* Same rows, same order as the send confirm: the card describes the
+              far side of the route either way round. */}
           {resultInfo && (
-            <p className="text-sm text-spark-text-muted">
-              You'll receive{' '}
-              <span className="text-spark-text-primary font-mono font-medium">~{formatReceived(resultInfo)}</span>
-            </p>
+            <FeeBreakdownCard
+              useRawStrings
+              className="w-full"
+              items={[
+                { label: 'Network', value: resultChainName },
+                { label: 'Asset', value: resultAssetName },
+                { label: 'Provider', value: getProviderDisplayName(selectedRoute.provider) },
+                {
+                  label: 'Address',
+                  node: depositAddressValue,
+                  expansion: depositQr,
+                },
+                ...(resultFee ? [{ label: 'Fees', value: resultFee }] : []),
+                { label: 'You receive', value: `~${formatReceived(resultInfo)}`, highlight: true },
+              ]}
+            />
           )}
+
+
+
         </div>
       )}
     </div>

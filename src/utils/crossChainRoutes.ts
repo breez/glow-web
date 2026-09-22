@@ -1,4 +1,5 @@
-import type { CrossChainRoutePair } from '@breeztech/breez-sdk-spark';
+import type { CrossChainRouteLimits, CrossChainRoutePair } from '@breeztech/breez-sdk-spark';
+import { formatUsdCents } from './crossChainFormat';
 
 // Group asset variants under a canonical display name (e.g. USDT0 → USDT).
 export const ASSET_DISPLAY_GROUP: Record<string, string> = { USDT0: 'USDT' };
@@ -76,4 +77,34 @@ export function landsInThisWallet(route: CrossChainRoutePair, stableTokenIdentif
   return route.acceptedAssets.some(({ asset }) =>
     asset.type === 'bitcoin'
     || (asset.type === 'token' && asset.tokenIdentifier === stableTokenIdentifier));
+}
+
+/** Limits for the asset a receive on this route will actually land in.
+ *  Mirrors the SDK's own preference (the active stable token when the route
+ *  takes it, otherwise bitcoin), since the bounds are published per accepted
+ *  asset and the two can differ. */
+export function receiveLimitsFor(
+  route: CrossChainRoutePair,
+  stableTokenIdentifier: string | null,
+): CrossChainRouteLimits | null {
+  const token = stableTokenIdentifier
+    ? route.acceptedAssets.find(({ asset }) =>
+        asset.type === 'token' && asset.tokenIdentifier === stableTokenIdentifier)
+    : undefined;
+  const landing = token ?? route.acceptedAssets.find(({ asset }) => asset.type === 'bitcoin');
+  return landing?.limits ?? null;
+}
+
+/** The bounds as the amount field states them, or null when the provider
+ *  publishes neither. Orchestra gives a bound in base units or in USD cents
+ *  and not always both; the field asks for dollars, so it reads the cents.
+ *  The en dash is the one place the house style allows one: it matches the
+ *  limits row the LNURL amount field already shows. */
+export function formatUsdLimits(limits: CrossChainRouteLimits | null): string | null {
+  const min = limits?.minUsdCents;
+  const max = limits?.maxUsdCents;
+  if (min !== undefined && max !== undefined) return `${formatUsdCents(min)} – ${formatUsdCents(max)}`;
+  if (min !== undefined) return `From ${formatUsdCents(min)}`;
+  if (max !== undefined) return `Up to ${formatUsdCents(max)}`;
+  return null;
 }

@@ -89,6 +89,11 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, tit
 const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onClose }) => {
   const receive = useReceivePayment();
   const [showChangeConfirm, setShowChangeConfirm] = useState<boolean>(false);
+  // The tabs belong to choosing, not to what you have made with the choice:
+  // past the USD amount form there is a quote to lose, and on a created
+  // invoice there is an invoice. The header arrow carries the way back from
+  // both instead.
+  const [usdResting, setUsdResting] = useState<boolean>(true);
 
   // First-paint deferral. On a fresh post-install launch the main
   // thread is still contending with WASM compile + SDK connect
@@ -273,6 +278,9 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     // Cleared, so a QR replacing its placeholder does not turn in again.
     later(320, () => setTurning(null));
   };
+  // Tabs while the user is choosing what to receive, gone once there is
+  // something made: a USD request past its amount form, or a created invoice.
+  const tabsVisible = receive.activeTab === 'usd' ? usdResting : receive.currentStep === 'input';
   // Under 400px the code shrinks so the switch and label have room beside its corners.
   const qrSize = window.innerWidth < 400 ? 184 : 200;
   const qrCardClassName = `${turning === 'out' ? 'animate-qr-turn-out' : turning === 'close' ? 'qr-turn-close' : turning === 'in' ? 'animate-qr-turn-in' : pendingMode ? 'qr-turn-wait' : ''} motion-reduce:animate-none`;
@@ -323,28 +331,40 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
           <DialogHeader
             title="Receive"
             onClose={onClose}
+            // The USD steps lend theirs through `useSheetBack`; the invoice is
+            // rendered here, so its way back is passed in directly.
+            onBack={receive.currentStep === 'qr' ? receive.dismissInvoice : undefined}
             icon={<ArrowDownIcon />}
           />
 
           {isContentReady ? (
             <TabContainer>
-              <TabList>
-                <Tab isActive={isBtcTab} onClick={() => { if (!isBtcTab) { handleTabChange('lightning'); setShownMode('lightning'); } }} data-testid="btc-tab">
-                  <span className="font-bold text-sm">₿</span>
-                  BTC
-                </Tab>
-                <Tab isActive={receive.activeTab === 'usd'} onClick={() => handleTabChange('usd')} data-testid="usd-tab">
-                  <span className="font-bold text-sm">$</span>
-                  USD
-                </Tab>
-              </TabList>
+              {tabsVisible && (
+                <TabList>
+                  <Tab isActive={isBtcTab} onClick={() => { if (!isBtcTab) { handleTabChange('lightning'); setShownMode('lightning'); } }} data-testid="btc-tab">
+                    <span className="font-bold text-sm">₿</span>
+                    BTC
+                  </Tab>
+                  <Tab isActive={receive.activeTab === 'usd'} onClick={() => handleTabChange('usd')} data-testid="usd-tab">
+                    <span className="font-bold text-sm">$</span>
+                    USD
+                  </Tab>
+                </TabList>
+              )}
 
               {/* The USD tab sits outside StepContainer: its steps size to their
                   own content (matching the cross-chain send flow), so the 280px
-                  floor would pad the short ones out with dead space. */}
-              {receive.activeTab === 'usd' ? (
-                <CrossChainReceiveWorkflow key={`usd-${receive.resetCount}`} />
-              ) : (
+                  floor would pad the short ones out with dead space. It stays
+                  mounted across tab switches and renders nothing while it is
+                  off screen: a quote, its network and the typed amount are too
+                  much to lose to a stray tap on BTC. Unkeyed for the same
+                  reason, since `resetCount` is bumped by closing the amount
+                  panel, which has nothing to do with this flow. */}
+              <CrossChainReceiveWorkflow
+                active={receive.activeTab === 'usd'}
+                onRestingChange={setUsdResting}
+              />
+              {receive.activeTab !== 'usd' && (
                 <StepContainer>
                   <>
                     {receive.currentStep === 'input' && (

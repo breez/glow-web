@@ -288,6 +288,12 @@ argue them as preferences: a citation adds nothing here.
   voice: "Could not create the invoice. Please try again." Not "Failed to
   create invoice", which is the system reporting its own state and leaves
   them nowhere to go.
+- Ranges read "to", per the no-dashes rule at the top, with one exception:
+  the min/max bound beside an amount field takes an en dash, "$0.80 –
+  $89 800". That is the shape the LNURL amount field already shows, and two
+  amount fields stating a bound differently is worse than the dash. The
+  exception is that hint and nothing else: a range in a sentence, a label or
+  a comment still reads "to".
 
 **Chrome**
 

@@ -52,7 +52,7 @@ export const CrossChainChainStep: React.FC<CrossChainChainStepProps> = ({
         </div>
       )}
       <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">
-        Select Network for {selectedAsset}
+        Select network for {selectedAsset}
       </label>
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-none touch-pan-y space-y-2 pr-1">
         {chains.map(r => {
