@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { BreezSdk, CrossChainRoutePair, ReceivePaymentRequest } from '@breeztech/breez-sdk-spark';
 import { WalletProvider } from '@/contexts/WalletContext';
 import { ToastProvider } from '@/contexts/ToastContext';
@@ -181,6 +181,26 @@ describe('USD receive deposit address', () => {
 
     expect(await screen.findByTestId('cross-chain-receive-amount-input')).toHaveValue('42');
     expect(screen.getByText('USDC on Solana')).toBeInTheDocument();
+  });
+
+  it('names the remembered network before the routes arrive', async () => {
+    setLastUsdReceiveRoute({ asset: 'USDC', chain: 'solana' });
+    const client = withCrossChainReceive([usdcOn('solana'), usdcOn('base')]);
+    // Held in flight, so the chip has only what was remembered to go on.
+    client.getCrossChainRoutes = vi.fn(() => new Promise<CrossChainRoutePair[]>(() => {}));
+    await openUsdTab(client);
+
+    expect(await screen.findByTestId('cross-chain-receive-route-chip'))
+      .toHaveTextContent('USDC on Solana');
+  });
+
+  it('asks again when the remembered network is no longer offered', async () => {
+    setLastUsdReceiveRoute({ asset: 'USDC', chain: 'solana' });
+    const client = withCrossChainReceive([usdcOn('base')]);
+    await openUsdTab(client);
+
+    await waitFor(() => expect(screen.getByTestId('cross-chain-receive-route-chip'))
+      .toHaveTextContent('Select network'));
   });
 
   it('skips the picker when a network is remembered', async () => {

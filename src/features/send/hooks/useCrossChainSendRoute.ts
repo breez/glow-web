@@ -20,10 +20,12 @@ export interface CrossChainSendRoute {
   routes: CrossChainRoutePair[];
   /** Display asset name of the chosen route, e.g. "USDC". */
   asset: string | null;
-  /** Chain group key of the chosen route. */
+  /** Raw chain name of the chosen network, known before the routes arrive. */
   chain: string | null;
-  /** A route on the chosen network, for the chip and for its bounds. */
+  /** A route on the chosen network, for its bounds. Absent until routes land. */
   chipRoute: CrossChainRoutePair | null;
+  /** Routes are still arriving and nothing is remembered for this address. */
+  loading: boolean;
   /** What that network takes, or null when it publishes no bounds. */
   limitRange: string | null;
   /** Records the choice. `CrossChainWorkflow` reads it back and skips straight
@@ -77,7 +79,13 @@ export function useCrossChainSendRoute(addressDetails: CrossChainAddressDetails 
   }, [wallet, address, addressDetails]);
 
   const { chainGroupKey } = useCrossChainRouteGroups(routes);
-  const forThisAddress = choice && choice.address === address ? choice : null;
+  // What was recorded for this address, read now rather than a fetch away, so
+  // the chip names the network on the first frame.
+  const forThisAddress = useMemo(() => {
+    if (choice && choice.address === address) return choice;
+    const stored = address ? getLastSendRoute(address) : null;
+    return stored ? { address, ...stored } : null;
+  }, [choice, address]);
 
   const chipRoute = useMemo(() => {
     if (!forThisAddress) return null;
@@ -93,9 +101,10 @@ export function useCrossChainSendRoute(addressDetails: CrossChainAddressDetails 
 
   return {
     routes,
-    asset: chipRoute ? forThisAddress!.asset : null,
-    chain: chipRoute ? forThisAddress!.chain : null,
+    asset: forThisAddress?.asset ?? null,
+    chain: forThisAddress?.chain ?? null,
     chipRoute,
+    loading: routes.length === 0 && !forThisAddress,
     limitRange: chipRoute ? formatUsdLimits(sparkSideLimits(chipRoute, stableTokenIdentifier)) : null,
     choose,
   };

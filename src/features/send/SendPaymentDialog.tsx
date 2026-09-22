@@ -273,8 +273,9 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 amountHint={route.limitRange}
                 routeChip={crossChainAddress && (
                   <CrossChainRouteChip
-                    route={route.chipRoute}
+                    chain={route.chipRoute?.chain ?? route.chain}
                     asset={route.asset}
+                    loading={route.loading}
                     onClick={openPicker}
                     disabled={route.routes.length === 0}
                     data-testid="cross-chain-send-route-chip"

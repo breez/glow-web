@@ -73,8 +73,12 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   const [step, setStep] = useState<WorkflowStep>('amount');
   const [usdInput, setUsdInput] = useState('');
   const [routes, setRoutes] = useState<CrossChainRoutePair[]>([]);
-  const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
-  const [selectedChain, setSelectedChain] = useState<string | null>(null);
+  // Seeded from what was remembered, which is readable now rather than a
+  // fetch away: the chip names the network on the first frame and the route
+  // fetch only confirms it.
+  const remembered = useState(getLastUsdReceiveRoute)[0];
+  const [selectedAsset, setSelectedAsset] = useState<string | null>(remembered?.asset ?? null);
+  const [selectedChain, setSelectedChain] = useState<string | null>(remembered?.chain ?? null);
   const [selectedRoute, setSelectedRoute] = useState<CrossChainRoutePair | null>(null);
   const [receiveResult, setReceiveResult] = useState<ReceivePaymentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -199,18 +203,20 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
       .then(fetched => {
         if (cancelled || fetched.length === 0) return;
         setRoutes(fetched);
-        const remembered = getLastUsdReceiveRoute();
         if (!remembered) return;
         const lookup = buildGroupLookup(fetched);
         const still = fetched.some(r =>
           assetMatchesGroup(r.asset, remembered.asset) && chainGroupKeyWith(r, lookup) === remembered.chain);
-        if (!still) return;
-        setSelectedAsset(remembered.asset);
-        setSelectedChain(remembered.chain);
+        // Dropped by the provider since it was remembered, so the chip has to
+        // stop naming it and ask again.
+        if (!still) {
+          setSelectedAsset(null);
+          setSelectedChain(null);
+        }
       })
       .catch(err => logger.warn(LogCategory.PAYMENT, 'Failed to prefetch cross-chain receive routes', { error: formatError(err) }));
     return () => { cancelled = true; };
-  }, [active, loadRoutes]);
+  }, [active, loadRoutes, remembered]);
 
   const fetchRoutes = useCallback(async () => {
     setStep('loading');
@@ -450,8 +456,9 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                 and a request is the same one nearly every time. */}
             <div className="mb-3">
               <CrossChainRouteChip
-                route={chipRoute}
+                chain={chipRoute?.chain ?? selectedChain}
                 asset={selectedAsset}
+                loading={routes.length === 0}
                 onClick={() => openPicker('amount')}
                 disabled={routes.length === 0}
                 data-testid="cross-chain-receive-route-chip"
