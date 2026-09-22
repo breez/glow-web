@@ -373,6 +373,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
         feeRateSatPerVbyte: quote.feeRateSatPerVbyte,
         fundingAddressIndex: plan.fundingAddressIndex,
         quotedSweepFeeSat: quotedSweepFeeSat(quote, plan),
+        quotedExitFeeSat: quote.singleUtxoFundingSat,
       });
       setUnilateralExitPlan(walletKey, { ...built, exitStateSnapshot });
       mnemonicRef.current = null;
