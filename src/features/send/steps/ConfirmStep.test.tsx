@@ -106,9 +106,12 @@ describe('ConfirmStep in stable balance', () => {
     expect(screen.getByText('$0.20')).toBeInTheDocument();
   });
 
-  it('states the fee once, the amount above it already including it', () => {
+  it('keeps the conversion amount to check the quote against', () => {
     renderConfirmStep(undefined, { conversionEstimate: inStableBalance(200_200_000n, 200_668n) });
-    expect(screen.queryByText('Conversion amount')).toBeNull();
+    // Two readings of the same figure, so a quote above what the payment
+    // needs is visible rather than folded into the hero.
+    expect(screen.getByText('Conversion amount')).toBeInTheDocument();
+    expect(screen.getAllByText('$200.20')).toHaveLength(1);
   });
 
   it('groups a four-figure amount with commas', () => {

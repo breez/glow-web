@@ -100,8 +100,17 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
       {/* Sats breakdown */}
       <SimpleFeeBreakdown amount={feesIncluded ? amount - fee : amount} fee={fee} amountLabel={feesIncluded ? 'Recipient gets' : 'Amount'} />
 
-      {isTokenMode && tokenFee && (
-        <FeeBreakdownCard useRawStrings items={[{ label: 'Conversion fee', value: tokenFee }]} />
+      {/* The amount repeats the hero, deliberately: it is the figure to check
+          the conversion against, and the pool can quote an input above what
+          the payment needs. */}
+      {isTokenMode && tokenAmount && tokenFee && (
+        <FeeBreakdownCard
+          useRawStrings
+          items={[
+            { label: 'Conversion amount', value: tokenAmount },
+            { label: 'Conversion fee', value: tokenFee },
+          ]}
+        />
       )}
 
       <FormError error={balanceError || error} />
