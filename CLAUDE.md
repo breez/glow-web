@@ -429,7 +429,8 @@ import { MyIcon } from '../components/Icons';
 
 - Cap the scroll area (`flex-1 min-h-0 overflow-y-auto`); keep the title/actions as `shrink-0` siblings above/below it.
 - Size the cap in **`dvh`, not `vh`**. `vh` is the largest (URL-bar-hidden) viewport, so a `vh` cap overflows the visible sheet on real mobile (fine on desktop + device simulator, which is the trap).
-- Add **`overscroll-y-none`** and **`touch-pan-y`** to the inner scroller, or on iOS it chains its scroll into / races the sheet's drag (the sheet's own scroller sets these; a nested one doesn't inherit them). `touch-pan-y` means the sheet no longer drags from the list, only from the handle/header/footer.
+- Call **`useSheetOwnsScroll()`** in the step. The library arbitrates drag against its OWN scroller, which a capped inner list leaves unscrollable, so without this the sheet stays draggable over the list and every swipe is a race between scrolling and closing the card. The hook takes the drag off the content area (the handle, backdrop and close button still dismiss) and replaces the `pan-down` touch-action the library pairs with the drag, which otherwise intersects the list's `pan-y` down to "downward only": flaky on iOS, immovable on Android. A workflow that owns scrolling only on some steps passes a flag, `useSheetOwnsScroll(step === 'provider')`; registrations are counted, so a step component inside such a workflow can register too.
+- Add **`overscroll-y-none`** and **`touch-pan-y`** to the inner scroller, or on iOS it chains its scroll into the sheet's drag (the sheet's own scroller sets these; a nested one doesn't inherit them).
 - To grow the area when the sheet is dragged to full, read **`useSheetFullSnap()`** and raise the cap; a freeze guard in the container stops the growing content from flipping the snap ladder.
 
 The funded send/cross-chain flow isn't reachable locally; debug sheet layout with a throwaway `?sheettest` harness in `main.tsx` + browser measurement.

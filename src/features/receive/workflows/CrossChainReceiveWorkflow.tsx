@@ -17,7 +17,7 @@ import { useWallet } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { useToast } from '../../../contexts/ToastContext';
 import { useCrossChainRouteGroups } from '../../../hooks/useCrossChainRouteGroups';
-import { useSheetBack, useSheetFullSnap } from '../../../components/ui/sheets/BottomSheetCardContext';
+import { useSheetBack, useSheetFullSnap, useSheetOwnsScroll } from '../../../components/ui/sheets/BottomSheetCardContext';
 import {
   assetDisplayName,
   assetMatchesGroup,
@@ -58,6 +58,10 @@ const CrossChainReceiveWorkflow: React.FC = () => {
   const [pendingChain, setPendingChain] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
   const [amountCopied, setAmountCopied] = useState(false);
+
+  // The provider and result steps cap and scroll themselves, same as the
+  // asset / chain steps do from inside their own components.
+  useSheetOwnsScroll(step === 'provider' || step === 'result');
 
   const { uniqueAssets, chainGroupKey, getChainsForAsset } = useCrossChainRouteGroups(routes);
   const chainsForAsset = selectedAsset ? getChainsForAsset(selectedAsset) : [];
@@ -348,7 +352,7 @@ const CrossChainReceiveWorkflow: React.FC = () => {
             <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">
               Select Provider for {selectedAsset} ({formatChainName(routesForSelection[0]?.chain ?? '')})
             </label>
-            <div className="space-y-2 overflow-y-auto min-h-0 pr-1">
+            <div className="space-y-2 overflow-y-auto overscroll-y-none touch-pan-y min-h-0 pr-1">
               {routesForSelection.map(r => (
                 <button
                   key={r.provider}

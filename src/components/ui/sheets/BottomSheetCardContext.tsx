@@ -12,6 +12,27 @@ export const useBottomSheetCardEl = () => useContext(BottomSheetCardContext);
 export const SheetFullSnapContext = createContext(false);
 export const useSheetFullSnap = () => useContext(SheetFullSnapContext);
 
+export const SetSheetOwnsScrollContext = createContext<((delta: number) => void) | null>(null);
+
+/**
+ * Declares that the content on screen scrolls itself, which takes the sheet's
+ * drag off the content area. The handle still drags. react-modal-sheet
+ * arbitrates drag against its OWN scroller, which a step that caps an inner
+ * list leaves unscrollable: the sheet then reads every swipe over the list as
+ * a drag, and the list moves only when the browser wins the race.
+ *
+ * Counted, not a flag: a workflow and the step component inside it both
+ * register, and their effects run child-first.
+ */
+export function useSheetOwnsScroll(enabled = true): void {
+  const register = useContext(SetSheetOwnsScrollContext);
+  useEffect(() => {
+    if (!register || !enabled) return;
+    register(1);
+    return () => register(-1);
+  }, [register, enabled]);
+}
+
 type SheetBack = (() => void) | null;
 
 /** The back action the step on screen lends the sheet header's arrow. */

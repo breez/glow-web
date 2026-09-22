@@ -6,7 +6,7 @@ import { ChevronDownIcon, CopyIcon, CheckIcon } from '../Icons';
 import { crossChainCardClass } from '../../utils/crossChainRoutes';
 import { formatChainName } from '../../utils/crossChainFormat';
 import { copyToClipboard } from '../../utils/clipboard';
-import { useSheetBack, useSheetFullSnap } from '../ui/sheets/BottomSheetCardContext';
+import { useSheetBack, useSheetFullSnap, useSheetOwnsScroll } from '../ui/sheets/BottomSheetCardContext';
 
 interface CrossChainChainStepProps {
   /** One representative route per chain group, in display order. */
@@ -39,6 +39,7 @@ export const CrossChainChainStep: React.FC<CrossChainChainStepProps> = ({
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const isSheetFull = useSheetFullSnap();
   useSheetBack(onBack);
+  useSheetOwnsScroll();
 
   return (
     <div
