@@ -394,6 +394,10 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   // counting once one of its transactions confirms, and each coin sent since
   // adds its own input fee. So the money at the address is part of the key, or
   // the step keeps asking for the figure a stale build came back with.
+  // It cannot feed itself: a build leaves this phase on its first line and
+  // comes back only on failure, with the attempt recorded. The key is the
+  // amounts rather than the objects, since every engine pass emits a fresh
+  // plan, and with it a fresh `sent` and `build`.
   useEffect(() => {
     if (phase !== 'fund' || !quote) return;
     const attempt = { quote, sat: sent.sat, inputs: sent.inputs };
