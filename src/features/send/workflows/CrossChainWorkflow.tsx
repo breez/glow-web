@@ -470,7 +470,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
               },
               {
                 label: 'Address',
-                value: truncateAddress(quote.recipientAddress, 20),
+                value: truncateAddress(quote.recipientAddress, 16),
               },
               {
                 label: 'Fees',

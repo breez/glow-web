@@ -12,6 +12,7 @@ import AmountPanel from './AmountPanel';
 // Mock rates put BTC at $100,000 and €92,000, so $1 = 1,000 sats.
 async function renderAmountPanel(client?: BreezSdk) {
   const setAmountSats = vi.fn();
+  const setAmountDisplay = vi.fn();
   const mockClient = client ?? createMockClient();
   render(
     <WalletProvider client={mockClient} isConnected>
@@ -21,6 +22,7 @@ async function renderAmountPanel(client?: BreezSdk) {
             isOpen
             amountSats={null}
             setAmountSats={setAmountSats}
+            setAmountDisplay={setAmountDisplay}
             description=""
             setDescription={vi.fn()}
             isLoading={false}
@@ -34,7 +36,7 @@ async function renderAmountPanel(client?: BreezSdk) {
     </WalletProvider>
   );
   await waitForSheetOpen();
-  return { setAmountSats, client: mockClient };
+  return { setAmountSats, setAmountDisplay, client: mockClient };
 }
 
 describe('AmountPanel fiat entry (no stable balance)', () => {
@@ -76,6 +78,18 @@ describe('AmountPanel fiat entry (no stable balance)', () => {
     fireEvent.change(screen.getByTestId('invoice-amount-input'), { target: { value: '5' } });
 
     await waitFor(() => expect(setAmountSats).toHaveBeenCalledWith(5000n));
+  });
+
+  it('hands the invoice the figure as typed, in the unit it was typed in', async () => {
+    const { setAmountDisplay } = await renderAmountPanel();
+
+    // Sats mode: the sats are the figure, so there is nothing else to state.
+    fireEvent.change(screen.getByTestId('invoice-amount-input'), { target: { value: '5000' } });
+    await waitFor(() => expect(setAmountDisplay).toHaveBeenLastCalledWith(null));
+
+    fireEvent.click(await screen.findByRole('button', { name: '₿' }));
+    fireEvent.change(screen.getByTestId('invoice-amount-input'), { target: { value: '5' } });
+    await waitFor(() => expect(setAmountDisplay).toHaveBeenLastCalledWith('$5.00'));
   });
 
   it('offers no fiat toggle while the rate has not loaded', async () => {

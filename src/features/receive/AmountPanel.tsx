@@ -8,7 +8,7 @@ import {
   DialogHeader,
 } from '../../components/ui';
 import { LightningBoltIcon } from '../../components/Icons';
-import { fixedQuickAmounts, formatQuickAmount } from '../../utils/tokenFormatting';
+import { fixedQuickAmounts, formatQuickAmount, formatTokenInput } from '../../utils/tokenFormatting';
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
 import { SatAmount } from '../../components/SatAmount';
 import { useAmountInput, useFiatOverride } from '../../hooks/useAmountInput';
@@ -22,6 +22,7 @@ interface AmountPanelProps {
   /** Validated amount in sats; null when the input is empty or invalid. */
   amountSats: Sats | null;
   setAmountSats: (sats: Sats | null) => void;
+  setAmountDisplay: (display: string | null) => void;
   description: string;
   setDescription: (v: string) => void;
   isLoading: boolean;
@@ -42,6 +43,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   isOpen,
   amountSats,
   setAmountSats,
+  setAmountDisplay,
   description,
   setDescription,
   isLoading,
@@ -75,6 +77,13 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   useEffect(() => {
     setAmountSats(parsedSats);
   }, [parsedSats, setAmountSats]);
+
+  // The unit the amount was typed in is the one the invoice will state it in,
+  // so the figure goes up alongside the sats. Null in sats mode: there the
+  // sats are the figure.
+  useEffect(() => {
+    setAmountDisplay(isTokenMode && config ? formatTokenInput(displayAmount, config) : null);
+  }, [isTokenMode, config, displayAmount, setAmountDisplay]);
 
   // Clear local state whenever the parent dialog calls
   // `useReceivePayment.reset()` or `closeAmountPanel()`, which bumps

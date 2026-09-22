@@ -462,6 +462,19 @@ export function formatQuickAmount(amt: number, config: TokenDisplayConfig): stri
 }
 
 /**
+ * A typed token amount as the app states it: the figure the user entered,
+ * padded to the config's fraction size and carrying its symbol. Digits are
+ * assembled as a string so a high-precision config cannot drift through a
+ * float. Null when the string is not a usable number.
+ */
+export function formatTokenInput(value: string, config: TokenDisplayConfig): string | null {
+  if (value === '' || value === '.' || !/^\d*\.?\d*$/.test(value)) return null;
+  const [whole, frac = ''] = value.split('.');
+  const units = BigInt(`${whole || '0'}${frac.slice(0, config.decimals).padEnd(config.decimals, '0')}`);
+  return formatTokenAmount(units, config);
+}
+
+/**
  * Validate and sanitize a token amount input string.
  * Returns the sanitized value, or null if the input should be rejected.
  */

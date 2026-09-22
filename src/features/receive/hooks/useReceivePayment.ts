@@ -4,6 +4,13 @@ import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { toSdkAmountNumber, type Sats } from '../../../types/sats';
 import type { PaymentMethod, ReceiveStep } from '../../../types/domain';
+
+/** What a created invoice asked for. `display` is the fiat or stable figure
+ *  the amount was typed in, absent when it was typed in sats. */
+export interface InvoiceAmount {
+  sats: Sats;
+  display: string | null;
+}
 import { LIGHTNING_INVOICE_MIN_SATS } from '../../../constants/receive';
 import { formatWithSpaces } from '../../../utils/formatNumber';
 
@@ -23,6 +30,9 @@ export interface UseReceivePaymentReturn {
   sparkLoading: boolean;
   bitcoinLoading: boolean;
   showAmountPanel: boolean;
+  /** The amount a created invoice asked for. Held apart from `amountSats`,
+   *  which the panel clears as it closes. */
+  invoiceAmount: InvoiceAmount | null;
   // Monotonically-increasing counter bumped by `reset()` AND by
   // `closeAmountPanel()`. AmountPanel watches this to clear its own
   // local state (`displayAmount`, `isTokenMode`) so the amount
@@ -38,6 +48,9 @@ export interface UseReceivePaymentReturn {
   // Actions
   setDescription: (desc: string) => void;
   setAmountSats: (sats: Sats | null) => void;
+  /** The amount as the panel is currently showing it, when that is a fiat or
+   *  stable figure rather than sats. Read at invoice creation. */
+  setAmountDisplay: (display: string | null) => void;
   setShowAmountPanel: (show: boolean) => void;
   // User-initiated close of the AmountPanel. Clears the typed
   // amount + description, bumps `resetCount`, and collapses the
@@ -78,6 +91,8 @@ export function useReceivePayment(): UseReceivePaymentReturn {
   const [sparkLoading, setSparkLoading] = useState<boolean>(false);
   const [bitcoinLoading, setBitcoinLoading] = useState<boolean>(false);
   const [showAmountPanel, setShowAmountPanel] = useState<boolean>(false);
+  const [amountDisplay, setAmountDisplay] = useState<string | null>(null);
+  const [invoiceAmount, setInvoiceAmount] = useState<InvoiceAmount | null>(null);
   const [resetCount, setResetCount] = useState<number>(0);
 
   const reset = useCallback(() => {
@@ -93,6 +108,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     setSparkLoading(false);
     setBitcoinLoading(false);
     setShowAmountPanel(false);
+    setInvoiceAmount(null);
     setResetCount((c) => c + 1);
   }, []);
 
@@ -203,6 +219,9 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       });
       setPaymentData(receiveResponse.paymentRequest);
       setFeeSats(Number(receiveResponse.fee) || 0);
+      // Captured here, not read off `amountSats` later: closing the panel
+      // clears its input, which clears the amount with it.
+      setInvoiceAmount({ sats: amountSats, display: amountDisplay });
       setCurrentStep('qr');
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to generate invoice', { error: formatError(err) });
@@ -213,7 +232,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       setIsLoading(false);
       logger.debug(LogCategory.PAYMENT, 'Receive invoice generation process finished');
     }
-  }, [wallet, amountSats, description, showAmountPanel]);
+  }, [wallet, amountSats, amountDisplay, description, showAmountPanel]);
 
   // Back from a created invoice to the address view. The invoice itself stays
   // valid and payable: nothing here revokes it, it just leaves the screen.
@@ -225,6 +244,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     setError(null);
     setAmountSats(null);
     setDescription('');
+    setInvoiceAmount(null);
     setResetCount((c) => c + 1);
   }, []);
 
@@ -234,6 +254,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     setError(null);
     setPaymentData('');
     setFeeSats(0);
+    setInvoiceAmount(null);
 
     if (tab === 'lightning') {
       loadLightningAddress();
@@ -259,9 +280,11 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     sparkLoading,
     bitcoinLoading,
     showAmountPanel,
+    invoiceAmount,
     resetCount,
     setDescription,
     setAmountSats,
+    setAmountDisplay,
     setShowAmountPanel,
     closeAmountPanel,
     dismissInvoice,

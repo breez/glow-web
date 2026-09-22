@@ -35,6 +35,11 @@ describe('receive tabs', () => {
     fireEvent.click(screen.getByTestId('generate-invoice-button'));
 
     await screen.findByTestId('lightning-invoice-text');
+    // The invoice states what it asks for, in place of the old title that
+    // only repeated the label on the string below it.
+    expect(screen.getByText('Scan to pay')).toBeInTheDocument();
+    expect(screen.getByText('5 000')).toBeInTheDocument();
+    expect(screen.queryByText('Scan to pay this Lightning invoice')).toBeNull();
     expect(screen.queryByTestId('show-amount-panel-button')).toBeNull();
     expect(screen.queryByTestId('btc-tab')).toBeNull();
     expect(screen.queryByTestId('usd-tab')).toBeNull();
