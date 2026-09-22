@@ -29,6 +29,7 @@ import {
 } from '../../../utils/crossChainRoutes';
 import { formatChainName, formatReceiveAmount, formatCrossChainAmount, parseCrossChainAmount } from '../../../utils/crossChainFormat';
 import { copyToClipboard } from '../../../utils/clipboard';
+import { normalizeDecimalInput } from '../../../utils/decimalInput';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
 import { formatWithSpaces } from '../../../utils/formatNumber';
 import { getProviderDisplayName } from '../../../utils/paymentDescription';
@@ -74,8 +75,11 @@ const CrossChainReceiveWorkflow: React.FC = () => {
   const usdValue = parseFloat(usdInput);
   const canContinue = Number.isFinite(usdValue) && usdValue > 0;
 
+  // Comma-locale keypads offer only "," as the separator, so normalize before
+  // the two-decimal guard or the key the keypad shows is the one we drop.
   const handleAmountChange = (value: string) => {
-    if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) setUsdInput(value);
+    const normalized = normalizeDecimalInput(value);
+    if (/^\d*\.?\d{0,2}$/.test(normalized)) setUsdInput(normalized);
   };
 
   // Single-step receive: create the order and surface the deposit address.

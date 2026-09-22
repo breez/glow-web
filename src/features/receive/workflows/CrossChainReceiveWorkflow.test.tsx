@@ -68,3 +68,29 @@ describe('USD receive deposit address', () => {
     expect(screen.queryByTestId('cross-chain-deposit-address')).toBeNull();
   });
 });
+
+describe('USD receive amount', () => {
+  it('accepts a comma as the decimal separator', async () => {
+    const client = createMockClient() as unknown as BreezSdk;
+
+    render(
+      <ToastProvider>
+        <WalletProvider client={client} isConnected>
+          <FiatDataProvider>
+            <StableBalanceProvider>
+              <ReceivePaymentDialog isOpen onClose={vi.fn()} />
+            </StableBalanceProvider>
+          </FiatDataProvider>
+        </WalletProvider>
+      </ToastProvider>,
+    );
+    await waitForSheetOpen();
+
+    fireEvent.click(screen.getByTestId('usd-tab'));
+    const amount = await screen.findByTestId('cross-chain-receive-amount-input');
+    fireEvent.change(amount, { target: { value: '5,50' } });
+
+    expect(amount).toHaveValue('5.50');
+    expect(screen.getByTestId('cross-chain-receive-continue')).toBeEnabled();
+  });
+});
