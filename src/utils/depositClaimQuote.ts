@@ -53,15 +53,47 @@ export function earlyOption(quote: FetchClaimDepositQuoteResponse | null): Claim
  * already a sat figure: the rate types are sat-per-vbyte and mean nothing
  * without the size of a claim transaction that has not been built yet.
  */
-function claimCeilingSats(maxFee: MaxFee): number | null {
+export function claimCeilingSats(maxFee: MaxFee): number | null {
   return maxFee.type === 'fixed' ? maxFee.amount : null;
 }
 
 /**
- * True when the SDK will take the early route on its own, so the wait is not
- * on offer and the fee the user is shown has to be the early one. Deliberately
- * not gated on the deposit's current depth: the point is to say what will
- * happen, and a route that unlocks a block from now still will.
+ * The ceiling an early claim is held to: the deposit's standing one outright,
+ * else the configured default. A standing ceiling wins here in both directions,
+ * so one set below the default does hold the deposit back from being fronted.
+ *
+ * Named for the early route because the claim at maturity resolves differently:
+ * the SDK takes whichever of the two admits more, so a lowered ceiling cannot
+ * keep a matured deposit from being claimed. Do not reason about maturity with
+ * this.
+ */
+export function earlyClaimCeiling(standing: MaxFee | undefined, configured: MaxFee): MaxFee {
+  return standing ?? configured;
+}
+
+/**
+ * The ceiling that refuses to have the deposit fronted: pay no more than the
+ * wait itself costs.
+ *
+ * Deliberately not derived from the early fee. The provider's spread falls as
+ * the deposit gets deeper, so a ceiling set just under today's spread is above
+ * tomorrow's and fronts the deposit anyway, which is the opposite of what
+ * choosing the wait asked for. The maturity fee is the one figure the spread
+ * does not fall below while fronting is still worth anything.
+ *
+ * It is also the floor worth recording rather than a lower one: the claim at
+ * maturity runs under whichever ceiling admits more, so naming the wait's own
+ * cost keeps that claim covered even where the configured ceiling sits below it.
+ */
+export function ceilingForWait(mature: ClaimDepositQuote): number {
+  return mature.feeSats;
+}
+
+/**
+ * True when the SDK will take the early route on its own, so the fee the user is
+ * shown has to be the early one. Deliberately not gated on the deposit's current
+ * depth: the point is to say what will happen, and a route that unlocks a block
+ * from now still will.
  */
 export function autoClaimsEarly(
   quote: FetchClaimDepositQuoteResponse | null,
