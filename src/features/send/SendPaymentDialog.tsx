@@ -12,7 +12,11 @@ import LnurlAuthWorkflow from './workflows/LnurlAuthWorkflow';
 import LnurlWithdrawWorkflow, { LNURL_WITHDRAW_COMPLETION_TIMEOUT_SECS } from './workflows/LnurlWithdrawWorkflow';
 import CrossChainWorkflow from './workflows/CrossChainWorkflow';
 import AmountStep from './steps/AmountStep';
-import { useCrossChainSendHint } from './hooks/useCrossChainSendHint';
+import { useCrossChainSendRoute } from './hooks/useCrossChainSendRoute';
+import { CrossChainRouteChip } from '../../components/crossChain/CrossChainRouteChip';
+import { CrossChainAssetStep } from '../../components/crossChain/CrossChainAssetStep';
+import { CrossChainChainStep } from '../../components/crossChain/CrossChainChainStep';
+import { useCrossChainRouteGroups } from '../../hooks/useCrossChainRouteGroups';
 import ConfirmStep from './steps/ConfirmStep';
 import ProcessingStep from './steps/ProcessingStep';
 import ResultStep from './steps/ResultStep';
@@ -37,12 +41,40 @@ interface SendPaymentDialogProps {
 const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, initialRawInput, onScanQr, onSuccessfulSend }) => {
   const wallet = useWallet();
   const send = useSendPayment();
-  // Stated on the amount field: a repeat recipient skips the network step, so
-  // this is where the network it settled on gets named, and the bounds mean
-  // nothing without it.
-  const crossChainHint = useCrossChainSendHint(
-    send.paymentInput?.parsedInput.type === 'crossChainAddress' ? send.paymentInput.parsedInput : null,
-  );
+  // The network is chosen before the amount, since it decides the bounds and
+  // most of the fee. `CrossChainWorkflow` reads the choice back and goes
+  // straight to the quote, so the picker stays off the path once answered.
+  const crossChainAddress = send.paymentInput?.parsedInput.type === 'crossChainAddress'
+    ? send.paymentInput.parsedInput
+    : null;
+  const route = useCrossChainSendRoute(crossChainAddress);
+  const { uniqueAssets, chainGroupKey, getChainsForAsset } = useCrossChainRouteGroups(route.routes);
+  const [picker, setPicker] = useState<'asset' | 'chain' | null>(null);
+  const [pendingAsset, setPendingAsset] = useState<string | null>(null);
+  const [pendingChain, setPendingChain] = useState<string | null>(null);
+
+  const openPicker = () => {
+    setPendingAsset(route.asset);
+    setPendingChain(route.chain);
+    if (uniqueAssets.length > 1) {
+      setPicker('asset');
+      return;
+    }
+    if (uniqueAssets.length === 1) setPendingAsset(uniqueAssets[0]);
+    setPicker('chain');
+  };
+
+  // One chain for the coin leaves nothing to ask, so the choice is taken here.
+  const takeAsset = (asset: string) => {
+    setPendingAsset(asset);
+    const chains = getChainsForAsset(asset);
+    if (chains.length === 1) {
+      route.choose(asset, chainGroupKey(chains[0]));
+      setPicker(null);
+      return;
+    }
+    setPicker('chain');
+  };
   const { findContactByAddress } = useContactsContext();
   const [showContactsView, setShowContactsView] = useState(false);
   const [selectedContactAddress, setSelectedContactAddress] = useState<string | null>(null);
@@ -200,7 +232,34 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
               />
             )}
 
-            {send.currentStep === 'amount' && (
+            {send.currentStep === 'amount' && picker === 'asset' && (
+              <CrossChainAssetStep
+                assets={uniqueAssets}
+                pending={pendingAsset}
+                onPendingChange={setPendingAsset}
+                onBack={() => setPicker(null)}
+                onContinue={() => { if (pendingAsset) takeAsset(pendingAsset); }}
+              />
+            )}
+
+            {send.currentStep === 'amount' && picker === 'chain' && (
+              <CrossChainChainStep
+                chains={pendingAsset ? getChainsForAsset(pendingAsset) : []}
+                chainGroupKey={chainGroupKey}
+                selectedAsset={pendingAsset}
+                pending={pendingChain}
+                onPendingChange={setPendingChain}
+                onBack={() => setPicker(uniqueAssets.length > 1 ? 'asset' : null)}
+                onContinue={() => {
+                  if (pendingAsset && pendingChain) {
+                    route.choose(pendingAsset, pendingChain);
+                    setPicker(null);
+                  }
+                }}
+              />
+            )}
+
+            {send.currentStep === 'amount' && !picker && (
               <AmountStep
                 paymentInput={send.paymentInput?.rawInput || ''}
                 amount={send.amount}
@@ -210,8 +269,17 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 error={send.error}
                 onBack={backToInput}
                 onNext={send.onAmountNext}
-                usdOnly={send.paymentInput?.parsedInput.type === 'crossChainAddress'}
-                amountHint={crossChainHint}
+                usdOnly={!!crossChainAddress}
+                amountHint={route.limitRange}
+                routeChip={crossChainAddress && (
+                  <CrossChainRouteChip
+                    route={route.chipRoute}
+                    asset={route.asset}
+                    onClick={openPicker}
+                    disabled={route.routes.length === 0}
+                    data-testid="cross-chain-send-route-chip"
+                  />
+                )}
               />
             )}
 

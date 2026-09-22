@@ -9,9 +9,9 @@ import {
   QRCodeContainer,
   FormError,
 } from '../../../components/ui';
-import { SpinnerIcon, CopyIcon, CheckIcon, ChevronDownIcon, QrCodeIcon } from '../../../components/Icons';
+import { SpinnerIcon, CopyIcon, CheckIcon, QrCodeIcon } from '../../../components/Icons';
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
-import CryptoIcon from '../../../components/CryptoIcon';
+import { CrossChainRouteChip } from '../../../components/crossChain/CrossChainRouteChip';
 import { CrossChainAssetStep } from '../../../components/crossChain/CrossChainAssetStep';
 import { CrossChainChainStep } from '../../../components/crossChain/CrossChainChainStep';
 import { useWallet } from '../../../contexts/WalletContext';
@@ -426,27 +426,16 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
       {step === 'amount' && (
         <div>
           <div>
-            {/* The network the sender pays on. A chip rather than a step of its
-                own: it is the same one nearly every time, and the amount is
-                the only part of a request that really changes. */}
-            <button
+            {/* Above the amount: the network governs what the amount may be,
+                and a request is the same one nearly every time. */}
+            <CrossChainRouteChip
+              route={chipRoute}
+              asset={selectedAsset}
               onClick={() => openPicker('amount')}
               disabled={routes.length === 0}
-              className={`${crossChainCardClass()} mb-4 flex items-center justify-between disabled:opacity-60`}
               data-testid="cross-chain-receive-route-chip"
-            >
-              {chipRoute ? (
-                <span className="flex items-center gap-3">
-                  <CryptoIcon chain={chipRoute.chain} size={32} />
-                  <span className="font-display font-medium text-spark-text-primary">
-                    {selectedAsset} on {formatChainName(chipRoute.chain)}
-                  </span>
-                </span>
-              ) : (
-                <span className="font-display font-medium text-spark-text-secondary">Select network</span>
-              )}
-              <ChevronDownIcon size="sm" className="text-spark-primary" />
-            </button>
+            />
+
 
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-spark-text-primary">Amount</label>

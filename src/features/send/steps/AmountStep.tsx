@@ -23,9 +23,10 @@ export interface AmountStepProps {
   /** Cross-chain sends are denominated in USD only: the amount starts in it
    *  and there is nothing to switch to. */
   usdOnly?: boolean;
-  /** The route and its bounds, stated beside the label. Absent until a network
-   *  is known, which for a send is one this recipient was paid on before. */
+  /** What the chosen network takes, stated beside the label. */
   amountHint?: string | null;
+  /** The network chip, above the amount it governs. Cross-chain only. */
+  routeChip?: React.ReactNode;
 }
 
 const AmountStep: React.FC<AmountStepProps> = ({
@@ -39,6 +40,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
   onNext,
   usdOnly = false,
   amountHint = null,
+  routeChip = null,
 }) => {
   // USD entry without a stable-balance token, funded from BTC. Cross-chain
   // ("Send USD", usdOnly) starts in USD; plain BTC sends start in sats
@@ -180,6 +182,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
 
   const amountSection = (
     <div>
+        {routeChip && <div className="mb-4">{routeChip}</div>}
         <div className="flex items-center justify-between mb-2">
           <label className="block text-sm font-medium text-spark-text-primary">
             Amount
