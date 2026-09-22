@@ -1,10 +1,39 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import type { ConversionEstimate } from '@breeztech/breez-sdk-spark';
 import { WalletProvider } from '@/contexts/WalletContext';
 import { FiatDataProvider } from '@/contexts/FiatDataContext';
 import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
 import ConfirmStep, { type ConfirmStepProps } from './ConfirmStep';
+
+// Stable balance needs an SDK round trip to switch on, so the hook is stubbed
+// rather than driven: what is under test is which denomination leads.
+const stable = vi.hoisted(() => ({ value: { isActive: false, displayConfig: null, btcFiatRate: 0 } }));
+vi.mock('@/contexts/StableBalanceContext', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/contexts/StableBalanceContext')>()),
+  useStableBalance: () => stable.value,
+}));
+
+const USDB_CONFIG = {
+  symbol: '$',
+  currencyCode: 'USD',
+  symbolPosition: 'before',
+  fractionSize: 2,
+  decimals: 6,
+  fiatCurrencyId: 'USD',
+  fiatCurrencyName: 'US Dollar',
+};
+
+beforeEach(() => {
+  stable.value = { isActive: false, displayConfig: null, btcFiatRate: 0 };
+});
+
+/** Stable balance holding USDB, with a conversion quoted for this send. */
+function inStableBalance(amountIn: bigint, fee: bigint) {
+  stable.value = { isActive: true, displayConfig: USDB_CONFIG as never, btcFiatRate: 100000 } as never;
+  return { amountIn, fee } as unknown as ConversionEstimate;
+}
 
 function renderConfirmStep(
   destination?: { label: string; value: string },
@@ -63,5 +92,38 @@ describe('ConfirmStep prepare failure', () => {
     expect(screen.getByText(/no route to destination/)).toBeInTheDocument();
     expect(screen.queryByText('Insufficient funds')).toBeNull();
     expect(screen.getByTestId('send-confirm-button')).toBeDisabled();
+  });
+});
+
+describe('ConfirmStep in stable balance', () => {
+  it('leads with the dollar figure and keeps the sats it settles', () => {
+    // $200.20 in, of which $0.200668 is the pool's cut.
+    const conversionEstimate = inStableBalance(200_200_000n, 200_668n);
+    renderConfirmStep(undefined, { conversionEstimate });
+
+    expect(screen.getByTestId('send-total')).toHaveTextContent('~$200.20');
+    expect(screen.getByTestId('send-total-sats')).toHaveTextContent('50 010');
+    expect(screen.getByText('$0.20')).toBeInTheDocument();
+  });
+
+  it('states the fee once, the amount above it already including it', () => {
+    renderConfirmStep(undefined, { conversionEstimate: inStableBalance(200_200_000n, 200_668n) });
+    expect(screen.queryByText('Conversion amount')).toBeNull();
+  });
+
+  it('groups a four-figure amount with commas', () => {
+    renderConfirmStep(undefined, { conversionEstimate: inStableBalance(1_234_560_000n, 1_200_000n) });
+    expect(screen.getByTestId('send-total')).toHaveTextContent('~$1,234.56');
+  });
+
+  it('bounds a sub-cent fee rather than showing it as free', () => {
+    renderConfirmStep(undefined, { conversionEstimate: inStableBalance(200_200_000n, 5_036n) });
+    expect(screen.getByText('< $0.01')).toBeInTheDocument();
+  });
+
+  it('leads with sats when the balance is bitcoin', () => {
+    renderConfirmStep(undefined);
+    expect(screen.getByTestId('send-total')).toHaveTextContent('50 010');
+    expect(screen.queryByTestId('send-total-sats')).toBeNull();
   });
 });

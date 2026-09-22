@@ -4,7 +4,8 @@ import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardConte
 import { FeeBreakdownCard, SimpleFeeBreakdown } from '../../../components/FeeBreakdownCard';
 import { SpinnerIcon } from '../../../components/Icons';
 import { SatAmount } from '../../../components/SatAmount';
-import { formatTokenAmount } from '../../../utils/tokenFormatting';
+import { formatTokenAmount, formatTokenAmountMinimum, tokenAmountDisplaysAsZero } from '../../../utils/tokenFormatting';
+import { groupUsd } from '../../../utils/formatNumber';
 import { truncateAddress } from '../../../utils/crossChainFormat';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
@@ -58,24 +59,33 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
     : balance.checkInsufficientFunds({ totalSats, conversionEstimate }));
   const balanceError = insufficientBalance ? 'Insufficient funds' : null;
 
-  // Token-formatted values from conversion estimate
+  // The pool takes its cut from the input side, so `amountIn` is the whole
+  // figure the token balance loses and the fee is already inside it. Stating
+  // the two as a sum would count the fee twice.
   const tokenAmount = isTokenMode && balance.config
-    ? formatTokenAmount(BigInt(conversionEstimate!.amountIn), balance.config)
+    ? groupUsd(formatTokenAmount(BigInt(conversionEstimate!.amountIn), balance.config))
     : null;
   const tokenFee = isTokenMode && balance.config
-    ? formatTokenAmount(BigInt(conversionEstimate!.fee), balance.config, { fullPrecision: true })
+    ? tokenAmountDisplaysAsZero(BigInt(conversionEstimate!.fee), balance.config)
+      ? formatTokenAmountMinimum(balance.config)
+      : groupUsd(formatTokenAmount(BigInt(conversionEstimate!.fee), balance.config))
     : null;
 
   return (
     <div className="space-y-6">
-      {/* Total amount display — always show sats */}
+      {/* What the sender holds in stable balance is dollars, so the figure
+          that has to agree with the request leads. Sats stay below: they are
+          what the invoice settles on, exactly. */}
       <div className="text-center py-4">
         <p className="text-spark-text-muted text-sm mb-2">You're sending</p>
-        <div className="flex items-baseline justify-center gap-2">
-          <span className="text-4xl font-mono font-bold text-spark-text-primary">
-            <SatAmount sats={total} />
-          </span>
+        <div className="text-4xl font-mono font-bold text-spark-text-primary" data-testid="send-total">
+          {tokenAmount ? `~${tokenAmount}` : <SatAmount sats={total} />}
         </div>
+        {tokenAmount && (
+          <p className="mt-2 font-mono text-sm text-spark-text-secondary" data-testid="send-total-sats">
+            <SatAmount sats={total} />
+          </p>
+        )}
       </div>
 
       {destination && (
@@ -90,15 +100,8 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
       {/* Sats breakdown */}
       <SimpleFeeBreakdown amount={feesIncluded ? amount - fee : amount} fee={fee} amountLabel={feesIncluded ? 'Recipient gets' : 'Amount'} />
 
-      {/* Token conversion details */}
-      {isTokenMode && tokenAmount && tokenFee && (
-        <FeeBreakdownCard
-          useRawStrings
-          items={[
-            { label: 'Conversion amount', value: tokenAmount },
-            { label: 'Conversion fee', value: tokenFee },
-          ]}
-        />
+      {isTokenMode && tokenFee && (
+        <FeeBreakdownCard useRawStrings items={[{ label: 'Conversion fee', value: tokenFee }]} />
       )}
 
       <FormError error={balanceError || error} />
