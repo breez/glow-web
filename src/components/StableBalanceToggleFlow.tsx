@@ -145,6 +145,20 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** One failure path for both ways in: say what did not happen, keep the
+   *  sheet, let them try again. The provider's own wording goes to the log. */
+  const showToggleFailure = useCallback((e: unknown) => {
+    logger.error(LogCategory.SDK, 'Failed to toggle stable balance', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+    setError(
+      direction === 'toToken'
+        ? 'Could not switch to USD. Please try again.'
+        : 'Could not switch to BTC. Please try again.',
+    );
+    setStep('confirm');
+  }, [direction]);
+
   const executeToggle = useCallback(async () => {
     logger.debug(LogCategory.SDK, 'executeToggle: starting', { direction, hasEstimate: !!conversionEstimate });
     setStep('executing');
@@ -192,12 +206,9 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
       logger.debug(LogCategory.SDK, 'executeToggle: calling onComplete');
       onComplete();
     } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : String(e);
-      logger.error(LogCategory.SDK, 'Failed to toggle stable balance', { error: errorMsg });
-      setError(`Failed to switch: ${errorMsg}`);
-      setStep('confirm');
+      showToggleFailure(e);
     }
-  }, [direction, stableBalance, conversionEstimate, wallet, onComplete]);
+  }, [direction, stableBalance, conversionEstimate, wallet, onComplete, showToggleFailure]);
 
   const handleDisclaimerAccept = useCallback(() => {
     setStableDisclaimerAccepted();
@@ -206,11 +217,11 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
     // dynamic minimum: quoting a conversion here only ever offers to convert
     // change that is too small to convert, and then fails.
     if (restorePrompt) {
-      void stableBalance.toggleStableBalance(USDB_TICKER).then(onComplete);
+      void stableBalance.toggleStableBalance(USDB_TICKER).then(onComplete).catch(showToggleFailure);
       return;
     }
     startEstimation();
-  }, [restorePrompt, stableBalance, onComplete, startEstimation]);
+  }, [restorePrompt, stableBalance, onComplete, startEstimation, showToggleFailure]);
 
   const handleConfirm = useCallback(() => {
     executeToggle();
