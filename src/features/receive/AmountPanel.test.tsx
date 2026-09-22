@@ -1,6 +1,8 @@
+import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { BreezSdk } from '@breeztech/breez-sdk-spark';
+import type { Sats } from '@/types/sats';
 import { WalletProvider } from '@/contexts/WalletContext';
 import { FiatDataProvider } from '@/contexts/FiatDataContext';
 import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
@@ -38,6 +40,52 @@ async function renderAmountPanel(client?: BreezSdk) {
   await waitForSheetOpen();
   return { setAmountSats, setAmountDisplay, client: mockClient };
 }
+
+/** The panel reads `amountSats` back from its parent, so a static prop can
+ *  never enable the button. This holds it the way the dialog does. */
+const Stateful: React.FC = () => {
+  const [amountSats, setAmountSats] = React.useState<Sats | null>(null);
+  return (
+    <AmountPanel
+      isOpen
+      amountSats={amountSats}
+      setAmountSats={setAmountSats}
+      setAmountDisplay={vi.fn()}
+      description=""
+      setDescription={vi.fn()}
+      isLoading={false}
+      error={null}
+      onCreateInvoice={vi.fn()}
+      onClose={vi.fn()}
+      resetCount={0}
+    />
+  );
+};
+
+describe('AmountPanel amount cap', () => {
+  it('refuses an amount past the cap, and says the cap', async () => {
+    render(
+      <WalletProvider client={createMockClient() as unknown as BreezSdk} isConnected>
+        <FiatDataProvider>
+          <StableBalanceProvider>
+            <Stateful />
+          </StableBalanceProvider>
+        </FiatDataProvider>
+      </WalletProvider>,
+    );
+    await waitForSheetOpen();
+    const input = screen.getByTestId('invoice-amount-input');
+
+    // 10 BTC goes through; a sat past it does not.
+    fireEvent.change(input, { target: { value: '1000000000' } });
+    await waitFor(() => expect(screen.getByTestId('generate-invoice-button')).toBeEnabled());
+
+    fireEvent.change(input, { target: { value: '1000000001' } });
+    await waitFor(() => expect(screen.getByTestId('generate-invoice-button')).toBeDisabled());
+    expect(screen.getByTestId('invoice-error-message'))
+      .toHaveTextContent('Amount must be at most \u20bf1 000 000 000');
+  });
+});
 
 describe('AmountPanel fiat entry (no stable balance)', () => {
   afterEach(() => {

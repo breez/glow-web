@@ -12,11 +12,12 @@ import { LightningBoltIcon } from '../../components/Icons';
 import { fixedQuickAmounts, formatQuickAmount, formatTokenInput } from '../../utils/tokenFormatting';
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
 import { SatAmount } from '../../components/SatAmount';
+import { formatWithSpaces } from '../../utils/formatNumber';
 import { useAmountInput, useFiatOverride } from '../../hooks/useAmountInput';
 import { getDisplayFiatCurrency } from '../../services/settings';
 import type { Sats } from '../../types/sats';
 import { dismissKeyboard } from '../../utils/keyboard';
-import { LIGHTNING_INVOICE_MIN_SATS, INVOICE_DESCRIPTION_MAX } from '../../constants/receive';
+import { LIGHTNING_INVOICE_MIN_SATS, LIGHTNING_INVOICE_MAX_SATS, INVOICE_DESCRIPTION_MAX } from '../../constants/receive';
 
 interface AmountPanelProps {
   isOpen: boolean;
@@ -127,7 +128,12 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   // because the parsed sats are produced by `useAmountInput`
   // regardless of denomination.
   const validAmount = amountSats !== null
-    && amountSats >= BigInt(LIGHTNING_INVOICE_MIN_SATS);
+    && amountSats >= BigInt(LIGHTNING_INVOICE_MIN_SATS)
+    && amountSats <= BigInt(LIGHTNING_INVOICE_MAX_SATS);
+
+  // Named rather than left to a disabled button: an amount over the cap is a
+  // figure the user typed on purpose, so it earns an answer.
+  const overMax = amountSats !== null && amountSats > BigInt(LIGHTNING_INVOICE_MAX_SATS);
 
   // "Invalid amount" surfaces when the input is non-empty and positive but
   // can't safely be converted to sats: covers both unsafe-integer overflow
@@ -244,7 +250,15 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
           </div>
 
 
-          <FormError error={amountTooLarge ? 'Invalid amount' : error} data-testid="invoice-error-message" />
+          <div data-testid="invoice-error-message">
+            <FormError
+              error={amountTooLarge
+                ? 'Invalid amount'
+                : overMax
+                ? `Amount must be at most ₿${formatWithSpaces(LIGHTNING_INVOICE_MAX_SATS)}`
+                : error}
+            />
+          </div>
 
           {/* Generate Button */}
           <PrimaryButton

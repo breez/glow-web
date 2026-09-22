@@ -11,7 +11,7 @@ export interface InvoiceAmount {
   sats: Sats;
   display: string | null;
 }
-import { LIGHTNING_INVOICE_MIN_SATS } from '../../../constants/receive';
+import { LIGHTNING_INVOICE_MIN_SATS, LIGHTNING_INVOICE_MAX_SATS } from '../../../constants/receive';
 import { formatWithSpaces } from '../../../utils/formatNumber';
 
 export interface UseReceivePaymentReturn {
@@ -185,6 +185,10 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     }
     if (amountSats < BigInt(LIGHTNING_INVOICE_MIN_SATS)) {
       setError(`Amount must be at least ₿${formatWithSpaces(LIGHTNING_INVOICE_MIN_SATS)}`);
+      return;
+    }
+    if (amountSats > BigInt(LIGHTNING_INVOICE_MAX_SATS)) {
+      setError(`Amount must be at most ₿${formatWithSpaces(LIGHTNING_INVOICE_MAX_SATS)}`);
       return;
     }
 
