@@ -88,7 +88,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
   return (
     <div className="flex flex-col gap-4">
       {/* Input with autocomplete */}
-      <div className="h-20">
+      <div className="h-16">
         {selectedContact ? (
           // Selected contact chip
           <div className="w-full h-full px-4 bg-spark-dark border border-spark-border rounded-xl flex items-center gap-3">
@@ -158,8 +158,12 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
-              placeholder='lnbc... / bc1... / sp1... / user@domain.com / contact / USDC or USDT address'
-              className="w-full h-full p-4 bg-spark-dark text-spark-text-primary placeholder-spark-text-muted focus:ring-0 resize-none font-mono text-sm border outline-hidden transition-all rounded-xl border-spark-border focus:border-spark-primary"
+              // Two lines at this width, which is what the field holds: a third
+              // was clipped. USDT is dropped rather than the lightning address,
+              // since a USDT address looks like the USDC one and carries no
+              // shape of its own.
+              placeholder='lnbc... / bc1... / sp1... / user@domain.com / USDC address'
+              className="w-full h-full px-4 py-3 bg-spark-dark text-spark-text-primary placeholder-spark-text-muted focus:ring-0 resize-none font-mono text-sm border outline-hidden transition-all rounded-xl border-spark-border focus:border-spark-primary"
               disabled={isLoading}
               data-testid="payment-input"
             />
