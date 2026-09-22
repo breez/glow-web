@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
+  AMOUNT_FIELD_CLASS,
   FormError,
   PrimaryButton,
   BottomSheetContainer,
@@ -15,7 +16,7 @@ import { useAmountInput, useFiatOverride } from '../../hooks/useAmountInput';
 import { getDisplayFiatCurrency } from '../../services/settings';
 import type { Sats } from '../../types/sats';
 import { dismissKeyboard } from '../../utils/keyboard';
-import { LIGHTNING_INVOICE_MIN_SATS } from '../../constants/receive';
+import { LIGHTNING_INVOICE_MIN_SATS, INVOICE_DESCRIPTION_MAX } from '../../constants/receive';
 
 interface AmountPanelProps {
   isOpen: boolean;
@@ -150,8 +151,38 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
           icon={<LightningBoltIcon />}
         />
 
-        {/* Amount Input */}
         <div className="space-y-4">
+          {/* Description */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-spark-text-secondary text-sm font-medium">Description (optional)</label>
+              <span className="text-xs text-spark-text-secondary">{description.length}/{INVOICE_DESCRIPTION_MAX}</span>
+            </div>
+            <textarea
+              ref={descriptionInputRef}
+              enterKeyHint="done"
+              value={description}
+              onChange={(e) => setDescription(e.target.value.replace(/\n/g, ''))}
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  // Always retract the keyboard on Enter. Commit
+                  // only if the amount is valid and we're not
+                  // already generating.
+                  await dismissKeyboard();
+                  if (validAmount && !isLoading) {
+                    onCreateInvoice();
+                  }
+                }
+              }}
+              placeholder="What's this for?"
+              disabled={isLoading}
+              maxLength={INVOICE_DESCRIPTION_MAX}
+              rows={1}
+              className={`${AMOUNT_FIELD_CLASS} focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 resize-none`}
+            />
+          </div>
+
           <div>
             <label className="block text-spark-text-secondary text-sm font-medium mb-2">
               Amount
@@ -174,7 +205,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                 placeholder={isTokenMode ? '0.00' : '0'}
                 disabled={isLoading}
                 rows={1}
-                className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 pr-16 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus-within:border-spark-primary focus:outline-hidden transition-all resize-none"
+                className={`${AMOUNT_FIELD_CLASS} focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 resize-none pr-16 font-mono`}
                 data-testid="invoice-amount-input"
               />
               {tokenSymbol && (
@@ -200,7 +231,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                 onClick={() => handleQuickAmount(quickAmount)}
                 disabled={isLoading}
                 className={`
-                  flex-1 py-2 rounded-lg text-sm font-mono font-medium transition-all
+                  flex-1 py-3 rounded-lg text-sm font-mono font-medium transition-all
                   ${displayAmount === String(quickAmount)
                     ? 'bg-spark-primary text-black'
                     : 'bg-spark-elevated border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
@@ -212,32 +243,6 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
             ))}
           </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-spark-text-secondary text-sm font-medium mb-2">Description (optional)</label>
-            <textarea
-              ref={descriptionInputRef}
-              enterKeyHint="done"
-              value={description}
-              onChange={(e) => setDescription(e.target.value.replace(/\n/g, ''))}
-              onKeyDown={async (e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  // Always retract the keyboard on Enter. Commit
-                  // only if the amount is valid and we're not
-                  // already generating.
-                  await dismissKeyboard();
-                  if (validAmount && !isLoading) {
-                    onCreateInvoice();
-                  }
-                }
-              }}
-              placeholder="What's this for?"
-              disabled={isLoading}
-              rows={1}
-              className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:outline-hidden transition-all resize-none"
-            />
-          </div>
 
           <FormError error={amountTooLarge ? 'Invalid amount' : error} data-testid="invoice-error-message" />
 

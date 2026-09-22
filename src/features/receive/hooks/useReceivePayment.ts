@@ -225,7 +225,10 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       setCurrentStep('qr');
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to generate invoice', { error: formatError(err) });
-      setError(`Failed to generate invoice: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      const raw = err instanceof Error ? err.message : '';
+      setError(/memo is too long/i.test(raw)
+        ? 'That description is too long. Shorten it and try again.'
+        : 'Could not create the invoice. Please try again.');
       setCurrentStep('input');
       setShowAmountPanel(true);
     } finally {

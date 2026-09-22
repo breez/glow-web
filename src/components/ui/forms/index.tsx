@@ -59,6 +59,15 @@ export interface FormInputProps {
   inputRef?: React.Ref<HTMLInputElement>;
 }
 
+/**
+ * The amount-entry field's shape: 58px tall, which is what a p-4 box around a
+ * single line of base text measures. Every screen that asks for an amount
+ * writes its own element, because they differ in the tag, the adornment and
+ * the font, so the one thing they must agree on is held here. The focus colour
+ * is not: send uses electric and receive uses the accent.
+ */
+export const AMOUNT_FIELD_CLASS = 'w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted transition-all';
+
 export const FormInput: React.FC<FormInputProps> = ({
   id,
   type = "text",

@@ -44,6 +44,7 @@ export {
   FormTextarea,
   FormError,
   FormHint,
+  AMOUNT_FIELD_CLASS,
 } from './forms';
 export type { FormInputProps, FormTextareaProps } from './forms';
 

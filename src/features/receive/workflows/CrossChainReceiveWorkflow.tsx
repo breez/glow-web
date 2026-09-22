@@ -5,6 +5,7 @@ import type {
   ReceivePaymentResponse,
 } from '@breeztech/breez-sdk-spark';
 import {
+  AMOUNT_FIELD_CLASS,
   PrimaryButton,
   QRCodeContainer,
   FormError,
@@ -459,7 +460,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                 }
               }}
               placeholder="Enter amount in USD"
-              className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all"
+              className={`${AMOUNT_FIELD_CLASS} focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20`}
               data-testid="cross-chain-receive-amount-input"
             />
 
@@ -471,7 +472,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                   <button
                     key={quickAmount}
                     onClick={() => setUsdInput(String(quickAmount))}
-                    className={`flex-1 py-2 rounded-lg text-sm font-mono font-medium transition-all ${
+                    className={`flex-1 py-3 rounded-lg text-sm font-mono font-medium transition-all ${
                       isSelected
                         ? 'bg-spark-primary text-white'
                         : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'

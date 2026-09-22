@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import type { ConversionOptions } from '@breeztech/breez-sdk-spark';
-import { FormError, PrimaryButton } from '../../../components/ui';
+import { AMOUNT_FIELD_CLASS, FormError, PrimaryButton } from '../../../components/ui';
 import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardContext';
 import { SpinnerIcon } from '../../../components/Icons';
 import { formatQuickAmount, pickQuickAmounts } from '../../../utils/tokenFormatting';
@@ -212,7 +212,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
               }
             }}
             placeholder={isTokenMode && config ? `Enter amount in ${config.currencyCode}` : 'Enter amount in sats'}
-            className={`w-full p-4 ${usdOnly ? '' : 'pr-16'} bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
+            className={`${AMOUNT_FIELD_CLASS} ${usdOnly ? '' : 'pr-16'} focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
             disabled={isLoading}
             readOnly={isSendAll}
             min={isTokenMode ? undefined : 1}
@@ -239,7 +239,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
               <button
                 key={quickAmount}
                 onClick={() => { setLocalAmount(String(quickAmount)); setFeesIncluded(false); setLocalError(null); }}
-                className={`flex-1 py-2 rounded-lg text-sm font-mono font-medium transition-all ${
+                className={`flex-1 py-3 rounded-lg text-sm font-mono font-medium transition-all ${
                   isSelected
                     ? 'bg-spark-primary text-white'
                     : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'
@@ -276,7 +276,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
               }}
               disabled={tokenSendAllBelowThreshold || hasPendingConversion}
               title={hasPendingConversion ? 'Balance is updating. Try again in a moment.' : undefined}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 py-3 rounded-lg text-sm font-medium transition-all ${
                 tokenSendAllBelowThreshold || hasPendingConversion
                   ? 'opacity-40 cursor-not-allowed border border-spark-border text-spark-text-secondary'
                   : isSendAll
@@ -294,15 +294,14 @@ const AmountStep: React.FC<AmountStepProps> = ({
           )}
         </div>
         )}
+        <FormError error={inlineBalanceError || localError || error} />
     </div>
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {destinationSection}
       {amountSection}
-
-      <FormError error={inlineBalanceError || localError || error} />
 
       <PrimaryButton
         onClick={handleNext}

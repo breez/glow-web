@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { LnurlPayRequestDetails, PrepareLnurlPayRequest, PrepareLnurlPayResponse } from '@breeztech/breez-sdk-spark';
 import type { PaymentStep } from '../../../types/domain';
-import { FormError, PrimaryButton } from '../../../components/ui';
+import { AMOUNT_FIELD_CLASS, FormError, PrimaryButton } from '../../../components/ui';
 import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardContext';
 import ConfirmStep from '../steps/ConfirmStep';
 import { logger, LogCategory } from '@/services/logger';
@@ -278,7 +278,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
 
   // amount + optional comment form
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Description */}
       <div className="text-center">
         <p className="text-spark-text-primary font-medium">{recipientLabel ?? description}</p>
@@ -309,7 +309,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
               ? `Enter amount in ${config.currencyCode}`
               : `Between ${formatWithSpaces(minSats)} and ${formatWithSpaces(maxSats)} sats`
             }
-            className="w-full p-4 pr-16 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed"
+            className={`${AMOUNT_FIELD_CLASS} pr-16 focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
             disabled={isLoading}
             readOnly={isSendAll}
             min={isTokenMode ? undefined : minSats}
@@ -382,6 +382,7 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
             </button>
           )}
         </div>
+        <FormError error={inlineBalanceError || error} />
       </div>
 
       {/* Optional comment */}
@@ -395,15 +396,13 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Add a message..."
-            className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 resize-none transition-all"
+            className={`${AMOUNT_FIELD_CLASS} focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 resize-none`}
             rows={3}
             maxLength={commentMaxLen}
             disabled={isLoading}
           />
         </div>
       )}
-
-      <FormError error={inlineBalanceError || error} />
 
       <PrimaryButton onClick={onAmountNext} disabled={isLoading || !validAmount || !!inlineBalanceError} className="w-full">
         {isLoading ? (

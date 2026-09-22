@@ -169,7 +169,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                     type="button"
                     onClick={() => buy.setQuickAmount(quickAmount)}
                     disabled={buy.isGenerating}
-                    className={`flex-1 py-2 rounded-lg text-sm font-mono font-medium transition-all ${
+                    className={`flex-1 py-3 rounded-lg text-sm font-mono font-medium transition-all ${
                       buy.amountInput === String(quickAmount)
                         ? 'bg-spark-primary text-white'
                         : 'bg-transparent border border-spark-border text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light'

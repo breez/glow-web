@@ -1,6 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { SimpleAlert } from '../../../components/AlertCard';
-import { PrimaryButton } from '../../../components/ui';
+import { FormError, PrimaryButton } from '../../../components/ui';
 import ContactAutocomplete from '../components/ContactAutocomplete';
 import { useContactsContext } from '../../../contexts/ContactsContext';
 import { searchContacts } from '../../../hooks/useContacts';
@@ -174,13 +173,6 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
         )}
       </div>
 
-      {/* Error */}
-      {error && (
-        <SimpleAlert variant="error" dataTestId="send-error-banner">
-          {error}
-        </SimpleAlert>
-      )}
-
       {/* Quick action buttons */}
       <div className="flex gap-2">
         <button
@@ -207,6 +199,12 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
           <ContactsIcon size="xs" />
           <span className="text-sm font-medium">Contacts</span>
         </button>
+      </div>
+
+      {/* Under the ways of filling the field rather than between them and it:
+          the same inline shape every other form uses for a bad value. */}
+      <div data-testid="send-error-banner">
+        <FormError error={error} />
       </div>
 
       {/* Continue button */}
