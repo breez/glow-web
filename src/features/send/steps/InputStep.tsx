@@ -173,12 +173,13 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
         )}
       </div>
 
-      {/* Quick action buttons */}
+      {/* Quick action buttons, with the field's error under them */}
+      <div>
       <div className="flex gap-2">
         <button
           onClick={handlePaste}
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-spark-surface border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-1.5 py-3 bg-spark-surface border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50"
         >
           <ClipboardIcon size="xs" />
           <span className="text-sm font-medium">Paste</span>
@@ -186,7 +187,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
         <button
           onClick={onScanQr}
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-spark-surface border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-1.5 py-3 bg-spark-surface border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50"
         >
           <QrCodeIcon size="xs" />
           <span className="text-sm font-medium">Scan</span>
@@ -194,7 +195,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
         <button
           onClick={onOpenContacts}
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-spark-surface border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-1.5 py-3 bg-spark-surface border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:border-spark-border-light transition-colors disabled:opacity-50"
         >
           <ContactsIcon size="xs" />
           <span className="text-sm font-medium">Contacts</span>
@@ -203,8 +204,11 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
 
       {/* Under the ways of filling the field rather than between them and it:
           the same inline shape every other form uses for a bad value. */}
-      <div data-testid="send-error-banner">
-        <FormError error={error} />
+      {error && (
+        <div data-testid="send-error-banner">
+          <FormError error={error} />
+        </div>
+      )}
       </div>
 
       {/* Continue button */}
