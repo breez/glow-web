@@ -82,11 +82,12 @@ describe('USD receive deposit address', () => {
     expect(screen.getByText('0.01 USDC')).toBeInTheDocument();
     expect(screen.getByText('~₿12 298')).toBeInTheDocument();
 
-    // The code is folded away: the address is what gets pasted.
-    const qrToggle = screen.getByRole('button', { name: 'Show deposit address QR code' });
-    expect(qrToggle).toHaveAttribute('aria-expanded', 'false');
+    // The code leads: on EVM it is the only artifact carrying the amount. It
+    // still folds away for a sender who only wants the address.
+    const qrToggle = screen.getByRole('button', { name: 'Hide deposit address QR code' });
+    expect(qrToggle).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(qrToggle);
-    expect(screen.getByRole('button', { name: 'Hide deposit address QR code' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: 'Show deposit address QR code' })).toHaveAttribute('aria-expanded', 'false');
 
     fireEvent.click(await screen.findByRole('button', { name: 'Back' }));
 

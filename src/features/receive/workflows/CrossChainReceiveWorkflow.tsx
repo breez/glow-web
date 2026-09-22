@@ -81,7 +81,10 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
   const [amountCopied, setAmountCopied] = useState(false);
   const [addressCopied, setAddressCopied] = useState(false);
-  const [showDepositQr, setShowDepositQr] = useState(false);
+  // Open by default: on EVM the code carries the amount and the pasted address
+  // does not, so it is the only artifact holding the whole request. Still
+  // collapsible, for a sender who only wants the address.
+  const [showDepositQr, setShowDepositQr] = useState(true);
   // Where the picker hands back to. Reached from Continue it carries straight
   // on into the order, as it did when it was a step of the flow; reached from
   // the chip it is a detour, so it returns to the amount.
@@ -270,7 +273,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
     setSelectedRoute(null);
     setAmountCopied(false);
     setAddressCopied(false);
-    setShowDepositQr(false);
+    setShowDepositQr(true);
     setStep('amount');
   };
 
@@ -616,6 +619,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
               useRawStrings
               className="w-full"
               items={[
+                { label: 'You asked for', value: `$${usdInput}` },
                 { label: 'Network', value: resultChainName },
                 { label: 'Asset', value: resultAssetName },
                 { label: 'Provider', value: getProviderDisplayName(selectedRoute.provider) },
