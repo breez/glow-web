@@ -66,9 +66,12 @@ export interface FormInputProps {
  * the font, so what they must agree on is held here. The focus state is the
  * accent rather than electric, which elsewhere means an outgoing payment and
  * backs the info alert: a state has no business borrowing a colour that
- * already says something else.
+ * already says something else. `block` is load-bearing: an inline field
+ * leaves a descender's worth of line box under it, which makes its wrapper
+ * taller than itself and throws the adornment centred against that wrapper
+ * off by a few pixels.
  */
-export const AMOUNT_FIELD_CLASS = 'w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all';
+export const AMOUNT_FIELD_CLASS = 'block w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all';
 
 export const FormInput: React.FC<FormInputProps> = ({
   id,
