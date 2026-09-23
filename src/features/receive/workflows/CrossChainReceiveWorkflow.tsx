@@ -100,9 +100,9 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   const [pendingChain, setPendingChain] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
   const [amountCopied, setAmountCopied] = useState(false);
-  // Open by default: on EVM the code carries the amount and the pasted address
-  // does not, so it is the only artifact holding the whole request. Still
-  // collapsible, for a sender who only wants the address.
+  // Open by default: the code is what the sender scans, so showing it costs
+  // nothing and asking for it costs a tap. Folds away for a sender who only
+  // wants the address to paste, which is the other half of who reaches here.
   const [showDepositQr, setShowDepositQr] = useState(true);
   // Where the picker hands back to. Reached from Continue it carries straight
   // on into the order, as it did when it was a step of the flow; reached from
