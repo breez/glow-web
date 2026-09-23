@@ -418,10 +418,8 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
       data-testid="cross-chain-deposit-qr"
     >
       <div className="overflow-hidden">
-        {/* The brackets hang 12px outside the code and the wrapper above clips
-            for the animation, so the padding has to clear them. */}
-        <div className="flex justify-center pt-6 pb-4">
-          <QRCodeContainer value={receiveResult.paymentRequest} />
+        <div className="flex justify-center pt-4 pb-1">
+          <QRCodeContainer value={receiveResult.paymentRequest} corners={false} />
         </div>
       </div>
     </div>
@@ -655,8 +653,8 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
           </div>
 
           {/* Its own block, not a row in the ledger below: the address and the
-              code are the one thing the sender is given, and the code folds
-              under the row it belongs to. */}
+              code are the one thing the sender is handed, so the code unfolds
+              inside the row it belongs to. */}
           <div className="w-full">
             <CopyableRow
               label="To address"
@@ -672,9 +670,9 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                   <QrCodeIcon size="sm" className="text-spark-text-secondary" />
                 </button>
               }
+              expansion={depositQr}
               data-testid="cross-chain-deposit-address"
             />
-            {depositQr}
           </div>
 
           {resultInfo && (

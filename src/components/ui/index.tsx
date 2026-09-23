@@ -264,8 +264,11 @@ export const CopyableRow: React.FC<{
   /** Sits before the copy button, for a control the row's value also answers
    *  to: a code to unfold, say. */
   actions?: ReactNode;
+  /** Full-width panel under the row, inside the same container: for what a
+   *  control in `actions` opens. */
+  expansion?: ReactNode;
   'data-testid'?: string;
-}> = ({ label, value, display, actions, 'data-testid': testId }) => {
+}> = ({ label, value, display, actions, expansion, 'data-testid': testId }) => {
   const [copied, setCopied] = React.useState(false);
   const handleCopy = () => {
     copyToClipboard(value)
@@ -281,23 +284,26 @@ export const CopyableRow: React.FC<{
   };
 
   return (
-    <div className="flex items-center gap-2 p-3 bg-spark-dark border border-spark-border rounded-xl">
-      <div className="min-w-0 flex-1">
-        <p className="text-xs text-spark-text-muted mb-0.5">{label}</p>
-        <p className="text-sm font-mono text-spark-text-secondary truncate" title={value} data-testid={testId}>
-          {display ?? value}
-        </p>
+    <div className="p-3 bg-spark-dark border border-spark-border rounded-xl">
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-spark-text-muted mb-0.5">{label}</p>
+          <p className="text-sm font-mono text-spark-text-secondary truncate" title={value} data-testid={testId}>
+            {display ?? value}
+          </p>
+        </div>
+        {actions}
+        <button
+          onClick={handleCopy}
+          className="shrink-0 p-1.5 rounded-md hover:bg-white/5 transition-colors"
+          aria-label={`Copy ${label}`}
+        >
+          {copied
+            ? <CheckIcon size="sm" className="text-spark-success" />
+            : <CopyIcon size="sm" className="text-spark-text-secondary" />}
+        </button>
       </div>
-      {actions}
-      <button
-        onClick={handleCopy}
-        className="shrink-0 p-1.5 rounded-md hover:bg-white/5 transition-colors"
-        aria-label={`Copy ${label}`}
-      >
-        {copied
-          ? <CheckIcon size="sm" className="text-spark-success" />
-          : <CopyIcon size="sm" className="text-spark-text-secondary" />}
-      </button>
+      {expansion}
     </div>
   );
 };
