@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import type { GetInfoResponse, FiatCurrency } from '@breeztech/breez-sdk-spark';
 import { safeAreaTop } from '../utils/safeAreaInsets';
 import { getFiatSettings, getDisplayFiatCurrency, setDisplayFiatCurrency, buyCopy, isBuyIconOnly } from '../services/settings';
-import { formatWithSpaces } from '../utils/formatNumber';
+import { formatWithSpaces, groupUsd } from '../utils/formatNumber';
 import { SatAmount } from './SatAmount';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 import { MenuIcon, AlertTriangleIcon, CurrencyIcon, CashAppIcon, SpinnerIcon, SwapVerticalIcon } from './Icons';
@@ -242,7 +242,8 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
     if (stableBalance.isActive && stableBalance.displayConfig) {
       const full = formatTokenAmount(BigInt(displayBalance), stableBalance.displayConfig);
       const sym = stableBalance.displayConfig.symbol;
-      return full.startsWith(sym) ? full.slice(sym.length).trimStart() : full;
+      const bare = full.startsWith(sym) ? full.slice(sym.length).trimStart() : full;
+      return groupUsd(bare);
     }
     return formatWithSpaces(displayBalance);
   }, [stableBalance.isActive, stableBalance.displayConfig, displayBalance]);
