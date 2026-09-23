@@ -56,7 +56,9 @@ export const CrossChainRouteChip: React.FC<CrossChainRouteChipProps> = ({
       <CryptoIcon chain={chain} size={32} />
       <span className="font-display font-medium text-spark-text-primary">
         {asset} on {formatChainName(chain)}
-        {provider && <span className="text-spark-text-secondary"> · via {provider}</span>}
+        {/* Wraps as a unit, so a long chain name breaks before it rather than
+            leaving "via" at the end of the line. */}
+        {provider && <span className="text-spark-text-secondary whitespace-nowrap"> · via {provider}</span>}
       </span>
     </span>
   ) : loading ? (
@@ -70,12 +72,10 @@ export const CrossChainRouteChip: React.FC<CrossChainRouteChipProps> = ({
     <span className="font-display font-medium text-spark-text-secondary">Select network</span>
   );
 
+  // Stated, not chosen: it sits as a card's top row, so it drops the border
+  // and background that would otherwise say "tappable" inside one.
   if (readOnly) {
-    return (
-      <div className={CHIP_CLASS} data-testid={testId}>
-        {body}
-      </div>
-    );
+    return <div data-testid={testId}>{body}</div>;
   }
 
   return (

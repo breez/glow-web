@@ -674,44 +674,35 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
             </button>
           </div>
 
-          {/* The route as one line rather than a row each for the network, the
-              asset and the provider: it is stated, not chosen, so it needs no
-              label and no chevron. */}
-          <CrossChainRouteChip
-            readOnly
-            chain={selectedRoute.chain}
-            asset={resultAssetName}
-            provider={getProviderDisplayName(selectedRoute.provider)}
-            data-testid="cross-chain-receive-route-summary"
-          />
-
           {resultInfo && (
-            <>
-              {/* Where the money goes. */}
-              <FeeBreakdownCard
-                useRawStrings
-                className="w-full"
-                items={[{ label: 'Address', node: depositAddressValue, expansion: depositQr }]}
-              />
-
-              {/* What it comes to: the three figures answer each other, and the
-                  route above them is a different question. */}
-              <FeeBreakdownCard
-                useRawStrings
-                className="w-full"
-                items={[
-                  { label: 'You asked for', value: `$${groupUsd(usdInput)}` },
-                  ...(resultFee
-                    ? [{
-                        label: 'Fees',
-                        value: resultFee,
-                        unit: resultInfo.serviceFeeAsset ? assetDisplayName(resultInfo.serviceFeeAsset) : undefined,
-                      }]
-                    : []),
-                  { label: 'You receive', value: `~${formatReceived(resultInfo)}`, highlight: true },
-                ]}
-              />
-            </>
+            <FeeBreakdownCard
+              useRawStrings
+              className="w-full"
+              // Leads the card rather than taking a row each for the network,
+              // the asset and the provider: it is what the rows below are
+              // about, and it is stated rather than chosen.
+              header={
+                <CrossChainRouteChip
+                  readOnly
+                  chain={selectedRoute.chain}
+                  asset={resultAssetName}
+                  provider={getProviderDisplayName(selectedRoute.provider)}
+                  data-testid="cross-chain-receive-route-summary"
+                />
+              }
+              items={[
+                { label: 'Address', node: depositAddressValue, expansion: depositQr },
+                { label: 'You asked for', value: `$${groupUsd(usdInput)}` },
+                ...(resultFee
+                  ? [{
+                      label: 'Fees',
+                      value: resultFee,
+                      unit: resultInfo.serviceFeeAsset ? assetDisplayName(resultInfo.serviceFeeAsset) : undefined,
+                    }]
+                  : []),
+                { label: 'You receive', value: `~${formatReceived(resultInfo)}`, highlight: true },
+              ]}
+            />
           )}
 
 

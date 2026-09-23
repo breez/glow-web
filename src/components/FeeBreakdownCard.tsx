@@ -34,6 +34,9 @@ export interface FeeBreakdownItem {
 
 export interface FeeBreakdownCardProps {
   items: FeeBreakdownItem[];
+  /** Leads the card, above the first row and its divider: for what the rows
+   *  are about rather than another figure among them. */
+  header?: ReactNode;
   /** When true, values are pre-formatted strings — skip numeric formatting and unit suffix */
   useRawStrings?: boolean;
   /** Optional className for additional styling */
@@ -54,14 +57,16 @@ export interface FeeBreakdownCardProps {
  */
 export const FeeBreakdownCard: React.FC<FeeBreakdownCardProps> = ({
   items,
+  header,
   useRawStrings = false,
   className = '',
 }) => {
   return (
     <div className={`bg-spark-dark/50 border border-spark-border rounded-2xl p-4 space-y-3 ${className}`}>
+      {header}
       {items.map((item, index) => (
         <React.Fragment key={item.label}>
-          {index > 0 && <div className="border-t border-spark-border/50" />}
+          {(index > 0 || header) && <div className="border-t border-spark-border/50" />}
           <div>
           <div className="flex justify-between items-center">
             <span className={`text-sm ${item.highlight ? 'text-spark-text-primary font-semibold' : item.emphasis ? 'text-spark-text-primary' : 'text-spark-text-secondary'}`}>
