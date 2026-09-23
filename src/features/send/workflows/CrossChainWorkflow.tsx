@@ -21,7 +21,7 @@ import { groupUsd } from '../../../utils/formatNumber';
 import { getLastSendRoute, setLastSendRoute } from '@/services/settings';
 import { logger, LogCategory } from '@/services/logger';
 import { getProviderDisplayName } from '../../../utils/paymentDescription';
-import { truncateAddress, formatChainName, formatCrossChainAmount, formatReceiveAmount } from '../../../utils/crossChainFormat';
+import { truncateAddress, formatChainName, formatReceiveAmount } from '../../../utils/crossChainFormat';
 import {
   assetDisplayName,
   assetMatchesGroup,
@@ -50,6 +50,14 @@ interface ProviderQuote {
   error: string | null;
   loading: boolean;
 }
+
+/** A fee at cents, bounded under one so a real cost never reads as free.
+ *  Every destination a route reaches here is a USD stablecoin, so the six
+ *  decimals it carries are nobody's business. */
+const feeAtCents = (amount: bigint, decimals: number): string => {
+  const cents = formatReceiveAmount(amount, decimals);
+  return amount > 0n && Number(cents) === 0 ? '< 0.01' : groupUsd(cents);
+};
 
 const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
   addressDetails,
@@ -393,7 +401,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-spark-text-secondary">Fee</span>
                             <span className="font-mono text-sm text-spark-text-primary">
-                              {groupUsd(formatCrossChainAmount(BigInt(pQuote.feeAmount), pq.route.decimals))} {pq.route.asset}
+                              {feeAtCents(BigInt(pQuote.feeAmount), pq.route.decimals)} {pq.route.asset}
                             </span>
                           </div>
                         </div>
@@ -457,19 +465,9 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
             </p>
           </div>
 
-          {/* The address sits where the invoice does on a Lightning send: it
-              came from somewhere else, and this is the screen where it is
-              worth checking before the money goes. */}
-          <div className="mb-4">
-            <CopyableRow
-              label="To address"
-              value={quote.recipientAddress}
-              display={truncateAddress(quote.recipientAddress, 20)}
-            />
-          </div>
-
-          {/* Under the address it qualifies: the same chip the picker step
-              showed, stating the route the money takes to get there. */}
+          {/* The route, then the address on it: the screen reads down from
+              where the money goes to exactly where, and the chip is the one
+              the picker step showed. */}
           <div className="mb-4">
             <CrossChainRouteChip
               readOnly
@@ -480,25 +478,39 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
             />
           </div>
 
+          {/* Where the invoice sits on a Lightning send: it came from
+              somewhere else, and this is the screen where it is worth
+              checking before the money goes. */}
+          <div className="mb-4">
+            <CopyableRow
+              label="To address"
+              value={quote.recipientAddress}
+              display={truncateAddress(quote.recipientAddress, 20)}
+            />
+          </div>
+
           {/* A ledger in the destination's own asset, since the fee is quoted
               there and cannot be added to a sat figure. The three close:
-              `feeAmount` is exactly `assetAmountIn - estimatedOut`. */}
+              `feeAmount` is exactly `assetAmountIn - estimatedOut`. Every
+              destination here is a USD stablecoin, so they read at cents; the
+              six decimals the asset carries are nobody's business, except
+              where a fee is real but rounds under one. */}
           <FeeBreakdownCard
             useRawStrings
             items={[
               {
                 label: 'Amount',
-                value: groupUsd(formatCrossChainAmount(BigInt(quote.assetAmountIn), confirmedRoute.decimals)),
+                value: groupUsd(formatReceiveAmount(BigInt(quote.assetAmountIn), confirmedRoute.decimals)),
                 unit: assetDisplayName(confirmedRoute.asset),
               },
               {
                 label: 'Fee',
-                value: `−${groupUsd(formatCrossChainAmount(BigInt(quote.feeAmount), confirmedRoute.decimals))}`,
+                value: `−${feeAtCents(BigInt(quote.feeAmount), confirmedRoute.decimals)}`,
                 unit: assetDisplayName(confirmedRoute.asset),
               },
               {
                 label: 'They receive',
-                value: `~${groupUsd(formatCrossChainAmount(BigInt(quote.estimatedOut), confirmedRoute.decimals))}`,
+                value: `~${groupUsd(formatReceiveAmount(BigInt(quote.estimatedOut), confirmedRoute.decimals))}`,
                 unit: assetDisplayName(confirmedRoute.asset),
                 highlight: true,
               },
