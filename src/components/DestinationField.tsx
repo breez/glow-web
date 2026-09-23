@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
 import { SimpleAlert } from '@/components/AlertCard';
 import { ClipboardIcon, QrCodeIcon } from '@/components/Icons';
+import { AMOUNT_FIELD_CLASS } from '@/components/ui';
 import { logger, LogCategory } from '@/services/logger';
 import { dismissKeyboard } from '@/utils/keyboard';
 
@@ -73,7 +74,7 @@ export const DestinationField: React.FC<{
           autoCorrect="off"
           spellCheck={false}
           placeholder="bc1q..."
-          className="block w-full p-4 bg-spark-dark text-spark-text-primary placeholder-spark-text-muted focus:ring-0 resize-none font-mono text-sm border outline-hidden transition-all rounded-xl border-spark-border focus:border-spark-primary"
+          className={`${AMOUNT_FIELD_CLASS} resize-none font-mono text-sm outline-hidden`}
         />
       </div>
 

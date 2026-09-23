@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BottomSheetContainer, BottomSheetCard, DialogHeader, PrimaryButton, FormError } from '../../../components/ui';
+import { BottomSheetContainer, BottomSheetCard, DialogHeader, PrimaryButton, FormError, AMOUNT_FIELD_CLASS } from '../../../components/ui';
 import { ContactsIcon, CheckIcon } from '../../../components/Icons';
 import { useContactsContext } from '../../../contexts/ContactsContext';
 
@@ -79,7 +79,7 @@ const SaveContactDialog: React.FC<SaveContactDialogProps> = ({ isOpen, lightning
                 onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) handleSave(); }}
                 placeholder="Contact name"
                 disabled={isSaving}
-                className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`${AMOUNT_FIELD_CLASS} disabled:opacity-50 disabled:cursor-not-allowed`}
               />
 
               <FormError error={error} />

@@ -60,8 +60,9 @@ export interface FormInputProps {
 }
 
 /**
- * The amount-entry field's shape: 58px tall, which is what a p-4 box around a
- * single line of base text measures. Every screen that asks for an amount
+ * Every field's shape, padding aside: `FIELD_BASE_CLASS` for one that sets its
+ * own height (a search row, a two-line destination), `AMOUNT_FIELD_CLASS` for
+ * the 58px box a p-4 around a single line of base text measures. Every screen that asks for an amount
  * writes its own element, because they differ in the tag, the adornment and
  * the font, so what they must agree on is held here. The focus state is the
  * accent rather than electric, which elsewhere means an outgoing payment and
@@ -71,7 +72,9 @@ export interface FormInputProps {
  * taller than itself and throws the adornment centred against that wrapper
  * off by a few pixels.
  */
-export const AMOUNT_FIELD_CLASS = 'block w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all';
+export const FIELD_BASE_CLASS = 'block w-full bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all';
+
+export const AMOUNT_FIELD_CLASS = `${FIELD_BASE_CLASS} p-4`;
 
 export const FormInput: React.FC<FormInputProps> = ({
   id,
@@ -109,38 +112,11 @@ export const FormInput: React.FC<FormInputProps> = ({
     autoComplete={autoComplete}
     spellCheck={spellCheck}
     autoFocus={autoFocus}
-    className={`w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-0 transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+    className={`${AMOUNT_FIELD_CLASS} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
     placeholder={placeholder}
     min={min}
     max={max}
     disabled={disabled}
-  />
-);
-
-export interface FormTextareaProps {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  placeholder?: string;
-  disabled?: boolean;
-  className?: string;
-  rows?: number;
-}
-
-export const FormTextarea: React.FC<FormTextareaProps> = ({
-  value,
-  onChange,
-  placeholder,
-  disabled = false,
-  className = "",
-  rows = 3,
-}) => (
-  <textarea
-    value={value}
-    onChange={onChange}
-    className={`w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-0 transition-all resize-none ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
-    placeholder={placeholder}
-    disabled={disabled}
-    rows={rows}
   />
 );
 

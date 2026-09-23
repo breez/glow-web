@@ -41,12 +41,12 @@ export {
   FormLabel,
   FormDescription,
   FormInput,
-  FormTextarea,
   FormError,
   FormHint,
   AMOUNT_FIELD_CLASS,
+  FIELD_BASE_CLASS,
 } from './forms';
-export type { FormInputProps, FormTextareaProps } from './forms';
+export type { FormInputProps } from './forms';
 
 // Bottom Sheets
 export { BottomSheetContainer, BottomSheetCard } from './sheets/BottomSheet';

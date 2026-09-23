@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { FormError, PrimaryButton } from '../../../components/ui';
+import { FormError, PrimaryButton, FIELD_BASE_CLASS } from '../../../components/ui';
 import ContactAutocomplete from '../components/ContactAutocomplete';
 import { useContactsContext } from '../../../contexts/ContactsContext';
 import { searchContacts } from '../../../hooks/useContacts';
@@ -162,7 +162,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
               // was clipped. The lightning address goes last so the wrap falls
               // after the prefixes rather than inside the token pair.
               placeholder='lnbc... / bc1... / sp1... / USDC or USDT address / user@domain.com'
-              className="w-full h-full px-4 py-3 bg-spark-dark text-spark-text-primary placeholder-spark-text-muted focus:ring-0 resize-none font-mono text-sm border outline-hidden transition-all rounded-xl border-spark-border focus:border-spark-primary"
+              className={`${FIELD_BASE_CLASS} h-full px-4 py-3 resize-none font-mono text-sm outline-hidden`}
               disabled={isLoading}
               data-testid="payment-input"
             />
