@@ -621,16 +621,6 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
           className="pb-2 flex flex-col items-center gap-4 overflow-y-auto overscroll-y-none touch-pan-y min-h-0"
           style={{ maxHeight: isSheetFull ? '85dvh' : '60dvh' }}
         >
-          {/* Where the picker step left it, so the route is the one thing that
-              does not move between the two. */}
-          <CrossChainRouteChip
-            readOnly
-            chain={selectedRoute.chain}
-            asset={resultAssetName}
-            provider={getProviderDisplayName(selectedRoute.provider)}
-            data-testid="cross-chain-receive-route-summary"
-          />
-
           {/* Names who pays it, because the card below carries two other
               figures and an unlabelled hero would be a third. Copies the bare
               number, at the precision the QR carries rather than the cent the
@@ -651,6 +641,17 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                 : <CopyIcon size="sm" className="text-spark-text-muted group-hover:text-spark-text-secondary transition-colors" />}
             </button>
           </div>
+
+          {/* Under the amount it was quoted for and above the address it
+              qualifies. The same box the picker step shows, so the route is
+              the one thing that does not change between the two. */}
+          <CrossChainRouteChip
+            readOnly
+            chain={selectedRoute.chain}
+            asset={resultAssetName}
+            provider={getProviderDisplayName(selectedRoute.provider)}
+            data-testid="cross-chain-receive-route-summary"
+          />
 
           {/* Its own block, not a row in the ledger below: the address and the
               code are the one thing the sender is handed, so the code unfolds
