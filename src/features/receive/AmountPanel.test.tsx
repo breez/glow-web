@@ -21,6 +21,7 @@ async function renderAmountPanel(client?: BreezSdk) {
             isOpen
             amountSats={null}
             setAmountSats={setAmountSats}
+            setAmountDisplay={vi.fn()}
             description=""
             setDescription={vi.fn()}
             isLoading={false}
