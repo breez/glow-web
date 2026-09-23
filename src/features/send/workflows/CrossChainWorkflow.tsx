@@ -10,6 +10,7 @@ import { useSheetBack, useSheetOwnsScroll } from '../../../components/ui/sheets/
 import { SpinnerIcon } from '../../../components/Icons';
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
 import { CrossChainAssetStep } from '../../../components/crossChain/CrossChainAssetStep';
+import { CrossChainRouteChip } from '../../../components/crossChain/CrossChainRouteChip';
 import { CrossChainChainStep } from '../../../components/crossChain/CrossChainChainStep';
 import { useWallet } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
@@ -456,8 +457,6 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
             </p>
           </div>
 
-          {/* Same rows, same order as the receive request: the card describes
-              the far side of the route either way round. */}
           {/* The address sits where the invoice does on a Lightning send: it
               came from somewhere else, and this is the screen where it is
               worth checking before the money goes. */}
@@ -469,23 +468,28 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
             />
           </div>
 
-          {/* The card is a ledger in the destination's own asset, since the
-              fee is quoted there and cannot be added to a sat figure:
+          {/* Under the address it qualifies: the same chip the picker step
+              showed, stating the route the money takes to get there. */}
+          <div className="mb-4">
+            <CrossChainRouteChip
+              readOnly
+              chain={confirmedRoute.chain}
+              asset={assetDisplayName(confirmedRoute.asset)}
+              provider={getProviderDisplayName(confirmedRoute.provider)}
+              data-testid="cross-chain-send-route-summary"
+            />
+          </div>
+
+          {/* A ledger in the destination's own asset, since the fee is quoted
+              there and cannot be added to a sat figure. The three close:
               `feeAmount` is exactly `assetAmountIn - estimatedOut`. */}
           <FeeBreakdownCard
             useRawStrings
             items={[
               {
-                label: 'Network',
-                value: `${formatChainName(confirmedRoute.chain)}`,
-              },
-              {
-                label: 'Asset',
-                value: assetDisplayName(confirmedRoute.asset),
-              },
-              {
-                label: 'Provider',
-                value: getProviderDisplayName(confirmedRoute.provider),
+                label: 'Amount',
+                value: groupUsd(formatCrossChainAmount(BigInt(quote.assetAmountIn), confirmedRoute.decimals)),
+                unit: assetDisplayName(confirmedRoute.asset),
               },
               {
                 label: 'Fee',
