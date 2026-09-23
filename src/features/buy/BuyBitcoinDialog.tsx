@@ -152,14 +152,15 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                     className={`${AMOUNT_FIELD_CLASS} pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                     data-testid="cashapp-amount-input"
                   />
-                  {buy.isStableBalanceActive && buy.tokenConfig && (
-                    <CurrencySwitcher
-                      isTokenMode={buy.isTokenMode}
-                      tokenSymbol={buy.tokenConfig.symbol}
-                      onSwitch={buy.toggleDenomination}
-                      disabled={buy.isGenerating}
-                    />
-                  )}
+                  {/* Always named, never absent: without a stable balance there
+                      is nothing to switch to, and the greyed control says that
+                      better than an empty corner does. */}
+                  <CurrencySwitcher
+                    isTokenMode={buy.isTokenMode}
+                    tokenSymbol={buy.tokenConfig?.symbol ?? ''}
+                    onSwitch={buy.toggleDenomination}
+                    disabled={buy.isGenerating || !buy.isStableBalanceActive || !buy.tokenConfig}
+                  />
                 </div>
               </div>
 

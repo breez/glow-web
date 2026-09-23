@@ -283,8 +283,10 @@ export const CopyableRow: React.FC<{
       });
   };
 
+  // p-4, like every card it is ever stacked with: at p-3 its label sat 4px
+  // inside theirs.
   return (
-    <div className="p-3 bg-spark-dark border border-spark-border rounded-xl">
+    <div className="p-4 bg-spark-dark border border-spark-border rounded-xl">
       <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-xs text-spark-text-muted mb-0.5">{label}</p>
