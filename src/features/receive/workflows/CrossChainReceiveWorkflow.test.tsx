@@ -244,3 +244,91 @@ describe('USD receive amount', () => {
     expect(screen.getByTestId('cross-chain-receive-continue')).toBeEnabled();
   });
 });
+
+describe('USD receive when the routes do not arrive', () => {
+  beforeEach(() => localStorage.clear());
+  // The backoff is jumped rather than waited out, and react-modal-sheet's own
+  // 50ms open poll is why the clock still has to run on its own.
+
+  // Three attempts, spaced by the workflow's backoff, before it gives up.
+  const exhaustRetries = async (client: BreezSdk) => {
+    await waitFor(() => expect(client.getCrossChainRoutes).toHaveBeenCalledTimes(1));
+    for (const calls of [2, 3]) {
+      await vi.advanceTimersByTimeAsync(6_000);
+      await waitFor(() => expect(client.getCrossChainRoutes).toHaveBeenCalledTimes(calls));
+    }
+  };
+
+  it('retries, then says so rather than spinning at a fetch that ended', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const client = withCrossChainReceive([]);
+      client.getCrossChainRoutes = vi.fn().mockRejectedValue(new Error('offline'));
+      await openUsdTab(client);
+      await exhaustRetries(client);
+
+      const chip = await screen.findByTestId('cross-chain-receive-route-chip');
+      expect(chip).toHaveTextContent('Networks unavailable');
+      expect(chip).not.toHaveTextContent('Loading networks');
+      // Tappable, because it is the way back: the CTA below it is not.
+      expect(chip).toBeEnabled();
+      expect(screen.getByText('Could not load the networks. Please try again.')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('holds the CTA shut while there is no network to send to', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const client = withCrossChainReceive([]);
+      client.getCrossChainRoutes = vi.fn().mockRejectedValue(new Error('offline'));
+      await openUsdTab(client);
+      await exhaustRetries(client);
+
+      fireEvent.change(screen.getByTestId('cross-chain-receive-amount-input'), { target: { value: '50' } });
+      expect(screen.getByTestId('cross-chain-receive-continue')).toBeDisabled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('recovers on a tap once the routes come back', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      // Remembered, so the recovered chip has a name to go back to. The failed
+      // state hides it meanwhile: nothing has confirmed the route still runs.
+      setLastUsdReceiveRoute({ asset: 'USDC', chain: 'base' });
+      const client = withCrossChainReceive([]);
+      client.getCrossChainRoutes = vi.fn().mockRejectedValue(new Error('offline'));
+      await openUsdTab(client);
+      await exhaustRetries(client);
+      expect(screen.getByTestId('cross-chain-receive-route-chip')).toHaveTextContent('Networks unavailable');
+
+      client.getCrossChainRoutes = vi.fn().mockResolvedValue([usdcOn('base')]);
+      fireEvent.click(screen.getByTestId('cross-chain-receive-route-chip'));
+
+      await waitFor(() =>
+        expect(screen.getByTestId('cross-chain-receive-route-chip')).toHaveTextContent('USDC on Base'));
+      expect(screen.queryByText('Could not load the networks. Please try again.')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // An empty list is the same dead end as a refused request, and used to leave
+  // the chip spinning at a fetch that had returned.
+  it('treats an empty route list as a failure', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const client = withCrossChainReceive([]);
+      await openUsdTab(client);
+      await exhaustRetries(client);
+
+      expect(await screen.findByTestId('cross-chain-receive-route-chip'))
+        .toHaveTextContent('Networks unavailable');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

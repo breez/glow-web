@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import type {
   CrossChainReceiveInfo,
   CrossChainRoutePair,
@@ -53,6 +53,14 @@ const QUICK_USD_AMOUNTS = [10, 50, 200];
  *  passes only the ticker, so 6 is what this assumes (breez/spark-sdk#1160). */
 const CROSS_CHAIN_FEE_DECIMALS = 6;
 
+/** How long to wait before each retry of the route fetch. Its length is how
+ *  many retries the chip makes before it stops and offers the tap. */
+const ROUTE_RETRY_DELAYS_MS = [2_000, 6_000];
+
+/** One sentence for every way the route list fails to arrive: an empty list
+ *  leaves the flow with nothing to send to, same as a refused request. */
+const CROSS_CHAIN_ROUTES_ERROR = 'Could not load the networks. Please try again.';
+
 interface CrossChainReceiveWorkflowProps {
   /** Whether the USD tab is the one on screen. The workflow stays mounted
    *  either way, so a stray tap on BTC cannot throw away a quote, but it
@@ -73,6 +81,10 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   const [step, setStep] = useState<WorkflowStep>('amount');
   const [usdInput, setUsdInput] = useState('');
   const [routes, setRoutes] = useState<CrossChainRoutePair[]>([]);
+  // The route fetch has run out of attempts. Distinct from an empty `routes`,
+  // which is also how a fetch still in flight looks.
+  const [routesFailed, setRoutesFailed] = useState(false);
+  const [routeAttempt, setRouteAttempt] = useState(0);
   // Seeded from what was remembered, which is readable now rather than a
   // fetch away: the chip names the network on the first frame and the route
   // fetch only confirms it.
@@ -192,17 +204,25 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   // The chip needs the routes before the amount is typed: it names the network
   // the request will use, and a remembered one only counts while the provider
   // still serves it. Held until the tab is opened, since the workflow is mounted
-  // for the whole life of the sheet now. A failure here stays quiet, since
-  // Continue re-fetches and is where the user finds out.
-  const routesRequested = useRef(false);
+  // for the whole life of the sheet now.
+  //
+  // It retries on its own before saying anything, because a chip with no route
+  // opens no picker: without the retry the only way out is the CTA, which is
+  // disabled for the same reason.
   useEffect(() => {
-    if (!active || routesRequested.current) return;
-    routesRequested.current = true;
+    if (!active || routes.length > 0) return;
     let cancelled = false;
-    loadRoutes()
-      .then(fetched => {
-        if (cancelled || fetched.length === 0) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const attempt = async (n: number) => {
+      try {
+        const fetched = await loadRoutes();
+        if (cancelled) return;
+        // An empty list is a failure like any other here: it leaves the flow
+        // with nothing to send to, which is what `fetchRoutes` also reports.
+        if (fetched.length === 0) throw new Error('No cross-chain routes available');
         setRoutes(fetched);
+        setRoutesFailed(false);
         if (!remembered) return;
         const lookup = buildGroupLookup(fetched);
         const still = fetched.some(r =>
@@ -213,10 +233,31 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
           setSelectedAsset(null);
           setSelectedChain(null);
         }
-      })
-      .catch(err => logger.warn(LogCategory.PAYMENT, 'Failed to prefetch cross-chain receive routes', { error: formatError(err) }));
-    return () => { cancelled = true; };
-  }, [active, loadRoutes, remembered]);
+      } catch (err) {
+        if (cancelled) return;
+        logger.warn(LogCategory.PAYMENT, 'Failed to prefetch cross-chain receive routes', {
+          error: formatError(err),
+          attempt: n + 1,
+        });
+        if (n < ROUTE_RETRY_DELAYS_MS.length) {
+          timer = setTimeout(() => void attempt(n + 1), ROUTE_RETRY_DELAYS_MS[n]);
+          return;
+        }
+        setRoutesFailed(true);
+        setError(CROSS_CHAIN_ROUTES_ERROR);
+      }
+    };
+
+    void attempt(0);
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+  }, [active, routeAttempt, routes.length, loadRoutes, remembered]);
+
+  // Takes the chip out of its failed state so the spinner reads true again.
+  const retryRoutes = () => {
+    setError(null);
+    setRoutesFailed(false);
+    setRouteAttempt(n => n + 1);
+  };
 
   const fetchRoutes = useCallback(async () => {
     setStep('loading');
@@ -224,7 +265,8 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
     try {
       const fetched = await loadRoutes();
       if (fetched.length === 0) {
-        setError('No cross-chain routes available right now');
+        setError(CROSS_CHAIN_ROUTES_ERROR);
+        setRoutesFailed(true);
         setStep('amount');
         return;
       }
@@ -237,7 +279,8 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
       }
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to fetch cross-chain receive routes', { error: formatError(err) });
-      setError(`Failed to fetch routes: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(CROSS_CHAIN_ROUTES_ERROR);
+      setRoutesFailed(true);
       setStep('amount');
     }
   }, [loadRoutes, selectAsset]);
@@ -458,8 +501,9 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                 chain={chipRoute?.chain ?? selectedChain}
                 asset={selectedAsset}
                 loading={routes.length === 0}
-                onClick={() => openPicker('amount')}
-                disabled={routes.length === 0}
+                failed={routesFailed}
+                onClick={() => (routesFailed ? retryRoutes() : openPicker('amount'))}
+                disabled={routes.length === 0 && !routesFailed}
                 data-testid="cross-chain-receive-route-chip"
               />
             </div>
@@ -519,7 +563,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
 
           <div className="space-y-4 pt-6">
             <FormError error={error} />
-            <PrimaryButton onClick={handleContinue} className="w-full" disabled={!canContinue} data-testid="cross-chain-receive-continue">
+            <PrimaryButton onClick={handleContinue} className="w-full" disabled={!canContinue || routesFailed} data-testid="cross-chain-receive-continue">
               Continue
             </PrimaryButton>
           </div>

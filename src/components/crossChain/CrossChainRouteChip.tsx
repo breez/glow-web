@@ -1,6 +1,6 @@
 import React from 'react';
 import CryptoIcon from '../CryptoIcon';
-import { ChevronDownIcon, SpinnerIcon } from '../Icons';
+import { ChevronDownIcon, RefreshIcon, SpinnerIcon } from '../Icons';
 import { formatChainName } from '../../utils/crossChainFormat';
 
 interface CrossChainRouteChipProps {
@@ -10,6 +10,9 @@ interface CrossChainRouteChipProps {
   asset: string | null;
   /** Routes are still arriving and nothing is remembered to show meanwhile. */
   loading?: boolean;
+  /** The route fetch gave up. Tapping retries instead of opening the picker,
+   *  and a remembered name is not shown: nothing has confirmed it still runs. */
+  failed?: boolean;
   onClick: () => void;
   disabled?: boolean;
   'data-testid'?: string;
@@ -22,6 +25,7 @@ export const CrossChainRouteChip: React.FC<CrossChainRouteChipProps> = ({
   chain,
   asset,
   loading = false,
+  failed = false,
   onClick,
   disabled = false,
   'data-testid': testId,
@@ -39,7 +43,9 @@ export const CrossChainRouteChip: React.FC<CrossChainRouteChipProps> = ({
       className="w-full p-3 min-h-[58px] rounded-2xl border bg-spark-dark border-spark-border hover:border-spark-border-light transition-all flex items-center justify-between disabled:opacity-60"
       data-testid={testId}
   >
-      {chain && asset ? (
+      {failed ? (
+        <span className="font-display font-medium text-spark-text-secondary">Networks unavailable</span>
+      ) : chain && asset ? (
         <span className="flex items-center gap-2.5">
           <CryptoIcon chain={chain} size={32} />
           <span className="font-display font-medium text-spark-text-primary">
@@ -56,7 +62,9 @@ export const CrossChainRouteChip: React.FC<CrossChainRouteChipProps> = ({
       ) : (
         <span className="font-display font-medium text-spark-text-secondary">Select network</span>
       )}
-      <ChevronDownIcon size="sm" className="text-spark-primary" />
+      {failed
+        ? <RefreshIcon size="sm" className="text-spark-primary" />
+        : <ChevronDownIcon size="sm" className="text-spark-primary" />}
     </button>
   </div>
 );
