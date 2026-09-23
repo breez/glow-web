@@ -8,6 +8,7 @@ import {
   AMOUNT_FIELD_CLASS,
   PrimaryButton,
   QRCodeContainer,
+  CopyableText,
   FormError,
 } from '../../../components/ui';
 import { SpinnerIcon, CopyIcon, CheckIcon } from '../../../components/Icons';
@@ -32,7 +33,7 @@ import {
   landsInThisWallet,
   sparkSideLimits,
 } from '../../../utils/crossChainRoutes';
-import { formatChainName, formatReceiveAmount, formatCrossChainAmount, formatUsdCents, parseCrossChainAmount, truncateAddress } from '../../../utils/crossChainFormat';
+import { formatChainName, formatReceiveAmount, formatCrossChainAmount, formatUsdCents, parseCrossChainAmount } from '../../../utils/crossChainFormat';
 import { copyToClipboard } from '../../../utils/clipboard';
 import { normalizeDecimalInput } from '../../../utils/decimalInput';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
@@ -99,7 +100,6 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   const [pendingChain, setPendingChain] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
   const [amountCopied, setAmountCopied] = useState(false);
-  const [addressCopied, setAddressCopied] = useState(false);
   // Where the picker hands back to. Reached from Continue it carries straight
   // on into the order, as it did when it was a step of the flow; reached from
   // the chip it is a detour, so it returns to the amount.
@@ -320,7 +320,6 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
     setReceiveResult(null);
     setSelectedRoute(null);
     setAmountCopied(false);
-    setAddressCopied(false);
     setStep('amount');
   };
 
@@ -426,39 +425,12 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   // EIP-681 URI so scanners auto-fill the amount; falls back to the URI if the
   // SDK omitted the structured info.
   const resultDepositAddress = resultInfo?.depositAddress ?? receiveResult?.paymentRequest ?? '';
-  const copyDepositAddress = () => {
-    void copyToClipboard(resultDepositAddress);
-    setAddressCopied(true);
-    setTimeout(() => setAddressCopied(false), 2000);
-    showToast('success', 'Address copied');
-  };
   const copyDepositAmount = () => {
     void copyToClipboard(resultDepositAmount);
     setAmountCopied(true);
     setTimeout(() => setAmountCopied(false), 2000);
     showToast('success', 'Amount copied');
   };
-
-  // A row in the breakdown rather than a block of its own: the code above is
-  // what the sender scans, and this is the bare address a withdrawal form
-  // wants. EVM puts the amount in the URI; Solana and Tron give back a bare
-  // address, so there the two match.
-  const depositAddressValue = (
-    <span className="flex items-center gap-1">
-      <span className="truncate" title={resultDepositAddress} data-testid="cross-chain-deposit-address">
-        {truncateAddress(resultDepositAddress, 16)}
-      </span>
-      <button
-        onClick={copyDepositAddress}
-        aria-label="Copy deposit address"
-        className="shrink-0 p-1.5 -my-1.5 rounded-md hover:bg-white/5 transition-colors"
-      >
-        {addressCopied
-          ? <CheckIcon size="sm" className="text-spark-success" />
-          : <CopyIcon size="sm" className="text-spark-text-secondary" />}
-      </button>
-    </span>
-  );
 
   if (!active) return null;
 
@@ -632,6 +604,16 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
           className="pb-2 flex flex-col items-center gap-4 overflow-y-auto overscroll-y-none touch-pan-y min-h-0"
           style={{ maxHeight: isSheetFull ? '85dvh' : '60dvh' }}
         >
+          {/* Where the picker step left it, so the route is the one thing that
+              does not move between the two. */}
+          <CrossChainRouteChip
+            readOnly
+            chain={selectedRoute.chain}
+            asset={resultAssetName}
+            provider={getProviderDisplayName(selectedRoute.provider)}
+            data-testid="cross-chain-receive-route-summary"
+          />
+
           {/* Names who pays it, because the card below carries two other
               figures and an unlabelled hero would be a third. Copies the bare
               number, at the precision the QR carries rather than the cent the
@@ -655,27 +637,27 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
 
           {depositQr}
 
+          {/* Under the code and copyable in one tap, the way the BTC tab shows
+              an address: it is the bare one a withdrawal form wants, where the
+              code carries the amount as well. */}
+          <CopyableText
+            text={resultDepositAddress}
+            truncate
+            showShare
+            label="Deposit Address"
+            onCopied={() => showToast('success', 'Address copied')}
+            onShareError={() => showToast('error', 'Failed to share')}
+            data-testid="cross-chain-deposit-address"
+          />
+
           {resultInfo && (
             <FeeBreakdownCard
               useRawStrings
               className="w-full"
-              // Leads the card rather than taking a row each for the network,
-              // the asset and the provider: it is what the rows below are
-              // about, and it is stated rather than chosen.
-              header={
-                <CrossChainRouteChip
-                  readOnly
-                  chain={selectedRoute.chain}
-                  asset={resultAssetName}
-                  provider={getProviderDisplayName(selectedRoute.provider)}
-                  data-testid="cross-chain-receive-route-summary"
-                />
-              }
               // No row for what was typed: the hero states what to ask for at
               // the precision that matters, and a fourth figure here reads as
               // the first addend of a sum it is not part of.
               items={[
-                { label: 'Address', node: depositAddressValue },
                 ...(resultFee
                   ? [{
                       label: 'Fees',

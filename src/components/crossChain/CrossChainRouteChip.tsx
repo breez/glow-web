@@ -69,27 +69,25 @@ export const CrossChainRouteChip: React.FC<CrossChainRouteChipProps> = ({
     <span className="font-display font-medium text-spark-text-secondary">Select network</span>
   );
 
-  // Stated, not chosen: it sits as a card's top row, so it drops the border and
-  // background that would otherwise say "tappable" inside one, and carries the
-  // provider under the route the way a payment row carries its detail. Keeping
-  // the route to one line is what the subtitle buys: on one line together, the
-  // longest chain name wrapped.
-  // A row in a card, so it takes a payment row's proportions rather than the
-  // picker chip's: the 40px mark matches the two lines beside it, where the
-  // picker's 32px is sized to the one line it shows.
+  // Stated, not chosen: the same box the picker step shows, in the same place,
+  // so the route is the one thing that does not move between the two. What it
+  // drops is the chevron, which is the whole of the affordance, and the
+  // provider, which goes under the route rather than along it.
   if (readOnly) {
     return (
-      <div className="flex items-center gap-3" data-testid={testId}>
+      <div className={CHIP_CLASS} data-testid={testId}>
         {chain && asset ? (
-          <>
-            <CryptoIcon chain={chain} size={40} />
-            <div className="min-w-0">
-              <p className="text-[15px] font-medium text-spark-text-primary truncate">
+          <span className="flex items-center gap-2.5 min-w-0">
+            <CryptoIcon chain={chain} size={32} />
+            <span className="min-w-0">
+              <span className="block font-display font-medium text-spark-text-primary truncate">
                 {asset} on {formatChainName(chain)}
-              </p>
-              {provider && <p className="text-xs text-spark-text-muted mt-0.5">via {provider}</p>}
-            </div>
-          </>
+              </span>
+              {provider && (
+                <span className="block text-xs text-spark-text-muted mt-0.5">via {provider}</span>
+              )}
+            </span>
+          </span>
         ) : body}
       </div>
     );
