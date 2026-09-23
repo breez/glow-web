@@ -232,7 +232,6 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
 
           <FormError error={amountTooLarge ? 'Invalid amount' : error} data-testid="invoice-error-message" />
 
-          {/* Generate Button */}
           <PrimaryButton
             onClick={async () => {
               // Dismiss the keyboard before kicking off the network
@@ -244,9 +243,9 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
             type="submit"
             disabled={isLoading || !validAmount}
             className="w-full"
-            data-testid="generate-invoice-button"
+            data-testid="create-invoice-button"
           >
-            {isLoading ? <LoadingSpinner size="small" /> : 'Generate Invoice'}
+            {isLoading ? <LoadingSpinner size="small" /> : 'Create Invoice'}
           </PrimaryButton>
         </div>
       </BottomSheetCard>

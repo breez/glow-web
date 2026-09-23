@@ -259,7 +259,7 @@ export async function generateLightningInvoice(
     await amountInput.waitFor({ state: 'visible', timeout: TIMEOUTS.UI_ACTION });
     await amountInput.fill(amountSats.toString());
 
-    await page.getByTestId('generate-invoice-button').click();
+    await page.getByTestId('create-invoice-button').click();
 
     // Wait for invoice to appear
     const invoiceWrapper = page.locator('[data-testid="lightning-invoice-text"]').first();
