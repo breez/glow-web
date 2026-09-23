@@ -393,7 +393,6 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
 
   const resultInfo = receiveResult?.crossChainInfo;
   const resultAssetName = selectedRoute ? assetDisplayName(selectedRoute.asset) : '';
-  const resultChainName = selectedRoute ? formatChainName(selectedRoute.chain) : '';
   // The amount the sender transfers. `resultDepositUsd` is the rounded $X.XX
   // display; `resultDepositAmount` (bare, full precision) is what the copy button
   // and the QR/EIP-681 carry for the sender to pay — e.g. shows "$1.06" but the
@@ -654,10 +653,12 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
           className="pb-2 flex flex-col items-center gap-4 overflow-y-auto overscroll-y-none touch-pan-y min-h-0"
           style={{ maxHeight: isSheetFull ? '85dvh' : '60dvh' }}
         >
-          {/* The deposit, as an instruction to pass on: the label names who pays
-              it, the way the exit's funding step does. Copies the bare number. */}
+          {/* Names who pays it, because the card below carries two other
+              figures and an unlabelled hero would be a third. Copies the bare
+              number, at the precision the QR carries rather than the cent the
+              screen shows. */}
           <div className="text-center">
-            <p className="text-spark-text-muted text-sm mb-2">Ask the sender for</p>
+            <p className="text-spark-text-muted text-sm mb-2">Sender pays</p>
             <button
               onClick={copyDepositAmount}
               className="inline-flex items-center gap-2 group"
@@ -673,34 +674,44 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
             </button>
           </div>
 
-          {/* Same rows, same order as the send confirm: the card describes the
-              far side of the route either way round. */}
+          {/* The route as one line rather than a row each for the network, the
+              asset and the provider: it is stated, not chosen, so it needs no
+              label and no chevron. */}
+          <CrossChainRouteChip
+            readOnly
+            chain={selectedRoute.chain}
+            asset={resultAssetName}
+            provider={getProviderDisplayName(selectedRoute.provider)}
+            data-testid="cross-chain-receive-route-summary"
+          />
+
           {resultInfo && (
-            <FeeBreakdownCard
-              useRawStrings
-              className="w-full"
-              items={[
-                { label: 'Network', value: resultChainName },
-                { label: 'Asset', value: resultAssetName },
-                { label: 'Provider', value: getProviderDisplayName(selectedRoute.provider) },
-                {
-                  label: 'Address',
-                  node: depositAddressValue,
-                  expansion: depositQr,
-                },
-                // With the fee and what lands: the three figures answer each
-                // other, and the route above them is a different question.
-                { label: 'You asked for', value: `$${groupUsd(usdInput)}` },
-                ...(resultFee
-                  ? [{
-                      label: 'Fees',
-                      value: resultFee,
-                      unit: resultInfo.serviceFeeAsset ? assetDisplayName(resultInfo.serviceFeeAsset) : undefined,
-                    }]
-                  : []),
-                { label: 'You receive', value: `~${formatReceived(resultInfo)}`, highlight: true },
-              ]}
-            />
+            <>
+              {/* Where the money goes. */}
+              <FeeBreakdownCard
+                useRawStrings
+                className="w-full"
+                items={[{ label: 'Address', node: depositAddressValue, expansion: depositQr }]}
+              />
+
+              {/* What it comes to: the three figures answer each other, and the
+                  route above them is a different question. */}
+              <FeeBreakdownCard
+                useRawStrings
+                className="w-full"
+                items={[
+                  { label: 'You asked for', value: `$${groupUsd(usdInput)}` },
+                  ...(resultFee
+                    ? [{
+                        label: 'Fees',
+                        value: resultFee,
+                        unit: resultInfo.serviceFeeAsset ? assetDisplayName(resultInfo.serviceFeeAsset) : undefined,
+                      }]
+                    : []),
+                  { label: 'You receive', value: `~${formatReceived(resultInfo)}`, highlight: true },
+                ]}
+              />
+            </>
           )}
 
 

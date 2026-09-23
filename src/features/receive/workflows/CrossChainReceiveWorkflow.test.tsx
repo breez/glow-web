@@ -75,10 +75,10 @@ describe('USD receive deposit address', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await screen.findByTestId('cross-chain-deposit-address');
 
-    // The deposit reads as an instruction, and the breakdown carries the route
-    // and what lands, in the same rows the send confirm uses.
-    expect(screen.getByText('Ask the sender for')).toBeInTheDocument();
-    expect(screen.getByText('Solana')).toBeInTheDocument();
+    // The deposit reads as an instruction, the route is one stated line, and
+    // the figures answer each other in a card of their own.
+    expect(screen.getByText('Sender pays')).toBeInTheDocument();
+    expect(screen.getByTestId('cross-chain-receive-route-summary')).toHaveTextContent('USDC on Solana');
     expect(screen.getByText('0.01')).toBeInTheDocument();
     expect(screen.getByText('~₿12 298')).toBeInTheDocument();
 
