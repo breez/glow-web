@@ -261,8 +261,11 @@ export const CopyableRow: React.FC<{
   label: string;
   value: string;
   display?: string;
+  /** Sits before the copy button, for a control the row's value also answers
+   *  to: a code to unfold, say. */
+  actions?: ReactNode;
   'data-testid'?: string;
-}> = ({ label, value, display, 'data-testid': testId }) => {
+}> = ({ label, value, display, actions, 'data-testid': testId }) => {
   const [copied, setCopied] = React.useState(false);
   const handleCopy = () => {
     copyToClipboard(value)
@@ -285,6 +288,7 @@ export const CopyableRow: React.FC<{
           {display ?? value}
         </p>
       </div>
+      {actions}
       <button
         onClick={handleCopy}
         className="shrink-0 p-1.5 rounded-md hover:bg-white/5 transition-colors"

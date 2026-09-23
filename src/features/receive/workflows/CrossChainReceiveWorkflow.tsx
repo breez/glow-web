@@ -8,10 +8,10 @@ import {
   AMOUNT_FIELD_CLASS,
   PrimaryButton,
   QRCodeContainer,
-  CopyableText,
+  CopyableRow,
   FormError,
 } from '../../../components/ui';
-import { SpinnerIcon, CopyIcon, CheckIcon } from '../../../components/Icons';
+import { SpinnerIcon, CopyIcon, CheckIcon, QrCodeIcon } from '../../../components/Icons';
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
 import { CrossChainRouteChip } from '../../../components/crossChain/CrossChainRouteChip';
@@ -33,7 +33,7 @@ import {
   landsInThisWallet,
   sparkSideLimits,
 } from '../../../utils/crossChainRoutes';
-import { formatChainName, formatReceiveAmount, formatCrossChainAmount, formatUsdCents, parseCrossChainAmount } from '../../../utils/crossChainFormat';
+import { formatChainName, formatReceiveAmount, formatCrossChainAmount, formatUsdCents, parseCrossChainAmount, truncateAddress } from '../../../utils/crossChainFormat';
 import { copyToClipboard } from '../../../utils/clipboard';
 import { normalizeDecimalInput } from '../../../utils/decimalInput';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
@@ -100,6 +100,10 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   const [pendingChain, setPendingChain] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
   const [amountCopied, setAmountCopied] = useState(false);
+  // Open by default: on EVM the code carries the amount and the pasted address
+  // does not, so it is the only artifact holding the whole request. Still
+  // collapsible, for a sender who only wants the address.
+  const [showDepositQr, setShowDepositQr] = useState(true);
   // Where the picker hands back to. Reached from Continue it carries straight
   // on into the order, as it did when it was a step of the flow; reached from
   // the chip it is a detour, so it returns to the amount.
@@ -320,6 +324,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
     setReceiveResult(null);
     setSelectedRoute(null);
     setAmountCopied(false);
+    setShowDepositQr(true);
     setStep('amount');
   };
 
@@ -400,11 +405,25 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   // Outside the card and at the size the BTC tab uses: it is what the sender
   // scans, and inside a card it was a third of the width narrower. The brackets
   // come back with it, having been off only because the card already framed it.
+  // Stays mounted and opens on grid rows, which resolve to the code's own
+  // height: a max-height transition would need a guessed ceiling, and easing
+  // against one is what makes a disclosure look like it snaps. The padding
+  // lives on the inner wrapper so the closed state has no height at all.
   const depositQr = receiveResult ? (
-    // The brackets hang 12px outside the code, so the block reserves that much
-    // again: without it they sit almost on the card's edge.
-    <div className="py-2" data-testid="cross-chain-deposit-qr">
-      <QRCodeContainer value={receiveResult.paymentRequest} />
+    <div
+      className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
+        showDepositQr ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+      }`}
+      aria-hidden={!showDepositQr}
+      data-testid="cross-chain-deposit-qr"
+    >
+      <div className="overflow-hidden">
+        {/* The brackets hang 12px outside the code and the wrapper above clips
+            for the animation, so the padding has to clear them. */}
+        <div className="flex justify-center pt-6 pb-4">
+          <QRCodeContainer value={receiveResult.paymentRequest} />
+        </div>
+      </div>
     </div>
   ) : null;
   // Parsed at the fee asset's scale, which is not the route's: a BSC route at
@@ -635,29 +654,43 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
             </button>
           </div>
 
-          {depositQr}
-
-          {/* Under the code and copyable in one tap, the way the BTC tab shows
-              an address: it is the bare one a withdrawal form wants, where the
-              code carries the amount as well. */}
-          <CopyableText
-            text={resultDepositAddress}
-            truncate
-            showShare
-            label="Deposit Address"
-            onCopied={() => showToast('success', 'Address copied')}
-            onShareError={() => showToast('error', 'Failed to share')}
-            data-testid="cross-chain-deposit-address"
-          />
+          {/* Its own block, not a row in the ledger below: the address and the
+              code are the one thing the sender is given, and the code folds
+              under the row it belongs to. */}
+          <div className="w-full">
+            <CopyableRow
+              label="To address"
+              value={resultDepositAddress}
+              display={truncateAddress(resultDepositAddress, 20)}
+              actions={
+                <button
+                  onClick={() => setShowDepositQr(open => !open)}
+                  aria-expanded={showDepositQr}
+                  aria-label={showDepositQr ? 'Hide deposit address QR code' : 'Show deposit address QR code'}
+                  className="shrink-0 p-1.5 rounded-md hover:bg-white/5 transition-colors"
+                >
+                  <QrCodeIcon size="sm" className="text-spark-text-secondary" />
+                </button>
+              }
+              data-testid="cross-chain-deposit-address"
+            />
+            {depositQr}
+          </div>
 
           {resultInfo && (
             <FeeBreakdownCard
               useRawStrings
               className="w-full"
-              // No row for what was typed: the hero states what to ask for at
-              // the precision that matters, and a fourth figure here reads as
-              // the first addend of a sum it is not part of.
+              // Amount, fee and what lands, so the three answer each other the
+              // way the send confirm's do. The amount is the deposit, in the
+              // asset the fee is quoted in; what was typed is not a row, the
+              // hero having stated it.
               items={[
+                {
+                  label: 'Amount',
+                  value: groupUsd(formatReceiveAmount(BigInt(resultInfo.depositAmount), selectedRoute.decimals)),
+                  unit: assetDisplayName(selectedRoute.asset),
+                },
                 ...(resultFee
                   ? [{
                       label: 'Fees',
