@@ -76,7 +76,10 @@ export const CrossChainRouteChip: React.FC<CrossChainRouteChipProps> = ({
   // longest chain name wrapped.
   if (readOnly) {
     return (
-      <div className="flex items-center gap-2.5" data-testid={testId}>
+      // Same height and same leading edge as the chip the picker step shows,
+      // so the one the user chose from and the one stating what they chose are
+      // the same object between steps rather than two that nearly match.
+      <div className="flex items-center gap-2.5 min-h-[58px]" data-testid={testId}>
         {chain && asset ? (
           <>
             <CryptoIcon chain={chain} size={32} />
