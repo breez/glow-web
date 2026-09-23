@@ -559,10 +559,14 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
               })}
             </div>
 
+            {/* Under what it is about rather than over the CTA: it answers
+                for the amount and the network above it, and the step padding
+                below keeps it off the button. */}
+            <FormError error={error} className="mt-4" />
+
           </div>
 
           <div className="space-y-4 pt-6">
-            <FormError error={error} />
             <PrimaryButton onClick={handleContinue} className="w-full" disabled={!canContinue || routesFailed} data-testid="cross-chain-receive-continue">
               Continue
             </PrimaryButton>

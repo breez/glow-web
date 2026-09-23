@@ -144,12 +144,16 @@ export const FormTextarea: React.FC<FormTextareaProps> = ({
   />
 );
 
+/** Owns no outer spacing: most callers sit in a container that already spaces
+ *  its children, where a margin of its own double-counts. One directly under a
+ *  field passes `mt-2`. */
 export const FormError: React.FC<{
   error: string | null;
-}> = ({ error }) => {
+  className?: string;
+}> = ({ error, className = '' }) => {
   if (!error) return null;
   return (
-    <div className="flex items-center gap-2 text-spark-primary text-sm mt-2">
+    <div className={`flex items-center gap-2 text-spark-primary text-sm ${className}`}>
       <ErrorIcon className="shrink-0" />
       <span className="text-spark-primary-light">{error}</span>
     </div>

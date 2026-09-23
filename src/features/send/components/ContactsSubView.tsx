@@ -317,7 +317,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
               disabled={isSaving}
             />
           </div>
-          <FormError error={formError} />
+          <FormError error={formError} className="mt-2" />
         </div>
 
         {/* Action buttons pinned to the bottom of the form area via

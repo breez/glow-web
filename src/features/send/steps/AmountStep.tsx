@@ -298,7 +298,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
           )}
         </div>
         )}
-        <FormError error={inlineBalanceError || localError || error} />
+        <FormError error={inlineBalanceError || localError || error} className="mt-2" />
     </div>
   );
 

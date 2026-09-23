@@ -83,7 +83,7 @@ const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
               />
-              <FormError error={error} />
+              <FormError error={error} className="mt-2" />
             </div>
 
             <PrimaryButton

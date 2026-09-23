@@ -209,7 +209,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
           the same inline shape every other form uses for a bad value. */}
       {error && (
         <div data-testid="send-error-banner">
-          <FormError error={error} />
+          <FormError error={error} className="mt-2" />
         </div>
       )}
       </div>
