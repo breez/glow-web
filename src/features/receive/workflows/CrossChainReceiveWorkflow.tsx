@@ -402,7 +402,9 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   // scans, and inside a card it was a third of the width narrower. The brackets
   // come back with it, having been off only because the card already framed it.
   const depositQr = receiveResult ? (
-    <div data-testid="cross-chain-deposit-qr">
+    // The brackets hang 12px outside the code, so the block reserves that much
+    // again: without it they sit almost on the card's edge.
+    <div className="py-2" data-testid="cross-chain-deposit-qr">
       <QRCodeContainer value={receiveResult.paymentRequest} />
     </div>
   ) : null;

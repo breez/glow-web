@@ -74,15 +74,15 @@ export const CrossChainRouteChip: React.FC<CrossChainRouteChipProps> = ({
   // provider under the route the way a payment row carries its detail. Keeping
   // the route to one line is what the subtitle buys: on one line together, the
   // longest chain name wrapped.
+  // A row in a card, so it takes a payment row's proportions rather than the
+  // picker chip's: the 40px mark matches the two lines beside it, where the
+  // picker's 32px is sized to the one line it shows.
   if (readOnly) {
     return (
-      // Same height and same leading edge as the chip the picker step shows,
-      // so the one the user chose from and the one stating what they chose are
-      // the same object between steps rather than two that nearly match.
-      <div className="flex items-center gap-2.5 min-h-[58px]" data-testid={testId}>
+      <div className="flex items-center gap-3" data-testid={testId}>
         {chain && asset ? (
           <>
-            <CryptoIcon chain={chain} size={32} />
+            <CryptoIcon chain={chain} size={40} />
             <div className="min-w-0">
               <p className="text-[15px] font-medium text-spark-text-primary truncate">
                 {asset} on {formatChainName(chain)}
