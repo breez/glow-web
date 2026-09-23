@@ -17,8 +17,9 @@ import {
 
 import type { PaymentMethod } from '../../types/domain';
 import { useLightningAddress } from './hooks/useLightningAddress';
-import { useReceivePayment } from './hooks/useReceivePayment';
+import { useReceivePayment, type InvoiceAmount } from './hooks/useReceivePayment';
 import { formatWithSpaces } from '../../utils/formatNumber';
+import { SatAmount } from '../../components/SatAmount';
 import SparkAddressDisplay from './SparkAddressDisplay';
 import BitcoinAddressDisplay from './BitcoinAddressDisplay';
 import LightningAddressDisplay from './LightningAddressDisplay';
@@ -48,20 +49,30 @@ interface ReceivePaymentDialogProps {
 interface QRCodeDisplayProps {
   paymentData: string;
   feeSats: number;
-  title: string;
-  description?: string;
+  /** What the invoice asks for. Absent only if it was made without one. */
+  amount: InvoiceAmount | null;
 }
 
-const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, title, description }) => {
+/** A created invoice: what it is for, then the code and the string itself.
+ *  The figure leads in the unit it was typed in, with the sats under it when
+ *  that was a fiat or stable one, since the invoice is denominated in sats. */
+const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, amount }) => {
   const { showToast } = useToast();
   return (
-    <div className="pt-8 space-y-6 flex flex-col items-center">
-      <div className="text-center">
-        <h3 className="text-lg font-medium text-[rgb(var(--text-white))] mb-2">{title}</h3>
-        {description && (
-          <p className="text-[rgb(var(--text-white))] opacity-75 text-sm">{description}</p>
-        )}
-      </div>
+    <div className="pt-4 space-y-6 flex flex-col items-center">
+      {amount && (
+        <div className="text-center">
+          <p className="text-spark-text-muted text-sm mb-2">Scan to pay</p>
+          <span className="text-3xl font-mono font-bold text-spark-text-primary">
+            {amount.display ?? <SatAmount sats={amount.sats} />}
+          </span>
+          {amount.display && (
+            <p className="text-sm text-spark-text-secondary mt-1 font-mono">
+              <SatAmount sats={amount.sats} />
+            </p>
+          )}
+        </div>
+      )}
 
       <QRCodeContainer value={paymentData} />
 
@@ -307,15 +318,6 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     }
   };
 
-  const getQRDescription = () => {
-    switch (receive.activeTab) {
-      case 'lightning': return 'Scan to pay this Lightning invoice';
-      case 'spark': return 'Use this address to receive payments';
-      case 'bitcoin': return 'Send Bitcoin to this address for automatic Lightning conversion';
-      default: return '';
-    }
-  };
-
   return (
     <>
       <BottomSheetContainer isOpen={isOpen} onClose={onClose} showBackdrop>
@@ -378,8 +380,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
                       <QRCodeDisplay
                         paymentData={receive.paymentData}
                         feeSats={receive.feeSats}
-                        title={getQRTitle()}
-                        description={getQRDescription()}
+                        amount={receive.invoiceAmount}
                       />
                     )}
                   </>
@@ -433,6 +434,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
         isOpen={isOpen && receive.activeTab === 'lightning' && receive.showAmountPanel}
         amountSats={receive.amountSats}
         setAmountSats={receive.setAmountSats}
+        setAmountDisplay={receive.setAmountDisplay}
         description={receive.description}
         setDescription={receive.setDescription}
         isLoading={receive.isLoading}
