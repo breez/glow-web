@@ -277,7 +277,9 @@ export const CopyableRow: React.FC<{
   };
 
   return (
-    <div className="flex items-center gap-2 p-3 bg-spark-dark border border-spark-border rounded-xl">
+    // Sized and rounded like every card it is ever stacked with: at p-3 its label
+    // sat 4px inside theirs, and at rounded-xl its corners were tighter.
+    <div className="flex items-center gap-2 p-4 bg-spark-dark border border-spark-border rounded-2xl">
       <div className="min-w-0 flex-1">
         <p className="text-xs text-spark-text-muted mb-0.5">{label}</p>
         <p className="text-sm font-mono text-spark-text-secondary truncate" title={value} data-testid={testId}>
