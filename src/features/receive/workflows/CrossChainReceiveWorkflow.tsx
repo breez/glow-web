@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import type {
   CrossChainReceiveInfo,
   CrossChainRoutePair,
@@ -40,7 +40,16 @@ type WorkflowStep = 'amount' | 'loading' | 'asset' | 'chain' | 'provider' | 'gen
 
 const QUICK_USD_AMOUNTS = [10, 50, 200];
 
-const CrossChainReceiveWorkflow: React.FC = () => {
+interface CrossChainReceiveWorkflowProps {
+  /** Whether the USD tab is the one on screen. Kept mounted while it is not,
+   *  so a trip to BTC and back does not discard a typed amount or a quote. */
+  active: boolean;
+  /** True while the flow is still on its amount form, which is where the tabs
+   *  still belong. */
+  onRestingChange?: (resting: boolean) => void;
+}
+
+const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ active, onRestingChange }) => {
   const wallet = useWallet();
   const stableBalance = useStableBalance();
   const { showToast } = useToast();
@@ -62,7 +71,9 @@ const CrossChainReceiveWorkflow: React.FC = () => {
 
   // The provider and result steps cap and scroll themselves, same as the
   // asset / chain steps do from inside their own components.
-  useSheetOwnsScroll(step === 'provider' || step === 'result');
+  useSheetOwnsScroll(active && (step === 'provider' || step === 'result'));
+
+  useEffect(() => { onRestingChange?.(step === 'amount'); }, [step, onRestingChange]);
 
   const { uniqueAssets, chainGroupKey, getChainsForAsset } = useCrossChainRouteGroups(routes);
   const chainsForAsset = selectedAsset ? getChainsForAsset(selectedAsset) : [];
@@ -259,6 +270,8 @@ const CrossChainReceiveWorkflow: React.FC = () => {
   // short step is not padded out to the tallest one. `pt-6` is the step padding
   // the other receive tabs use. The selection lists cap themselves against the
   // viewport (see CrossChainAssetStep) rather than against this container.
+  if (!active) return null;
+
   return (
     <div className="pt-6">
       {/* Step 1: Amount */}

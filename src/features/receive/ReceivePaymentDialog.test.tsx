@@ -39,3 +39,24 @@ describe('a created invoice', () => {
     expect(screen.queryByText('Scan to pay this Lightning invoice')).toBeNull();
   });
 });
+
+describe('receive tabs', () => {
+  it('takes the tabs away once an invoice exists, and gives a way back', async () => {
+    await openDialog();
+
+    expect(await screen.findByTestId('btc-tab')).toBeInTheDocument();
+    fireEvent.click(await screen.findByTestId('show-amount-panel-button'));
+    fireEvent.change(await screen.findByTestId('invoice-amount-input'), { target: { value: '5000' } });
+    fireEvent.click(screen.getByTestId('generate-invoice-button'));
+
+    await screen.findByTestId('lightning-invoice-text');
+    expect(screen.queryByTestId('btc-tab')).toBeNull();
+    expect(screen.queryByTestId('usd-tab')).toBeNull();
+
+    // `useSheetBack` registers through an effect, so the arrow lands a render late.
+    fireEvent.click(await screen.findByRole('button', { name: 'Back' }));
+
+    expect(await screen.findByTestId('show-amount-panel-button')).toBeInTheDocument();
+    expect(screen.getByTestId('btc-tab')).toBeInTheDocument();
+  });
+});
