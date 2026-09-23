@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PageLayout from '../components/layout/PageLayout';
-import { PrimaryButton } from '../components/ui';
+import { PrimaryButton, FIELD_BASE_CLASS } from '../components/ui';
 import { SimpleAlert } from '../components/AlertCard';
 import { WebSecurityNotice } from '../components/WebSecurityNotice';
 import { useScreenCaptureProtection } from '@/utils/screenSecurity';
@@ -69,7 +69,7 @@ const RestorePage: React.FC<RestorePageProps> = ({
           <textarea
             value={mnemonic}
             onChange={(e) => setMnemonic(e.target.value)}
-            className="w-full h-36 px-4 py-3 text-spark-text-primary bg-spark-dark border border-spark-border rounded-xl focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 resize-none font-mono text-sm"
+            className={`${FIELD_BASE_CLASS} h-36 px-4 py-3 resize-none font-mono text-sm`}
             placeholder="word1 word2 word3 ..."
             // A mobile keyboard otherwise sentence-cases and autocorrects
             // BIP39 words into something the SDK rejects.

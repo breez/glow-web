@@ -43,6 +43,8 @@ export {
   FormInput,
   FormTextarea,
   FormError,
+  AMOUNT_FIELD_CLASS,
+  FIELD_BASE_CLASS,
   FormHint,
 } from './forms';
 export type { FormInputProps, FormTextareaProps } from './forms';

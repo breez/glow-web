@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { SimpleAlert } from '../../../components/AlertCard';
-import { PrimaryButton } from '../../../components/ui';
+import { PrimaryButton, FIELD_BASE_CLASS } from '../../../components/ui';
 import ContactAutocomplete from '../components/ContactAutocomplete';
 import { useContactsContext } from '../../../contexts/ContactsContext';
 import { searchContacts } from '../../../hooks/useContacts';
@@ -160,7 +160,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
               autoCorrect="off"
               spellCheck={false}
               placeholder='lnbc... / bc1... / sp1... / user@domain.com / contact / USDC or USDT address'
-              className="w-full h-full p-4 bg-spark-dark text-spark-text-primary placeholder-spark-text-muted focus:ring-0 resize-none font-mono text-sm border outline-hidden transition-all rounded-xl border-spark-border focus:border-spark-primary"
+              className={`${FIELD_BASE_CLASS} h-full p-4 resize-none font-mono text-sm outline-hidden`}
               disabled={isLoading}
               data-testid="payment-input"
             />

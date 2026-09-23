@@ -59,6 +59,23 @@ export interface FormInputProps {
   inputRef?: React.Ref<HTMLInputElement>;
 }
 
+/**
+ * Every field's shape, padding aside: `FIELD_BASE_CLASS` for one that sets its
+ * own height (a search row, a two-line destination), `AMOUNT_FIELD_CLASS` for
+ * the box a `p-4` around a single line of base text measures. Every screen that
+ * asks for an amount writes its own element, because they differ in the tag,
+ * the adornment and the font, so what they must agree on is held here. The
+ * focus state is the accent rather than electric, which elsewhere means an
+ * outgoing payment: a state has no business borrowing a colour that already
+ * says something else. `block` is load-bearing: an inline field leaves a
+ * descender's worth of line box under it, which makes its wrapper taller than
+ * itself and throws an adornment centred against that wrapper off by a few
+ * pixels.
+ */
+export const FIELD_BASE_CLASS = 'block w-full bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all';
+
+export const AMOUNT_FIELD_CLASS = `${FIELD_BASE_CLASS} p-4`;
+
 export const FormInput: React.FC<FormInputProps> = ({
   id,
   type = "text",
@@ -95,7 +112,7 @@ export const FormInput: React.FC<FormInputProps> = ({
     autoComplete={autoComplete}
     spellCheck={spellCheck}
     autoFocus={autoFocus}
-    className={`w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-0 transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+    className={`${AMOUNT_FIELD_CLASS} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
     placeholder={placeholder}
     min={min}
     max={max}

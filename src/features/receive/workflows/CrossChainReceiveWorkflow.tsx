@@ -9,6 +9,7 @@ import {
   QRCodeContainer,
   CopyableText,
   FormError,
+  AMOUNT_FIELD_CLASS,
 } from '../../../components/ui';
 import { SpinnerIcon, CopyIcon, CheckIcon } from '../../../components/Icons';
 import { CrossChainAssetStep } from '../../../components/crossChain/CrossChainAssetStep';
@@ -292,7 +293,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                 }
               }}
               placeholder="Enter amount in USD"
-              className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all"
+              className={AMOUNT_FIELD_CLASS}
               data-testid="cross-chain-receive-amount-input"
             />
 

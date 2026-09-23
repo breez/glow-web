@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { LnurlWithdrawRequestDetails, LnurlWithdrawResponse } from '@breeztech/breez-sdk-spark';
-import { FormError, PrimaryButton } from '../../../components/ui';
+import { FormError, PrimaryButton, AMOUNT_FIELD_CLASS } from '../../../components/ui';
 import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardContext';
 import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
@@ -130,7 +130,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
             value={amount}
             onChange={(e) => { setAmount(e.target.value); setError(null); }}
             placeholder={`Between ${formatWithSpaces(minSats)} and ${formatWithSpaces(maxSats)} sats`}
-            className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-primary placeholder-spark-text-muted focus:border-spark-electric focus:ring-2 focus:ring-spark-electric/20 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className={`${AMOUNT_FIELD_CLASS} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
             min={minSats}
             max={maxSats}
           />

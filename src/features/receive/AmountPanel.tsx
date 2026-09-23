@@ -6,6 +6,7 @@ import {
   BottomSheetContainer,
   BottomSheetCard,
   DialogHeader,
+  AMOUNT_FIELD_CLASS,
 } from '../../components/ui';
 import { LightningBoltIcon } from '../../components/Icons';
 import { fixedQuickAmounts, formatQuickAmount, formatTokenInput } from '../../utils/tokenFormatting';
@@ -174,7 +175,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                 placeholder={isTokenMode ? '0.00' : '0'}
                 disabled={isLoading}
                 rows={1}
-                className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 pr-16 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus-within:border-spark-primary focus:outline-hidden transition-all resize-none"
+                className={`${AMOUNT_FIELD_CLASS} resize-none pr-16 font-mono`}
                 data-testid="invoice-amount-input"
               />
               {tokenSymbol && (
@@ -235,7 +236,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
               placeholder="What's this for?"
               disabled={isLoading}
               rows={1}
-              className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:outline-hidden transition-all resize-none"
+              className={`${AMOUNT_FIELD_CLASS} resize-none`}
             />
           </div>
 
