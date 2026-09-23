@@ -59,6 +59,8 @@ export interface UseReceivePaymentReturn {
   // available as an escape hatch for the SDK-error-recovery path
   // where the amount must survive the panel closing and reopening.
   closeAmountPanel: () => void;
+  /** Leaves a created invoice for the address view; the invoice stays payable. */
+  dismissInvoice: () => void;
   handleTabChange: (tab: PaymentMethod, loadLightningAddress: () => void) => void;
   generateBitcoinAddress: () => Promise<void>;
   generateBolt11Invoice: () => Promise<void>;
@@ -232,6 +234,20 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     }
   }, [wallet, amountSats, amountDisplay, description, showAmountPanel]);
 
+  // Back from a created invoice to the address view. The invoice itself stays
+  // valid and payable: nothing here revokes it, it just leaves the screen.
+  // Clears the amount so the next trip through the panel starts empty.
+  const dismissInvoice = useCallback(() => {
+    setCurrentStep('input');
+    setPaymentData('');
+    setFeeSats(0);
+    setError(null);
+    setAmountSats(null);
+    setDescription('');
+    setInvoiceAmount(null);
+    setResetCount((c) => c + 1);
+  }, []);
+
   const handleTabChange = useCallback((tab: PaymentMethod, loadLightningAddress: () => void) => {
     setActiveTab(tab);
     setCurrentStep('input');
@@ -271,6 +287,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
     setAmountDisplay,
     setShowAmountPanel,
     closeAmountPanel,
+    dismissInvoice,
     handleTabChange,
     generateBitcoinAddress,
     generateBolt11Invoice,
