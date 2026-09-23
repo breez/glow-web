@@ -75,7 +75,7 @@ const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
               </p>
             </div>
 
-            <div>
+            <div className="space-y-2">
               <FormInput
                 id="staging-password"
                 type="password"
