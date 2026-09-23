@@ -10,7 +10,7 @@ import {
   QRCodeContainer,
   FormError,
 } from '../../../components/ui';
-import { SpinnerIcon, CopyIcon, CheckIcon, QrCodeIcon } from '../../../components/Icons';
+import { SpinnerIcon, CopyIcon, CheckIcon } from '../../../components/Icons';
 import { FeeBreakdownCard } from '../../../components/FeeBreakdownCard';
 import CurrencySwitcher from '../../../components/ui/CurrencySwitcher';
 import { CrossChainRouteChip } from '../../../components/crossChain/CrossChainRouteChip';
@@ -100,10 +100,6 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
   const [amountCopied, setAmountCopied] = useState(false);
   const [addressCopied, setAddressCopied] = useState(false);
-  // Open by default: on EVM the code carries the amount and the pasted address
-  // does not, so it is the only artifact holding the whole request. Still
-  // collapsible, for a sender who only wants the address.
-  const [showDepositQr, setShowDepositQr] = useState(true);
   // Where the picker hands back to. Reached from Continue it carries straight
   // on into the order, as it did when it was a step of the flow; reached from
   // the chip it is a detour, so it returns to the amount.
@@ -325,7 +321,6 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
     setSelectedRoute(null);
     setAmountCopied(false);
     setAddressCopied(false);
-    setShowDepositQr(true);
     setStep('amount');
   };
 
@@ -403,22 +398,12 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   const resultDepositUsd = selectedRoute && resultInfo
     ? `$${groupUsd(formatReceiveAmount(BigInt(resultInfo.depositAmount), selectedRoute.decimals))}`
     : `$${groupUsd(usdInput)}`;
-  // Stays mounted and opens on grid rows, which resolve to the code's own
-  // height: a max-height transition would need a guessed ceiling, and easing
-  // against one is what makes a disclosure look like it snaps. The padding
-  // lives on the inner wrapper so the closed state has no height at all.
+  // Outside the card and at the size the BTC tab uses: it is what the sender
+  // scans, and inside a card it was a third of the width narrower. The brackets
+  // come back with it, having been off only because the card already framed it.
   const depositQr = receiveResult ? (
-    <div
-      className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
-        showDepositQr ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-      }`}
-      aria-hidden={!showDepositQr}
-    >
-      <div className="overflow-hidden">
-        <div className="flex justify-center pt-5 pb-3">
-          <QRCodeContainer value={receiveResult.paymentRequest} size={148} corners={false} />
-        </div>
-      </div>
+    <div data-testid="cross-chain-deposit-qr">
+      <QRCodeContainer value={receiveResult.paymentRequest} />
     </div>
   ) : null;
   // Parsed at the fee asset's scale, which is not the route's: a BSC route at
@@ -452,23 +437,15 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
     showToast('success', 'Amount copied');
   };
 
-  // The address carries its own controls, so it is a row in the breakdown
-  // rather than a block of its own: the code is what the sender scans, the
-  // copy is the bare address a withdrawal form wants. EVM puts the amount in
-  // the URI; Solana and Tron give back a bare address, so there they match.
+  // A row in the breakdown rather than a block of its own: the code above is
+  // what the sender scans, and this is the bare address a withdrawal form
+  // wants. EVM puts the amount in the URI; Solana and Tron give back a bare
+  // address, so there the two match.
   const depositAddressValue = (
     <span className="flex items-center gap-1">
       <span className="truncate" title={resultDepositAddress} data-testid="cross-chain-deposit-address">
         {truncateAddress(resultDepositAddress, 16)}
       </span>
-      <button
-        onClick={() => setShowDepositQr(open => !open)}
-        aria-expanded={showDepositQr}
-        aria-label={showDepositQr ? 'Hide deposit address QR code' : 'Show deposit address QR code'}
-        className="shrink-0 p-1.5 -my-1.5 rounded-md hover:bg-white/5 transition-colors"
-      >
-        <QrCodeIcon size="sm" className="text-spark-text-secondary" />
-      </button>
       <button
         onClick={copyDepositAddress}
         aria-label="Copy deposit address"
@@ -674,6 +651,8 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
             </button>
           </div>
 
+          {depositQr}
+
           {resultInfo && (
             <FeeBreakdownCard
               useRawStrings
@@ -690,9 +669,11 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                   data-testid="cross-chain-receive-route-summary"
                 />
               }
+              // No row for what was typed: the hero states what to ask for at
+              // the precision that matters, and a fourth figure here reads as
+              // the first addend of a sum it is not part of.
               items={[
-                { label: 'Address', node: depositAddressValue, expansion: depositQr },
-                { label: 'You asked for', value: `$${groupUsd(usdInput)}` },
+                { label: 'Address', node: depositAddressValue },
                 ...(resultFee
                   ? [{
                       label: 'Fees',

@@ -82,12 +82,10 @@ describe('USD receive deposit address', () => {
     expect(screen.getByText('0.01')).toBeInTheDocument();
     expect(screen.getByText('~₿12 298')).toBeInTheDocument();
 
-    // The code leads: on EVM it is the only artifact carrying the amount. It
-    // still folds away for a sender who only wants the address.
-    const qrToggle = screen.getByRole('button', { name: 'Hide deposit address QR code' });
-    expect(qrToggle).toHaveAttribute('aria-expanded', 'true');
-    fireEvent.click(qrToggle);
-    expect(screen.getByRole('button', { name: 'Show deposit address QR code' })).toHaveAttribute('aria-expanded', 'false');
+    // The code stands outside the card, at the width the BTC tab gives it, so
+    // there is nothing left to fold away.
+    expect(screen.getByTestId('cross-chain-deposit-qr')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /deposit address QR code/ })).toBeNull();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Back' }));
 
@@ -125,8 +123,8 @@ describe('USD receive deposit address', () => {
 
     expect(screen.getByText('$50.68')).toBeInTheDocument();
     expect(screen.getByText('0.05')).toBeInTheDocument();
-    // Dollars group with commas, and the ticker sits outside the figure.
-    expect(screen.getByText('$50.43')).toBeInTheDocument();
+    // What was typed is not a row: the hero already states what to ask for.
+    expect(screen.queryByText('You asked for')).toBeNull();
     // A fee under a cent states a bound rather than rounding away to nothing.
     expect(screen.queryByText('0.00')).toBeNull();
   });
