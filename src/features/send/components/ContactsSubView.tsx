@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import type { Contact } from '@breeztech/breez-sdk-spark';
 import { useContactsContext } from '../../../contexts/ContactsContext';
 import { isValidLightningAddress, searchContacts } from '../../../hooks/useContacts';
-import { FormInput, FormError, PrimaryButton, ConfirmDialog } from '../../../components/ui';
+import { FormInput, FormError, PrimaryButton, ConfirmDialog, AMOUNT_FIELD_CLASS, FIELD_BASE_CLASS } from '../../../components/ui';
 import { BackIcon, PlusIcon, EditPencilIcon, TrashIcon, ContactsIcon, SearchIcon, CloseIcon } from '../../../components/Icons';
 import { useWallet } from '../../../contexts/WalletContext';
 import { dismissKeyboard } from '../../../utils/keyboard';
@@ -158,7 +158,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
             autoComplete="off"
             spellCheck={false}
             placeholder="Search contacts..."
-            className="w-full bg-spark-dark border border-spark-border rounded-xl pl-9 pr-9 py-2.5 text-sm text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-0 transition-all"
+            className={`${FIELD_BASE_CLASS} pl-9 pr-9 py-2.5 text-sm`}
           />
           {searchQuery && (
             <button
@@ -286,7 +286,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
-              className="w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`${AMOUNT_FIELD_CLASS} disabled:opacity-50 disabled:cursor-not-allowed`}
             />
           </div>
           <div>
