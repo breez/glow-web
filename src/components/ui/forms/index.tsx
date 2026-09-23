@@ -18,7 +18,7 @@ export const FormLabel: React.FC<{
   htmlFor: string;
   children: ReactNode;
 }> = ({ htmlFor, children }) => (
-  <label htmlFor={htmlFor} className="block text-sm font-medium text-spark-text-secondary mb-1">
+  <label htmlFor={htmlFor} className="block text-sm font-medium text-spark-text-primary mb-1">
     {children}
   </label>
 );
