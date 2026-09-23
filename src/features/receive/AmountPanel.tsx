@@ -144,7 +144,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
         {/* Amount Input */}
         <div className="space-y-4">
           <div>
-            <label className="block text-spark-text-secondary text-sm font-medium mb-2">
+            <label className="block text-sm font-medium text-spark-text-primary mb-2">
               Amount
             </label>
             <div className="relative">
@@ -205,7 +205,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
 
           {/* Description */}
           <div>
-            <label className="block text-spark-text-secondary text-sm font-medium mb-2">Description (optional)</label>
+            <label className="block text-sm font-medium text-spark-text-primary mb-2">Description (optional)</label>
             <textarea
               ref={descriptionInputRef}
               enterKeyHint="done"
