@@ -450,6 +450,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
           )}
 
+          {/* Dev mode only: this is what you reach for if Spark stops operating,
+              not a feature, and starting one moves the whole balance on-chain
+              at the cost of mining fees. An exit already running stays on the
+              transaction list either way, so nothing in flight is stranded by
+              turning dev mode back off. */}
+          {isDevMode && (
           <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
             <h3 className="font-display font-semibold text-spark-text-primary mb-1">Unilateral Exit</h3>
             <p className="text-sm text-spark-text-muted mb-3">
@@ -475,6 +481,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               Use this only if Spark stops operating. This is a last-resort action.
             </p>
           </div>
+          )}
 
           {/* Account deletion (App Store 5.1.1(v)): opens the guide
               explaining how to delete the account (logout wipes the
