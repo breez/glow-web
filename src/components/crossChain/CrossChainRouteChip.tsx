@@ -40,7 +40,12 @@ export const CrossChainRouteChip: React.FC<CrossChainRouteChipProps> = ({
       // rather than to the list rows it opens. The height is held because only
       // the named state carries a 32px icon, and the field below would shift
       // when the routes land.
-      className="w-full p-3 min-h-[58px] rounded-2xl border bg-spark-dark border-spark-border hover:border-spark-border-light transition-all flex items-center justify-between disabled:opacity-60"
+      //
+      // Padding is asymmetric so the two rows line up: `pl-4` puts the leading
+      // item on the amount field's text, and `pr-5` carries the trailing glyph
+      // in by the currency pill's own padding, which is what the eye reads it
+      // against.
+      className="w-full py-3 pl-4 pr-5 min-h-[58px] rounded-2xl border bg-spark-dark border-spark-border hover:border-spark-border-light transition-all flex items-center justify-between disabled:opacity-60"
       data-testid={testId}
   >
       {failed ? (
