@@ -29,6 +29,8 @@ interface UnlockPageProps {
   error: string | null;
   onUnlock: () => Promise<void>;
   onAbandon: () => Promise<void>;
+  /** The lock came from a refused passkey rather than a failed start. */
+  passkeyRefused?: boolean;
 }
 
 const UnlockPage: React.FC<UnlockPageProps> = ({
@@ -36,6 +38,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
   error,
   onUnlock,
   onAbandon,
+  passkeyRefused = false,
 }) => {
   // Web hosts use passkey terminology; native uses biometric.
   const isWebPasskey = !secureStorage.isSupported();
@@ -65,15 +68,23 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
     };
   }, [isWebPasskey]);
 
-  const unlockLabel = isWebPasskey
+  // A refused passkey gets the passkey wording on every host. Without
+  // it the device-only tier falls to copy written for the other way in
+  // here, a failed silent reconnect, and tells the user the app could
+  // not start when it started fine and the passkey did not answer.
+  const isPasskeyUnlock = isWebPasskey || passkeyRefused;
+  const unlockLabel = isPasskeyUnlock
     ? 'Unlock with passkey'
     : !isBiometricTier ? 'Try Again'
       : biometry ? `Unlock with ${biometry.label}` : 'Unlock';
-  const unlockDescription = isWebPasskey
-    ? 'Glow is locked. Unlock with your passkey to continue.'
+  // No line for the passkey: the button under it already says to unlock
+  // with the passkey, and the error card above it says why this screen
+  // is here at all.
+  const unlockDescription = isPasskeyUnlock
+    ? null
     : !isBiometricTier ? 'Glow could not start up. Please try again.'
       : 'Glow is locked. Unlock with your biometric to continue.';
-  const UnlockIcon = isWebPasskey
+  const UnlockIcon = isPasskeyUnlock
     ? PasskeyIcon
     : biometry?.kind === 'face' ? FaceIdIcon : FingerprintIcon;
 
@@ -91,14 +102,19 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
             <h1 className="font-display text-2xl font-bold text-spark-text-primary">
               Welcome back
             </h1>
-            <p className="text-sm text-spark-text-secondary text-center">
-              {unlockDescription}
-            </p>
+            {unlockDescription && (
+              <p className="text-sm text-spark-text-secondary text-center">
+                {unlockDescription}
+              </p>
+            )}
           </div>
 
           {/* Error banner */}
           {error && (
-            <AlertCard variant="error" title={isBiometricTier ? 'Unlock failed' : 'Could not start'}>
+            <AlertCard
+              variant="error"
+              title={isBiometricTier || isPasskeyUnlock ? 'Unlock failed' : 'Could not start'}
+            >
               {error}
             </AlertCard>
           )}
@@ -109,7 +125,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
               disabled={isLoading}
               className="w-full flex items-center justify-center gap-2"
             >
-              {isBiometricTier && <UnlockIcon size="md" />}
+              {(isBiometricTier || isPasskeyUnlock) && <UnlockIcon size="md" />}
               {unlockLabel}
             </PrimaryButton>
 
