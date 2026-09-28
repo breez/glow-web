@@ -142,7 +142,7 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
         setFailure({ message: `Could not ${action.doing} ${domain}. ${FRESH_CODE}` });
       } else if (await hostAnswers(parsed.url)) {
         setFailure({
-          message: `Could not read the reply from ${domain}. Check the site if you've ${action.done}.`,
+          message: `Could not read the reply from ${domain}. Check the site to see if you've ${action.done}.`,
           missingCors: true,
         });
       } else {

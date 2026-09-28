@@ -55,7 +55,7 @@ describe('LnurlAuthWorkflow', () => {
     const onAuth = vi.fn().mockRejectedValue(new Error(NETWORK_ERROR));
     await logIn(onAuth, onClose);
     expect(await screen.findByText(
-      "Could not read the reply from stacker.news. Check the site if you've logged in.",
+      "Could not read the reply from stacker.news. Check the site to see if you've logged in.",
     )).toBeInTheDocument();
     expect(probe).toHaveBeenCalledWith('https://stacker.news', expect.objectContaining({ mode: 'no-cors' }));
 
@@ -85,7 +85,7 @@ describe('LnurlAuthWorkflow', () => {
     vi.stubGlobal('crossOriginIsolated', true);
     await logIn(() => Promise.reject(new Error(NETWORK_ERROR)));
     expect(await screen.findByText(
-      "Could not read the reply from stacker.news. Check the site if you've logged in.",
+      "Could not read the reply from stacker.news. Check the site to see if you've logged in.",
     )).toBeInTheDocument();
     expect(probe).not.toHaveBeenCalled();
   });
