@@ -3,6 +3,7 @@ import { DialogContainer, DialogCard } from './ui';
 import { SpinnerIcon } from './Icons';
 import { formatTokenAmount, type TokenDisplayConfig } from '../utils/tokenFormatting';
 import type { ConversionEstimate } from '@breeztech/breez-sdk-spark';
+import { useTranslation } from 'react-i18next';
 
 interface StableBalanceFeeConfirmProps {
   isOpen: boolean;
@@ -29,12 +30,13 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const { t } = useTranslation(['critical', 'common']);
   if (!isOpen) return null;
 
-  const title = direction === 'toToken' ? 'Convert to USD' : 'Convert to BTC';
+  const title = direction === 'toToken' ? t('stableBalance.convertToUsd') : t('stableBalance.convertToBtc');
   const description = direction === 'toToken'
-    ? 'Your BTC balance will be converted to USD.'
-    : 'Your USD balance will be converted back to BTC.';
+    ? t('stableBalance.toUsd')
+    : t('stableBalance.toBtc');
 
   const feeText = conversionEstimate && displayConfig
     ? formatTokenAmount(conversionEstimate.fee, displayConfig, { fullPrecision: true })
@@ -59,7 +61,7 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
 
           {!isEstimating && feeText && (
             <p className="text-sm text-spark-text-secondary mb-4">
-              Conversion fee: <span className="font-mono text-spark-text-primary">{feeText}</span>
+              {t('stableBalance.conversionFee')} <span className="font-mono text-spark-text-primary">{feeText}</span>
             </p>
           )}
 
@@ -71,7 +73,7 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
 
           {!isEstimating && !feeText && !error && !info && (
             <p className="text-sm text-spark-text-muted mb-4">
-              Couldn't estimate fee
+              {t('stableBalance.feeUnavailable')}
             </p>
           )}
 
@@ -85,7 +87,7 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
               disabled={isExecuting}
               className="flex-1 py-2.5 rounded-xl font-display font-semibold text-sm border border-spark-border text-spark-text-secondary hover:bg-white/5 transition-colors disabled:opacity-50"
             >
-              Cancel
+              {t('common:actions.cancel')}
             </button>
             <button
               onClick={onConfirm}
@@ -97,7 +99,7 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
                   <SpinnerIcon size="md" />
                 </span>
               ) : (
-                'Confirm'
+                t('common:actions.confirm')
               )}
             </button>
           </div>

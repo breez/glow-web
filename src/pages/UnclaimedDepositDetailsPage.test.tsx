@@ -6,7 +6,7 @@ import { WalletProvider } from '@/contexts/WalletContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
 import { saveSettings } from '@/services/settings';
-import { CLAIM_SUBMITTED_LINE } from '@/utils/depositClaimQuote';
+import { claimSubmittedLine } from '@/utils/depositClaimQuote';
 import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import UnclaimedDepositDetailsPage from './UnclaimedDepositDetailsPage';
 
@@ -495,7 +495,7 @@ describe('a confirming deposit with both routes on offer', () => {
 
     await turnOnInstant();
     fireEvent.click(button('Claim'));
-    await screen.findByText(CLAIM_SUBMITTED_LINE);
+    await screen.findByText(claimSubmittedLine());
     expect(screen.queryByText(/in progress/)).toBeNull();
   });
 
@@ -843,7 +843,7 @@ describe('a claim already in flight', () => {
     // Reopened mid-settlement: no quote is fetched, so this can only come from
     // the receipt written when the claim was sent.
     await renderSheet(submitted, withQuote(quote()));
-    expect(screen.getByText(CLAIM_SUBMITTED_LINE)).toBeInTheDocument();
+    expect(screen.getByText(claimSubmittedLine())).toBeInTheDocument();
     expect(screen.getByText('Delivery fee').parentElement).toHaveTextContent('3 200');
     expect(screen.getByText('You receive').parentElement).toHaveTextContent('96 800');
   });
@@ -855,7 +855,7 @@ describe('a claim already in flight', () => {
     const client = withQuote(quote());
     await renderSheet(inFlight(), client);
 
-    expect(screen.getByText(CLAIM_SUBMITTED_LINE)).toBeInTheDocument();
+    expect(screen.getByText(claimSubmittedLine())).toBeInTheDocument();
     expect(queryButton('Claim')).toBeNull();
     expect(queryInstantRow()).toBeNull();
     // No point pricing a deposit whose claim is already settling.
@@ -874,14 +874,14 @@ describe('a claim already in flight', () => {
     stream.emitSynced();
 
     // The quote is still loaded: only the in-flight status hides the choice.
-    await screen.findByText(CLAIM_SUBMITTED_LINE);
+    await screen.findByText(claimSubmittedLine());
     expect(queryInstantRow()).toBeNull();
     expect(queryButton(/^Claim/)).toBeNull();
   });
 
   it('still reports it once the deposit confirms, the SDK skipping it either way', async () => {
     await renderSheet(inFlight(true), withQuote(quote()));
-    expect(screen.getByText(CLAIM_SUBMITTED_LINE)).toBeInTheDocument();
+    expect(screen.getByText(claimSubmittedLine())).toBeInTheDocument();
     expect(screen.queryByText(/claimed automatically/)).not.toBeInTheDocument();
   });
 });
@@ -1006,7 +1006,7 @@ describe('committing a route that has not unlocked', () => {
     await waitFor(() => expect(button('Claim')).toBeDisabled());
     // Read as submitted, the sheet would stand down over a deposit still
     // waiting and report a claim that never happened.
-    expect(screen.queryByText(CLAIM_SUBMITTED_LINE)).toBeNull();
+    expect(screen.queryByText(claimSubmittedLine())).toBeNull();
     expect(await findInstantRow()).toBeInTheDocument();
   });
 

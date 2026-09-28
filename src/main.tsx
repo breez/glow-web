@@ -15,6 +15,8 @@ import { startDeepLinks } from '@/utils/deepLink';
 import { logStartupDeviceInfo } from '@/utils/deviceInfo';
 import { startSdkInit } from '@/services/sdkReady';
 import { prfAvailability } from '@/services/passkeyService';
+import { initI18n, warmupSample } from '@/services/i18n';
+import i18n from 'i18next';
 
 // Strip the SDK's script-set User-Agent before the SDK (or anything else)
 // issues a request. stripUserAgentFetch.ts explains why it is still needed.
@@ -208,18 +210,11 @@ initWebViewportManager();
  * it, so the fonts are in flight and `fonts.ready` waits for them. The race is
  * a safety bound: a font that never resolves must not strand the splash
  * forever. The fonts are local, so in practice this resolves in tens of ms.
+ *
+ * One weight per family is enough: these are variable faces spanning 200-800,
+ * so every weight the UI asks for resolves to the same file.
  */
-const BUNDLED_FACES = [
-  '300 1rem "Plus Jakarta Sans"',
-  '400 1rem "Plus Jakarta Sans"',
-  '500 1rem "Plus Jakarta Sans"',
-  '600 1rem "Plus Jakarta Sans"',
-  '700 1rem "Plus Jakarta Sans"',
-  '800 1rem "Plus Jakarta Sans"',
-  '400 1rem "JetBrains Mono"',
-  '500 1rem "JetBrains Mono"',
-  '600 1rem "JetBrains Mono"',
-];
+const BUNDLED_FAMILIES = ['Plus Jakarta Sans', 'Manrope', 'JetBrains Mono'];
 
 async function fontsSettled(): Promise<void> {
   if (!document.fonts) return;
@@ -229,8 +224,13 @@ async function fontsSettled(): Promise<void> {
   // for a moment when the home screen first paints, under font-display: block.
   // These are local and small, so warming all of them costs tens of ms of
   // splash that is already on screen.
+  // The sample decides which subsets are fetched, because the faces carry a
+  // unicode-range. Latin alone leaves the active language's own subset to load
+  // on first paint, where font-display: block renders it as nothing. A family
+  // with no face covering the sample loads nothing, so this is free for Latin.
+  const sample = warmupSample();
   const warm = Promise.all(
-    BUNDLED_FACES.map((f) => document.fonts.load(f).catch(() => undefined)),
+    BUNDLED_FAMILIES.map((f) => document.fonts.load(`400 1rem "${f}"`, sample).catch(() => undefined)),
   ).then(() => document.fonts.ready);
 
   await Promise.race([
@@ -335,20 +335,15 @@ function showWebAssemblyBlocked(): void {
   // a clean launch under Lockdown Mode still leaves Glow off the list. Turning
   // Lockdown Mode off is the only route that actually works on native. Safari
   // does support per-site exceptions, so the web copy still points at those.
-  const heading = isIos ? 'Turn off Lockdown Mode to use Glow' : 'Lockdown Mode is stopping Glow';
-  // The steps read as a trail to follow, so anything the user has to spot in
-  // iOS Settings is set in bold and worded exactly as the device labels it.
-  const ui = (label: string) => `<strong class="font-semibold">${label}</strong>`;
+  const heading = isIos ? i18n.t('lockdown.headingIos') : i18n.t('lockdown.headingWeb');
+  // Each step carries its own markup and its own iOS Settings labels, so a
+  // translator can match what their device actually says. The labels have to
+  // read exactly as the device shows them, which only a speaker can confirm.
   const intro = isIos
     ? ''
-    : 'Add an exception for Glow in your browser settings, or open Glow in another browser.';
+    : i18n.t('lockdown.introWeb');
   const steps = isIos
-    ? [
-        `Open ${ui('Settings')}`,
-        `Go to ${ui('Privacy &amp; Security')}, then ${ui('Lockdown Mode')}`,
-        `Tap ${ui('Turn Off Lockdown Mode')}`,
-        `Confirm with ${ui('Turn Off &amp; Restart')}`,
-      ]
+    ? [1, 2, 3, 4].map((n) => i18n.t(`common:lockdown.step${n}`))
     : [];
 
   document.getElementById('root')!.innerHTML = `
@@ -418,6 +413,11 @@ async function init() {
     await mountClaimTest(Number(claimTest) || 1500);
     return;
   }
+  // Before the WebAssembly check, because the Lockdown screen below is the one
+  // place a reader is told how to recover and it should be in their language.
+  // Resolving it needs no WASM.
+  const language = await initI18n();
+
   // Lockdown Mode leaves the WebView running but takes WebAssembly with it, so
   // startup would otherwise paint a working-looking welcome screen and fail at
   // the first SDK call. Bail out here with something actionable instead.
@@ -429,6 +429,8 @@ async function init() {
   try {
     handOffNativeSplash();
     logger.info(LogCategory.UI, 'Initializing application');
+
+    logger.info(LogCategory.UI, 'Language resolved', { language });
     // Startup debugging breadcrumb: what hardware / OS / build this ran on.
     void logStartupDeviceInfo();
 
@@ -466,8 +468,8 @@ async function init() {
     void hideSplash();
     document.getElementById('root')!.innerHTML = `
       <div style="color: #d4a574; padding: 20px; text-align: center; background: #0a0a0f; min-height: 100vh; display: flex; flex-direction: column; justify-content: center;">
-        <h2>Failed to load application</h2>
-        <p>There was an error starting Glow. Please refresh and try again.</p>
+        <h2>${i18n.t('startupFailure.title')}</h2>
+        <p>${i18n.t('startupFailure.body')}</p>
       </div>
     `;
   }

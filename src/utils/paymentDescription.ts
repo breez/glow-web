@@ -1,4 +1,5 @@
 import type { Payment, PaymentDetails } from '@breeztech/breez-sdk-spark';
+import i18n from 'i18next';
 
 type ContactLookup = (address: string) => { name: string } | undefined;
 
@@ -46,7 +47,7 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
   const convInfo = getConversionInfo(payment.details);
 
   if (payment.method === 'lightning') {
-    if (isCrossChain(convInfo)) return 'USD Transfer';
+    if (isCrossChain(convInfo)) return i18n.t('methods.usdTransfer');
     if (payment.details?.type === 'lightning') {
       const comment = payment.details.lnurlPayInfo?.comment
         ?? payment.details.lnurlReceiveMetadata?.senderComment;
@@ -57,29 +58,29 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
         if (contact) return isSend ? `Pay to ${contact.name}` : contact.name;
         return isSend ? `Pay to ${payment.details.lnurlPayInfo.lnAddress}` : payment.details.lnurlPayInfo.lnAddress;
       }
-      return payment.details?.description || 'Lightning Payment';
+      return payment.details?.description || i18n.t('methods.lightningPayment');
     }
-    return 'Lightning Payment';
+    return i18n.t('methods.lightningPayment');
   }
   if (payment.method === 'spark') {
-    if (isCrossChain(convInfo)) return 'USD Transfer';
+    if (isCrossChain(convInfo)) return i18n.t('methods.usdTransfer');
     if (convInfo) {
       const dir = payment.paymentType === 'send' ? 'from' : 'to';
       return `Conversion ${dir} Bitcoin`;
     }
-    return 'Spark Transfer';
+    return i18n.t('methods.sparkTransfer');
   }
   if (payment.method === 'token') {
     const ticker = payment.details?.type === 'token' ? payment.details.metadata.ticker : null;
     const displayName = (ticker ? tickerToDisplayName(ticker) : null) || fiatCurrencyName;
-    if (isCrossChain(convInfo)) return displayName ? `${displayName} Transfer` : 'Token Transfer';
+    if (isCrossChain(convInfo)) return displayName ? i18n.t('methods.namedTransfer', { name: displayName }) : i18n.t('methods.tokenTransfer');
     if (convInfo) {
       const dir = payment.paymentType === 'send' ? 'from' : 'to';
       return `Conversion ${dir} ${displayName}`;
     }
-    return displayName ? `${displayName} Transfer` : 'Token Transfer';
+    return displayName ? i18n.t('methods.namedTransfer', { name: displayName }) : i18n.t('methods.tokenTransfer');
   }
-  if (payment.method === 'deposit') return 'BTC Transfer';
-  if (payment.method === 'withdraw') return 'BTC Transfer';
-  return 'Payment';
+  if (payment.method === 'deposit') return i18n.t('methods.btcTransfer');
+  if (payment.method === 'withdraw') return i18n.t('methods.btcTransfer');
+  return i18n.t('methods.payment');
 }

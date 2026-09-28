@@ -1,5 +1,6 @@
 import React from 'react';
 import { SatAmount } from './SatAmount';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Reusable component for displaying payment fee breakdowns.
@@ -99,18 +100,19 @@ export const SimpleFeeBreakdown: React.FC<SimpleFeeBreakdownProps> = ({
   amount,
   fee,
   useRawStrings = false,
-  amountLabel = 'Amount',
-  feeLabel = 'Network fee',
+  amountLabel,
+  feeLabel,
   className = '',
 }) => {
+  const { t } = useTranslation('common');
   if (useRawStrings) {
     return (
       <FeeBreakdownCard
         className={className}
         useRawStrings
         items={[
-          { label: amountLabel, value: String(amount) },
-          { label: feeLabel, value: String(fee) },
+          { label: amountLabel ?? t('labels.amount'), value: String(amount) },
+          { label: feeLabel ?? t('labels.networkFee'), value: String(fee) },
         ]}
       />
     );
@@ -122,9 +124,9 @@ export const SimpleFeeBreakdown: React.FC<SimpleFeeBreakdownProps> = ({
       className={className}
       useRawStrings={useRawStrings}
       items={[
-        { label: amountLabel, value: amount },
-        { label: feeLabel, value: fee },
-        { label: 'Total', value: total, highlight: true },
+        { label: amountLabel ?? t('labels.amount'), value: amount },
+        { label: feeLabel ?? t('labels.networkFee'), value: fee },
+        { label: t('labels.total'), value: total, highlight: true },
       ]}
     />
   );

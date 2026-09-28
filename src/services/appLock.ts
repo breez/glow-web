@@ -18,6 +18,7 @@ import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { bytesToHex, hexToBytes } from '../utils/hex';
 import { logger, LogCategory } from './logger';
+import i18n from 'i18next';
 
 /** Salt + hash in ONE record: a two-key layout could be torn by a
  *  process kill between writes, leaving a PIN no input could match. */
@@ -211,11 +212,10 @@ export async function verifyPin(pin: string): Promise<PinVerifyResult> {
 
 /** Lock-screen copy for a rejected attempt. */
 export function pinAttemptMessage(result: PinVerifyResult): string {
-  if (result.lockedForMs <= 0) return 'Incorrect PIN';
+  if (result.lockedForMs <= 0) return i18n.t('lock.incorrectPin');
   const seconds = Math.ceil(result.lockedForMs / 1000);
-  if (seconds < 60) return `Too many attempts. Try again in ${seconds} seconds.`;
-  const minutes = Math.ceil(seconds / 60);
-  return `Too many attempts. Try again in ${minutes === 1 ? '1 minute' : `${minutes} minutes`}.`;
+  if (seconds < 60) return i18n.t('lock.tooManySeconds', { count: seconds });
+  return i18n.t('lock.tooManyMinutes', { count: Math.ceil(seconds / 60) });
 }
 
 // ============================================

@@ -10,6 +10,7 @@ import MigrationProgressStep from './steps/MigrationProgressStep';
 import DoneStep from './steps/DoneStep';
 import ErrorStep from './steps/ErrorStep';
 import type { MigrationEntry, MigrationOutcome } from './types';
+import { useTranslation } from 'react-i18next';
 
 export type { MigrationEntry, MigrationOutcome } from './types';
 
@@ -33,6 +34,7 @@ export interface PasskeyMigrationModalProps {
  * components inside a shared dialog shell.
  */
 const PasskeyMigrationModal: React.FC<PasskeyMigrationModalProps> = (props) => {
+  const { t } = useTranslation('critical');
   const { isOpen, entry } = props;
   const flow = useMigrationFlow(props);
 
@@ -49,10 +51,10 @@ const PasskeyMigrationModal: React.FC<PasskeyMigrationModalProps> = (props) => {
           </div>
           <h2 className="font-display text-lg font-bold text-spark-text-primary">
             {flow.phase === 'done'
-              ? 'Upgrade complete'
+              ? t('common:migration.upgradeComplete')
               : flow.isInFlight
-                ? 'Upgrading passkey'
-                : entry === 'login' ? 'Check passkey' : 'Upgrade passkey'}
+                ? t('common:migration.upgrading')
+                : entry === 'login' ? t('common:migration.checkPasskey') : t('common:migration.upgradePasskey')}
           </h2>
         </div>
 

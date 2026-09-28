@@ -18,6 +18,7 @@ import { useBackButton } from '../hooks/useBackButton';
 import { ConfirmDialog } from './ui';
 import { isPasskeyMode } from '@/services/passkeyService';
 import { pinAttemptMessage, type PinVerifyResult } from '@/services/appLock';
+import { useTranslation } from 'react-i18next';
 
 interface LockScreenProps {
   biometricGate: boolean;
@@ -40,6 +41,7 @@ const LockScreen: React.FC<LockScreenProps> = ({
   unlockWithBiometric,
   onForgotPin,
 }) => {
+  const { t } = useTranslation(['common', 'critical']);
   useBackButton(useCallback(() => true, []), true);
 
   const [showForgotConfirm, setShowForgotConfirm] = useState(false);
@@ -94,7 +96,7 @@ const LockScreen: React.FC<LockScreenProps> = ({
         >
           <PinScreenLayout
             prompt={
-              <p className="text-sm text-spark-text-secondary">Enter your PIN to unlock</p>
+              <p className="text-sm text-spark-text-secondary">{t('lock.unlockPrompt')}</p>
             }
           >
             <PinEntry
@@ -114,7 +116,7 @@ const LockScreen: React.FC<LockScreenProps> = ({
             onClick={() => setShowForgotConfirm(true)}
             className="mx-auto mt-6 shrink-0 text-sm text-spark-text-muted underline hover:text-spark-text-secondary transition-colors"
           >
-            Forgot your PIN?
+            {t('lock.forgotPin')}
           </button>
         </div>
       ) : (
@@ -132,16 +134,16 @@ const LockScreen: React.FC<LockScreenProps> = ({
         isOpen={showForgotConfirm}
         variant="danger"
         zClassName="z-[100001]"
-        title="Forgot your PIN?"
+        title={t('lock.forgotPin')}
         message={isPasskey
-          ? "The PIN can't be recovered. The only way back in is to erase all Glow data on this device and sign in again with your passkey."
-          : "The PIN can't be recovered. The only way back in is to erase all Glow data on this device and restore from your recovery phrase. Make sure you have it saved."}
-        confirmLabel="Erase"
+          ? t('critical:pinReset.bodyPasskey')
+          : t('critical:pinReset.bodyMnemonic')}
+        confirmLabel={t('critical:pinReset.confirm')}
         // The dialog stays up until the device-owner prompt passes, so a
         // cancelled prompt reads as "nothing happened" rather than as a
         // silently dropped erase.
         onConfirm={() => {
-          void confirmDeviceOwner('Erase all Glow data').then((confirmed) => {
+          void confirmDeviceOwner(t('critical:pinReset.deviceOwnerReason')).then((confirmed) => {
             if (!confirmed) return;
             setShowForgotConfirm(false);
             void onForgotPin();

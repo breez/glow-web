@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { safeAreaTop } from '../utils/safeAreaInsets';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Offline indicator: a compact centered pill pinned below the status
@@ -11,6 +12,7 @@ import { safeAreaTop } from '../utils/safeAreaInsets';
  * comes from @capacitor/network.
  */
 const OfflineBanner: React.FC = () => {
+  const { t } = useTranslation('common');
   const isOnline = useNetworkStatus();
   if (isOnline) return null;
 
@@ -29,7 +31,7 @@ const OfflineBanner: React.FC = () => {
         className="flex items-center gap-1.5 rounded-full border border-white/10 bg-spark-surface px-3 py-1 text-xs font-medium text-spark-text-secondary shadow-glass-lg"
       >
         <span className="h-1.5 w-1.5 rounded-full bg-spark-primary" />
-        No internet connection
+        {t('offline.banner')}
       </div>
     </div>,
     document.body,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { QRCodeContainer, QrPlaceholder, CopyableText } from '../../components/ui';
 import { useToast } from '../../contexts/ToastContext';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   address: string | null;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const BitcoinAddressDisplay: React.FC<Props> = ({ address, isLoading, section, qrSize, qrCardClassName }) => {
+  const { t } = useTranslation('common');
   const { showToast } = useToast();
 
   if (section === 'qr') {
@@ -29,9 +31,9 @@ const BitcoinAddressDisplay: React.FC<Props> = ({ address, isLoading, section, q
           text={address}
           truncate
           showShare
-          label="Bitcoin Address"
-          onCopied={() => showToast('success', 'Copied!')}
-          onShareError={() => showToast('error', 'Failed to share')}
+          label={t('receive.bitcoinAddress')}
+          onCopied={() => showToast('success', t('actions.copied'))}
+          onShareError={() => showToast('error', t('labels.shareFailed'))}
           data-testid="bitcoin-address-text"
         />
       ) : (

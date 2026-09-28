@@ -1,0 +1,143 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "Kurtarma ifaden geçiş anahtarından türetilir. Başka bir cihazda geri yüklemek için geçiş anahtarını veya aşağıdaki kurtarma ifadesini kullan."
+    },
+    "passkeyUnavailable": {
+      "body": "Kurtarma ifaden geçiş anahtarından türetilir. O olmadan ifade bu cihazda geri alınamaz. Görüntülemek için geçiş anahtarının hâlâ bulunduğu bir cihazda oturum aç."
+    },
+    "notFound": {
+      "body": "Bu cihazda kurtarma ifadesi bulunamadı."
+    },
+    "reveal": {
+      "hintRevealed": "Kimsenin baktığından emin olma",
+      "hintDeviceStored": "Bu cihazda güvenle saklanıyor"
+    },
+    "phraseLabel": "Kurtarma ifadesi"
+  },
+  "logout": {
+    "confirmPasskey": "Çıkış yapmak bu cihazdaki tüm Glow verilerini siler. Paranıza yeniden erişmek için geçiş anahtarına ihtiyacın olacak.",
+    "confirmMnemonic": "Çıkış yapmak bu cihazdaki tüm Glow verilerini siler. Kurtarma ifadeni kaydettiğinden emin ol: paranıza yeniden erişmek için gerekecek."
+  },
+  "pinReset": {
+    "bodyPasskey": "PIN kurtarılamaz. Geri dönmenin tek yolu bu cihazdaki tüm Glow verilerini silmek ve geçiş anahtarınla yeniden oturum açmak.",
+    "bodyMnemonic": "PIN kurtarılamaz. Geri dönmenin tek yolu bu cihazdaki tüm Glow verilerini silmek ve kurtarma ifadenden geri yüklemek. Kaydettiğinden emin ol.",
+    "confirm": "Sil",
+    "deviceOwnerReason": "Tüm Glow verilerini sil"
+  },
+  "stableBalance": {
+    "toUsd": "BTC bakiyen USD'ye çevrilecek.",
+    "toBtc": "USD bakiyen tekrar BTC'ye çevrilecek.",
+    "convertToUsd": "USD'ye çevir",
+    "convertToBtc": "BTC'ye çevir",
+    "conversionFee": "Dönüşüm ücreti:",
+    "feeUnavailable": "Ücret tahmin edilemedi",
+    "disclaimerBody": "Bakiyen USD olarak tutulur. Gelen BTC otomatik olarak USD'ye, giden ödemeler ise tekrar BTC'ye çevrilir. Dönüşüm eşiğinin altındaki tutarlar birikene kadar bozuk para olarak kalır.",
+    "balanceTooLow": "Bakiye dönüştürmek için çok düşük — bozuk para olarak kalacak",
+    "switchToUsdFailed": "USD moduna geçilemedi. Tekrar dene.",
+    "switchToBtcFailed": "BTC moduna geçilemedi. Tekrar dene.",
+    "restoreTitle": "USD bakiyesi algılandı",
+    "restoreBody": "USD cinsinden para tespit ettik. USD moduna geçmek ister misin?\n\nBakiyen USD olarak tutulacak. Gelen BTC otomatik olarak USD’ye, giden ödemeler ise tekrar BTC’ye çevrilir."
+  },
+  "send": {
+    "sendAll": "Tümünü gönder",
+    "enterAmount": "Tutarı sats olarak gir",
+    "exceedsBalance": "Tutar kullanılabilir bakiyeyi aşıyor",
+    "balanceUpdating": "Bakiye güncelleniyor. Birazdan tekrar dene.",
+    "invalidAmount": "Geçerli bir tutar gir",
+    "invalidDestination": "Geçersiz ödeme hedefi",
+    "youAreSending": "Gönderdiğin tutar",
+    "recipientGets": "Alıcının aldığı",
+    "insufficientFunds": "Yetersiz bakiye",
+    "conversionAmount": "Dönüşüm tutarı",
+    "conversionFee": "Dönüşüm ücreti",
+    "toAddress": "Şu adrese",
+    "toSparkAddress": "Şu Spark adresine",
+    "toSparkInvoice": "Şu Spark faturasına",
+    "toInvoice": "Şu faturaya",
+    "crossChain": {
+      "amountTooSmall": "Bu rota için tutar çok küçük.",
+      "amountTooLarge": "Bu rota için tutar çok büyük.",
+      "amountTooSmallHint": "Bu tutar mevcut rotalar için çok küçük. Daha büyük bir tutar göndermeyi dene.",
+      "amountTooLargeHint": "Bu tutar mevcut rotalar için çok büyük. Daha küçük bir tutar göndermeyi dene.",
+      "networkUnavailable": "Bu ağ geçici olarak kullanılamıyor. Birazdan tekrar dene.",
+      "networkNotSupported": "Bu ağ kullanılamıyor. Başka bir ağ dene.",
+      "rateDrift": "Tutar bu ağ için çok küçük. Daha büyük bir tutar ya da başka bir ağ dene."
+    },
+    "withdraw": {
+      "noValidAmount": "Bu çekim bağlantısında Glow'un alabileceği geçerli bir tutar yok.",
+      "wholeSats": "Sats olarak tam sayı gir"
+    },
+    "enterAmountIn": "Tutarı {{currency}} olarak gir",
+    "amountRange": "{{min}} ile {{max}} sats arasında",
+    "result": {
+      "notSentBody": "Ödeme gerçekleşmedi. Paran gönderilmedi."
+    }
+  },
+  "generate": {
+    "title": "Gizli tut",
+    "body": "Bu kelimeleri sırayla yaz. Paranı geri almak için tek yedeğin bu.",
+    "warning": "Kurtarma ifadeni asla paylaşma. Bu kelimelere sahip olan herkes paranıza erişebilir.",
+    "copyToClipboard": "Panoya kopyala",
+    "saved": "İfademi kaydettim"
+  },
+  "restore": {
+    "body": "Glow'u geri yüklemek için 12 veya 24 kelimelik kurtarma ifadeni gir. Kelimeler boşlukla ayrılmalı.",
+    "placeholder": "kelime1 kelime2 kelime3 ...",
+    "invalidLength": "Geçerli bir 12 veya 24 kelimelik kurtarma ifadesi gir",
+    "invalidPhrase": "Geçersiz kurtarma ifadesi. Kelimeleri kontrol edip tekrar dene."
+  },
+  "unlock": {
+    "eraseTitle": "Sil ve baştan başla",
+    "eraseAction": "Sil ve baştan başla",
+    "erase": "Sil",
+    "eraseReason": "Tüm Glow verilerini sil",
+    "eraseBodyPasskey": "Bu işlem bu cihazdaki tüm Glow verilerini siler. Paranıza yeniden erişmek için geçiş anahtarına ihtiyacın olacak.",
+    "eraseBodyMnemonic": "Bu işlem bu cihazdaki tüm Glow verilerini siler. Kurtarma ifadeni kaydettiğinden emin ol: paranıza yeniden erişmek için gerekecek."
+  },
+  "refund": {
+    "destinationBody": "İadeyi almak istediğin Bitcoin adresini gir.",
+    "refund": "İade et",
+    "amount": "Tutar",
+    "networkFee": "Ağ ücreti"
+  },
+  "deposit": {
+    "amount": "Tutar",
+    "networkFee": "Ağ ücreti",
+    "feeChanged": "Ağ ücreti değişti",
+    "approveOrReject": "Bu transferi talep etmek için onayla, ya da iade başlatmak için reddet.",
+    "canReject": "Bunun yerine iade başlatmak için reddedebilirsin.",
+    "feeRose": "Sen onaylarken ücret <amount/> tutarına yükseldi. Yeni ücretle talep etmek için onayla.",
+    "deliveryFee": "Teslimat ücreti",
+    "youReceive": "Alacağın",
+    "claim": "Al",
+    "approve": "Onayla",
+    "reject": "Reddet",
+    "claimFeeChanged": "Talebin geçmedi: ücret <amount/> değerinden değişti."
+  },
+  "passkey": {
+    "confirmDeleted": "Bu geçiş anahtarının silindiğini onaylıyorum.",
+    "confirmDeletedHint": "İsteğe bağlı. Emin değilsen işaretlemeden devam et.",
+    "isHowYouAccess": "Geçiş anahtarın, paranıza erişme yolunuzdur"
+  },
+  "migration": {
+    "switchFailed": "Yeni geçiş anahtarına geçişi tamamlayamadık. Paran güvende. Lütfen tekrar dene.",
+    "keepWindowOpen": "Bu pencereyi açık tut",
+    "verifyMultipleTimes": "Taşıma sırasında kimliğini birkaç kez doğrulaman istenecek: taşınan her etiket için bir kez, ardından yeni geçiş anahtarını oluşturmak için birkaç kez daha. Taşıma bitene kadar bu pencereyi açık tut.",
+    "explainBody": "Yeni bir geçiş anahtarı oluşturup paranı otomatik olarak aktaracağız. İşlem sırasında kimliğini birkaç kez doğrulaman istenecek.",
+    "singleTransaction": "Paran tek bir işlemde aktarılacak. Ödeme geçmişin taşınmayacak.",
+    "doneBody": "Paran yeni geçiş anahtarına taşındı.",
+    "addressPending_one": "Bu Lightning adresi aktarılamadı:",
+    "addressPending_other": "Bu Lightning adresleri aktarılamadı:",
+    "addressPendingBody_one": "Bu adrese gönderilen ödemeler, aktarım tamamlanana kadar eski geçiş anahtarına ulaşmaya devam edecek.",
+    "addressPendingBody_other": "Bu adreslere gönderilen ödemeler, aktarımlar tamamlanana kadar eski geçiş anahtarına ulaşmaya devam edecek.",
+    "explainFirstTime": "Geçiş anahtarını Glow'un daha eski bir sürümüyle oluşturduysan, yenisini oluşturup paranı otomatik olarak aktaracağız. Glow'u ilk kez kullanıyorsan devam etmek için <skip/> seçeneğini seç.",
+    "migrateLabels_one": "Etiketini yeni geçiş anahtarına taşıyacağız.",
+    "migrateLabels_other": "{{count}} etiketin tümünü yeni geçiş anahtarına taşıyacağız."
+  },
+  "webNotice": {
+    "preferPasskey": "Güvenliğin için bunun yerine geçiş anahtarı kullanmanı öneririz.",
+    "preferApp": "Güvenliğin için Glow uygulamasını öneririz.",
+    "risk": "Web üzerindeki kurtarma ifadesi daha az güvenlidir ve paranın kaybolma ihtimali vardır. Web’de kurtarma ifadesini yalnızca bu riski göze alıyorsan kullan."
+  }
+}

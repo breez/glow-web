@@ -6,6 +6,7 @@ import { logger, LogCategory } from '@/services/logger';
 import { holdIdleLock } from '@/services/appLock';
 import { CameraFlipIcon, ImageIcon, AlertTriangleIcon } from './Icons';
 import { useLatest } from '../hooks/useLatest';
+import { useTranslation } from 'react-i18next';
 
 interface QrScannerDialogProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface QrScannerDialogProps {
 }
 
 const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onScan, zIndex }) => {
+  const { t } = useTranslation('common');
   // Status / nav bar tints are handled by the shared BottomSheetContainer
   // since this dialog is mounted with fullHeight — isFullScreen is true
   // for the whole open lifetime, so both bars get the spark-surface push.
@@ -37,12 +39,12 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
       onScan(result);
       onClose();
     } catch {
-      setGalleryError('No QR code found in image');
+      setGalleryError(t('qrScanner.noQrInImage'));
       setTimeout(() => setGalleryError(null), 3000);
     }
     // Reset so the same file can be re-selected
     if (fileInputRef.current) fileInputRef.current.value = '';
-  }, [onScan, onClose]);
+  }, [onScan, onClose, t]);
 
   const {
     videoRef,
@@ -178,7 +180,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
               <div className="absolute inset-0 flex items-center justify-center bg-spark-surface/70">
                 <div className="text-center text-white p-4">
                   <div className="animate-spin rounded-full h-10 w-10 border-2 border-spark-primary border-t-transparent mx-auto mb-3"></div>
-                  <p className="text-sm text-spark-text-secondary">Initializing camera...</p>
+                  <p className="text-sm text-spark-text-secondary">{t('qrScanner.initializing')}</p>
                 </div>
               </div>
             )}
@@ -189,7 +191,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
                   <div className="w-16 h-16 rounded-full bg-spark-primary/20 flex items-center justify-center mx-auto mb-4">
                     <AlertTriangleIcon size="xl" className="text-spark-primary" />
                   </div>
-                  <p className="text-sm mb-2 font-medium">Camera not available</p>
+                  <p className="text-sm mb-2 font-medium">{t('qrScanner.unavailable')}</p>
                   <p className="text-xs text-spark-text-muted">{error}</p>
                 </div>
               </div>
@@ -202,7 +204,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
             <FloatingIconButton
               onClick={toggleCamera}
               className="absolute top-4 left-4 z-20"
-              aria-label="Switch camera"
+              aria-label={t('a11y.switchCamera')}
               icon={
                 <CameraFlipIcon />
               }
@@ -213,7 +215,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
           <FloatingIconButton
             onClick={() => fileInputRef.current?.click()}
             className="absolute top-4 right-4 z-20"
-            aria-label="Pick image from gallery"
+            aria-label={t('a11y.pickImage')}
             icon={
               <ImageIcon />
             }
@@ -240,13 +242,13 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
         <div className="bg-spark-surface/80 backdrop-blur-md">
           <div className="p-6">
             <p className="text-spark-text-secondary text-sm text-center mb-4">
-              Point camera at QR code
+              {t('qrScanner.hint')}
             </p>
             <button
               onClick={handleClose}
               className="w-full py-3 border border-spark-border text-spark-text-primary rounded-xl font-medium hover:bg-white/10 transition-colors"
             >
-              Cancel
+              {t('actions.cancel')}
             </button>
           </div>
         </div>

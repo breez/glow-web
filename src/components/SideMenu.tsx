@@ -12,6 +12,7 @@ import { useBackButton } from '../hooks/useBackButton';
 import { SimpleAlert } from './AlertCard';
 import { useUnilateralExitEngineState } from '../features/unilateral-exit/hooks/useUnilateralExitEngineLifecycle';
 import GlowLogo from './GlowLogo';
+import { useTranslation } from 'react-i18next';
 
 // App Store Review Guidelines 5.1.1(i) requires the privacy policy to be
 // reachable from inside the app, not just from the store listing, and 1.5
@@ -63,6 +64,7 @@ interface SideMenuProps {
 }
 
 const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSettings, onOpenRefund, hasRejectedDeposits = false }) => {
+  const { t } = useTranslation(['common', 'critical']);
   // While the drawer is open, push the solid spark-surface tone over
   // the wallet page's glass tint so the status bar matches the drawer
   // panel's solid bg. Tied to isOpen so popping happens on close.
@@ -129,18 +131,18 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
     // Get Refund - only show when there are rejected deposits
     ...(hasRejectedDeposits && onOpenRefund ? [{
       icon: <RefundIcon />,
-      label: 'Get Refund',
+      label: t('menu.getRefund'),
       onClick: () => closeDrawerThen(onOpenRefund),
       highlight: true
     }] : []),
     {
       icon: <SettingsIcon />,
-      label: 'Settings',
+      label: t('menu.settings'),
       onClick: () => closeDrawerThen(onOpenSettings)
     },
     {
       icon: <LogoutIcon />,
-      label: 'Logout',
+      label: t('menu.logout'),
       onClick: () => { setShowLogoutConfirm(true); }
     }
   ];
@@ -196,7 +198,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
               <button
                 onClick={onClose}
                 className="p-2 -mr-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
-                aria-label="Close"
+                aria-label={t('actions.close')}
               >
                 <CloseIcon />
               </button>
@@ -231,7 +233,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                   onClick={() => { void openExternalUrl(PRIVACY_POLICY_URL); }}
                   className="hover:text-spark-text-secondary transition-colors"
                 >
-                  Privacy Policy
+                  {t('menu.privacyPolicy')}
                 </button>
                 <span aria-hidden="true">&middot;</span>
                 <button
@@ -239,7 +241,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                   onClick={() => { void openExternalUrl(SUPPORT_URL); }}
                   className="hover:text-spark-text-secondary transition-colors"
                 >
-                  Support
+                  {t('menu.support')}
                 </button>
               </div>
               <a
@@ -252,7 +254,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                 }}
                 className="block text-xs text-spark-text-muted text-center hover:text-spark-text-secondary transition-colors"
               >
-                Powered by Breez SDK
+                {t('app.poweredBy')}
               </a>
             </div>
 
@@ -294,12 +296,12 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                   </div>
 
                   <h3 className="font-display text-lg font-semibold text-spark-text-primary text-center mb-2">
-                    Logout
+                    {t('menu.logout')}
                   </h3>
                   <p className={`text-spark-text-secondary text-sm text-center ${isPasskey ? 'mb-3' : 'mb-6'}`}>
                     {isPasskey
-                      ? "Logging out deletes all Glow data stored on this device. You'll need your passkey to access your funds again."
-                      : "Logging out deletes all Glow data stored on this device. Make sure you've saved your recovery phrase: you'll need it to access your funds again."}
+                      ? t('critical:logout.confirmPasskey')
+                      : t('critical:logout.confirmMnemonic')}
                   </p>
                   {isPasskey && (
                     <button
@@ -307,7 +309,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                       onClick={() => { void openExternalUrl(ACCOUNT_DELETION_GUIDE_URL); }}
                       className="mx-auto mb-6 flex items-center gap-1 text-xs text-spark-text-muted underline hover:text-spark-text-secondary transition-colors"
                     >
-                      How to remove your passkey
+                      {t('menu.removePasskeyGuide')}
                       <ExternalLinkIcon size="xs" />
                     </button>
                   )}
@@ -326,13 +328,13 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                       onClick={() => setShowLogoutConfirm(false)}
                       className="flex-1 px-4 py-3 border border-spark-border text-spark-text-secondary rounded-xl font-medium hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
                     >
-                      Cancel
+                      {t('actions.cancel')}
                     </button>
                     <button
                       onClick={handleConfirmLogout}
                       className="flex-1 px-4 py-3 bg-spark-primary text-black rounded-xl font-medium hover:bg-spark-primary/90 transition-colors"
                     >
-                      Logout
+                      {t('menu.logout')}
                     </button>
                   </div>
                 </TransitionChild>

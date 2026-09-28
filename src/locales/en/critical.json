@@ -1,0 +1,143 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "Your recovery phrase is derived from your passkey. To restore on another device, use your passkey or the recovery phrase below."
+    },
+    "passkeyUnavailable": {
+      "body": "Your recovery phrase is derived from your passkey. Without it, the phrase cannot be retrieved on this device. Sign in on a device where the passkey is still available to view it."
+    },
+    "notFound": {
+      "body": "Could not find a recovery phrase on this device."
+    },
+    "reveal": {
+      "hintRevealed": "Make sure no one is watching",
+      "hintDeviceStored": "Stored securely on this device"
+    },
+    "phraseLabel": "Recovery Phrase"
+  },
+  "logout": {
+    "confirmPasskey": "Logging out deletes all Glow data stored on this device. You'll need your passkey to access your funds again.",
+    "confirmMnemonic": "Logging out deletes all Glow data stored on this device. Make sure you've saved your recovery phrase: you'll need it to access your funds again."
+  },
+  "pinReset": {
+    "bodyPasskey": "The PIN can't be recovered. The only way back in is to erase all Glow data on this device and sign in again with your passkey.",
+    "bodyMnemonic": "The PIN can't be recovered. The only way back in is to erase all Glow data on this device and restore from your recovery phrase. Make sure you have it saved.",
+    "confirm": "Erase",
+    "deviceOwnerReason": "Erase all Glow data"
+  },
+  "stableBalance": {
+    "toUsd": "Your BTC balance will be converted to USD.",
+    "toBtc": "Your USD balance will be converted back to BTC.",
+    "convertToUsd": "Convert to USD",
+    "convertToBtc": "Convert to BTC",
+    "conversionFee": "Conversion fee:",
+    "feeUnavailable": "Couldn't estimate fee",
+    "disclaimerBody": "Your balance is held in USD. Incoming BTC is automatically converted to USD, and outgoing payments are converted back to BTC. Amounts under the conversion threshold remain as change until they accumulate.",
+    "balanceTooLow": "Balance too low to convert — it will remain as change",
+    "switchToUsdFailed": "Could not switch to USD. Please try again.",
+    "switchToBtcFailed": "Could not switch to BTC. Please try again.",
+    "restoreTitle": "USD Balance Detected",
+    "restoreBody": "We've detected USD funds. Would you like to switch to USD mode?\n\nYour balance will be held in USD. Incoming BTC is automatically converted to USD, and outgoing payments are converted back to BTC."
+  },
+  "send": {
+    "sendAll": "Send All",
+    "enterAmount": "Enter amount in sats",
+    "exceedsBalance": "Amount exceeds available balance",
+    "balanceUpdating": "Balance is updating. Try again in a moment.",
+    "invalidAmount": "Please enter a valid amount",
+    "invalidDestination": "Invalid payment destination",
+    "youAreSending": "You're sending",
+    "recipientGets": "Recipient gets",
+    "insufficientFunds": "Insufficient funds",
+    "conversionAmount": "Conversion amount",
+    "conversionFee": "Conversion fee",
+    "toAddress": "To address",
+    "toSparkAddress": "To Spark address",
+    "toSparkInvoice": "To Spark invoice",
+    "toInvoice": "To invoice",
+    "crossChain": {
+      "amountTooSmall": "Amount too small for this route.",
+      "amountTooLarge": "Amount too large for this route.",
+      "amountTooSmallHint": "This amount is too small for the available routes. Try sending a larger amount.",
+      "amountTooLargeHint": "This amount is too large for the available routes. Try sending a smaller amount.",
+      "networkUnavailable": "This network is temporarily unavailable. Try again in a moment.",
+      "networkNotSupported": "This network isn't available. Try another network.",
+      "rateDrift": "Amount too small for this network. Try a larger amount or another network."
+    },
+    "withdraw": {
+      "noValidAmount": "This withdraw link has no valid amount Glow can receive.",
+      "wholeSats": "Enter a whole number of sats"
+    },
+    "enterAmountIn": "Enter amount in {{currency}}",
+    "amountRange": "Between {{min}} and {{max}} sats",
+    "result": {
+      "notSentBody": "The payment did not go through. Your funds were not sent."
+    }
+  },
+  "generate": {
+    "title": "Keep it Secret",
+    "body": "Write down these words in order. This is your only backup to recover your funds.",
+    "warning": "Never share your recovery phrase. Anyone with these words can access your funds.",
+    "copyToClipboard": "Copy to Clipboard",
+    "saved": "I've Saved My Phrase"
+  },
+  "restore": {
+    "body": "Enter your 12 or 24-word recovery phrase to restore Glow. Words should be separated by spaces.",
+    "placeholder": "word1 word2 word3 ...",
+    "invalidLength": "Please enter a valid 12 or 24-word recovery phrase",
+    "invalidPhrase": "Invalid recovery phrase. Please check your words and try again."
+  },
+  "unlock": {
+    "eraseTitle": "Erase and Start Over",
+    "eraseAction": "Erase and start over",
+    "erase": "Erase",
+    "eraseReason": "Erase all Glow data",
+    "eraseBodyPasskey": "This deletes all Glow data stored on this device. You'll need your passkey to access your funds again.",
+    "eraseBodyMnemonic": "This deletes all Glow data stored on this device. Make sure you've saved your recovery phrase: you'll need it to access your funds again."
+  },
+  "refund": {
+    "destinationBody": "Enter the Bitcoin address where you want to receive the refund.",
+    "refund": "Refund",
+    "amount": "Amount",
+    "networkFee": "Network fee"
+  },
+  "deposit": {
+    "amount": "Amount",
+    "networkFee": "Network fee",
+    "feeChanged": "Network fee changed",
+    "approveOrReject": "Approve to claim this transfer, or reject to process a refund.",
+    "canReject": "You can reject to process a refund instead.",
+    "feeRose": "The fee rose to <amount/> while you were confirming. Approve to claim at the new fee.",
+    "deliveryFee": "Delivery fee",
+    "youReceive": "You receive",
+    "claim": "Claim",
+    "approve": "Approve",
+    "reject": "Reject",
+    "claimFeeChanged": "Your claim did not go through: the fee changed from <amount/>."
+  },
+  "passkey": {
+    "confirmDeleted": "I confirm that this passkey was deleted.",
+    "confirmDeletedHint": "Optional. Continue without ticking if unsure.",
+    "isHowYouAccess": "Your passkey is how you access your funds"
+  },
+  "migration": {
+    "switchFailed": "We could not finish switching to your new passkey. Your funds are safe. Please retry.",
+    "keepWindowOpen": "Keep this window open",
+    "verifyMultipleTimes": "You'll be asked to verify your identity multiple times during the migration: once for each label being migrated, then a few more times to create your new passkey. Please keep this window open until the migration is complete.",
+    "explainBody": "We'll create a new passkey and automatically transfer your funds. You'll be asked to verify your identity a few times during the process.",
+    "singleTransaction": "Your funds will be transferred in a single transaction. Your payment history won't carry over.",
+    "doneBody": "Your funds have been moved to your new passkey.",
+    "addressPending_one": "This Lightning address couldn't be transferred:",
+    "addressPending_other": "These Lightning addresses couldn't be transferred:",
+    "addressPendingBody_one": "Payments sent to it will continue to arrive under your old passkey until the transfer is complete.",
+    "addressPendingBody_other": "Payments sent to them will continue to arrive under your old passkey until the transfers are complete.",
+    "explainFirstTime": "If you created your passkey with an earlier version of Glow, we'll create a new one and transfer your funds automatically. If this is your first time using Glow, choose <skip/> to continue.",
+    "migrateLabels_one": "We'll migrate your label to your new passkey.",
+    "migrateLabels_other": "We'll migrate all {{count}} labels to your new passkey."
+  },
+  "webNotice": {
+    "preferPasskey": "For your safety, we recommend using a passkey instead.",
+    "preferApp": "For your safety, we recommend the Glow app.",
+    "risk": "A recovery phrase on the web is less secure, and there is a chance your money will be lost. Use a recovery phrase on the web only if you are willing to take this risk."
+  }
+}
