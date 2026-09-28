@@ -31,8 +31,10 @@ kind reviewable means not burying it under the first.
 ## How a language ships
 
 A language is translatable as soon as it has a directory here. It is **served to
-readers** only once its base subtag appears in `SHIPPING_LANGUAGES` in
-[`../services/i18n.ts`](../services/i18n.ts).
+readers** only once its base subtag appears in [`shipping.json`](shipping.json).
+That file is deliberately plain JSON rather than TypeScript, because the native
+app reads it too: a CI check makes the iOS and Android language declarations
+match it exactly.
 
 Add it there when both hold:
 
@@ -43,6 +45,38 @@ Add it there when both hold:
 Until then, a reader whose device asks for that language gets English. This is
 deliberate: volunteer translation does not arrive finished, and a half-translated
 send screen is worse than an English one.
+
+## Contributing a translation, without a checkout
+
+You do not need git, an editor, or any of the build tooling. The files here are
+plain JSON and GitHub can edit them in the browser.
+
+1. Open the file for your language, for example `hu/common.json`.
+2. Click the pencil icon. GitHub makes you your own copy, which is fine.
+3. Change the text on the right of each colon. Leave the name on the left alone:
+   that is what the app looks the string up by.
+4. Click **Commit changes**, then **Propose changes**. That opens a pull
+   request, and someone on the team picks it up.
+
+Four rules, and the review is mostly checking them:
+
+- **Only the right-hand side.** `"amount": "Összeg"` is a change. `"osszeg":`
+  is a broken build.
+- **Keep every `{{placeholder}}` spelled exactly as it is.** You may move it
+  anywhere in the sentence, which is the point: put it where your grammar
+  wants it. `{{min}} és {{max}} sats között` is right.
+- **Keep the quotes and commas.** If GitHub shows a red mark in the margin, a
+  quote or comma went missing. Undo and try that line again.
+- **Do not translate** Glow, Breez, Spark, Lightning, Bitcoin, LNURL, sats,
+  BTC, USD, Face ID, Touch ID.
+
+If you want to translate a language that has no directory yet, say so in an
+issue first. Copying `en/` and renaming it is the easy part; deciding to serve
+it is the part worth talking about.
+
+A translation tool with a proper editor (Weblate, Crowdin) is worth adding when
+the JSON becomes the thing stopping people, not before. Both have free plans
+for open-source projects, so the cost of waiting is nothing.
 
 ## Glossary
 
