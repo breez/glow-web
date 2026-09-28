@@ -16,12 +16,12 @@ interface LnurlAuthWorkflowProps {
   onClose: () => void;
 }
 
-// LUD-04 actions: the CTA, the ask under the domain, and the verb an error uses.
+// LUD-04 actions: the CTA, the ask under the domain, and the verbs errors use.
 const ACTIONS = {
-  register: { label: 'Register', ask: 'register', doing: 'register with' },
-  login: { label: 'Log In', ask: 'log in', doing: 'log in to' },
-  link: { label: 'Link Account', ask: 'link your account', doing: 'link your account on' },
-  auth: { label: 'Authenticate', ask: 'authenticate', doing: 'authenticate with' },
+  register: { label: 'Register', ask: 'register', doing: 'register with', done: 'registered' },
+  login: { label: 'Log In', ask: 'log in', doing: 'log in to', done: 'logged in' },
+  link: { label: 'Link Account', ask: 'link your account', doing: 'link your account on', done: 'linked your account' },
+  auth: { label: 'Authenticate', ask: 'authenticate', doing: 'authenticate with', done: 'authenticated' },
 } as const;
 
 // A login code is single use, so a retry after a refusal needs a fresh one.
@@ -142,7 +142,7 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
         setFailure({ message: `Could not ${action.doing} ${domain}. ${FRESH_CODE}` });
       } else if (await hostAnswers(parsed.url)) {
         setFailure({
-          message: `You may already be logged in. ${domain} didn't let Glow read its reply, so check the site.`,
+          message: `Could not read the reply from ${domain}. Check the site if you've ${action.done}.`,
           missingCors: true,
         });
       } else {
@@ -197,19 +197,27 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
         </div>
       )}
 
-      <div className="flex gap-3">
-        <SecondaryButton onClick={onClose} disabled={isLoading} className="flex-1">
-          Cancel
-        </SecondaryButton>
-        <PrimaryButton onClick={handleAuth} disabled={isLoading} className="flex-1">
-          {isLoading ? (
-            <span className="flex items-center justify-center gap-2">
-              <SpinnerIcon size="md" />
-              Processing...
-            </span>
-          ) : action.label}
+      {/* The site may have taken the login already, and a retry with the same
+          single-use code would only report it as used. */}
+      {failure?.missingCors ? (
+        <PrimaryButton onClick={onClose} className="w-full">
+          Done
         </PrimaryButton>
-      </div>
+      ) : (
+        <div className="flex gap-3">
+          <SecondaryButton onClick={onClose} disabled={isLoading} className="flex-1">
+            Cancel
+          </SecondaryButton>
+          <PrimaryButton onClick={handleAuth} disabled={isLoading} className="flex-1">
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <SpinnerIcon size="md" />
+                Processing...
+              </span>
+            ) : action.label}
+          </PrimaryButton>
+        </div>
+      )}
     </div>
   );
 };

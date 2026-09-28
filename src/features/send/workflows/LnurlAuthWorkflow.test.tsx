@@ -11,8 +11,8 @@ const parsed: LnurlAuthRequestDetails = {
 };
 const NETWORK_ERROR = 'Network error: Request error: error sending request : JsValue(TypeError: Failed to fetch';
 
-const logIn = async (onAuth: () => Promise<LnurlCallbackStatus>) => {
-  render(<LnurlAuthWorkflow parsed={parsed} onBack={vi.fn()} onAuth={onAuth} onClose={vi.fn()} />);
+const logIn = async (onAuth: () => Promise<LnurlCallbackStatus>, onClose = vi.fn()) => {
+  render(<LnurlAuthWorkflow parsed={parsed} onBack={vi.fn()} onAuth={onAuth} onClose={onClose} />);
   fireEvent.click(screen.getByRole('button', { name: 'Log In' }));
 };
 
@@ -51,14 +51,23 @@ describe('LnurlAuthWorkflow', () => {
   it("doesn't call the login failed when the site answers but hides its reply", async () => {
     const probe = vi.fn().mockResolvedValue(new Response());
     vi.stubGlobal('fetch', probe);
-    await logIn(() => Promise.reject(new Error(NETWORK_ERROR)));
+    const onClose = vi.fn();
+    const onAuth = vi.fn().mockRejectedValue(new Error(NETWORK_ERROR));
+    await logIn(onAuth, onClose);
     expect(await screen.findByText(
-      "You may already be logged in. stacker.news didn't let Glow read its reply, so check the site.",
+      "Could not read the reply from stacker.news. Check the site if you've logged in.",
     )).toBeInTheDocument();
     expect(probe).toHaveBeenCalledWith('https://stacker.news', expect.objectContaining({ mode: 'no-cors' }));
 
     expect(screen.getByText(/The site is missing a CORS header that Glow needs/)).toHaveTextContent('The site is missing a CORS header that Glow needs (LUD-01).');
     expect(screen.getByRole('link', { name: 'LUD-01' })).toHaveAttribute('href', 'https://github.com/lnurl/luds/blob/luds/01.md');
+
+    // A retry would reuse a code the site may have spent, so the sheet only closes.
+    expect(screen.queryByRole('button', { name: 'Log In' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(onClose).toHaveBeenCalled();
+    expect(onAuth).toHaveBeenCalledTimes(1);
   });
 
   it('says the site is unreachable when nothing answers', async () => {
@@ -76,7 +85,7 @@ describe('LnurlAuthWorkflow', () => {
     vi.stubGlobal('crossOriginIsolated', true);
     await logIn(() => Promise.reject(new Error(NETWORK_ERROR)));
     expect(await screen.findByText(
-      "You may already be logged in. stacker.news didn't let Glow read its reply, so check the site.",
+      "Could not read the reply from stacker.news. Check the site if you've logged in.",
     )).toBeInTheDocument();
     expect(probe).not.toHaveBeenCalled();
   });
