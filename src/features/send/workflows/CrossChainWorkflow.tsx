@@ -133,7 +133,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
         });
       }
     });
-  }, [prepareRoute]);
+  }, [prepareRoute, t]);
 
   // Advance from asset selection (asset is the display group name, e.g. "USDT" not "USDT0")
   const selectAsset = useCallback((asset: string, allRoutes: CrossChainRoutePair[]) => {
@@ -175,7 +175,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
       prepareAllProviders(matching);
       setStep('provider');
     }
-  }, [prepareRoute, prepareAllProviders]);
+  }, [prepareRoute, prepareAllProviders, t]);
 
   // Fetch routes on mount
   useEffect(() => {

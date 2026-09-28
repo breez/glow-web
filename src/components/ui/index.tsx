@@ -354,7 +354,7 @@ export const CopyableText: React.FC<{
         <button
           onClick={handleCopy}
           className={`text-center font-mono text-xs sm:text-sm break-all hover:opacity-80 transition-opacity ${textColor}`}
-          title="Tap to copy"
+          title={t('actions.tapToCopy')}
           data-testid="copyable-text-content"
         >
           {displayText}

@@ -17,7 +17,7 @@ import { forgetClaimFee, readClaimFee, rejectDeposit, rememberClaimFee, removeRe
 import { explorerTxUrl } from '../utils/explorer';
 import { getSettings } from '../services/settings';
 import {
-  CLAIM_SUBMITTED_LINE,
+  claimSubmittedLine,
   autoClaimsEarly,
   blocksToWait,
   ceilingForWait,
@@ -343,7 +343,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
   const statusLine: ReactNode = isClaimInFlight
     // Says what the toast said, so reopening the sheet mid-settlement reports
     // the claim rather than showing an amount and nothing else.
-    ? CLAIM_SUBMITTED_LINE
+    ? claimSubmittedLine()
     : !isConfirming
       ? t('common:deposit.autoClaim')
       // Nothing until the quote lands. The depth a deposit matures at is not

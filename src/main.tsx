@@ -413,6 +413,11 @@ async function init() {
     await mountClaimTest(Number(claimTest) || 1500);
     return;
   }
+  // Before the WebAssembly check, because the Lockdown screen below is the one
+  // place a reader is told how to recover and it should be in their language.
+  // Resolving it needs no WASM.
+  const language = await initI18n();
+
   // Lockdown Mode leaves the WebView running but takes WebAssembly with it, so
   // startup would otherwise paint a working-looking welcome screen and fail at
   // the first SDK call. Bail out here with something actionable instead.

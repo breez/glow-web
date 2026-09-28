@@ -212,7 +212,7 @@ export function useBuyBitcoin({
     } finally {
       setIsGenerating(false);
     }
-  }, [amountSats, sdk, onMobileRedirectComplete]);
+  }, [amountSats, sdk, onMobileRedirectComplete, t]);
 
   // Cash App URLs are `https://cash.app/launch/lightning/<bolt11>`. Extract the
   // invoice only while the link is on screen so the bus subscription pauses

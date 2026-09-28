@@ -47,7 +47,7 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
   const convInfo = getConversionInfo(payment.details);
 
   if (payment.method === 'lightning') {
-    if (isCrossChain(convInfo)) return 'USD Transfer';
+    if (isCrossChain(convInfo)) return i18n.t('methods.usdTransfer');
     if (payment.details?.type === 'lightning') {
       const comment = payment.details.lnurlPayInfo?.comment
         ?? payment.details.lnurlReceiveMetadata?.senderComment;
@@ -63,7 +63,7 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
     return i18n.t('methods.lightningPayment');
   }
   if (payment.method === 'spark') {
-    if (isCrossChain(convInfo)) return 'USD Transfer';
+    if (isCrossChain(convInfo)) return i18n.t('methods.usdTransfer');
     if (convInfo) {
       const dir = payment.paymentType === 'send' ? 'from' : 'to';
       return `Conversion ${dir} Bitcoin`;
@@ -80,7 +80,7 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
     }
     return displayName ? i18n.t('methods.namedTransfer', { name: displayName }) : i18n.t('methods.tokenTransfer');
   }
-  if (payment.method === 'deposit') return 'BTC Transfer';
-  if (payment.method === 'withdraw') return 'BTC Transfer';
+  if (payment.method === 'deposit') return i18n.t('methods.btcTransfer');
+  if (payment.method === 'withdraw') return i18n.t('methods.btcTransfer');
   return i18n.t('methods.payment');
 }

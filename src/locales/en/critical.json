@@ -32,7 +32,12 @@
     "convertToBtc": "Convert to BTC",
     "conversionFee": "Conversion fee:",
     "feeUnavailable": "Couldn't estimate fee",
-    "disclaimerBody": "Your balance is held in USD. Incoming BTC is automatically converted to USD, and outgoing payments are converted back to BTC. Amounts under the conversion threshold remain as change until they accumulate."
+    "disclaimerBody": "Your balance is held in USD. Incoming BTC is automatically converted to USD, and outgoing payments are converted back to BTC. Amounts under the conversion threshold remain as change until they accumulate.",
+    "balanceTooLow": "Balance too low to convert — it will remain as change",
+    "switchToUsdFailed": "Could not switch to USD. Please try again.",
+    "switchToBtcFailed": "Could not switch to BTC. Please try again.",
+    "restoreTitle": "USD Balance Detected",
+    "restoreBody": "We've detected USD funds. Would you like to switch to USD mode?\n\nYour balance will be held in USD. Incoming BTC is automatically converted to USD, and outgoing payments are converted back to BTC."
   },
   "send": {
     "sendAll": "Send All",
@@ -54,7 +59,10 @@
       "amountTooSmall": "Amount too small for this route.",
       "amountTooLarge": "Amount too large for this route.",
       "amountTooSmallHint": "This amount is too small for the available routes. Try sending a larger amount.",
-      "amountTooLargeHint": "This amount is too large for the available routes. Try sending a smaller amount."
+      "amountTooLargeHint": "This amount is too large for the available routes. Try sending a smaller amount.",
+      "networkUnavailable": "This network is temporarily unavailable. Try again in a moment.",
+      "networkNotSupported": "This network isn't available. Try another network.",
+      "rateDrift": "Amount too small for this network. Try a larger amount or another network."
     },
     "withdraw": {
       "noValidAmount": "This withdraw link has no valid amount Glow can receive.",
@@ -125,5 +133,10 @@
     "explainFirstTime": "If you created your passkey with an earlier version of Glow, we'll create a new one and transfer your funds automatically. If this is your first time using Glow, choose <skip/> to continue.",
     "migrateLabels_one": "We'll migrate your label to your new passkey.",
     "migrateLabels_other": "We'll migrate all {{count}} labels to your new passkey."
+  },
+  "webNotice": {
+    "preferPasskey": "For your safety, we recommend using a passkey instead.",
+    "preferApp": "For your safety, we recommend the Glow app.",
+    "risk": "A recovery phrase on the web is less secure, and there is a chance your money will be lost. Use a recovery phrase on the web only if you are willing to take this risk."
   }
 }

@@ -35,7 +35,8 @@
     "retry": "Retry",
     "goBack": "Go Back",
     "edit": "Edit",
-    "skip": "Skip"
+    "skip": "Skip",
+    "tapToCopy": "Tap to copy"
   },
   "labels": {
     "address": "Address",
@@ -55,7 +56,9 @@
     "justNow": "Just now",
     "somethingWentWrongRetry": "Something went wrong. Please try again.",
     "shareFailed": "Failed to share",
-    "guide": "Guide"
+    "guide": "Guide",
+    "securityNotice": "Security Notice",
+    "readyNow": "ready now"
   },
   "a11y": {
     "goBack": "Go back",
@@ -212,7 +215,8 @@
     "sparkTransfer": "Spark Transfer",
     "tokenTransfer": "Token Transfer",
     "namedTransfer": "{{name}} Transfer",
-    "usdTransfer": "USD Transfer"
+    "usdTransfer": "USD Transfer",
+    "btcTransfer": "BTC Transfer"
   },
   "security": {
     "gateReason": "Unlock Lock Screen settings",
@@ -352,7 +356,21 @@
     "createAddressBody": "Create a Lightning Address to receive payments easily",
     "lightningUnavailable": "Lightning addresses unavailable",
     "shareFailed": "Failed to share",
-    "scanToPayShort": "Scan to pay"
+    "scanToPayShort": "Scan to pay",
+    "onChain": "On-chain",
+    "switchTo": "Switch to {{mode}}",
+    "createAddressShort": "Create Address",
+    "amountCopied": "Amount copied",
+    "addressCopied": "Address copied",
+    "copyAmount": "Copy amount",
+    "depositAddress": "Deposit Address",
+    "crossChain": {
+      "createFailed": "Failed to create request.",
+      "noRoutes": "No cross-chain routes available right now",
+      "creating": "Creating request...",
+      "enterUsd": "Enter amount in USD",
+      "routeSummary": "{{asset}} on {{chain}} · via {{provider}}"
+    }
   },
   "buy": {
     "title": "Buy Bitcoin",
@@ -457,7 +475,8 @@
       "noRoutesAny": "No cross-chain routes available for this address",
       "routesFetchFailed": "Failed to fetch routes: {{error}}",
       "quoteFailedHint": "Couldn’t get a quote from any provider right now. Try again, or go back and use a different amount.",
-      "fetchingRoutes": "Fetching routes..."
+      "fetchingRoutes": "Fetching routes...",
+      "selectNetwork": "Select Network for {{asset}}"
     },
     "withdraw": {
       "amountToReceive": "Amount to receive",
@@ -551,7 +570,8 @@
     "setupFailed": "Could not set this transfer up to be claimed. Please try again.",
     "checkingOptions": "Checking delivery options",
     "countNotClaimed_one": "{{count}} deposit could not be claimed",
-    "countNotClaimed_other": "{{count}} deposits could not be claimed"
+    "countNotClaimed_other": "{{count}} deposits could not be claimed",
+    "claimSubmitted": "Claim submitted. Funds will arrive shortly."
   },
   "startup": {
     "refreshFailed": "Could not refresh your data.",
@@ -595,5 +615,10 @@
   },
   "logout": {
     "done": "Successfully logged out"
+  },
+  "refresh": {
+    "pull": "Pull to refresh",
+    "release": "Release to refresh",
+    "refreshing": "Refreshing"
   }
 }
