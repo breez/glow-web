@@ -115,7 +115,13 @@
     "unlockPrompt": "Inserisci il PIN per sbloccare",
     "continuePrompt": "Inserisci il PIN per continuare",
     "forgotPin": "Hai dimenticato il PIN?",
-    "useBiometrics": "Usa la biometria"
+    "useBiometrics": "Usa la biometria",
+    "unlockGlow": "Sblocca Glow",
+    "incorrectPin": "PIN errato",
+    "tooManySeconds_one": "Troppi tentativi. Riprova tra {{count}} secondi.",
+    "tooManySeconds_other": "Troppi tentativi. Riprova tra {{count}} secondi.",
+    "tooManyMinutes_one": "Troppi tentativi. Riprova tra {{count}} minuti.",
+    "tooManyMinutes_other": "Troppi tentativi. Riprova tra {{count}} minuti."
   },
   "offline": {
     "banner": "Nessuna connessione a internet"
@@ -164,7 +170,13 @@
     "initializing": "Avvio della fotocamera...",
     "unavailable": "Fotocamera non disponibile",
     "hint": "Inquadra il codice QR",
-    "noQrInImage": "Nessun codice QR trovato nell'immagine"
+    "noQrInImage": "Nessun codice QR trovato nell'immagine",
+    "noVideo": "Elemento video non disponibile",
+    "unavailableOrDenied": "Accesso alla fotocamera negato o non disponibile",
+    "denied": "Accesso alla fotocamera negato. Consenti l’accesso e riprova.",
+    "notFound": "Nessuna fotocamera trovata su questo dispositivo",
+    "inUse": "La fotocamera è già in uso da un’altra applicazione",
+    "constraints": "Vincoli della fotocamera non supportati"
   },
   "staging": {
     "title": "Ambiente di staging",
@@ -272,7 +284,8 @@
     "useRecoveryPhrase": "Usa invece la frase di recupero",
     "createPasskey": "Crea passkey",
     "useExistingPasskey": "Usa un passkey esistente",
-    "usePasskeyInstead": "Usa invece il passkey"
+    "usePasskeyInstead": "Usa invece il passkey",
+    "settingUp": "Configurazione di Glow..."
   },
   "wallet": {
     "send": "Invia",
@@ -302,8 +315,8 @@
     "alreadyExists": "Il passkey esiste già",
     "signInCancelled": "Accesso annullato",
     "unavailable": "Passkey non disponibile",
-    "signInFailed": "Accesso non riuscito",
-    "noLongerOnDevice": "Quel passkey non è più su questo dispositivo.",
+    "signInFailed": "Non è stato possibile accedere con il tuo passkey. Riprova.",
+    "noLongerOnDevice": "Il tuo passkey Glow non è più su questo dispositivo. Puoi crearne uno nuovo.",
     "couldNotSignIn": "Impossibile accedere con quel passkey. Potrebbe essere stato rimosso, oppure la richiesta è stata annullata.",
     "saveLabelFailed": "Impossibile salvare l'etichetta",
     "connectFailed": "Impossibile connettersi",
@@ -317,7 +330,12 @@
     "notFoundOnDevice": "Impossibile trovare il tuo passkey Glow su questo dispositivo. Riprova, oppure controlla Impostazioni > Password.",
     "createdNotReady": "Il tuo passkey è stato creato ma non era ancora pronto all'uso. Usalo per accedere.",
     "timedOut": "Tempo scaduto per l'accesso. Riprova.",
-    "cancelledRetry": "Accesso annullato. Riprova."
+    "cancelledRetry": "Accesso annullato. Riprova.",
+    "alreadyExistsRetry": "Hai già un passkey Glow su questo dispositivo. Riprova ad accedere.",
+    "alreadyExistsUse": "Hai già un passkey Glow su questo dispositivo. Usalo per accedere.",
+    "labelSaveFailed": "Salvataggio dell’etichetta su Nostr non riuscito",
+    "promptCancelled": "Richiesta del passkey annullata. Riprova.",
+    "signInFailedShort": "Accesso non riuscito. Riprova."
   },
   "receive": {
     "title": "Ricevi",
@@ -514,7 +532,32 @@
       "refundSuccessBody": "Il tuo rimborso è stato inviato alla rete Bitcoin.",
       "refundFailBody": "Si è verificato un errore durante l’elaborazione del rimborso. Riprova."
     },
-    "loginCodeInvalid": "Questo codice di accesso non è valido. Aggiorna il sito per averne uno nuovo."
+    "loginCodeInvalid": "Questo codice di accesso non è valido. Aggiorna il sito per averne uno nuovo.",
+    "title": "Invia BTC o USD",
+    "lnurlAuth": {
+      "freshCode": "Aggiorna il sito per un nuovo codice e riprova.",
+      "cta_register": "Registrati",
+      "wants_register": "vuole che ti registri",
+      "failed_register": "Registrazione su {{domain}} non riuscita.",
+      "failedReason_register": "Registrazione su {{domain}} non riuscita: {{reason}}.",
+      "unclear_register": "Non è stato possibile leggere la risposta da {{domain}}. Controlla sul sito se hai registrato.",
+      "cta_login": "Accedi",
+      "wants_login": "vuole che accedi",
+      "failed_login": "Accesso a {{domain}} non riuscito.",
+      "failedReason_login": "Accesso a {{domain}} non riuscito: {{reason}}.",
+      "unclear_login": "Non è stato possibile leggere la risposta da {{domain}}. Controlla sul sito se hai effettuato l’accesso.",
+      "cta_link": "Collega account",
+      "wants_link": "vuole che colleghi il tuo account",
+      "failed_link": "Collegamento dell’account su {{domain}} non riuscito.",
+      "failedReason_link": "Collegamento dell’account su {{domain}} non riuscito: {{reason}}.",
+      "unclear_link": "Non è stato possibile leggere la risposta da {{domain}}. Controlla sul sito se hai collegato il tuo account.",
+      "cta_auth": "Autentica",
+      "wants_auth": "vuole che ti autentichi",
+      "failed_auth": "Autenticazione su {{domain}} non riuscita.",
+      "failedReason_auth": "Autenticazione su {{domain}} non riuscita: {{reason}}.",
+      "unclear_auth": "Non è stato possibile leggere la risposta da {{domain}}. Controlla sul sito se hai autenticato.",
+      "unreachable": "Impossibile raggiungere {{domain}}. Controlla la connessione e riprova."
+    }
   },
   "restore": {
     "restoring": "Ripristino...",
@@ -548,7 +591,8 @@
     "loadFailed": "Impossibile caricare i depositi rifiutati",
     "notOnchainAddress": "Questo non è un indirizzo Bitcoin on-chain",
     "refundFailed": "Rimborso del deposito non riuscito",
-    "readingFeeRates": "Lettura delle commissioni attuali..."
+    "readingFeeRates": "Lettura delle commissioni attuali...",
+    "loading": "Caricamento dei depositi rifiutati..."
   },
   "deposit": {
     "title": "Trasferimento BTC",
@@ -611,7 +655,15 @@
     "notNow": "Non ora",
     "lightningAddress": "Indirizzo Lightning",
     "labelFailed": "Impossibile migrare l'etichetta “{{label}}”. Riprova.",
-    "currentLabel": "(attuale)"
+    "currentLabel": "(attuale)",
+    "probeFailed": "Non è stato possibile verificare la presenza di un passkey. Riprova.",
+    "labelsReadFailed": "Non è stato possibile leggere le etichette del tuo passkey. Riprova.",
+    "unreachablePasskey": "Non siamo riusciti a raggiungere il passkey del tuo tentativo precedente. Se hai chiuso la richiesta, tocca Riprova. Se hai eliminato quel passkey, scegli Crea un nuovo passkey per ricominciare.",
+    "stageSweep": "Spostamento del tuo {{what}}...",
+    "stageSweepOf": "Spostamento del tuo {{what}} ({{current}} di {{total}})...",
+    "sweep_funds": "fondi",
+    "sweep_address": "indirizzo Lightning",
+    "sweep_contacts": "contatti"
   },
   "refresh": {
     "pull": "Trascina per aggiornare",

@@ -115,7 +115,13 @@
     "unlockPrompt": "Gib deine PIN zum Entsperren ein",
     "continuePrompt": "Gib deine PIN ein, um fortzufahren",
     "forgotPin": "PIN vergessen?",
-    "useBiometrics": "Biometrie verwenden"
+    "useBiometrics": "Biometrie verwenden",
+    "unlockGlow": "Glow entsperren",
+    "incorrectPin": "Falscher PIN",
+    "tooManySeconds_one": "Zu viele Versuche. Versuche es in {{count}} Sekunden erneut.",
+    "tooManySeconds_other": "Zu viele Versuche. Versuche es in {{count}} Sekunden erneut.",
+    "tooManyMinutes_one": "Zu viele Versuche. Versuche es in {{count}} Minuten erneut.",
+    "tooManyMinutes_other": "Zu viele Versuche. Versuche es in {{count}} Minuten erneut."
   },
   "offline": {
     "banner": "Keine Internetverbindung"
@@ -164,7 +170,13 @@
     "initializing": "Kamera wird gestartet...",
     "unavailable": "Kamera nicht verfügbar",
     "hint": "Richte die Kamera auf den QR-Code",
-    "noQrInImage": "Kein QR-Code im Bild gefunden"
+    "noQrInImage": "Kein QR-Code im Bild gefunden",
+    "noVideo": "Videoelement nicht verfügbar",
+    "unavailableOrDenied": "Kamerazugriff verweigert oder nicht verfügbar",
+    "denied": "Kamerazugriff verweigert. Erlaube den Zugriff und versuche es erneut.",
+    "notFound": "Auf diesem Gerät wurde keine Kamera gefunden",
+    "inUse": "Die Kamera wird bereits von einer anderen App verwendet",
+    "constraints": "Kameraeinstellungen werden nicht unterstützt"
   },
   "staging": {
     "title": "Staging-Umgebung",
@@ -272,7 +284,8 @@
     "useRecoveryPhrase": "Stattdessen Wiederherstellungsphrase verwenden",
     "createPasskey": "Passkey erstellen",
     "useExistingPasskey": "Vorhandenen Passkey verwenden",
-    "usePasskeyInstead": "Stattdessen Passkey verwenden"
+    "usePasskeyInstead": "Stattdessen Passkey verwenden",
+    "settingUp": "Glow wird eingerichtet..."
   },
   "wallet": {
     "send": "Senden",
@@ -302,8 +315,8 @@
     "alreadyExists": "Passkey existiert bereits",
     "signInCancelled": "Anmeldung abgebrochen",
     "unavailable": "Passkey nicht verfügbar",
-    "signInFailed": "Anmeldung fehlgeschlagen",
-    "noLongerOnDevice": "Dieser Passkey ist nicht mehr auf diesem Gerät.",
+    "signInFailed": "Die Anmeldung mit deinem Passkey hat nicht geklappt. Versuche es erneut.",
+    "noLongerOnDevice": "Dein Glow-Passkey ist nicht mehr auf diesem Gerät. Du kannst einen neuen erstellen.",
     "couldNotSignIn": "Anmeldung mit diesem Passkey nicht möglich. Er wurde möglicherweise entfernt, oder die Abfrage wurde abgebrochen.",
     "saveLabelFailed": "Label konnte nicht gespeichert werden",
     "connectFailed": "Verbindung nicht möglich",
@@ -317,7 +330,12 @@
     "notFoundOnDevice": "Dein Glow-Passkey wurde auf diesem Gerät nicht gefunden. Versuche es erneut, oder sieh unter Einstellungen > Passwörter nach.",
     "createdNotReady": "Dein Passkey wurde erstellt, war aber noch nicht einsatzbereit. Melde dich damit an.",
     "timedOut": "Zeitüberschreitung bei der Anmeldung. Bitte versuche es erneut.",
-    "cancelledRetry": "Anmeldung abgebrochen. Bitte versuche es erneut."
+    "cancelledRetry": "Anmeldung abgebrochen. Bitte versuche es erneut.",
+    "alreadyExistsRetry": "Du hast auf diesem Gerät bereits einen Glow-Passkey. Versuche erneut, dich anzumelden.",
+    "alreadyExistsUse": "Du hast auf diesem Gerät bereits einen Glow-Passkey. Melde dich damit an.",
+    "labelSaveFailed": "Label konnte nicht in Nostr gespeichert werden",
+    "promptCancelled": "Die Passkey-Abfrage wurde abgebrochen. Versuche es erneut.",
+    "signInFailedShort": "Anmeldung fehlgeschlagen. Versuche es erneut."
   },
   "receive": {
     "title": "Empfangen",
@@ -514,7 +532,32 @@
       "refundSuccessBody": "Deine Rückerstattung wurde an das Bitcoin-Netzwerk gesendet.",
       "refundFailBody": "Bei der Rückerstattung ist ein Fehler aufgetreten. Versuche es erneut."
     },
-    "loginCodeInvalid": "Dieser Anmeldecode ist ungültig. Lade die Seite neu, um einen neuen zu erhalten."
+    "loginCodeInvalid": "Dieser Anmeldecode ist ungültig. Lade die Seite neu, um einen neuen zu erhalten.",
+    "title": "BTC oder USD senden",
+    "lnurlAuth": {
+      "freshCode": "Lade die Seite für einen neuen Code neu und versuche es erneut.",
+      "cta_register": "Registrieren",
+      "wants_register": "möchte, dass du dich registrierst",
+      "failed_register": "Registrierung bei {{domain}} fehlgeschlagen.",
+      "failedReason_register": "Registrierung bei {{domain}} fehlgeschlagen: {{reason}}.",
+      "unclear_register": "Die Antwort von {{domain}} konnte nicht gelesen werden. Prüfe auf der Seite, ob du dich registriert hast.",
+      "cta_login": "Anmelden",
+      "wants_login": "möchte, dass du dich anmeldest",
+      "failed_login": "Anmeldung bei {{domain}} fehlgeschlagen.",
+      "failedReason_login": "Anmeldung bei {{domain}} fehlgeschlagen: {{reason}}.",
+      "unclear_login": "Die Antwort von {{domain}} konnte nicht gelesen werden. Prüfe auf der Seite, ob du dich angemeldet hast.",
+      "cta_link": "Konto verknüpfen",
+      "wants_link": "möchte, dass du dein Konto verknüpfst",
+      "failed_link": "Kontoverknüpfung auf {{domain}} fehlgeschlagen.",
+      "failedReason_link": "Kontoverknüpfung auf {{domain}} fehlgeschlagen: {{reason}}.",
+      "unclear_link": "Die Antwort von {{domain}} konnte nicht gelesen werden. Prüfe auf der Seite, ob du dich dein Konto verknüpft hast.",
+      "cta_auth": "Authentifizieren",
+      "wants_auth": "möchte, dass du dich authentifizierst",
+      "failed_auth": "Authentifizierung bei {{domain}} fehlgeschlagen.",
+      "failedReason_auth": "Authentifizierung bei {{domain}} fehlgeschlagen: {{reason}}.",
+      "unclear_auth": "Die Antwort von {{domain}} konnte nicht gelesen werden. Prüfe auf der Seite, ob du dich authentifiziert hast.",
+      "unreachable": "{{domain}} ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut."
+    }
   },
   "restore": {
     "restoring": "Wird wiederhergestellt...",
@@ -548,7 +591,8 @@
     "loadFailed": "Abgelehnte Einzahlungen konnten nicht geladen werden",
     "notOnchainAddress": "Das ist keine On-Chain-Bitcoin-Adresse",
     "refundFailed": "Rückerstattung der Einzahlung fehlgeschlagen",
-    "readingFeeRates": "Aktuelle Gebührensätze werden gelesen..."
+    "readingFeeRates": "Aktuelle Gebührensätze werden gelesen...",
+    "loading": "Abgelehnte Einzahlungen werden geladen..."
   },
   "deposit": {
     "title": "BTC-Transfer",
@@ -611,7 +655,15 @@
     "notNow": "Jetzt nicht",
     "lightningAddress": "Lightning-Adresse",
     "labelFailed": "Das Label „{{label}}“ konnte nicht migriert werden. Bitte versuche es erneut.",
-    "currentLabel": "(aktuell)"
+    "currentLabel": "(aktuell)",
+    "probeFailed": "Es konnte nicht geprüft werden, ob schon ein Passkey vorhanden ist. Versuche es erneut.",
+    "labelsReadFailed": "Deine Passkey-Label konnten nicht gelesen werden. Versuche es erneut.",
+    "unreachablePasskey": "Wir konnten den Passkey aus deinem letzten Versuch nicht erreichen. Wenn du die Abfrage geschlossen hast, tippe auf Erneut versuchen. Wenn du diesen Passkey gelöscht hast, wähle Neuen Passkey erstellen, um neu anzufangen.",
+    "stageSweep": "Dein {{what}} wird verschoben...",
+    "stageSweepOf": "Dein {{what}} wird verschoben ({{current}} von {{total}})...",
+    "sweep_funds": "Guthaben",
+    "sweep_address": "Lightning-Adresse",
+    "sweep_contacts": "Kontakte"
   },
   "refresh": {
     "pull": "Zum Aktualisieren ziehen",

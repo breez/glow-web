@@ -91,7 +91,7 @@ export function useMigrationFlow({
   const [lnAddressFailures, setLnAddressFailures] = useState<LnAddressFailure[]>([]);
   // Current sub-step of the silent sweep, so a long move reads as progress
   // (connect + sync sits under 'funds', then the address, then contacts).
-  const [sweepDetail, setSweepDetail] = useState<'funds' | 'Lightning address' | 'contacts'>('funds');
+  const [sweepDetail, setSweepDetail] = useState<'funds' | 'address' | 'contacts'>('funds');
   // Set only when a recorded shared passkey can't be reached (e.g. the user deleted
   // it): the error screen then offers a fresh start instead of a Retry dead-end.
   const [canStartOver, setCanStartOver] = useState(false);
@@ -254,15 +254,15 @@ export function useMigrationFlow({
         logger.warn(LogCategory.AUTH, 'Migration: label listing failed, surfacing retry', { phase, error: formatError(e) });
         setError(
           phase === 'probe'
-            ? 'Could not check for an existing passkey. Please try again.'
-            : 'Could not read your passkey labels. Please try again.',
+            ? t('common:migration.probeFailed')
+            : t('common:migration.labelsReadFailed'),
         );
         setPhase('error');
       }
     })();
 
     return () => { cancelled = true; };
-  }, [isOpen, phase, activeLegacySdk, onCloseRef]);
+  }, [isOpen, phase, activeLegacySdk, onCloseRef, t]);
 
   // ============================================
   // Phase: check-deposits-all. Per label: derive seed (cached), connect, sync,
@@ -380,8 +380,7 @@ export function useMigrationFlow({
               error: formatError(e),
             });
             setError(
-              "We couldn't reach the passkey from your previous attempt. If you dismissed the prompt, tap Retry. "
-              + 'If you deleted that passkey, choose Create a new passkey to start fresh.',
+              t('common:migration.unreachablePasskey'),
             );
             setCanStartOver(true);
             setPhase('error');
@@ -505,7 +504,7 @@ export function useMigrationFlow({
         // 5. Sweep sats + tokens, transfer the Lightning address, migrate contacts.
         await sweepBalances(oldSdk, newSdk, oldInfo, label);
         if (cancelled) return;
-        setSweepDetail('Lightning address');
+        setSweepDetail('address');
         const failedAddress = await transferLightningAddress(oldSdk, newSdk, newInfo.identityPubkey, label);
         if (failedAddress) setLnAddressFailures((prev) => [...prev, { label, address: failedAddress }]);
         if (cancelled) return;
@@ -713,9 +712,15 @@ export function useMigrationFlow({
       case 'derive-new-passkey': return t('common:migration.stageDerive');
       case 'sweep-label': {
         if (confirmedLabels.length > 1) {
-          return `Moving your ${sweepDetail} (${currentLabelIndex + 1} of ${confirmedLabels.length})...`;
+          return t('common:migration.stageSweepOf', {
+            what: t(`common:migration.sweep_${sweepDetail}`),
+            current: currentLabelIndex + 1,
+            total: confirmedLabels.length,
+          });
         }
-        return `Moving your ${sweepDetail}...`;
+        return t('common:migration.stageSweep', {
+          what: t(`common:migration.sweep_${sweepDetail}`),
+        });
       }
       case 'switch': return t('common:migration.stageSwitch');
       default: return '';

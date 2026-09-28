@@ -3,6 +3,7 @@ import QrScanner from '@/utils/qrScanner';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { hapticLight } from '@/utils/haptics';
+import i18n from 'i18next';
 
 export type FacingMode = 'environment' | 'user';
 
@@ -73,7 +74,7 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
       setIsScanning(false);
 
       if (!videoRef.current) {
-        const errorMsg = 'Video element not available';
+        const errorMsg = i18n.t('qrScanner.noVideo');
         setError(errorMsg);
         onError?.(errorMsg);
         setIsInitializing(false);
@@ -83,7 +84,7 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
       // Check if camera is available
       const hasCamera = await QrScanner.hasCamera();
       if (!hasCamera) {
-        const errorMsg = 'No camera found on this device';
+        const errorMsg = i18n.t('qrScanner.notFound');
         setError(errorMsg);
         onError?.(errorMsg);
         setIsInitializing(false);
@@ -141,17 +142,17 @@ export const useQrScanner = ({ onScan, onError }: UseQrScannerOptions): UseQrSca
       logger.error(LogCategory.UI, 'Failed to start QR scanner', {
         error: formatError(err),
       });
-      let errorMessage = 'Camera access denied or not available';
+      let errorMessage = i18n.t('qrScanner.unavailableOrDenied');
 
       if (err instanceof Error) {
         if (err.name === 'NotAllowedError') {
-          errorMessage = 'Camera access denied. Please allow camera access and try again.';
+          errorMessage = i18n.t('qrScanner.denied');
         } else if (err.name === 'NotFoundError') {
-          errorMessage = 'No camera found on this device';
+          errorMessage = i18n.t('qrScanner.notFound');
         } else if (err.name === 'NotReadableError') {
-          errorMessage = 'Camera is already in use by another application';
+          errorMessage = i18n.t('qrScanner.inUse');
         } else if (err.name === 'OverconstrainedError') {
-          errorMessage = 'Camera constraints not supported';
+          errorMessage = i18n.t('qrScanner.constraints');
         }
       }
 

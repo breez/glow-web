@@ -29,6 +29,7 @@ import {
 } from '@/services/secureStorage';
 import { isPasskeyMode } from '@/services/passkeyService';
 import { logger, LogCategory } from '@/services/logger';
+import i18n from 'i18next';
 
 export interface AppLockState {
   locked: boolean;
@@ -175,7 +176,7 @@ export function useAppLock(): AppLockState {
   }, []);
 
   const unlockWithBiometric = useCallback(async () => {
-    if (await tryAuthenticateBiometric('Unlock Glow')) setLocked(false);
+    if (await tryAuthenticateBiometric(i18n.t('lock.unlockGlow'))) setLocked(false);
   }, []);
 
   const unlockAfterWipe = useCallback(() => setLocked(false), []);

@@ -117,7 +117,8 @@
   },
   "passkey": {
     "confirmDeleted": "Ik bevestig dat deze passkey is verwijderd.",
-    "confirmDeletedHint": "Optioneel. Ga verder zonder aanvinken als je het niet zeker weet."
+    "confirmDeletedHint": "Optioneel. Ga verder zonder aanvinken als je het niet zeker weet.",
+    "isHowYouAccess": "Je passkey is hoe je bij je geld komt"
   },
   "migration": {
     "switchFailed": "We konden het overschakelen naar je nieuwe passkey niet afronden. Je geld is veilig. Probeer het opnieuw.",

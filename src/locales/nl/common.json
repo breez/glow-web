@@ -115,7 +115,13 @@
     "unlockPrompt": "Voer je pincode in om te ontgrendelen",
     "continuePrompt": "Voer je pincode in om door te gaan",
     "forgotPin": "Pincode vergeten?",
-    "useBiometrics": "Biometrie gebruiken"
+    "useBiometrics": "Biometrie gebruiken",
+    "unlockGlow": "Glow ontgrendelen",
+    "incorrectPin": "Onjuiste pincode",
+    "tooManySeconds_one": "Te veel pogingen. Probeer het over {{count}} seconden opnieuw.",
+    "tooManySeconds_other": "Te veel pogingen. Probeer het over {{count}} seconden opnieuw.",
+    "tooManyMinutes_one": "Te veel pogingen. Probeer het over {{count}} minuten opnieuw.",
+    "tooManyMinutes_other": "Te veel pogingen. Probeer het over {{count}} minuten opnieuw."
   },
   "offline": {
     "banner": "Geen internetverbinding"
@@ -164,7 +170,13 @@
     "initializing": "Camera wordt gestart...",
     "unavailable": "Camera niet beschikbaar",
     "hint": "Richt de camera op de QR-code",
-    "noQrInImage": "Geen QR-code gevonden in de afbeelding"
+    "noQrInImage": "Geen QR-code gevonden in de afbeelding",
+    "noVideo": "Video-element niet beschikbaar",
+    "unavailableOrDenied": "Cameratoegang geweigerd of niet beschikbaar",
+    "denied": "Cameratoegang geweigerd. Sta toegang toe en probeer het opnieuw.",
+    "notFound": "Geen camera gevonden op dit apparaat",
+    "inUse": "De camera is al in gebruik door een andere app",
+    "constraints": "Camerabeperkingen worden niet ondersteund"
   },
   "staging": {
     "title": "Staging-omgeving",
@@ -272,7 +284,8 @@
     "useRecoveryPhrase": "Gebruik in plaats daarvan de herstelzin",
     "createPasskey": "Passkey aanmaken",
     "useExistingPasskey": "Bestaande passkey gebruiken",
-    "usePasskeyInstead": "Gebruik in plaats daarvan een passkey"
+    "usePasskeyInstead": "Gebruik in plaats daarvan een passkey",
+    "settingUp": "Glow instellen..."
   },
   "wallet": {
     "send": "Versturen",
@@ -302,8 +315,8 @@
     "alreadyExists": "Passkey bestaat al",
     "signInCancelled": "Inloggen geannuleerd",
     "unavailable": "Passkey niet beschikbaar",
-    "signInFailed": "Inloggen mislukt",
-    "noLongerOnDevice": "Die passkey staat niet meer op dit apparaat.",
+    "signInFailed": "Inloggen met je passkey is niet gelukt. Probeer het opnieuw.",
+    "noLongerOnDevice": "Je Glow-passkey staat niet meer op dit apparaat. Je kunt een nieuwe aanmaken.",
     "couldNotSignIn": "Inloggen met die passkey is niet gelukt. Mogelijk is hij verwijderd, of is de vraag geannuleerd.",
     "saveLabelFailed": "Label kon niet worden opgeslagen",
     "connectFailed": "Verbinden is niet gelukt",
@@ -317,7 +330,12 @@
     "notFoundOnDevice": "Je Glow-passkey is niet gevonden op dit apparaat. Probeer het opnieuw, of kijk bij Instellingen > Wachtwoorden.",
     "createdNotReady": "Je passkey is aangemaakt, maar was nog niet klaar voor gebruik. Log ermee in.",
     "timedOut": "Time-out bij het inloggen. Probeer het opnieuw.",
-    "cancelledRetry": "Inloggen geannuleerd. Probeer het opnieuw."
+    "cancelledRetry": "Inloggen geannuleerd. Probeer het opnieuw.",
+    "alreadyExistsRetry": "Je hebt al een Glow-passkey op dit apparaat. Probeer opnieuw in te loggen.",
+    "alreadyExistsUse": "Je hebt al een Glow-passkey op dit apparaat. Log er mee in.",
+    "labelSaveFailed": "Label opslaan in Nostr mislukt",
+    "promptCancelled": "De passkey-melding is geannuleerd. Probeer het opnieuw.",
+    "signInFailedShort": "Inloggen is niet gelukt. Probeer het opnieuw."
   },
   "receive": {
     "title": "Ontvangen",
@@ -514,7 +532,32 @@
       "refundSuccessBody": "Je terugbetaling is naar het Bitcoin-netwerk gestuurd.",
       "refundFailBody": "Er is een fout opgetreden bij het verwerken van de terugbetaling. Probeer het opnieuw."
     },
-    "loginCodeInvalid": "Deze inlogcode is niet geldig. Vernieuw de site voor een nieuwe."
+    "loginCodeInvalid": "Deze inlogcode is niet geldig. Vernieuw de site voor een nieuwe.",
+    "title": "BTC of USD verzenden",
+    "lnurlAuth": {
+      "freshCode": "Vernieuw de site voor een nieuwe code en probeer het opnieuw.",
+      "cta_register": "Registreren",
+      "wants_register": "wil dat je je registreert",
+      "failed_register": "Registreren bij {{domain}} is mislukt.",
+      "failedReason_register": "Registreren bij {{domain}} is mislukt: {{reason}}.",
+      "unclear_register": "De reactie van {{domain}} kon niet worden gelezen. Controleer op de site of je bent geregistreerd.",
+      "cta_login": "Inloggen",
+      "wants_login": "wil dat je inlogt",
+      "failed_login": "Inloggen bij {{domain}} is mislukt.",
+      "failedReason_login": "Inloggen bij {{domain}} is mislukt: {{reason}}.",
+      "unclear_login": "De reactie van {{domain}} kon niet worden gelezen. Controleer op de site of je bent ingelogd.",
+      "cta_link": "Account koppelen",
+      "wants_link": "wil dat je je account koppelt",
+      "failed_link": "Je account koppelen op {{domain}} is mislukt.",
+      "failedReason_link": "Je account koppelen op {{domain}} is mislukt: {{reason}}.",
+      "unclear_link": "De reactie van {{domain}} kon niet worden gelezen. Controleer op de site of je bent je account gekoppeld.",
+      "cta_auth": "Verifiëren",
+      "wants_auth": "wil dat je je verifieert",
+      "failed_auth": "Verifiëren bij {{domain}} is mislukt.",
+      "failedReason_auth": "Verifiëren bij {{domain}} is mislukt: {{reason}}.",
+      "unclear_auth": "De reactie van {{domain}} kon niet worden gelezen. Controleer op de site of je bent geverifieerd.",
+      "unreachable": "{{domain}} is niet bereikbaar. Controleer je verbinding en probeer het opnieuw."
+    }
   },
   "restore": {
     "restoring": "Bezig met herstellen...",
@@ -548,7 +591,8 @@
     "loadFailed": "Kan geweigerde stortingen niet laden",
     "notOnchainAddress": "Dat is geen on-chain Bitcoin-adres",
     "refundFailed": "Terugbetaling van storting mislukt",
-    "readingFeeRates": "Huidige tarieven lezen..."
+    "readingFeeRates": "Huidige tarieven lezen...",
+    "loading": "Geweigerde stortingen laden..."
   },
   "deposit": {
     "title": "BTC-overdracht",
@@ -611,7 +655,15 @@
     "notNow": "Niet nu",
     "lightningAddress": "Lightning-adres",
     "labelFailed": "Het label “{{label}}” kon niet worden gemigreerd. Probeer het opnieuw.",
-    "currentLabel": "(huidig)"
+    "currentLabel": "(huidig)",
+    "probeFailed": "Kan niet controleren of er al een passkey is. Probeer het opnieuw.",
+    "labelsReadFailed": "Kan de labels van je passkey niet lezen. Probeer het opnieuw.",
+    "unreachablePasskey": "We konden de passkey van je vorige poging niet bereiken. Als je de melding hebt gesloten, tik je op Opnieuw. Als je die passkey hebt verwijderd, kies je Nieuwe passkey aanmaken om opnieuw te beginnen.",
+    "stageSweep": "Je {{what}} wordt verplaatst...",
+    "stageSweepOf": "Je {{what}} wordt verplaatst ({{current}} van {{total}})...",
+    "sweep_funds": "geld",
+    "sweep_address": "Lightning-adres",
+    "sweep_contacts": "contacten"
   },
   "refresh": {
     "pull": "Trek om te vernieuwen",

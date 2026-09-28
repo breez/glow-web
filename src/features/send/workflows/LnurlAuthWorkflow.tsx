@@ -7,6 +7,7 @@ import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
 import { openExternalUrl } from '../../../utils/externalLink';
 import ResultStep from '../steps/ResultStep';
+import i18n from 'i18next';
 
 interface LnurlAuthWorkflowProps {
   parsed: LnurlAuthRequestDetails;
@@ -16,16 +17,18 @@ interface LnurlAuthWorkflowProps {
   onClose: () => void;
 }
 
-// LUD-04 actions: the CTA, the ask under the domain, and the verbs errors use.
-const ACTIONS = {
-  register: { label: 'Register', ask: 'register', doing: 'register with', done: 'registered' },
-  login: { label: 'Log In', ask: 'log in', doing: 'log in to', done: 'logged in' },
-  link: { label: 'Link Account', ask: 'link your account', doing: 'link your account on', done: 'linked your account' },
-  auth: { label: 'Authenticate', ask: 'authenticate', doing: 'authenticate with', done: 'authenticated' },
-} as const;
+/**
+ * LUD-04 actions. Each sentence is its own key rather than a verb glued to a
+ * domain: "Could not" + "log in to" + domain has a word order only English
+ * agrees with, and nothing here would let a translator move the domain.
+ */
+type AuthAction = 'register' | 'login' | 'link' | 'auth';
+const copy = (kind: AuthAction, form: string, vars?: Record<string, unknown>): string =>
+  i18n.t(`common:send.lnurlAuth.${form}_${kind}`, vars ?? {});
 
 // A login code is single use, so a retry after a refusal needs a fresh one.
-const FRESH_CODE = 'Refresh the site for a new code and try again.';
+/** Resolved per call: the module loads before i18next has a language. */
+const freshCode = (): string => i18n.t('send.lnurlAuth.freshCode');
 
 const LUD_01_URL = 'https://github.com/lnurl/luds/blob/luds/01.md';
 
@@ -117,7 +120,10 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
   const [done, setDone] = useState(false);
   useSheetBack(isLoading || done ? undefined : onBack);
 
-  const action = ACTIONS[parsed.action as keyof typeof ACTIONS] ?? ACTIONS.auth;
+  const kind: AuthAction =
+    parsed.action === 'register' || parsed.action === 'login' || parsed.action === 'link'
+      ? parsed.action
+      : 'auth';
   const { domain } = parsed;
 
   const handleAuth = async () => {
@@ -131,7 +137,7 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
       }
       const reason = result.errorDetails.reason.trim().replace(/\.+$/, '');
       logger.warn(LogCategory.SDK, 'LNURL auth refused', { domain, reason });
-      setFailure({ message: `Could not ${action.doing} ${domain}: ${reason}. ${FRESH_CODE}` });
+      setFailure({ message: `${copy(kind, 'failedReason', { domain, reason })} ${freshCode()}` });
     } catch (err) {
       const error = formatError(err);
       logger.error(LogCategory.SDK, 'LNURL auth failed', { domain, error });
@@ -139,14 +145,14 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
       // still answers, the reply was hidden by missing CORS headers and the
       // site may well have accepted the login (#415).
       if (!error.includes('Network error:')) {
-        setFailure({ message: `Could not ${action.doing} ${domain}. ${FRESH_CODE}` });
+        setFailure({ message: `${copy(kind, 'failed', { domain })} ${freshCode()}` });
       } else if (await hostAnswers(parsed.url)) {
         setFailure({
-          message: `Could not read the reply from ${domain}. Check the site to see if you've ${action.done}.`,
+          message: copy(kind, 'unclear', { domain }),
           missingCors: true,
         });
       } else {
-        setFailure({ message: `Could not reach ${domain}. Check your connection and try again.` });
+        setFailure({ message: i18n.t('send.lnurlAuth.unreachable', { domain }) });
       }
     } finally {
       setIsLoading(false);
@@ -169,7 +175,7 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
     <div className="space-y-5">
       <div className="text-center">
         <DomainName domain={domain} />
-        <p className="text-spark-text-secondary text-sm mt-1">wants you to {action.ask}</p>
+        <p className="text-spark-text-secondary text-sm mt-1">{copy(kind, 'wants')}</p>
       </div>
 
       {failure && (
@@ -212,9 +218,9 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">
                 <SpinnerIcon size="md" />
-                Processing...
+                {i18n.t('send.processingEllipsis')}
               </span>
-            ) : action.label}
+            ) : copy(kind, 'cta')}
           </PrimaryButton>
         </div>
       )}

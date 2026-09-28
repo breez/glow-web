@@ -117,7 +117,8 @@
   },
   "passkey": {
     "confirmDeleted": "Megerősítem, hogy ezt az azonosítókulcsot törölték.",
-    "confirmDeletedHint": "Nem kötelező. Ha bizonytalan vagy, jelölés nélkül folytasd."
+    "confirmDeletedHint": "Nem kötelező. Ha bizonytalan vagy, jelölés nélkül folytasd.",
+    "isHowYouAccess": "Az azonosítókulcsod az, amivel hozzáférsz a pénzedhez"
   },
   "migration": {
     "switchFailed": "Nem sikerült befejezni az átállást az új azonosítókulcsodra. A pénzed biztonságban van. Próbáld újra.",

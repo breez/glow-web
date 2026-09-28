@@ -117,7 +117,8 @@
   },
   "passkey": {
     "confirmDeleted": "Confirmo que este passkey fue eliminado.",
-    "confirmDeletedHint": "Opcional. Continúa sin marcarlo si no estás seguro."
+    "confirmDeletedHint": "Opcional. Continúa sin marcarlo si no estás seguro.",
+    "isHowYouAccess": "Tu passkey es como accedes a tus fondos"
   },
   "migration": {
     "switchFailed": "No pudimos terminar el cambio a tu nuevo passkey. Tus fondos están a salvo. Inténtalo de nuevo.",

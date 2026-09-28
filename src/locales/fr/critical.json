@@ -117,7 +117,8 @@
   },
   "passkey": {
     "confirmDeleted": "Je confirme que cette passkey a été supprimée.",
-    "confirmDeletedHint": "Facultatif. Continuez sans cocher si vous n'êtes pas sûr."
+    "confirmDeletedHint": "Facultatif. Continuez sans cocher si vous n'êtes pas sûr.",
+    "isHowYouAccess": "Ton passkey est ton moyen d’accéder à tes fonds"
   },
   "migration": {
     "switchFailed": "Nous n'avons pas pu terminer le passage à votre nouvelle passkey. Vos fonds sont en sécurité. Réessayez.",

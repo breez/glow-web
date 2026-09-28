@@ -3,7 +3,7 @@ import i18n from 'i18next';
 
 /** What the sheet says once an early claim is in, until the funds land. */
 /** Resolved per call: the module loads before i18next has a language. */
-export const claimSubmittedLine = (): string => i18n.t('common:deposit.claimSubmitted');
+export const claimSubmittedLine = (): string => i18n.t('deposit.claimSubmitted');
 
 /**
  * Blocks still to wait before an option can be claimed. `confirmationsRequired`
