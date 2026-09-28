@@ -47,7 +47,7 @@ send screen is worse than an English one.
 ## Glossary
 
 Terms that must be translated the same way everywhere, and the ones that must
-not be translated at all. Consistency here is what makes the 82 critical strings
+not be translated at all. Consistency here is what makes the critical strings
 reviewable in one sitting.
 
 | English | it | de | hu | es | fr |
@@ -91,7 +91,7 @@ first thing to confirm or reject in review.
 
 Every language below is a complete first draft, machine-generated, and none of
 them ships. A language joins `shipping.json` only after a speaker has read its
-`critical.json`: eighty-two strings, an evening's work.
+`critical.json`: a hundred strings, an evening's work.
 
 | Language | `critical` reviewed |
 |---|---|
@@ -154,6 +154,14 @@ request rather than inventing an abbreviation.
 
 ## What is deliberately not translated
 
+- **Unilateral exit.** The whole `features/unilateral-exit` tree, plus
+  `UnilateralExitPage`. Starting an exit is behind the same five-tap developer
+  gesture as the passkey hub, so nobody who cannot read English reaches it, and
+  the tracker only appears once an exit exists. It is about ninety strings of
+  dense copy about moving funds on-chain, and the feature is still changing
+  week to week, so translating it now buys a re-translation later. Revisit when
+  the Settings entry loses its `isDevMode` guard: the display path in
+  `WalletPage` and `TransactionList` is already ungated and ready for it.
 - **Developer-only screens.** The passkey hub (`PasskeySettingsPage` and the
   management, labels and local-state pages under it) is reachable only after a
   five-tap gesture in Settings. Its strings stay hardcoded in English: nobody

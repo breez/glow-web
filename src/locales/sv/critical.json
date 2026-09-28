@@ -32,7 +32,12 @@
     "convertToBtc": "Växla till BTC",
     "conversionFee": "Växlingsavgift:",
     "feeUnavailable": "Avgiften kunde inte uppskattas",
-    "disclaimerBody": "Ditt saldo hålls i USD. Inkommande BTC växlas automatiskt till USD, och utgående betalningar växlas tillbaka till BTC. Belopp under växlingsgränsen ligger kvar som växel tills de samlas ihop."
+    "disclaimerBody": "Ditt saldo hålls i USD. Inkommande BTC växlas automatiskt till USD, och utgående betalningar växlas tillbaka till BTC. Belopp under växlingsgränsen ligger kvar som växel tills de samlas ihop.",
+    "balanceTooLow": "Saldot är för lågt för att växlas — det blir kvar som växel",
+    "switchToUsdFailed": "Det gick inte att byta till USD. Försök igen.",
+    "switchToBtcFailed": "Det gick inte att byta till BTC. Försök igen.",
+    "restoreTitle": "USD-saldo upptäckt",
+    "restoreBody": "Vi har hittat pengar i USD. Vill du byta till USD-läge?\n\nDitt saldo hålls i USD. Inkommande BTC växlas automatiskt till USD och utgående betalningar tillbaka till BTC."
   },
   "send": {
     "sendAll": "Skicka allt",
@@ -54,14 +59,20 @@
       "amountTooSmall": "Beloppet är för litet för den här rutten.",
       "amountTooLarge": "Beloppet är för stort för den här rutten.",
       "amountTooSmallHint": "Beloppet är för litet för de tillgängliga rutterna. Prova att skicka ett större belopp.",
-      "amountTooLargeHint": "Beloppet är för stort för de tillgängliga rutterna. Prova att skicka ett mindre belopp."
+      "amountTooLargeHint": "Beloppet är för stort för de tillgängliga rutterna. Prova att skicka ett mindre belopp.",
+      "networkUnavailable": "Det här nätverket är tillfälligt otillgängligt. Försök igen om en stund.",
+      "networkNotSupported": "Det här nätverket är inte tillgängligt. Prova ett annat nätverk.",
+      "rateDrift": "Beloppet är för litet för det här nätverket. Prova ett större belopp eller ett annat nätverk."
     },
     "withdraw": {
       "noValidAmount": "Den här uttagslänken saknar ett giltigt belopp som Glow kan ta emot.",
       "wholeSats": "Ange ett helt antal sats"
     },
     "enterAmountIn": "Ange beloppet i {{currency}}",
-    "amountRange": "Mellan {{min}} och {{max}} sats"
+    "amountRange": "Mellan {{min}} och {{max}} sats",
+    "result": {
+      "notSentBody": "Betalningen gick inte igenom. Dina pengar skickades inte."
+    }
   },
   "generate": {
     "title": "Håll den hemlig",
@@ -96,7 +107,13 @@
     "feeChanged": "Nätverksavgiften har ändrats",
     "approveOrReject": "Godkänn för att lösa in den här överföringen, eller avvisa för att starta en återbetalning.",
     "canReject": "Du kan avvisa för att starta en återbetalning i stället.",
-    "feeRose": "Avgiften steg till <amount/> medan du bekräftade. Godkänn för att lösa in till den nya avgiften."
+    "feeRose": "Avgiften steg till <amount/> medan du bekräftade. Godkänn för att lösa in till den nya avgiften.",
+    "deliveryFee": "Leveransavgift",
+    "youReceive": "Du får",
+    "claim": "Hämta",
+    "approve": "Godkänn",
+    "reject": "Avvisa",
+    "claimFeeChanged": "Din hämtning gick inte igenom: avgiften ändrades från <amount/>."
   },
   "passkey": {
     "confirmDeleted": "Jag bekräftar att den här passkeyn har tagits bort.",
@@ -116,5 +133,10 @@
     "explainFirstTime": "Om du skapade din passkey med en tidigare version av Glow skapar vi en ny och för över dina pengar automatiskt. Om det här är första gången du använder Glow, välj <skip/> för att fortsätta.",
     "migrateLabels_one": "Vi migrerar din etikett till din nya passkey.",
     "migrateLabels_other": "Vi migrerar alla {{count}} etiketter till din nya passkey."
+  },
+  "webNotice": {
+    "preferPasskey": "För din säkerhet rekommenderar vi att du använder en passkey i stället.",
+    "preferApp": "För din säkerhet rekommenderar vi Glow-appen.",
+    "risk": "En återställningsfras på webben är mindre säker, och det finns en risk att dina pengar går förlorade. Använd en återställningsfras på webben bara om du är beredd att ta den risken."
   }
 }

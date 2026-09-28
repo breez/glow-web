@@ -11,7 +11,7 @@
     "continue": "Fortsätt",
     "copy": "Kopiera",
     "copied": "Kopierat!",
-    "done": "Klart",
+    "done": "Klar",
     "enable": "Aktivera",
     "getStarted": "Kom igång",
     "hide": "Dölj",
@@ -35,7 +35,8 @@
     "retry": "Försök igen",
     "goBack": "Tillbaka",
     "edit": "Redigera",
-    "skip": "Hoppa över"
+    "skip": "Hoppa över",
+    "tapToCopy": "Tryck för att kopiera"
   },
   "labels": {
     "address": "Adress",
@@ -55,7 +56,9 @@
     "justNow": "Nyss",
     "somethingWentWrongRetry": "Något gick fel. Försök igen.",
     "shareFailed": "Delningen misslyckades",
-    "guide": "Guide"
+    "guide": "Guide",
+    "readyNow": "klart nu",
+    "securityNotice": "Säkerhetsmeddelande"
   },
   "a11y": {
     "goBack": "Tillbaka",
@@ -78,7 +81,8 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
-    "generic": "biometrisk"
+    "generic": "biometrisk",
+    "lockout": "Biometrisk upplåsning är låst. Lås upp enheten med din kod och försök igen."
   },
   "pages": {
     "backup": "Säkerhetskopia",
@@ -129,7 +133,8 @@
     "processing": "Bearbetas",
     "pendingConfirmation": "Väntar på bekräftelse",
     "pendingApproval": "Väntar på godkännande",
-    "tapToClaim": "Tryck för att lösa in"
+    "tapToClaim": "Tryck för att lösa in",
+    "confirming": "Bekräftar"
   },
   "paymentDetails": {
     "amount": "Belopp",
@@ -152,7 +157,8 @@
     "provider": "Leverantör",
     "initialAmount": "Ursprungligt belopp",
     "convertedAmount": "Växlat belopp",
-    "url": "URL"
+    "url": "URL",
+    "sentAmount": "Skickat belopp"
   },
   "qrScanner": {
     "initializing": "Startar kameran...",
@@ -208,7 +214,9 @@
     "lightningPayment": "Lightning-betalning",
     "sparkTransfer": "Spark-överföring",
     "tokenTransfer": "Token-överföring",
-    "namedTransfer": "{{name}}-överföring"
+    "namedTransfer": "{{name}}-överföring",
+    "usdTransfer": "USD-överföring",
+    "btcTransfer": "BTC-överföring"
   },
   "security": {
     "gateReason": "Lås upp låsskärmens inställningar",
@@ -334,8 +342,8 @@
     "createAddressPrompt": "Skapa en Lightning-adress för att ta emot betalningar enklare",
     "createLightningAddress": "Skapa Lightning-adress",
     "editLightningAddress": "Redigera Lightning-adressen",
-    "editAddress": "Redigera adressen",
-    "createAddress": "Skapa adress",
+    "editAddress": "Redigera adress",
+    "createAddress": "Skapa Lightning-adress",
     "addressUnavailable": "Lightning-adresser är inte tillgängliga i den här miljön.",
     "loadAddressFailed": "Lightning-adressen kunde inte laddas",
     "enterUsername": "Ange ett användarnamn",
@@ -343,7 +351,26 @@
     "saveAddressFailed": "Lightning-adressen kunde inte sparas",
     "invalidAmount": "Ogiltigt belopp",
     "invalidAmountEntry": "Ange ett giltigt belopp",
-    "enterAmountSats": "Ange beloppet i sats"
+    "enterAmountSats": "Ange beloppet i sats",
+    "onChain": "On-chain",
+    "switchTo": "Byt till {{mode}}",
+    "createAddressShort": "Skapa adress",
+    "createAddressBody": "Skapa en Lightning-adress för att enkelt ta emot betalningar",
+    "lightningUnavailable": "Lightning-adresser är inte tillgängliga",
+    "shareFailed": "Delningen misslyckades",
+    "scanToPayShort": "Skanna för att betala",
+    "description": "Beskrivning (valfritt)",
+    "amountCopied": "Beloppet kopierat",
+    "addressCopied": "Adressen kopierad",
+    "copyAmount": "Kopiera belopp",
+    "depositAddress": "Insättningsadress",
+    "crossChain": {
+      "createFailed": "Det gick inte att skapa begäran.",
+      "noRoutes": "Inga cross-chain-rutter är tillgängliga just nu",
+      "creating": "Skapar begäran...",
+      "enterUsd": "Ange belopp i USD",
+      "routeSummary": "{{asset}} på {{chain}} · via {{provider}}"
+    }
   },
   "buy": {
     "title": "Köp bitcoin",
@@ -354,7 +381,10 @@
     "redirecting": "Omdirigerar…",
     "amount": "Belopp",
     "invalidAmount": "Ogiltigt belopp",
-    "invoiceFailed": "Fakturan kunde inte skapas. Försök igen."
+    "invoiceFailed": "Fakturan kunde inte skapas. Försök igen.",
+    "addFundsFromCashApp": "Lägg till pengar från Cash App",
+    "openCashApp": "Öppna Cash App",
+    "openFailed": "Det gick inte att öppna köpsidan. Försök igen."
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Försök igen med en annan lösenordshanterare, eller fortsätt med en återställningsfras.",
@@ -371,7 +401,8 @@
   },
   "startupFailure": {
     "title": "Appen kunde inte laddas",
-    "body": "Ett fel uppstod när Glow skulle starta. Ladda om sidan och försök igen."
+    "body": "Ett fel uppstod när Glow skulle starta. Ladda om sidan och försök igen.",
+    "missingApiKey": "API-nyckel saknas"
   },
   "lockdown": {
     "headingIos": "Stäng av Låst läge för att använda Glow",
@@ -444,7 +475,8 @@
       "noRoutesAny": "Ingen rutt mellan kedjor är tillgänglig för den här adressen",
       "routesFetchFailed": "Rutterna kunde inte hämtas: {{error}}",
       "quoteFailedHint": "Just nu ger ingen leverantör någon offert. Försök igen, eller gå tillbaka och använd ett annat belopp.",
-      "fetchingRoutes": "Hämtar rutter..."
+      "fetchingRoutes": "Hämtar rutter...",
+      "selectNetwork": "Välj nätverk för {{asset}}"
     },
     "withdraw": {
       "amountToReceive": "Belopp att ta emot",
@@ -454,7 +486,9 @@
     "lnurl": {
       "commentPlaceholder": "Lägg till ett meddelande...",
       "commentTooLong": "Kommentaren får vara högst {{max}} tecken",
-      "prepareFailed": "LNURL Pay kunde inte förberedas: {{error}}"
+      "prepareFailed": "LNURL Pay kunde inte förberedas: {{error}}",
+      "to": "Till",
+      "comment": "Kommentar (valfritt)"
     },
     "noDestination": "Ange en betalningsmottagare",
     "prepareFailed": "Betalningen kunde inte förberedas {{error}}",
@@ -474,8 +508,13 @@
       "authSuccessBody": "Du har autentiserats hos tjänsten.",
       "sentBody": "Din betalning har skickats till mottagaren.",
       "authFailBody": "Ett fel uppstod under autentiseringen. Försök igen.",
-      "failBody": "Ett fel uppstod när din betalning behandlades. Försök igen."
-    }
+      "failBody": "Ett fel uppstod när din betalning behandlades. Försök igen.",
+      "refundSent": "Återbetalning skickad!",
+      "refundFailed": "Återbetalningen misslyckades",
+      "refundSuccessBody": "Din återbetalning har skickats till Bitcoin-nätverket.",
+      "refundFailBody": "Ett fel uppstod när återbetalningen behandlades. Försök igen."
+    },
+    "loginCodeInvalid": "Den här inloggningskoden är ogiltig. Uppdatera webbplatsen för en ny."
   },
   "restore": {
     "restoring": "Återställer...",
@@ -504,14 +543,35 @@
     "failed": "Återbetalningen misslyckades",
     "processing": "Behandlar återbetalningen...",
     "errorBody": "Ett fel uppstod när din återbetalning behandlades.",
-    "txId": "Återbetalningens transaktions-ID"
+    "txId": "Återbetalningens transaktions-ID",
+    "getRefund": "Få återbetalning",
+    "loadFailed": "Det gick inte att läsa in avvisade insättningar",
+    "notOnchainAddress": "Det är inte en on-chain Bitcoin-adress",
+    "refundFailed": "Det gick inte att återbetala insättningen",
+    "readingFeeRates": "Läser aktuella avgifter..."
   },
   "deposit": {
     "title": "BTC-överföring",
     "claimFailed": "Inlösen misslyckades",
     "autoClaimFailed": "Automatisk inlösen misslyckades",
     "waitingConfirmations": "Väntar på 3 bekräftelser.",
-    "autoClaim": "Den här överföringen löses in automatiskt."
+    "autoClaim": "Den här överföringen löses in automatiskt.",
+    "speed": "Hastighet",
+    "standardDelivery": "Standardleverans",
+    "instantDelivery": "Omedelbar leverans",
+    "expeditedDelivery": "Skyndsam leverans",
+    "claimedAutomatically": "Hämtas automatiskt",
+    "arrivesInSeconds": "Kommer fram på sekunder",
+    "unlocksIn": "Låses upp om {{wait}}",
+    "beingClaimed": "Den här överföringen hämtas nu.",
+    "claimDeferred": "Det gick inte att hämta överföringen än. Försök igen.",
+    "claimFailedGeneric": "Det gick inte att hämta överföringen",
+    "earlyUnavailable": "Tidig leverans är inte tillgänglig just nu, så den här överföringen hämtas automatiskt.",
+    "setupFailed": "Det gick inte att förbereda överföringen för hämtning. Försök igen.",
+    "checkingOptions": "Kontrollerar leveransalternativ",
+    "claimSubmitted": "Begäran skickad. Pengarna kommer snart.",
+    "countNotClaimed_one": "{{count}} insättning kunde inte hämtas",
+    "countNotClaimed_other": "{{count}} insättningar kunde inte hämtas"
   },
   "startup": {
     "refreshFailed": "Dina uppgifter kunde inte uppdateras.",
@@ -552,5 +612,13 @@
     "lightningAddress": "Lightning-adress",
     "labelFailed": "Etiketten ”{{label}}” kunde inte migreras. Försök igen.",
     "currentLabel": "(aktuell)"
+  },
+  "refresh": {
+    "pull": "Dra för att uppdatera",
+    "release": "Släpp för att uppdatera",
+    "refreshing": "Uppdaterar"
+  },
+  "logout": {
+    "done": "Du har loggat ut"
   }
 }

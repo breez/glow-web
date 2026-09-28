@@ -35,7 +35,8 @@
     "retry": "Нов опит",
     "goBack": "Назад",
     "edit": "Редактиране",
-    "skip": "Пропускане"
+    "skip": "Пропускане",
+    "tapToCopy": "Докосни, за да копираш"
   },
   "labels": {
     "address": "Адрес",
@@ -55,7 +56,9 @@
     "justNow": "Току-що",
     "somethingWentWrongRetry": "Нещо се обърка. Опитайте отново.",
     "shareFailed": "Споделянето не бе успешно",
-    "guide": "Ръководство"
+    "guide": "Ръководство",
+    "readyNow": "готово сега",
+    "securityNotice": "Бележка за сигурност"
   },
   "a11y": {
     "goBack": "Назад",
@@ -78,7 +81,8 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
-    "generic": "биометрия"
+    "generic": "биометрия",
+    "lockout": "Биометричното отключване е заключено. Отключи устройството с кода си и опитай отново."
   },
   "pages": {
     "backup": "Резервно копие",
@@ -129,7 +133,8 @@
     "processing": "Обработва се",
     "pendingConfirmation": "Чака потвърждение",
     "pendingApproval": "Чака одобрение",
-    "tapToClaim": "Докоснете, за да заявите"
+    "tapToClaim": "Докоснете, за да заявите",
+    "confirming": "Потвърждава се"
   },
   "paymentDetails": {
     "amount": "Сума",
@@ -152,7 +157,8 @@
     "provider": "Доставчик",
     "initialAmount": "Първоначална сума",
     "convertedAmount": "Преобразувана сума",
-    "url": "URL"
+    "url": "URL",
+    "sentAmount": "Изпратена сума"
   },
   "qrScanner": {
     "initializing": "Стартира камерата...",
@@ -208,7 +214,9 @@
     "lightningPayment": "Lightning плащане",
     "sparkTransfer": "Spark превод",
     "tokenTransfer": "Превод на токени",
-    "namedTransfer": "Превод {{name}}"
+    "namedTransfer": "Превод {{name}}",
+    "usdTransfer": "USD превод",
+    "btcTransfer": "BTC превод"
   },
   "security": {
     "gateReason": "Отключване на настройките на заключения екран",
@@ -335,7 +343,7 @@
     "createLightningAddress": "Създаване на Lightning адрес",
     "editLightningAddress": "Редактиране на Lightning адреса",
     "editAddress": "Редактиране на адреса",
-    "createAddress": "Създаване на адрес",
+    "createAddress": "Създаване на Lightning адрес",
     "addressUnavailable": "Lightning адресите не са налични в тази среда.",
     "loadAddressFailed": "Lightning адресът не можа да се зареди",
     "enterUsername": "Въведете потребителско име",
@@ -343,7 +351,26 @@
     "saveAddressFailed": "Lightning адресът не можа да бъде запазен",
     "invalidAmount": "Невалидна сума",
     "invalidAmountEntry": "Въведете валидна сума",
-    "enterAmountSats": "Въведете сумата в sats"
+    "enterAmountSats": "Въведете сумата в sats",
+    "onChain": "On-chain",
+    "switchTo": "Превключи към {{mode}}",
+    "createAddressShort": "Създаване на адрес",
+    "createAddressBody": "Създай Lightning адрес, за да получаваш плащания лесно",
+    "lightningUnavailable": "Lightning адресите не са достъпни",
+    "shareFailed": "Споделянето не бе успешно",
+    "scanToPayShort": "Сканирай, за да платиш",
+    "description": "Описание (по избор)",
+    "amountCopied": "Сумата е копирана",
+    "addressCopied": "Адресът е копиран",
+    "copyAmount": "Копирай сумата",
+    "depositAddress": "Адрес за депозит",
+    "crossChain": {
+      "createFailed": "Заявката не бе създадена.",
+      "noRoutes": "В момента няма достъпни междуверижни маршрути",
+      "creating": "Създаване на заявка...",
+      "enterUsd": "Въведи сума в USD",
+      "routeSummary": "{{asset}} в {{chain}} · чрез {{provider}}"
+    }
   },
   "buy": {
     "title": "Купуване на Bitcoin",
@@ -354,7 +381,10 @@
     "redirecting": "Пренасочва се…",
     "amount": "Сума",
     "invalidAmount": "Невалидна сума",
-    "invoiceFailed": "Фактурата не можа да бъде създадена. Опитайте отново."
+    "invoiceFailed": "Фактурата не можа да бъде създадена. Опитайте отново.",
+    "addFundsFromCashApp": "Добави средства от Cash App",
+    "openCashApp": "Отвори Cash App",
+    "openFailed": "Страницата за покупка не се отвори. Опитай отново."
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Опитайте отново с друг мениджър на пароли или продължете с възстановяваща фраза.",
@@ -371,7 +401,8 @@
   },
   "startupFailure": {
     "title": "Приложението не можа да се зареди",
-    "body": "Възникна грешка при стартирането на Glow. Презаредете страницата и опитайте отново."
+    "body": "Възникна грешка при стартирането на Glow. Презаредете страницата и опитайте отново.",
+    "missingApiKey": "Липсва API ключ"
   },
   "lockdown": {
     "headingIos": "Изключете заключения режим, за да използвате Glow",
@@ -444,7 +475,8 @@
       "noRoutesAny": "Няма наличен маршрут между вериги за този адрес",
       "routesFetchFailed": "Маршрутите не можаха да бъдат получени: {{error}}",
       "quoteFailedHint": "В момента никой доставчик не дава оферта. Опитайте отново или се върнете и използвайте друга сума.",
-      "fetchingRoutes": "Получаване на маршрути..."
+      "fetchingRoutes": "Получаване на маршрути...",
+      "selectNetwork": "Избери мрежа за {{asset}}"
     },
     "withdraw": {
       "amountToReceive": "Сума за получаване",
@@ -454,7 +486,9 @@
     "lnurl": {
       "commentPlaceholder": "Добавете съобщение...",
       "commentTooLong": "Коментарът може да е най-много {{max}} знака",
-      "prepareFailed": "LNURL Pay не можа да бъде подготвен: {{error}}"
+      "prepareFailed": "LNURL Pay не можа да бъде подготвен: {{error}}",
+      "to": "До",
+      "comment": "Коментар (по избор)"
     },
     "noDestination": "Въведете получател на плащането",
     "prepareFailed": "Плащането не можа да бъде подготвено {{error}}",
@@ -474,8 +508,13 @@
       "authSuccessBody": "Успешно се удостоверихте пред услугата.",
       "sentBody": "Плащането ви бе изпратено успешно до получателя.",
       "authFailBody": "Възникна грешка при удостоверяването. Опитайте отново.",
-      "failBody": "Възникна грешка при обработката на плащането ви. Опитайте отново."
-    }
+      "failBody": "Възникна грешка при обработката на плащането ви. Опитайте отново.",
+      "refundSent": "Възстановяването е изпратено!",
+      "refundFailed": "Възстановяването не бе успешно",
+      "refundSuccessBody": "Възстановяването ти беше изпратено към Bitcoin мрежата.",
+      "refundFailBody": "Възникна грешка при обработката на възстановяването. Опитай отново."
+    },
+    "loginCodeInvalid": "Този код за вход е невалиден. Опресни сайта за нов."
   },
   "restore": {
     "restoring": "Възстановява се...",
@@ -504,14 +543,35 @@
     "failed": "Възстановяването не бе успешно",
     "processing": "Обработва се възстановяването...",
     "errorBody": "Възникна грешка при обработката на вашето възстановяване.",
-    "txId": "Идентификатор на транзакцията за възстановяване"
+    "txId": "Идентификатор на транзакцията за възстановяване",
+    "getRefund": "Върни средства",
+    "loadFailed": "Отхвърлените депозити не се заредиха",
+    "notOnchainAddress": "Това не е on-chain Bitcoin адрес",
+    "refundFailed": "Възстановяването на депозита не бе успешно",
+    "readingFeeRates": "Отчитане на текущите такси..."
   },
   "deposit": {
     "title": "BTC превод",
     "claimFailed": "Заявката не бе успешна",
     "autoClaimFailed": "Автоматичната заявка не бе успешна",
     "waitingConfirmations": "Изчакване на 3 потвърждения.",
-    "autoClaim": "Този превод ще бъде заявен автоматично."
+    "autoClaim": "Този превод ще бъде заявен автоматично.",
+    "speed": "Скорост",
+    "standardDelivery": "Стандартна доставка",
+    "instantDelivery": "Незабавна доставка",
+    "expeditedDelivery": "Ускорена доставка",
+    "claimedAutomatically": "Заявява се автоматично",
+    "arrivesInSeconds": "Пристига за секунди",
+    "unlocksIn": "Отключва се след {{wait}}",
+    "beingClaimed": "Този превод се заявява в момента.",
+    "claimDeferred": "Този превод не може да бъде заявен още. Опитай отново.",
+    "claimFailedGeneric": "Заявяването на превода не бе успешно",
+    "earlyUnavailable": "Ранната доставка не е достъпна в момента, затова този превод ще бъде заявен автоматично.",
+    "setupFailed": "Този превод не можа да бъде подготвен за заявяване. Опитай отново.",
+    "checkingOptions": "Проверка на опциите за доставка",
+    "claimSubmitted": "Заявката е изпратена. Средствата ще пристигнат скоро.",
+    "countNotClaimed_one": "{{count}} депозит не можа да бъде заявен",
+    "countNotClaimed_other": "{{count}} депозита не можаха да бъдат заявени"
   },
   "startup": {
     "refreshFailed": "Данните ви не можаха да бъдат обновени.",
@@ -552,5 +612,13 @@
     "lightningAddress": "Lightning адрес",
     "labelFailed": "Етикетът „{{label}}“ не можа да бъде прехвърлен. Опитайте отново.",
     "currentLabel": "(текущ)"
+  },
+  "refresh": {
+    "pull": "Дръпни за опресняване",
+    "release": "Пусни за опресняване",
+    "refreshing": "Опресняване"
+  },
+  "logout": {
+    "done": "Излизането е успешно"
   }
 }

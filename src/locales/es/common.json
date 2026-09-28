@@ -35,7 +35,8 @@
     "retry": "Reintentar",
     "goBack": "Volver",
     "edit": "Editar",
-    "skip": "Omitir"
+    "skip": "Omitir",
+    "tapToCopy": "Toca para copiar"
   },
   "labels": {
     "address": "Dirección",
@@ -55,7 +56,9 @@
     "justNow": "Ahora mismo",
     "somethingWentWrongRetry": "Algo ha salido mal. Inténtalo de nuevo.",
     "shareFailed": "No se pudo compartir",
-    "guide": "Guía"
+    "guide": "Guía",
+    "readyNow": "listo ya",
+    "securityNotice": "Aviso de seguridad"
   },
   "a11y": {
     "goBack": "Volver",
@@ -78,7 +81,8 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
-    "generic": "biométrico"
+    "generic": "biométrico",
+    "lockout": "El desbloqueo biométrico está bloqueado. Desbloquea el dispositivo con tu código y vuelve a intentarlo."
   },
   "pages": {
     "backup": "Copia de seguridad",
@@ -129,7 +133,8 @@
     "processing": "Procesando",
     "pendingConfirmation": "Pendiente de confirmación",
     "pendingApproval": "Pendiente de aprobación",
-    "tapToClaim": "Toca para reclamar"
+    "tapToClaim": "Toca para reclamar",
+    "confirming": "Confirmando"
   },
   "paymentDetails": {
     "amount": "Importe",
@@ -152,7 +157,8 @@
     "provider": "Proveedor",
     "initialAmount": "Importe inicial",
     "convertedAmount": "Importe convertido",
-    "url": "URL"
+    "url": "URL",
+    "sentAmount": "Importe enviado"
   },
   "qrScanner": {
     "initializing": "Iniciando la cámara...",
@@ -208,7 +214,9 @@
     "lightningPayment": "Pago Lightning",
     "sparkTransfer": "Transferencia Spark",
     "tokenTransfer": "Transferencia de tokens",
-    "namedTransfer": "Transferencia {{name}}"
+    "namedTransfer": "Transferencia {{name}}",
+    "usdTransfer": "Transferencia USD",
+    "btcTransfer": "Transferencia BTC"
   },
   "security": {
     "gateReason": "Desbloquear los ajustes de la pantalla de bloqueo",
@@ -335,7 +343,7 @@
     "createLightningAddress": "Crear dirección Lightning",
     "editLightningAddress": "Editar la dirección Lightning",
     "editAddress": "Editar dirección",
-    "createAddress": "Crear dirección",
+    "createAddress": "Crear dirección Lightning",
     "addressUnavailable": "Las direcciones Lightning no están disponibles en este entorno.",
     "loadAddressFailed": "No se pudo cargar la dirección Lightning",
     "enterUsername": "Introduce un nombre de usuario",
@@ -343,7 +351,26 @@
     "saveAddressFailed": "No se pudo guardar la dirección Lightning",
     "invalidAmount": "Importe no válido",
     "invalidAmountEntry": "Introduce un importe válido",
-    "enterAmountSats": "Introduce el importe en sats"
+    "enterAmountSats": "Introduce el importe en sats",
+    "onChain": "On-chain",
+    "switchTo": "Cambiar a {{mode}}",
+    "createAddressShort": "Crear dirección",
+    "createAddressBody": "Crea una dirección Lightning para recibir pagos fácilmente",
+    "lightningUnavailable": "Direcciones Lightning no disponibles",
+    "shareFailed": "No se pudo compartir",
+    "scanToPayShort": "Escanea para pagar",
+    "description": "Descripción (opcional)",
+    "amountCopied": "Importe copiado",
+    "addressCopied": "Dirección copiada",
+    "copyAmount": "Copiar importe",
+    "depositAddress": "Dirección de depósito",
+    "crossChain": {
+      "createFailed": "No se pudo crear la solicitud.",
+      "noRoutes": "No hay rutas entre cadenas disponibles ahora",
+      "creating": "Creando solicitud...",
+      "enterUsd": "Introduce el importe en USD",
+      "routeSummary": "{{asset}} en {{chain}} · vía {{provider}}"
+    }
   },
   "buy": {
     "title": "Comprar Bitcoin",
@@ -354,7 +381,10 @@
     "redirecting": "Redirigiendo…",
     "amount": "Importe",
     "invalidAmount": "Importe no válido",
-    "invoiceFailed": "No se pudo crear la factura. Inténtalo de nuevo."
+    "invoiceFailed": "No se pudo crear la factura. Inténtalo de nuevo.",
+    "addFundsFromCashApp": "Añadir fondos desde Cash App",
+    "openCashApp": "Abrir Cash App",
+    "openFailed": "No se pudo abrir la página de compra. Inténtalo de nuevo."
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Inténtalo de nuevo con otro gestor de contraseñas, o continúa con una frase de recuperación.",
@@ -371,7 +401,8 @@
   },
   "startupFailure": {
     "title": "No se pudo cargar la aplicación",
-    "body": "Se ha producido un error al iniciar Glow. Recarga la página e inténtalo de nuevo."
+    "body": "Se ha producido un error al iniciar Glow. Recarga la página e inténtalo de nuevo.",
+    "missingApiKey": "Falta la clave de API"
   },
   "lockdown": {
     "headingIos": "Desactiva el Modo de Aislamiento para usar Glow",
@@ -444,7 +475,8 @@
       "noRoutesAny": "No hay rutas entre cadenas disponibles para esta dirección",
       "routesFetchFailed": "No se pudieron obtener las rutas: {{error}}",
       "quoteFailedHint": "Ahora mismo ningún proveedor ofrece una cotización. Inténtalo de nuevo, o vuelve atrás y usa otro importe.",
-      "fetchingRoutes": "Obteniendo las rutas..."
+      "fetchingRoutes": "Obteniendo las rutas...",
+      "selectNetwork": "Selecciona la red para {{asset}}"
     },
     "withdraw": {
       "amountToReceive": "Importe a recibir",
@@ -454,7 +486,9 @@
     "lnurl": {
       "commentPlaceholder": "Añade un mensaje...",
       "commentTooLong": "El comentario puede tener como máximo {{max}} caracteres",
-      "prepareFailed": "No se pudo preparar LNURL Pay: {{error}}"
+      "prepareFailed": "No se pudo preparar LNURL Pay: {{error}}",
+      "to": "Para",
+      "comment": "Comentario (opcional)"
     },
     "noDestination": "Introduce un destino de pago",
     "prepareFailed": "No se pudo preparar el pago {{error}}",
@@ -474,8 +508,13 @@
       "authSuccessBody": "Te has autenticado correctamente con el servicio.",
       "sentBody": "Tu pago se ha enviado correctamente al destinatario.",
       "authFailBody": "Se ha producido un error durante la autenticación. Inténtalo de nuevo.",
-      "failBody": "Se ha producido un error al procesar tu pago. Inténtalo de nuevo."
-    }
+      "failBody": "Se ha producido un error al procesar tu pago. Inténtalo de nuevo.",
+      "refundSent": "¡Reembolso enviado!",
+      "refundFailed": "Reembolso fallido",
+      "refundSuccessBody": "Tu reembolso se ha enviado a la red Bitcoin.",
+      "refundFailBody": "Se produjo un error al procesar el reembolso. Inténtalo de nuevo."
+    },
+    "loginCodeInvalid": "Este código de acceso no es válido. Actualiza el sitio para obtener uno nuevo."
   },
   "restore": {
     "restoring": "Restaurando...",
@@ -504,14 +543,35 @@
     "failed": "El reembolso ha fallado",
     "processing": "Procesando el reembolso...",
     "errorBody": "Se ha producido un error al procesar tu reembolso.",
-    "txId": "ID de transacción del reembolso"
+    "txId": "ID de transacción del reembolso",
+    "getRefund": "Obtener reembolso",
+    "loadFailed": "No se pudieron cargar los depósitos rechazados",
+    "notOnchainAddress": "Esa no es una dirección Bitcoin on-chain",
+    "refundFailed": "No se pudo reembolsar el depósito",
+    "readingFeeRates": "Leyendo las comisiones actuales..."
   },
   "deposit": {
     "title": "Transferencia de BTC",
     "claimFailed": "La reclamación ha fallado",
     "autoClaimFailed": "La reclamación automática ha fallado",
     "waitingConfirmations": "Esperando 3 confirmaciones.",
-    "autoClaim": "Esta transferencia se reclamará automáticamente."
+    "autoClaim": "Esta transferencia se reclamará automáticamente.",
+    "speed": "Velocidad",
+    "standardDelivery": "Entrega estándar",
+    "instantDelivery": "Entrega instantánea",
+    "expeditedDelivery": "Entrega acelerada",
+    "claimedAutomatically": "Se reclama automáticamente",
+    "arrivesInSeconds": "Llega en segundos",
+    "unlocksIn": "Se desbloquea en {{wait}}",
+    "beingClaimed": "Esta transferencia se está reclamando.",
+    "claimDeferred": "Aún no se ha podido reclamar esta transferencia. Inténtalo de nuevo.",
+    "claimFailedGeneric": "No se pudo reclamar la transferencia",
+    "earlyUnavailable": "La entrega anticipada no está disponible ahora, así que esta transferencia se reclamará automáticamente.",
+    "setupFailed": "No se pudo preparar esta transferencia para reclamarla. Inténtalo de nuevo.",
+    "checkingOptions": "Comprobando opciones de entrega",
+    "claimSubmitted": "Solicitud enviada. Los fondos llegarán en breve.",
+    "countNotClaimed_one": "No se pudo reclamar {{count}} depósito",
+    "countNotClaimed_other": "No se pudieron reclamar {{count}} depósitos"
   },
   "startup": {
     "refreshFailed": "No se pudieron actualizar tus datos.",
@@ -552,5 +612,13 @@
     "lightningAddress": "Dirección Lightning",
     "labelFailed": "No se pudo migrar la etiqueta “{{label}}”. Inténtalo de nuevo.",
     "currentLabel": "(actual)"
+  },
+  "refresh": {
+    "pull": "Desliza para actualizar",
+    "release": "Suelta para actualizar",
+    "refreshing": "Actualizando"
+  },
+  "logout": {
+    "done": "Sesión cerrada correctamente"
   }
 }
