@@ -5,7 +5,7 @@ const BLOCKS_PER_HOUR = 6;
 const BLOCKS_PER_DAY = 144;
 
 export function formatBlockWait(blocks: number): string {
-  if (blocks <= 0) return i18n.t('common:labels.readyNow');
+  if (blocks <= 0) return i18n.t('labels.readyNow');
   if (blocks < BLOCKS_PER_HOUR) return `~${blocks * MINUTES_PER_BLOCK} min`;
   if (blocks < BLOCKS_PER_DAY) return `~${Math.round(blocks / BLOCKS_PER_HOUR)} h`;
   return `~${Math.round(blocks / BLOCKS_PER_DAY)} d`;

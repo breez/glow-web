@@ -115,7 +115,13 @@
     "unlockPrompt": "Add meg a PIN-kódot a feloldáshoz",
     "continuePrompt": "Add meg a PIN-kódot a folytatáshoz",
     "forgotPin": "Elfelejtetted a PIN-kódot?",
-    "useBiometrics": "Biometria használata"
+    "useBiometrics": "Biometria használata",
+    "unlockGlow": "Glow feloldása",
+    "incorrectPin": "Hibás PIN-kód",
+    "tooManySeconds_one": "Túl sok próbálkozás. Próbáld újra {{count}} másodperc múlva.",
+    "tooManySeconds_other": "Túl sok próbálkozás. Próbáld újra {{count}} másodperc múlva.",
+    "tooManyMinutes_one": "Túl sok próbálkozás. Próbáld újra {{count}} perc múlva.",
+    "tooManyMinutes_other": "Túl sok próbálkozás. Próbáld újra {{count}} perc múlva."
   },
   "offline": {
     "banner": "Nincs internetkapcsolat"
@@ -164,7 +170,13 @@
     "initializing": "Kamera indítása...",
     "unavailable": "A kamera nem érhető el",
     "hint": "Irányítsd a kamerát a QR-kódra",
-    "noQrInImage": "Nem található QR-kód a képen"
+    "noQrInImage": "Nem található QR-kód a képen",
+    "noVideo": "A videoelem nem érhető el",
+    "unavailableOrDenied": "A kamerához való hozzáférés megtagadva vagy nem érhető el",
+    "denied": "A kamerához való hozzáférés megtagadva. Engedélyezd a hozzáférést, és próbáld újra.",
+    "notFound": "Nem található kamera ezen az eszközön",
+    "inUse": "A kamerát már egy másik alkalmazás használja",
+    "constraints": "A kamera beállításai nem támogatottak"
   },
   "staging": {
     "title": "Staging környezet",
@@ -272,7 +284,8 @@
     "useRecoveryPhrase": "Inkább a helyreállítási kifejezést használom",
     "createPasskey": "Azonosítókulcs létrehozása",
     "useExistingPasskey": "Meglévő azonosítókulcs használata",
-    "usePasskeyInstead": "Inkább azonosítókulcsot használok"
+    "usePasskeyInstead": "Inkább azonosítókulcsot használok",
+    "settingUp": "A Glow beállítása..."
   },
   "wallet": {
     "send": "Küldés",
@@ -302,8 +315,8 @@
     "alreadyExists": "Az azonosítókulcs már létezik",
     "signInCancelled": "A bejelentkezés megszakadt",
     "unavailable": "Az azonosítókulcs nem érhető el",
-    "signInFailed": "A bejelentkezés sikertelen",
-    "noLongerOnDevice": "Ez az azonosítókulcs már nincs ezen az eszközön.",
+    "signInFailed": "Nem sikerült bejelentkezni az azonosítókulcsoddal. Próbáld újra.",
+    "noLongerOnDevice": "A Glow azonosítókulcsod már nincs ezen az eszközön. Létrehozhatsz újat.",
     "couldNotSignIn": "Nem sikerült bejelentkezni ezzel az azonosítókulccsal. Lehet, hogy eltávolították, vagy a kérést megszakították.",
     "saveLabelFailed": "Nem sikerült menteni a címkét",
     "connectFailed": "Nem sikerült csatlakozni",
@@ -317,7 +330,12 @@
     "notFoundOnDevice": "Nem található a Glow azonosítókulcsod ezen az eszközön. Próbáld újra, vagy nézd meg itt: Beállítások > Jelszavak.",
     "createdNotReady": "Az azonosítókulcsod létrejött, de még nem volt használatra kész. Jelentkezz be vele.",
     "timedOut": "A bejelentkezés túllépte az időkorlátot. Próbáld újra.",
-    "cancelledRetry": "A bejelentkezés megszakadt. Próbáld újra."
+    "cancelledRetry": "A bejelentkezés megszakadt. Próbáld újra.",
+    "alreadyExistsRetry": "Már van Glow azonosítókulcsod ezen az eszközön. Próbálj újra bejelentkezni.",
+    "alreadyExistsUse": "Már van Glow azonosítókulcsod ezen az eszközön. Jelentkezz be vele.",
+    "labelSaveFailed": "A címke mentése a Nostrra nem sikerült",
+    "promptCancelled": "Az azonosítókulcs-kérés megszakadt. Próbáld újra.",
+    "signInFailedShort": "Nem sikerült bejelentkezni. Próbáld újra."
   },
   "receive": {
     "title": "Fogadás",
@@ -514,7 +532,32 @@
       "refundSuccessBody": "A visszatérítésedet elküldtük a Bitcoin-hálózatra.",
       "refundFailBody": "Hiba történt a visszatérítés feldolgozása közben. Próbáld újra."
     },
-    "loginCodeInvalid": "Ez a belépési kód érvénytelen. Frissítsd az oldalt egy újért."
+    "loginCodeInvalid": "Ez a belépési kód érvénytelen. Frissítsd az oldalt egy újért.",
+    "title": "BTC vagy USD küldése",
+    "lnurlAuth": {
+      "freshCode": "Frissítsd az oldalt egy új kódért, és próbáld újra.",
+      "cta_register": "Regisztráció",
+      "wants_register": "azt kéri, hogy regisztrálj",
+      "failed_register": "A regisztráció nem sikerült itt: {{domain}}.",
+      "failedReason_register": "A regisztráció nem sikerült itt: {{domain}}: {{reason}}.",
+      "unclear_register": "Nem sikerült elolvasni a választ innen: {{domain}}. Nézd meg az oldalon, hogy regisztráltál-e.",
+      "cta_login": "Bejelentkezés",
+      "wants_login": "azt kéri, hogy jelentkezz be",
+      "failed_login": "A bejelentkezés nem sikerült ide: {{domain}}.",
+      "failedReason_login": "A bejelentkezés nem sikerült ide: {{domain}}: {{reason}}.",
+      "unclear_login": "Nem sikerült elolvasni a választ innen: {{domain}}. Nézd meg az oldalon, hogy bejelentkeztél-e.",
+      "cta_link": "Fiók összekapcsolása",
+      "wants_link": "azt kéri, hogy kapcsold össze a fiókodat",
+      "failed_link": "A fiók összekapcsolása nem sikerült itt: {{domain}}.",
+      "failedReason_link": "A fiók összekapcsolása nem sikerült itt: {{domain}}: {{reason}}.",
+      "unclear_link": "Nem sikerült elolvasni a választ innen: {{domain}}. Nézd meg az oldalon, hogy összekapcsoltad a fiókodat-e.",
+      "cta_auth": "Hitelesítés",
+      "wants_auth": "azt kéri, hogy hitelesítsd magad",
+      "failed_auth": "A hitelesítés nem sikerült itt: {{domain}}.",
+      "failedReason_auth": "A hitelesítés nem sikerült itt: {{domain}}: {{reason}}.",
+      "unclear_auth": "Nem sikerült elolvasni a választ innen: {{domain}}. Nézd meg az oldalon, hogy hitelesítetted magad-e.",
+      "unreachable": "A(z) {{domain}} nem érhető el. Ellenőrizd a kapcsolatot, és próbáld újra."
+    }
   },
   "restore": {
     "restoring": "Visszaállítás...",
@@ -548,7 +591,8 @@
     "loadFailed": "Az elutasított befizetések betöltése nem sikerült",
     "notOnchainAddress": "Ez nem on-chain Bitcoin-cím",
     "refundFailed": "A befizetés visszatérítése nem sikerült",
-    "readingFeeRates": "Aktuális díjszabás beolvasása..."
+    "readingFeeRates": "Aktuális díjszabás beolvasása...",
+    "loading": "Elutasított befizetések betöltése..."
   },
   "deposit": {
     "title": "BTC-átutalás",
@@ -611,7 +655,15 @@
     "notNow": "Most nem",
     "lightningAddress": "Lightning-cím",
     "labelFailed": "Nem sikerült migrálni ezt a címkét: „{{label}}”. Próbáld újra.",
-    "currentLabel": "(jelenlegi)"
+    "currentLabel": "(jelenlegi)",
+    "probeFailed": "Nem sikerült ellenőrizni, van-e már azonosítókulcs. Próbáld újra.",
+    "labelsReadFailed": "Nem sikerült beolvasni az azonosítókulcsod címkéit. Próbáld újra.",
+    "unreachablePasskey": "Nem értük el az előző próbálkozásodból származó azonosítókulcsot. Ha bezártad a kérést, koppints az Újra gombra. Ha törölted azt az azonosítókulcsot, válaszd az Új azonosítókulcs létrehozása lehetőséget, és kezdd elölről.",
+    "stageSweep": "A(z) {{what}} áthelyezése...",
+    "stageSweepOf": "A(z) {{what}} áthelyezése ({{current}} / {{total}})...",
+    "sweep_funds": "pénzed",
+    "sweep_address": "Lightning-címed",
+    "sweep_contacts": "névjegyeid"
   },
   "refresh": {
     "pull": "Húzd le a frissítéshez",

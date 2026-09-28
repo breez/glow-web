@@ -63,7 +63,7 @@ function openInAppOverlay(url: string): void {
   // Boxed, neutral secondary button (no primary color).
   const done = document.createElement('button');
   done.type = 'button';
-  done.textContent = i18n.t('common:actions.done');
+  done.textContent = i18n.t('actions.done');
   done.style.cssText =
     'background:none;border:1px solid #35354a;border-radius:10px;color:rgba(255,255,255,0.7);'
     + 'font:600 14px -apple-system,sans-serif;padding:8px 18px;cursor:pointer;';

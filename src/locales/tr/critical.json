@@ -117,7 +117,8 @@
   },
   "passkey": {
     "confirmDeleted": "Bu geçiş anahtarının silindiğini onaylıyorum.",
-    "confirmDeletedHint": "İsteğe bağlı. Emin değilsen işaretlemeden devam et."
+    "confirmDeletedHint": "İsteğe bağlı. Emin değilsen işaretlemeden devam et.",
+    "isHowYouAccess": "Geçiş anahtarın, paranıza erişme yolunuzdur"
   },
   "migration": {
     "switchFailed": "Yeni geçiş anahtarına geçişi tamamlayamadık. Paran güvende. Lütfen tekrar dene.",

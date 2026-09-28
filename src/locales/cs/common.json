@@ -115,7 +115,17 @@
     "unlockPrompt": "Zadej PIN pro odemknutí",
     "continuePrompt": "Zadej PIN pro pokračování",
     "forgotPin": "Zapomněl jsi PIN?",
-    "useBiometrics": "Použít biometrii"
+    "useBiometrics": "Použít biometrii",
+    "unlockGlow": "Odemknout Glow",
+    "incorrectPin": "Nesprávný PIN",
+    "tooManySeconds_one": "Příliš mnoho pokusů. Zkus to znovu za {{count}} s.",
+    "tooManySeconds_other": "Příliš mnoho pokusů. Zkus to znovu za {{count}} s.",
+    "tooManySeconds_few": "Příliš mnoho pokusů. Zkus to znovu za {{count}} s.",
+    "tooManySeconds_many": "Příliš mnoho pokusů. Zkus to znovu za {{count}} s.",
+    "tooManyMinutes_one": "Příliš mnoho pokusů. Zkus to znovu za {{count}} min.",
+    "tooManyMinutes_other": "Příliš mnoho pokusů. Zkus to znovu za {{count}} min.",
+    "tooManyMinutes_few": "Příliš mnoho pokusů. Zkus to znovu za {{count}} min.",
+    "tooManyMinutes_many": "Příliš mnoho pokusů. Zkus to znovu za {{count}} min."
   },
   "offline": {
     "banner": "Není připojení k internetu"
@@ -164,7 +174,13 @@
     "initializing": "Spouští se kamera...",
     "unavailable": "Kamera není dostupná",
     "hint": "Namiř kameru na QR kód",
-    "noQrInImage": "V obrázku nebyl nalezen QR kód"
+    "noQrInImage": "V obrázku nebyl nalezen QR kód",
+    "noVideo": "Videoprvek není dostupný",
+    "unavailableOrDenied": "Přístup ke kameře byl odepřen nebo není dostupný",
+    "denied": "Přístup ke kameře byl odepřen. Povol přístup a zkus to znovu.",
+    "notFound": "Na tomto zařízení nebyla nalezena kamera",
+    "inUse": "Kameru už používá jiná aplikace",
+    "constraints": "Nastavení kamery nejsou podporována"
   },
   "staging": {
     "title": "Staging prostředí",
@@ -272,7 +288,8 @@
     "useRecoveryPhrase": "Použít místo toho obnovovací frázi",
     "createPasskey": "Vytvořit passkey",
     "useExistingPasskey": "Použít existující passkey",
-    "usePasskeyInstead": "Použít místo toho passkey"
+    "usePasskeyInstead": "Použít místo toho passkey",
+    "settingUp": "Nastavuji Glow..."
   },
   "wallet": {
     "send": "Poslat",
@@ -302,8 +319,8 @@
     "alreadyExists": "Passkey už existuje",
     "signInCancelled": "Přihlášení zrušeno",
     "unavailable": "Passkey není dostupný",
-    "signInFailed": "Přihlášení se nezdařilo",
-    "noLongerOnDevice": "Tento passkey už v tomto zařízení není.",
+    "signInFailed": "Přihlášení pomocí passkey se nezdařilo. Zkus to znovu.",
+    "noLongerOnDevice": "Tvůj Glow passkey už na tomto zařízení není. Můžeš si vytvořit nový.",
     "couldNotSignIn": "Přihlášení tímto passkey se nezdařilo. Možná byl odebrán, nebo byl požadavek zrušen.",
     "saveLabelFailed": "Štítek se nepodařilo uložit",
     "connectFailed": "Připojení se nezdařilo",
@@ -317,7 +334,12 @@
     "notFoundOnDevice": "Tvůj Glow passkey nebyl na tomto zařízení nalezen. Zkus to znovu, nebo se podívej do Nastavení > Hesla.",
     "createdNotReady": "Tvůj passkey byl vytvořen, ale ještě nebyl připravený k použití. Přihlas se s ním.",
     "timedOut": "Přihlášení vypršelo. Zkus to znovu.",
-    "cancelledRetry": "Přihlášení zrušeno. Zkus to znovu."
+    "cancelledRetry": "Přihlášení zrušeno. Zkus to znovu.",
+    "alreadyExistsRetry": "Na tomto zařízení už máš Glow passkey. Zkus se přihlásit znovu.",
+    "alreadyExistsUse": "Na tomto zařízení už máš Glow passkey. Použij ho k přihlášení.",
+    "labelSaveFailed": "Uložení štítku do Nostr se nezdařilo",
+    "promptCancelled": "Výzva k passkey byla zrušena. Zkus to znovu.",
+    "signInFailedShort": "Přihlášení se nezdařilo. Zkus to znovu."
   },
   "receive": {
     "title": "Přijmout",
@@ -514,7 +536,32 @@
       "refundSuccessBody": "Tvé vrácení bylo odesláno do sítě Bitcoin.",
       "refundFailBody": "Při zpracování vrácení došlo k chybě. Zkus to znovu."
     },
-    "loginCodeInvalid": "Tento přihlašovací kód není platný. Obnov stránku a získáš nový."
+    "loginCodeInvalid": "Tento přihlašovací kód není platný. Obnov stránku a získáš nový.",
+    "title": "Poslat BTC nebo USD",
+    "lnurlAuth": {
+      "freshCode": "Obnov stránku pro nový kód a zkus to znovu.",
+      "cta_register": "Registrovat",
+      "wants_register": "tě žádá o registraci",
+      "failed_register": "Registrace u {{domain}} se nezdařila.",
+      "failedReason_register": "Registrace u {{domain}} se nezdařila: {{reason}}.",
+      "unclear_register": "Nepodařilo se přečíst odpověď od {{domain}}. Zkontroluj web, jestli ses zaregistroval.",
+      "cta_login": "Přihlásit se",
+      "wants_login": "tě žádá o přihlášení",
+      "failed_login": "Přihlášení k {{domain}} se nezdařilo.",
+      "failedReason_login": "Přihlášení k {{domain}} se nezdařilo: {{reason}}.",
+      "unclear_login": "Nepodařilo se přečíst odpověď od {{domain}}. Zkontroluj web, jestli ses přihlásil.",
+      "cta_link": "Propojit účet",
+      "wants_link": "tě žádá o propojení účtu",
+      "failed_link": "Propojení účtu na {{domain}} se nezdařilo.",
+      "failedReason_link": "Propojení účtu na {{domain}} se nezdařilo: {{reason}}.",
+      "unclear_link": "Nepodařilo se přečíst odpověď od {{domain}}. Zkontroluj web, jestli ses propojil účet.",
+      "cta_auth": "Ověřit",
+      "wants_auth": "tě žádá o ověření",
+      "failed_auth": "Ověření u {{domain}} se nezdařilo.",
+      "failedReason_auth": "Ověření u {{domain}} se nezdařilo: {{reason}}.",
+      "unclear_auth": "Nepodařilo se přečíst odpověď od {{domain}}. Zkontroluj web, jestli ses ověřil.",
+      "unreachable": "Nepodařilo se spojit s {{domain}}. Zkontroluj připojení a zkus to znovu."
+    }
   },
   "restore": {
     "restoring": "Obnovuje se...",
@@ -548,7 +595,8 @@
     "loadFailed": "Nepodařilo se načíst odmítnuté vklady",
     "notOnchainAddress": "To není on-chain Bitcoin adresa",
     "refundFailed": "Vrácení vkladu se nezdařilo",
-    "readingFeeRates": "Načítání aktuálních sazeb poplatků..."
+    "readingFeeRates": "Načítání aktuálních sazeb poplatků...",
+    "loading": "Načítání odmítnutých vkladů..."
   },
   "deposit": {
     "title": "Převod BTC",
@@ -612,7 +660,15 @@
     "notNow": "Teď ne",
     "lightningAddress": "Lightning adresa",
     "labelFailed": "Štítek „{{label}}“ se nepodařilo převést. Zkus to znovu.",
-    "currentLabel": "(aktuální)"
+    "currentLabel": "(aktuální)",
+    "probeFailed": "Nepodařilo se ověřit existující passkey. Zkus to znovu.",
+    "labelsReadFailed": "Nepodařilo se načíst štítky tvého passkey. Zkus to znovu.",
+    "unreachablePasskey": "Nepodařilo se nám dosáhnout passkey z tvého předchozího pokusu. Pokud jsi výzvu zavřel, klepni na Zkusit znovu. Pokud jsi ten passkey smazal, zvol Vytvořit nový passkey a začni znovu.",
+    "stageSweep": "Přesouváme tvůj {{what}}...",
+    "stageSweepOf": "Přesouváme tvůj {{what}} ({{current}} z {{total}})...",
+    "sweep_funds": "prostředky",
+    "sweep_address": "Lightning adresu",
+    "sweep_contacts": "kontakty"
   },
   "refresh": {
     "pull": "Přetažením obnovíš",

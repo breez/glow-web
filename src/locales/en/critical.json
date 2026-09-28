@@ -117,7 +117,8 @@
   },
   "passkey": {
     "confirmDeleted": "I confirm that this passkey was deleted.",
-    "confirmDeletedHint": "Optional. Continue without ticking if unsure."
+    "confirmDeletedHint": "Optional. Continue without ticking if unsure.",
+    "isHowYouAccess": "Your passkey is how you access your funds"
   },
   "migration": {
     "switchFailed": "We could not finish switching to your new passkey. Your funds are safe. Please retry.",

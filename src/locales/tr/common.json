@@ -115,7 +115,13 @@
     "unlockPrompt": "Kilidi açmak için PIN'ini gir",
     "continuePrompt": "Devam etmek için PIN'ini gir",
     "forgotPin": "PIN'ini mi unuttun?",
-    "useBiometrics": "Biyometri kullan"
+    "useBiometrics": "Biyometri kullan",
+    "unlockGlow": "Glow’u aç",
+    "incorrectPin": "Yanlış PIN",
+    "tooManySeconds_one": "Çok fazla deneme. {{count}} saniye sonra tekrar dene.",
+    "tooManySeconds_other": "Çok fazla deneme. {{count}} saniye sonra tekrar dene.",
+    "tooManyMinutes_one": "Çok fazla deneme. {{count}} dakika sonra tekrar dene.",
+    "tooManyMinutes_other": "Çok fazla deneme. {{count}} dakika sonra tekrar dene."
   },
   "offline": {
     "banner": "İnternet bağlantısı yok"
@@ -164,7 +170,13 @@
     "initializing": "Kamera başlatılıyor...",
     "unavailable": "Kamera kullanılamıyor",
     "hint": "Kamerayı QR koda doğrult",
-    "noQrInImage": "Görselde QR kod bulunamadı"
+    "noQrInImage": "Görselde QR kod bulunamadı",
+    "noVideo": "Video öğesi kullanılamıyor",
+    "unavailableOrDenied": "Kamera erişimi reddedildi veya kullanılamıyor",
+    "denied": "Kamera erişimi reddedildi. Erişime izin ver ve tekrar dene.",
+    "notFound": "Bu cihazda kamera bulunamadı",
+    "inUse": "Kamera zaten başka bir uygulama tarafından kullanılıyor",
+    "constraints": "Kamera kısıtlamaları desteklenmiyor"
   },
   "staging": {
     "title": "Staging ortamı",
@@ -272,7 +284,8 @@
     "useRecoveryPhrase": "Bunun yerine kurtarma ifadesini kullan",
     "createPasskey": "Geçiş anahtarı oluştur",
     "useExistingPasskey": "Mevcut geçiş anahtarını kullan",
-    "usePasskeyInstead": "Bunun yerine geçiş anahtarı kullan"
+    "usePasskeyInstead": "Bunun yerine geçiş anahtarı kullan",
+    "settingUp": "Glow kuruluyor..."
   },
   "wallet": {
     "send": "Gönder",
@@ -302,8 +315,8 @@
     "alreadyExists": "Geçiş anahtarı zaten var",
     "signInCancelled": "Oturum açma iptal edildi",
     "unavailable": "Geçiş anahtarı kullanılamıyor",
-    "signInFailed": "Oturum açılamadı",
-    "noLongerOnDevice": "O geçiş anahtarı artık bu cihazda değil.",
+    "signInFailed": "Geçiş anahtarınla giriş yapılamadı. Tekrar dene.",
+    "noLongerOnDevice": "Glow geçiş anahtarın artık bu cihazda değil. Yeni bir tane oluşturabilirsin.",
     "couldNotSignIn": "O geçiş anahtarıyla oturum açılamadı. Kaldırılmış olabilir ya da istek iptal edilmiş olabilir.",
     "saveLabelFailed": "Etiket kaydedilemedi",
     "connectFailed": "Bağlanılamadı",
@@ -317,7 +330,12 @@
     "notFoundOnDevice": "Bu cihazda Glow geçiş anahtarın bulunamadı. Tekrar dene ya da Ayarlar > Parolalar bölümüne bak.",
     "createdNotReady": "Geçiş anahtarın oluşturuldu ama henüz kullanıma hazır değildi. Oturum açmak için kullan.",
     "timedOut": "Oturum açma zaman aşımına uğradı. Tekrar dene.",
-    "cancelledRetry": "Oturum açma iptal edildi. Tekrar dene."
+    "cancelledRetry": "Oturum açma iptal edildi. Tekrar dene.",
+    "alreadyExistsRetry": "Bu cihazda zaten bir Glow geçiş anahtarın var. Tekrar giriş yapmayı dene.",
+    "alreadyExistsUse": "Bu cihazda zaten bir Glow geçiş anahtarın var. Giriş yapmak için onu kullan.",
+    "labelSaveFailed": "Etiket Nostr’a kaydedilemedi",
+    "promptCancelled": "Geçiş anahtarı istemi iptal edildi. Tekrar dene.",
+    "signInFailedShort": "Giriş yapılamadı. Tekrar dene."
   },
   "receive": {
     "title": "Al",
@@ -514,7 +532,32 @@
       "refundSuccessBody": "Geri ödemen Bitcoin ağına gönderildi.",
       "refundFailBody": "Geri ödeme işlenirken bir hata oluştu. Tekrar dene."
     },
-    "loginCodeInvalid": "Bu giriş kodu geçerli değil. Yeni bir kod için siteyi yenile."
+    "loginCodeInvalid": "Bu giriş kodu geçerli değil. Yeni bir kod için siteyi yenile.",
+    "title": "BTC ya da USD gönder",
+    "lnurlAuth": {
+      "freshCode": "Yeni bir kod için siteyi yenile ve tekrar dene.",
+      "cta_register": "Kayıt ol",
+      "wants_register": "kayıt olmanı istiyor",
+      "failed_register": "{{domain}} sitesine kayıt olunamadı.",
+      "failedReason_register": "{{domain}} sitesine kayıt olunamadı: {{reason}}.",
+      "unclear_register": "{{domain}} sitesinden gelen yanıt okunamadı. kayıt olduğunu siteden kontrol et.",
+      "cta_login": "Giriş yap",
+      "wants_login": "giriş yapmanı istiyor",
+      "failed_login": "{{domain}} sitesine giriş yapılamadı.",
+      "failedReason_login": "{{domain}} sitesine giriş yapılamadı: {{reason}}.",
+      "unclear_login": "{{domain}} sitesinden gelen yanıt okunamadı. giriş yaptığını siteden kontrol et.",
+      "cta_link": "Hesabı bağla",
+      "wants_link": "hesabını bağlamanı istiyor",
+      "failed_link": "Hesabın {{domain}} sitesine bağlanamadı.",
+      "failedReason_link": "Hesabın {{domain}} sitesine bağlanamadı: {{reason}}.",
+      "unclear_link": "{{domain}} sitesinden gelen yanıt okunamadı. hesabını bağladığını siteden kontrol et.",
+      "cta_auth": "Doğrula",
+      "wants_auth": "doğrulama yapmanı istiyor",
+      "failed_auth": "{{domain}} sitesinde doğrulama yapılamadı.",
+      "failedReason_auth": "{{domain}} sitesinde doğrulama yapılamadı: {{reason}}.",
+      "unclear_auth": "{{domain}} sitesinden gelen yanıt okunamadı. doğrulama yaptığını siteden kontrol et.",
+      "unreachable": "{{domain}} sitesine ulaşılamadı. Bağlantını kontrol et ve tekrar dene."
+    }
   },
   "restore": {
     "restoring": "Geri yükleniyor...",
@@ -548,7 +591,8 @@
     "loadFailed": "Reddedilen yatırmalar yüklenemedi",
     "notOnchainAddress": "Bu bir on-chain Bitcoin adresi değil",
     "refundFailed": "Yatırma geri ödenemedi",
-    "readingFeeRates": "Güncel ücretler okunuyor..."
+    "readingFeeRates": "Güncel ücretler okunuyor...",
+    "loading": "Reddedilen yatırmalar yükleniyor..."
   },
   "deposit": {
     "title": "BTC transferi",
@@ -611,7 +655,15 @@
     "notNow": "Şimdi değil",
     "lightningAddress": "Lightning adresi",
     "labelFailed": "“{{label}}” etiketi taşınamadı. Tekrar dene.",
-    "currentLabel": "(geçerli)"
+    "currentLabel": "(geçerli)",
+    "probeFailed": "Mevcut geçiş anahtarı kontrol edilemedi. Tekrar dene.",
+    "labelsReadFailed": "Geçiş anahtarı etiketlerin okunamadı. Tekrar dene.",
+    "unreachablePasskey": "Önceki denemendeki geçiş anahtarına ulaşamadık. İstemi kapattıysan Tekrar Dene’ye dokun. O geçiş anahtarını sildiysen, baştan başlamak için Yeni geçiş anahtarı oluştur’u seç.",
+    "stageSweep": "{{what}} taşınıyor...",
+    "stageSweepOf": "{{what}} taşınıyor ({{current}} / {{total}})...",
+    "sweep_funds": "paran",
+    "sweep_address": "Lightning adresin",
+    "sweep_contacts": "kişilerin"
   },
   "refresh": {
     "pull": "Yenilemek için çek",

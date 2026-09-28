@@ -117,7 +117,8 @@
   },
   "passkey": {
     "confirmDeleted": "Vahvistan, että tämä avainkoodi on poistettu.",
-    "confirmDeletedHint": "Vapaaehtoinen. Jatka valitsematta, jos et ole varma."
+    "confirmDeletedHint": "Vapaaehtoinen. Jatka valitsematta, jos et ole varma.",
+    "isHowYouAccess": "Avainkoodisi on tapasi päästä varoihisi"
   },
   "migration": {
     "switchFailed": "Emme saaneet vaihtoa uuteen avainkoodiisi valmiiksi. Varasi ovat turvassa. Yritä uudelleen.",

@@ -117,7 +117,8 @@
   },
   "passkey": {
     "confirmDeleted": "Potwierdzam, że ten passkey został usunięty.",
-    "confirmDeletedHint": "Opcjonalne. Jeśli nie masz pewności, kontynuuj bez zaznaczania."
+    "confirmDeletedHint": "Opcjonalne. Jeśli nie masz pewności, kontynuuj bez zaznaczania.",
+    "isHowYouAccess": "Twój passkey to sposób dostępu do Twoich środków"
   },
   "migration": {
     "switchFailed": "Nie udało się dokończyć przejścia na nowy passkey. Twoje środki są bezpieczne. Spróbuj ponownie.",

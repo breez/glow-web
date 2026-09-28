@@ -115,7 +115,13 @@
     "unlockPrompt": "Anna PIN-koodi avataksesi lukituksen",
     "continuePrompt": "Anna PIN-koodi jatkaaksesi",
     "forgotPin": "Unohditko PIN-koodin?",
-    "useBiometrics": "Käytä biometriaa"
+    "useBiometrics": "Käytä biometriaa",
+    "unlockGlow": "Avaa Glow",
+    "incorrectPin": "Väärä PIN",
+    "tooManySeconds_one": "Liian monta yritystä. Yritä uudelleen {{count}} sekunnin kuluttua.",
+    "tooManySeconds_other": "Liian monta yritystä. Yritä uudelleen {{count}} sekunnin kuluttua.",
+    "tooManyMinutes_one": "Liian monta yritystä. Yritä uudelleen {{count}} minuutin kuluttua.",
+    "tooManyMinutes_other": "Liian monta yritystä. Yritä uudelleen {{count}} minuutin kuluttua."
   },
   "offline": {
     "banner": "Ei internet-yhteyttä"
@@ -164,7 +170,13 @@
     "initializing": "Käynnistetään kameraa...",
     "unavailable": "Kamera ei ole käytettävissä",
     "hint": "Suuntaa kamera QR-koodiin",
-    "noQrInImage": "Kuvasta ei löytynyt QR-koodia"
+    "noQrInImage": "Kuvasta ei löytynyt QR-koodia",
+    "noVideo": "Videoelementti ei ole käytettävissä",
+    "unavailableOrDenied": "Kameran käyttö evätty tai ei käytettävissä",
+    "denied": "Kameran käyttö evätty. Salli käyttö ja yritä uudelleen.",
+    "notFound": "Laitteesta ei löytynyt kameraa",
+    "inUse": "Kamera on jo toisen sovelluksen käytössä",
+    "constraints": "Kameran asetuksia ei tueta"
   },
   "staging": {
     "title": "Staging-ympäristö",
@@ -272,7 +284,8 @@
     "useRecoveryPhrase": "Käytä sen sijaan palautuslausetta",
     "createPasskey": "Luo avainkoodi",
     "useExistingPasskey": "Käytä olemassa olevaa avainkoodia",
-    "usePasskeyInstead": "Käytä sen sijaan avainkoodia"
+    "usePasskeyInstead": "Käytä sen sijaan avainkoodia",
+    "settingUp": "Määritetään Glow..."
   },
   "wallet": {
     "send": "Lähetä",
@@ -302,8 +315,8 @@
     "alreadyExists": "Avainkoodi on jo olemassa",
     "signInCancelled": "Kirjautuminen peruttiin",
     "unavailable": "Avainkoodi ei ole käytettävissä",
-    "signInFailed": "Kirjautuminen epäonnistui",
-    "noLongerOnDevice": "Kyseistä avainkoodia ei ole enää tällä laitteella.",
+    "signInFailed": "Kirjautuminen avainkoodilla ei onnistunut. Yritä uudelleen.",
+    "noLongerOnDevice": "Glow-avainkoodisi ei ole enää tällä laitteella. Voit luoda uuden.",
     "couldNotSignIn": "Kirjautuminen kyseisellä avainkoodilla ei onnistunut. Se on ehkä poistettu, tai pyyntö peruttiin.",
     "saveLabelFailed": "Tunnisteen tallennus epäonnistui",
     "connectFailed": "Yhdistäminen epäonnistui",
@@ -317,7 +330,12 @@
     "notFoundOnDevice": "Glow-avainkoodiasi ei löytynyt tältä laitteelta. Yritä uudelleen tai katso kohdasta Asetukset > Salasanat.",
     "createdNotReady": "Avainkoodisi luotiin, mutta se ei ollut vielä valmis käyttöön. Kirjaudu sillä sisään.",
     "timedOut": "Kirjautuminen aikakatkaistiin. Yritä uudelleen.",
-    "cancelledRetry": "Kirjautuminen peruttiin. Yritä uudelleen."
+    "cancelledRetry": "Kirjautuminen peruttiin. Yritä uudelleen.",
+    "alreadyExistsRetry": "Sinulla on jo Glow-avainkoodi tällä laitteella. Yritä kirjautua uudelleen.",
+    "alreadyExistsUse": "Sinulla on jo Glow-avainkoodi tällä laitteella. Kirjaudu sillä sisään.",
+    "labelSaveFailed": "Tunnisteen tallennus Nostriin epäonnistui",
+    "promptCancelled": "Avainkoodikehote peruutettiin. Yritä uudelleen.",
+    "signInFailedShort": "Kirjautuminen epäonnistui. Yritä uudelleen."
   },
   "receive": {
     "title": "Vastaanota",
@@ -514,7 +532,32 @@
       "refundSuccessBody": "Hyvityksesi on lähetetty Bitcoin-verkkoon.",
       "refundFailBody": "Hyvityksen käsittelyssä tapahtui virhe. Yritä uudelleen."
     },
-    "loginCodeInvalid": "Tämä kirjautumiskoodi ei kelpaa. Päivitä sivu saadaksesi uuden."
+    "loginCodeInvalid": "Tämä kirjautumiskoodi ei kelpaa. Päivitä sivu saadaksesi uuden.",
+    "title": "Lähetä BTC tai USD",
+    "lnurlAuth": {
+      "freshCode": "Päivitä sivu saadaksesi uuden koodin ja yritä uudelleen.",
+      "cta_register": "Rekisteröidy",
+      "wants_register": "pyytää sinua rekisteröitymään",
+      "failed_register": "Rekisteröityminen palveluun {{domain}} epäonnistui.",
+      "failedReason_register": "Rekisteröityminen palveluun {{domain}} epäonnistui: {{reason}}.",
+      "unclear_register": "Vastausta palvelusta {{domain}} ei voitu lukea. Tarkista sivustolta, oletko rekisteröitynyt.",
+      "cta_login": "Kirjaudu sisään",
+      "wants_login": "pyytää sinua kirjautumaan sisään",
+      "failed_login": "Kirjautuminen palveluun {{domain}} epäonnistui.",
+      "failedReason_login": "Kirjautuminen palveluun {{domain}} epäonnistui: {{reason}}.",
+      "unclear_login": "Vastausta palvelusta {{domain}} ei voitu lukea. Tarkista sivustolta, oletko kirjautunut sisään.",
+      "cta_link": "Yhdistä tili",
+      "wants_link": "pyytää sinua yhdistämään tilisi",
+      "failed_link": "Tilin yhdistäminen palveluun {{domain}} epäonnistui.",
+      "failedReason_link": "Tilin yhdistäminen palveluun {{domain}} epäonnistui: {{reason}}.",
+      "unclear_link": "Vastausta palvelusta {{domain}} ei voitu lukea. Tarkista sivustolta, oletko yhdistänyt tilisi.",
+      "cta_auth": "Todenna",
+      "wants_auth": "pyytää sinua todentamaan",
+      "failed_auth": "Todennus palveluun {{domain}} epäonnistui.",
+      "failedReason_auth": "Todennus palveluun {{domain}} epäonnistui: {{reason}}.",
+      "unclear_auth": "Vastausta palvelusta {{domain}} ei voitu lukea. Tarkista sivustolta, oletko todentanut.",
+      "unreachable": "Palveluun {{domain}} ei saatu yhteyttä. Tarkista yhteytesi ja yritä uudelleen."
+    }
   },
   "restore": {
     "restoring": "Palautetaan...",
@@ -548,7 +591,8 @@
     "loadFailed": "Hylättyjen talletusten lataus epäonnistui",
     "notOnchainAddress": "Tämä ei ole on-chain Bitcoin-osoite",
     "refundFailed": "Talletuksen hyvitys epäonnistui",
-    "readingFeeRates": "Luetaan nykyisiä maksuja..."
+    "readingFeeRates": "Luetaan nykyisiä maksuja...",
+    "loading": "Ladataan hylättyjä talletuksia..."
   },
   "deposit": {
     "title": "BTC-siirto",
@@ -611,7 +655,15 @@
     "notNow": "Ei nyt",
     "lightningAddress": "Lightning-osoite",
     "labelFailed": "Tunnisteen ”{{label}}” siirto epäonnistui. Yritä uudelleen.",
-    "currentLabel": "(nykyinen)"
+    "currentLabel": "(nykyinen)",
+    "probeFailed": "Olemassa olevan avainkoodin tarkistus epäonnistui. Yritä uudelleen.",
+    "labelsReadFailed": "Avainkoodisi tunnisteita ei voitu lukea. Yritä uudelleen.",
+    "unreachablePasskey": "Emme tavoittaneet edellisen yrityksesi avainkoodia. Jos suljit kehotteen, napauta Yritä uudelleen. Jos poistit kyseisen avainkoodin, valitse Luo uusi avainkoodi aloittaaksesi alusta.",
+    "stageSweep": "Siirretään {{what}}...",
+    "stageSweepOf": "Siirretään {{what}} ({{current}}/{{total}})...",
+    "sweep_funds": "varat",
+    "sweep_address": "Lightning-osoite",
+    "sweep_contacts": "yhteystiedot"
   },
   "refresh": {
     "pull": "Päivitä vetämällä",

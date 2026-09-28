@@ -247,7 +247,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
           <div className="flex-1 overflow-y-auto">
             {isLoading && (
               <div className="py-16 flex justify-center">
-                <LoadingSpinner text="Loading rejected deposits..." />
+                <LoadingSpinner text={t('common:refund.loading')} />
               </div>
             )}
 

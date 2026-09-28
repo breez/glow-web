@@ -115,7 +115,13 @@
     "unlockPrompt": "Ange din PIN-kod för att låsa upp",
     "continuePrompt": "Ange din PIN-kod för att fortsätta",
     "forgotPin": "Glömt din PIN-kod?",
-    "useBiometrics": "Använd biometri"
+    "useBiometrics": "Använd biometri",
+    "unlockGlow": "Lås upp Glow",
+    "incorrectPin": "Fel PIN-kod",
+    "tooManySeconds_one": "För många försök. Försök igen om {{count}} sekunder.",
+    "tooManySeconds_other": "För många försök. Försök igen om {{count}} sekunder.",
+    "tooManyMinutes_one": "För många försök. Försök igen om {{count}} minuter.",
+    "tooManyMinutes_other": "För många försök. Försök igen om {{count}} minuter."
   },
   "offline": {
     "banner": "Ingen internetanslutning"
@@ -164,7 +170,13 @@
     "initializing": "Startar kameran...",
     "unavailable": "Kameran är inte tillgänglig",
     "hint": "Rikta kameran mot QR-koden",
-    "noQrInImage": "Ingen QR-kod hittades i bilden"
+    "noQrInImage": "Ingen QR-kod hittades i bilden",
+    "noVideo": "Videoelementet är inte tillgängligt",
+    "unavailableOrDenied": "Kameraåtkomst nekad eller inte tillgänglig",
+    "denied": "Kameraåtkomst nekad. Tillåt åtkomst och försök igen.",
+    "notFound": "Ingen kamera hittades på den här enheten",
+    "inUse": "Kameran används redan av en annan app",
+    "constraints": "Kamerabegränsningar stöds inte"
   },
   "staging": {
     "title": "Stagingmiljö",
@@ -272,7 +284,8 @@
     "useRecoveryPhrase": "Använd återställningsfrasen i stället",
     "createPasskey": "Skapa passkey",
     "useExistingPasskey": "Använd befintlig passkey",
-    "usePasskeyInstead": "Använd passkey i stället"
+    "usePasskeyInstead": "Använd passkey i stället",
+    "settingUp": "Konfigurerar Glow..."
   },
   "wallet": {
     "send": "Skicka",
@@ -302,8 +315,8 @@
     "alreadyExists": "Passkeyn finns redan",
     "signInCancelled": "Inloggningen avbröts",
     "unavailable": "Passkeyn är inte tillgänglig",
-    "signInFailed": "Inloggningen misslyckades",
-    "noLongerOnDevice": "Den passkeyn finns inte längre på den här enheten.",
+    "signInFailed": "Det gick inte att logga in med din passkey. Försök igen.",
+    "noLongerOnDevice": "Din Glow-passkey finns inte längre på den här enheten. Du kan skapa en ny.",
     "couldNotSignIn": "Det gick inte att logga in med den passkeyn. Den kan ha tagits bort, eller så avbröts förfrågan.",
     "saveLabelFailed": "Etiketten kunde inte sparas",
     "connectFailed": "Det gick inte att ansluta",
@@ -317,7 +330,12 @@
     "notFoundOnDevice": "Din Glow-passkey hittades inte på den här enheten. Försök igen, eller titta under Inställningar > Lösenord.",
     "createdNotReady": "Din passkey skapades men var inte klar att användas än. Använd den för att logga in.",
     "timedOut": "Inloggningen tog för lång tid. Försök igen.",
-    "cancelledRetry": "Inloggningen avbröts. Försök igen."
+    "cancelledRetry": "Inloggningen avbröts. Försök igen.",
+    "alreadyExistsRetry": "Du har redan en Glow-passkey på den här enheten. Försök logga in igen.",
+    "alreadyExistsUse": "Du har redan en Glow-passkey på den här enheten. Logga in med den.",
+    "labelSaveFailed": "Det gick inte att spara etiketten i Nostr",
+    "promptCancelled": "Passkey-förfrågan avbröts. Försök igen.",
+    "signInFailedShort": "Det gick inte att logga in. Försök igen."
   },
   "receive": {
     "title": "Ta emot",
@@ -514,7 +532,32 @@
       "refundSuccessBody": "Din återbetalning har skickats till Bitcoin-nätverket.",
       "refundFailBody": "Ett fel uppstod när återbetalningen behandlades. Försök igen."
     },
-    "loginCodeInvalid": "Den här inloggningskoden är ogiltig. Uppdatera webbplatsen för en ny."
+    "loginCodeInvalid": "Den här inloggningskoden är ogiltig. Uppdatera webbplatsen för en ny.",
+    "title": "Skicka BTC eller USD",
+    "lnurlAuth": {
+      "freshCode": "Uppdatera webbplatsen för en ny kod och försök igen.",
+      "cta_register": "Registrera",
+      "wants_register": "vill att du registrerar dig",
+      "failed_register": "Det gick inte att registrera sig på {{domain}}.",
+      "failedReason_register": "Det gick inte att registrera sig på {{domain}}: {{reason}}.",
+      "unclear_register": "Det gick inte att läsa svaret från {{domain}}. Kontrollera på webbplatsen om du har registrerat dig.",
+      "cta_login": "Logga in",
+      "wants_login": "vill att du loggar in",
+      "failed_login": "Det gick inte att logga in på {{domain}}.",
+      "failedReason_login": "Det gick inte att logga in på {{domain}}: {{reason}}.",
+      "unclear_login": "Det gick inte att läsa svaret från {{domain}}. Kontrollera på webbplatsen om du har loggat in.",
+      "cta_link": "Länka konto",
+      "wants_link": "vill att du länkar ditt konto",
+      "failed_link": "Det gick inte att länka ditt konto på {{domain}}.",
+      "failedReason_link": "Det gick inte att länka ditt konto på {{domain}}: {{reason}}.",
+      "unclear_link": "Det gick inte att läsa svaret från {{domain}}. Kontrollera på webbplatsen om du har länkat ditt konto.",
+      "cta_auth": "Autentisera",
+      "wants_auth": "vill att du autentiserar dig",
+      "failed_auth": "Det gick inte att autentisera på {{domain}}.",
+      "failedReason_auth": "Det gick inte att autentisera på {{domain}}: {{reason}}.",
+      "unclear_auth": "Det gick inte att läsa svaret från {{domain}}. Kontrollera på webbplatsen om du har autentiserat dig.",
+      "unreachable": "Det gick inte att nå {{domain}}. Kontrollera din anslutning och försök igen."
+    }
   },
   "restore": {
     "restoring": "Återställer...",
@@ -548,7 +591,8 @@
     "loadFailed": "Det gick inte att läsa in avvisade insättningar",
     "notOnchainAddress": "Det är inte en on-chain Bitcoin-adress",
     "refundFailed": "Det gick inte att återbetala insättningen",
-    "readingFeeRates": "Läser aktuella avgifter..."
+    "readingFeeRates": "Läser aktuella avgifter...",
+    "loading": "Läser in avvisade insättningar..."
   },
   "deposit": {
     "title": "BTC-överföring",
@@ -611,7 +655,15 @@
     "notNow": "Inte nu",
     "lightningAddress": "Lightning-adress",
     "labelFailed": "Etiketten ”{{label}}” kunde inte migreras. Försök igen.",
-    "currentLabel": "(aktuell)"
+    "currentLabel": "(aktuell)",
+    "probeFailed": "Det gick inte att kontrollera om det finns en passkey. Försök igen.",
+    "labelsReadFailed": "Det gick inte att läsa dina passkey-etiketter. Försök igen.",
+    "unreachablePasskey": "Vi kunde inte nå passkeyn från ditt förra försök. Om du stängde förfrågan, tryck på Försök igen. Om du raderade den passkeyn, välj Skapa en ny passkey för att börja om.",
+    "stageSweep": "Flyttar din {{what}}...",
+    "stageSweepOf": "Flyttar din {{what}} ({{current}} av {{total}})...",
+    "sweep_funds": "pengar",
+    "sweep_address": "Lightning-adress",
+    "sweep_contacts": "kontakter"
   },
   "refresh": {
     "pull": "Dra för att uppdatera",
