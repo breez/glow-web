@@ -122,6 +122,12 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     return contact ? `Pay to ${contact.name}` : `Pay to ${address}`;
   }, [send.paymentInput, findContactByAddress]);
 
+  // The input step is always the send entry point, so it keeps the send icon
+  // even when a scanned LNURL is still in paymentInput (e.g. after Back). Past
+  // it, withdraw reads as a receive and a login moves no money at all.
+  const workflowType = send.currentStep === 'input' ? null : send.paymentInput?.parsedInput.type;
+  const headerIcon = workflowType === 'lnurlWithdraw' ? <ArrowDownIcon /> : workflowType === 'lnurlAuth' ? undefined : <ArrowUpIcon />;
+
   const lnurlPayDetails = getLnurlPayRequestDetails(send.paymentInput);
   const lnurlAuthDetails = getLnurlAuthRequestDetails(send.paymentInput);
   const lnurlWithdrawDetails = getLnurlWithdrawRequestDetails(send.paymentInput);
@@ -166,10 +172,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
             <DialogHeader
               title={dialogTitle}
               onClose={handleClose}
-              // The input step is always the send entry point, so it keeps the send
-              // icon even when a scanned lnurl-withdraw is still in paymentInput (e.g.
-              // after Back). Only the withdraw workflow step flips to the receive icon.
-              icon={send.currentStep !== 'input' && send.paymentInput?.parsedInput.type === 'lnurlWithdraw' ? <ArrowDownIcon /> : <ArrowUpIcon />}
+              icon={headerIcon}
             />
 
             {send.currentStep === 'input' && (
@@ -265,10 +268,8 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                   <LnurlAuthWorkflow
                     parsed={lnurlAuthDetails}
                     onBack={() => send.setCurrentStep('input')}
-                    onRun={send.handleRun}
-                    onAuth={async (requestData) => {
-                      return await wallet.lnurlAuth(requestData);
-                    }}
+                    onAuth={(requestData) => wallet.lnurlAuth(requestData)}
+                    onClose={handleClose}
                   />
                 )}
                 {lnurlWithdrawDetails && (
@@ -313,7 +314,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
             )}
 
             {send.currentStep === 'processing' && (
-              <ProcessingStep operationType={send.paymentInput?.parsedInput.type === 'lnurlAuth' ? 'auth' : 'payment'} processingPhase={send.processingPhase} />
+              <ProcessingStep processingPhase={send.processingPhase} />
             )}
 
             {send.currentStep === 'result' && (
@@ -321,7 +322,6 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
                 result={send.paymentResult === 'success' ? 'success' : 'failure'}
                 error={send.error}
                 onClose={handleClose}
-                operationType={send.paymentInput?.parsedInput.type === 'lnurlAuth' ? 'auth' : 'payment'}
               />
             )}
           </div>
