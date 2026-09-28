@@ -1,7 +1,9 @@
 import type { ClaimDepositQuote, DepositInfo, FetchClaimDepositQuoteResponse, InstantClaimStatus, MaxFee } from '@breeztech/breez-sdk-spark';
+import i18n from 'i18next';
 
 /** What the sheet says once an early claim is in, until the funds land. */
-export const CLAIM_SUBMITTED_LINE = 'Claim submitted. Funds will arrive shortly.';
+/** Resolved per call: the module loads before i18next has a language. */
+export const claimSubmittedLine = (): string => i18n.t('common:deposit.claimSubmitted');
 
 /**
  * Blocks still to wait before an option can be claimed. `confirmationsRequired`

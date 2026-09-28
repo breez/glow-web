@@ -194,7 +194,7 @@ export function useBuyBitcoin({
     } finally {
       setIsGenerating(false);
     }
-  }, [amountSats, sdk, onMobileRedirectComplete]);
+  }, [amountSats, sdk, onMobileRedirectComplete, t]);
 
   // The purchase lands as a Spark payment from the conversion provider, not as
   // a payment of the invoice, so it is matched by quote. Listens only on `link`.

@@ -1,4 +1,5 @@
 import type { CrossChainRoutePair } from '@breeztech/breez-sdk-spark';
+import i18n from 'i18next';
 
 // Group asset variants under a canonical display name (e.g. USDT0 → USDT).
 export const ASSET_DISPLAY_GROUP: Record<string, string> = { USDT0: 'USDT' };
@@ -60,11 +61,11 @@ export function crossChainCardClass(active = false): string {
  *  fees took too large a share of. */
 export function crossChainFriendlyError(err: unknown, fallback: string): string {
   const raw = err instanceof Error ? err.message : 'Unknown error';
-  if (raw.includes('Cross-chain route temporarily unavailable')) return 'This network is temporarily unavailable. Try again in a moment.';
-  if (raw.includes('Cross-chain route not supported')) return "This network isn't available. Try another network.";
-  if (raw.includes('Amount too small')) return 'Amount too small for this route.';
-  if (raw.includes('Amount too large')) return 'Amount too large for this route.';
-  if (raw.includes('rate drift')) return 'Amount too small for this network. Try a larger amount or another network.';
+  if (raw.includes('Cross-chain route temporarily unavailable')) return i18n.t('critical:send.crossChain.networkUnavailable');
+  if (raw.includes('Cross-chain route not supported')) return i18n.t('critical:send.crossChain.networkNotSupported');
+  if (raw.includes('Amount too small')) return i18n.t('critical:send.crossChain.amountTooSmall');
+  if (raw.includes('Amount too large')) return i18n.t('critical:send.crossChain.amountTooLarge');
+  if (raw.includes('rate drift')) return i18n.t('critical:send.crossChain.rateDrift');
   return fallback;
 }
 

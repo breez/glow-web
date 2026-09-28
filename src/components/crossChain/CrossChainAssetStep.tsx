@@ -3,6 +3,7 @@ import { useSheetBack, useSheetFullSnap, useSheetOwnsScroll } from '../ui/sheets
 import { PrimaryButton } from '../ui';
 import CryptoIcon from '../CryptoIcon';
 import { crossChainCardClass } from '../../utils/crossChainRoutes';
+import { useTranslation } from 'react-i18next';
 
 interface CrossChainAssetStepProps {
   /** Display asset names to choose from (e.g. "USDC", "USDT"). */
@@ -24,6 +25,7 @@ export const CrossChainAssetStep: React.FC<CrossChainAssetStepProps> = ({
   onContinue,
   error,
 }) => {
+  const { t } = useTranslation('common');
   const isSheetFull = useSheetFullSnap();
   useSheetBack(onBack);
   useSheetOwnsScroll();
@@ -39,7 +41,7 @@ export const CrossChainAssetStep: React.FC<CrossChainAssetStepProps> = ({
     )}
     {assets.length > 0 && (
       <div className="mb-4 min-h-0 flex flex-col">
-        <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">Select coin</label>
+        <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">{t('send.crossChain.selectCoin')}</label>
         <div className="space-y-2 overflow-y-auto overscroll-y-none touch-pan-y min-h-0 pr-1">
           {assets.map(asset => (
             <button

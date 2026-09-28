@@ -56,7 +56,7 @@ export const useLightningAddress = (): UseLightningAddress => {
     setIsEditing(false);
     setEditValue('');
     setError(null);
-  }, [t]);
+  }, []);
 
   const extractUsername = (value: string): string => {
     if (!value) return '';
