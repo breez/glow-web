@@ -32,7 +32,12 @@
     "convertToBtc": "In BTC umwandeln",
     "conversionFee": "Umwandlungsgebühr:",
     "feeUnavailable": "Gebühr konnte nicht geschätzt werden",
-    "disclaimerBody": "Dein Guthaben wird in USD gehalten. Eingehende BTC werden automatisch in USD umgewandelt, ausgehende Zahlungen zurück in BTC. Beträge unterhalb der Umwandlungsschwelle bleiben als Restbetrag, bis sie sich ansammeln."
+    "disclaimerBody": "Dein Guthaben wird in USD gehalten. Eingehende BTC werden automatisch in USD umgewandelt, ausgehende Zahlungen zurück in BTC. Beträge unterhalb der Umwandlungsschwelle bleiben als Restbetrag, bis sie sich ansammeln.",
+    "balanceTooLow": "Das Guthaben ist zu niedrig zum Umwandeln — es bleibt als Restbetrag",
+    "switchToUsdFailed": "Der Wechsel zu USD ist fehlgeschlagen. Versuche es erneut.",
+    "switchToBtcFailed": "Der Wechsel zu BTC ist fehlgeschlagen. Versuche es erneut.",
+    "restoreTitle": "USD-Guthaben erkannt",
+    "restoreBody": "Wir haben USD-Guthaben gefunden. Möchtest du in den USD-Modus wechseln?\n\nDein Guthaben wird in USD gehalten. Eingehende BTC werden automatisch in USD umgewandelt, ausgehende Zahlungen zurück in BTC."
   },
   "send": {
     "sendAll": "Alles senden",
@@ -54,14 +59,20 @@
       "amountTooSmall": "Betrag zu klein für diese Route.",
       "amountTooLarge": "Betrag zu groß für diese Route.",
       "amountTooSmallHint": "Dieser Betrag ist zu klein für die verfügbaren Routen. Versuche es mit einem größeren Betrag.",
-      "amountTooLargeHint": "Dieser Betrag ist zu groß für die verfügbaren Routen. Versuche es mit einem kleineren Betrag."
+      "amountTooLargeHint": "Dieser Betrag ist zu groß für die verfügbaren Routen. Versuche es mit einem kleineren Betrag.",
+      "networkUnavailable": "Dieses Netzwerk ist vorübergehend nicht verfügbar. Versuche es gleich noch einmal.",
+      "networkNotSupported": "Dieses Netzwerk ist nicht verfügbar. Versuche ein anderes Netzwerk.",
+      "rateDrift": "Der Betrag ist für dieses Netzwerk zu klein. Versuche einen größeren Betrag oder ein anderes Netzwerk."
     },
     "withdraw": {
       "noValidAmount": "Dieser Auszahlungslink enthält keinen gültigen Betrag, den Glow empfangen kann.",
       "wholeSats": "Gib eine ganze Zahl in Sats ein"
     },
     "enterAmountIn": "Betrag in {{currency}} eingeben",
-    "amountRange": "Zwischen {{min}} und {{max}} Sats"
+    "amountRange": "Zwischen {{min}} und {{max}} Sats",
+    "result": {
+      "notSentBody": "Die Zahlung ist nicht durchgegangen. Dein Guthaben wurde nicht gesendet."
+    }
   },
   "generate": {
     "title": "Halte sie geheim",
@@ -96,7 +107,13 @@
     "feeChanged": "Netzwerkgebühr geändert",
     "approveOrReject": "Bestätige, um diesen Transfer einzulösen, oder lehne ab, um eine Rückerstattung anzustoßen.",
     "canReject": "Du kannst ablehnen, um stattdessen eine Rückerstattung anzustoßen.",
-    "feeRose": "Die Gebühr ist während deiner Bestätigung auf <amount/> gestiegen. Bestätige, um zur neuen Gebühr einzulösen."
+    "feeRose": "Die Gebühr ist während deiner Bestätigung auf <amount/> gestiegen. Bestätige, um zur neuen Gebühr einzulösen.",
+    "deliveryFee": "Liefergebühr",
+    "youReceive": "Du erhältst",
+    "claim": "Einlösen",
+    "approve": "Bestätigen",
+    "reject": "Ablehnen",
+    "claimFeeChanged": "Dein Einlösen ist fehlgeschlagen: die Gebühr hat sich von <amount/> geändert."
   },
   "passkey": {
     "confirmDeleted": "Ich bestätige, dass dieser Passkey gelöscht wurde.",
@@ -116,5 +133,10 @@
     "explainFirstTime": "Wenn du deinen Passkey mit einer früheren Version von Glow erstellt hast, erstellen wir einen neuen und übertragen dein Guthaben automatisch. Wenn du Glow zum ersten Mal verwendest, wähle <skip/>, um fortzufahren.",
     "migrateLabels_one": "Wir migrieren dein Label auf deinen neuen Passkey.",
     "migrateLabels_other": "Wir migrieren alle {{count}} Labels auf deinen neuen Passkey."
+  },
+  "webNotice": {
+    "preferPasskey": "Zu deiner Sicherheit empfehlen wir stattdessen einen Passkey.",
+    "preferApp": "Zu deiner Sicherheit empfehlen wir die Glow-App.",
+    "risk": "Eine Wiederherstellungsphrase im Web ist weniger sicher, und es besteht die Möglichkeit, dass dein Guthaben verloren geht. Nutze eine Wiederherstellungsphrase im Web nur, wenn du dieses Risiko eingehen willst."
   }
 }

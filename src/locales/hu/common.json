@@ -35,7 +35,8 @@
     "retry": "Újrapróbálás",
     "goBack": "Vissza",
     "edit": "Szerkesztés",
-    "skip": "Kihagyás"
+    "skip": "Kihagyás",
+    "tapToCopy": "Koppintsd meg a másoláshoz"
   },
   "labels": {
     "address": "Cím",
@@ -55,7 +56,9 @@
     "justNow": "Az imént",
     "somethingWentWrongRetry": "Valami hiba történt. Próbáld újra.",
     "shareFailed": "A megosztás nem sikerült",
-    "guide": "Útmutató"
+    "guide": "Útmutató",
+    "readyNow": "most azonnal",
+    "securityNotice": "Biztonsági megjegyzés"
   },
   "a11y": {
     "goBack": "Vissza",
@@ -78,7 +81,8 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
-    "generic": "biometrikus"
+    "generic": "biometrikus",
+    "lockout": "A biometrikus feloldás zárolva van. Oldd fel az eszközt a kódoddal, és próbáld újra."
   },
   "pages": {
     "backup": "Biztonsági mentés",
@@ -129,7 +133,8 @@
     "processing": "Feldolgozás",
     "pendingConfirmation": "Megerősítésre vár",
     "pendingApproval": "Jóváhagyásra vár",
-    "tapToClaim": "Koppints az igényléshez"
+    "tapToClaim": "Koppints az igényléshez",
+    "confirming": "Megerősítés"
   },
   "paymentDetails": {
     "amount": "Összeg",
@@ -152,7 +157,8 @@
     "provider": "Szolgáltató",
     "initialAmount": "Kiindulási összeg",
     "convertedAmount": "Átváltott összeg",
-    "url": "URL"
+    "url": "URL",
+    "sentAmount": "Elküldött összeg"
   },
   "qrScanner": {
     "initializing": "Kamera indítása...",
@@ -208,7 +214,9 @@
     "lightningPayment": "Lightning-fizetés",
     "sparkTransfer": "Spark-átutalás",
     "tokenTransfer": "Token-átutalás",
-    "namedTransfer": "{{name}}-átutalás"
+    "namedTransfer": "{{name}}-átutalás",
+    "usdTransfer": "USD-átutalás",
+    "btcTransfer": "BTC-átutalás"
   },
   "security": {
     "gateReason": "A zárolási képernyő beállításainak feloldása",
@@ -335,7 +343,7 @@
     "createLightningAddress": "Lightning-cím létrehozása",
     "editLightningAddress": "Lightning-cím szerkesztése",
     "editAddress": "Cím szerkesztése",
-    "createAddress": "Cím létrehozása",
+    "createAddress": "Lightning-cím létrehozása",
     "addressUnavailable": "A Lightning-címek nem érhetők el ebben a környezetben.",
     "loadAddressFailed": "Nem sikerült betölteni a Lightning-címet",
     "enterUsername": "Adj meg egy felhasználónevet",
@@ -343,7 +351,26 @@
     "saveAddressFailed": "Nem sikerült menteni a Lightning-címet",
     "invalidAmount": "Érvénytelen összeg",
     "invalidAmountEntry": "Adj meg érvényes összeget",
-    "enterAmountSats": "Add meg az összeget satsban"
+    "enterAmountSats": "Add meg az összeget satsban",
+    "onChain": "On-chain",
+    "switchTo": "Váltás erre: {{mode}}",
+    "createAddressShort": "Cím létrehozása",
+    "createAddressBody": "Hozz létre egy Lightning-címet, hogy könnyen kaphass fizetéseket",
+    "lightningUnavailable": "A Lightning-címek nem érhetők el",
+    "shareFailed": "A megosztás nem sikerült",
+    "scanToPayShort": "Olvasd be a fizetéshez",
+    "description": "Leírás (nem kötelező)",
+    "amountCopied": "Összeg másolva",
+    "addressCopied": "Cím másolva",
+    "copyAmount": "Összeg másolása",
+    "depositAddress": "Befizetési cím",
+    "crossChain": {
+      "createFailed": "A kérés létrehozása nem sikerült.",
+      "noRoutes": "Jelenleg nincs elérhető láncok közötti útvonal",
+      "creating": "Kérés létrehozása...",
+      "enterUsd": "Add meg az összeget USD-ben",
+      "routeSummary": "{{asset}} ezen: {{chain}} · {{provider}} szolgáltatón át"
+    }
   },
   "buy": {
     "title": "Bitcoin vásárlása",
@@ -354,7 +381,10 @@
     "redirecting": "Átirányítás…",
     "amount": "Összeg",
     "invalidAmount": "Érvénytelen összeg",
-    "invoiceFailed": "Nem sikerült létrehozni a számlát. Próbáld újra."
+    "invoiceFailed": "Nem sikerült létrehozni a számlát. Próbáld újra.",
+    "addFundsFromCashApp": "Pénz hozzáadása a Cash Appből",
+    "openCashApp": "Cash App megnyitása",
+    "openFailed": "A vásárlási oldal megnyitása nem sikerült. Próbáld újra."
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Próbáld újra másik jelszókezelővel, vagy folytasd helyreállítási kifejezéssel.",
@@ -371,7 +401,8 @@
   },
   "startupFailure": {
     "title": "Az alkalmazást nem sikerült betölteni",
-    "body": "Hiba történt a Glow indításakor. Frissítsd az oldalt, és próbáld újra."
+    "body": "Hiba történt a Glow indításakor. Frissítsd az oldalt, és próbáld újra.",
+    "missingApiKey": "Hiányzó API-kulcs"
   },
   "lockdown": {
     "headingIos": "Kapcsold ki a Zárolt üzemmódot a Glow használatához",
@@ -444,7 +475,8 @@
       "noRoutesAny": "Ehhez a címhez nincs elérhető láncok közötti útvonal",
       "routesFetchFailed": "Nem sikerült lekérni az útvonalakat: {{error}}",
       "quoteFailedHint": "Jelenleg egyik szolgáltató sem ad ajánlatot. Próbáld újra, vagy lépj vissza, és adj meg másik összeget.",
-      "fetchingRoutes": "Útvonalak lekérése..."
+      "fetchingRoutes": "Útvonalak lekérése...",
+      "selectNetwork": "Válassz hálózatot ehhez: {{asset}}"
     },
     "withdraw": {
       "amountToReceive": "Fogadandó összeg",
@@ -454,7 +486,9 @@
     "lnurl": {
       "commentPlaceholder": "Írj egy üzenetet...",
       "commentTooLong": "A megjegyzés legfeljebb {{max}} karakter lehet",
-      "prepareFailed": "Nem sikerült előkészíteni az LNURL Pay műveletet: {{error}}"
+      "prepareFailed": "Nem sikerült előkészíteni az LNURL Pay műveletet: {{error}}",
+      "to": "Címzett",
+      "comment": "Megjegyzés (nem kötelező)"
     },
     "noDestination": "Adj meg egy fizetési célpontot",
     "prepareFailed": "Nem sikerült előkészíteni a fizetést: {{error}}",
@@ -474,8 +508,13 @@
       "authSuccessBody": "Sikeresen hitelesítetted magad a szolgáltatásnál.",
       "sentBody": "A fizetésed sikeresen elment a címzettnek.",
       "authFailBody": "Hiba történt a hitelesítés során. Próbáld újra.",
-      "failBody": "Hiba történt a fizetés feldolgozása során. Próbáld újra."
-    }
+      "failBody": "Hiba történt a fizetés feldolgozása során. Próbáld újra.",
+      "refundSent": "Visszatérítés elküldve!",
+      "refundFailed": "A visszatérítés nem sikerült",
+      "refundSuccessBody": "A visszatérítésedet elküldtük a Bitcoin-hálózatra.",
+      "refundFailBody": "Hiba történt a visszatérítés feldolgozása közben. Próbáld újra."
+    },
+    "loginCodeInvalid": "Ez a belépési kód érvénytelen. Frissítsd az oldalt egy újért."
   },
   "restore": {
     "restoring": "Visszaállítás...",
@@ -504,14 +543,35 @@
     "failed": "A visszatérítés sikertelen",
     "processing": "Visszatérítés feldolgozása...",
     "errorBody": "Hiba történt a visszatérítés feldolgozása során.",
-    "txId": "A visszatérítés tranzakcióazonosítója"
+    "txId": "A visszatérítés tranzakcióazonosítója",
+    "getRefund": "Visszatérítés kérése",
+    "loadFailed": "Az elutasított befizetések betöltése nem sikerült",
+    "notOnchainAddress": "Ez nem on-chain Bitcoin-cím",
+    "refundFailed": "A befizetés visszatérítése nem sikerült",
+    "readingFeeRates": "Aktuális díjszabás beolvasása..."
   },
   "deposit": {
     "title": "BTC-átutalás",
     "claimFailed": "Az igénylés sikertelen",
     "autoClaimFailed": "Az automatikus igénylés sikertelen",
     "waitingConfirmations": "Várakozás 3 megerősítésre.",
-    "autoClaim": "Ez az átutalás automatikusan igényelve lesz."
+    "autoClaim": "Ez az átutalás automatikusan igényelve lesz.",
+    "speed": "Sebesség",
+    "standardDelivery": "Normál kézbesítés",
+    "instantDelivery": "Azonnali kézbesítés",
+    "expeditedDelivery": "Gyorsított kézbesítés",
+    "claimedAutomatically": "Automatikusan igényelve",
+    "arrivesInSeconds": "Másodpercek alatt megérkezik",
+    "unlocksIn": "Feloldás {{wait}} múlva",
+    "beingClaimed": "Ez az átutalás éppen igénylés alatt áll.",
+    "claimDeferred": "Ezt az átutalást még nem sikerült igényelni. Próbáld újra.",
+    "claimFailedGeneric": "Az átutalás igénylése nem sikerült",
+    "earlyUnavailable": "A korai kézbesítés most nem érhető el, ezért ez az átutalás automatikusan lesz igényelve.",
+    "setupFailed": "Ezt az átutalást nem sikerült igénylésre előkészíteni. Próbáld újra.",
+    "checkingOptions": "Kézbesítési lehetőségek ellenőrzése",
+    "claimSubmitted": "Az igénylés elküldve. A pénz hamarosan megérkezik.",
+    "countNotClaimed_one": "{{count}} befizetést nem sikerült igényelni",
+    "countNotClaimed_other": "{{count}} befizetést nem sikerült igényelni"
   },
   "startup": {
     "refreshFailed": "Nem sikerült frissíteni az adataidat.",
@@ -552,5 +612,13 @@
     "lightningAddress": "Lightning-cím",
     "labelFailed": "Nem sikerült migrálni ezt a címkét: „{{label}}”. Próbáld újra.",
     "currentLabel": "(jelenlegi)"
+  },
+  "refresh": {
+    "pull": "Húzd le a frissítéshez",
+    "release": "Engedd el a frissítéshez",
+    "refreshing": "Frissítés"
+  },
+  "logout": {
+    "done": "Sikeresen kijelentkeztél"
   }
 }

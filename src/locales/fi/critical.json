@@ -32,7 +32,12 @@
     "convertToBtc": "Muunna bitcoineiksi",
     "conversionFee": "Muunnosmaksu:",
     "feeUnavailable": "Maksua ei voitu arvioida",
-    "disclaimerBody": "Saldoasi pidetään dollareissa. Saapuva BTC muunnetaan automaattisesti dollareiksi ja lähtevät maksut takaisin bitcoineiksi. Muunnosrajan alle jäävät summat jäävät vaihtorahaksi, kunnes niitä kertyy tarpeeksi."
+    "disclaimerBody": "Saldoasi pidetään dollareissa. Saapuva BTC muunnetaan automaattisesti dollareiksi ja lähtevät maksut takaisin bitcoineiksi. Muunnosrajan alle jäävät summat jäävät vaihtorahaksi, kunnes niitä kertyy tarpeeksi.",
+    "balanceTooLow": "Saldo on liian pieni muunnettavaksi — se jää vaihtorahaksi",
+    "switchToUsdFailed": "Vaihto USD:hen epäonnistui. Yritä uudelleen.",
+    "switchToBtcFailed": "Vaihto BTC:hen epäonnistui. Yritä uudelleen.",
+    "restoreTitle": "USD-saldo havaittu",
+    "restoreBody": "Löysimme varoja USD:na. Haluatko vaihtaa USD-tilaan?\n\nSaldosi pidetään USD:na. Saapuvat BTC:t muunnetaan automaattisesti USD:ksi ja lähtevät maksut takaisin BTC:ksi."
   },
   "send": {
     "sendAll": "Lähetä kaikki",
@@ -54,14 +59,20 @@
       "amountTooSmall": "Summa on liian pieni tälle reitille.",
       "amountTooLarge": "Summa on liian suuri tälle reitille.",
       "amountTooSmallHint": "Tämä summa on liian pieni käytettävissä oleville reiteille. Kokeile lähettää suurempi summa.",
-      "amountTooLargeHint": "Tämä summa on liian suuri käytettävissä oleville reiteille. Kokeile lähettää pienempi summa."
+      "amountTooLargeHint": "Tämä summa on liian suuri käytettävissä oleville reiteille. Kokeile lähettää pienempi summa.",
+      "networkUnavailable": "Tämä verkko ei ole hetkellisesti käytettävissä. Yritä hetken kuluttua uudelleen.",
+      "networkNotSupported": "Tämä verkko ei ole käytettävissä. Kokeile toista verkkoa.",
+      "rateDrift": "Määrä on liian pieni tälle verkolle. Kokeile suurempaa määrää tai toista verkkoa."
     },
     "withdraw": {
       "noValidAmount": "Tässä nostolinkissä ei ole kelvollista summaa, jonka Glow voisi vastaanottaa.",
       "wholeSats": "Anna kokonaisluku sateina"
     },
     "enterAmountIn": "Anna summa valuutassa {{currency}}",
-    "amountRange": "{{min}} ja {{max}} satin väliltä"
+    "amountRange": "{{min}} ja {{max}} satin väliltä",
+    "result": {
+      "notSentBody": "Maksu ei mennyt läpi. Varojasi ei lähetetty."
+    }
   },
   "generate": {
     "title": "Pidä se salassa",
@@ -96,7 +107,13 @@
     "feeChanged": "Verkkomaksu muuttui",
     "approveOrReject": "Hyväksy lunastaaksesi tämän siirron, tai hylkää aloittaaksesi hyvityksen.",
     "canReject": "Voit hylätä ja aloittaa hyvityksen sen sijaan.",
-    "feeRose": "Maksu nousi summaan <amount/> vahvistuksen aikana. Hyväksy lunastaaksesi uudella maksulla."
+    "feeRose": "Maksu nousi summaan <amount/> vahvistuksen aikana. Hyväksy lunastaaksesi uudella maksulla.",
+    "deliveryFee": "Toimitusmaksu",
+    "youReceive": "Saat",
+    "claim": "Lunasta",
+    "approve": "Hyväksy",
+    "reject": "Hylkää",
+    "claimFeeChanged": "Lunastuksesi ei mennyt läpi: maksu muuttui arvosta <amount/>."
   },
   "passkey": {
     "confirmDeleted": "Vahvistan, että tämä avainkoodi on poistettu.",
@@ -116,5 +133,10 @@
     "explainFirstTime": "Jos loit avainkoodisi Glow'n aiemmalla versiolla, luomme uuden ja siirrämme varasi automaattisesti. Jos käytät Glow'ta ensimmäistä kertaa, valitse <skip/> jatkaaksesi.",
     "migrateLabels_one": "Siirrämme tunnisteesi uuteen avainkoodiisi.",
     "migrateLabels_other": "Siirrämme kaikki {{count}} tunnistetta uuteen avainkoodiisi."
+  },
+  "webNotice": {
+    "preferPasskey": "Turvallisuutesi vuoksi suosittelemme käyttämään avainkoodia.",
+    "preferApp": "Turvallisuutesi vuoksi suosittelemme Glow-sovellusta.",
+    "risk": "Palautuslause verkossa on vähemmän turvallinen, ja on mahdollista, että menetät varasi. Käytä palautuslausetta verkossa vain, jos olet valmis ottamaan tämän riskin."
   }
 }

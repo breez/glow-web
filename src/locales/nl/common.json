@@ -35,7 +35,8 @@
     "retry": "Opnieuw",
     "goBack": "Terug",
     "edit": "Bewerken",
-    "skip": "Overslaan"
+    "skip": "Overslaan",
+    "tapToCopy": "Tik om te kopiëren"
   },
   "labels": {
     "address": "Adres",
@@ -55,7 +56,9 @@
     "justNow": "Zojuist",
     "somethingWentWrongRetry": "Er is iets misgegaan. Probeer het opnieuw.",
     "shareFailed": "Delen mislukt",
-    "guide": "Handleiding"
+    "guide": "Handleiding",
+    "readyNow": "nu gereed",
+    "securityNotice": "Beveiligingsmelding"
   },
   "a11y": {
     "goBack": "Terug",
@@ -78,7 +81,8 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
-    "generic": "biometrisch"
+    "generic": "biometrisch",
+    "lockout": "Biometrisch ontgrendelen is geblokkeerd. Ontgrendel je apparaat met je toegangscode en probeer opnieuw."
   },
   "pages": {
     "backup": "Back-up",
@@ -129,7 +133,8 @@
     "processing": "Wordt verwerkt",
     "pendingConfirmation": "Wacht op bevestiging",
     "pendingApproval": "Wacht op goedkeuring",
-    "tapToClaim": "Tik om te claimen"
+    "tapToClaim": "Tik om te claimen",
+    "confirming": "Bevestigen"
   },
   "paymentDetails": {
     "amount": "Bedrag",
@@ -152,7 +157,8 @@
     "provider": "Aanbieder",
     "initialAmount": "Oorspronkelijk bedrag",
     "convertedAmount": "Omgezet bedrag",
-    "url": "URL"
+    "url": "URL",
+    "sentAmount": "Verzonden bedrag"
   },
   "qrScanner": {
     "initializing": "Camera wordt gestart...",
@@ -208,7 +214,9 @@
     "lightningPayment": "Lightning-betaling",
     "sparkTransfer": "Spark-overdracht",
     "tokenTransfer": "Token-overdracht",
-    "namedTransfer": "{{name}}-overdracht"
+    "namedTransfer": "{{name}}-overdracht",
+    "usdTransfer": "USD-overboeking",
+    "btcTransfer": "BTC-overboeking"
   },
   "security": {
     "gateReason": "Instellingen van het vergrendelscherm ontgrendelen",
@@ -335,7 +343,7 @@
     "createLightningAddress": "Lightning-adres aanmaken",
     "editLightningAddress": "Lightning-adres bewerken",
     "editAddress": "Adres bewerken",
-    "createAddress": "Adres aanmaken",
+    "createAddress": "Lightning-adres aanmaken",
     "addressUnavailable": "Lightning-adressen zijn niet beschikbaar in deze omgeving.",
     "loadAddressFailed": "Lightning-adres kon niet worden geladen",
     "enterUsername": "Voer een gebruikersnaam in",
@@ -343,7 +351,26 @@
     "saveAddressFailed": "Lightning-adres kon niet worden opgeslagen",
     "invalidAmount": "Ongeldig bedrag",
     "invalidAmountEntry": "Voer een geldig bedrag in",
-    "enterAmountSats": "Voer het bedrag in sats in"
+    "enterAmountSats": "Voer het bedrag in sats in",
+    "onChain": "On-chain",
+    "switchTo": "Overschakelen naar {{mode}}",
+    "createAddressShort": "Adres aanmaken",
+    "createAddressBody": "Maak een Lightning-adres om eenvoudig betalingen te ontvangen",
+    "lightningUnavailable": "Lightning-adressen niet beschikbaar",
+    "shareFailed": "Delen mislukt",
+    "scanToPayShort": "Scan om te betalen",
+    "description": "Omschrijving (optioneel)",
+    "amountCopied": "Bedrag gekopieerd",
+    "addressCopied": "Adres gekopieerd",
+    "copyAmount": "Bedrag kopiëren",
+    "depositAddress": "Stortingsadres",
+    "crossChain": {
+      "createFailed": "Aanvraag maken mislukt.",
+      "noRoutes": "Er zijn nu geen cross-chain routes beschikbaar",
+      "creating": "Aanvraag maken...",
+      "enterUsd": "Voer bedrag in USD in",
+      "routeSummary": "{{asset}} op {{chain}} · via {{provider}}"
+    }
   },
   "buy": {
     "title": "Bitcoin kopen",
@@ -354,7 +381,10 @@
     "redirecting": "Doorverwijzen…",
     "amount": "Bedrag",
     "invalidAmount": "Ongeldig bedrag",
-    "invoiceFailed": "Factuur kon niet worden aangemaakt. Probeer het opnieuw."
+    "invoiceFailed": "Factuur kon niet worden aangemaakt. Probeer het opnieuw.",
+    "addFundsFromCashApp": "Geld toevoegen via Cash App",
+    "openCashApp": "Cash App openen",
+    "openFailed": "Kan de aankooppagina niet openen. Probeer het opnieuw."
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Probeer het opnieuw met een andere wachtwoordbeheerder, of ga verder met een herstelzin.",
@@ -371,7 +401,8 @@
   },
   "startupFailure": {
     "title": "De applicatie kon niet worden geladen",
-    "body": "Er is een fout opgetreden bij het starten van Glow. Ververs de pagina en probeer het opnieuw."
+    "body": "Er is een fout opgetreden bij het starten van Glow. Ververs de pagina en probeer het opnieuw.",
+    "missingApiKey": "Ontbrekende API-sleutel"
   },
   "lockdown": {
     "headingIos": "Schakel de Beveiligingsmodus uit om Glow te gebruiken",
@@ -444,7 +475,8 @@
       "noRoutesAny": "Geen cross-chain route beschikbaar voor dit adres",
       "routesFetchFailed": "Routes konden niet worden opgehaald: {{error}}",
       "quoteFailedHint": "Op dit moment geeft geen enkele aanbieder een offerte. Probeer het opnieuw, of ga terug en gebruik een ander bedrag.",
-      "fetchingRoutes": "Routes worden opgehaald..."
+      "fetchingRoutes": "Routes worden opgehaald...",
+      "selectNetwork": "Selecteer netwerk voor {{asset}}"
     },
     "withdraw": {
       "amountToReceive": "Te ontvangen bedrag",
@@ -454,7 +486,9 @@
     "lnurl": {
       "commentPlaceholder": "Voeg een bericht toe...",
       "commentTooLong": "De opmerking mag maximaal {{max}} tekens bevatten",
-      "prepareFailed": "LNURL Pay kon niet worden voorbereid: {{error}}"
+      "prepareFailed": "LNURL Pay kon niet worden voorbereid: {{error}}",
+      "to": "Aan",
+      "comment": "Opmerking (optioneel)"
     },
     "noDestination": "Voer een betaalbestemming in",
     "prepareFailed": "Betaling kon niet worden voorbereid {{error}}",
@@ -474,8 +508,13 @@
       "authSuccessBody": "Je bent met succes geverifieerd bij de dienst.",
       "sentBody": "Je betaling is met succes naar de ontvanger verstuurd.",
       "authFailBody": "Er is een fout opgetreden tijdens de verificatie. Probeer het opnieuw.",
-      "failBody": "Er is een fout opgetreden bij het verwerken van je betaling. Probeer het opnieuw."
-    }
+      "failBody": "Er is een fout opgetreden bij het verwerken van je betaling. Probeer het opnieuw.",
+      "refundSent": "Terugbetaling verzonden!",
+      "refundFailed": "Terugbetaling mislukt",
+      "refundSuccessBody": "Je terugbetaling is naar het Bitcoin-netwerk gestuurd.",
+      "refundFailBody": "Er is een fout opgetreden bij het verwerken van de terugbetaling. Probeer het opnieuw."
+    },
+    "loginCodeInvalid": "Deze inlogcode is niet geldig. Vernieuw de site voor een nieuwe."
   },
   "restore": {
     "restoring": "Bezig met herstellen...",
@@ -504,14 +543,35 @@
     "failed": "Terugbetaling mislukt",
     "processing": "Terugbetaling wordt verwerkt...",
     "errorBody": "Er is een fout opgetreden bij het verwerken van je terugbetaling.",
-    "txId": "Transactie-ID van de terugbetaling"
+    "txId": "Transactie-ID van de terugbetaling",
+    "getRefund": "Terugbetaling ophalen",
+    "loadFailed": "Kan geweigerde stortingen niet laden",
+    "notOnchainAddress": "Dat is geen on-chain Bitcoin-adres",
+    "refundFailed": "Terugbetaling van storting mislukt",
+    "readingFeeRates": "Huidige tarieven lezen..."
   },
   "deposit": {
     "title": "BTC-overdracht",
     "claimFailed": "Claimen mislukt",
     "autoClaimFailed": "Automatisch claimen mislukt",
     "waitingConfirmations": "Wachten op 3 bevestigingen.",
-    "autoClaim": "Deze overdracht wordt automatisch geclaimd."
+    "autoClaim": "Deze overdracht wordt automatisch geclaimd.",
+    "speed": "Snelheid",
+    "standardDelivery": "Standaardlevering",
+    "instantDelivery": "Directe levering",
+    "expeditedDelivery": "Versnelde levering",
+    "claimedAutomatically": "Wordt automatisch geclaimd",
+    "arrivesInSeconds": "Komt binnen enkele seconden aan",
+    "unlocksIn": "Wordt ontgrendeld over {{wait}}",
+    "beingClaimed": "Deze overboeking wordt geclaimd.",
+    "claimDeferred": "Deze overboeking kon nog niet worden geclaimd. Probeer het opnieuw.",
+    "claimFailedGeneric": "Claimen van overboeking mislukt",
+    "earlyUnavailable": "Vervroegde levering is nu niet beschikbaar, dus deze overboeking wordt automatisch geclaimd.",
+    "setupFailed": "Deze overboeking kon niet worden voorbereid om te claimen. Probeer het opnieuw.",
+    "checkingOptions": "Bezorgopties controleren",
+    "claimSubmitted": "Claim verzonden. Het geld komt binnenkort aan.",
+    "countNotClaimed_one": "{{count}} storting kon niet worden geclaimd",
+    "countNotClaimed_other": "{{count}} stortingen konden niet worden geclaimd"
   },
   "startup": {
     "refreshFailed": "Je gegevens konden niet worden bijgewerkt.",
@@ -552,5 +612,13 @@
     "lightningAddress": "Lightning-adres",
     "labelFailed": "Het label “{{label}}” kon niet worden gemigreerd. Probeer het opnieuw.",
     "currentLabel": "(huidig)"
+  },
+  "refresh": {
+    "pull": "Trek om te vernieuwen",
+    "release": "Laat los om te vernieuwen",
+    "refreshing": "Vernieuwen"
+  },
+  "logout": {
+    "done": "Succesvol uitgelogd"
   }
 }

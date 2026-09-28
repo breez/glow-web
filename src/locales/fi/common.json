@@ -35,7 +35,8 @@
     "retry": "Yritä uudelleen",
     "goBack": "Takaisin",
     "edit": "Muokkaa",
-    "skip": "Ohita"
+    "skip": "Ohita",
+    "tapToCopy": "Kopioi napauttamalla"
   },
   "labels": {
     "address": "Osoite",
@@ -55,7 +56,9 @@
     "justNow": "Juuri nyt",
     "somethingWentWrongRetry": "Jokin meni pieleen. Yritä uudelleen.",
     "shareFailed": "Jakaminen epäonnistui",
-    "guide": "Opas"
+    "guide": "Opas",
+    "readyNow": "valmis nyt",
+    "securityNotice": "Turvallisuusilmoitus"
   },
   "a11y": {
     "goBack": "Takaisin",
@@ -78,7 +81,8 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
-    "generic": "biometrinen"
+    "generic": "biometrinen",
+    "lockout": "Biometrinen avaus on lukittu. Avaa laite pääsykoodilla ja yritä uudelleen."
   },
   "pages": {
     "backup": "Varmuuskopio",
@@ -129,7 +133,8 @@
     "processing": "Käsitellään",
     "pendingConfirmation": "Odottaa vahvistusta",
     "pendingApproval": "Odottaa hyväksyntää",
-    "tapToClaim": "Napauta lunastaaksesi"
+    "tapToClaim": "Napauta lunastaaksesi",
+    "confirming": "Vahvistetaan"
   },
   "paymentDetails": {
     "amount": "Summa",
@@ -152,7 +157,8 @@
     "provider": "Palveluntarjoaja",
     "initialAmount": "Alkuperäinen summa",
     "convertedAmount": "Muunnettu summa",
-    "url": "URL"
+    "url": "URL",
+    "sentAmount": "Lähetetty määrä"
   },
   "qrScanner": {
     "initializing": "Käynnistetään kameraa...",
@@ -208,7 +214,9 @@
     "lightningPayment": "Lightning-maksu",
     "sparkTransfer": "Spark-siirto",
     "tokenTransfer": "Token-siirto",
-    "namedTransfer": "{{name}}-siirto"
+    "namedTransfer": "{{name}}-siirto",
+    "usdTransfer": "USD-siirto",
+    "btcTransfer": "BTC-siirto"
   },
   "security": {
     "gateReason": "Avaa lukitusnäytön asetukset",
@@ -335,7 +343,7 @@
     "createLightningAddress": "Luo Lightning-osoite",
     "editLightningAddress": "Muokkaa Lightning-osoitetta",
     "editAddress": "Muokkaa osoitetta",
-    "createAddress": "Luo osoite",
+    "createAddress": "Luo Lightning-osoite",
     "addressUnavailable": "Lightning-osoitteet eivät ole käytettävissä tässä ympäristössä.",
     "loadAddressFailed": "Lightning-osoitteen lataus epäonnistui",
     "enterUsername": "Anna käyttäjänimi",
@@ -343,7 +351,26 @@
     "saveAddressFailed": "Lightning-osoitteen tallennus epäonnistui",
     "invalidAmount": "Virheellinen summa",
     "invalidAmountEntry": "Anna kelvollinen summa",
-    "enterAmountSats": "Anna summa sateina"
+    "enterAmountSats": "Anna summa sateina",
+    "onChain": "On-chain",
+    "switchTo": "Vaihda: {{mode}}",
+    "createAddressShort": "Luo osoite",
+    "createAddressBody": "Luo Lightning-osoite, niin voit vastaanottaa maksuja helposti",
+    "lightningUnavailable": "Lightning-osoitteet eivät ole käytettävissä",
+    "shareFailed": "Jakaminen epäonnistui",
+    "scanToPayShort": "Maksa skannaamalla",
+    "description": "Kuvaus (valinnainen)",
+    "amountCopied": "Määrä kopioitu",
+    "addressCopied": "Osoite kopioitu",
+    "copyAmount": "Kopioi määrä",
+    "depositAddress": "Talletusosoite",
+    "crossChain": {
+      "createFailed": "Pyynnön luonti epäonnistui.",
+      "noRoutes": "Cross-chain-reittejä ei ole juuri nyt saatavilla",
+      "creating": "Luodaan pyyntöä...",
+      "enterUsd": "Syötä määrä USD:na",
+      "routeSummary": "{{asset}} verkossa {{chain}} · palvelulla {{provider}}"
+    }
   },
   "buy": {
     "title": "Osta bitcoinia",
@@ -354,7 +381,10 @@
     "redirecting": "Ohjataan…",
     "amount": "Summa",
     "invalidAmount": "Virheellinen summa",
-    "invoiceFailed": "Laskun luonti epäonnistui. Yritä uudelleen."
+    "invoiceFailed": "Laskun luonti epäonnistui. Yritä uudelleen.",
+    "addFundsFromCashApp": "Lisää varoja Cash Appista",
+    "openCashApp": "Avaa Cash App",
+    "openFailed": "Ostosivun avaaminen epäonnistui. Yritä uudelleen."
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Yritä uudelleen toisella salasanapalvelulla tai jatka palautuslauseella.",
@@ -371,7 +401,8 @@
   },
   "startupFailure": {
     "title": "Sovelluksen lataus epäonnistui",
-    "body": "Glow'n käynnistyksessä tapahtui virhe. Päivitä sivu ja yritä uudelleen."
+    "body": "Glow'n käynnistyksessä tapahtui virhe. Päivitä sivu ja yritä uudelleen.",
+    "missingApiKey": "API-avain puuttuu"
   },
   "lockdown": {
     "headingIos": "Poista lukitustila käytöstä käyttääksesi Glow'ta",
@@ -444,7 +475,8 @@
       "noRoutesAny": "Tälle osoitteelle ei ole ketjujen välistä reittiä",
       "routesFetchFailed": "Reittien haku epäonnistui: {{error}}",
       "quoteFailedHint": "Yksikään palveluntarjoaja ei anna juuri nyt tarjousta. Yritä uudelleen tai palaa takaisin ja käytä eri summaa.",
-      "fetchingRoutes": "Haetaan reittejä..."
+      "fetchingRoutes": "Haetaan reittejä...",
+      "selectNetwork": "Valitse verkko: {{asset}}"
     },
     "withdraw": {
       "amountToReceive": "Vastaanotettava summa",
@@ -454,7 +486,9 @@
     "lnurl": {
       "commentPlaceholder": "Lisää viesti...",
       "commentTooLong": "Kommentti voi olla enintään {{max}} merkkiä",
-      "prepareFailed": "LNURL Payn valmistelu epäonnistui: {{error}}"
+      "prepareFailed": "LNURL Payn valmistelu epäonnistui: {{error}}",
+      "to": "Saaja",
+      "comment": "Kommentti (valinnainen)"
     },
     "noDestination": "Anna maksun kohde",
     "prepareFailed": "Maksun valmistelu epäonnistui {{error}}",
@@ -474,8 +508,13 @@
       "authSuccessBody": "Tunnistautuminen palveluun onnistui.",
       "sentBody": "Maksusi lähetettiin vastaanottajalle.",
       "authFailBody": "Tunnistautumisessa tapahtui virhe. Yritä uudelleen.",
-      "failBody": "Maksun käsittelyssä tapahtui virhe. Yritä uudelleen."
-    }
+      "failBody": "Maksun käsittelyssä tapahtui virhe. Yritä uudelleen.",
+      "refundSent": "Hyvitys lähetetty!",
+      "refundFailed": "Hyvitys epäonnistui",
+      "refundSuccessBody": "Hyvityksesi on lähetetty Bitcoin-verkkoon.",
+      "refundFailBody": "Hyvityksen käsittelyssä tapahtui virhe. Yritä uudelleen."
+    },
+    "loginCodeInvalid": "Tämä kirjautumiskoodi ei kelpaa. Päivitä sivu saadaksesi uuden."
   },
   "restore": {
     "restoring": "Palautetaan...",
@@ -504,14 +543,35 @@
     "failed": "Hyvitys epäonnistui",
     "processing": "Käsitellään hyvitystä...",
     "errorBody": "Hyvityksen käsittelyssä tapahtui virhe.",
-    "txId": "Hyvityksen tapahtumatunnus"
+    "txId": "Hyvityksen tapahtumatunnus",
+    "getRefund": "Hae hyvitys",
+    "loadFailed": "Hylättyjen talletusten lataus epäonnistui",
+    "notOnchainAddress": "Tämä ei ole on-chain Bitcoin-osoite",
+    "refundFailed": "Talletuksen hyvitys epäonnistui",
+    "readingFeeRates": "Luetaan nykyisiä maksuja..."
   },
   "deposit": {
     "title": "BTC-siirto",
     "claimFailed": "Lunastus epäonnistui",
     "autoClaimFailed": "Automaattinen lunastus epäonnistui",
     "waitingConfirmations": "Odotetaan 3 vahvistusta.",
-    "autoClaim": "Tämä siirto lunastetaan automaattisesti."
+    "autoClaim": "Tämä siirto lunastetaan automaattisesti.",
+    "speed": "Nopeus",
+    "standardDelivery": "Vakiotoimitus",
+    "instantDelivery": "Välitön toimitus",
+    "expeditedDelivery": "Nopeutettu toimitus",
+    "claimedAutomatically": "Lunastetaan automaattisesti",
+    "arrivesInSeconds": "Saapuu sekunneissa",
+    "unlocksIn": "Avautuu {{wait}} kuluttua",
+    "beingClaimed": "Tätä siirtoa lunastetaan parhaillaan.",
+    "claimDeferred": "Tätä siirtoa ei voitu vielä lunastaa. Yritä uudelleen.",
+    "claimFailedGeneric": "Siirron lunastus epäonnistui",
+    "earlyUnavailable": "Aikaistettu toimitus ei ole nyt käytettävissä, joten tämä siirto lunastetaan automaattisesti.",
+    "setupFailed": "Tätä siirtoa ei voitu valmistella lunastettavaksi. Yritä uudelleen.",
+    "checkingOptions": "Tarkistetaan toimitusvaihtoehtoja",
+    "claimSubmitted": "Lunastus lähetetty. Varat saapuvat pian.",
+    "countNotClaimed_one": "{{count}} talletusta ei voitu lunastaa",
+    "countNotClaimed_other": "{{count}} talletusta ei voitu lunastaa"
   },
   "startup": {
     "refreshFailed": "Tietojesi päivitys epäonnistui.",
@@ -552,5 +612,13 @@
     "lightningAddress": "Lightning-osoite",
     "labelFailed": "Tunnisteen ”{{label}}” siirto epäonnistui. Yritä uudelleen.",
     "currentLabel": "(nykyinen)"
+  },
+  "refresh": {
+    "pull": "Päivitä vetämällä",
+    "release": "Päivitä vapauttamalla",
+    "refreshing": "Päivitetään"
+  },
+  "logout": {
+    "done": "Uloskirjautuminen onnistui"
   }
 }

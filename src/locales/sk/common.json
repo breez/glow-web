@@ -35,7 +35,8 @@
     "retry": "Zopakovať",
     "goBack": "Späť",
     "edit": "Upraviť",
-    "skip": "Preskočiť"
+    "skip": "Preskočiť",
+    "tapToCopy": "Ťuknutím skopíruješ"
   },
   "labels": {
     "address": "Adresa",
@@ -55,7 +56,9 @@
     "justNow": "Práve teraz",
     "somethingWentWrongRetry": "Niečo sa pokazilo. Skús to znova.",
     "shareFailed": "Zdieľanie sa nepodarilo",
-    "guide": "Návod"
+    "guide": "Návod",
+    "readyNow": "pripravené",
+    "securityNotice": "Bezpečnostné upozornenie"
   },
   "a11y": {
     "goBack": "Späť",
@@ -78,7 +81,8 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
-    "generic": "biometria"
+    "generic": "biometria",
+    "lockout": "Biometrické odomknutie je zablokované. Odomkni zariadenie kódom a skús to znova."
   },
   "pages": {
     "backup": "Záloha",
@@ -129,7 +133,8 @@
     "processing": "Spracúva sa",
     "pendingConfirmation": "Čaká na potvrdenie",
     "pendingApproval": "Čaká na schválenie",
-    "tapToClaim": "Klepnutím nárokuj"
+    "tapToClaim": "Klepnutím nárokuj",
+    "confirming": "Potvrdzuje sa"
   },
   "paymentDetails": {
     "amount": "Suma",
@@ -152,7 +157,8 @@
     "provider": "Poskytovateľ",
     "initialAmount": "Pôvodná suma",
     "convertedAmount": "Prevedená suma",
-    "url": "URL"
+    "url": "URL",
+    "sentAmount": "Odoslaná suma"
   },
   "qrScanner": {
     "initializing": "Spúšťa sa kamera...",
@@ -208,7 +214,9 @@
     "lightningPayment": "Lightning platba",
     "sparkTransfer": "Spark prevod",
     "tokenTransfer": "Prevod tokenov",
-    "namedTransfer": "Prevod {{name}}"
+    "namedTransfer": "Prevod {{name}}",
+    "usdTransfer": "USD prevod",
+    "btcTransfer": "BTC prevod"
   },
   "security": {
     "gateReason": "Odomknúť nastavenia uzamknutej obrazovky",
@@ -335,7 +343,7 @@
     "createLightningAddress": "Vytvoriť Lightning adresu",
     "editLightningAddress": "Upraviť Lightning adresu",
     "editAddress": "Upraviť adresu",
-    "createAddress": "Vytvoriť adresu",
+    "createAddress": "Vytvoriť Lightning adresu",
     "addressUnavailable": "Lightning adresy nie sú v tomto prostredí dostupné.",
     "loadAddressFailed": "Lightning adresu sa nepodarilo načítať",
     "enterUsername": "Zadaj používateľské meno",
@@ -343,7 +351,26 @@
     "saveAddressFailed": "Lightning adresu sa nepodarilo uložiť",
     "invalidAmount": "Neplatná suma",
     "invalidAmountEntry": "Zadaj platnú sumu",
-    "enterAmountSats": "Zadaj sumu v sats"
+    "enterAmountSats": "Zadaj sumu v sats",
+    "onChain": "On-chain",
+    "switchTo": "Prepnúť na {{mode}}",
+    "createAddressShort": "Vytvoriť adresu",
+    "createAddressBody": "Vytvor si Lightning adresu, aby si mohol ľahko prijímať platby",
+    "lightningUnavailable": "Lightning adresy nie sú dostupné",
+    "shareFailed": "Zdieľanie zlyhalo",
+    "scanToPayShort": "Naskenuj a zaplať",
+    "description": "Popis (nepovinné)",
+    "amountCopied": "Suma skopírovaná",
+    "addressCopied": "Adresa skopírovaná",
+    "copyAmount": "Kopírovať sumu",
+    "depositAddress": "Adresa na vklad",
+    "crossChain": {
+      "createFailed": "Nepodarilo sa vytvoriť žiadosť.",
+      "noRoutes": "Momentálne nie sú dostupné žiadne cross-chain trasy",
+      "creating": "Vytvára sa žiadosť...",
+      "enterUsd": "Zadaj sumu v USD",
+      "routeSummary": "{{asset}} na {{chain}} · cez {{provider}}"
+    }
   },
   "buy": {
     "title": "Kúpiť Bitcoin",
@@ -354,7 +381,10 @@
     "redirecting": "Presmerúva sa…",
     "amount": "Suma",
     "invalidAmount": "Neplatná suma",
-    "invoiceFailed": "Faktúru sa nepodarilo vytvoriť. Skús to znova."
+    "invoiceFailed": "Faktúru sa nepodarilo vytvoriť. Skús to znova.",
+    "addFundsFromCashApp": "Pridať prostriedky z Cash App",
+    "openCashApp": "Otvoriť Cash App",
+    "openFailed": "Nepodarilo sa otvoriť stránku nákupu. Skús to znova."
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Skús to znova s iným správcom hesiel, alebo pokračuj s obnovovacou frázou.",
@@ -371,7 +401,8 @@
   },
   "startupFailure": {
     "title": "Aplikáciu sa nepodarilo načítať",
-    "body": "Pri spúšťaní Glow došlo k chybe. Obnov stránku a skús to znova."
+    "body": "Pri spúšťaní Glow došlo k chybe. Obnov stránku a skús to znova.",
+    "missingApiKey": "Chýba API kľúč"
   },
   "lockdown": {
     "headingIos": "Vypni režim uzamknutia, aby si mohol používať Glow",
@@ -444,7 +475,8 @@
       "noRoutesAny": "Pre túto adresu nie je dostupná medzireťazcová trasa",
       "routesFetchFailed": "Trasy sa nepodarilo načítať: {{error}}",
       "quoteFailedHint": "Práve teraz žiadny poskytovateľ nedáva ponuku. Skús to znova, alebo sa vráť a použi inú sumu.",
-      "fetchingRoutes": "Načítavajú sa trasy..."
+      "fetchingRoutes": "Načítavajú sa trasy...",
+      "selectNetwork": "Vyber sieť pre {{asset}}"
     },
     "withdraw": {
       "amountToReceive": "Suma na prijatie",
@@ -454,7 +486,9 @@
     "lnurl": {
       "commentPlaceholder": "Pridaj správu...",
       "commentTooLong": "Poznámka môže mať najviac {{max}} znakov",
-      "prepareFailed": "LNURL Pay sa nepodarilo pripraviť: {{error}}"
+      "prepareFailed": "LNURL Pay sa nepodarilo pripraviť: {{error}}",
+      "to": "Komu",
+      "comment": "Komentár (nepovinné)"
     },
     "noDestination": "Zadaj príjemcu platby",
     "prepareFailed": "Platbu sa nepodarilo pripraviť {{error}}",
@@ -474,8 +508,13 @@
       "authSuccessBody": "Úspešne si sa overil v službe.",
       "sentBody": "Tvoja platba bola úspešne odoslaná príjemcovi.",
       "authFailBody": "Pri overovaní došlo k chybe. Skús to znova.",
-      "failBody": "Pri spracovaní platby došlo k chybe. Skús to znova."
-    }
+      "failBody": "Pri spracovaní platby došlo k chybe. Skús to znova.",
+      "refundSent": "Vrátenie odoslané!",
+      "refundFailed": "Vrátenie zlyhalo",
+      "refundSuccessBody": "Tvoje vrátenie bolo odoslané do siete Bitcoin.",
+      "refundFailBody": "Pri spracovaní vrátenia došlo k chybe. Skús to znova."
+    },
+    "loginCodeInvalid": "Tento prihlasovací kód nie je platný. Obnov stránku a získaš nový."
   },
   "restore": {
     "restoring": "Obnovuje sa...",
@@ -504,14 +543,36 @@
     "failed": "Vrátenie sa nepodarilo",
     "processing": "Spracúva sa vrátenie...",
     "errorBody": "Pri spracovaní vrátenia došlo k chybe.",
-    "txId": "ID transakcie vrátenia"
+    "txId": "ID transakcie vrátenia",
+    "getRefund": "Získať vrátenie",
+    "loadFailed": "Nepodarilo sa načítať odmietnuté vklady",
+    "notOnchainAddress": "To nie je on-chain Bitcoin adresa",
+    "refundFailed": "Vrátenie vkladu zlyhalo",
+    "readingFeeRates": "Načítavajú sa aktuálne poplatky..."
   },
   "deposit": {
     "title": "Prevod BTC",
     "claimFailed": "Nárok sa nepodaril",
     "autoClaimFailed": "Automatický nárok sa nepodaril",
     "waitingConfirmations": "Čaká sa na 3 potvrdenia.",
-    "autoClaim": "Tento prevod bude nárokovaný automaticky."
+    "autoClaim": "Tento prevod bude nárokovaný automaticky.",
+    "speed": "Rýchlosť",
+    "standardDelivery": "Štandardné doručenie",
+    "instantDelivery": "Okamžité doručenie",
+    "expeditedDelivery": "Zrýchlené doručenie",
+    "claimedAutomatically": "Vyzdvihne sa automaticky",
+    "arrivesInSeconds": "Dorazí za pár sekúnd",
+    "unlocksIn": "Odomkne sa o {{wait}}",
+    "beingClaimed": "Tento prevod sa práve vyzdvihuje.",
+    "claimDeferred": "Tento prevod sa zatiaľ nedá vyzdvihnúť. Skús to znova.",
+    "claimFailedGeneric": "Vyzdvihnutie prevodu zlyhalo",
+    "earlyUnavailable": "Skoršie doručenie teraz nie je dostupné, takže tento prevod sa vyzdvihne automaticky.",
+    "setupFailed": "Tento prevod sa nepodarilo pripraviť na vyzdvihnutie. Skús to znova.",
+    "checkingOptions": "Kontrola možností doručenia",
+    "claimSubmitted": "Žiadosť odoslaná. Prostriedky čoskoro dorazia.",
+    "countNotClaimed_one": "{{count}} vklad sa nepodarilo vyzdvihnúť",
+    "countNotClaimed_other": "{{count}} vkladov sa nepodarilo vyzdvihnúť",
+    "countNotClaimed_few": "{{count}} vklady sa nepodarilo vyzdvihnúť"
   },
   "startup": {
     "refreshFailed": "Tvoje údaje sa nepodarilo aktualizovať.",
@@ -552,5 +613,13 @@
     "lightningAddress": "Lightning adresa",
     "labelFailed": "Štítok „{{label}}“ sa nepodarilo previesť. Skús to znova.",
     "currentLabel": "(aktuálny)"
+  },
+  "refresh": {
+    "pull": "Potiahnutím obnovíš",
+    "release": "Uvoľnením obnovíš",
+    "refreshing": "Obnovuje sa"
+  },
+  "logout": {
+    "done": "Odhlásenie prebehlo úspešne"
   }
 }

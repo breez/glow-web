@@ -32,7 +32,12 @@
     "convertToBtc": "Przelicz na BTC",
     "conversionFee": "Opłata za przewalutowanie:",
     "feeUnavailable": "Nie udało się oszacować opłaty",
-    "disclaimerBody": "Twoje saldo jest utrzymywane w USD. Przychodzące BTC są automatycznie przeliczane na USD, a płatności wychodzące z powrotem na BTC. Kwoty poniżej progu przewalutowania pozostają jako reszta, dopóki się nie uzbierają."
+    "disclaimerBody": "Twoje saldo jest utrzymywane w USD. Przychodzące BTC są automatycznie przeliczane na USD, a płatności wychodzące z powrotem na BTC. Kwoty poniżej progu przewalutowania pozostają jako reszta, dopóki się nie uzbierają.",
+    "balanceTooLow": "Saldo jest zbyt niskie do konwersji — pozostanie jako reszta",
+    "switchToUsdFailed": "Nie udało się przełączyć na USD. Spróbuj ponownie.",
+    "switchToBtcFailed": "Nie udało się przełączyć na BTC. Spróbuj ponownie.",
+    "restoreTitle": "Wykryto saldo USD",
+    "restoreBody": "Wykryliśmy środki w USD. Czy chcesz przełączyć się na tryb USD?\n\nTwoje saldo będzie utrzymywane w USD. Przychodzące BTC są automatycznie przeliczane na USD, a płatności wychodzące z powrotem na BTC."
   },
   "send": {
     "sendAll": "Wyślij wszystko",
@@ -54,14 +59,20 @@
       "amountTooSmall": "Kwota jest za mała dla tej trasy.",
       "amountTooLarge": "Kwota jest za duża dla tej trasy.",
       "amountTooSmallHint": "Ta kwota jest za mała dla dostępnych tras. Spróbuj wysłać większą kwotę.",
-      "amountTooLargeHint": "Ta kwota jest za duża dla dostępnych tras. Spróbuj wysłać mniejszą kwotę."
+      "amountTooLargeHint": "Ta kwota jest za duża dla dostępnych tras. Spróbuj wysłać mniejszą kwotę.",
+      "networkUnavailable": "Ta sieć jest tymczasowo niedostępna. Spróbuj ponownie za chwilę.",
+      "networkNotSupported": "Ta sieć jest niedostępna. Wypróbuj inną sieć.",
+      "rateDrift": "Kwota jest za mała dla tej sieci. Spróbuj większej kwoty lub innej sieci."
     },
     "withdraw": {
       "noValidAmount": "Ten link do wypłaty nie zawiera prawidłowej kwoty, którą Glow może przyjąć.",
       "wholeSats": "Podaj liczbę całkowitą w sats"
     },
     "enterAmountIn": "Podaj kwotę w {{currency}}",
-    "amountRange": "Od {{min}} do {{max}} sats"
+    "amountRange": "Od {{min}} do {{max}} sats",
+    "result": {
+      "notSentBody": "Płatność nie przeszła. Twoje środki nie zostały wysłane."
+    }
   },
   "generate": {
     "title": "Zachowaj ją w tajemnicy",
@@ -96,7 +107,13 @@
     "feeChanged": "Opłata sieciowa uległa zmianie",
     "approveOrReject": "Zatwierdź, aby odebrać ten transfer, albo odrzuć, aby rozpocząć zwrot.",
     "canReject": "Możesz odrzucić i zamiast tego rozpocząć zwrot.",
-    "feeRose": "Opłata wzrosła do <amount/>, gdy potwierdzałeś. Zatwierdź, aby odebrać po nowej opłacie."
+    "feeRose": "Opłata wzrosła do <amount/>, gdy potwierdzałeś. Zatwierdź, aby odebrać po nowej opłacie.",
+    "deliveryFee": "Opłata za dostawę",
+    "youReceive": "Otrzymujesz",
+    "claim": "Odbierz",
+    "approve": "Zatwierdź",
+    "reject": "Odrzuć",
+    "claimFeeChanged": "Twoje zgłoszenie nie przeszło: opłata zmieniła się z <amount/>."
   },
   "passkey": {
     "confirmDeleted": "Potwierdzam, że ten passkey został usunięty.",
@@ -122,5 +139,10 @@
     "migrateLabels_few": "Przeniesiemy wszystkie {{count}} etykiety na nowy passkey.",
     "migrateLabels_many": "Przeniesiemy wszystkie {{count}} etykiet na nowy passkey.",
     "migrateLabels_other": "Przeniesiemy wszystkie {{count}} etykiet na nowy passkey."
+  },
+  "webNotice": {
+    "preferPasskey": "Dla Twojego bezpieczeństwa zalecamy zamiast tego passkey.",
+    "preferApp": "Dla Twojego bezpieczeństwa zalecamy aplikację Glow.",
+    "risk": "Fraza odzyskiwania w przeglądarce jest mniej bezpieczna i istnieje ryzyko utraty środków. Używaj frazy odzyskiwania w przeglądarce tylko wtedy, gdy godzisz się na to ryzyko."
   }
 }

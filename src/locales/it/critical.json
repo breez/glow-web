@@ -32,7 +32,12 @@
     "convertToBtc": "Converti in BTC",
     "conversionFee": "Commissione di conversione:",
     "feeUnavailable": "Impossibile stimare la commissione",
-    "disclaimerBody": "Il tuo saldo è mantenuto in USD. I BTC in entrata vengono convertiti automaticamente in USD e i pagamenti in uscita vengono riconvertiti in BTC. Gli importi sotto la soglia di conversione restano come resto finché non si accumulano."
+    "disclaimerBody": "Il tuo saldo è mantenuto in USD. I BTC in entrata vengono convertiti automaticamente in USD e i pagamenti in uscita vengono riconvertiti in BTC. Gli importi sotto la soglia di conversione restano come resto finché non si accumulano.",
+    "balanceTooLow": "Il saldo è troppo basso per la conversione — resterà come resto",
+    "switchToUsdFailed": "Non è stato possibile passare a USD. Riprova.",
+    "switchToBtcFailed": "Non è stato possibile passare a BTC. Riprova.",
+    "restoreTitle": "Rilevato saldo in USD",
+    "restoreBody": "Abbiamo rilevato fondi in USD. Vuoi passare alla modalità USD?\n\nIl tuo saldo sarà mantenuto in USD. I BTC in entrata vengono convertiti automaticamente in USD e i pagamenti in uscita riconvertiti in BTC."
   },
   "send": {
     "sendAll": "Invia tutto",
@@ -54,14 +59,20 @@
       "amountTooSmall": "Importo troppo piccolo per questo percorso.",
       "amountTooLarge": "Importo troppo grande per questo percorso.",
       "amountTooSmallHint": "Questo importo è troppo piccolo per i percorsi disponibili. Prova a inviare un importo maggiore.",
-      "amountTooLargeHint": "Questo importo è troppo grande per i percorsi disponibili. Prova a inviare un importo minore."
+      "amountTooLargeHint": "Questo importo è troppo grande per i percorsi disponibili. Prova a inviare un importo minore.",
+      "networkUnavailable": "Questa rete è temporaneamente non disponibile. Riprova tra un momento.",
+      "networkNotSupported": "Questa rete non è disponibile. Prova un’altra rete.",
+      "rateDrift": "L’importo è troppo piccolo per questa rete. Prova un importo maggiore o un’altra rete."
     },
     "withdraw": {
       "noValidAmount": "Questo link di prelievo non ha un importo valido che Glow possa ricevere.",
       "wholeSats": "Inserisci un numero intero di sats"
     },
     "enterAmountIn": "Inserisci l'importo in {{currency}}",
-    "amountRange": "Tra {{min}} e {{max}} sats"
+    "amountRange": "Tra {{min}} e {{max}} sats",
+    "result": {
+      "notSentBody": "Il pagamento non è andato a buon fine. I tuoi fondi non sono stati inviati."
+    }
   },
   "generate": {
     "title": "Tienila segreta",
@@ -96,7 +107,13 @@
     "feeChanged": "Commissione di rete modificata",
     "approveOrReject": "Approva per richiedere questo trasferimento, oppure rifiuta per avviare un rimborso.",
     "canReject": "Puoi rifiutare per avviare un rimborso.",
-    "feeRose": "La commissione è salita a <amount/> mentre stavi confermando. Approva per richiedere alla nuova commissione."
+    "feeRose": "La commissione è salita a <amount/> mentre stavi confermando. Approva per richiedere alla nuova commissione.",
+    "deliveryFee": "Commissione di consegna",
+    "youReceive": "Ricevi",
+    "claim": "Riscuoti",
+    "approve": "Approva",
+    "reject": "Rifiuta",
+    "claimFeeChanged": "La tua riscossione non è andata a buon fine: la commissione è cambiata da <amount/>."
   },
   "passkey": {
     "confirmDeleted": "Confermo che questo passkey è stato eliminato.",
@@ -116,5 +133,10 @@
     "explainFirstTime": "Se hai creato il tuo passkey con una versione precedente di Glow, ne creeremo uno nuovo e trasferiremo automaticamente i tuoi fondi. Se è la prima volta che usi Glow, scegli <skip/> per continuare.",
     "migrateLabels_one": "Migreremo la tua etichetta sul nuovo passkey.",
     "migrateLabels_other": "Migreremo tutte le {{count}} etichette sul nuovo passkey."
+  },
+  "webNotice": {
+    "preferPasskey": "Per la tua sicurezza, ti consigliamo di usare un passkey.",
+    "preferApp": "Per la tua sicurezza, ti consigliamo l’app Glow.",
+    "risk": "Una frase di recupero sul web è meno sicura e c’è la possibilità che i tuoi fondi vengano persi. Usa una frase di recupero sul web solo se sei disposto a correre questo rischio."
   }
 }
