@@ -58,6 +58,7 @@ interface QRCodeDisplayProps {
  *  The figure leads in the unit it was typed in, with the sats under it when
  *  that was a fiat or stable one, since the invoice is denominated in sats. */
 const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, amount }) => {
+  const { t } = useTranslation('common');
   const { showToast } = useToast();
   return (
     <div className="pt-4 space-y-6 flex flex-col items-center">

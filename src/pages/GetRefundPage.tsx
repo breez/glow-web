@@ -102,7 +102,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
     } finally {
       setIsLoading(false);
     }
-  }, [fetchRejectedDeposits]);
+  }, [fetchRejectedDeposits, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,7 +123,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
       }
     })();
     return () => { cancelled = true; };
-  }, [fetchRejectedDeposits]);
+  }, [fetchRejectedDeposits, t]);
 
   useEffect(() => {
     let listenerId: string | null = null;

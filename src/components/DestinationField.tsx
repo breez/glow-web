@@ -5,6 +5,7 @@ import { SimpleAlert } from '@/components/AlertCard';
 import { ClipboardIcon, QrCodeIcon } from '@/components/Icons';
 import { logger, LogCategory } from '@/services/logger';
 import { dismissKeyboard } from '@/utils/keyboard';
+import { useTranslation } from 'react-i18next';
 
 /** The send flow's quick actions, so the address fields read as one control. */
 const quickAction =
@@ -19,6 +20,7 @@ export const DestinationField: React.FC<{
   onSubmit: () => void;
   onScanQr: () => void;
 }> = ({ destination, onChange, error, onSubmit, onScanQr }) => {
+  const { t } = useTranslation('common');
   const id = useId();
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -52,7 +54,7 @@ export const DestinationField: React.FC<{
           htmlFor={id}
           className="block text-sm font-medium text-spark-text-primary mb-2"
         >
-          Destination
+          {t('send.destination')}
         </label>
         {/* A textarea so a long address wraps instead of scrolling sideways,
             with Enter submitting: this field never takes a second line. */}
@@ -80,11 +82,11 @@ export const DestinationField: React.FC<{
       <div className="flex gap-2">
         <button type="button" onClick={() => void handlePaste()} className={quickAction}>
           <ClipboardIcon size="xs" />
-          <span className="text-sm font-medium">Paste</span>
+          <span className="text-sm font-medium">{t('actions.paste')}</span>
         </button>
         <button type="button" onClick={onScanQr} className={quickAction}>
           <QrCodeIcon size="xs" />
-          <span className="text-sm font-medium">Scan</span>
+          <span className="text-sm font-medium">{t('actions.scan')}</span>
         </button>
       </div>
 

@@ -1,13 +1,10 @@
 import React, { type ReactNode } from 'react';
 import { RadioCheckIcon } from './Icons';
+import { useTranslation } from 'react-i18next';
 
 export type FeeSpeed = 'slow' | 'medium' | 'fast';
 
-const SPEEDS: { key: FeeSpeed; label: string }[] = [
-  { key: 'slow', label: 'Slow' },
-  { key: 'medium', label: 'Medium' },
-  { key: 'fast', label: 'Fast' },
-];
+const SPEEDS: FeeSpeed[] = ['slow', 'medium', 'fast'];
 
 /**
  * Slow, Medium and Fast as three cards, `detail` giving each one's second line.
@@ -17,11 +14,13 @@ export const FeeRateSelector: React.FC<{
   selected: FeeSpeed | null;
   onSelect: (speed: FeeSpeed) => void;
   detail: (speed: FeeSpeed) => ReactNode;
-}> = ({ selected, onSelect, detail }) => (
+}> = ({ selected, onSelect, detail }) => {
+  const { t } = useTranslation('common');
+  return (
   <div>
-    <span className="block text-sm font-medium text-spark-text-primary mb-2">Select Fee Rate</span>
+    <span className="block text-sm font-medium text-spark-text-primary mb-2">{t('send.feeRate.title')}</span>
     <div className="flex gap-2">
-      {SPEEDS.map(({ key, label }) => (
+      {SPEEDS.map((key) => (
         <button
           key={key}
           type="button"
@@ -34,10 +33,11 @@ export const FeeRateSelector: React.FC<{
           }`}
         >
           {selected === key && <RadioCheckIcon className="absolute top-2 right-2" />}
-          <div>{label}</div>
+          <div>{t(`send.feeRate.${key}`)}</div>
           <div className="text-xs opacity-70">{detail(key)}</div>
         </button>
       ))}
     </div>
   </div>
-);
+  );
+};

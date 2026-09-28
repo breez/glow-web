@@ -2,6 +2,7 @@ import React from 'react';
 import { Capacitor } from '@capacitor/core';
 import { AlertCard } from './AlertCard';
 import { openExternalUrl } from '../utils/externalLink';
+import { useTranslation } from 'react-i18next';
 
 const STORE_BADGES = [
   {
@@ -25,14 +26,13 @@ interface WebSecurityNoticeProps {
   recommendPasskey?: boolean;
 }
 
-export const WebSecurityNotice: React.FC<WebSecurityNoticeProps> = ({ recommendPasskey = false }) =>
-  isWeb ? (
-    <AlertCard variant="warning" title="Security Notice">
+export const WebSecurityNotice: React.FC<WebSecurityNoticeProps> = ({ recommendPasskey = false }) => {
+  const { t } = useTranslation(['critical', 'common']);
+  return isWeb ? (
+    <AlertCard variant="warning" title={t('common:labels.securityNotice')}>
       <p className="text-spark-text-secondary text-sm">
-        {recommendPasskey
-          ? 'For your safety, we recommend using a passkey instead.'
-          : 'For your safety, we recommend the Glow app.'}{' '}
-        A recovery phrase on the web is less secure, and there is a chance your money will be lost. Use a recovery phrase on the web only if you are willing to take this risk.
+        {recommendPasskey ? t('webNotice.preferPasskey') : t('webNotice.preferApp')}{' '}
+        {t('webNotice.risk')}
       </p>
       {!recommendPasskey && (
         <div className="grid grid-cols-2 gap-2 mt-3">
@@ -54,3 +54,4 @@ export const WebSecurityNotice: React.FC<WebSecurityNoticeProps> = ({ recommendP
       )}
     </AlertCard>
   ) : null;
+};

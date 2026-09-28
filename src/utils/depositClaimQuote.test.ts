@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DepositInfo } from '@breeztech/breez-sdk-spark';
 import type { ClaimDepositQuote, FetchClaimDepositQuoteResponse } from '@breeztech/breez-sdk-spark';
 import {
-  CLAIM_SUBMITTED_LINE,
+  claimSubmittedLine,
   autoClaimsEarly,
   blocksToWait,
   ceilingForWait,
@@ -51,7 +51,7 @@ describe('the claimedDeposits split', () => {
 
 describe('submitted-claim copy', () => {
   it('tells the user the funds are on their way', () => {
-    expect(CLAIM_SUBMITTED_LINE).toBe('Claim submitted. Funds will arrive shortly.');
+    expect(claimSubmittedLine()).toBe('Claim submitted. Funds will arrive shortly.');
   });
 });
 

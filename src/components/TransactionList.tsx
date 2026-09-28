@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 import { Payment } from '@breeztech/breez-sdk-spark';
 import { depositNeedsAction, type ExtendedPayment } from '../utils/depositHelpers';
 import { formatWithSpaces } from '../utils/formatNumber';

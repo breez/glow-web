@@ -420,7 +420,7 @@ export function useBreezSdk(
         logger.error(LogCategory.SDK, 'SDK event subscriber threw', { error: formatError(e) });
       }
     });
-  }, [refreshWalletData, fetchUnclaimedDeposits, isSyncingRef, showToastRef]);
+  }, [refreshWalletData, fetchUnclaimedDeposits, isSyncingRef, showToastRef, t]);
 
   // ----------------------------------------
   // Connection lifecycle
@@ -657,7 +657,7 @@ export function useBreezSdk(
     setStartupState('no-wallet');
     clearNetworkOverride();
     showToast('success', t('common:logout.done'));
-  }, [sdk, showToast]);
+  }, [sdk, showToast, t]);
 
   const adoptMigratedSdk = useCallback(async (newSdk: BreezSdk, label: string): Promise<void> => {
     logger.info(LogCategory.AUTH, 'Adopting migrated SDK', { label });

@@ -234,7 +234,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       setIsLoading(false);
       logger.debug(LogCategory.PAYMENT, 'Receive invoice generation process finished');
     }
-  }, [wallet, amountSats, amountDisplay, description, showAmountPanel]);
+  }, [wallet, amountSats, amountDisplay, description, showAmountPanel, t]);
 
   // Back from a created invoice to the address view. The invoice itself stays
   // valid and payable: nothing here revokes it, it just leaves the screen.
