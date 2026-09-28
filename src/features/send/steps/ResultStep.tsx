@@ -1,5 +1,5 @@
 import React, { useEffect, useState, type ReactNode } from 'react';
-import { PrimaryButton, ErrorMessageBox } from '../../../components/ui';
+import { PrimaryButton } from '../../../components/ui';
 import { CloseIcon } from '../../../components/Icons';
 import GlowLogo from '../../../components/GlowLogo';
 import { hapticLight } from '@/utils/haptics';
@@ -10,11 +10,13 @@ export interface ResultStepProps {
   onClose: () => void;
   /** Operation type to customize messaging (default: 'payment') */
   operationType?: 'payment' | 'auth' | 'refund';
+  /** Replaces the operation's default success line. */
+  description?: string;
   /** Shown on success between the description and Done, e.g. a transaction ID. */
   children?: ReactNode;
 }
 
-const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operationType = 'payment', children }) => {
+const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operationType = 'payment', description, children }) => {
   const isSuccess = result === 'success';
   const [starsAnimating, setStarsAnimating] = useState(false);
 
@@ -28,7 +30,7 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
 
   const getTitle = () => {
     if (operationType === 'auth') {
-      return isSuccess ? 'Authenticated!' : 'Authentication Failed';
+      return 'Authenticated!';
     }
     if (operationType === 'refund') {
       return isSuccess ? 'Refund Sent!' : 'Refund Failed';
@@ -37,9 +39,7 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
   };
 
   const getSuccessDescription = () => {
-    if (operationType === 'auth') {
-      return 'You have successfully authenticated with the service.';
-    }
+    if (description) return description;
     if (operationType === 'refund') {
       return 'Your refund has been sent to the Bitcoin network.';
     }
@@ -47,9 +47,6 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
   };
 
   const getDefaultErrorMessage = () => {
-    if (operationType === 'auth') {
-      return 'There was an error during authentication. Please try again.';
-    }
     if (operationType === 'refund') {
       return 'There was an error processing your refund. Please try again.';
     }
@@ -57,27 +54,6 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, error, onClose, operati
   };
 
   if (!isSuccess) {
-    // Auth failure: use ErrorMessageBox card style
-    if (operationType === 'auth') {
-      // The SDK's "Network error" means Glow never read the service's reply,
-      // not that the service refused. A service that sends no CORS headers
-      // still gets the login, and the WebView only hides its answer.
-      const unconfirmed = error?.includes('Network error:');
-      return (
-        <div className="space-y-5">
-          <ErrorMessageBox
-            title={unconfirmed ? 'Authentication Not Confirmed' : getTitle()}
-            error={unconfirmed
-              ? "Glow couldn't read the service's reply, so it can't confirm the login. Check the site to see if it went through."
-              : error || getDefaultErrorMessage()}
-          />
-          <PrimaryButton onClick={onClose} className="w-full">
-            Close
-          </PrimaryButton>
-        </div>
-      );
-    }
-
     // Payment failure: circular error icon with glow
     return (
       <div className="flex flex-col items-center justify-center py-4" data-testid="payment-failure">

@@ -79,6 +79,18 @@ describe('processInput destinations', () => {
     expect(client.prepareSendPayment).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['Invalid input: Lnurl error: lnurl contains invalid k1 parameter', 'This login code is not valid. Refresh the site for a new one.'],
+    ['Invalid input: Lnurl error: lnurl contains unsupported action', 'This login code is not valid. Refresh the site for a new one.'],
+    ['Invalid input: invalid input', 'Invalid payment destination'],
+  ])('names a broken login code apart from other bad input (%s)', async (sdkError, shown) => {
+    const { result } = renderSendPayment(() => Promise.reject(new Error(sdkError)));
+
+    await act(() => result.current.processInput('lnurl1bad'));
+
+    expect(result.current.error).toBe(shown);
+  });
+
   it('prepares an invoice with a sub-sat amount rounded up, as the SDK requires', async () => {
     const { client, result } = renderSendPayment(
       async (input) => ({ ...(bolt11Details(input) as object), amountMsat: 654_321 }) as InputType,

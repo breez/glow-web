@@ -3,53 +3,24 @@ import type { ProcessingPhase } from '../hooks/useSendPayment';
 
 export interface ProcessingStepProps {
   /** Operation type to customize messaging (default: 'payment') */
-  operationType?: 'payment' | 'auth' | 'withdraw';
+  operationType?: 'payment' | 'withdraw';
   /** Processing phase for conversion payments */
   processingPhase?: ProcessingPhase;
 }
 
 const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'payment', processingPhase = 'sending' }) => {
-  const isAuth = operationType === 'auth';
   const isWithdraw = operationType === 'withdraw';
   const isConverting = processingPhase === 'converting';
 
   const getTitle = () => {
-    if (isAuth) return 'Authenticating...';
     if (isWithdraw) return 'Waiting for payment...';
     if (isConverting) return 'Converting...';
     return 'Sending...';
   };
   const getDescription = () => {
-    if (isAuth) return 'Please wait while we verify your identity...';
     if (isWithdraw) return 'Completing the transfer. This can take a moment...';
     if (isConverting) return 'Please wait while we convert the amount...';
     return 'Please wait while we process your transaction...';
-  };
-
-  // Key icon for auth, lightning bolt for payment
-  const renderIcon = () => {
-    if (isAuth) {
-      return (
-        <svg
-          className="w-10 h-10 text-spark-electric"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-        </svg>
-      );
-    }
-    return (
-      <svg
-        className="w-10 h-10 text-spark-electric"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-      >
-        <path d="M13 3L4 14h7l-2 7 9-11h-7l2-7z" />
-      </svg>
-    );
   };
 
   return (
@@ -80,15 +51,12 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ operationType = 'paymen
             </svg>
           </span>
 
-          {/* Icon */}
-          {isAuth ? renderIcon() : (
-            <img
-              src="/assets/Glow_Logo.svg"
-              alt="Processing"
-              className="w-14 h-14 object-contain animate-pulse drop-shadow-[0_0_15px_rgba(212,165,116,0.4)]"
-              style={{ animationDuration: '2s' }}
-            />
-          )}
+          <img
+            src="/assets/Glow_Logo.svg"
+            alt="Processing"
+            className="w-14 h-14 object-contain animate-pulse drop-shadow-[0_0_15px_rgba(212,165,116,0.4)]"
+            style={{ animationDuration: '2s' }}
+          />
         </div>
       </div>
 

@@ -22,7 +22,11 @@ function bareDestination(parsed: InputType): string | null {
   }
 }
 
-export type SendStep = 'input' | 'amount' | 'workflow' | 'processing' | 'result';
+/** The parser's refusals of an LNURL-auth code (LUD-04), as opposed to input
+ *  that is not a destination at all. */
+const BAD_LOGIN_CODE = /lnurl (missing|contains invalid) k1|lnurl contains unsupported action/;
+
+export type SendStep ='input' | 'amount' | 'workflow' | 'processing' | 'result';
 export type ProcessingPhase = 'sending' | 'converting';
 
 export interface ProcessInputOptions {
@@ -230,7 +234,9 @@ export function useSendPayment(): UseSendPaymentReturn {
       }
     } catch (err) {
       logger.warn(LogCategory.PAYMENT, 'Failed to parse payment input', { error: formatError(err) });
-      setError(destinationErrorMessage(err, 'Invalid payment destination'));
+      setError(destinationErrorMessage(err, BAD_LOGIN_CODE.test(formatError(err))
+        ? 'This login code is not valid. Refresh the site for a new one.'
+        : 'Invalid payment destination'));
     } finally {
       setIsLoading(false);
     }

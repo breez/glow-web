@@ -156,7 +156,7 @@ export const FormError: React.FC<{
   return (
     <div className="flex items-center gap-2 text-spark-primary text-sm">
       <ErrorIcon className="shrink-0" />
-      <span className="text-spark-primary-light">{error}</span>
+      <span className="min-w-0 [overflow-wrap:anywhere] text-spark-primary-light">{error}</span>
     </div>
   );
 };
