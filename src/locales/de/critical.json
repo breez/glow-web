@@ -117,7 +117,8 @@
   },
   "passkey": {
     "confirmDeleted": "Ich bestätige, dass dieser Passkey gelöscht wurde.",
-    "confirmDeletedHint": "Optional. Fahre ohne Häkchen fort, wenn du unsicher bist."
+    "confirmDeletedHint": "Optional. Fahre ohne Häkchen fort, wenn du unsicher bist.",
+    "isHowYouAccess": "Dein Passkey ist dein Zugang zu deinem Guthaben"
   },
   "migration": {
     "switchFailed": "Der Wechsel zu deinem neuen Passkey konnte nicht abgeschlossen werden. Dein Guthaben ist sicher. Bitte versuche es erneut.",

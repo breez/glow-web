@@ -199,7 +199,7 @@ describe('every referenced key exists', () => {
       for (const m of refs) {
         const ref = m[1]!;
         const full = ref.includes(':') ? ref : `${declared}:${ref}`;
-        if (!known.has(full)) missing.push(`${path.replace('../', '')} -> ${full}`);
+        if (!known.has(full)) missing.push(`${path.replace(/^\.\.\//, '')} -> ${full}`);
       }
     }
     expect(missing, `unresolved keys:\n${missing.join('\n')}`).toEqual([]);

@@ -117,7 +117,8 @@
   },
   "passkey": {
     "confirmDeleted": "Jag bekräftar att den här passkeyn har tagits bort.",
-    "confirmDeletedHint": "Valfritt. Fortsätt utan att kryssa i om du är osäker."
+    "confirmDeletedHint": "Valfritt. Fortsätt utan att kryssa i om du är osäker.",
+    "isHowYouAccess": "Din passkey är hur du kommer åt dina pengar"
   },
   "migration": {
     "switchFailed": "Vi kunde inte slutföra bytet till din nya passkey. Dina pengar är säkra. Försök igen.",

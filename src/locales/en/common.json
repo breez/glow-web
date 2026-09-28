@@ -115,7 +115,13 @@
     "unlockPrompt": "Enter your PIN to unlock",
     "continuePrompt": "Enter your PIN to continue",
     "forgotPin": "Forgot your PIN?",
-    "useBiometrics": "Use biometrics"
+    "useBiometrics": "Use biometrics",
+    "unlockGlow": "Unlock Glow",
+    "incorrectPin": "Incorrect PIN",
+    "tooManySeconds_one": "Too many attempts. Try again in {{count}} second.",
+    "tooManySeconds_other": "Too many attempts. Try again in {{count}} seconds.",
+    "tooManyMinutes_one": "Too many attempts. Try again in {{count}} minute.",
+    "tooManyMinutes_other": "Too many attempts. Try again in {{count}} minutes."
   },
   "offline": {
     "banner": "No internet connection"
@@ -164,7 +170,13 @@
     "initializing": "Initializing camera...",
     "unavailable": "Camera not available",
     "hint": "Point camera at QR code",
-    "noQrInImage": "No QR code found in image"
+    "noQrInImage": "No QR code found in image",
+    "noVideo": "Video element not available",
+    "unavailableOrDenied": "Camera access denied or not available",
+    "denied": "Camera access denied. Please allow camera access and try again.",
+    "notFound": "No camera found on this device",
+    "inUse": "Camera is already in use by another application",
+    "constraints": "Camera constraints not supported"
   },
   "staging": {
     "title": "Staging Environment",
@@ -272,7 +284,8 @@
     "useRecoveryPhrase": "Use Recovery Phrase Instead",
     "createPasskey": "Create Passkey",
     "useExistingPasskey": "Use Existing Passkey",
-    "usePasskeyInstead": "Use Passkey Instead"
+    "usePasskeyInstead": "Use Passkey Instead",
+    "settingUp": "Setting up Glow..."
   },
   "wallet": {
     "send": "Send",
@@ -302,8 +315,8 @@
     "alreadyExists": "Passkey already exists",
     "signInCancelled": "Sign-in cancelled",
     "unavailable": "Passkey unavailable",
-    "signInFailed": "Sign-in failed",
-    "noLongerOnDevice": "That passkey is no longer on this device.",
+    "signInFailed": "Could not sign in with your passkey. Please try again.",
+    "noLongerOnDevice": "Your Glow passkey is no longer on this device. You can create a new one.",
     "couldNotSignIn": "Could not sign in with that passkey. It may have been removed, or the prompt was cancelled.",
     "saveLabelFailed": "Couldn't save label",
     "connectFailed": "Couldn't connect",
@@ -317,7 +330,12 @@
     "notFoundOnDevice": "Could not find your Glow passkey on this device. Try again, or check Settings > Passwords.",
     "createdNotReady": "Your passkey was created but was not ready to use yet. Use it to sign in.",
     "timedOut": "Sign-in timed out. Please try again.",
-    "cancelledRetry": "Sign-in cancelled. Please try again."
+    "cancelledRetry": "Sign-in cancelled. Please try again.",
+    "alreadyExistsRetry": "You already have a Glow passkey on this device. Try again to sign in.",
+    "alreadyExistsUse": "You already have a Glow passkey on this device. Use it to sign in.",
+    "labelSaveFailed": "Failed to save label to Nostr",
+    "promptCancelled": "Passkey prompt cancelled. Please try again.",
+    "signInFailedShort": "Could not sign in. Please try again."
   },
   "receive": {
     "title": "Receive",
@@ -514,7 +532,32 @@
       "refundSuccessBody": "Your refund has been sent to the Bitcoin network.",
       "refundFailBody": "There was an error processing your refund. Please try again."
     },
-    "loginCodeInvalid": "This login code is not valid. Refresh the site for a new one."
+    "loginCodeInvalid": "This login code is not valid. Refresh the site for a new one.",
+    "title": "Send BTC or USD",
+    "lnurlAuth": {
+      "freshCode": "Refresh the site for a new code and try again.",
+      "cta_register": "Register",
+      "cta_login": "Log In",
+      "cta_link": "Link Account",
+      "cta_auth": "Authenticate",
+      "wants_register": "wants you to register",
+      "wants_login": "wants you to log in",
+      "wants_link": "wants you to link your account",
+      "wants_auth": "wants you to authenticate",
+      "failed_register": "Could not register with {{domain}}.",
+      "failed_login": "Could not log in to {{domain}}.",
+      "failed_link": "Could not link your account on {{domain}}.",
+      "failed_auth": "Could not authenticate with {{domain}}.",
+      "failedReason_register": "Could not register with {{domain}}: {{reason}}.",
+      "failedReason_login": "Could not log in to {{domain}}: {{reason}}.",
+      "failedReason_link": "Could not link your account on {{domain}}: {{reason}}.",
+      "failedReason_auth": "Could not authenticate with {{domain}}: {{reason}}.",
+      "unclear_register": "Could not read the reply from {{domain}}. Check the site to see if you've registered.",
+      "unclear_login": "Could not read the reply from {{domain}}. Check the site to see if you've logged in.",
+      "unclear_link": "Could not read the reply from {{domain}}. Check the site to see if you've linked your account.",
+      "unclear_auth": "Could not read the reply from {{domain}}. Check the site to see if you've authenticated.",
+      "unreachable": "Could not reach {{domain}}. Check your connection and try again."
+    }
   },
   "restore": {
     "restoring": "Restoring...",
@@ -548,7 +591,8 @@
     "notOnchainAddress": "That is not an on-chain Bitcoin address",
     "refundFailed": "Failed to refund deposit",
     "getRefund": "Get Refund",
-    "readingFeeRates": "Reading current fee rates..."
+    "readingFeeRates": "Reading current fee rates...",
+    "loading": "Loading rejected deposits..."
   },
   "deposit": {
     "title": "BTC Transfer",
@@ -611,7 +655,15 @@
     "notNow": "Not now",
     "lightningAddress": "Lightning address",
     "labelFailed": "Could not migrate the label “{{label}}”. Please try again.",
-    "currentLabel": "(current)"
+    "currentLabel": "(current)",
+    "probeFailed": "Could not check for an existing passkey. Please try again.",
+    "labelsReadFailed": "Could not read your passkey labels. Please try again.",
+    "unreachablePasskey": "We couldn't reach the passkey from your previous attempt. If you dismissed the prompt, tap Retry. If you deleted that passkey, choose Create a new passkey to start fresh.",
+    "stageSweep": "Moving your {{what}}...",
+    "stageSweepOf": "Moving your {{what}} ({{current}} of {{total}})...",
+    "sweep_funds": "funds",
+    "sweep_address": "Lightning address",
+    "sweep_contacts": "contacts"
   },
   "logout": {
     "done": "Successfully logged out"

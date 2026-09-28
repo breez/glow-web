@@ -117,7 +117,8 @@
   },
   "passkey": {
     "confirmDeleted": "Potvrdzujem, že tento passkey bol vymazaný.",
-    "confirmDeletedHint": "Nepovinné. Ak si nie si istý, pokračuj bez zaškrtnutia."
+    "confirmDeletedHint": "Nepovinné. Ak si nie si istý, pokračuj bez zaškrtnutia.",
+    "isHowYouAccess": "Tvoj passkey je spôsob, akým sa dostaneš k svojim prostriedkom"
   },
   "migration": {
     "switchFailed": "Prechod na nový passkey sa nepodarilo dokončiť. Tvoje prostriedky sú v bezpečí. Skús to znova.",

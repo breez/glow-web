@@ -115,7 +115,17 @@
     "unlockPrompt": "Podaj PIN, aby odblokować",
     "continuePrompt": "Podaj PIN, aby kontynuować",
     "forgotPin": "Nie pamiętasz PIN-u?",
-    "useBiometrics": "Użyj biometrii"
+    "useBiometrics": "Użyj biometrii",
+    "unlockGlow": "Odblokuj Glow",
+    "incorrectPin": "Nieprawidłowy PIN",
+    "tooManySeconds_one": "Zbyt wiele prób. Spróbuj ponownie za {{count}} s.",
+    "tooManySeconds_other": "Zbyt wiele prób. Spróbuj ponownie za {{count}} s.",
+    "tooManySeconds_few": "Zbyt wiele prób. Spróbuj ponownie za {{count}} s.",
+    "tooManySeconds_many": "Zbyt wiele prób. Spróbuj ponownie za {{count}} s.",
+    "tooManyMinutes_one": "Zbyt wiele prób. Spróbuj ponownie za {{count}} min.",
+    "tooManyMinutes_other": "Zbyt wiele prób. Spróbuj ponownie za {{count}} min.",
+    "tooManyMinutes_few": "Zbyt wiele prób. Spróbuj ponownie za {{count}} min.",
+    "tooManyMinutes_many": "Zbyt wiele prób. Spróbuj ponownie za {{count}} min."
   },
   "offline": {
     "banner": "Brak połączenia z internetem"
@@ -164,7 +174,13 @@
     "initializing": "Uruchamianie kamery...",
     "unavailable": "Kamera niedostępna",
     "hint": "Skieruj kamerę na kod QR",
-    "noQrInImage": "Nie znaleziono kodu QR na obrazie"
+    "noQrInImage": "Nie znaleziono kodu QR na obrazie",
+    "noVideo": "Element wideo niedostępny",
+    "unavailableOrDenied": "Odmówiono dostępu do aparatu lub jest niedostępny",
+    "denied": "Odmówiono dostępu do aparatu. Zezwól na dostęp i spróbuj ponownie.",
+    "notFound": "Nie znaleziono aparatu na tym urządzeniu",
+    "inUse": "Aparat jest już używany przez inną aplikację",
+    "constraints": "Ograniczenia aparatu nie są obsługiwane"
   },
   "staging": {
     "title": "Środowisko staging",
@@ -272,7 +288,8 @@
     "useRecoveryPhrase": "Użyj zamiast tego frazy odzyskiwania",
     "createPasskey": "Utwórz passkey",
     "useExistingPasskey": "Użyj istniejącego passkey",
-    "usePasskeyInstead": "Użyj zamiast tego passkey"
+    "usePasskeyInstead": "Użyj zamiast tego passkey",
+    "settingUp": "Konfigurowanie Glow..."
   },
   "wallet": {
     "send": "Wyślij",
@@ -302,8 +319,8 @@
     "alreadyExists": "Passkey już istnieje",
     "signInCancelled": "Logowanie anulowane",
     "unavailable": "Passkey niedostępny",
-    "signInFailed": "Logowanie nie powiodło się",
-    "noLongerOnDevice": "Tego passkey nie ma już na tym urządzeniu.",
+    "signInFailed": "Nie udało się zalogować za pomocą passkey. Spróbuj ponownie.",
+    "noLongerOnDevice": "Twojego passkey Glow nie ma już na tym urządzeniu. Możesz utworzyć nowy.",
     "couldNotSignIn": "Nie udało się zalogować tym passkey. Mógł zostać usunięty albo żądanie zostało anulowane.",
     "saveLabelFailed": "Nie udało się zapisać etykiety",
     "connectFailed": "Nie udało się połączyć",
@@ -317,7 +334,12 @@
     "notFoundOnDevice": "Nie znaleziono twojego passkey Glow na tym urządzeniu. Spróbuj ponownie albo sprawdź w Ustawienia > Hasła.",
     "createdNotReady": "Twój passkey został utworzony, ale nie był jeszcze gotowy do użycia. Zaloguj się nim.",
     "timedOut": "Upłynął limit czasu logowania. Spróbuj ponownie.",
-    "cancelledRetry": "Logowanie anulowane. Spróbuj ponownie."
+    "cancelledRetry": "Logowanie anulowane. Spróbuj ponownie.",
+    "alreadyExistsRetry": "Masz już passkey Glow na tym urządzeniu. Spróbuj zalogować się ponownie.",
+    "alreadyExistsUse": "Masz już passkey Glow na tym urządzeniu. Użyj go, aby się zalogować.",
+    "labelSaveFailed": "Nie udało się zapisać etykiety w Nostr",
+    "promptCancelled": "Monit passkey został anulowany. Spróbuj ponownie.",
+    "signInFailedShort": "Nie udało się zalogować. Spróbuj ponownie."
   },
   "receive": {
     "title": "Odbierz",
@@ -514,7 +536,32 @@
       "refundSuccessBody": "Twój zwrot został wysłany do sieci Bitcoin.",
       "refundFailBody": "Wystąpił błąd podczas przetwarzania zwrotu. Spróbuj ponownie."
     },
-    "loginCodeInvalid": "Ten kod logowania jest nieprawidłowy. Odśwież stronę, aby otrzymać nowy."
+    "loginCodeInvalid": "Ten kod logowania jest nieprawidłowy. Odśwież stronę, aby otrzymać nowy.",
+    "title": "Wyślij BTC lub USD",
+    "lnurlAuth": {
+      "freshCode": "Odśwież stronę, aby otrzymać nowy kod, i spróbuj ponownie.",
+      "cta_register": "Zarejestruj",
+      "wants_register": "prosi o rejestrację",
+      "failed_register": "Nie udało się zarejestrować w {{domain}}.",
+      "failedReason_register": "Nie udało się zarejestrować w {{domain}}: {{reason}}.",
+      "unclear_register": "Nie udało się odczytać odpowiedzi z {{domain}}. Sprawdź na stronie, czy zarejestrowano.",
+      "cta_login": "Zaloguj się",
+      "wants_login": "prosi o zalogowanie się",
+      "failed_login": "Nie udało się zalogować w {{domain}}.",
+      "failedReason_login": "Nie udało się zalogować w {{domain}}: {{reason}}.",
+      "unclear_login": "Nie udało się odczytać odpowiedzi z {{domain}}. Sprawdź na stronie, czy zalogowano.",
+      "cta_link": "Połącz konto",
+      "wants_link": "prosi o połączenie konta",
+      "failed_link": "Nie udało się połączyć konta w {{domain}}.",
+      "failedReason_link": "Nie udało się połączyć konta w {{domain}}: {{reason}}.",
+      "unclear_link": "Nie udało się odczytać odpowiedzi z {{domain}}. Sprawdź na stronie, czy połączono konto.",
+      "cta_auth": "Uwierzytelnij",
+      "wants_auth": "prosi o uwierzytelnienie",
+      "failed_auth": "Nie udało się uwierzytelnić w {{domain}}.",
+      "failedReason_auth": "Nie udało się uwierzytelnić w {{domain}}: {{reason}}.",
+      "unclear_auth": "Nie udało się odczytać odpowiedzi z {{domain}}. Sprawdź na stronie, czy uwierzytelniono.",
+      "unreachable": "Nie można połączyć się z {{domain}}. Sprawdź połączenie i spróbuj ponownie."
+    }
   },
   "restore": {
     "restoring": "Przywracanie...",
@@ -548,7 +595,8 @@
     "loadFailed": "Nie udało się wczytać odrzuconych depozytów",
     "notOnchainAddress": "To nie jest adres Bitcoin on-chain",
     "refundFailed": "Nie udało się zwrócić depozytu",
-    "readingFeeRates": "Odczytywanie bieżących opłat..."
+    "readingFeeRates": "Odczytywanie bieżących opłat...",
+    "loading": "Wczytywanie odrzuconych depozytów..."
   },
   "deposit": {
     "title": "Transfer BTC",
@@ -613,7 +661,15 @@
     "notNow": "Nie teraz",
     "lightningAddress": "Adres Lightning",
     "labelFailed": "Nie udało się zmigrować etykiety „{{label}}”. Spróbuj ponownie.",
-    "currentLabel": "(bieżąca)"
+    "currentLabel": "(bieżąca)",
+    "probeFailed": "Nie udało się sprawdzić istniejącego passkey. Spróbuj ponownie.",
+    "labelsReadFailed": "Nie udało się odczytać etykiet Twojego passkey. Spróbuj ponownie.",
+    "unreachablePasskey": "Nie udało nam się dotrzeć do passkey z poprzedniej próby. Jeśli zamknięto monit, dotknij Ponów. Jeśli ten passkey został usunięty, wybierz Utwórz nowy passkey, aby zacząć od nowa.",
+    "stageSweep": "Przenoszenie: {{what}}...",
+    "stageSweepOf": "Przenoszenie: {{what}} ({{current}} z {{total}})...",
+    "sweep_funds": "środki",
+    "sweep_address": "adres Lightning",
+    "sweep_contacts": "kontakty"
   },
   "refresh": {
     "pull": "Pociągnij, aby odświeżyć",

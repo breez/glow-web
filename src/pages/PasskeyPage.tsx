@@ -380,7 +380,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             // the register fall-through refused. Drop the stale pin: the
             // retry's unpinned sign-in then picks the present cred.
             localStorage.removeItem('passkeyActiveCredentialId');
-            setError('You already have a Glow passkey on this device. Try again to sign in.');
+            setError(t('passkey.alreadyExistsRetry'));
             setErrorKind('sign-in-failed');
             return;
           }
@@ -388,8 +388,8 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             isTimedOut || (isCancelled && isLikelyTimeout(elapsedMs))
               ? t('passkey.timedOut')
               : isCancelled
-                ? 'Passkey prompt cancelled. Please try again.'
-                : (friendlyPasskeyError(e, { isGrapheneOs: isGrapheneOsDevice() }) ?? 'Could not sign in with your passkey. Please try again.'),
+                ? t('passkey.promptCancelled')
+                : (friendlyPasskeyError(e, { isGrapheneOs: isGrapheneOsDevice() }) ?? t('passkey.signInFailed')),
           );
           setErrorKind('sign-in-failed');
         }
@@ -573,7 +573,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
               return;
             }
             setError(
-              'Your Glow passkey is no longer on this device. You can create a new one.',
+              t('passkey.noLongerOnDevice'),
             );
             setErrorKind('sign-in-failed');
             setPhase('review');
@@ -643,7 +643,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
               ? (isLikelyTimeout(elapsedMs)
                 ? t('passkey.timedOut')
                 : t('passkey.cancelledRetry'))
-              : (friendlyPasskeyError(e, { isGrapheneOs: isGrapheneOsDevice() }) ?? 'Could not sign in with your passkey. Please try again.'),
+              : (friendlyPasskeyError(e, { isGrapheneOs: isGrapheneOsDevice() }) ?? t('passkey.signInFailed')),
           );
           setErrorKind('sign-in-failed');
           return;
@@ -721,7 +721,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             setError(
               isLikelyTimeout(elapsedMs)
                 ? t('passkey.timedOut')
-                : 'Could not sign in. Please try again.',
+                : t('passkey.signInFailedShort'),
             );
             setErrorKind(null);
           }
@@ -732,7 +732,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           errorCode,
           elapsedMs,
         });
-        setError('Could not sign in with your passkey. Please try again.');
+        setError(t('passkey.signInFailed'));
         setErrorKind(null);
       }
     };
@@ -782,7 +782,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         setPhase('connecting');
       } catch (e) {
         if (cancelled) return;
-        setError('Failed to save label to Nostr');
+        setError(t('passkey.labelSaveFailed'));
         setErrorKind('generic');
         logger.error(LogCategory.AUTH, 'Failed to save label', {
           error: e instanceof Error ? e.message : String(e),
@@ -792,7 +792,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
 
     run();
     return () => { cancelled = true; };
-  }, [phase, error]);
+  }, [phase, error, t]);
 
   // Connect: produce the wallet, dispatched on `connectActionRef`.
   useEffect(() => {
@@ -901,7 +901,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             setIsNewUser(false);
             detectingFailCountRef.current = 0;
             setPhase('creating');
-            setError('You already have a Glow passkey on this device. Use it to sign in.');
+            setError(t('passkey.alreadyExistsUse'));
             setErrorKind('already-exists');
             return;
           }
@@ -984,7 +984,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
         </p>
       </div>
 
-      <AlertCard variant="warning" title="Your passkey is how you access your funds">
+      <AlertCard variant="warning" title={t('critical:passkey.isHowYouAccess')}>
         <p className="text-spark-text-secondary text-sm">
           Deleting your passkey from your device, browser, or password manager may make your funds permanently inaccessible.
         </p>

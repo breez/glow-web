@@ -67,7 +67,7 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
     return (
       <PageLayout onBack={onBack} footer={<div />} title={t('common:pages.getStarted')} onClearError={onClearError}>
         <div className="flex items-center justify-center h-full">
-          <LoadingSpinner text="Setting up Glow..." />
+          <LoadingSpinner text={t('common:onboarding.settingUp')} />
         </div>
       </PageLayout>
     );
