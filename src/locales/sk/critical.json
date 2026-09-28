@@ -32,7 +32,12 @@
     "convertToBtc": "Previesť na BTC",
     "conversionFee": "Poplatok za prevod:",
     "feeUnavailable": "Poplatok sa nedá odhadnúť",
-    "disclaimerBody": "Tvoj zostatok je držaný v USD. Prichádzajúce BTC sa automaticky prevádzajú na USD a odchádzajúce platby späť na BTC. Sumy pod prahom prevodu zostávajú ako drobné, kým sa nenazbierajú."
+    "disclaimerBody": "Tvoj zostatok je držaný v USD. Prichádzajúce BTC sa automaticky prevádzajú na USD a odchádzajúce platby späť na BTC. Sumy pod prahom prevodu zostávajú ako drobné, kým sa nenazbierajú.",
+    "balanceTooLow": "Zostatok je príliš nízky na prevod — zostane ako drobné",
+    "switchToUsdFailed": "Prepnutie na USD zlyhalo. Skús to znova.",
+    "switchToBtcFailed": "Prepnutie na BTC zlyhalo. Skús to znova.",
+    "restoreTitle": "Zistený USD zostatok",
+    "restoreBody": "Našli sme prostriedky v USD. Chceš prepnúť do režimu USD?\n\nTvoj zostatok bude vedený v USD. Prichádzajúce BTC sa automaticky prevádzajú na USD a odchádzajúce platby späť na BTC."
   },
   "send": {
     "sendAll": "Poslať všetko",
@@ -54,14 +59,20 @@
       "amountTooSmall": "Suma je pre túto trasu príliš malá.",
       "amountTooLarge": "Suma je pre túto trasu príliš veľká.",
       "amountTooSmallHint": "Táto suma je pre dostupné trasy príliš malá. Skús poslať väčšiu sumu.",
-      "amountTooLargeHint": "Táto suma je pre dostupné trasy príliš veľká. Skús poslať menšiu sumu."
+      "amountTooLargeHint": "Táto suma je pre dostupné trasy príliš veľká. Skús poslať menšiu sumu.",
+      "networkUnavailable": "Táto sieť je dočasne nedostupná. Skús to o chvíľu znova.",
+      "networkNotSupported": "Táto sieť nie je dostupná. Skús inú sieť.",
+      "rateDrift": "Suma je pre túto sieť príliš malá. Skús väčšiu sumu alebo inú sieť."
     },
     "withdraw": {
       "noValidAmount": "Tento odkaz na výber neobsahuje platnú sumu, ktorú môže Glow prijať.",
       "wholeSats": "Zadaj celé číslo v sats"
     },
     "enterAmountIn": "Zadaj sumu v {{currency}}",
-    "amountRange": "Medzi {{min}} a {{max}} sats"
+    "amountRange": "Medzi {{min}} a {{max}} sats",
+    "result": {
+      "notSentBody": "Platba neprebehla. Tvoje prostriedky neboli odoslané."
+    }
   },
   "generate": {
     "title": "Nechaj si to pre seba",
@@ -96,7 +107,13 @@
     "feeChanged": "Sieťový poplatok sa zmenil",
     "approveOrReject": "Schváľ, ak chceš tento prevod nárokovať, alebo odmietni pre začatie vrátenia.",
     "canReject": "Môžeš odmietnuť a namiesto toho začať vrátenie.",
-    "feeRose": "Poplatok sa počas potvrdzovania zvýšil na <amount/>. Schváľ pre nárokovanie s novým poplatkom."
+    "feeRose": "Poplatok sa počas potvrdzovania zvýšil na <amount/>. Schváľ pre nárokovanie s novým poplatkom.",
+    "deliveryFee": "Poplatok za doručenie",
+    "youReceive": "Dostaneš",
+    "claim": "Vyzdvihnúť",
+    "approve": "Schváliť",
+    "reject": "Odmietnuť",
+    "claimFeeChanged": "Tvoje vyzdvihnutie neprešlo: poplatok sa zmenil z <amount/>."
   },
   "passkey": {
     "confirmDeleted": "Potvrdzujem, že tento passkey bol vymazaný.",
@@ -119,5 +136,10 @@
     "migrateLabels_one": "Prevedieme tvoj štítok na nový passkey.",
     "migrateLabels_few": "Prevedieme všetky {{count}} štítky na nový passkey.",
     "migrateLabels_other": "Prevedieme všetkých {{count}} štítkov na nový passkey."
+  },
+  "webNotice": {
+    "preferPasskey": "Pre tvoju bezpečnosť odporúčame namiesto toho použiť passkey.",
+    "preferApp": "Pre tvoju bezpečnosť odporúčame aplikáciu Glow.",
+    "risk": "Obnovovacia fráza na webe je menej bezpečná a je možné, že o svoje prostriedky prídeš. Použi obnovovaciu frázu na webe len vtedy, ak si ochotný podstúpiť toto riziko."
   }
 }

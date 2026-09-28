@@ -32,7 +32,12 @@
     "convertToBtc": "Átváltás BTC-re",
     "conversionFee": "Átváltási díj:",
     "feeUnavailable": "A díj nem becsülhető meg",
-    "disclaimerBody": "Az egyenleged USD-ben van tartva. A beérkező BTC automatikusan USD-re váltódik, a kimenő fizetések pedig vissza BTC-re. Az átváltási küszöb alatti összegek visszajáróként maradnak, amíg fel nem gyűlnek."
+    "disclaimerBody": "Az egyenleged USD-ben van tartva. A beérkező BTC automatikusan USD-re váltódik, a kimenő fizetések pedig vissza BTC-re. Az átváltási küszöb alatti összegek visszajáróként maradnak, amíg fel nem gyűlnek.",
+    "balanceTooLow": "Az egyenleg túl alacsony az átváltáshoz — visszajáróként marad",
+    "switchToUsdFailed": "Az USD-re váltás nem sikerült. Próbáld újra.",
+    "switchToBtcFailed": "A BTC-re váltás nem sikerült. Próbáld újra.",
+    "restoreTitle": "USD-egyenleg észlelve",
+    "restoreBody": "USD-ben lévő pénzt találtunk. Szeretnél USD módra váltani?\n\nAz egyenleged USD-ben lesz tartva. A beérkező BTC automatikusan USD-re váltódik, a kimenő fizetések pedig vissza BTC-re."
   },
   "send": {
     "sendAll": "Összes küldése",
@@ -54,14 +59,20 @@
       "amountTooSmall": "Az összeg túl kicsi ehhez az útvonalhoz.",
       "amountTooLarge": "Az összeg túl nagy ehhez az útvonalhoz.",
       "amountTooSmallHint": "Ez az összeg túl kicsi az elérhető útvonalakhoz. Próbálj nagyobb összeget küldeni.",
-      "amountTooLargeHint": "Ez az összeg túl nagy az elérhető útvonalakhoz. Próbálj kisebb összeget küldeni."
+      "amountTooLargeHint": "Ez az összeg túl nagy az elérhető útvonalakhoz. Próbálj kisebb összeget küldeni.",
+      "networkUnavailable": "Ez a hálózat átmenetileg nem érhető el. Próbáld újra egy pillanat múlva.",
+      "networkNotSupported": "Ez a hálózat nem érhető el. Próbálj másik hálózatot.",
+      "rateDrift": "Az összeg túl kicsi ehhez a hálózathoz. Próbálj nagyobb összeget vagy másik hálózatot."
     },
     "withdraw": {
       "noValidAmount": "Ez a kifizetési link nem tartalmaz olyan érvényes összeget, amelyet a Glow fogadni tud.",
       "wholeSats": "Egész számot adj meg satsban"
     },
     "enterAmountIn": "Add meg az összeget ebben: {{currency}}",
-    "amountRange": "{{min}} és {{max}} sats között"
+    "amountRange": "{{min}} és {{max}} sats között",
+    "result": {
+      "notSentBody": "A fizetés nem ment át. A pénzed nem lett elküldve."
+    }
   },
   "generate": {
     "title": "Tartsd titokban",
@@ -96,7 +107,13 @@
     "feeChanged": "A hálózati díj megváltozott",
     "approveOrReject": "Hagyd jóvá az átutalás igényléséhez, vagy utasítsd el a visszatérítés elindításához.",
     "canReject": "Az elutasítással visszatérítést indíthatsz helyette.",
-    "feeRose": "A díj <amount/> összegre emelkedett, miközben megerősítetted. Hagyd jóvá az igényléshez az új díjjal."
+    "feeRose": "A díj <amount/> összegre emelkedett, miközben megerősítetted. Hagyd jóvá az igényléshez az új díjjal.",
+    "deliveryFee": "Kézbesítési díj",
+    "youReceive": "Ennyit kapsz",
+    "claim": "Igénylés",
+    "approve": "Jóváhagyás",
+    "reject": "Elutasítás",
+    "claimFeeChanged": "Az igénylésed nem ment át: a díj megváltozott erről: <amount/>."
   },
   "passkey": {
     "confirmDeleted": "Megerősítem, hogy ezt az azonosítókulcsot törölték.",
@@ -116,5 +133,10 @@
     "explainFirstTime": "Ha a Glow egy korábbi verziójával hoztad létre az azonosítókulcsodat, létrehozunk egy újat, és automatikusan átvisszük a pénzedet. Ha most használod először a Glow-t, válaszd a <skip/> lehetőséget a folytatáshoz.",
     "migrateLabels_one": "Átvisszük a címkédet az új azonosítókulcsodra.",
     "migrateLabels_other": "Mind a(z) {{count}} címkédet átvisszük az új azonosítókulcsodra."
+  },
+  "webNotice": {
+    "preferPasskey": "A biztonságod érdekében inkább azonosítókulcsot ajánlunk.",
+    "preferApp": "A biztonságod érdekében a Glow alkalmazást ajánljuk.",
+    "risk": "A webes helyreállítási kifejezés kevésbé biztonságos, és fennáll az esélye, hogy elveszíted a pénzedet. Csak akkor használj webes helyreállítási kifejezést, ha vállalod ezt a kockázatot."
   }
 }

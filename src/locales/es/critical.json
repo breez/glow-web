@@ -32,7 +32,12 @@
     "convertToBtc": "Convertir a BTC",
     "conversionFee": "Comisión de conversión:",
     "feeUnavailable": "No se pudo estimar la comisión",
-    "disclaimerBody": "Tu saldo se mantiene en USD. Los BTC entrantes se convierten automáticamente a USD y los pagos salientes se vuelven a convertir a BTC. Los importes por debajo del umbral de conversión quedan como cambio hasta que se acumulan."
+    "disclaimerBody": "Tu saldo se mantiene en USD. Los BTC entrantes se convierten automáticamente a USD y los pagos salientes se vuelven a convertir a BTC. Los importes por debajo del umbral de conversión quedan como cambio hasta que se acumulan.",
+    "balanceTooLow": "El saldo es demasiado bajo para convertir — quedará como cambio",
+    "switchToUsdFailed": "No se pudo cambiar a USD. Inténtalo de nuevo.",
+    "switchToBtcFailed": "No se pudo cambiar a BTC. Inténtalo de nuevo.",
+    "restoreTitle": "Saldo en USD detectado",
+    "restoreBody": "Hemos detectado fondos en USD. ¿Quieres cambiar al modo USD?\n\nTu saldo se mantendrá en USD. Los BTC entrantes se convierten automáticamente a USD y los pagos salientes vuelven a BTC."
   },
   "send": {
     "sendAll": "Enviar todo",
@@ -54,14 +59,20 @@
       "amountTooSmall": "Importe demasiado pequeño para esta ruta.",
       "amountTooLarge": "Importe demasiado grande para esta ruta.",
       "amountTooSmallHint": "Este importe es demasiado pequeño para las rutas disponibles. Prueba a enviar un importe mayor.",
-      "amountTooLargeHint": "Este importe es demasiado grande para las rutas disponibles. Prueba a enviar un importe menor."
+      "amountTooLargeHint": "Este importe es demasiado grande para las rutas disponibles. Prueba a enviar un importe menor.",
+      "networkUnavailable": "Esta red no está disponible temporalmente. Inténtalo de nuevo en un momento.",
+      "networkNotSupported": "Esta red no está disponible. Prueba con otra red.",
+      "rateDrift": "El importe es demasiado pequeño para esta red. Prueba con un importe mayor u otra red."
     },
     "withdraw": {
       "noValidAmount": "Este enlace de retiro no tiene un importe válido que Glow pueda recibir.",
       "wholeSats": "Introduce un número entero de sats"
     },
     "enterAmountIn": "Introduce el importe en {{currency}}",
-    "amountRange": "Entre {{min}} y {{max}} sats"
+    "amountRange": "Entre {{min}} y {{max}} sats",
+    "result": {
+      "notSentBody": "El pago no se completó. Tus fondos no se enviaron."
+    }
   },
   "generate": {
     "title": "Mantenla en secreto",
@@ -96,7 +107,13 @@
     "feeChanged": "La comisión de red ha cambiado",
     "approveOrReject": "Aprueba para reclamar esta transferencia, o recházala para iniciar un reembolso.",
     "canReject": "Puedes rechazarla para iniciar un reembolso en su lugar.",
-    "feeRose": "La comisión subió a <amount/> mientras confirmabas. Aprueba para reclamar con la nueva comisión."
+    "feeRose": "La comisión subió a <amount/> mientras confirmabas. Aprueba para reclamar con la nueva comisión.",
+    "deliveryFee": "Comisión de entrega",
+    "youReceive": "Recibes",
+    "claim": "Reclamar",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "claimFeeChanged": "Tu solicitud no se completó: la comisión cambió desde <amount/>."
   },
   "passkey": {
     "confirmDeleted": "Confirmo que este passkey fue eliminado.",
@@ -116,5 +133,10 @@
     "explainFirstTime": "Si creaste tu passkey con una versión anterior de Glow, crearemos uno nuevo y transferiremos tus fondos automáticamente. Si es la primera vez que usas Glow, elige <skip/> para continuar.",
     "migrateLabels_one": "Migraremos tu etiqueta a tu nuevo passkey.",
     "migrateLabels_other": "Migraremos las {{count}} etiquetas a tu nuevo passkey."
+  },
+  "webNotice": {
+    "preferPasskey": "Por tu seguridad, te recomendamos usar un passkey en su lugar.",
+    "preferApp": "Por tu seguridad, te recomendamos la app de Glow.",
+    "risk": "Una frase de recuperación en la web es menos segura y existe la posibilidad de que pierdas tu dinero. Usa una frase de recuperación en la web solo si estás dispuesto a asumir ese riesgo."
   }
 }

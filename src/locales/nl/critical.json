@@ -32,7 +32,12 @@
     "convertToBtc": "Omzetten naar BTC",
     "conversionFee": "Omzettingskosten:",
     "feeUnavailable": "Kosten konden niet worden geschat",
-    "disclaimerBody": "Je saldo wordt in USD aangehouden. Binnenkomende BTC wordt automatisch omgezet naar USD, en uitgaande betalingen worden terug omgezet naar BTC. Bedragen onder de omzettingsdrempel blijven als wisselgeld staan tot ze zich opstapelen."
+    "disclaimerBody": "Je saldo wordt in USD aangehouden. Binnenkomende BTC wordt automatisch omgezet naar USD, en uitgaande betalingen worden terug omgezet naar BTC. Bedragen onder de omzettingsdrempel blijven als wisselgeld staan tot ze zich opstapelen.",
+    "balanceTooLow": "Het saldo is te laag om om te zetten — het blijft als wisselgeld staan",
+    "switchToUsdFailed": "Overschakelen naar USD is mislukt. Probeer het opnieuw.",
+    "switchToBtcFailed": "Overschakelen naar BTC is mislukt. Probeer het opnieuw.",
+    "restoreTitle": "USD-saldo gedetecteerd",
+    "restoreBody": "We hebben geld in USD gevonden. Wil je overschakelen naar de USD-modus?\n\nJe saldo wordt in USD aangehouden. Binnenkomende BTC wordt automatisch omgezet naar USD en uitgaande betalingen weer naar BTC."
   },
   "send": {
     "sendAll": "Alles versturen",
@@ -54,14 +59,20 @@
       "amountTooSmall": "Bedrag te klein voor deze route.",
       "amountTooLarge": "Bedrag te groot voor deze route.",
       "amountTooSmallHint": "Dit bedrag is te klein voor de beschikbare routes. Probeer een groter bedrag te versturen.",
-      "amountTooLargeHint": "Dit bedrag is te groot voor de beschikbare routes. Probeer een kleiner bedrag te versturen."
+      "amountTooLargeHint": "Dit bedrag is te groot voor de beschikbare routes. Probeer een kleiner bedrag te versturen.",
+      "networkUnavailable": "Dit netwerk is tijdelijk niet beschikbaar. Probeer het zo meteen opnieuw.",
+      "networkNotSupported": "Dit netwerk is niet beschikbaar. Probeer een ander netwerk.",
+      "rateDrift": "Het bedrag is te klein voor dit netwerk. Probeer een hoger bedrag of een ander netwerk."
     },
     "withdraw": {
       "noValidAmount": "Deze opnamelink bevat geen geldig bedrag dat Glow kan ontvangen.",
       "wholeSats": "Voer een heel getal aan sats in"
     },
     "enterAmountIn": "Voer het bedrag in {{currency}} in",
-    "amountRange": "Tussen {{min}} en {{max}} sats"
+    "amountRange": "Tussen {{min}} en {{max}} sats",
+    "result": {
+      "notSentBody": "De betaling is niet gelukt. Je geld is niet verzonden."
+    }
   },
   "generate": {
     "title": "Houd hem geheim",
@@ -96,7 +107,13 @@
     "feeChanged": "Netwerkkosten gewijzigd",
     "approveOrReject": "Keur goed om deze overdracht te claimen, of wijs af om een terugbetaling te starten.",
     "canReject": "Je kunt afwijzen om in plaats daarvan een terugbetaling te starten.",
-    "feeRose": "De kosten stegen naar <amount/> terwijl je aan het bevestigen was. Keur goed om te claimen tegen de nieuwe kosten."
+    "feeRose": "De kosten stegen naar <amount/> terwijl je aan het bevestigen was. Keur goed om te claimen tegen de nieuwe kosten.",
+    "deliveryFee": "Leveringskosten",
+    "youReceive": "Je ontvangt",
+    "claim": "Claimen",
+    "approve": "Goedkeuren",
+    "reject": "Weigeren",
+    "claimFeeChanged": "Je claim is niet gelukt: de kosten zijn gewijzigd van <amount/>."
   },
   "passkey": {
     "confirmDeleted": "Ik bevestig dat deze passkey is verwijderd.",
@@ -116,5 +133,10 @@
     "explainFirstTime": "Als je je passkey met een eerdere versie van Glow hebt aangemaakt, maken we een nieuwe aan en dragen we je geld automatisch over. Gebruik je Glow voor het eerst, kies dan <skip/> om verder te gaan.",
     "migrateLabels_one": "We migreren je label naar je nieuwe passkey.",
     "migrateLabels_other": "We migreren alle {{count}} labels naar je nieuwe passkey."
+  },
+  "webNotice": {
+    "preferPasskey": "Voor je veiligheid raden we aan om in plaats daarvan een passkey te gebruiken.",
+    "preferApp": "Voor je veiligheid raden we de Glow-app aan.",
+    "risk": "Een herstelzin op het web is minder veilig en de kans bestaat dat je geld verloren gaat. Gebruik een herstelzin op het web alleen als je dat risico wilt nemen."
   }
 }

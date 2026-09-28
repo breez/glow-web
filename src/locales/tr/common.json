@@ -11,7 +11,7 @@
     "continue": "Devam",
     "copy": "Kopyala",
     "copied": "Kopyalandı!",
-    "done": "Tamam",
+    "done": "Bitti",
     "enable": "Etkinleştir",
     "getStarted": "Başla",
     "hide": "Gizle",
@@ -35,7 +35,8 @@
     "retry": "Yeniden dene",
     "goBack": "Geri dön",
     "edit": "Düzenle",
-    "skip": "Atla"
+    "skip": "Atla",
+    "tapToCopy": "Kopyalamak için dokun"
   },
   "labels": {
     "address": "Adres",
@@ -55,7 +56,9 @@
     "justNow": "Az önce",
     "somethingWentWrongRetry": "Bir şeyler ters gitti. Tekrar dene.",
     "shareFailed": "Paylaşılamadı",
-    "guide": "Rehber"
+    "guide": "Rehber",
+    "readyNow": "şimdi hazır",
+    "securityNotice": "Güvenlik uyarısı"
   },
   "a11y": {
     "goBack": "Geri",
@@ -78,7 +81,8 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
-    "generic": "biyometrik"
+    "generic": "biyometrik",
+    "lockout": "Biyometrik kilit açma engellendi. Cihazını şifrenle aç ve tekrar dene."
   },
   "pages": {
     "backup": "Yedek",
@@ -129,7 +133,8 @@
     "processing": "İşleniyor",
     "pendingConfirmation": "Onay bekliyor",
     "pendingApproval": "Onaya bekliyor",
-    "tapToClaim": "Talep etmek için dokun"
+    "tapToClaim": "Talep etmek için dokun",
+    "confirming": "Onaylanıyor"
   },
   "paymentDetails": {
     "amount": "Tutar",
@@ -152,7 +157,8 @@
     "provider": "Sağlayıcı",
     "initialAmount": "Başlangıç tutarı",
     "convertedAmount": "Dönüştürülen tutar",
-    "url": "URL"
+    "url": "URL",
+    "sentAmount": "Gönderilen tutar"
   },
   "qrScanner": {
     "initializing": "Kamera başlatılıyor...",
@@ -208,7 +214,9 @@
     "lightningPayment": "Lightning ödemesi",
     "sparkTransfer": "Spark transferi",
     "tokenTransfer": "Token transferi",
-    "namedTransfer": "{{name}} transferi"
+    "namedTransfer": "{{name}} transferi",
+    "usdTransfer": "USD transferi",
+    "btcTransfer": "BTC transferi"
   },
   "security": {
     "gateReason": "Kilit ekranı ayarlarının kilidini aç",
@@ -335,7 +343,7 @@
     "createLightningAddress": "Lightning adresi oluştur",
     "editLightningAddress": "Lightning adresini düzenle",
     "editAddress": "Adresi düzenle",
-    "createAddress": "Adres oluştur",
+    "createAddress": "Lightning adresi oluştur",
     "addressUnavailable": "Bu ortamda Lightning adresleri kullanılamıyor.",
     "loadAddressFailed": "Lightning adresi yüklenemedi",
     "enterUsername": "Bir kullanıcı adı gir",
@@ -343,7 +351,26 @@
     "saveAddressFailed": "Lightning adresi kaydedilemedi",
     "invalidAmount": "Geçersiz tutar",
     "invalidAmountEntry": "Geçerli bir tutar gir",
-    "enterAmountSats": "Tutarı sats olarak gir"
+    "enterAmountSats": "Tutarı sats olarak gir",
+    "onChain": "On-chain",
+    "switchTo": "{{mode}} moduna geç",
+    "createAddressShort": "Adres oluştur",
+    "createAddressBody": "Kolayca ödeme almak için bir Lightning adresi oluştur",
+    "lightningUnavailable": "Lightning adresleri kullanılamıyor",
+    "shareFailed": "Paylaşılamadı",
+    "scanToPayShort": "Ödemek için tara",
+    "description": "Açıklama (isteğe bağlı)",
+    "amountCopied": "Tutar kopyalandı",
+    "addressCopied": "Adres kopyalandı",
+    "copyAmount": "Tutarı kopyala",
+    "depositAddress": "Yatırma adresi",
+    "crossChain": {
+      "createFailed": "İstek oluşturulamadı.",
+      "noRoutes": "Şu anda kullanılabilir zincirler arası rota yok",
+      "creating": "İstek oluşturuluyor...",
+      "enterUsd": "USD cinsinden tutar gir",
+      "routeSummary": "{{chain}} üzerinde {{asset}} · {{provider}} ile"
+    }
   },
   "buy": {
     "title": "Bitcoin al",
@@ -354,7 +381,10 @@
     "redirecting": "Yönlendiriliyor…",
     "amount": "Tutar",
     "invalidAmount": "Geçersiz tutar",
-    "invoiceFailed": "Fatura oluşturulamadı. Tekrar dene."
+    "invoiceFailed": "Fatura oluşturulamadı. Tekrar dene.",
+    "addFundsFromCashApp": "Cash App ile bakiye ekle",
+    "openCashApp": "Cash App’i aç",
+    "openFailed": "Satın alma sayfası açılamadı. Tekrar dene."
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Başka bir parola sağlayıcısıyla tekrar dene ya da kurtarma ifadesiyle devam et.",
@@ -371,7 +401,8 @@
   },
   "startupFailure": {
     "title": "Uygulama yüklenemedi",
-    "body": "Glow başlatılırken bir hata oluştu. Sayfayı yenileyip tekrar dene."
+    "body": "Glow başlatılırken bir hata oluştu. Sayfayı yenileyip tekrar dene.",
+    "missingApiKey": "API anahtarı eksik"
   },
   "lockdown": {
     "headingIos": "Glow'u kullanmak için Kilitleme Modu'nu kapat",
@@ -444,7 +475,8 @@
       "noRoutesAny": "Bu adres için zincirler arası rota yok",
       "routesFetchFailed": "Rotalar alınamadı: {{error}}",
       "quoteFailedHint": "Şu anda hiçbir sağlayıcı teklif vermiyor. Tekrar dene ya da geri dönüp farklı bir tutar kullan.",
-      "fetchingRoutes": "Rotalar alınıyor..."
+      "fetchingRoutes": "Rotalar alınıyor...",
+      "selectNetwork": "{{asset}} için ağ seç"
     },
     "withdraw": {
       "amountToReceive": "Alınacak tutar",
@@ -454,7 +486,9 @@
     "lnurl": {
       "commentPlaceholder": "Bir mesaj ekle...",
       "commentTooLong": "Yorum en fazla {{max}} karakter olabilir",
-      "prepareFailed": "LNURL Pay hazırlanamadı: {{error}}"
+      "prepareFailed": "LNURL Pay hazırlanamadı: {{error}}",
+      "to": "Alıcı",
+      "comment": "Yorum (isteğe bağlı)"
     },
     "noDestination": "Bir ödeme hedefi gir",
     "prepareFailed": "Ödeme hazırlanamadı {{error}}",
@@ -474,8 +508,13 @@
       "authSuccessBody": "Hizmette kimliğin başarıyla doğrulandı.",
       "sentBody": "Ödemen alıcıya başarıyla gönderildi.",
       "authFailBody": "Kimlik doğrulama sırasında bir hata oluştu. Tekrar dene.",
-      "failBody": "Ödemen işlenirken bir hata oluştu. Tekrar dene."
-    }
+      "failBody": "Ödemen işlenirken bir hata oluştu. Tekrar dene.",
+      "refundSent": "Geri ödeme gönderildi!",
+      "refundFailed": "Geri ödeme başarısız",
+      "refundSuccessBody": "Geri ödemen Bitcoin ağına gönderildi.",
+      "refundFailBody": "Geri ödeme işlenirken bir hata oluştu. Tekrar dene."
+    },
+    "loginCodeInvalid": "Bu giriş kodu geçerli değil. Yeni bir kod için siteyi yenile."
   },
   "restore": {
     "restoring": "Geri yükleniyor...",
@@ -504,14 +543,35 @@
     "failed": "İade başarısız",
     "processing": "İade işleniyor...",
     "errorBody": "İaden işlenirken bir hata oluştu.",
-    "txId": "İade işlem kimliği"
+    "txId": "İade işlem kimliği",
+    "getRefund": "Geri ödeme al",
+    "loadFailed": "Reddedilen yatırmalar yüklenemedi",
+    "notOnchainAddress": "Bu bir on-chain Bitcoin adresi değil",
+    "refundFailed": "Yatırma geri ödenemedi",
+    "readingFeeRates": "Güncel ücretler okunuyor..."
   },
   "deposit": {
     "title": "BTC transferi",
     "claimFailed": "Talep başarısız",
     "autoClaimFailed": "Otomatik talep başarısız",
     "waitingConfirmations": "3 onay bekleniyor.",
-    "autoClaim": "Bu transfer otomatik olarak talep edilecek."
+    "autoClaim": "Bu transfer otomatik olarak talep edilecek.",
+    "speed": "Hız",
+    "standardDelivery": "Standart teslimat",
+    "instantDelivery": "Anında teslimat",
+    "expeditedDelivery": "Hızlandırılmış teslimat",
+    "claimedAutomatically": "Otomatik olarak alınır",
+    "arrivesInSeconds": "Saniyeler içinde ulaşır",
+    "unlocksIn": "{{wait}} içinde açılır",
+    "beingClaimed": "Bu transfer alınıyor.",
+    "claimDeferred": "Bu transfer henüz alınamadı. Tekrar dene.",
+    "claimFailedGeneric": "Transfer alınamadı",
+    "earlyUnavailable": "Erken teslimat şu anda kullanılamıyor, bu yüzden bu transfer otomatik olarak alınacak.",
+    "setupFailed": "Bu transfer alınmak üzere hazırlanamadı. Tekrar dene.",
+    "checkingOptions": "Teslimat seçenekleri kontrol ediliyor",
+    "claimSubmitted": "Talep gönderildi. Para kısa süre içinde ulaşacak.",
+    "countNotClaimed_one": "{{count}} yatırma alınamadı",
+    "countNotClaimed_other": "{{count}} yatırma alınamadı"
   },
   "startup": {
     "refreshFailed": "Verilerin yenilenemedi.",
@@ -552,5 +612,13 @@
     "lightningAddress": "Lightning adresi",
     "labelFailed": "“{{label}}” etiketi taşınamadı. Tekrar dene.",
     "currentLabel": "(geçerli)"
+  },
+  "refresh": {
+    "pull": "Yenilemek için çek",
+    "release": "Yenilemek için bırak",
+    "refreshing": "Yenileniyor"
+  },
+  "logout": {
+    "done": "Başarıyla çıkış yapıldı"
   }
 }
