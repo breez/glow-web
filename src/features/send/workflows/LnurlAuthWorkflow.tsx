@@ -142,7 +142,7 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
         setFailure({ message: `Could not ${action.doing} ${domain}. ${FRESH_CODE}` });
       } else if (await hostAnswers(parsed.url)) {
         setFailure({
-          message: `Could not read the reply from ${domain}. Check the site to see if it worked.`,
+          message: `You may already be logged in. ${domain} didn't let Glow read its reply, so check the site.`,
           missingCors: true,
         });
       } else {

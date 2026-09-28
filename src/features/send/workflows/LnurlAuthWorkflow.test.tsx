@@ -53,7 +53,7 @@ describe('LnurlAuthWorkflow', () => {
     vi.stubGlobal('fetch', probe);
     await logIn(() => Promise.reject(new Error(NETWORK_ERROR)));
     expect(await screen.findByText(
-      'Could not read the reply from stacker.news. Check the site to see if it worked.',
+      "You may already be logged in. stacker.news didn't let Glow read its reply, so check the site.",
     )).toBeInTheDocument();
     expect(probe).toHaveBeenCalledWith('https://stacker.news', expect.objectContaining({ mode: 'no-cors' }));
 
@@ -76,7 +76,7 @@ describe('LnurlAuthWorkflow', () => {
     vi.stubGlobal('crossOriginIsolated', true);
     await logIn(() => Promise.reject(new Error(NETWORK_ERROR)));
     expect(await screen.findByText(
-      'Could not read the reply from stacker.news. Check the site to see if it worked.',
+      "You may already be logged in. stacker.news didn't let Glow read its reply, so check the site.",
     )).toBeInTheDocument();
     expect(probe).not.toHaveBeenCalled();
   });
