@@ -59,7 +59,7 @@ describe('LnurlAuthWorkflow', () => {
     )).toBeInTheDocument();
     expect(probe).toHaveBeenCalledWith('https://stacker.news', expect.objectContaining({ mode: 'no-cors' }));
 
-    expect(screen.getByText(/The site is missing a CORS header that Glow needs/)).toHaveTextContent('The site is missing a CORS header that Glow needs (LUD-01).');
+    expect(screen.getByText(/is missing a CORS header/)).toHaveTextContent('stacker.news is missing a CORS header (LUD-01).');
     expect(screen.getByRole('link', { name: 'LUD-01' })).toHaveAttribute('href', 'https://github.com/lnurl/luds/blob/luds/01.md');
 
     // A retry would reuse a code the site may have spent, so the sheet only closes.
