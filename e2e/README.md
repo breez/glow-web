@@ -39,6 +39,12 @@ passes. From the spark-sdk clone:
 make local-env-block-interval SECONDS=0
 ```
 
+Under Nix, from the directory it ran in:
+
+```
+nix run github:breez/spark-sdk/jssdwt-ssp-additions#local-env -- block-interval 0
+```
+
 Then:
 
 ```
