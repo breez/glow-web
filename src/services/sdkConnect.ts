@@ -57,12 +57,12 @@ export function buildConnectConfig(overrideNetwork?: Network): Config {
     throw new Error('Breez API key not found. Create a .env file with VITE_BREEZ_API_KEY=your_key');
   }
 
-  config.stableBalanceConfig = {
-    tokens: [{ label: USDB_TICKER, tokenIdentifier: USDB_TOKEN_IDENTIFIER }],
-  };
-  // Cross-chain sends are mainnet-only: the SDK rejects the config on any
-  // other network at connect time, which aborts the whole connection.
+  // USDB and cross-chain sends are mainnet-only: the SDK rejects either config
+  // on any other network at connect time, which aborts the whole connection.
   if (network === 'mainnet') {
+    config.stableBalanceConfig = {
+      tokens: [{ label: USDB_TICKER, tokenIdentifier: USDB_TOKEN_IDENTIFIER }],
+    };
     config.crossChainConfig = {};
   }
 
