@@ -1,8 +1,8 @@
 /**
- * The regtest node's RPC, with the credentials `regtest:up` writes to
- * `.env.local` (Playwright loads it). Only a node you run answers these.
+ * The Bitcoin node of the local Spark environment, at its default port and with
+ * its fixed credentials. Its wallet holds what the environment mined.
  */
-const RPC_URL = process.env.BITCOIND_RPC_URL;
+const RPC_URL = process.env.BITCOIND_RPC_URL ?? 'http://127.0.0.1:18443/wallet/default';
 const RPC_AUTH = Buffer.from(
   `${process.env.BITCOIND_RPC_USER ?? 'rpcuser'}:${process.env.BITCOIND_RPC_PASSWORD ?? 'rpcpassword'}`,
 ).toString('base64');
@@ -11,7 +11,6 @@ const RPC_AUTH = Buffer.from(
 const MINING_ADDRESS = 'bcrt1qs758ursh4q9z627kt3pp5yysm78ddny6txaqgw';
 
 async function rpc<T>(method: string, params: unknown[] = []): Promise<T> {
-  if (!RPC_URL) throw new Error('no BITCOIND_RPC_URL: run npm run regtest:up');
   const response = await fetch(RPC_URL, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Basic ${RPC_AUTH}` },
@@ -39,6 +38,17 @@ export const isBitcoindReachable = async (): Promise<boolean> => {
 };
 
 export const tipHeight = (): Promise<number> => rpc<number>('getblockcount');
+
+/**
+ * Whether the chain holds still between the blocks a test mines. The local
+ * environment mines a block every 5 seconds unless told to mine only on
+ * request.
+ */
+export const minesOnlyOnRequest = async (): Promise<boolean> => {
+  const before = await tipHeight();
+  await new Promise(resolve => setTimeout(resolve, 7_000));
+  return (await tipHeight()) === before;
+};
 
 export const mineBlocks = (count: number): Promise<string[]> =>
   rpc<string[]>('generatetoaddress', [count, MINING_ADDRESS]);

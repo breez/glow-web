@@ -1,8 +1,8 @@
 /**
- * The indexer the app itself reads. Used here to tell apart a transaction the
+ * The chain API the app itself reads. Used here to tell apart a transaction the
  * app broadcast from one the operators' watchtower published.
  */
-const BASE = process.env.TEST_ESPLORA_URL || 'http://localhost:3002';
+const BASE = process.env.TEST_ESPLORA_URL || 'http://127.0.0.1:8090/api';
 
 interface AddressTx {
   txid: string;
