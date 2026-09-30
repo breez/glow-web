@@ -2,45 +2,39 @@ import {
   Config,
   Network,
   SdkBuilder,
-  SparkConfig,
   connect,
   defaultConfig,
+  parseSparkConfig,
   type BreezSdk,
   type Seed,
 } from '@breeztech/breez-sdk-spark';
 import { getSettings } from './settings';
+import { esploraBaseUrl } from './esplora';
 import { logger, LogCategory } from './logger';
 import { formatError } from '../utils/formatError';
 import { USDB_TOKEN_IDENTIFIER, USDB_TICKER } from '../constants/stableBalance';
 
-function localCluster(): SparkConfig | null {
-  const raw = import.meta.env.VITE_SPARK_LOCAL_CONFIG;
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as SparkConfig;
-  } catch (e) {
-    logger.warn(LogCategory.SDK, 'Ignoring unparseable local cluster config', {
-      error: formatError(e),
-    });
-    return null;
-  }
+/**
+ * The spark-config.json of the local Spark environment (the spark-sdk's
+ * regtest/local/) that regtest runs on, when the dev server was given one.
+ */
+function localEnvironmentConfig(network: Network): string | null {
+  return network === 'regtest' ? __SPARK_CONFIG__ : null;
 }
 
 /**
- * Points the config at a locally-run cluster when one is configured, and
- * reports whether it took over. A local cluster runs no Breez services, so the
- * hosted endpoints have to be cleared or connect fails reaching them. Leaf
- * optimization is turned off so leaves are not split or merged behind a test's
- * back.
+ * Points a regtest config at the local Spark environment, and reports whether
+ * it took over. The environment serves its own LNURL and data-sync services at
+ * their default ports, and takes no API key.
  */
-function applyLocalCluster(config: Config, network: Network): boolean {
-  const cluster = network === 'regtest' ? localCluster() : null;
-  if (!cluster) return false;
-  config.sparkConfig = cluster;
+function applyLocalEnvironment(config: Config, network: Network): boolean {
+  const sparkConfig = localEnvironmentConfig(network);
+  if (!sparkConfig) return false;
+  config.sparkConfig = parseSparkConfig(sparkConfig);
   config.apiKey = undefined;
-  config.lnurlDomain = undefined;
-  config.realTimeSyncServerUrl = undefined;
-  config.leafOptimizationConfig.autoEnabled = false;
+  config.lnurlDomain = 'http://127.0.0.1:8080';
+  // The JS SDK reaches the data-sync service over gRPC-Web.
+  config.realTimeSyncServerUrl = 'http://127.0.0.1:8082';
   return true;
 }
 
@@ -59,7 +53,7 @@ export function buildConnectConfig(overrideNetwork?: Network): Config {
   const config: Config = defaultConfig(network);
   config.apiKey = import.meta.env.VITE_BREEZ_API_KEY;
 
-  if (!applyLocalCluster(config, network) && !config.apiKey) {
+  if (!applyLocalEnvironment(config, network) && !config.apiKey) {
     throw new Error('Breez API key not found. Create a .env file with VITE_BREEZ_API_KEY=your_key');
   }
 
@@ -96,8 +90,9 @@ export function buildConnectConfig(overrideNetwork?: Network): Config {
 }
 
 /**
- * Connects a wallet. A config built for a local cluster is pointed at that
- * cluster's own indexer, since the hosted one knows nothing about its chain.
+ * Connects a wallet. A config built for the local environment is pointed at
+ * the environment's own chain API, since the hosted one knows nothing about
+ * its chain.
  */
 export async function connectSdk(params: {
   config: Config;
@@ -105,9 +100,11 @@ export async function connectSdk(params: {
   storageDir: string;
 }): Promise<BreezSdk> {
   const { config, seed, storageDir } = params;
-  const chainApiUrl = import.meta.env.VITE_ESPLORA_BASE_URL;
-  if (chainApiUrl && config.apiKey == null && config.sparkConfig) {
-    const builder = SdkBuilder.new(config, seed).withRestChainService(chainApiUrl, 'esplora');
+  if (localEnvironmentConfig(config.network)) {
+    const builder = SdkBuilder.new(config, seed).withRestChainService(
+      esploraBaseUrl(config.network),
+      'mempoolSpace',
+    );
     return (await builder.withDefaultStorage(storageDir)).build();
   }
   return connect({ config, seed, storageDir });

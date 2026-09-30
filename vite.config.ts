@@ -1,15 +1,29 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import wasm from 'vite-plugin-wasm';
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import pkg from './package.json' with { type: 'json' }
 
+// The spark-config.json a local Spark environment writes, which regtest then
+// connects to. Only the dev server reads it: a build's CSP refuses the plain
+// http the environment is served over.
+const localSparkConfig = (path: string | undefined): string | null => {
+  if (!path) return null;
+  const file = resolve(path);
+  if (!existsSync(file)) {
+    throw new Error(`No Spark config at ${file}: start the local Spark environment, or unset SPARK_CONFIG_PATH`);
+  }
+  return readFileSync(file, 'utf8');
+};
+
 // https://vitejs.dev/config/
-// A locally-run Spark cluster is reached over plain http on localhost, which
+// The local Spark environment is served over plain http on localhost, which
 // the shipped `connect-src 'self' https: wss:` refuses. Widening it only in the
 // dev server keeps the production policy (index.html + vercel.json) untouched.
-const allowLocalClusterCsp = () => ({
-  name: 'allow-local-cluster-csp',
+const allowLocalEnvironmentCsp = () => ({
+  name: 'allow-local-environment-csp',
   apply: 'serve' as const,
   transformIndexHtml: (html: string) =>
     html.replace(
@@ -18,19 +32,22 @@ const allowLocalClusterCsp = () => ({
     ),
 });
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
     base: env.VITE_BASE_PATH || '/',
-    // The web build has no native shell to ask, so the label falls back to
-    // this. Kept in step with glow-app's package.json version.
-    define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+    define: {
+      // The web build has no native shell to ask, so the label falls back to
+      // this. Kept in step with glow-app's package.json version.
+      __APP_VERSION__: JSON.stringify(pkg.version),
+      __SPARK_CONFIG__: JSON.stringify(command === 'serve' ? localSparkConfig(env.SPARK_CONFIG_PATH) : null),
+    },
     plugins: [
       react(),
       wasm(),
       nodePolyfills(),
-      allowLocalClusterCsp(),
+      allowLocalEnvironmentCsp(),
     ],
     server: {
       host: env.VITE_SERVER_HOST || 'localhost',
