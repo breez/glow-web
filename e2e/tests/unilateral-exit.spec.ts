@@ -6,17 +6,19 @@ import {
   isBitcoindReachable,
   decodeRawTx,
   isUnspent,
+  minesOnlyOnRequest,
   mineBlocks,
   newAddress,
   tipHeight,
 } from '../utils/bitcoind';
 import { outspend, txConfirmed, waitFor } from '../utils/esplora';
-import { freshMnemonic, fundTestWallet, isFundingReachable } from '../utils/fund';
+import { freshMnemonic, fundWallet } from '../utils/fund';
 import { willReceiveSat } from '../../src/features/unilateral-exit/driver';
 import { deriveFundingKey } from '../../src/features/unilateral-exit/funding';
 
 import {
   blocksToNextStep,
+  blocksToProgress,
   driveWizardToTracker,
   nodesConfirmed,
   openUnilateralExit,
@@ -26,9 +28,8 @@ import {
 } from '../utils/exitWizard';
 
 /**
- * Unilateral exit against a local Spark cluster. Needs the cluster and its
- * gRPC-web proxies: see local-regtest/README.md. Without a reachable bitcoind
- * the file skips rather than fails.
+ * Unilateral exit against a local Spark environment, mining only on request:
+ * see e2e/README.md. Without the environment the file skips rather than fails.
  *
  * An exit consumes every leaf the wallet has, so each test funds its own before
  * it runs.
@@ -42,17 +43,19 @@ let MNEMONIC = '';
 // app's own refund the only one that can go out.
 const DIRECT_REFUND_OFFSET = 50;
 const EXIT_TIMEOUT = 12 * 60_000;
-// Three leaves, so the exit fans out rather than taking the single-branch path.
-const LEAF_SATS = 200_000;
-const LEAF_COUNT = 3;
+// The SSP pays a claim out as several leaves, so the exit fans out rather than
+// taking the single-branch path.
+const DEPOSIT_SATS = 200_000;
 const driveToCompletion = async (page: Page): Promise<void> => {
   const complete = page.getByTestId('unilateral-exit-complete');
-  // Each pass is a block plus a poll interval, so this is minutes of patience:
-  // the last step to confirm is the sweep, and the app only calls the exit done
-  // once a check has seen it.
+  // Each pass mines to the nearest timelock, or a block when none is pending,
+  // plus a poll interval, so this is minutes of patience: the last step to
+  // confirm is the sweep, and the app only calls the exit done once a check has
+  // seen it. A wallet's refunds mature apart, since each transfer of a leaf
+  // takes 100 blocks off its refund's timelock.
   for (let pass = 0; pass < 60; pass++) {
     if (await complete.isVisible().catch(() => false)) return;
-    await mineBlocks(1);
+    await mineBlocks(await blocksToProgress(page, await tipHeight()));
     await page.waitForTimeout(6_000);
   }
   if (await complete.isVisible().catch(() => false)) return;
@@ -113,9 +116,16 @@ const refundTxids = (page: Page): Promise<string[]> => txidsOfKind(page, 'refund
 const nodeTxids = (page: Page): Promise<string[]> => txidsOfKind(page, 'node');
 
 test.describe('Unilateral exit', () => {
+  // Funding reads the deposit address off the receive sheet's copy button.
+  test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
+
   test.beforeAll(async () => {
-    test.skip(!(await isBitcoindReachable()), 'needs a local regtest cluster');
-    test.skip(!(await isFundingReachable()), 'needs regtest_up serving /fund');
+    test.skip(!process.env.SPARK_CONFIG_PATH, 'needs SPARK_CONFIG_PATH, to run the app on a local Spark environment');
+    test.skip(!(await isBitcoindReachable()), 'needs a local Spark environment');
+    test.skip(
+      !(await minesOnlyOnRequest()),
+      'needs the local Spark environment mining only on request: make local-env-block-interval SECONDS=0',
+    );
   });
 
   // Its own wallet, funded from scratch: leaves survive a failed exit, so a
@@ -123,7 +133,6 @@ test.describe('Unilateral exit', () => {
   test.beforeEach(async () => {
     test.setTimeout(EXIT_TIMEOUT);
     MNEMONIC = process.env.TEST_EXIT_MNEMONIC ?? freshMnemonic();
-    await fundTestWallet(MNEMONIC, LEAF_SATS, LEAF_COUNT);
   });
 
   test('exits the balance on-chain, driving itself to the sweep', async ({ page }) => {
@@ -148,6 +157,7 @@ test.describe('Unilateral exit', () => {
       }
     });
     await openWallet(page, MNEMONIC);
+    await fundWallet(page, DEPOSIT_SATS);
     await openUnilateralExit(page);
 
     await test.step('intro says what the exit asks of the user', async () => {
@@ -262,7 +272,7 @@ test.describe('Unilateral exit', () => {
       // wallet list then shows.
       const [archived] = await storedArchive(page);
       expect(archived?.deliveredSat).toBe(balance);
-      expect(archived?.exitFeePaidSat).toBe(funded);
+      expect(archived?.exitFeePaidSat).toBe(built!.quotedExitFeeSat);
       expect(archived?.exitFeeAddress).toBe(deriveFundingKey(MNEMONIC, 'regtest', 0).address);
 
       // The exit cost something, so it is not silently a no-op. Against balance
@@ -276,6 +286,7 @@ test.describe('Unilateral exit', () => {
 
     const destination = await newAddress('e2e-watchtower-destination');
     await openWallet(page, MNEMONIC);
+    await fundWallet(page, DEPOSIT_SATS);
     await openUnilateralExit(page);
 
     const quoted = await driveWizardToTracker(page, destination, MNEMONIC);

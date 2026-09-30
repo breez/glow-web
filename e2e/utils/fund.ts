@@ -1,37 +1,28 @@
 import { generateMnemonic } from 'bip39';
+import { expect, type Page } from '@playwright/test';
+import { getBalance, getBitcoinAddress, waitForWalletReady } from '../fixtures/dual-wallet';
+import { mineBlocks, sendToAddress } from './bitcoind';
+
+// The claim pays the SSP's fee out of the deposit, up to the app's default
+// ceiling.
+const MAX_CLAIM_FEE_SATS = 500;
 
 /**
- * Funds the test wallet against the running cluster, so a test needing leaves
- * does not need the cluster restarted. Served by `regtest_up`, which holds the
- * one wallet that can claim a deposit here.
+ * Funds the wallet open on `page` with a deposit from the environment's Bitcoin
+ * node. The wallet claims it once it confirms, and the environment's SSP pays
+ * the claim out of its pool of leaves.
  */
-const FUND_URL = process.env.TEST_FUND_URL || 'http://127.0.0.1:8997';
+export const fundWallet = async (page: Page, sats: number): Promise<void> => {
+  const address = await getBitcoinAddress(page);
+  await sendToAddress(address, sats / 100_000_000);
+  await mineBlocks(1);
 
-export const isFundingReachable = async (): Promise<boolean> => {
-  try {
-    const response = await fetch(FUND_URL, { signal: AbortSignal.timeout(2_000) });
-    return response.ok;
-  } catch {
-    return false;
-  }
-};
-
-/**
- * Sends `count` transfers of `sats` to the wallet `mnemonic` owns. Each lands as
- * its own leaf. Slow: every round is a deposit, a confirmation and a sync.
- */
-export const fundTestWallet = async (
-  mnemonic: string,
-  sats: number,
-  count: number,
-): Promise<void> => {
-  const query = new URLSearchParams({ sats: String(sats), count: String(count), mnemonic });
-  const response = await fetch(`${FUND_URL}/fund?${query}`, {
-    signal: AbortSignal.timeout(10 * 60_000),
-  });
-  const body = (await response.json()) as { funded?: number; error?: string };
-  if (body.error) throw new Error(`funding the test wallet failed: ${body.error}`);
-  if (body.funded !== count) throw new Error(`funded ${body.funded} of ${count} rounds`);
+  // Reopening the wallet syncs it, which is when it claims a deposit.
+  await expect(async () => {
+    await page.reload();
+    await waitForWalletReady(page);
+    expect(await getBalance(page)).toBeGreaterThanOrEqual(sats - MAX_CLAIM_FEE_SATS);
+  }).toPass({ timeout: 5 * 60_000, intervals: [10_000] });
 };
 
 /**
