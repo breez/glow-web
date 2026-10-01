@@ -22,13 +22,6 @@ coverage/
 .DS_Store
 .playwright-mcp/
 
-# Local regtest wiring (ports change per cluster run)
-local-regtest/envoy.yaml
-local-regtest/.env
-local-regtest/cluster.log
-local-regtest/cluster.pid
-local-regtest/cluster/target/
-
 # Recorded walkthroughs, and the harness that records them
 /demo/
 /e2e/demo/

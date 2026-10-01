@@ -14,21 +14,11 @@ export function esploraBaseUrl(network: string): string {
     case 'testnet':
       return 'https://mempool.space/testnet/api';
     case 'regtest':
-      return 'http://localhost:3002';
+      // The local Spark environment's chain API.
+      return 'http://127.0.0.1:8090/api';
     default:
       return 'https://mempool.space/api';
   }
-}
-
-/**
- * Where the `/v1` endpoints live: fee estimates, and the package submission a
- * zero-fee tree transaction needs. A hosted mempool serves them alongside the
- * esplora ones; run locally they are a separate service from the indexer.
- */
-export function mempoolBaseUrl(network: string): string {
-  const override = import.meta.env?.VITE_MEMPOOL_BASE_URL;
-  if (override) return trim(override);
-  return network === 'regtest' ? 'http://localhost:8999/api' : esploraBaseUrl(network);
 }
 
 const atLeastOne = (rate: number | undefined): number => Math.max(1, Math.round(rate ?? 1));
@@ -59,15 +49,11 @@ export function createEsploraClient(
   timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS,
 ): ChainClient {
   const base = esploraBaseUrl(network);
-  const mempool = mempoolBaseUrl(network);
 
   // A chain endpoint that accepts the connection and then never answers would
   // otherwise leave the caller pending forever, with no error to react to.
   const send = (path: string, init: RequestInit = {}): Promise<Response> =>
     fetch(`${base}${path}`, { ...init, signal: AbortSignal.timeout(timeoutMs) });
-
-  const sendToMempool = (path: string, init: RequestInit = {}): Promise<Response> =>
-    fetch(`${mempool}${path}`, { ...init, signal: AbortSignal.timeout(timeoutMs) });
 
   const getJson = async <T>(path: string): Promise<T> => {
     const response = await send(path);
@@ -77,7 +63,7 @@ export function createEsploraClient(
 
   return {
     async feeRates() {
-      const response = await sendToMempool('/v1/fees/recommended');
+      const response = await send('/v1/fees/recommended');
       if (!response.ok) throw await failure(response, 'GET /v1/fees/recommended');
       const fees = (await response.json()) as {
         fastestFee: number;
@@ -123,7 +109,7 @@ export function createEsploraClient(
     // hosted mempool passes this straight to bitcoind's `submitpackage`, so no
     // node of our own is needed.
     async broadcastPackage(parentHex, childHex) {
-      const response = await sendToMempool('/v1/txs/package', {
+      const response = await send('/v1/txs/package', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify([parentHex, childHex]),

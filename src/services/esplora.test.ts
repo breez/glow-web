@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createEsploraClient, esploraBaseUrl, mempoolBaseUrl } from './esplora';
+import { createEsploraClient, esploraBaseUrl } from './esplora';
 
 const okJson = (body: unknown) =>
   new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
@@ -18,6 +18,10 @@ describe('esploraBaseUrl', () => {
 
   it('uses the testnet path for testnet', () => {
     expect(esploraBaseUrl('testnet')).toBe('https://mempool.space/testnet/api');
+  });
+
+  it("uses the local Spark environment's chain API for regtest", () => {
+    expect(esploraBaseUrl('regtest')).toBe('http://127.0.0.1:8090/api');
   });
 });
 
@@ -99,21 +103,9 @@ describe('EsploraClient', () => {
     fetchMock.mockResolvedValue(okJson({}));
     await client().broadcastPackage('parenthex', 'childhex');
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe(`${mempoolBaseUrl('mainnet')}/v1/txs/package`);
+    expect(url).toBe('https://mempool.space/api/v1/txs/package');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toEqual(['parenthex', 'childhex']);
-  });
-
-  it('asks the indexer for chain reads and the mempool for its own endpoints', async () => {
-    // Hosted, both live under one origin; run locally the indexer and the
-    // mempool are separate services.
-    fetchMock.mockResolvedValue(okText('840500'));
-    await client().tipHeight();
-    expect(fetchMock.mock.calls[0][0]).toBe(`${esploraBaseUrl('mainnet')}/blocks/tip/height`);
-
-    fetchMock.mockResolvedValue(okJson({ fastestFee: 9, halfHourFee: 5, hourFee: 2 }));
-    await client().feeRates();
-    expect(fetchMock.mock.calls[1][0]).toBe(`${mempoolBaseUrl('mainnet')}/v1/fees/recommended`);
   });
 
   it('surfaces the rejection reason when a package is refused', async () => {

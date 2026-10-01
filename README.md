@@ -56,6 +56,56 @@ npm run dev
 
 The application will be available at `http://localhost:5173`
 
+## Running on a local Spark environment
+
+The [spark-sdk](https://github.com/breez/spark-sdk) runs a Spark regtest network of your own: a Bitcoin node, Spark operators, a service provider with its Lightning node, a second Lightning node called Alice, an LNURL server, a data-sync service and a block explorer. Its [testing guide](https://sdk-doc-spark.breez.technology/guide/testing.html#local-environment) says what it runs and how to start it. On regtest, Glow connects to it without an API key.
+
+1. From a clone of the spark-sdk with its `jssdwt-ssp-additions` branch checked out, start the environment:
+
+   ```bash
+   make local-env-up
+   ```
+
+   Or run it natively with Nix:
+
+   ```bash
+   nix run github:breez/spark-sdk/jssdwt-ssp-additions#local-env
+   ```
+
+   Once it can serve a wallet, it prints where its Spark config is: `regtest/local/data/spark-config.json` in the clone under Docker, `.spark-local/local/spark-config.json` in the directory it ran in under Nix.
+
+2. From the same clone, build the SDK's JavaScript package and link it into glow-web, since Glow needs a newer SDK than its npm release. The build takes Rust, protobuf and yarn, and on macOS Homebrew's llvm:
+
+   ```bash
+   cd packages/wasm && make build
+   ```
+
+   Then, from glow-web, and again after every `npm install`:
+
+   ```bash
+   npm link ../spark-sdk/packages/wasm
+   ```
+
+3. Name the Spark config file in `.env.local`, then start the dev server:
+
+   ```
+   SPARK_CONFIG_PATH=../spark-sdk/regtest/local/data/spark-config.json
+   ```
+
+4. Open `http://localhost:5173/?network=regtest`.
+
+The commands below run from the spark-sdk clone. The testing guide lists their Nix equivalents.
+
+| | |
+|---|---|
+| Fund a wallet | `make local-env-fund ADDRESS=<address> AMOUNT_SATS=<sats>`, to an on-chain address from Receive. The wallet claims the deposit once it confirms. |
+| Pay and get paid over Lightning | The environment prints Alice's commands: `bolt11-receive` makes an invoice for Glow to pay, `bolt11-send` pays one Glow made. |
+| Mine blocks | `make local-env-mine BLOCKS=<blocks>` |
+| Mine only on request | `make local-env-block-interval SECONDS=0`, or `block-interval 0` under Nix. The environment otherwise mines a block every 5 seconds. |
+| See what happened on-chain | The explorer at `http://127.0.0.1:8090` |
+
+A unilateral exit's refunds wait out a timelock of up to 2,000 blocks, which `make local-env-mine BLOCKS=2000` passes at once. Its exit fee is funded like a wallet, with `make local-env-fund`.
+
 ## Building for Production
 
 ```bash

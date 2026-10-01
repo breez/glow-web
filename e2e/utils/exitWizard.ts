@@ -62,6 +62,15 @@ export const blocksToNextStep = async (page: Page, tip: number): Promise<number>
   return blocks as number;
 };
 
+/**
+ * Blocks to mine for the exit to move on: those left on the nearest timelock,
+ * or one to confirm what went out when nothing waits on a timelock.
+ */
+export const blocksToProgress = async (page: Page, tip: number): Promise<number> => {
+  const plan = await storedPlan(page);
+  return Math.max(1, nextAction(plan?.exit.transactions ?? [], tip)?.blocks ?? 1);
+};
+
 /** The figure the quote puts in front of the user as what will arrive. */
 const quotedWillReceiveSat = async (page: Page): Promise<number> => {
   const hero = page.getByText("You'll receive").locator('..');
