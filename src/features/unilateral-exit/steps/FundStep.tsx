@@ -75,7 +75,10 @@ const PaymentTarget: React.FC<{ address: string; amountSat: number }> = ({ addre
 // The send flow's result shape: an instruction to pay reads as wrong once it
 // is paid, so the step becomes the receipt instead. What it waits on sits
 // under the title, as a result's detail line does.
-const Receipt: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
+export const Receipt: React.FC<{ title?: string; children?: React.ReactNode }> = ({
+  title = 'Exit fee received',
+  children,
+}) => (
   <div className="pt-6 flex flex-col items-center">
     <div className="relative mb-4">
       <div className="absolute inset-0 w-20 h-20 rounded-full blur-xl bg-spark-success/30" />
@@ -83,7 +86,7 @@ const Receipt: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
         <CheckIcon className="w-10 h-10 text-spark-success" />
       </div>
     </div>
-    <h3 className="font-display text-xl font-bold text-spark-text-primary">Exit fee received</h3>
+    <h3 className="font-display text-xl font-bold text-spark-text-primary">{title}</h3>
     {children && <div className="mt-2 space-y-2">{children}</div>}
   </div>
 );
@@ -98,7 +101,7 @@ const Breakdown: React.FC<{ topUp: TopUp; feeRate: number }> = ({ topUp, feeRate
   />
 );
 
-const Status: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+export const Status: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="flex items-center justify-center gap-2" data-testid="unilateral-exit-pending-status">
     <ClockIcon className="shrink-0 text-spark-primary" />
     <p className="text-sm text-spark-text-secondary">{children}</p>
@@ -170,7 +173,8 @@ export const PendingExitStep: React.FC<{
   isStarting: boolean;
   startError: string | null;
   onCancel: () => void;
-}> = ({ pending, coins, nothingToExit, isStarting, startError, onCancel }) => {
+  cancelLabel?: string;
+}> = ({ pending, coins, nothingToExit, isStarting, startError, onCancel, cancelLabel = 'Cancel exit' }) => {
   const [advanced, setAdvanced] = useState(false);
   const topUp = pendingTopUp(pending, coins);
 
@@ -231,7 +235,7 @@ export const PendingExitStep: React.FC<{
           cancelling: coins already sent count toward the next exit. */}
       <CollapsibleSection label="Advanced" isVisible={advanced} onToggle={() => setAdvanced(v => !v)} bare>
         <BackupActions>
-          <ExitActionRow label="Cancel exit" icon={<CloseIcon size="md" />} onClick={onCancel} testId="unilateral-exit-cancel" />
+          <ExitActionRow label={cancelLabel} icon={<CloseIcon size="md" />} onClick={onCancel} testId="unilateral-exit-cancel" />
         </BackupActions>
       </CollapsibleSection>
     </div>

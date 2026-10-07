@@ -20,7 +20,7 @@ import SaveContactDialog from '../features/send/components/SaveContactDialog';
 import BuyBitcoinDialog from '../features/buy/BuyBitcoinDialog';
 import { getBuyProviderSettings, filterProvidersByNetwork, filterProvidersByPlatform } from '../services/settings';
 import { useCashAppInstalled } from '../hooks/useCashAppInstalled';
-import { unilateralExitEntries, type UnilateralExitEntry } from '../features/unilateral-exit/listEntries';
+import { exitGroupTitle, unilateralExitEntries, type UnilateralExitEntry } from '../features/unilateral-exit/listEntries';
 import { ArchivedExitDialog } from '../features/unilateral-exit/ArchivedExitDialog';
 import { useUnilateralExitEngineState } from '../features/unilateral-exit/hooks/useUnilateralExitEngineLifecycle';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';
@@ -137,11 +137,14 @@ const WalletPage: React.FC<WalletPageProps> = ({
   }, [wallet]);
 
   const exitState = useUnilateralExitEngineState();
-  const exitEntries = useMemo(() => unilateralExitEntries(exitState), [exitState]);
+  // The published sdk types predate `recoverableFundsSats`.
+  const recoverableSat = (walletInfo as { recoverableFundsSats?: number } | null)?.recoverableFundsSats ?? 0;
+  const exitEntries = useMemo(() => unilateralExitEntries(exitState, recoverableSat), [exitState, recoverableSat]);
   const selectedExit = exitState.archive.find(exit => exit.id === selectedExitId) ?? null;
   const handleExitSelected = useCallback((entry: UnilateralExitEntry) => {
-    if (entry.isActive) onOpenUnilateralExit();
-    else setSelectedExitId(entry.id);
+    if (entry.kind === 'archived') setSelectedExitId(entry.id);
+    // A kept recovery's tracker has no route yet, and the exit flow is not it.
+    else if (entry.kind !== 'recovery') onOpenUnilateralExit();
   }, [onOpenUnilateralExit]);
 
   // Refs for dialog states to use in stable callbacks (advanced-event-handler-refs optimization)
@@ -316,6 +319,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
           isSyncing={isSyncing}
           exitEntries={exitEntries}
           onExitSelected={handleExitSelected}
+          exitGroupTitle={exitGroupTitle(exitState)}
         />
       </div>
 

@@ -99,6 +99,18 @@ describe('QuoteStep', () => {
     expect(screen.getByText(/2 500/)).toBeInTheDocument();
   });
 
+  it('gives recoverable funds their own row, so Balance stays the balance', () => {
+    renderStep({ quote: quote({ recoverableValueSat: 148_200 }), recoverableFundsSat: 48_200 });
+    expect(within(screen.getByText('Balance').parentElement as HTMLElement).getByText(/100 000/)).toBeInTheDocument();
+    expect(within(screen.getByText('Recoverable Funds').parentElement as HTMLElement).getByText(/48 200/)).toBeInTheDocument();
+  });
+
+  it('calls the fee a network fee once co-signed recoveries add theirs to the sweep', () => {
+    renderStep({ quote: quote({ recoverableValueSat: 148_200 }), recoverableFundsSat: 48_200, sweepFeeSat: 3_100 });
+    expect(screen.queryByText('Sweep fee')).not.toBeInTheDocument();
+    expect(within(screen.getByText('Network fee').parentElement as HTMLElement).getByText(/3 100/)).toBeInTheDocument();
+  });
+
   it('reports a quote that failed outright', () => {
     renderStep({ error: 'operators unreachable' });
     expect(screen.getByText('Could not quote the exit')).toBeInTheDocument();

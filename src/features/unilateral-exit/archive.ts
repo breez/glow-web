@@ -1,7 +1,7 @@
 import { logger, LogCategory } from '@/services/logger';
-import { willReceiveSat } from './driver';
+import { cooperativeValueSat, willReceiveSat } from './driver';
 import { fundingAddressOf } from './funding';
-import type { UnilateralExitPlan, WalletKey } from './driver';
+import type { ExitMode, UnilateralExitPlan, WalletKey } from './driver';
 
 /**
  * A finished exit, kept once its plan slot is handed to the next one. The plan
@@ -16,8 +16,10 @@ export interface ArchivedExit {
   completedAt: number;
   // Absent on exits archived before they were recorded.
   network?: string;
-  /** What left Spark. */
+  /** What left Spark, recoverable funds included. */
   exitedSat?: number;
+  /** The part of `exitedSat` that was outside the balance. */
+  recoverableFundsSat?: number;
   /** What was sent to the exit fee address, from another wallet. */
   exitFeePaidSat?: number;
   /**
@@ -25,6 +27,7 @@ export interface ArchivedExit {
    * when a watchtower's refund lands first, rather than reaching the destination.
    */
   exitFeeAddress?: string;
+  mode?: ExitMode;
 }
 
 const key = ({ identityPubkey, network }: WalletKey): string =>
@@ -66,11 +69,13 @@ export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): Archiv
       completedAt: Date.now(),
       network: plan.network,
       exitedSat: plan.exit.recoverableValueSat,
+      recoverableFundsSat: cooperativeValueSat(plan.exit) || undefined,
       // What the exit was quoted to need, not what the address holds: a rebuild
       // takes in every confirmed coin there, the exit's own change included, so
       // summing those counts the same sats twice.
       exitFeePaidSat: plan.quotedExitFeeSat ?? funding.reduce((sum, input) => sum + input.value, 0),
       exitFeeAddress: keyed ? fundingAddressOf(keyed.pubkey, plan.network) : undefined,
+      mode: plan.mode,
     },
     ...existing,
   ];

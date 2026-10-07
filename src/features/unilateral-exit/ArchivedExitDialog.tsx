@@ -8,7 +8,7 @@ import {
   PaymentInfoRow,
 } from '@/components/ui';
 import { SatAmount } from '@/components/SatAmount';
-import { createChainClient } from '@/services/chain';
+import { createChainClient, type ChainClient } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { explorerTxUrl } from '@/utils/explorer';
 import type { ArchivedExit } from './archive';
@@ -19,10 +19,14 @@ import type { ArchivedExit } from './archive';
  * only an exit has, since the exit fee was paid from another wallet and this
  * is the one place it is recorded.
  */
-export const ArchivedExitDialog: React.FC<{ exit: ArchivedExit; onClose: () => void }> = ({
-  exit,
-  onClose,
-}) => {
+export const ArchivedExitDialog: React.FC<{
+  exit: ArchivedExit;
+  onClose: () => void;
+  subtitle?: string;
+  exitedLabel?: string;
+  /** Reads the unspent exit fee. Absent means the backend for the exit's network. */
+  chain?: ChainClient;
+}> = ({ exit, onClose, subtitle = 'Unilateral Exit', exitedLabel = 'Balance Exited', chain }) => {
   const [shown, setShown] = useState({ destination: false, exitFeeAddress: false, txid: false });
   const toggle = (field: keyof typeof shown) => setShown(current => ({ ...current, [field]: !current[field] }));
 
@@ -33,7 +37,7 @@ export const ArchivedExitDialog: React.FC<{ exit: ArchivedExit; onClose: () => v
   useEffect(() => {
     if (!exitFeeAddress || !network) return;
     let cancelled = false;
-    createChainClient(network)
+    (chain ?? createChainClient(network))
       .addressUtxos(exitFeeAddress)
       .then(utxos => {
         if (!cancelled) setUnspentSat(utxos.reduce((sum, utxo) => sum + utxo.value, 0));
@@ -46,18 +50,24 @@ export const ArchivedExitDialog: React.FC<{ exit: ArchivedExit; onClose: () => v
     return () => {
       cancelled = true;
     };
-  }, [exitFeeAddress, network]);
+  }, [exitFeeAddress, network, chain]);
 
   return (
     <BottomSheetContainer isOpen onClose={onClose}>
       <BottomSheetCard>
         <DialogHeader title="BTC Transfer" onClose={onClose} />
-        <p className="-mt-3 mb-4 text-center text-sm text-spark-text-muted">Unilateral Exit</p>
+        <p className="-mt-3 mb-4 text-center text-sm text-spark-text-muted">{subtitle}</p>
         <div className="space-y-4 overflow-y-auto" data-testid="unilateral-exit-details">
           <PaymentInfoCard>
             <PaymentInfoRow label="Received" value={<SatAmount sats={exit.deliveredSat} />} />
             {exit.exitedSat !== undefined && (
-              <PaymentInfoRow label="Balance Exited" value={<SatAmount sats={exit.exitedSat} />} />
+              <PaymentInfoRow
+                label={exitedLabel}
+                value={<SatAmount sats={exit.exitedSat - (exit.recoverableFundsSat ?? 0)} />}
+              />
+            )}
+            {!!exit.recoverableFundsSat && (
+              <PaymentInfoRow label="Recoverable Funds" value={<SatAmount sats={exit.recoverableFundsSat} />} />
             )}
             {exit.exitFeePaidSat !== undefined && (
               <PaymentInfoRow label="Exit Fee Paid" value={<SatAmount sats={exit.exitFeePaidSat} />} />

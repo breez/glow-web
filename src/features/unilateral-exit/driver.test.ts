@@ -9,6 +9,7 @@ import {
   exitStages,
   isReady,
   loadPlan,
+  loadRecoveries,
   nextAction,
   planFromExitResponse,
   requiredFundingOf,
@@ -17,6 +18,7 @@ import {
   planProgress,
   quotedSweepFeeSat,
   savePlan,
+  saveRecoveries,
   startExit,
   willReceiveSat,
 } from './driver';
@@ -124,6 +126,14 @@ describe('storing a plan', () => {
     localStorage.setItem(key, '{oops');
     expect(loadPlan(wallet)).toBeNull();
   });
+
+  it('keeps co-signed recoveries apart from the plan slot', () => {
+    const recovery = plan([tx({ txid: 'c', kind: 'cooperative' as never })], { mode: 'recover' });
+    saveRecoveries(wallet, [recovery]);
+    expect(loadPlan(wallet)).toBeNull();
+    expect(loadRecoveries(wallet)).toEqual([recovery]);
+    expect(loadRecoveries({ ...wallet, network: 'regtest' })).toEqual([]);
+  });
 });
 
 // one input, one 596 524 sat output
@@ -179,6 +189,12 @@ describe('willReceiveSat', () => {
     expect(quotedSweepFeeSat(prepared({ sweepFeeSat: 900 }), twoLeaves([]))).toBe(900);
   });
 
+  it('takes the co-signed recoveries\' fee off too, since it comes out of the value moved', () => {
+    const quote = { ...prepared({ recoverableValueSat: 600_000, sweepFeeSat: 215 }), cooperativeFeeSats: 990 };
+    expect(quotedSweepFeeSat(quote, null)).toBe(1_205);
+    expect(willReceiveSat(quote)).toBe(598_795);
+  });
+
   it('reports what a confirmed sweep actually paid', () => {
     expect(willReceiveSat(twoLeaves([tx({ txid: 's', kind: 'sweep', txHex: sweepHex, status: confirmed(1) })]))).toBe(596_524);
   });
@@ -204,6 +220,16 @@ describe('exitStages', () => {
       ]),
     );
     expect(stages).toMatchObject({ inSpark: 420_000, onChain: 180_000, delivered: 0 });
+  });
+
+  it('delivers a co-signed leaf once its own recovery confirms', () => {
+    const stages = exitStages(
+      twoLeaves([
+        tx({ txid: 'c1', kind: 'cooperative' as never, nodeId: 'leaf-1', status: confirmed(900) }),
+        tx({ txid: 'r2', kind: 'refund', nodeId: 'leaf-2' }),
+      ]),
+    );
+    expect(stages).toMatchObject({ inSpark: 420_000, onChain: 0, delivered: 180_000 });
   });
 
   it('does not credit a leaf whose refund is only in the mempool', () => {
@@ -393,6 +419,17 @@ describe('advanceUnilateralExit', () => {
     const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })], { quotedSweepFeeSat: 215 }), chain(), driver, '02abc');
     expect(next.quotedSweepFeeSat).toBe(215);
     expect(next.exit.sweepFeeSat).toBe(180);
+  });
+
+  it('raises that floor when a moved leaf comes back co-signed, since its fee comes off what arrives', async () => {
+    const quote = { ...prepared({ sweepFeeSat: 180 }), cooperativeFeeSats: 1_450 };
+    const driver = sdk({
+      checkUnilateralExit: async () => ({ exit: checked([{ txid: 'a' }]), verdict: redo }),
+      prepareUnilateralExit: async () => quote,
+      unilateralExit: async () => checked([{ txid: 'fresh', status: ready }], { sweepFeeSat: 180 }),
+    });
+    const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })], { quotedSweepFeeSat: 215 }), chain(), driver, '02abc');
+    expect(next.quotedSweepFeeSat).toBe(1_630);
   });
 
   it('waits for the user rather than prompting for a passkey in the background', async () => {
@@ -649,6 +686,12 @@ describe('startExit', () => {
     if (outcome.type !== 'started') return;
     expect(outcome.plan).toMatchObject({ fundingAddressIndex: 3, quotedSweepFeeSat: 180, exitStateSnapshot: 'snapshot' });
     expect(outcome.plan.exit.transactions[0].txid).toBe('fan');
+  });
+
+  it('keeps a recovery a recovery once it is built', async () => {
+    const driver = sdk({ prepareUnilateralExit: async () => prepared(), unilateralExit: async () => checked([{ txid: 'fan' }]) });
+    const outcome = await startExit(pendingExit({ mode: 'recover' }), [feeCoin(5_898)], driver, '02abc');
+    expect(outcome).toMatchObject({ type: 'started', plan: { mode: 'recover' } });
   });
 
   it('reports what the build says it still needs, sized on the coins it had', async () => {
