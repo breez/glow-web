@@ -64,7 +64,7 @@ export function createMockClient(overrides?: Partial<BreezSdk>): BreezSdk {
     // that aren't needed for unit testing. This gives us flexibility in mocks while maintaining type safety.
     parse: vi.fn().mockImplementation(async (input: string): Promise<InputType> => {
       // Spark address
-      if (input.startsWith('sp1')) {
+      if (input.startsWith('spark1')) {
         return {
           type: 'sparkAddress',
           address: input,
@@ -159,7 +159,7 @@ export function createMockClient(overrides?: Partial<BreezSdk>): BreezSdk {
 
     // Send payment
     prepareSendPayment: vi.fn().mockResolvedValue({
-      paymentMethod: { type: 'spark', address: 'sp1test' },
+      paymentMethod: { type: 'spark', address: 'spark1test' },
       payAmount: { amountSats: 1000 },
     } as unknown as PrepareSendPaymentResponse),
 
@@ -172,7 +172,7 @@ export function createMockClient(overrides?: Partial<BreezSdk>): BreezSdk {
       let paymentRequest = '';
 
       if (paymentMethod.type === 'sparkAddress') {
-        paymentRequest = 'sp1testaddress123456789';
+        paymentRequest = 'spark1testaddress123456789';
       } else if (paymentMethod.type === 'bitcoinAddress') {
         paymentRequest = 'tb1qtest123456789abcdef';
       } else if (paymentMethod.type === 'bolt11Invoice') {

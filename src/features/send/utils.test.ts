@@ -9,8 +9,8 @@ describe('getSendDestination', () => {
   it('reads the destination out of every send payment method', () => {
     expect(getSendDestination(method({ type: 'bitcoinAddress', address: { address: 'bc1qtest' } })).value)
       .toBe('bc1qtest');
-    expect(getSendDestination(method({ type: 'sparkAddress', address: 'sp1test' })).value)
-      .toBe('sp1test');
+    expect(getSendDestination(method({ type: 'sparkAddress', address: 'spark1test' })).value)
+      .toBe('spark1test');
     expect(getSendDestination(method({ type: 'sparkInvoice', sparkInvoiceDetails: { invoice: 'sparkrt1test' } })).value)
       .toBe('sparkrt1test');
     expect(getSendDestination(method({ type: 'bolt11Invoice', invoiceDetails: { invoice: { bolt11: 'lnbc1test' } } })).value)
