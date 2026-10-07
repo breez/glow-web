@@ -4,7 +4,7 @@ import { AlertCard } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
 import { CollapsibleCodeField, CollapsibleSection, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { RefreshIcon } from '@/components/Icons';
-import { blocksToFinish, exitStages, nextAction, planProgress } from './driver';
+import { blocksToFinish, exitStages, isCooperative, nextAction, planProgress } from './driver';
 import type { NextAction, PlanProgress, UnilateralExitPlan } from './driver';
 import { formatDaysLeft } from '@/utils/blockTime';
 import { formatWithSpaces } from '@/utils/formatNumber';
@@ -133,7 +133,9 @@ export const TrackerView: React.FC<{
   continueError?: string | null;
   /** The exit started while this sheet was open, so nothing has said yet that it can close. */
   justStarted?: boolean;
-}> = ({ plan, tipHeight, isAdvancing, onRebuild, onContinue, isContinuing = false, continueError = null, justStarted = false }) => {
+  /** What the closing line calls this, such as "recovery". */
+  noun?: string;
+}> = ({ plan, tipHeight, isAdvancing, onRebuild, onContinue, isContinuing = false, continueError = null, justStarted = false, noun = 'exit' }) => {
   const { transactions } = plan.exit;
   const [advanced, setAdvanced] = useState(false);
   const progress = useMemo(() => planProgress(plan), [plan]);
@@ -144,6 +146,17 @@ export const TrackerView: React.FC<{
   const blocksLeft = useMemo(
     () => (tipHeight === null ? null : blocksToFinish(transactions, tipHeight)),
     [transactions, tipHeight],
+  );
+  // A co-signed recovery is Glow's own record, which the exit-data export does
+  // not hold, so saving or restoring exit data would not bring it back.
+  const isCosignedRecovery = transactions.length > 0 && transactions.every(isCooperative);
+  const rebuildRow = plan.phase === 'active' && (
+    <ExitActionRow
+      label="Rebuild at a higher fee"
+      icon={<RefreshIcon size="md" />}
+      onClick={onRebuild}
+      testId="unilateral-exit-bump-fee"
+    />
   );
 
   return (
@@ -160,7 +173,7 @@ export const TrackerView: React.FC<{
           fine but leaving Glow for good is not. */}
       {justStarted && plan.phase === 'active' && (
         <p className="text-spark-text-muted text-xs text-center text-balance">
-          You can close this. Open Glow regularly until the exit finishes.
+          You can close this. Open Glow regularly until the {noun} finishes.
         </p>
       )}
 
@@ -201,16 +214,11 @@ export const TrackerView: React.FC<{
         onToggle={() => setAdvanced(v => !v)}
         bare
       >
-        <BackupActions frozen={plan.exitStateSnapshot}>
-          {plan.phase === 'active' && (
-            <ExitActionRow
-              label="Rebuild at a higher fee"
-              icon={<RefreshIcon size="md" />}
-              onClick={onRebuild}
-              testId="unilateral-exit-bump-fee"
-            />
-          )}
-        </BackupActions>
+        {isCosignedRecovery ? (
+          rebuildRow
+        ) : (
+          <BackupActions frozen={plan.exitStateSnapshot}>{rebuildRow}</BackupActions>
+        )}
       </CollapsibleSection>
     </div>
   );

@@ -172,6 +172,14 @@ describe('TrackerView', () => {
     expect(screen.getByText('Save exit data')).toBeInTheDocument();
     expect(screen.getByTestId('unilateral-exit-backup-save')).toBeInTheDocument();
   });
+
+  it('offers only the fee bump for a co-signed recovery, which exit data cannot restore', () => {
+    renderTracker(plan([tx({ txid: 'c1', kind: 'cooperative' as never }), tx({ txid: 'c2', kind: 'cooperative' as never })]));
+    fireEvent.click(screen.getByText('Advanced'));
+    expect(screen.getByTestId('unilateral-exit-bump-fee')).toBeInTheDocument();
+    expect(screen.queryByTestId('unilateral-exit-backup-save')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('unilateral-exit-backup-restore')).not.toBeInTheDocument();
+  });
 });
 
 describe('the note once an exit starts', () => {

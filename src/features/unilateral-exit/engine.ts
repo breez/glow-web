@@ -7,6 +7,7 @@ import {
   loadPendingExit,
   isPendingFunded,
   loadPlan,
+  loadRecoveries,
   savePendingExit,
   savePlan,
   startExit,
@@ -38,6 +39,12 @@ export interface UnilateralExitEngineState {
   startError: string | null;
   /** Exits that already finished, newest first. Outlives the plan slot. */
   archive: ArchivedExit[];
+  /**
+   * Co-signed recoveries kept until they confirm, never in the plan slot. Not
+   * driven yet, as that takes `checkRecoverFunds`, which the published sdk
+   * lacks: rebroadcast, check, then sync and archive (`archiveExit`) on complete.
+   */
+  recoveries: UnilateralExitPlan[];
   tipHeight: number | null;
   isAdvancing: boolean;
 }
@@ -52,6 +59,7 @@ const idle: UnilateralExitEngineState = {
   isStarting: false,
   startError: null,
   archive: [],
+  recoveries: [],
   tipHeight: null,
   isAdvancing: false,
 };
@@ -206,7 +214,7 @@ export function startUnilateralExitEngine(
   // Left behind by a start that saved its plan and stopped before clearing it.
   if (plan) clearPendingExit(target);
   const pending = plan ? null : loadPendingExit(target);
-  emit({ ...idle, plan, pending, archive: loadArchive(target) });
+  emit({ ...idle, plan, pending, archive: loadArchive(target), recoveries: loadRecoveries(target) });
   if (!plan && !pending) return;
 
   void advanceNow();

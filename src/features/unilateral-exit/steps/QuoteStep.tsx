@@ -1,9 +1,10 @@
 import { CopyableRow, ErrorMessageBox, LoadingSpinner } from '@/components/ui';
 import React from 'react';
 import { AlertCard, SimpleAlert } from '@/components/AlertCard';
-import { FeeBreakdownCard } from '@/components/FeeBreakdownCard';
+import { FeeBreakdownCard, type FeeBreakdownItem } from '@/components/FeeBreakdownCard';
 import { SatAmount } from '@/components/SatAmount';
 import { truncateAddress } from '@/utils/crossChainFormat';
+import { cooperativeFeeSats } from '../driver';
 import type { QuoteFields } from '../hooks/useUnilateralExitFlow';
 
 export const QuoteStep: React.FC<QuoteFields> = ({
@@ -13,6 +14,7 @@ export const QuoteStep: React.FC<QuoteFields> = ({
   isQuoting,
   error,
   leftBehindSat,
+  recoverableFundsSat = 0,
 }) => {
   if (isQuoting) {
     return (
@@ -56,6 +58,17 @@ export const QuoteStep: React.FC<QuoteFields> = ({
     );
   }
 
+  // Recoverable funds sit outside the balance, so they get their own row rather
+  // than a Balance that no longer matches the wallet's. Co-signed recoveries
+  // add their fee to the sweep's, so the row is no longer the sweep's alone.
+  const isCosigned = recoverableFundsSat > 0 || cooperativeFeeSats(quote) > 0;
+  const items: FeeBreakdownItem[] = [
+    { label: 'Balance', value: quote.recoverableValueSat - recoverableFundsSat },
+    ...(recoverableFundsSat > 0 ? [{ label: 'Recoverable Funds', value: recoverableFundsSat }] : []),
+    { label: isCosigned ? 'Network fee' : 'Sweep fee', value: sweepFeeSat, approximate: true },
+    { label: 'Exit fee', value: quote.singleUtxoFundingSat, highlight: true },
+  ];
+
   return (
     <div className="space-y-4">
       <div className="text-center py-2">
@@ -76,13 +89,7 @@ export const QuoteStep: React.FC<QuoteFields> = ({
         data-testid="unilateral-exit-quote-destination"
       />
 
-      <FeeBreakdownCard
-        items={[
-          { label: 'Balance', value: quote.recoverableValueSat },
-          { label: 'Sweep fee', value: sweepFeeSat, approximate: true },
-          { label: 'Exit fee', value: quote.singleUtxoFundingSat, highlight: true },
-        ]}
-      />
+      <FeeBreakdownCard items={items} />
 
       <SimpleAlert variant="warning" hideIcon>
         To start the process you need to pay the exit fee. These are the mining fees required to

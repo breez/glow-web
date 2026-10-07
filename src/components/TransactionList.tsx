@@ -41,6 +41,15 @@ const getMethodIcon = (payment: Payment): React.ReactNode => {
   return payment.method === 'lightning' ? LightningIcon : null;
 };
 
+const exitEntryTestId: Record<UnilateralExitEntry['kind'], string> = {
+  recoverable: 'recoverable-funds-entry',
+  active: 'unilateral-exit-entry',
+  recovery: 'recovery-entry',
+  archived: 'unilateral-exit-complete',
+};
+
+const isInFlight = ({ kind }: UnilateralExitEntry) => kind === 'active' || kind === 'recovery';
+
 const SkeletonTransactionRow: React.FC<{ index: number }> = ({ index }) => (
   <li
     className="flex items-center gap-3 px-3 py-3 rounded-xl animate-skeleton-item"
@@ -59,9 +68,10 @@ interface TransactionListProps {
   transactions: Payment[];
   onPaymentSelected: (payment: Payment) => void;
   isSyncing?: boolean;
-  /** Rows for the Unilateral Exit group. An exit is not a payment the sdk reports. */
+  /** Rows for the exit group. An exit is not a payment the sdk reports. */
   exitEntries?: UnilateralExitEntry[];
   onExitSelected?: (entry: UnilateralExitEntry) => void;
+  exitGroupTitle?: string;
 }
 
 const TransactionList: React.FC<TransactionListProps> = ({
@@ -70,6 +80,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
   isSyncing,
   exitEntries = [],
   onExitSelected,
+  exitGroupTitle = 'Unilateral Exit',
 }) => {
   const stableBalance = useStableBalance();
   const { fiatCurrencies } = useFiatData();
@@ -135,11 +146,11 @@ const TransactionList: React.FC<TransactionListProps> = ({
       className="transaction-item flex items-center gap-3 px-3 py-3 rounded-xl animate-list-item cursor-pointer"
       style={{ animationDelay: `${Math.min(index * 30, 240)}ms` }}
       onClick={() => onExitSelected?.(entry)}
-      data-testid={entry.isActive ? 'unilateral-exit-entry' : 'unilateral-exit-complete'}
+      data-testid={exitEntryTestId[entry.kind]}
     >
       <div
         className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-spark-electric/15 text-spark-electric ${
-          entry.isActive ? 'animate-pulse' : ''
+          isInFlight(entry) ? 'animate-pulse' : ''
         }`}
       >
         {SendIcon}
@@ -148,18 +159,20 @@ const TransactionList: React.FC<TransactionListProps> = ({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <p className="text-[15px] font-medium text-spark-text-primary truncate">{entry.title}</p>
-          {entry.isActive && (
+          {isInFlight(entry) && (
             <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-spark-warning animate-pulse" />
           )}
         </div>
         <div className="flex items-center gap-1 text-xs text-spark-text-muted mt-0.5 min-h-4">
           {entry.timestamp !== undefined && <span>{formatTimeAgo(entry.timestamp)}</span>}
-          {entry.subtitle && <span className="truncate">{entry.subtitle}</span>}
+          {entry.subtitle && (
+            <span className={`truncate ${entry.isAction ? 'text-spark-electric' : ''}`}>{entry.subtitle}</span>
+          )}
         </div>
       </div>
 
       <span className="font-mono font-semibold text-[15px] shrink-0 inline-flex items-center text-spark-electric">
-        <SatAmount sats={entry.amountSat} approximate={entry.isActive} />
+        <SatAmount sats={entry.amountSat} approximate={isInFlight(entry)} />
       </span>
     </li>
   );
@@ -288,7 +301,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
         <>
           <div className="flex items-center gap-2 mb-3">
             <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
-              Unilateral Exit
+              {exitGroupTitle}
             </h2>
             <div className="flex-1 h-px bg-linear-to-r from-spark-border to-transparent" />
           </div>

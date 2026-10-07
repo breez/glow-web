@@ -26,9 +26,9 @@ export interface UnilateralExitPlan {
   feeRateSatPerVbyte: number;
   fundingAddressIndex: number;
   /**
-   * The sweep fee the exit was quoted at: the one fee that comes off the
-   * balance, so the figure shown is the balance less this. The fees the
-   * funding pays do not reduce what arrives.
+   * What comes off the value moved: the sweep's fee, plus the co-signed
+   * recoveries' where there are any, so the figure shown is the value less
+   * this. The fees the funding pays do not reduce what arrives.
    */
   quotedSweepFeeSat: number;
   /**
@@ -47,7 +47,39 @@ export interface UnilateralExitPlan {
   phase: ExitPhase;
   /** Frozen when the exit was built: the operators stop reporting the leaves it moves. */
   exitStateSnapshot?: string;
+  mode?: ExitMode;
 }
+
+/**
+ * `recover` moves funds found outside the balance for a wallet that never
+ * started an exit. Absent means a unilateral exit the user started.
+ */
+export type ExitMode = 'recover';
+
+/** What the recover-funds proposal adds to a quote or an exit; the published types predate it. */
+interface ProposedFields {
+  cooperativeFeeSats?: number;
+  leaves: { value: number; method?: 'cooperative' | 'unilateral' }[];
+}
+
+/**
+ * The fee the operators' co-signed recoveries cost, off the value they move:
+ * what each leaf's watchtower transaction already took plus the recovery's own.
+ */
+export const cooperativeFeeSats = (exit: PrepareUnilateralExitResponse | UnilateralExitResponse): number =>
+  (exit as ProposedFields).cooperativeFeeSats ?? 0;
+
+/**
+ * The part of a quote or an exit that lies outside the balance. Only the
+ * co-signed kind says so on its leaf: a stranded leaf quotes like a balance one.
+ */
+export const cooperativeValueSat = (exit: PrepareUnilateralExitResponse | UnilateralExitResponse): number =>
+  (exit as ProposedFields).leaves
+    .filter(leaf => leaf.method === 'cooperative')
+    .reduce((sum, leaf) => sum + leaf.value, 0);
+
+/** A co-signed recovery: ready at once, and paying the destination directly rather than through the sweep. */
+export const isCooperative = (tx: UnilateralExitTransaction): boolean => (tx.kind as string) === 'cooperative';
 
 const PLAN_VERSION = 4;
 
@@ -63,6 +95,7 @@ export interface PlanMeta {
   fundingAddressIndex: number;
   quotedSweepFeeSat: number;
   quotedExitFeeSat?: number;
+  mode?: ExitMode;
 }
 
 const storageKey = ({ identityPubkey, network }: WalletKey): string =>
@@ -134,6 +167,37 @@ export function clearPlan(wallet: WalletKey): void {
 }
 
 /**
+ * Co-signed recoveries Glow broadcast and follows until they confirm. The sdk
+ * records no payment for one, so this is the only record of it. Plan-shaped,
+ * mode `recover`, cooperative transactions only, and kept beside the plan and
+ * pending slots: they need no funding key, so they never hold up an exit.
+ */
+const recoveriesKey = ({ identityPubkey, network }: WalletKey): string =>
+  `recovery-cosigned:${identityPubkey.slice(0, 16)}:${network}`;
+
+export function saveRecoveries(wallet: WalletKey, recoveries: UnilateralExitPlan[]): void {
+  try {
+    localStorage.setItem(recoveriesKey(wallet), JSON.stringify(recoveries));
+  } catch (e) {
+    logger.error(LogCategory.SDK, 'Failed to persist the co-signed recoveries', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+}
+
+export function loadRecoveries(wallet: WalletKey): UnilateralExitPlan[] {
+  const raw = localStorage.getItem(recoveriesKey(wallet));
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as UnilateralExitPlan[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(r => r?.version === PLAN_VERSION && Array.isArray(r.exit?.transactions));
+  } catch {
+    return [];
+  }
+}
+
+/**
  * An exit saved when its fee address is first shown, before anything is built.
  * The user starts it once confirmed coins at the address pay for it.
  */
@@ -147,6 +211,7 @@ export interface PendingExit {
   required: Funding;
   /** What the quote said would arrive, shown until the exit is built. */
   willReceiveSat: number;
+  mode?: ExitMode;
 }
 
 const pendingKey = ({ identityPubkey, network }: WalletKey): string =>
@@ -178,20 +243,22 @@ export function clearPendingExit(wallet: WalletKey): void {
 }
 
 /**
- * The sweep fee an exit is held to. A rebuild is quoted on the refunds it has
- * left to sweep, so an earlier quote stays the floor; a quote at a higher rate
+ * The sweep fee an exit is held to, the co-signed recoveries' fee included:
+ * both come off the value moved. A rebuild is quoted on the refunds it has left
+ * to sweep, so an earlier quote stays the floor; a quote at a higher rate
  * replaces it.
  */
 export function quotedSweepFeeSat(
   quote: PrepareUnilateralExitResponse,
   resuming: UnilateralExitPlan | null,
 ): number {
-  return Math.max(quote.sweepFeeSat, resuming?.quotedSweepFeeSat ?? 0);
+  return Math.max(quote.sweepFeeSat + cooperativeFeeSats(quote), resuming?.quotedSweepFeeSat ?? 0);
 }
 
 /**
- * What the destination address ends up with: the balance less the sweep's fee,
- * until the sweep confirms and the figure is read off the sweep itself.
+ * What the destination address ends up with: the value moved less the sweep's
+ * fee, until the sweep and any co-signed recoveries confirm and the figure is
+ * read off them.
  *
  * The funding is not counted. It pays the other fees, and what it has left
  * comes back only if the sweep glow built is the one that lands.
@@ -203,9 +270,12 @@ export function willReceiveSat(
   if (!('exit' in exit)) {
     return Math.max(0, exit.recoverableValueSat - quotedSweepFeeSat(exit, resuming));
   }
-  const sweep = exit.exit.transactions.find(tx => tx.kind === 'sweep');
-  const swept = sweep?.status.type === 'confirmed' ? outputTotalSat(sweep.txHex) : null;
-  return swept ?? Math.max(0, exit.exit.recoverableValueSat - exit.quotedSweepFeeSat);
+  const landing = exit.exit.transactions.filter(tx => tx.kind === 'sweep' || isCooperative(tx));
+  const outputs = landing.every(tx => tx.status.type === 'confirmed') ? landing.map(tx => outputTotalSat(tx.txHex)) : [];
+  const landed = outputs.length > 0 && outputs.every(sat => sat !== null);
+  return landed
+    ? outputs.reduce<number>((sum, sat) => sum + (sat ?? 0), 0)
+    : Math.max(0, exit.exit.recoverableValueSat - exit.quotedSweepFeeSat);
 }
 
 /** Whether a quote moves anything worth more than it costs to move. */
@@ -217,7 +287,7 @@ export const isWorthExiting = (
 /**
  * Where the money is. A leaf sits in Spark until its refund is on-chain, then
  * in an output only the owner can spend, and reaches the destination when the
- * sweep confirms.
+ * sweep confirms. A co-signed leaf reaches it when its own recovery confirms.
  */
 export interface ExitStages {
   inSpark: number;
@@ -233,12 +303,16 @@ export function exitStages(plan: UnilateralExitPlan): ExitStages {
     return { inSpark: 0, onChain: 0, delivered: willReceive, willReceive };
   }
 
-  const refunded = new Set(
-    transactions.filter(tx => tx.kind === 'refund' && tx.status.type === 'confirmed').map(tx => tx.nodeId),
-  );
+  const confirmedFor = (matches: (tx: UnilateralExitTransaction) => boolean) =>
+    new Set(transactions.filter(tx => matches(tx) && tx.status.type === 'confirmed').map(tx => tx.nodeId));
+  const refunded = confirmedFor(tx => tx.kind === 'refund');
+  const recovered = confirmedFor(isCooperative);
+  const valueOf = (ids: Set<string | undefined>) =>
+    leaves.filter(leaf => ids.has(leaf.leafId)).reduce((sum, leaf) => sum + leaf.value, 0);
   const total = leaves.reduce((sum, leaf) => sum + leaf.value, 0);
-  const onChain = leaves.filter(leaf => refunded.has(leaf.leafId)).reduce((sum, leaf) => sum + leaf.value, 0);
-  return { inSpark: total - onChain, onChain, delivered: 0, willReceive };
+  const onChain = valueOf(refunded);
+  const delivered = valueOf(recovered);
+  return { inSpark: total - onChain - delivered, onChain, delivered, willReceive };
 }
 
 /**
@@ -369,7 +443,7 @@ export async function startExit(
   identityPubkey: string,
   key?: FundingKey,
 ): Promise<StartOutcome> {
-  const { network, destination, feeRateSatPerVbyte, fundingAddressIndex } = pending;
+  const { network, destination, feeRateSatPerVbyte, fundingAddressIndex, mode } = pending;
   const { publicKeyHex, secretKey } =
     key ?? deriveFundingKey(await readWalletMnemonic({ interactive: true }), network, fundingAddressIndex);
   await restoreExitState(sdk, null, await loadExitState(identityPubkey).catch(() => null));
@@ -403,7 +477,7 @@ export async function startExit(
     .exportUnilateralExitState()
     .then(r => r.exitState)
     .catch(() => undefined);
-  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quote.sweepFeeSat, quotedExitFeeSat: quote.singleUtxoFundingSat };
+  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quotedSweepFeeSat(quote, null), quotedExitFeeSat: quote.singleUtxoFundingSat, mode };
   return { type: 'started', plan: { ...planFromExitResponse(exit, meta), exitStateSnapshot } };
 }
 
@@ -496,11 +570,10 @@ export async function rebuildExit(
   );
   if (rebuilt.transactions.length === 0) return null;
 
-  const { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat } = plan;
-  return {
-    ...planFromExitResponse(rebuilt, { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat }),
-    exitStateSnapshot: plan.exitStateSnapshot,
-  };
+  // A leaf the watchtower moved comes back co-signed, and that fee comes off what arrives too.
+  const { network, destination, feeRateSatPerVbyte, fundingAddressIndex, mode } = plan;
+  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quotedSweepFeeSat(prepared, plan), mode };
+  return { ...planFromExitResponse(rebuilt, meta), exitStateSnapshot: plan.exitStateSnapshot };
 }
 
 /**

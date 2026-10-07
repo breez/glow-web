@@ -8,6 +8,7 @@ import type { ChainUtxo, FeeRates } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { destinationErrorMessage } from '@/utils/destinationAddress';
 import {
+  cooperativeValueSat,
   isWorthExiting,
   planFromExitResponse,
   quotedSweepFeeSat,
@@ -19,6 +20,7 @@ import {
   willReceiveSat,
   type Funding,
   type TopUp,
+  type UnilateralExitPlan,
   type WalletKey,
 } from '../driver';
 import {
@@ -88,6 +90,23 @@ export interface QuoteFields {
   error: string | null;
   /** Balance in pieces too small to be worth their own fee at this rate. */
   leftBehindSat: number;
+  /** The part of the quote that lies outside the balance. */
+  recoverableFundsSat?: number;
+}
+
+/** The quote's figures as the step shows them. `balanceSat` is the wallet's, which excludes recoverable funds. */
+export function quoteFiguresOf(
+  quote: PrepareUnilateralExitResponse,
+  resuming: UnilateralExitPlan | null,
+  balanceSat: number,
+): Pick<QuoteFields, 'sweepFeeSat' | 'willReceiveSat' | 'leftBehindSat' | 'recoverableFundsSat'> {
+  const recoverableFundsSat = cooperativeValueSat(quote);
+  return {
+    sweepFeeSat: quotedSweepFeeSat(quote, resuming),
+    willReceiveSat: willReceiveSat(quote, resuming),
+    leftBehindSat: Math.max(0, balanceSat - (quote.recoverableValueSat - recoverableFundsSat)),
+    recoverableFundsSat,
+  };
 }
 
 /** An exit under way keeps its funding address, and what it holds pays for the rest. */
@@ -374,6 +393,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
         fundingAddressIndex: plan.fundingAddressIndex,
         quotedSweepFeeSat: quotedSweepFeeSat(quote, plan),
         quotedExitFeeSat: quote.singleUtxoFundingSat,
+        mode: plan.mode,
       });
       setUnilateralExitPlan(walletKey, { ...built, exitStateSnapshot });
       mnemonicRef.current = null;
@@ -457,11 +477,11 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     },
     quote: {
       quote,
-      sweepFeeSat: quote ? quotedSweepFeeSat(quote, plan) : 0,
-      willReceiveSat: quote ? willReceiveSat(quote, plan) : 0,
+      ...(quote
+        ? quoteFiguresOf(quote, plan, balanceSat)
+        : { sweepFeeSat: 0, willReceiveSat: 0, leftBehindSat: 0, recoverableFundsSat: 0 }),
       isQuoting,
       error: quoteError,
-      leftBehindSat: quote ? Math.max(0, balanceSat - quote.recoverableValueSat) : 0,
     },
     funding: fundingKey && {
       address: fundingKey.address,

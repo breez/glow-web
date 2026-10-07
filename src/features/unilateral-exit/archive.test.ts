@@ -46,6 +46,13 @@ describe('archiveExit', () => {
     expect(loadArchive(wallet)[0].deliveredSat).toBe(596_524);
   });
 
+  it('keeps whether it was a recovery, and nothing for an exit the user started', () => {
+    archiveExit(wallet, { ...finished('sweep-a', 50_000), mode: 'recover' });
+    archiveExit(wallet, finished('sweep-b', 70_000));
+
+    expect(loadArchive(wallet).map(entry => entry.mode)).toEqual([undefined, 'recover']);
+  });
+
   it('records the same exit once, however many passes report it', () => {
     archiveExit(wallet, finished('sweep-a', 50_000));
     archiveExit(wallet, finished('sweep-a', 50_000));
