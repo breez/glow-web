@@ -106,7 +106,7 @@ describe('processInput destinations', () => {
   });
 
   const onchain = { type: 'bitcoinAddress', address: 'bc1qtest' };
-  const spark = { type: 'sparkAddress', address: 'sp1test' };
+  const spark = { type: 'sparkAddress', address: 'spark1test' };
 
   it.each([
     { rail: 'Lightning', methods: [onchain, spark, bolt11Details(BOLT11)], paid: BOLT11 },

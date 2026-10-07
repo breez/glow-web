@@ -16,7 +16,7 @@ function renderAmountStep(props: Partial<AmountStepProps> = {}, client?: BreezSd
       <FiatDataProvider>
         <StableBalanceProvider>
           <AmountStep
-            paymentInput="sp1test"
+            paymentInput="spark1test"
             amount=""
             balanceSats={100000}
             isLoading={false}
