@@ -6,12 +6,14 @@ import type { FiatCurrency } from '@breeztech/breez-sdk-spark';
 import SlideInPage from '../components/layout/SlideInPage';
 import { ChevronUpIcon, ChevronDownIcon, DragHandleIcon } from '../components/Icons';
 import { logger, LogCategory } from '@/services/logger';
+import { useTranslation } from 'react-i18next';
 
 interface FiatCurrenciesPageProps {
   onBack: () => void;
 }
 
 const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
+  const { t } = useTranslation('common');
   const wallet = useWallet();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -130,14 +132,14 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
     .sort((a, b) => a.id.localeCompare(b.id));
 
   return (
-    <SlideInPage title="Fiat Currencies" closeStyle="back" onClose={onBack} slideFrom="right">
+    <SlideInPage title={t('pages.fiatCurrencies')} closeStyle="back" onClose={onBack} slideFrom="right">
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <LoadingSpinner />
         </div>
       ) : loadError ? (
         <div className="p-4 text-center text-spark-text-muted">
-          Failed to load currencies. Please try again.
+          {t('labels.fiatLoadFailed')}
         </div>
       ) : (
         <div className="p-4 space-y-2">
@@ -181,7 +183,7 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                   onClick={() => handleMoveUp(currency.id)}
                   disabled={index === 0}
                   className="p-1 text-spark-text-muted hover:text-spark-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
-                  aria-label="Move up"
+                  aria-label={t('a11y.moveUp')}
                 >
                   <ChevronUpIcon />
                 </button>
@@ -189,7 +191,7 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                   onClick={() => handleMoveDown(currency.id)}
                   disabled={index === selectedCurrencyList.length - 1}
                   className="p-1 text-spark-text-muted hover:text-spark-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
-                  aria-label="Move down"
+                  aria-label={t('a11y.moveDown')}
                 >
                   <ChevronDownIcon />
                 </button>

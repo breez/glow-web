@@ -6,6 +6,7 @@ import { FormInput, FormError, PrimaryButton, ConfirmDialog, AMOUNT_FIELD_CLASS,
 import { BackIcon, PlusIcon, EditPencilIcon, TrashIcon, ContactsIcon, SearchIcon, CloseIcon } from '../../../components/Icons';
 import { useWallet } from '../../../contexts/WalletContext';
 import { dismissKeyboard } from '../../../utils/keyboard';
+import { useTranslation } from 'react-i18next';
 
 interface ContactsSubViewProps {
   onSelect: (address: string) => void;
@@ -13,6 +14,7 @@ interface ContactsSubViewProps {
 }
 
 const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) => {
+  const { t } = useTranslation('common');
   const wallet = useWallet();
   const { contacts, isLoading, hasSynced, addContact, updateContact, deleteContact } = useContactsContext();
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,9 +66,9 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
 
     const name = formName.trim();
     const address = formAddress.trim();
-    if (!name) { setFormError('Name is required'); return; }
-    if (!address) { setFormError('Address is required'); return; }
-    if (!isValidLightningAddress(address)) { setFormError('Invalid Lightning address format'); return; }
+    if (!name) { setFormError(t('contacts.nameRequired')); return; }
+    if (!address) { setFormError(t('contacts.addressRequired')); return; }
+    if (!isValidLightningAddress(address)) { setFormError(t('contacts.invalidAddress')); return; }
 
     setIsSaving(true);
     setFormError(null);
@@ -78,7 +80,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
         await wallet.parse(address);
       } catch {
         setIsSaving(false);
-        setFormError('Lightning address not found');
+        setFormError(t('contacts.addressNotFound'));
         return;
       }
     }
@@ -86,11 +88,11 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
     if (editingContact) {
       const result = await updateContact(editingContact.id, name, address);
       if (result) resetForm();
-      else setFormError('Failed to update contact');
+      else setFormError(t('contacts.updateFailed'));
     } else {
       const result = await addContact(name, address);
       if (result) resetForm();
-      else setFormError('Failed to add contact');
+      else setFormError(t('contacts.addFailed'));
     }
     setIsSaving(false);
   };
@@ -119,14 +121,14 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
           >
             <BackIcon />
           </button>
-          <h2 className="font-display text-lg font-bold text-spark-text-primary flex-1">Contacts</h2>
+          <h2 className="font-display text-lg font-bold text-spark-text-primary flex-1">{t('contacts.title')}</h2>
           <button
             onClick={handleStartAdd}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-spark-primary text-white text-sm font-medium rounded-xl hover:bg-spark-primary-light transition-colors"
-            aria-label="Add contact"
+            aria-label={t('a11y.addContact')}
           >
             <PlusIcon size="sm" />
-            <span>Add</span>
+            <span>{t('actions.add')}</span>
           </button>
         </div>
 
@@ -136,7 +138,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
           <input
             id="contacts-search"
             name="contacts-search"
-            aria-label="Search contacts"
+            aria-label={t('a11y.searchContacts')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={async (e) => {
@@ -157,14 +159,14 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
             autoCorrect="off"
             autoComplete="off"
             spellCheck={false}
-            placeholder="Search contacts..."
+            placeholder={t('contacts.searchPlaceholder')}
             className={`${FIELD_BASE_CLASS} pl-9 pr-9 py-2.5 text-sm`}
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              aria-label="Clear search"
+              aria-label={t('a11y.clearSearch')}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-spark-text-muted hover:text-spark-text-primary transition-colors"
             >
               <CloseIcon size="sm" />
@@ -183,10 +185,10 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
               <ContactsIcon className="w-7 h-7 text-spark-text-muted" />
             </div>
             <h3 className="text-base font-semibold text-spark-text-primary mb-1">
-              {searchQuery ? 'No matches' : 'No contacts yet'}
+              {searchQuery ? t('contacts.noMatches') : t('contacts.empty')}
             </h3>
             <p className="text-spark-text-muted text-sm text-center max-w-xs">
-              {searchQuery ? 'Try a different search term.' : 'Add contacts to quickly send payments.'}
+              {searchQuery ? t('contacts.noMatchesBody') : t('contacts.emptyBody')}
             </p>
           </div>
         ) : (
@@ -221,14 +223,14 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
                   <button
                     onClick={() => handleStartEdit(contact)}
                     className="p-1.5 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
-                    aria-label={`Edit ${contact.name}`}
+                    aria-label={t('contacts.editAria', { name: contact.name })}
                   >
                     <EditPencilIcon />
                   </button>
                   <button
                     onClick={() => setDeletingContact(contact)}
                     className="p-1.5 text-spark-text-muted hover:text-spark-primary-light rounded-lg hover:bg-white/5 transition-colors"
-                    aria-label={`Delete ${contact.name}`}
+                    aria-label={t('contacts.deleteAria', { name: contact.name })}
                   >
                     <TrashIcon />
                   </button>
@@ -258,14 +260,14 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
             <BackIcon />
           </button>
           <h2 className="font-display text-lg font-bold text-spark-text-primary">
-            {editingContact ? 'Edit Contact' : 'New Contact'}
+            {editingContact ? t('contacts.edit') : t('contacts.new')}
           </h2>
         </div>
 
         {/* Form fields take the natural content height */}
         <div className="space-y-4">
           <div>
-            <label htmlFor="subview-contact-name" className="block text-sm font-medium text-spark-text-primary mb-2">Name</label>
+            <label htmlFor="subview-contact-name" className="block text-sm font-medium text-spark-text-primary mb-2">{t('contacts.name')}</label>
             <input
               id="subview-contact-name"
               value={formName}
@@ -281,7 +283,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
                 }
               }}
               enterKeyHint="next"
-              placeholder="Contact name"
+              placeholder={t('contacts.namePlaceholder')}
               disabled={isSaving}
               autoComplete="off"
               autoCorrect="off"
@@ -290,7 +292,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
             />
           </div>
           <div>
-            <label htmlFor="subview-contact-address" className="block text-sm font-medium text-spark-text-primary mb-2">Lightning Address</label>
+            <label htmlFor="subview-contact-address" className="block text-sm font-medium text-spark-text-primary mb-2">{t('contacts.lightningAddress')}</label>
             <FormInput
               id="subview-contact-address"
               inputRef={addressInputRef}
@@ -313,7 +315,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
               autoCorrect="off"
               autoComplete="off"
               spellCheck={false}
-              placeholder="user@domain.com"
+              placeholder={t('contacts.addressPlaceholder')}
               disabled={isSaving}
             />
           </div>
@@ -328,10 +330,10 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
             onClick={resetForm}
             className="flex-1 py-3 text-sm font-medium border border-spark-border text-spark-text-secondary rounded-xl hover:text-spark-text-primary transition-colors"
           >
-            Cancel
+            {t('actions.cancel')}
           </button>
           <PrimaryButton onClick={handleSave} disabled={isSaving} className="flex-1">
-            {isSaving ? 'Saving...' : 'Save'}
+            {isSaving ? t('actions.saving') : t('actions.save')}
           </PrimaryButton>
         </div>
       </div>
@@ -339,9 +341,9 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
       {/* Delete confirmation */}
       <ConfirmDialog
         isOpen={!!deletingContact}
-        title="Delete Contact"
-        message={`Are you sure you want to delete "${deletingContact?.name}"?`}
-        confirmLabel="Delete"
+        title={t('contacts.deleteTitle')}
+        message={t('contacts.deleteConfirm', { name: deletingContact?.name ?? '' })}
+        confirmLabel={t('actions.delete')}
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() => setDeletingContact(null)}

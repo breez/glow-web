@@ -1,4 +1,6 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 import { Payment } from '@breeztech/breez-sdk-spark';
 import { depositNeedsAction, type ExtendedPayment } from '../utils/depositHelpers';
 import { formatWithSpaces } from '../utils/formatNumber';
@@ -19,16 +21,18 @@ const SendIcon = <ArrowUpIcon size="sm" />;
 const LightningIcon = <LightningBoltIcon size="xs" />;
 
 // Hoisted helper functions (rendering-hoist-jsx optimization)
+// `narrow` + `numeric: 'always'` reproduces the previous English exactly
+// ("5m ago", "1y ago") while giving every other language the case agreement
+// and unit abbreviations it needs, which six hand-translated strings would not.
 const formatTimeAgo = (timestamp: number): string => {
-  const now = Math.floor(Date.now() / 1000);
-  const diffSeconds = now - timestamp;
-
-  if (diffSeconds < 60) return 'Just now';
-  if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
-  if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h ago`;
-  if (diffSeconds < 2592000) return `${Math.floor(diffSeconds / 86400)}d ago`;
-  if (diffSeconds < 31536000) return `${Math.floor(diffSeconds / 2592000)}mo ago`;
-  return `${Math.floor(diffSeconds / 31536000)}y ago`;
+  const diffSeconds = Math.floor(Date.now() / 1000) - timestamp;
+  if (diffSeconds < 60) return i18n.t('labels.justNow');
+  const rtf = new Intl.RelativeTimeFormat(i18n.language, { numeric: 'always', style: 'narrow' });
+  if (diffSeconds < 3600) return rtf.format(-Math.floor(diffSeconds / 60), 'minute');
+  if (diffSeconds < 86400) return rtf.format(-Math.floor(diffSeconds / 3600), 'hour');
+  if (diffSeconds < 2592000) return rtf.format(-Math.floor(diffSeconds / 86400), 'day');
+  if (diffSeconds < 31536000) return rtf.format(-Math.floor(diffSeconds / 2592000), 'month');
+  return rtf.format(-Math.floor(diffSeconds / 31536000), 'year');
 };
 
 const getTransactionIcon = (payment: Payment): React.ReactNode => {
@@ -71,6 +75,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
   exitEntries = [],
   onExitSelected,
 }) => {
+  const { t } = useTranslation('common');
   const stableBalance = useStableBalance();
   const { fiatCurrencies } = useFiatData();
   const { findContactByAddress } = useContactsContext();
@@ -95,18 +100,18 @@ const TransactionList: React.FC<TransactionListProps> = ({
     }
 
     return [
-      { title: 'Pending Confirmation', items: confirming },
-      { title: 'Pending Approval', items: pendingApproval },
-      { title: 'Payments', items: regular },
+      { title: t('transactions.pendingConfirmation'), items: confirming },
+      { title: t('transactions.pendingApproval'), items: pendingApproval },
+      { title: t('transactions.title'), items: regular },
     ];
-  }, [transactions]);
+  }, [transactions, t]);
 
   if (!transactions.length && exitEntries.length === 0) {
     if (isSyncing) {
       return (
         <div className="px-4 py-3 flex-1 overflow-hidden" style={{ maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)' }}>
           <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">Payments</h2>
+            <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">{t('transactions.title')}</h2>
             <div className="flex-1 h-px bg-linear-to-r from-spark-border to-transparent" />
           </div>
           <ul className="space-y-2">
@@ -119,9 +124,9 @@ const TransactionList: React.FC<TransactionListProps> = ({
     }
     return (
       <div className="flex flex-col items-center justify-center py-20 px-6" data-testid="empty-state">
-        <h3 className="text-lg font-semibold text-spark-text-primary mb-2">No payments yet</h3>
+        <h3 className="text-lg font-semibold text-spark-text-primary mb-2">{t('transactions.emptyTitle')}</h3>
         <p className="text-spark-text-muted text-sm text-center max-w-xs">
-          Your payment history will appear here once you send or receive your first payment.
+          {t('transactions.emptyBody')}
         </p>
       </div>
     );
@@ -178,7 +183,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
     const isProcessing = !needsAction && deposit?.isMature === true;
     const isConfirming = deposit?.isMature === false;
     const subtitle = needsAction
-      ? 'Tap to claim'
+      ? t('transactions.tapToClaim')
       : deposit
         ? null
         : formatTimeAgo(tx.timestamp);
@@ -217,7 +222,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
             )}
             {isFailed && (
               <span className="shrink-0 px-1.5 py-0.5 rounded-sm bg-spark-primary/15 text-spark-primary text-[10px] font-medium uppercase">
-                Failed
+                {t('transactions.failed')}
               </span>
             )}
           </div>
@@ -230,7 +235,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                 no color of its own. */}
             {(isProcessing || isConfirming) && (
               <span className="px-1.5 py-0.5 rounded-sm bg-spark-text-muted/15 text-[10px] leading-3 font-medium uppercase">
-                {isProcessing ? 'Processing' : 'Confirming'}
+                {isProcessing ? t('transactions.processing') : t('transactions.confirming')}
               </span>
             )}
             {subtitle && <span className={needsAction ? amountClass : ''}>{subtitle}</span>}

@@ -1,0 +1,143 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "Deine Wiederherstellungsphrase wird aus deinem Passkey abgeleitet. Um auf einem anderen Gerät wiederherzustellen, verwende deinen Passkey oder die Wiederherstellungsphrase unten."
+    },
+    "passkeyUnavailable": {
+      "body": "Deine Wiederherstellungsphrase wird aus deinem Passkey abgeleitet. Ohne ihn kann die Phrase auf diesem Gerät nicht abgerufen werden. Melde dich auf einem Gerät an, auf dem der Passkey noch verfügbar ist, um sie anzuzeigen."
+    },
+    "notFound": {
+      "body": "Auf diesem Gerät wurde keine Wiederherstellungsphrase gefunden."
+    },
+    "reveal": {
+      "hintRevealed": "Achte darauf, dass niemand zusieht",
+      "hintDeviceStored": "Sicher auf diesem Gerät gespeichert"
+    },
+    "phraseLabel": "Wiederherstellungsphrase"
+  },
+  "logout": {
+    "confirmPasskey": "Beim Abmelden werden alle auf diesem Gerät gespeicherten Glow-Daten gelöscht. Du brauchst deinen Passkey, um wieder auf dein Guthaben zuzugreifen.",
+    "confirmMnemonic": "Beim Abmelden werden alle auf diesem Gerät gespeicherten Glow-Daten gelöscht. Stelle sicher, dass du deine Wiederherstellungsphrase gesichert hast: Du brauchst sie, um wieder auf dein Guthaben zuzugreifen."
+  },
+  "pinReset": {
+    "bodyPasskey": "Die PIN kann nicht wiederhergestellt werden. Der einzige Weg zurück ist, alle Glow-Daten auf diesem Gerät zu löschen und dich erneut mit deinem Passkey anzumelden.",
+    "bodyMnemonic": "Die PIN kann nicht wiederhergestellt werden. Der einzige Weg zurück ist, alle Glow-Daten auf diesem Gerät zu löschen und aus deiner Wiederherstellungsphrase wiederherzustellen. Stelle sicher, dass du sie gesichert hast.",
+    "confirm": "Löschen",
+    "deviceOwnerReason": "Alle Glow-Daten löschen"
+  },
+  "stableBalance": {
+    "toUsd": "Dein BTC-Guthaben wird in USD umgewandelt.",
+    "toBtc": "Dein USD-Guthaben wird zurück in BTC umgewandelt.",
+    "convertToUsd": "In USD umwandeln",
+    "convertToBtc": "In BTC umwandeln",
+    "conversionFee": "Umwandlungsgebühr:",
+    "feeUnavailable": "Gebühr konnte nicht geschätzt werden",
+    "disclaimerBody": "Dein Guthaben wird in USD gehalten. Eingehende BTC werden automatisch in USD umgewandelt, ausgehende Zahlungen zurück in BTC. Beträge unterhalb der Umwandlungsschwelle bleiben als Restbetrag, bis sie sich ansammeln.",
+    "balanceTooLow": "Das Guthaben ist zu niedrig zum Umwandeln — es bleibt als Restbetrag",
+    "switchToUsdFailed": "Der Wechsel zu USD ist fehlgeschlagen. Versuche es erneut.",
+    "switchToBtcFailed": "Der Wechsel zu BTC ist fehlgeschlagen. Versuche es erneut.",
+    "restoreTitle": "USD-Guthaben erkannt",
+    "restoreBody": "Wir haben USD-Guthaben gefunden. Möchtest du in den USD-Modus wechseln?\n\nDein Guthaben wird in USD gehalten. Eingehende BTC werden automatisch in USD umgewandelt, ausgehende Zahlungen zurück in BTC."
+  },
+  "send": {
+    "sendAll": "Alles senden",
+    "enterAmount": "Betrag in Sats eingeben",
+    "exceedsBalance": "Der Betrag übersteigt das verfügbare Guthaben",
+    "balanceUpdating": "Das Guthaben wird aktualisiert. Versuche es gleich noch einmal.",
+    "invalidAmount": "Bitte gib einen gültigen Betrag ein",
+    "invalidDestination": "Ungültiges Zahlungsziel",
+    "youAreSending": "Du sendest",
+    "recipientGets": "Empfänger erhält",
+    "insufficientFunds": "Nicht genügend Guthaben",
+    "conversionAmount": "Umwandlungsbetrag",
+    "conversionFee": "Umwandlungsgebühr",
+    "toAddress": "An Adresse",
+    "toSparkAddress": "An Spark-Adresse",
+    "toSparkInvoice": "An Spark-Rechnung",
+    "toInvoice": "An Rechnung",
+    "crossChain": {
+      "amountTooSmall": "Betrag zu klein für diese Route.",
+      "amountTooLarge": "Betrag zu groß für diese Route.",
+      "amountTooSmallHint": "Dieser Betrag ist zu klein für die verfügbaren Routen. Versuche es mit einem größeren Betrag.",
+      "amountTooLargeHint": "Dieser Betrag ist zu groß für die verfügbaren Routen. Versuche es mit einem kleineren Betrag.",
+      "networkUnavailable": "Dieses Netzwerk ist vorübergehend nicht verfügbar. Versuche es gleich noch einmal.",
+      "networkNotSupported": "Dieses Netzwerk ist nicht verfügbar. Versuche ein anderes Netzwerk.",
+      "rateDrift": "Der Betrag ist für dieses Netzwerk zu klein. Versuche einen größeren Betrag oder ein anderes Netzwerk."
+    },
+    "withdraw": {
+      "noValidAmount": "Dieser Auszahlungslink enthält keinen gültigen Betrag, den Glow empfangen kann.",
+      "wholeSats": "Gib eine ganze Zahl in Sats ein"
+    },
+    "enterAmountIn": "Betrag in {{currency}} eingeben",
+    "amountRange": "Zwischen {{min}} und {{max}} Sats",
+    "result": {
+      "notSentBody": "Die Zahlung ist nicht durchgegangen. Dein Guthaben wurde nicht gesendet."
+    }
+  },
+  "generate": {
+    "title": "Halte sie geheim",
+    "body": "Schreibe diese Wörter der Reihe nach auf. Das ist deine einzige Sicherung, um dein Guthaben wiederherzustellen.",
+    "warning": "Teile deine Wiederherstellungsphrase niemals. Wer diese Wörter hat, kann auf dein Guthaben zugreifen.",
+    "copyToClipboard": "In die Zwischenablage kopieren",
+    "saved": "Ich habe meine Phrase gesichert"
+  },
+  "restore": {
+    "body": "Gib deine Wiederherstellungsphrase aus 12 oder 24 Wörtern ein, um Glow wiederherzustellen. Die Wörter müssen durch Leerzeichen getrennt sein.",
+    "placeholder": "wort1 wort2 wort3 ...",
+    "invalidLength": "Bitte gib eine gültige Wiederherstellungsphrase aus 12 oder 24 Wörtern ein",
+    "invalidPhrase": "Ungültige Wiederherstellungsphrase. Prüfe deine Wörter und versuche es erneut."
+  },
+  "unlock": {
+    "eraseTitle": "Löschen und neu beginnen",
+    "eraseAction": "Löschen und neu beginnen",
+    "erase": "Löschen",
+    "eraseReason": "Alle Glow-Daten löschen",
+    "eraseBodyPasskey": "Damit werden alle auf diesem Gerät gespeicherten Glow-Daten gelöscht. Du brauchst deinen Passkey, um wieder auf dein Guthaben zuzugreifen.",
+    "eraseBodyMnemonic": "Damit werden alle auf diesem Gerät gespeicherten Glow-Daten gelöscht. Stelle sicher, dass du deine Wiederherstellungsphrase gesichert hast: Du brauchst sie, um wieder auf dein Guthaben zuzugreifen."
+  },
+  "refund": {
+    "destinationBody": "Gib die Bitcoin-Adresse ein, an die du die Rückerstattung erhalten möchtest.",
+    "refund": "Rückerstatten",
+    "amount": "Betrag",
+    "networkFee": "Netzwerkgebühr"
+  },
+  "deposit": {
+    "amount": "Betrag",
+    "networkFee": "Netzwerkgebühr",
+    "feeChanged": "Netzwerkgebühr geändert",
+    "approveOrReject": "Bestätige, um diesen Transfer einzulösen, oder lehne ab, um eine Rückerstattung anzustoßen.",
+    "canReject": "Du kannst ablehnen, um stattdessen eine Rückerstattung anzustoßen.",
+    "feeRose": "Die Gebühr ist während deiner Bestätigung auf <amount/> gestiegen. Bestätige, um zur neuen Gebühr einzulösen.",
+    "deliveryFee": "Liefergebühr",
+    "youReceive": "Du erhältst",
+    "claim": "Einlösen",
+    "approve": "Bestätigen",
+    "reject": "Ablehnen",
+    "claimFeeChanged": "Dein Einlösen ist fehlgeschlagen: die Gebühr hat sich von <amount/> geändert."
+  },
+  "passkey": {
+    "confirmDeleted": "Ich bestätige, dass dieser Passkey gelöscht wurde.",
+    "confirmDeletedHint": "Optional. Fahre ohne Häkchen fort, wenn du unsicher bist.",
+    "isHowYouAccess": "Dein Passkey ist dein Zugang zu deinem Guthaben"
+  },
+  "migration": {
+    "switchFailed": "Der Wechsel zu deinem neuen Passkey konnte nicht abgeschlossen werden. Dein Guthaben ist sicher. Bitte versuche es erneut.",
+    "keepWindowOpen": "Lass dieses Fenster geöffnet",
+    "verifyMultipleTimes": "Du wirst während der Migration mehrfach gebeten, deine Identität zu bestätigen: einmal für jedes migrierte Label und danach noch einige Male, um deinen neuen Passkey zu erstellen. Lass dieses Fenster geöffnet, bis die Migration abgeschlossen ist.",
+    "explainBody": "Wir erstellen einen neuen Passkey und übertragen dein Guthaben automatisch. Du wirst während des Vorgangs einige Male gebeten, deine Identität zu bestätigen.",
+    "singleTransaction": "Dein Guthaben wird in einer einzigen Transaktion übertragen. Dein Zahlungsverlauf wird nicht übernommen.",
+    "doneBody": "Dein Guthaben wurde auf deinen neuen Passkey übertragen.",
+    "addressPending_one": "Diese Lightning-Adresse konnte nicht übertragen werden:",
+    "addressPending_other": "Diese Lightning-Adressen konnten nicht übertragen werden:",
+    "addressPendingBody_one": "Zahlungen an diese Adresse gehen weiterhin bei deinem alten Passkey ein, bis die Übertragung abgeschlossen ist.",
+    "addressPendingBody_other": "Zahlungen an diese Adressen gehen weiterhin bei deinem alten Passkey ein, bis die Übertragungen abgeschlossen sind.",
+    "explainFirstTime": "Wenn du deinen Passkey mit einer früheren Version von Glow erstellt hast, erstellen wir einen neuen und übertragen dein Guthaben automatisch. Wenn du Glow zum ersten Mal verwendest, wähle <skip/>, um fortzufahren.",
+    "migrateLabels_one": "Wir migrieren dein Label auf deinen neuen Passkey.",
+    "migrateLabels_other": "Wir migrieren alle {{count}} Labels auf deinen neuen Passkey."
+  },
+  "webNotice": {
+    "preferPasskey": "Zu deiner Sicherheit empfehlen wir stattdessen einen Passkey.",
+    "preferApp": "Zu deiner Sicherheit empfehlen wir die Glow-App.",
+    "risk": "Eine Wiederherstellungsphrase im Web ist weniger sicher, und es besteht die Möglichkeit, dass dein Guthaben verloren geht. Nutze eine Wiederherstellungsphrase im Web nur, wenn du dieses Risiko eingehen willst."
+  }
+}

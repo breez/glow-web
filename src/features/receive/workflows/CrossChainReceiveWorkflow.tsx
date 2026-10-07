@@ -36,6 +36,7 @@ import { formatWithSpaces } from '../../../utils/formatNumber';
 import { getProviderDisplayName } from '../../../utils/paymentDescription';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
+import { useTranslation } from 'react-i18next';
 
 type WorkflowStep = 'amount' | 'loading' | 'asset' | 'chain' | 'provider' | 'generating' | 'result';
 
@@ -51,6 +52,7 @@ interface CrossChainReceiveWorkflowProps {
 }
 
 const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ active, onRestingChange }) => {
+  const { t } = useTranslation('common');
   const wallet = useWallet();
   const stableBalance = useStableBalance();
   const { showToast } = useToast();
@@ -116,10 +118,10 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
       setStep('result');
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to create cross-chain receive order', { error: formatError(err) });
-      setError(crossChainFriendlyError(err, 'Failed to create request.'));
+      setError(crossChainFriendlyError(err, t('receive.crossChain.createFailed')));
       setStep('amount');
     }
-  }, [wallet, usdInput]);
+  }, [wallet, usdInput, t]);
 
   // Advance from chain selection. Only >1 provider opens a provider step;
   // otherwise create the order directly (today routes are Orchestra-only).
@@ -157,7 +159,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
       // and its funds would be ones Glow can't show or spend anyway.
       const fetched = listed?.filter(route => landsInThisWallet(route, stableTokenIdentifier));
       if (!fetched || fetched.length === 0) {
-        setError('No cross-chain routes available right now');
+        setError(t('receive.crossChain.noRoutes'));
         setStep('amount');
         return;
       }
@@ -170,10 +172,10 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
       }
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to fetch cross-chain receive routes', { error: formatError(err) });
-      setError(`Failed to fetch routes: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(t('send.crossChain.routesFetchFailed', { error: err instanceof Error ? err.message : t('labels.unknownError') }));
       setStep('amount');
     }
-  }, [wallet, selectAsset, stableTokenIdentifier]);
+  }, [wallet, selectAsset, stableTokenIdentifier, t]);
 
   // Back navigation — respect skipped steps
   const goBackToAmount = () => {
@@ -264,7 +266,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
     void copyToClipboard(resultDepositAmount);
     setAmountCopied(true);
     setTimeout(() => setAmountCopied(false), 2000);
-    showToast('success', 'Amount copied');
+    showToast('success', t('receive.amountCopied'));
   };
 
   // Steps are content-sized: the sheet re-measures and re-snaps per step, so a
@@ -279,7 +281,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
       {step === 'amount' && (
         <div>
           <div>
-            <label className="block text-sm font-medium text-spark-text-primary mb-2">Amount</label>
+            <label className="block text-sm font-medium text-spark-text-primary mb-2">{t('send.amount')}</label>
             <input
               type="text"
               inputMode="decimal"
@@ -292,7 +294,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                   if (canContinue) fetchRoutes();
                 }
               }}
-              placeholder="Enter amount in USD"
+              placeholder={t('receive.crossChain.enterUsd')}
               className={AMOUNT_FIELD_CLASS}
               data-testid="cross-chain-receive-amount-input"
             />
@@ -332,7 +334,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
         <div className="flex flex-col items-center justify-center py-12 space-y-3">
           <SpinnerIcon size="lg" className="text-spark-primary animate-spin" />
           <p className="text-sm text-spark-text-secondary">
-            {step === 'loading' ? 'Fetching routes...' : 'Creating request...'}
+            {step === 'loading' ? t('send.crossChain.fetchingRoutes') : t('receive.crossChain.creating')}
           </p>
         </div>
       )}
@@ -413,7 +415,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
             <button
               onClick={copyDepositAmount}
               className="inline-flex items-center gap-2 group"
-              title="Copy amount"
+              title={t('receive.copyAmount')}
               data-testid="cross-chain-deposit-amount"
             >
               <span className="text-3xl font-mono font-bold text-spark-text-primary">
@@ -424,7 +426,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
                 : <CopyIcon size="sm" className="text-spark-text-muted group-hover:text-spark-text-secondary transition-colors" />}
             </button>
             <p className="text-sm text-spark-text-secondary mt-1">
-              {resultAssetName} on {resultChainName} · via {getProviderDisplayName(selectedRoute.provider)}
+              {t('receive.crossChain.routeSummary', { asset: resultAssetName, chain: resultChainName, provider: getProviderDisplayName(selectedRoute.provider) })}
             </p>
           </div>
 
@@ -435,10 +437,10 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
             textToShare={resultShareMessage}
             truncate
             showShare
-            label="Deposit Address"
+            label={t('receive.depositAddress')}
             shareLabel="Deposit"
-            onCopied={() => showToast('success', 'Address copied')}
-            onShareError={() => showToast('error', 'Failed to share')}
+            onCopied={() => showToast('success', t('receive.addressCopied'))}
+            onShareError={() => showToast('error', t('labels.shareFailed'))}
             data-testid="cross-chain-deposit-address"
           />
 

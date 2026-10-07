@@ -8,6 +8,7 @@ import { WebSecurityNotice } from '../components/WebSecurityNotice';
 import { CheckIcon, CopyIcon } from '../components/Icons';
 import { logger, LogCategory } from '@/services/logger';
 import { copyToClipboard } from '@/utils/clipboard';
+import { useTranslation } from 'react-i18next';
 
 interface GeneratePageProps {
   onMnemonicConfirmed: (mnemonic: string) => void;
@@ -23,6 +24,7 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
   onClearError,
   recommendPasskey = false,
 }) => {
+  const { t } = useTranslation(['critical', 'common']);
   const [mnemonic, setMnemonic] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isCopied, setIsCopied] = useState<boolean>(false);
@@ -63,9 +65,9 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
 
   if (isLoading) {
     return (
-      <PageLayout onBack={onBack} footer={<div />} title="Get Started" onClearError={onClearError}>
+      <PageLayout onBack={onBack} footer={<div />} title={t('common:pages.getStarted')} onClearError={onClearError}>
         <div className="flex items-center justify-center h-full">
-          <LoadingSpinner text="Setting up Glow..." />
+          <LoadingSpinner text={t('common:onboarding.settingUp')} />
         </div>
       </PageLayout>
     );
@@ -74,7 +76,7 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
   const footer = (
     <div className="max-w-xl mx-auto">
       <PrimaryButton className="w-full" onClick={handleConfirmMnemonic}>
-        I've Saved My Phrase
+        {t('generate.saved')}
       </PrimaryButton>
     </div>
   );
@@ -82,10 +84,10 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
   const words = mnemonic.split(' ');
 
   return (
-    <PageLayout onBack={onBack} footer={footer} title="Get Started" onClearError={onClearError}>
+    <PageLayout onBack={onBack} footer={footer} title={t('common:pages.getStarted')} onClearError={onClearError}>
       <div className="max-w-xl mx-auto w-full space-y-4">
         <p className="text-spark-text-secondary text-center mb-6">
-          Write down these words in order. This is your only backup to recover your funds.
+          {t('generate.body')}
         </p>
 
         {/* Mnemonic grid */}
@@ -122,21 +124,21 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
             {isCopied ? (
               <>
                 <CheckIcon size="md" />
-                <span className="font-medium">Copied!</span>
+                <span className="font-medium">{t('common:actions.copied')}</span>
               </>
             ) : (
               <>
                 <CopyIcon size="md" />
-                <span className="font-medium">Copy to Clipboard</span>
+                <span className="font-medium">{t('generate.copyToClipboard')}</span>
               </>
             )}
           </button>
         </div>
 
         {/* Warning */}
-        <AlertCard variant="warning" title="Keep it Secret">
+        <AlertCard variant="warning" title={t('generate.title')}>
           <p className="text-spark-text-secondary text-sm">
-            Never share your recovery phrase. Anyone with these words can access your funds.
+            {t('generate.warning')}
           </p>
         </AlertCard>
 

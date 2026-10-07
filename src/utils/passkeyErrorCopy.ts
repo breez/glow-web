@@ -6,6 +6,8 @@
  * callers keep their own fallback copy and surface the raw text separately.
  */
 
+import i18n from 'i18next';
+
 type FailureKind =
   | 'gpm-loop'
   | 'prf-unsupported'
@@ -56,34 +58,31 @@ function classify(e: unknown, opts?: { isGrapheneOs?: boolean }): FailureKind | 
   return null;
 }
 
-const COPY: Record<FailureKind, string> = {
+const COPY_KEYS: Record<FailureKind, string> = {
   // Both deterministic failures share one message: the "Passkey Not
   // Supported" title carries the diagnosis, so the body is only the two
   // ways forward, which are the same for either cause.
-  'gpm-loop': 'Please try again with another password provider, or continue with a recovery phrase.',
-  'prf-unsupported': 'Please try again with another password provider, or continue with a recovery phrase.',
-  'auth-failed': "Your device couldn't finish verifying your identity. Lock and unlock your device, then try again.",
-  'timeout': 'The passkey prompt timed out. Please try again.',
-  'prf-eval': "Your password manager couldn't process the passkey. Please try again.",
-  'config': "Passkeys aren't configured correctly for this app. Please update Glow or try again later.",
-  'network': 'Network problem. Check your connection and try again.',
+  'gpm-loop': 'passkeyErrors.tryAnotherProvider',
+  'prf-unsupported': 'passkeyErrors.tryAnotherProvider',
+  'auth-failed': 'passkeyErrors.authFailed',
+  'timeout': 'passkeyErrors.timeout',
+  'prf-eval': 'passkeyErrors.prfEval',
+  'config': 'passkeyErrors.config',
+  'network': 'passkeyErrors.network',
 };
+
+/** Resolved per call: the module loads before i18next has a language. */
+const copy = (kind: FailureKind): string => i18n.t(`common:${COPY_KEYS[kind]}`);
 
 export function friendlyPasskeyError(
   e: unknown,
   opts?: { isGrapheneOs?: boolean },
 ): string | null {
   const kind = classify(e, opts);
-  return kind === null ? null : COPY[kind];
+  return kind === null ? null : copy(kind);
 }
 
-// The failures a retry cannot fix: the provider has no PRF at all, or
-// GPM's screen-lock check is broken on this OS. Both already tell the
-// user to switch provider or use the recovery phrase.
-const DETERMINISTIC_COPY: ReadonlySet<string> = new Set([
-  COPY['gpm-loop'],
-  COPY['prf-unsupported'],
-]);
+
 
 /**
  * True when retrying the same provider can never succeed, so callers point
@@ -93,5 +92,11 @@ const DETERMINISTIC_COPY: ReadonlySet<string> = new Set([
  * copy the user is reading.
  */
 export function isDeterministicFailureCopy(message: string | null): boolean {
-  return message !== null && DETERMINISTIC_COPY.has(message);
+  // Compared per call rather than against a set built at import: the copy is
+  // translated, so a frozen set would test a message in the reader's language
+  // against English and never match. These are the failures a retry cannot
+  // fix, where the provider has no PRF at all or GPM's screen-lock check is
+  // broken on this OS.
+  if (message === null) return false;
+  return message === copy('gpm-loop') || message === copy('prf-unsupported');
 }

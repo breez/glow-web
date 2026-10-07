@@ -7,6 +7,7 @@ import { crossChainCardClass } from '../../utils/crossChainRoutes';
 import { formatChainName } from '../../utils/crossChainFormat';
 import { copyToClipboard } from '../../utils/clipboard';
 import { useSheetBack, useSheetFullSnap, useSheetOwnsScroll } from '../ui/sheets/BottomSheetCardContext';
+import { useTranslation } from 'react-i18next';
 
 interface CrossChainChainStepProps {
   /** One representative route per chain group, in display order. */
@@ -35,6 +36,7 @@ export const CrossChainChainStep: React.FC<CrossChainChainStepProps> = ({
   onContinue,
   error,
 }) => {
+  const { t } = useTranslation('common');
   const [expandedChain, setExpandedChain] = useState<string | null>(null);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const isSheetFull = useSheetFullSnap();
@@ -52,7 +54,7 @@ export const CrossChainChainStep: React.FC<CrossChainChainStepProps> = ({
         </div>
       )}
       <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">
-        Select Network for {selectedAsset}
+        {t('send.crossChain.selectNetwork', { asset: selectedAsset })}
       </label>
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-none touch-pan-y space-y-2 pr-1">
         {chains.map(r => {

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { WarningIcon, PasskeyIcon } from '../components/Icons';
 import { WebSecurityNotice } from '../components/WebSecurityNotice';
 import SlideInPage from '../components/layout/SlideInPage';
@@ -21,6 +22,10 @@ interface BackupPageProps {
 }
 
 const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' }) => {
+  // `critical` first, so a bare key resolves there and a `common:` prefix
+  // reaches the shared bundle. Only the sentences about the phrase itself sit
+  // in critical; the chrome around them does not.
+  const { t } = useTranslation(['critical', 'common']);
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
@@ -166,14 +171,14 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
         setMnemonic(w.seed.mnemonic);
         setIsRevealed(true);
       } else {
-        setError('Could not derive recovery phrase');
+        setError(t('common:errors.deriveFailed'));
         setPasskeyAttemptFailed(true);
       }
     } catch (e) {
       logger.error(LogCategory.AUTH, 'Failed to derive mnemonic from passkey', {
         error: e instanceof Error ? e.message : String(e),
       });
-      setError(e instanceof Error ? e.message : 'Failed to authenticate');
+      setError(e instanceof Error ? e.message : t('common:errors.authFailed'));
       setPasskeyAttemptFailed(true);
     } finally {
       setIsLoading(false);
@@ -194,13 +199,13 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
         setMnemonic(seed.mnemonic);
         setIsRevealed(true);
       } else {
-        setError('Could not retrieve recovery phrase');
+        setError(t('common:errors.retrieveFailed'));
       }
     } catch (e) {
       logger.error(LogCategory.AUTH, 'Biometric fallback retrieveSeed failed', {
         error: e instanceof Error ? e.message : String(e),
       });
-      setError(e instanceof Error ? e.message : 'Failed to authenticate');
+      setError(e instanceof Error ? e.message : t('common:errors.authFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -231,7 +236,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
   const words = mnemonic ? mnemonic.split(' ') : [];
 
   return (
-    <SlideInPage title="Backup" onClose={onBack} slideFrom="left" closeStyle={closeStyle}>
+    <SlideInPage title={t('common:pages.backup')} onClose={onBack} slideFrom="left" closeStyle={closeStyle}>
       {/* min-h-full + flexed chain so the PIN gate (the sole child
           while it shows) can split the viewport 1/3 header / 2/3
           input; the card views flow from the top as before. */}
@@ -244,7 +249,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
           )}
 
           {gate === 'locked' && (
-            <PinGate reason="Unlock Backup" onUnlocked={() => setGate('open')} />
+            <PinGate reason={t('common:backup.pinReason')} onUnlocked={() => setGate('open')} />
           )}
 
           {gate === 'open' && (
@@ -257,9 +262,9 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
                   <PasskeyIcon size="md" className="text-spark-primary" />
                 </div>
                 <div>
-                  <h4 className="font-medium text-spark-text-primary mb-1">Passkey Protected</h4>
+                  <h4 className="font-medium text-spark-text-primary mb-1">{t('common:backup.passkeyProtected.title')}</h4>
                   <p className="text-spark-text-muted text-sm">
-                    Your recovery phrase is derived from your passkey. To restore on another device, use your passkey or the recovery phrase below.
+                    {t('backup.passkeyProtected.body')}
                   </p>
                 </div>
               </div>
@@ -278,10 +283,10 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
               <span className="font-display font-semibold text-spark-text-primary">
-                {isLoading ? 'Authenticating...' : 'Tap to reveal phrase'}
+                {isLoading ? t('common:backup.reveal.busyTitle') : t('common:backup.reveal.title')}
               </span>
               <span className="text-sm text-spark-text-muted">
-                {isLoading ? 'Complete passkey authentication' : 'Requires passkey authentication'}
+                {isLoading ? t('common:backup.reveal.hintPasskeyBusy') : t('common:backup.reveal.hintPasskey')}
               </span>
             </button>
           )}
@@ -300,14 +305,14 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
               <span className="font-display font-semibold text-spark-text-primary">
-                {isLoading ? 'Authenticating...' : 'Tap to reveal phrase'}
+                {isLoading ? t('common:backup.reveal.busyTitle') : t('common:backup.reveal.title')}
               </span>
               <span className="text-sm text-spark-text-muted">
                 {mnemonic
-                  ? 'Make sure no one is watching'
+                  ? t('backup.reveal.hintRevealed')
                   : isLoading
-                    ? `Complete ${biometry?.label ?? 'biometric'} authentication`
-                    : `Requires ${biometry?.label ?? 'biometric authentication'}`}
+                    ? t('common:backup.reveal.hintBiometricBusy', { method: biometry?.label ?? t('common:backup.reveal.methodFallbackShort') })
+                    : t('common:backup.reveal.hintBiometric', { method: biometry?.label ?? t('common:backup.reveal.methodFallback') })}
               </span>
             </button>
           )}
@@ -336,14 +341,14 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               className="w-full bg-spark-dark border border-spark-border rounded-2xl p-8 flex flex-col items-center gap-4 hover:border-spark-border-light transition-colors disabled:opacity-50"
             >
               <span className="font-display font-semibold text-spark-text-primary">
-                {isLoading ? 'Authenticating...' : 'Tap to reveal phrase'}
+                {isLoading ? t('common:backup.reveal.busyTitle') : t('common:backup.reveal.title')}
               </span>
               <span className="text-sm text-spark-text-muted">
                 {fallbackTier === 'device'
-                  ? 'Stored securely on this device'
+                  ? t('backup.reveal.hintDeviceStored')
                   : isLoading
-                    ? `Complete ${biometry?.label ?? 'biometric'} authentication`
-                    : `Requires ${biometry?.label ?? 'biometric authentication'}`}
+                    ? t('common:backup.reveal.hintBiometricBusy', { method: biometry?.label ?? t('common:backup.reveal.methodFallbackShort') })
+                    : t('common:backup.reveal.hintBiometric', { method: biometry?.label ?? t('common:backup.reveal.methodFallback') })}
               </span>
             </button>
           )}
@@ -358,9 +363,9 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center mx-auto mb-4">
                 <WarningIcon size="xl" className="text-spark-primary" />
               </div>
-              <h3 className="font-display font-semibold text-spark-text-primary mb-2">Passkey Unavailable</h3>
+              <h3 className="font-display font-semibold text-spark-text-primary mb-2">{t('common:backup.passkeyUnavailable.title')}</h3>
               <p className="text-spark-text-muted text-sm">
-                Your recovery phrase is derived from your passkey. Without it, the phrase cannot be retrieved on this device. Sign in on a device where the passkey is still available to view it.
+                {t('backup.passkeyUnavailable.body')}
               </p>
             </div>
           )}
@@ -369,13 +374,13 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
           {isRevealed && mnemonic && (
             <div className="bg-spark-dark border border-spark-border rounded-2xl p-4 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-spark-text-secondary">Recovery Phrase</span>
+                <span className="text-sm font-medium text-spark-text-secondary">{t('backup.phraseLabel')}</span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleHide}
                     className="px-3 py-1.5 text-sm font-medium text-spark-text-muted hover:text-spark-text-primary border border-spark-border rounded-lg hover:bg-white/5 transition-colors"
                   >
-                    Hide
+                    {t('common:actions.hide')}
                   </button>
                   <button
                     onClick={handleCopy}
@@ -387,7 +392,7 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
                       }
                     `}
                   >
-                    {copied ? 'Copied!' : 'Copy'}
+                    {copied ? t('common:actions.copied') : t('common:actions.copy')}
                   </button>
                 </div>
               </div>
@@ -416,9 +421,9 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
               <div className="w-16 h-16 rounded-2xl bg-spark-primary/20 flex items-center justify-center mx-auto mb-4">
                 <WarningIcon size="xl" className="text-spark-primary" />
               </div>
-              <h3 className="font-display font-semibold text-spark-text-primary mb-2">No Backup Found</h3>
+              <h3 className="font-display font-semibold text-spark-text-primary mb-2">{t('common:backup.notFound.title')}</h3>
               <p className="text-spark-text-muted text-sm">
-                Could not find a recovery phrase for this wallet.
+                {t('backup.notFound.body')}
               </p>
             </div>
           )}

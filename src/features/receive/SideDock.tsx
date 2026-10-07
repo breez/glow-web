@@ -1,9 +1,12 @@
 import React from 'react';
 import { ChainLinkIcon, LightningBoltIcon } from '../../components/Icons';
+import i18n from 'i18next';
 
 export type BtcMode = 'lightning' | 'bitcoin';
 
-const LABEL: Record<BtcMode, string> = { lightning: 'Lightning', bitcoin: 'On-chain' };
+/** Resolved per call: the module loads before i18next has a language. */
+const label = (mode: BtcMode): string =>
+  mode === 'lightning' ? 'Lightning' : i18n.t('receive.onChain');
 const other = (mode: BtcMode): BtcMode => (mode === 'lightning' ? 'bitcoin' : 'lightning');
 
 /**
@@ -22,7 +25,7 @@ export const SideDock: React.FC<{ mode: BtcMode; onChange: (mode: BtcMode) => vo
         key={m}
         type="button"
         onClick={() => onChange(m)}
-        aria-label={LABEL[m]}
+        aria-label={label(m)}
         aria-pressed={mode === m}
         data-testid={m === 'lightning' ? 'lightning-tab' : 'bitcoin-tab'}
         className={`relative flex h-11 w-full items-center justify-center rounded-[22px] outline-none transition-colors duration-[320ms] focus-visible:ring-2 focus-visible:ring-spark-primary/60 ${mode === m ? 'text-black' : 'text-spark-text-muted'}`}
@@ -42,11 +45,11 @@ export const SideCaption: React.FC<{ shown: BtcMode; mode: BtcMode; onChange: (m
   <button
     type="button"
     onClick={() => onChange(other(mode))}
-    aria-label={`Switch to ${LABEL[other(mode)]}`}
+    aria-label={i18n.t('receive.switchTo', { mode: label(other(mode)) })}
     className="flex w-11 items-center justify-center self-stretch rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-spark-primary/60"
   >
     <span className="-mb-[0.1em] text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase [writing-mode:vertical-rl]">
-      {LABEL[shown]}
+      {label(shown)}
     </span>
   </button>
 );

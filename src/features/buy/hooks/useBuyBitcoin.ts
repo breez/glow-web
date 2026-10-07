@@ -17,6 +17,7 @@ import {
   type BuyBitcoinProvider,
 } from '../../../services/settings';
 import { useCashAppInstalled } from '../../../hooks/useCashAppInstalled';
+import { useTranslation } from 'react-i18next';
 
 export type BuyStep = 'select' | 'amount' | 'link';
 
@@ -74,6 +75,7 @@ export function useBuyBitcoin({
   onMobileRedirectComplete,
   onInvoicePaid,
 }: UseBuyBitcoinOptions): UseBuyBitcoinReturn {
+  const { t } = useTranslation('common');
   const sdk = useWallet();
 
   const input = useAmountInput();
@@ -178,7 +180,7 @@ export function useBuyBitcoin({
     }
     const amountSatsForSdk = toSdkAmountNumber(amountSats);
     if (amountSatsForSdk === null) {
-      setError('Invalid amount');
+      setError(t('buy.invalidAmount'));
       return;
     }
     setError(null);
@@ -206,11 +208,11 @@ export function useBuyBitcoin({
       setStep('link');
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to create Cash App buy URL', { error: formatError(e) });
-      setError('Failed to create invoice. Please try again.');
+      setError(t('buy.invoiceFailed'));
     } finally {
       setIsGenerating(false);
     }
-  }, [amountSats, sdk, onMobileRedirectComplete]);
+  }, [amountSats, sdk, onMobileRedirectComplete, t]);
 
   // Cash App URLs are `https://cash.app/launch/lightning/<bolt11>`. Extract the
   // invoice only while the link is on screen so the bus subscription pauses
@@ -240,7 +242,7 @@ export function useBuyBitcoin({
     && amountSats >= MIN_CASH_APP_SATS
     && !amountTooLarge;
 
-  const displayedError = error ?? (amountTooLarge ? 'Invalid amount' : null);
+  const displayedError = error ?? (amountTooLarge ? t('buy.invalidAmount') : null);
 
   // Buying adds funds, so there is no balance to scale against: fixed points of
   // value, held there by the rate. One set covers both denominations, since a

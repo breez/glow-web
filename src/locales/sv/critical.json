@@ -1,0 +1,143 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "Din återställningsfras härleds från din passkey. För att återställa på en annan enhet, använd din passkey eller återställningsfrasen nedan."
+    },
+    "passkeyUnavailable": {
+      "body": "Din återställningsfras härleds från din passkey. Utan den går frasen inte att hämta på den här enheten. Logga in på en enhet där passkeyn fortfarande finns för att se den."
+    },
+    "notFound": {
+      "body": "Ingen återställningsfras hittades på den här enheten."
+    },
+    "reveal": {
+      "hintRevealed": "Se till att ingen tittar",
+      "hintDeviceStored": "Säkert lagrad på den här enheten"
+    },
+    "phraseLabel": "Återställningsfras"
+  },
+  "logout": {
+    "confirmPasskey": "Att logga ut raderar alla Glow-data som finns på den här enheten. Du behöver din passkey för att komma åt dina pengar igen.",
+    "confirmMnemonic": "Att logga ut raderar alla Glow-data som finns på den här enheten. Se till att du har sparat din återställningsfras: du behöver den för att komma åt dina pengar igen."
+  },
+  "pinReset": {
+    "bodyPasskey": "PIN-koden går inte att återställa. Enda vägen tillbaka är att radera alla Glow-data på den här enheten och logga in igen med din passkey.",
+    "bodyMnemonic": "PIN-koden går inte att återställa. Enda vägen tillbaka är att radera alla Glow-data på den här enheten och återställa från din återställningsfras. Se till att du har sparat den.",
+    "confirm": "Radera",
+    "deviceOwnerReason": "Radera alla Glow-data"
+  },
+  "stableBalance": {
+    "toUsd": "Ditt BTC-saldo växlas till USD.",
+    "toBtc": "Ditt USD-saldo växlas tillbaka till BTC.",
+    "convertToUsd": "Växla till USD",
+    "convertToBtc": "Växla till BTC",
+    "conversionFee": "Växlingsavgift:",
+    "feeUnavailable": "Avgiften kunde inte uppskattas",
+    "disclaimerBody": "Ditt saldo hålls i USD. Inkommande BTC växlas automatiskt till USD, och utgående betalningar växlas tillbaka till BTC. Belopp under växlingsgränsen ligger kvar som växel tills de samlas ihop.",
+    "balanceTooLow": "Saldot är för lågt för att växlas — det blir kvar som växel",
+    "switchToUsdFailed": "Det gick inte att byta till USD. Försök igen.",
+    "switchToBtcFailed": "Det gick inte att byta till BTC. Försök igen.",
+    "restoreTitle": "USD-saldo upptäckt",
+    "restoreBody": "Vi har hittat pengar i USD. Vill du byta till USD-läge?\n\nDitt saldo hålls i USD. Inkommande BTC växlas automatiskt till USD och utgående betalningar tillbaka till BTC."
+  },
+  "send": {
+    "sendAll": "Skicka allt",
+    "enterAmount": "Ange beloppet i sats",
+    "exceedsBalance": "Beloppet överstiger tillgängligt saldo",
+    "balanceUpdating": "Saldot uppdateras. Försök igen om en stund.",
+    "invalidAmount": "Ange ett giltigt belopp",
+    "invalidDestination": "Ogiltig betalningsmottagare",
+    "youAreSending": "Du skickar",
+    "recipientGets": "Mottagaren får",
+    "insufficientFunds": "Otillräckligt saldo",
+    "conversionAmount": "Växlingsbelopp",
+    "conversionFee": "Växlingsavgift",
+    "toAddress": "Till adress",
+    "toSparkAddress": "Till Spark-adress",
+    "toSparkInvoice": "Till Spark-faktura",
+    "toInvoice": "Till faktura",
+    "crossChain": {
+      "amountTooSmall": "Beloppet är för litet för den här rutten.",
+      "amountTooLarge": "Beloppet är för stort för den här rutten.",
+      "amountTooSmallHint": "Beloppet är för litet för de tillgängliga rutterna. Prova att skicka ett större belopp.",
+      "amountTooLargeHint": "Beloppet är för stort för de tillgängliga rutterna. Prova att skicka ett mindre belopp.",
+      "networkUnavailable": "Det här nätverket är tillfälligt otillgängligt. Försök igen om en stund.",
+      "networkNotSupported": "Det här nätverket är inte tillgängligt. Prova ett annat nätverk.",
+      "rateDrift": "Beloppet är för litet för det här nätverket. Prova ett större belopp eller ett annat nätverk."
+    },
+    "withdraw": {
+      "noValidAmount": "Den här uttagslänken saknar ett giltigt belopp som Glow kan ta emot.",
+      "wholeSats": "Ange ett helt antal sats"
+    },
+    "enterAmountIn": "Ange beloppet i {{currency}}",
+    "amountRange": "Mellan {{min}} och {{max}} sats",
+    "result": {
+      "notSentBody": "Betalningen gick inte igenom. Dina pengar skickades inte."
+    }
+  },
+  "generate": {
+    "title": "Håll den hemlig",
+    "body": "Skriv ner orden i ordning. Det här är din enda säkerhetskopia för att få tillbaka dina pengar.",
+    "warning": "Dela aldrig din återställningsfras. Den som har dessa ord kommer åt dina pengar.",
+    "copyToClipboard": "Kopiera till urklipp",
+    "saved": "Jag har sparat min fras"
+  },
+  "restore": {
+    "body": "Ange din återställningsfras på 12 eller 24 ord för att återställa Glow. Orden ska skiljas åt med mellanslag.",
+    "placeholder": "ord1 ord2 ord3 ...",
+    "invalidLength": "Ange en giltig återställningsfras på 12 eller 24 ord",
+    "invalidPhrase": "Ogiltig återställningsfras. Kontrollera orden och försök igen."
+  },
+  "unlock": {
+    "eraseTitle": "Radera och börja om",
+    "eraseAction": "Radera och börja om",
+    "erase": "Radera",
+    "eraseReason": "Radera alla Glow-data",
+    "eraseBodyPasskey": "Det här raderar alla Glow-data som finns på den här enheten. Du behöver din passkey för att komma åt dina pengar igen.",
+    "eraseBodyMnemonic": "Det här raderar alla Glow-data som finns på den här enheten. Se till att du har sparat din återställningsfras: du behöver den för att komma åt dina pengar igen."
+  },
+  "refund": {
+    "destinationBody": "Ange den Bitcoin-adress där du vill ta emot återbetalningen.",
+    "refund": "Återbetala",
+    "amount": "Belopp",
+    "networkFee": "Nätverksavgift"
+  },
+  "deposit": {
+    "amount": "Belopp",
+    "networkFee": "Nätverksavgift",
+    "feeChanged": "Nätverksavgiften har ändrats",
+    "approveOrReject": "Godkänn för att lösa in den här överföringen, eller avvisa för att starta en återbetalning.",
+    "canReject": "Du kan avvisa för att starta en återbetalning i stället.",
+    "feeRose": "Avgiften steg till <amount/> medan du bekräftade. Godkänn för att lösa in till den nya avgiften.",
+    "deliveryFee": "Leveransavgift",
+    "youReceive": "Du får",
+    "claim": "Hämta",
+    "approve": "Godkänn",
+    "reject": "Avvisa",
+    "claimFeeChanged": "Din hämtning gick inte igenom: avgiften ändrades från <amount/>."
+  },
+  "passkey": {
+    "confirmDeleted": "Jag bekräftar att den här passkeyn har tagits bort.",
+    "confirmDeletedHint": "Valfritt. Fortsätt utan att kryssa i om du är osäker.",
+    "isHowYouAccess": "Din passkey är hur du kommer åt dina pengar"
+  },
+  "migration": {
+    "switchFailed": "Vi kunde inte slutföra bytet till din nya passkey. Dina pengar är säkra. Försök igen.",
+    "keepWindowOpen": "Låt det här fönstret vara öppet",
+    "verifyMultipleTimes": "Du kommer att behöva bekräfta din identitet flera gånger under migreringen: en gång för varje etikett som migreras, och sedan några gånger till för att skapa din nya passkey. Låt fönstret vara öppet tills migreringen är klar.",
+    "explainBody": "Vi skapar en ny passkey och för över dina pengar automatiskt. Du kommer att behöva bekräfta din identitet några gånger under processen.",
+    "singleTransaction": "Dina pengar förs över i en enda transaktion. Din betalningshistorik följer inte med.",
+    "doneBody": "Dina pengar har flyttats till din nya passkey.",
+    "addressPending_one": "Den här Lightning-adressen kunde inte föras över:",
+    "addressPending_other": "De här Lightning-adresserna kunde inte föras över:",
+    "addressPendingBody_one": "Betalningar till den här adressen fortsätter att komma in på din gamla passkey tills överföringen är klar.",
+    "addressPendingBody_other": "Betalningar till de här adresserna fortsätter att komma in på din gamla passkey tills överföringarna är klara.",
+    "explainFirstTime": "Om du skapade din passkey med en tidigare version av Glow skapar vi en ny och för över dina pengar automatiskt. Om det här är första gången du använder Glow, välj <skip/> för att fortsätta.",
+    "migrateLabels_one": "Vi migrerar din etikett till din nya passkey.",
+    "migrateLabels_other": "Vi migrerar alla {{count}} etiketter till din nya passkey."
+  },
+  "webNotice": {
+    "preferPasskey": "För din säkerhet rekommenderar vi att du använder en passkey i stället.",
+    "preferApp": "För din säkerhet rekommenderar vi Glow-appen.",
+    "risk": "En återställningsfras på webben är mindre säker, och det finns en risk att dina pengar går förlorade. Använd en återställningsfras på webben bara om du är beredd att ta den risken."
+  }
+}

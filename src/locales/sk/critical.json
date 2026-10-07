@@ -1,0 +1,146 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "Tvoja obnovovacia fráza sa odvodzuje z tvojho passkey. Ak chceš obnoviť na inom zariadení, použi passkey alebo obnovovaciu frázu nižšie."
+    },
+    "passkeyUnavailable": {
+      "body": "Tvoja obnovovacia fráza sa odvodzuje z tvojho passkey. Bez neho ju na tomto zariadení nemožno získať. Na zobrazenie sa prihlás na zariadení, kde je passkey stále dostupný."
+    },
+    "notFound": {
+      "body": "Na tomto zariadení sa nenašla žiadna obnovovacia fráza."
+    },
+    "reveal": {
+      "hintRevealed": "Uisti sa, že sa nikto nepozerá",
+      "hintDeviceStored": "Bezpečne uložené v tomto zariadení"
+    },
+    "phraseLabel": "Obnovovacia fráza"
+  },
+  "logout": {
+    "confirmPasskey": "Odhlásenie vymaže všetky údaje Glow uložené v tomto zariadení. Na opätovný prístup k svojim prostriedkom budeš potrebovať passkey.",
+    "confirmMnemonic": "Odhlásenie vymaže všetky údaje Glow uložené v tomto zariadení. Uisti sa, že máš uloženú obnovovaciu frázu: budeš ju potrebovať na opätovný prístup k svojim prostriedkom."
+  },
+  "pinReset": {
+    "bodyPasskey": "PIN sa nedá obnoviť. Jediná cesta späť je vymazať všetky údaje Glow v tomto zariadení a znova sa prihlásiť svojím passkey.",
+    "bodyMnemonic": "PIN sa nedá obnoviť. Jediná cesta späť je vymazať všetky údaje Glow v tomto zariadení a obnoviť ich z obnovovacej frázy. Uisti sa, že ju máš uloženú.",
+    "confirm": "Vymazať",
+    "deviceOwnerReason": "Vymazať všetky údaje Glow"
+  },
+  "stableBalance": {
+    "toUsd": "Tvoj zostatok v BTC sa prevedie na USD.",
+    "toBtc": "Tvoj zostatok v USD sa prevedie späť na BTC.",
+    "convertToUsd": "Previesť na USD",
+    "convertToBtc": "Previesť na BTC",
+    "conversionFee": "Poplatok za prevod:",
+    "feeUnavailable": "Poplatok sa nedá odhadnúť",
+    "disclaimerBody": "Tvoj zostatok je držaný v USD. Prichádzajúce BTC sa automaticky prevádzajú na USD a odchádzajúce platby späť na BTC. Sumy pod prahom prevodu zostávajú ako drobné, kým sa nenazbierajú.",
+    "balanceTooLow": "Zostatok je príliš nízky na prevod — zostane ako drobné",
+    "switchToUsdFailed": "Prepnutie na USD zlyhalo. Skús to znova.",
+    "switchToBtcFailed": "Prepnutie na BTC zlyhalo. Skús to znova.",
+    "restoreTitle": "Zistený USD zostatok",
+    "restoreBody": "Našli sme prostriedky v USD. Chceš prepnúť do režimu USD?\n\nTvoj zostatok bude vedený v USD. Prichádzajúce BTC sa automaticky prevádzajú na USD a odchádzajúce platby späť na BTC."
+  },
+  "send": {
+    "sendAll": "Poslať všetko",
+    "enterAmount": "Zadaj sumu v sats",
+    "exceedsBalance": "Suma presahuje dostupný zostatok",
+    "balanceUpdating": "Zostatok sa aktualizuje. Skús to o chvíľu znova.",
+    "invalidAmount": "Zadaj platnú sumu",
+    "invalidDestination": "Neplatný cieľ platby",
+    "youAreSending": "Posielaš",
+    "recipientGets": "Príjemca dostane",
+    "insufficientFunds": "Nedostatok prostriedkov",
+    "conversionAmount": "Suma prevodu",
+    "conversionFee": "Poplatok za prevod",
+    "toAddress": "Na adresu",
+    "toSparkAddress": "Na adresu Spark",
+    "toSparkInvoice": "Na faktúru Spark",
+    "toInvoice": "Na faktúru",
+    "crossChain": {
+      "amountTooSmall": "Suma je pre túto trasu príliš malá.",
+      "amountTooLarge": "Suma je pre túto trasu príliš veľká.",
+      "amountTooSmallHint": "Táto suma je pre dostupné trasy príliš malá. Skús poslať väčšiu sumu.",
+      "amountTooLargeHint": "Táto suma je pre dostupné trasy príliš veľká. Skús poslať menšiu sumu.",
+      "networkUnavailable": "Táto sieť je dočasne nedostupná. Skús to o chvíľu znova.",
+      "networkNotSupported": "Táto sieť nie je dostupná. Skús inú sieť.",
+      "rateDrift": "Suma je pre túto sieť príliš malá. Skús väčšiu sumu alebo inú sieť."
+    },
+    "withdraw": {
+      "noValidAmount": "Tento odkaz na výber neobsahuje platnú sumu, ktorú môže Glow prijať.",
+      "wholeSats": "Zadaj celé číslo v sats"
+    },
+    "enterAmountIn": "Zadaj sumu v {{currency}}",
+    "amountRange": "Medzi {{min}} a {{max}} sats",
+    "result": {
+      "notSentBody": "Platba neprebehla. Tvoje prostriedky neboli odoslané."
+    }
+  },
+  "generate": {
+    "title": "Nechaj si to pre seba",
+    "body": "Zapíš si tieto slová v poradí. Je to tvoja jediná záloha na obnovenie prostriedkov.",
+    "warning": "Nikdy nezdieľaj svoju obnovovaciu frázu. Ktokoľvek s týmito slovami získa prístup k tvojim prostriedkom.",
+    "copyToClipboard": "Kopírovať do schránky",
+    "saved": "Frázu mám uloženú"
+  },
+  "restore": {
+    "body": "Zadaj svoju obnovovaciu frázu s 12 alebo 24 slovami na obnovenie Glow. Slová oddeľ medzerami.",
+    "placeholder": "slovo1 slovo2 slovo3 ...",
+    "invalidLength": "Zadaj platnú obnovovaciu frázu s 12 alebo 24 slovami",
+    "invalidPhrase": "Neplatná obnovovacia fráza. Skontroluj slová a skús to znova."
+  },
+  "unlock": {
+    "eraseTitle": "Vymazať a začať odznova",
+    "eraseAction": "Vymazať a začať odznova",
+    "erase": "Vymazať",
+    "eraseReason": "Vymazať všetky údaje Glow",
+    "eraseBodyPasskey": "Týmto vymažeš všetky údaje Glow uložené v tomto zariadení. Na opätovný prístup k svojim prostriedkom budeš potrebovať passkey.",
+    "eraseBodyMnemonic": "Týmto vymažeš všetky údaje Glow uložené v tomto zariadení. Uisti sa, že máš uloženú obnovovaciu frázu: budeš ju potrebovať na opätovný prístup k svojim prostriedkom."
+  },
+  "refund": {
+    "destinationBody": "Zadaj bitcoinovú adresu, na ktorú chceš dostať vrátené prostriedky.",
+    "refund": "Vrátiť",
+    "amount": "Suma",
+    "networkFee": "Sieťový poplatok"
+  },
+  "deposit": {
+    "amount": "Suma",
+    "networkFee": "Sieťový poplatok",
+    "feeChanged": "Sieťový poplatok sa zmenil",
+    "approveOrReject": "Schváľ, ak chceš tento prevod nárokovať, alebo odmietni pre začatie vrátenia.",
+    "canReject": "Môžeš odmietnuť a namiesto toho začať vrátenie.",
+    "feeRose": "Poplatok sa počas potvrdzovania zvýšil na <amount/>. Schváľ pre nárokovanie s novým poplatkom.",
+    "deliveryFee": "Poplatok za doručenie",
+    "youReceive": "Dostaneš",
+    "claim": "Vyzdvihnúť",
+    "approve": "Schváliť",
+    "reject": "Odmietnuť",
+    "claimFeeChanged": "Tvoje vyzdvihnutie neprešlo: poplatok sa zmenil z <amount/>."
+  },
+  "passkey": {
+    "confirmDeleted": "Potvrdzujem, že tento passkey bol vymazaný.",
+    "confirmDeletedHint": "Nepovinné. Ak si nie si istý, pokračuj bez zaškrtnutia.",
+    "isHowYouAccess": "Tvoj passkey je spôsob, akým sa dostaneš k svojim prostriedkom"
+  },
+  "migration": {
+    "switchFailed": "Prechod na nový passkey sa nepodarilo dokončiť. Tvoje prostriedky sú v bezpečí. Skús to znova.",
+    "keepWindowOpen": "Nechaj toto okno otvorené",
+    "verifyMultipleTimes": "Počas prevodu budeš viackrát požiadaný o overenie totožnosti: raz za každý prevádzaný štítok a potom ešte niekoľkokrát na vytvorenie nového passkey. Nechaj toto okno otvorené, kým sa prevod neskončí.",
+    "explainBody": "Vytvoríme nový passkey a automaticky prevedieme tvoje prostriedky. Počas procesu budeš niekoľkokrát požiadaný o overenie totožnosti.",
+    "singleTransaction": "Tvoje prostriedky sa prevedú jedinou transakciou. História platieb sa neprenesie.",
+    "doneBody": "Tvoje prostriedky boli presunuté na nový passkey.",
+    "addressPending_one": "Túto lightningovú adresu sa nepodarilo previesť:",
+    "addressPending_few": "Tieto lightningové adresy sa nepodarilo previesť:",
+    "addressPending_other": "Tieto lightningové adresy sa nepodarilo previesť:",
+    "addressPendingBody_one": "Platby na túto adresu budú naďalej prichádzať na tvoj starý passkey, kým sa prevod neskončí.",
+    "addressPendingBody_few": "Platby na tieto adresy budú naďalej prichádzať na tvoj starý passkey, kým sa prevody neskončia.",
+    "addressPendingBody_other": "Platby na tieto adresy budú naďalej prichádzať na tvoj starý passkey, kým sa prevody neskončia.",
+    "explainFirstTime": "Ak si svoj passkey vytvoril staršou verziou Glow, vytvoríme nový a automaticky prevedieme tvoje prostriedky. Ak používaš Glow prvýkrát, pokračuj voľbou <skip/>.",
+    "migrateLabels_one": "Prevedieme tvoj štítok na nový passkey.",
+    "migrateLabels_few": "Prevedieme všetky {{count}} štítky na nový passkey.",
+    "migrateLabels_other": "Prevedieme všetkých {{count}} štítkov na nový passkey."
+  },
+  "webNotice": {
+    "preferPasskey": "Pre tvoju bezpečnosť odporúčame namiesto toho použiť passkey.",
+    "preferApp": "Pre tvoju bezpečnosť odporúčame aplikáciu Glow.",
+    "risk": "Obnovovacia fráza na webe je menej bezpečná a je možné, že o svoje prostriedky prídeš. Použi obnovovaciu frázu na webe len vtedy, ak si ochotný podstúpiť toto riziko."
+  }
+}
