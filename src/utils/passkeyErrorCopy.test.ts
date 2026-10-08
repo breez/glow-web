@@ -12,6 +12,12 @@ const withCode = (message: string, code: string): Error => {
 const GPM_LOOP =
   'v1=breez_sdk_spark.PrfProviderException$AuthenticationFailed: v1=Google Password Manager: [15] Flow has timed out.';
 
+// Web errors as the SDK's browser provider throws them: no code, no variant
+// name, wrapped in "PRF error: Passkey error: " when they cross the WASM boundary.
+const WEB_PRF_SIGN_IN = 'PRF error: Passkey error: PRF not supported by authenticator';
+const WEB_PRF_CREATE =
+  'PRF error: Passkey error: Passkey created, but the active credential provider does not support the WebAuthn PRF extension.';
+
 describe('friendlyPasskeyError', () => {
   it('maps the wrapped GPM auth-failed timeout (QA repro, code collapsed to GENERIC_ERROR)', () => {
     expect(friendlyPasskeyError(withCode(GPM_LOOP, 'GENERIC_ERROR'))).toBe(
@@ -33,6 +39,11 @@ describe('friendlyPasskeyError', () => {
 
   it('maps PRF_NOT_SUPPORTED to the same deterministic copy as the GPM loop', () => {
     expect(friendlyPasskeyError(withCode('nope', 'PRF_NOT_SUPPORTED'))).toBe(DETERMINISTIC);
+  });
+
+  it('maps the web provider PRF-unsupported messages (sign-in and create) to the same copy', () => {
+    expect(friendlyPasskeyError(new Error(WEB_PRF_SIGN_IN))).toBe(DETERMINISTIC);
+    expect(friendlyPasskeyError(new Error(WEB_PRF_CREATE))).toBe(DETERMINISTIC);
   });
 
   it('maps a bare AUTHENTICATION_FAILED code regardless of message', () => {
@@ -67,6 +78,11 @@ describe('isDeterministicFailureCopy', () => {
 
   it('flags PRF_NOT_SUPPORTED', () => {
     expect(isDeterministicFailureCopy(friendlyPasskeyError(withCode('nope', 'PRF_NOT_SUPPORTED')))).toBe(true);
+  });
+
+  it('flags the web provider PRF-unsupported messages', () => {
+    expect(isDeterministicFailureCopy(friendlyPasskeyError(new Error(WEB_PRF_SIGN_IN)))).toBe(true);
+    expect(isDeterministicFailureCopy(friendlyPasskeyError(new Error(WEB_PRF_CREATE)))).toBe(true);
   });
 
   it('leaves retryable failures alone', () => {
