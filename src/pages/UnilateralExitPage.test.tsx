@@ -4,7 +4,7 @@ import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import type { FeeRates } from '@/services/chain';
 import type { UnilateralExitFlow } from '@/features/unilateral-exit/hooks/useUnilateralExitFlow';
 import { quoteFigures } from '@/features/unilateral-exit/quote';
-import { prepared } from '@/features/unilateral-exit/testFixtures';
+import { plan, prepared } from '@/features/unilateral-exit/testFixtures';
 
 // The page is the switch under test; the flow behind it is stubbed per step.
 const flow = vi.hoisted(() => ({ current: null as unknown as UnilateralExitFlow }));
@@ -48,35 +48,53 @@ describe('the fee step while its rates load', () => {
   });
 });
 
-const quoteFlow = (singleUtxoFundingSat: number) => {
+const quoteFlow = (
+  singleUtxoFundingSat: number,
+  { underWay = false, startError = null }: { underWay?: boolean; startError?: string | null } = {},
+) => {
   const quote = prepared({ singleUtxoFundingSat });
   return {
     phase: 'quote',
-    engine: { plan: null, pending: null, archive: [] },
+    engine: { plan: underWay ? plan([]) : null, pending: null, archive: [] },
     canGoBack: true,
     back: vi.fn(),
     quote: { quote, figures: quoteFigures(quote), isQuoting: false, error: null },
-    startError: null,
+    startError,
     continueFromQuote: vi.fn(),
     goTo: vi.fn(),
   } as unknown as UnilateralExitFlow;
 };
 
+async function renderQuote(...args: Parameters<typeof quoteFlow>) {
+  flow.current = quoteFlow(...args);
+  render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
+  await waitForSheetOpen();
+  return screen.getByTestId('unilateral-exit-quote-continue');
+}
+
 describe('the quote step', () => {
   it('names the tap that starts the exit when the quote needs no funding', async () => {
-    flow.current = quoteFlow(0);
-    render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
-    await waitForSheetOpen();
-    const cta = screen.getByTestId('unilateral-exit-quote-continue');
-    expect(cta).toHaveTextContent('Exit Spark');
+    const cta = await renderQuote(0);
+    expect(cta).toHaveTextContent(/^Exit Spark$/);
     fireEvent.click(cta);
     expect(flow.current.continueFromQuote).toHaveBeenCalled();
   });
 
+  it('names the tap that continues an exit under way when the quote needs no funding', async () => {
+    expect(await renderQuote(0, { underWay: true })).toHaveTextContent(/^Continue Exit$/);
+  });
+
   it('only continues, to the phrase and the fee, when the quote needs funding', async () => {
-    flow.current = quoteFlow(3_000);
-    render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
-    await waitForSheetOpen();
-    expect(screen.getByTestId('unilateral-exit-quote-continue')).toHaveTextContent('Continue');
+    expect(await renderQuote(3_000)).toHaveTextContent(/^Continue$/);
+  });
+
+  it('says the exit could not start when building it at once failed', async () => {
+    await renderQuote(0, { startError: 'operators unreachable' });
+    expect(screen.getByText('Could not start the exit')).toBeInTheDocument();
+  });
+
+  it('says the exit could not continue when rebuilding one under way failed', async () => {
+    await renderQuote(0, { underWay: true, startError: 'operators unreachable' });
+    expect(screen.getByText('Could not continue the exit')).toBeInTheDocument();
   });
 });

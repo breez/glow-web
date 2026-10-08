@@ -60,7 +60,7 @@ coins, and the sdk spends them together, fanning out again if it has to.
 
 | | |
 |---|---|
-| `quote.ts` | everything read off a quote, for Recover Funds and the Unilateral Exit alike: what it moves, what it costs, what arrives, whether it needs funding |
+| `quote.ts` | everything read off a quote, for Recover Funds and the Unilateral Exit alike: what it moves, what it costs, what arrives and whether that is an estimate, whether it needs funding, and what the exit fee address was paid |
 | `driver.ts` | what an exit is, how one is built and started, and one pass over it: check, rebuild if needed, send what is ready |
 | `engine.ts` | watches a saved exit's fee address, starts the exit when the user asks, then runs passes for as long as the app is open |
 | `funding.ts` | the key and address the fees are paid from |

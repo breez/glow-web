@@ -128,6 +128,27 @@ describe('archiveExit', () => {
     expect(loadArchive(wallet)[0].exitFeePaidSat).toBe(58_534);
   });
 
+  it('keeps the fee and its address through a rebuild that spent no funding', () => {
+    archiveExit(
+      wallet,
+      plan([tx({ txid: 'sweep-d', kind: 'sweep', txHex: '00', status: confirmed(10) })], {
+        phase: 'complete',
+        quotedExitFeeSat: 14_350,
+        exitFeeAddress: 'bcrt1qfee',
+        exit: { recoverableValueSat: 120_000, fundingInputs: [] },
+      }),
+    );
+
+    expect(loadArchive(wallet)[0]).toMatchObject({ exitFeePaidSat: 14_350, exitFeeAddress: 'bcrt1qfee' });
+  });
+
+  it('records no exit fee for an exit that never needed one', () => {
+    archiveExit(wallet, finished('sweep-e', 118_900));
+
+    expect(loadArchive(wallet)[0].exitFeePaidSat).toBeUndefined();
+    expect(loadArchive(wallet)[0].exitFeeAddress).toBeUndefined();
+  });
+
   it('ignores a plan that never built a sweep', () => {
     archiveExit(wallet, plan([tx({ txid: 'node-a' })], { phase: 'complete' }));
 

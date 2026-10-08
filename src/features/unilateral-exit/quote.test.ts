@@ -1,8 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { PrepareUnilateralExitResponse } from '@breeztech/breez-sdk-spark';
 import { planFromExitResponse } from './driver';
-import { leftOutSat, needsFunding, quoteFigures, quotedSweepFeeSat, willReceiveSat } from './quote';
-import { checked, confirmed, prepared, sweepHex, twoLeaves, tx } from './testFixtures';
+import { deriveFundingKey } from './funding';
+import {
+  builtExitFeeRecord,
+  exitFeeRecordOf,
+  isEstimate,
+  leftOutSat,
+  needsFunding,
+  quoteFigures,
+  quotedSweepFeeSat,
+  willReceiveSat,
+} from './quote';
+import { checked, confirmed, MNEMONIC, pendingExit, plan, prepared, sweepHex, twoLeaves, tx } from './testFixtures';
 
 const meta = {
   network: 'mainnet',
@@ -80,6 +90,52 @@ describe('needsFunding', () => {
   });
 });
 
+describe('the exit fee record', () => {
+  const key = deriveFundingKey(MNEMONIC, 'regtest', 0);
+  const input = (txid: string, value: number) => ({ type: 'p2wpkh' as const, txid, vout: 0, value, pubkey: key.publicKeyHex });
+
+  it('is what the plan recorded, whatever its funding inputs say', () => {
+    const recorded = plan([], { quotedExitFeeSat: 14_350, exitFeeAddress: 'bcrt1qfee', exit: { fundingInputs: [] } });
+    expect(exitFeeRecordOf(recorded)).toEqual({ quotedExitFeeSat: 14_350, exitFeeAddress: 'bcrt1qfee' });
+  });
+
+  it('reads an older plan off the coins its builds spent', () => {
+    const older = plan([], { network: 'regtest', exit: { fundingInputs: [input('a', 12_000), input('b', 8_000)] } });
+    expect(exitFeeRecordOf(older)).toEqual({ quotedExitFeeSat: 20_000, exitFeeAddress: key.address });
+  });
+
+  it('is empty for an exit that never needed funding', () => {
+    expect(exitFeeRecordOf(plan([]))).toEqual({ quotedExitFeeSat: undefined, exitFeeAddress: undefined });
+  });
+
+  it('takes a funded build\'s own exit fee, and carries what was paid through one that needs none', () => {
+    const paid = { quotedExitFeeSat: 14_350, exitFeeAddress: 'bcrt1qfee' };
+    expect(builtExitFeeRecord(prepared({ singleUtxoFundingSat: 16_000 }), paid)).toEqual({
+      quotedExitFeeSat: 16_000,
+      exitFeeAddress: 'bcrt1qfee',
+    });
+    expect(builtExitFeeRecord(prepared({ singleUtxoFundingSat: 0 }), paid)).toEqual(paid);
+    expect(builtExitFeeRecord(prepared({ singleUtxoFundingSat: 0 }), {})).toEqual({});
+  });
+});
+
+describe('isEstimate', () => {
+  const funded = plan([], { quotedExitFeeSat: 14_350 });
+
+  it('marks what an exit fee pays for as an estimate, and nothing else', () => {
+    expect(isEstimate(prepared({ singleUtxoFundingSat: 3_000 }))).toBe(true);
+    expect(isEstimate(prepared({ singleUtxoFundingSat: 0 }))).toBe(false);
+    expect(isEstimate(funded)).toBe(true);
+    expect(isEstimate(plan([]))).toBe(false);
+    expect(isEstimate(pendingExit())).toBe(true);
+  });
+
+  it('keeps a rebuild of a funded exit an estimate, even once it needs no more funding', () => {
+    expect(isEstimate(prepared({ singleUtxoFundingSat: 0 }), funded)).toBe(true);
+    expect(quoteFigures(prepared({ singleUtxoFundingSat: 0 }), { resuming: funded }).isEstimate).toBe(true);
+  });
+});
+
 describe('leftOutSat', () => {
   it('counts every leaf the quote skipped, a reason it does not know included', () => {
     const quote = withApi({}, {
@@ -99,6 +155,11 @@ describe('leftOutSat', () => {
     expect(leftOutSat(prepared({ recoverableValueSat: 100_000 }), 102_500)).toBe(2_500);
     // Co-signed funds sit outside the balance, so they do not cover any of it.
     expect(leftOutSat(prepared({ leaves: cosigned, recoverableValueSat: 148_200 }), 102_500)).toBe(2_500);
+  });
+
+  it('says which of the two the figure came from', () => {
+    expect(quoteFigures(withApi({}, { skipped: [] })).leftOutFromSkipped).toBe(true);
+    expect(quoteFigures(prepared()).leftOutFromSkipped).toBe(false);
   });
 });
 

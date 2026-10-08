@@ -46,8 +46,7 @@ NORMAL_CASE = [
         ('02-destination', 'Address', 'new', '', ''),
         ('03-fee-cosigned', 'Fee', 'new', '', ''),
         ('04-review-cosigned', 'Review', 'new', '', ''),
-        ('04b-review-left-out', 'Review', 'new', 'Says how much, not why',
-         'When the quote leaves funds out, the review shows the amount. Most reasons are nothing the user can act on.'),
+        ('04b-review-left-out', 'Review', 'new', '', 'Glow shows how much stays behind, not why.'),
         ('05-sent', 'Done', 'new', '', ''),
         ('06-wallet-after-cosigned', 'Wallet', 'new', 'One BTC Transfer per recovery',
          'Glow keeps this row itself, **because the SDK records no payment for a co-signed recovery.**'),
@@ -60,8 +59,8 @@ NORMAL_CASE = [
         ('11-archived-dialog', 'Landed', 'today', '', ''),
     ], 'exitfee'),
     ('When no exit fee is needed', [
-        'If the funds are already on-chain and only the last transaction is left, it pays its own fee from them.',
-        'There is no exit fee to send, so the recovery starts at once.',
+        'If the funds are already on-chain and only the last transaction is left, its fee comes out of those funds.',
+        'There is no exit fee to send, so Glow starts the recovery at once.',
     ], [
         ('07b-review-no-exit-fee', 'Review', 'new', '', ''),
         ('07c-running-no-exit-fee', 'Running', 'today', '', ''),
@@ -82,7 +81,7 @@ NORMAL_CASE = [
         ('14-review-error', 'Error', 'new', 'Nothing was co-signed',
          'If the operators sign only some of the funds, no error is shown. The unsigned funds stay in the Recoverable Funds row.'),
         ('15-fee-nothing-worth', 'Dead end', 'new', 'Worth less than the fee',
-         'The recoverable funds (₿350 here) would cost more in network fees than they are worth, at every speed.'),
+         'The SDK leaves out funds (₿350 here) that cost more to move than they hold. With nothing left to recover, Glow does not say why.'),
     ]),
     ('Speeding up a stuck recovery', [
         'Replace-by-fee: the operators co-sign a new transaction for the same output at a higher fee, which replaces the stuck one.',

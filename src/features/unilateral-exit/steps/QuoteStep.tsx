@@ -72,12 +72,19 @@ export const QuoteStep: React.FC<QuoteFields> = ({ quote, figures, isQuoting, er
         </SimpleAlert>
       )}
 
-      {figures.leftOutSat > 0 && (
-        <LeftOutCard title="Some of your balance stays behind">
-          <SatAmount sats={figures.leftOutSat} /> sits in pieces too small to be worth their own
-          on-chain fee at this rate, so they are left out of this exit.
-        </LeftOutCard>
-      )}
+      {/* The SDK skips leaves for many reasons, few the user can act on, so
+          Glow names only the amount. */}
+      {figures.leftOutSat > 0 &&
+        (figures.leftOutFromSkipped ? (
+          <LeftOutCard title="Some funds stay behind">
+            <SatAmount sats={figures.leftOutSat} /> is left out of this exit.
+          </LeftOutCard>
+        ) : (
+          <LeftOutCard title="Some of your balance stays behind">
+            <SatAmount sats={figures.leftOutSat} /> sits in pieces too small to be worth their own
+            on-chain fee at this rate, so they are left out of this exit.
+          </LeftOutCard>
+        ))}
 
     </div>
   );

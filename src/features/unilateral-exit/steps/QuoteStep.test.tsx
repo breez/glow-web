@@ -101,6 +101,15 @@ describe('QuoteStep', () => {
     expect(screen.getByText(/2 500/)).toBeInTheDocument();
   });
 
+  it('says how much stays behind, and not why, once the quote lists what it skips', () => {
+    const skipping = { ...quote(), skipped: [{ leafId: 'gone', valueSats: 2_500, reason: { type: 'fundsNotFound' } }] };
+    renderStep(skipping, { walletBalanceSat: 100_000 });
+    expect(screen.getByText('Some funds stay behind')).toBeInTheDocument();
+    expect(screen.getByText(/is left out of this exit/)).toHaveTextContent('2 500');
+    expect(screen.queryByText('Some of your balance stays behind')).not.toBeInTheDocument();
+    expect(screen.queryByText(/too small/)).not.toBeInTheDocument();
+  });
+
   it('gives recoverable funds their own row, so Balance stays the balance', () => {
     renderStep(withRecoverable());
     expect(within(screen.getByText('Balance').parentElement as HTMLElement).getByText(/100 000/)).toBeInTheDocument();

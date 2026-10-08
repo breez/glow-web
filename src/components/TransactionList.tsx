@@ -172,7 +172,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
       </div>
 
       <span className="font-mono font-semibold text-[15px] shrink-0 inline-flex items-center text-spark-electric">
-        <SatAmount sats={entry.amountSat} approximate={isInFlight(entry)} />
+        <SatAmount sats={entry.amountSat} approximate={entry.isEstimate} />
       </span>
     </li>
   );

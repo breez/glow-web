@@ -42,6 +42,10 @@ describe('a pending exit in the wallet list', () => {
     });
   });
 
+  it('marks what will arrive as an estimate, since the exit fee pays for it', () => {
+    expect(row().isEstimate).toBe(true);
+  });
+
   it('asks for the rest after a partial payment', () => {
     expect(row({ pendingCoins: [coin(3_000, false)] }).subtitle).toBe('Send ₿3 034 more');
   });
@@ -72,6 +76,7 @@ describe('recoverable funds in the wallet list', () => {
     });
     expect(row({}, 48_200).kind).toBe('active');
     expect(row({ pending: null, plan: plan([]) }, 48_200).kind).toBe('active');
+    expect(row({ pending: null }, 48_200).isEstimate).toBeFalsy();
   });
 
   it('sits above a finished exit, in the same group', () => {
@@ -109,6 +114,7 @@ describe('a kept co-signed recovery in the wallet list', () => {
       title: 'BTC Transfer',
       subtitle: 'Waiting for a confirmation',
       amountSat: 45_300,
+      isEstimate: false,
       kind: 'recovery',
     });
     expect(rows[1]).toMatchObject({ id: 'pending', title: 'Waiting for exit fee' });
@@ -127,6 +133,13 @@ describe('a kept co-signed recovery in the wallet list', () => {
     expect(entries({ pending: null, recoveries: [{ ...recovery, phase: 'complete' }] }, 11_800)).toEqual([
       expect.objectContaining({ kind: 'recoverable', amountSat: 11_800 }),
     ]);
+  });
+});
+
+describe('an exit under way in the wallet list', () => {
+  it('marks its amount as an estimate only when an exit fee paid for it', () => {
+    expect(row({ pending: null, plan: plan([], { quotedExitFeeSat: 14_350 }) }).isEstimate).toBe(true);
+    expect(row({ pending: null, plan: plan([]) }).isEstimate).toBe(false);
   });
 });
 

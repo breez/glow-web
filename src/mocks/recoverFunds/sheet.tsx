@@ -9,7 +9,7 @@ import { DestinationField } from '@/components/DestinationField';
 import { FeeRateSelector, type FeeSpeed } from '@/components/FeeRateSelector';
 import { SatAmount } from '@/components/SatAmount';
 import { WalletProvider, useWalletConnection } from '@/contexts/WalletContext';
-import { exitFeeSat, quoteFigures, quotedSweepFeeSat } from '@/features/unilateral-exit/quote';
+import { builtExitFeeRecord, quoteFigures, quotedSweepFeeSat } from '@/features/unilateral-exit/quote';
 import { RecoverReviewStep } from '@/features/unilateral-exit/steps/RecoverReviewStep';
 import { PendingExitStep, Receipt, Status } from '@/features/unilateral-exit/steps/FundStep';
 import { TrackerView } from '@/features/unilateral-exit/TrackerView';
@@ -20,6 +20,7 @@ import {
   DESTINATION,
   DUST_QUOTE,
   DUST_SAT,
+  EXIT_FEE_ADDRESS,
   FEE_RATES,
   LEFT_OUT_QUOTE,
   MIXED_QUOTE,
@@ -133,7 +134,7 @@ const strandedMeta = (quote: PrepareUnilateralExitResponse) => ({
   destination: quote.destination,
   feeRateSatPerVbyte: quote.feeRateSatPerVbyte,
   quotedSweepFeeSat: quotedSweepFeeSat(quote, null),
-  quotedExitFeeSat: exitFeeSat(quote),
+  ...builtExitFeeRecord(quote, {}, EXIT_FEE_ADDRESS),
   mode: 'recover' as const,
 });
 
