@@ -37,7 +37,17 @@ export const PIN_LENGTH = 6;
 export const AUTO_LOCK_OPTIONS_SECONDS = [0, 30, 120, 300, 600, 1800, 3600];
 export const DEFAULT_AUTO_LOCK_SECONDS = 120;
 
-const PBKDF2_ITERATIONS = 100_000;
+/**
+ * OWASP's current floor for PBKDF2-SHA256. The PIN keyspace is small
+ * enough that this derivation cost is the only thing between a copied
+ * record and the PIN, so it is sized for offline search, not for the
+ * on-device backoff below. Measured well under a second on the oldest
+ * supported devices; the pad is already busy-blocked while it runs.
+ */
+const PBKDF2_ITERATIONS = 600_000;
+/** What records written before the raise used. Kept so an existing PIN
+ *  still verifies; those records are re-derived on next success. */
+const LEGACY_PBKDF2_ITERATIONS = 100_000;
 
 /**
  * Consecutive failures to seconds of enforced wait, clamped to the last
@@ -71,7 +81,11 @@ function mirrorGet(key: string): string | null {
 // PIN hashing
 // ============================================
 
-async function derivePinHash(pin: string, salt: Uint8Array): Promise<string> {
+async function derivePinHash(
+  pin: string,
+  salt: Uint8Array,
+  iterations: number,
+): Promise<string> {
   const key = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(pin),
@@ -84,7 +98,7 @@ async function derivePinHash(pin: string, salt: Uint8Array): Promise<string> {
       name: 'PBKDF2',
       hash: 'SHA-256',
       salt: salt as BufferSource,
-      iterations: PBKDF2_ITERATIONS,
+      iterations,
     },
     key,
     256,
@@ -100,6 +114,20 @@ interface PinRecord {
   v: 1;
   salt: string;
   hash: string;
+  /** Absent on records written before the iteration raise. */
+  iterations?: number;
+}
+
+/**
+ * The cost a stored record was derived at. Absent means the pre-raise
+ * default. A nonsensical one is treated the same way rather than passed
+ * through: the record is editable by anyone who can reach the store,
+ * and an out-of-range count makes deriveBits throw instead of simply
+ * not matching.
+ */
+function recordIterations(record: PinRecord): number {
+  const n = record.iterations;
+  return typeof n === 'number' && Number.isInteger(n) && n >= 1 ? n : LEGACY_PBKDF2_ITERATIONS;
 }
 
 async function readPinRecord(): Promise<PinRecord | null> {
@@ -124,11 +152,20 @@ export function isPinEnabledSync(): boolean {
   return isAppLockSupported() && mirrorGet(PIN_MIRROR_KEY) === 'true';
 }
 
+async function writePinRecord(pin: string, salt: Uint8Array): Promise<void> {
+  const record: PinRecord = {
+    v: 1,
+    salt: bytesToHex(salt),
+    hash: await derivePinHash(pin, salt, PBKDF2_ITERATIONS),
+    iterations: PBKDF2_ITERATIONS,
+  };
+  await Preferences.set({ key: PIN_RECORD_KEY, value: JSON.stringify(record) });
+}
+
 /** Create or replace the PIN. Caller is responsible for the verify step. */
 export async function setPin(pin: string): Promise<void> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  const record: PinRecord = { v: 1, salt: bytesToHex(salt), hash: await derivePinHash(pin, salt) };
-  await Preferences.set({ key: PIN_RECORD_KEY, value: JSON.stringify(record) });
+  await writePinRecord(pin, salt);
   await Preferences.remove({ key: PIN_ATTEMPTS_KEY });
   mirrorSet(PIN_MIRROR_KEY, 'true');
   logger.info(LogCategory.AUTH, 'appLock: PIN set');
@@ -192,9 +229,19 @@ export async function verifyPin(pin: string): Promise<PinVerifyResult> {
   if (waiting > 0) return { ok: false, lockedForMs: waiting };
 
   const record = await readPinRecord();
-  const ok = record != null && (await derivePinHash(pin, hexToBytes(record.salt))) === record.hash;
+  const iterations = record == null ? PBKDF2_ITERATIONS : recordIterations(record);
+  const ok =
+    record != null &&
+    (await derivePinHash(pin, hexToBytes(record.salt), iterations)) === record.hash;
   if (ok) {
     await Preferences.remove({ key: PIN_ATTEMPTS_KEY });
+    // Re-derive a record left at the old cost, with a fresh salt. Done
+    // after clearing attempts so a failure here cannot lock the user
+    // out: the old record still verifies on the next entry.
+    if (iterations !== PBKDF2_ITERATIONS) {
+      await writePinRecord(pin, crypto.getRandomValues(new Uint8Array(16)));
+      logger.info(LogCategory.AUTH, 'appLock: PIN record re-derived');
+    }
     return { ok: true, lockedForMs: 0 };
   }
 

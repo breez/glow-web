@@ -186,6 +186,48 @@ describe('appLock idle-lock suppression', () => {
   });
 });
 
+describe('appLock PIN record upgrade', () => {
+  // A record written before the derivation cost was raised: no
+  // `iterations` field, hash computed at the old count.
+  async function legacyRecord(pin: string, saltHex: string) {
+    const salt = Uint8Array.from(saltHex.match(/../g)!.map((b) => parseInt(b, 16)));
+    const key = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveBits'],
+    );
+    const bits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', hash: 'SHA-256', salt, iterations: 100_000 }, key, 256,
+    );
+    const hash = [...new Uint8Array(bits)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    return { v: 1, salt: saltHex, hash };
+  }
+
+  it('verifies a pre-raise record and re-derives it at the new cost', async () => {
+    const appLock = await loadAppLock(true);
+    const saltHex = '000102030405060708090a0b0c0d0e0f';
+    appLock.store.set('glow.appLock.pin', JSON.stringify(await legacyRecord('123456', saltHex)));
+
+    expect((await appLock.verifyPin('654321')).ok).toBe(false);
+    expect((await appLock.verifyPin('123456')).ok).toBe(true);
+
+    const upgraded = JSON.parse(appLock.store.get('glow.appLock.pin')!);
+    expect(upgraded.iterations).toBe(600_000);
+    expect(upgraded.salt).not.toBe(saltHex);
+    // Still the same PIN afterwards, and only that PIN.
+    expect((await appLock.verifyPin('123456')).ok).toBe(true);
+    expect((await appLock.verifyPin('654321')).ok).toBe(false);
+  });
+
+  it('rejects a record whose stored cost was tampered with, without throwing', async () => {
+    const appLock = await loadAppLock(true);
+    const saltHex = '0f0e0d0c0b0a09080706050403020100';
+    const record = { ...(await legacyRecord('123456', saltHex)), iterations: 0 };
+    appLock.store.set('glow.appLock.pin', JSON.stringify(record));
+    // 0 would throw inside deriveBits; the read falls back to the
+    // pre-raise count, which is also what this hash was derived at.
+    expect((await appLock.verifyPin('123456')).ok).toBe(true);
+  });
+});
+
 describe('appLock on web', () => {
   it('reports unsupported and disabled everywhere', async () => {
     const appLock = await loadAppLock(false);
