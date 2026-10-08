@@ -6,7 +6,7 @@ import { CollapsibleCodeField, CollapsibleSection, PrimaryButton, SecondaryButto
 import { RefreshIcon } from '@/components/Icons';
 import { blocksToFinish, exitStages, nextAction, planProgress } from './driver';
 import type { NextAction, PlanProgress, UnilateralExitPlan } from './driver';
-import { isCooperative } from './quote';
+import { isCooperative, isEstimate } from './quote';
 import { formatDaysLeft } from '@/utils/blockTime';
 import { formatWithSpaces } from '@/utils/formatNumber';
 
@@ -86,7 +86,7 @@ const ExitSummary: React.FC<{
         </p>
         <SatAmount
           sats={stages.willReceive}
-          approximate
+          approximate={isEstimate(plan)}
           className="text-4xl font-bold text-spark-text-primary"
         />
       </div>

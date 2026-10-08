@@ -81,6 +81,15 @@ describe('what the exit is worth right now', () => {
     expect(screen.getByText(/599 785/)).toBeInTheDocument();
   });
 
+  it('marks what will arrive approximate only when an exit fee paid for it', () => {
+    const hero = () => screen.getByText(/599 785/).closest('span') as HTMLElement;
+    const { unmount } = renderTracker(twoLeaves([tx({ txid: 'a' })], { quotedExitFeeSat: 3_122 }));
+    expect(hero()).toHaveTextContent('~');
+    unmount();
+    renderTracker(twoLeaves([tx({ txid: 'a', kind: 'sweep' })]));
+    expect(hero()).not.toHaveTextContent('~');
+  });
+
   it('counts the transactions done against the total', () => {
     renderTracker(
       plan([tx({ txid: 'a', status: confirmed(900) }), tx({ txid: 'r', kind: 'refund', status: locked(3000) })]),

@@ -16,6 +16,16 @@ export const RecoverReviewStep: React.FC<{
   /** Why the recovery did not start, under the review it was started from. */
   error?: string | null;
 }> = ({ figures, destination, error = null }) => {
+  // The SDK may have skipped every leaf of an empty quote for any reason, fees
+  // among them, so Glow blames the fees only for a quote that moves something.
+  if (figures.isEmpty) {
+    return (
+      <AlertCard variant="warning" title="Nothing can be recovered right now">
+        <p className="text-sm">Try again later.</p>
+      </AlertCard>
+    );
+  }
+
   if (!figures.isWorthMoving) {
     return (
       <AlertCard variant="warning" title="Nothing is worth recovering right now">

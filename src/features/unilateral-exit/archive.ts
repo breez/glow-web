@@ -1,6 +1,5 @@
 import { logger, LogCategory } from '@/services/logger';
-import { fundingAddressOf } from './funding';
-import { cooperativeValueSat, willReceiveSat } from './quote';
+import { cooperativeValueSat, exitFeeRecordOf, willReceiveSat } from './quote';
 import type { ExitMode, UnilateralExitPlan, WalletKey } from './driver';
 
 /**
@@ -59,8 +58,10 @@ export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): Archiv
   const existing = loadArchive(wallet);
   if (existing.some(entry => entry.id === id)) return existing;
 
-  const funding = plan.exit.fundingInputs;
-  const keyed = funding.find(input => input.type === 'p2wpkh');
+  // What the exit was quoted to need, not what the address holds: a rebuild
+  // takes in every confirmed coin there, the exit's own change included, so
+  // summing those counts the same sats twice.
+  const { quotedExitFeeSat, exitFeeAddress } = exitFeeRecordOf(plan);
   const next = [
     {
       id,
@@ -70,11 +71,8 @@ export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): Archiv
       network: plan.network,
       exitedSat: plan.exit.recoverableValueSat,
       recoverableFundsSat: cooperativeValueSat(plan.exit) || undefined,
-      // What the exit was quoted to need, not what the address holds: a rebuild
-      // takes in every confirmed coin there, the exit's own change included, so
-      // summing those counts the same sats twice.
-      exitFeePaidSat: plan.quotedExitFeeSat ?? funding.reduce((sum, input) => sum + input.value, 0),
-      exitFeeAddress: keyed ? fundingAddressOf(keyed.pubkey, plan.network) : undefined,
+      exitFeePaidSat: quotedExitFeeSat,
+      exitFeeAddress,
       mode: plan.mode,
     },
     ...existing,

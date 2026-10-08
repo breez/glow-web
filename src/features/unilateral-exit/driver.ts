@@ -13,7 +13,15 @@ import type { ChainClient, ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { loadExitState, restoreExitState, saveExitState } from './exitState';
 import { deriveFundingKey, MnemonicNeedsPasskeyError, readWalletMnemonic, type FundingKey } from './funding';
-import { exitFeeSat, isCooperative, isWorthExiting, needsFunding, quotedSweepFeeSat, willReceiveSat } from './quote';
+import {
+  builtExitFeeRecord,
+  exitFeeRecordOf,
+  isCooperative,
+  isWorthExiting,
+  needsFunding,
+  quotedSweepFeeSat,
+  willReceiveSat,
+} from './quote';
 
 /**
  * `complete` is the sdk's `done` verdict. `redo` is its `redo`: the chain no
@@ -34,10 +42,13 @@ export interface UnilateralExitPlan {
    */
   quotedSweepFeeSat: number;
   /**
-   * What the exit was quoted to need at its fee address, from the build that
-   * produced this plan. Absent on a plan written before the field existed.
+   * What the exit fee address was asked for, and where it is. Kept here as well
+   * as in the funding inputs, which a build that needs no funding leaves empty.
+   * Absent when the exit never needed any, or on a plan written before these
+   * existed, whose funding inputs stand in (`exitFeeRecordOf`).
    */
   quotedExitFeeSat?: number;
+  exitFeeAddress?: string;
   /** The sdk's latest word on the exit, handed back to `checkUnilateralExit` unchanged. */
   exit: UnilateralExitResponse;
   /**
@@ -72,6 +83,7 @@ export interface PlanMeta {
   fundingAddressIndex: number;
   quotedSweepFeeSat: number;
   quotedExitFeeSat?: number;
+  exitFeeAddress?: string;
   mode?: ExitMode;
 }
 
@@ -432,7 +444,10 @@ export async function startExit(
     .exportUnilateralExitState()
     .then(r => r.exitState)
     .catch(() => undefined);
-  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quotedSweepFeeSat(quote, null), quotedExitFeeSat: exitFeeSat(quote), mode };
+  // The user paid the fee even if this quote no longer needs it. Glow then
+  // builds without it and keeps the pending exit's record of where it went.
+  const fee = builtExitFeeRecord(quote, { quotedExitFeeSat: pending.required.sat, exitFeeAddress: pending.fundingAddress });
+  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quotedSweepFeeSat(quote, null), ...fee, mode };
   return { type: 'started', plan: { ...planFromExitResponse(exit, meta), exitStateSnapshot } };
 }
 
@@ -492,10 +507,11 @@ export async function checkExit(plan: UnilateralExitPlan, sdk: ExitSdk): Promise
  * destination, fee rate and funding. Null when there is nothing left to build,
  * which leaves the stored exit as it was.
  *
- * A background pass never asks for the recovery phrase: a wallet that keeps
- * none on the device throws, and the tracker offers the rebuild as a button.
- * The button passes `interactive`, since its tap is what lets a passkey
- * prompt run. The phrase is read first, while that tap is still fresh.
+ * Glow reads the recovery phrase only when the rebuild has funding to sign
+ * for, and quotes first to find out. From the tracker's button (`interactive`)
+ * Glow reads it first instead, while the tap is fresh enough for a passkey
+ * prompt. In the background Glow cannot prompt, so on a passkey wallet the
+ * read fails and the tracker offers the rebuild as that button.
  */
 export async function rebuildExit(
   plan: UnilateralExitPlan,
@@ -503,11 +519,9 @@ export async function rebuildExit(
   identityPubkey: string,
   { interactive = false }: { interactive?: boolean } = {},
 ): Promise<UnilateralExitPlan | null> {
-  const key = deriveFundingKey(
-    await readWalletMnemonic({ interactive }),
-    plan.network,
-    plan.fundingAddressIndex,
-  );
+  const readKey = async () =>
+    deriveFundingKey(await readWalletMnemonic({ interactive }), plan.network, plan.fundingAddressIndex);
+  const tapKey = interactive ? await readKey() : null;
   await restoreExitState(sdk, plan, await loadExitState(identityPubkey).catch(() => null));
 
   // Named, not reselected: `auto` can drop a leaf that is part-way out.
@@ -519,12 +533,15 @@ export async function rebuildExit(
   });
   if (prepared.leaves.length === 0) return null;
 
-  const rebuilt = await buildFromQuote(sdk, prepared, { inputs: plan.exit.fundingInputs, secretKey: key.secretKey });
+  const key = needsFunding(prepared) ? (tapKey ?? (await readKey())) : null;
+  const rebuilt = await buildFromQuote(sdk, prepared, key && { inputs: plan.exit.fundingInputs, secretKey: key.secretKey });
   if (rebuilt.transactions.length === 0) return null;
 
-  // A leaf the watchtower moved comes back co-signed, and that fee comes off what arrives too.
+  // A leaf the watchtower moved comes back co-signed, and that fee comes off
+  // what arrives too. The fee record carries over: at the same rate and with
+  // the same funding, the user paid the fee address what they paid before.
   const { network, destination, feeRateSatPerVbyte, fundingAddressIndex, mode } = plan;
-  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quotedSweepFeeSat(prepared, plan), mode };
+  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quotedSweepFeeSat(prepared, plan), ...exitFeeRecordOf(plan), mode };
   return { ...planFromExitResponse(rebuilt, meta), exitStateSnapshot: plan.exitStateSnapshot };
 }
 

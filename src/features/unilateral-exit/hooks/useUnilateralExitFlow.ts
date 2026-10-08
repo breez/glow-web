@@ -19,7 +19,7 @@ import {
   type TopUp,
   type WalletKey,
 } from '../driver';
-import { quoteFigures, quotedSweepFeeSat, type QuoteFigures } from '../quote';
+import { builtExitFeeRecord, exitFeeRecordOf, quoteFigures, quotedSweepFeeSat, type QuoteFigures } from '../quote';
 import {
   setPendingExit,
   setUnilateralExitPlan,
@@ -380,7 +380,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
         feeRateSatPerVbyte: quote.feeRateSatPerVbyte,
         fundingAddressIndex: plan?.fundingAddressIndex ?? 0,
         quotedSweepFeeSat: quotedSweepFeeSat(quote, plan),
-        quotedExitFeeSat: figures.exitFeeSat,
+        ...builtExitFeeRecord(quote, plan ? exitFeeRecordOf(plan) : {}, fundingKey?.address),
         mode: plan?.mode,
       });
       setUnilateralExitPlan(walletKey, { ...built, exitStateSnapshot });

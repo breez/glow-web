@@ -8,7 +8,7 @@ import {
   type PendingExit,
   type UnilateralExitPlan,
 } from './driver';
-import { willReceiveSat } from './quote';
+import { isEstimate, willReceiveSat } from './quote';
 import type { ArchivedExit } from './archive';
 import type { UnilateralExitEngineState } from './engine';
 
@@ -24,6 +24,8 @@ export interface UnilateralExitEntry {
   /** The subtitle asks for a tap, so it takes the amount's color, as "Tap to claim" does. */
   isAction?: boolean;
   amountSat: number;
+  /** `amountSat` is what an exit still under way expects to deliver. */
+  isEstimate?: boolean;
   /**
    * `active` is in flight, so it pulses and opens the flow. `recoverable` opens
    * the flow too but nothing is under way yet. `recovery` is a kept co-signed
@@ -83,6 +85,7 @@ const recoveryEntry = (recovery: UnilateralExitPlan): UnilateralExitEntry => ({
   title: 'BTC Transfer',
   subtitle: 'Waiting for a confirmation',
   amountSat: willReceiveSat(recovery),
+  isEstimate: isEstimate(recovery),
   kind: 'recovery',
 });
 
@@ -91,12 +94,16 @@ const inFlight = (recoveries: UnilateralExitPlan[]) => recoveries.filter(r => r.
 const liveEntry = (state: UnilateralExitEngineState, recoverableSat: number): UnilateralExitEntry | null => {
   const { plan, pending } = state;
   if (!plan && pending) {
-    return { id: 'pending', ...pendingText(state, pending), amountSat: pending.willReceiveSat, kind: 'active' };
+    return {
+      id: 'pending',
+      ...pendingText(state, pending),
+      amountSat: pending.willReceiveSat,
+      isEstimate: isEstimate(pending),
+      kind: 'active',
+    };
   }
   if (!plan) {
-    const keptSat = inFlight(state.recoveries)
-      .flatMap(r => r.exit.leaves)
-      .reduce((sum, leaf) => sum + leaf.value, 0);
+    const keptSat = inFlight(state.recoveries).reduce((sum, r) => sum + r.exit.recoverableValueSat, 0);
     const leftSat = recoverableSat - keptSat;
     if (leftSat <= 0) return null;
     return {
@@ -115,6 +122,7 @@ const liveEntry = (state: UnilateralExitEngineState, recoverableSat: number): Un
     subtitle: activeSubtitle(state),
     isAction: plan.phase === 'redo',
     amountSat: willReceiveSat(plan),
+    isEstimate: isEstimate(plan),
     kind: 'active',
   };
 };

@@ -367,18 +367,50 @@ describe('advanceUnilateralExit', () => {
   });
 
   it('waits for the user rather than prompting for a passkey in the background', async () => {
-    // A wallet that keeps no phrase on the device: the rebuild needs a
-    // ceremony, which only a button press can ask for.
+    // A wallet that keeps no phrase on the device: a rebuild that signs for
+    // funding needs a ceremony, which only a button press can ask for.
     localStorage.removeItem('walletMnemonic');
     localStorage.setItem('passkeyLabel', 'Default');
-    const { plan: next } = await advanceUnilateralExit(
-      plan([tx({ txid: 'a' })]),
-      chain(),
-      checking(checked([{ txid: 'a' }]), redo),
-      '02abc',
-    );
+    const unilateralExit = vi.fn(async () => checked([{ txid: 'fresh', status: ready }]));
+    const driver = sdk({
+      checkUnilateralExit: async () => ({ exit: checked([{ txid: 'a' }]), verdict: redo }),
+      prepareUnilateralExit: async () => prepared({ singleUtxoFundingSat: 3_000 }),
+      unilateralExit,
+    });
+    const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain(), driver, '02abc');
     expect(next.phase).toBe('redo');
+    expect(unilateralExit).not.toHaveBeenCalled();
     localStorage.removeItem('passkeyLabel');
+  });
+
+  it('rebuilds a sweep left on its own without the phrase, so a passkey wallet does not stall', async () => {
+    localStorage.removeItem('walletMnemonic');
+    localStorage.setItem('passkeyLabel', 'Default');
+    const unilateralExit = vi.fn(async () => checked([{ txid: 'sweep', kind: 'sweep', status: ready }]));
+    const driver = sdk({
+      checkUnilateralExit: async () => ({ exit: checked([{ txid: 'a' }]), verdict: redo }),
+      prepareUnilateralExit: async () => prepared({ singleUtxoFundingSat: 0, cpfpFeeSat: 0 }),
+      unilateralExit,
+    });
+    const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain(), driver, '02abc');
+    expect(next.phase).toBe('active');
+    expect(unilateralExit).toHaveBeenCalledWith(expect.objectContaining({ fundingInputs: [] }), undefined);
+    localStorage.removeItem('passkeyLabel');
+  });
+
+  it('keeps what the exit fee address was paid when a rebuild leaves only the sweep', async () => {
+    const key = deriveFundingKey(MNEMONIC, 'mainnet', 0);
+    const funding = [{ type: 'p2wpkh' as const, txid: 'f', vout: 0, value: 14_350, pubkey: key.publicKeyHex }];
+    const funded = plan([tx({ txid: 'a' })], { quotedExitFeeSat: 14_350, exit: { fundingInputs: funding } });
+    const driver = sdk({
+      checkUnilateralExit: async ({ exit }) => ({ exit, verdict: redo }),
+      prepareUnilateralExit: async () => prepared({ singleUtxoFundingSat: 0, cpfpFeeSat: 0 }),
+      // The sdk lists the funding a build was handed, and this one took none.
+      unilateralExit: async () => checked([{ txid: 'sweep', kind: 'sweep', status: ready }], { fundingInputs: [] }),
+    });
+    const { plan: next } = await advanceUnilateralExit(funded, chain(), driver, '02abc');
+    expect(next.exit.fundingInputs).toEqual([]);
+    expect(next).toMatchObject({ quotedExitFeeSat: 14_350, exitFeeAddress: key.address });
   });
 
   it('leaves the exit for the user to rebuild when it cannot do it unattended', async () => {
@@ -637,8 +669,24 @@ describe('startExit', () => {
     );
     expect(outcome.type).toBe('started');
     if (outcome.type !== 'started') return;
-    expect(outcome.plan).toMatchObject({ fundingAddressIndex: 3, quotedSweepFeeSat: 180, exitStateSnapshot: 'snapshot' });
+    expect(outcome.plan).toMatchObject({
+      fundingAddressIndex: 3,
+      quotedSweepFeeSat: 180,
+      quotedExitFeeSat: 3_000,
+      exitFeeAddress: 'bcrt1qfund',
+      exitStateSnapshot: 'snapshot',
+    });
     expect(outcome.plan.exit.transactions[0].txid).toBe('fan');
+  });
+
+  it('keeps a record of the fee paid when the quote at start no longer needs it', async () => {
+    const unilateralExit = vi.fn(async () => checked([{ txid: 'sweep', kind: 'sweep' }]));
+    const driver = sdk({ prepareUnilateralExit: async () => prepared({ singleUtxoFundingSat: 0, cpfpFeeSat: 0 }), unilateralExit });
+    const outcome = await startExit(pendingExit(), [feeCoin(5_898)], driver, '02abc');
+
+    // The coins stay at the fee address, which the finished exit points to.
+    expect(unilateralExit).toHaveBeenCalledWith(expect.objectContaining({ fundingInputs: [] }), undefined);
+    expect(outcome).toMatchObject({ type: 'started', plan: { quotedExitFeeSat: 5_898, exitFeeAddress: 'bcrt1qfund' } });
   });
 
   it('keeps a recovery a recovery once it is built', async () => {
