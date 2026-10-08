@@ -113,9 +113,10 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
         );
       case 'quote':
         if (!canContinueFromQuote(flow.quote)) return null;
+        // A quote that needs no funding builds on this tap, so it names what the tap does.
         return (
-          <PrimaryButton onClick={() => flow.goTo('unlock')} className="w-full" data-testid="unilateral-exit-quote-continue">
-            Continue
+          <PrimaryButton onClick={flow.continueFromQuote} className="w-full" data-testid="unilateral-exit-quote-continue">
+            {flow.quote.figures?.needsFunding ? 'Continue' : flow.engine.plan ? 'Continue Exit' : 'Exit Spark'}
           </PrimaryButton>
         );
       case 'pending': {
@@ -201,6 +202,12 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
             {flow.phase === 'fee' && <FeeStep {...flow.fee} />}
 
             {flow.phase === 'quote' && <QuoteStep {...flow.quote} />}
+            {flow.phase === 'quote' && flow.startError && (
+              <ErrorMessageBox
+                title={flow.engine.plan ? 'Could not continue the exit' : 'Could not start the exit'}
+                error={flow.startError}
+              />
+            )}
 
             {flow.phase === 'unlock' && (
               <>

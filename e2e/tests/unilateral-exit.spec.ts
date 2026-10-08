@@ -12,7 +12,7 @@ import {
 } from '../utils/bitcoind';
 import { outspend, txConfirmed, waitFor } from '../utils/esplora';
 import { freshMnemonic, fundTestWallet, isFundingReachable } from '../utils/fund';
-import { willReceiveSat } from '../../src/features/unilateral-exit/driver';
+import { willReceiveSat } from '../../src/features/unilateral-exit/quote';
 import { deriveFundingKey } from '../../src/features/unilateral-exit/funding';
 
 import {

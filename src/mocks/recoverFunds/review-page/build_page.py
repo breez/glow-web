@@ -46,6 +46,8 @@ NORMAL_CASE = [
         ('02-destination', 'Address', 'new', '', ''),
         ('03-fee-cosigned', 'Fee', 'new', '', ''),
         ('04-review-cosigned', 'Review', 'new', '', ''),
+        ('04b-review-left-out', 'Review', 'new', 'Says how much, not why',
+         'When the quote leaves funds out, the review shows the amount. Most reasons are nothing the user can act on.'),
         ('05-sent', 'Done', 'new', '', ''),
         ('06-wallet-after-cosigned', 'Wallet', 'new', 'One BTC Transfer per recovery',
          'Glow keeps this row itself, **because the SDK records no payment for a co-signed recovery.**'),
@@ -57,6 +59,13 @@ NORMAL_CASE = [
         ('10-tracker-stranded', 'Running', 'today', '', ''),
         ('11-archived-dialog', 'Landed', 'today', '', ''),
     ], 'exitfee'),
+    ('When no exit fee is needed', [
+        'If the funds are already on-chain and only the last transaction is left, it pays its own fee from them.',
+        'There is no exit fee to send, so the recovery starts at once.',
+    ], [
+        ('07b-review-no-exit-fee', 'Review', 'new', '', ''),
+        ('07c-running-no-exit-fee', 'Running', 'today', '', ''),
+    ]),
     ('Both at once', [
         'When a parent goes on-chain, some of its funds may only need operator signatures while others need an exit fee.',
         'Sync finds both, and the Recoverable Funds row shows them as one total.',

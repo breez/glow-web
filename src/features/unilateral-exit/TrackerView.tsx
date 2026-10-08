@@ -4,8 +4,9 @@ import { AlertCard } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
 import { CollapsibleCodeField, CollapsibleSection, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { RefreshIcon } from '@/components/Icons';
-import { blocksToFinish, exitStages, isCooperative, nextAction, planProgress } from './driver';
+import { blocksToFinish, exitStages, nextAction, planProgress } from './driver';
 import type { NextAction, PlanProgress, UnilateralExitPlan } from './driver';
+import { isCooperative } from './quote';
 import { formatDaysLeft } from '@/utils/blockTime';
 import { formatWithSpaces } from '@/utils/formatNumber';
 

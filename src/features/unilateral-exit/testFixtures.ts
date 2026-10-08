@@ -85,6 +85,29 @@ export const plan = (
   };
 };
 
+/** One input, one 596 524 sat output: a sweep as the chain reports it. */
+export const sweepHex =
+  '0200000001' + '00'.repeat(32) + '00000000' + '00' + 'ffffffff' +
+  '01' + '2c1a090000000000' + '160014' + 'ab'.repeat(20) + '00000000';
+
+/** An exit of two leaves worth 600 000, held to a 215 sat sweep fee. */
+export const twoLeaves = (transactions: Parameters<typeof plan>[0], over: Parameters<typeof plan>[1] = {}) =>
+  plan(transactions, {
+    quotedSweepFeeSat: 215,
+    ...over,
+    exit: {
+      leaves: [
+        { leafId: 'leaf-1', value: 180_000 },
+        { leafId: 'leaf-2', value: 420_000 },
+      ],
+      recoverableValueSat: 600_000,
+      totalFeeSat: 3_122,
+      cpfpFeeSat: 2_907,
+      sweepFeeSat: 0,
+      ...over.exit,
+    },
+  });
+
 export const prepared = (
   over: Partial<PrepareUnilateralExitResponse> = {},
 ): PrepareUnilateralExitResponse => ({

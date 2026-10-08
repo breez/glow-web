@@ -5,10 +5,10 @@ import {
   nextAction,
   pendingTopUp,
   planProgress,
-  willReceiveSat,
   type PendingExit,
   type UnilateralExitPlan,
 } from './driver';
+import { willReceiveSat } from './quote';
 import type { ArchivedExit } from './archive';
 import type { UnilateralExitEngineState } from './engine';
 

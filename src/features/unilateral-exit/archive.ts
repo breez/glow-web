@@ -1,6 +1,6 @@
 import { logger, LogCategory } from '@/services/logger';
-import { cooperativeValueSat, willReceiveSat } from './driver';
 import { fundingAddressOf } from './funding';
+import { cooperativeValueSat, willReceiveSat } from './quote';
 import type { ExitMode, UnilateralExitPlan, WalletKey } from './driver';
 
 /**
