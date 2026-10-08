@@ -3,6 +3,7 @@ import {
   applyExitCheck,
   blocksToFinish,
   broadcastReadyTransactions,
+  buildFromQuote,
   checkExit,
   clearPlan,
   destinationAddressOf,
@@ -16,11 +17,9 @@ import {
   sentFunding,
   topUpFor,
   planProgress,
-  quotedSweepFeeSat,
   savePlan,
   saveRecoveries,
   startExit,
-  willReceiveSat,
 } from './driver';
 import {
   blocked,
@@ -34,11 +33,14 @@ import {
   prepared,
   ready,
   sdk,
+  sweepHex,
+  twoLeaves,
   tx,
 } from './testFixtures';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CheckUnilateralExitRequest, UnilateralExitVerdict } from '@breeztech/breez-sdk-spark';
 import type { ChainClient } from '@/services/chain';
+import { deriveFundingKey } from './funding';
 
 const meta = {
   network: 'mainnet',
@@ -133,74 +135,6 @@ describe('storing a plan', () => {
     expect(loadPlan(wallet)).toBeNull();
     expect(loadRecoveries(wallet)).toEqual([recovery]);
     expect(loadRecoveries({ ...wallet, network: 'regtest' })).toEqual([]);
-  });
-});
-
-// one input, one 596 524 sat output
-const sweepHex =
-  '0200000001' + '00'.repeat(32) + '00000000' + '00' + 'ffffffff' +
-  '01' + '2c1a090000000000' + '160014' + 'ab'.repeat(20) + '00000000';
-
-const twoLeaves = (transactions: Parameters<typeof plan>[0], over: Parameters<typeof plan>[1] = {}) =>
-  plan(transactions, {
-    quotedSweepFeeSat: 215,
-    ...over,
-    exit: {
-      leaves: [
-        { leafId: 'leaf-1', value: 180_000 },
-        { leafId: 'leaf-2', value: 420_000 },
-      ],
-      recoverableValueSat: 600_000,
-      totalFeeSat: 3_122,
-      cpfpFeeSat: 2_907,
-      sweepFeeSat: 0,
-      ...over.exit,
-    },
-  });
-
-describe('willReceiveSat', () => {
-  it('is the balance less the sweep fee: the other fees come out of the funding', () => {
-    const quote = prepared({ recoverableValueSat: 600_000, totalFeeSat: 3_122, cpfpFeeSat: 2_907, sweepFeeSat: 215 });
-    expect(willReceiveSat(quote)).toBe(599_785);
-  });
-
-  it('says the same thing on the quote and on the exit built from it', () => {
-    const quote = prepared({ recoverableValueSat: 600_000, totalFeeSat: 3_122, cpfpFeeSat: 2_907, sweepFeeSat: 215 });
-    // A fresh build carries no sweep yet, so the sdk reports its fee as zero there.
-    const built = planFromExitResponse(
-      checked([{ txid: 'r', kind: 'refund' }], { recoverableValueSat: 600_000, sweepFeeSat: 0 }),
-      { ...meta, quotedSweepFeeSat: quotedSweepFeeSat(quote, null) },
-    );
-    expect(willReceiveSat(built)).toBe(willReceiveSat(quote));
-    expect(willReceiveSat(built)).toBe(599_785);
-  });
-
-  it('does not move when a check or rebuild reprices the exit', () => {
-    expect(willReceiveSat(twoLeaves([tx({ txid: 'r', kind: 'refund' })], { exit: { totalFeeSat: 214, sweepFeeSat: 214 } }))).toBe(599_785);
-  });
-
-  it('holds a resumed quote to the sweep fee the exit was first quoted at', () => {
-    const resuming = twoLeaves([]);
-    expect(quotedSweepFeeSat(prepared({ sweepFeeSat: 180 }), resuming)).toBe(215);
-    expect(willReceiveSat(prepared({ recoverableValueSat: 600_000, sweepFeeSat: 180 }), resuming)).toBe(599_785);
-  });
-
-  it('lets a quote at a higher rate cost more', () => {
-    expect(quotedSweepFeeSat(prepared({ sweepFeeSat: 900 }), twoLeaves([]))).toBe(900);
-  });
-
-  it('takes the co-signed recoveries\' fee off too, since it comes out of the value moved', () => {
-    const quote = { ...prepared({ recoverableValueSat: 600_000, sweepFeeSat: 215 }), cooperativeFeeSats: 990 };
-    expect(quotedSweepFeeSat(quote, null)).toBe(1_205);
-    expect(willReceiveSat(quote)).toBe(598_795);
-  });
-
-  it('reports what a confirmed sweep actually paid', () => {
-    expect(willReceiveSat(twoLeaves([tx({ txid: 's', kind: 'sweep', txHex: sweepHex, status: confirmed(1) })]))).toBe(596_524);
-  });
-
-  it('ignores an unconfirmed sweep, which may still be rebuilt', () => {
-    expect(willReceiveSat(twoLeaves([tx({ txid: 's', kind: 'sweep', txHex: sweepHex })]))).toBe(599_785);
   });
 });
 
@@ -658,6 +592,25 @@ describe('topUpFor', () => {
   it("asks a quote for its own figure, whose single coin is already priced in, and prices a second one", () => {
     expect(topUpFor({ sat: 5_898, inputs: 1 }, { sat: 0, inputs: 0 }, 2).stillToSendSat).toBe(5_898);
     expect(topUpFor({ sat: 5_898, inputs: 1 }, { sat: 3_000, inputs: 1 }, 2).stillToSendSat).toBe(3_034);
+  });
+});
+
+describe('buildFromQuote', () => {
+  const funding = {
+    inputs: [{ type: 'p2wpkh' as const, txid: 'f', vout: 0, value: 6_000, pubkey: '02ab' }],
+    secretKey: deriveFundingKey(MNEMONIC, 'regtest', 0).secretKey,
+  };
+
+  it('spends the funding and signs for it when the quote needs funding', async () => {
+    const unilateralExit = vi.fn(async () => checked([]));
+    await buildFromQuote(sdk({ unilateralExit }), prepared({ singleUtxoFundingSat: 3_000 }), funding);
+    expect(unilateralExit).toHaveBeenCalledWith(expect.objectContaining({ fundingInputs: funding.inputs }), expect.anything());
+  });
+
+  it('builds a quote that needs no funding with no inputs and no signer, whatever it is handed', async () => {
+    const unilateralExit = vi.fn(async () => checked([]));
+    await buildFromQuote(sdk({ unilateralExit }), prepared({ singleUtxoFundingSat: 0 }), funding);
+    expect(unilateralExit).toHaveBeenCalledWith(expect.objectContaining({ fundingInputs: [] }), undefined);
   });
 });
 

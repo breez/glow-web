@@ -3,15 +3,17 @@ import type {
   BreezSdk,
   CheckUnilateralExitResponse,
   CpfpInput,
+  CpfpSigner,
   PrepareUnilateralExitResponse,
+  UnilateralExitRequest,
   UnilateralExitResponse,
   UnilateralExitTransaction,
 } from '@breeztech/breez-sdk-spark';
 import type { ChainClient, ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
-import { outputTotalSat } from '@/utils/rawTx';
 import { loadExitState, restoreExitState, saveExitState } from './exitState';
 import { deriveFundingKey, MnemonicNeedsPasskeyError, readWalletMnemonic, type FundingKey } from './funding';
+import { exitFeeSat, isCooperative, isWorthExiting, needsFunding, quotedSweepFeeSat, willReceiveSat } from './quote';
 
 /**
  * `complete` is the sdk's `done` verdict. `redo` is its `redo`: the chain no
@@ -55,31 +57,6 @@ export interface UnilateralExitPlan {
  * started an exit. Absent means a unilateral exit the user started.
  */
 export type ExitMode = 'recover';
-
-/** What the recover-funds proposal adds to a quote or an exit; the published types predate it. */
-interface ProposedFields {
-  cooperativeFeeSats?: number;
-  leaves: { value: number; method?: 'cooperative' | 'unilateral' }[];
-}
-
-/**
- * The fee the operators' co-signed recoveries cost, off the value they move:
- * what each leaf's watchtower transaction already took plus the recovery's own.
- */
-export const cooperativeFeeSats = (exit: PrepareUnilateralExitResponse | UnilateralExitResponse): number =>
-  (exit as ProposedFields).cooperativeFeeSats ?? 0;
-
-/**
- * The part of a quote or an exit that lies outside the balance. Only the
- * co-signed kind says so on its leaf: a stranded leaf quotes like a balance one.
- */
-export const cooperativeValueSat = (exit: PrepareUnilateralExitResponse | UnilateralExitResponse): number =>
-  (exit as ProposedFields).leaves
-    .filter(leaf => leaf.method === 'cooperative')
-    .reduce((sum, leaf) => sum + leaf.value, 0);
-
-/** A co-signed recovery: ready at once, and paying the destination directly rather than through the sweep. */
-export const isCooperative = (tx: UnilateralExitTransaction): boolean => (tx.kind as string) === 'cooperative';
 
 const PLAN_VERSION = 4;
 
@@ -243,48 +220,6 @@ export function clearPendingExit(wallet: WalletKey): void {
 }
 
 /**
- * The sweep fee an exit is held to, the co-signed recoveries' fee included:
- * both come off the value moved. A rebuild is quoted on the refunds it has left
- * to sweep, so an earlier quote stays the floor; a quote at a higher rate
- * replaces it.
- */
-export function quotedSweepFeeSat(
-  quote: PrepareUnilateralExitResponse,
-  resuming: UnilateralExitPlan | null,
-): number {
-  return Math.max(quote.sweepFeeSat + cooperativeFeeSats(quote), resuming?.quotedSweepFeeSat ?? 0);
-}
-
-/**
- * What the destination address ends up with: the value moved less the sweep's
- * fee, until the sweep and any co-signed recoveries confirm and the figure is
- * read off them.
- *
- * The funding is not counted. It pays the other fees, and what it has left
- * comes back only if the sweep glow built is the one that lands.
- */
-export function willReceiveSat(
-  exit: PrepareUnilateralExitResponse | UnilateralExitPlan,
-  resuming: UnilateralExitPlan | null = null,
-): number {
-  if (!('exit' in exit)) {
-    return Math.max(0, exit.recoverableValueSat - quotedSweepFeeSat(exit, resuming));
-  }
-  const landing = exit.exit.transactions.filter(tx => tx.kind === 'sweep' || isCooperative(tx));
-  const outputs = landing.every(tx => tx.status.type === 'confirmed') ? landing.map(tx => outputTotalSat(tx.txHex)) : [];
-  const landed = outputs.length > 0 && outputs.every(sat => sat !== null);
-  return landed
-    ? outputs.reduce<number>((sum, sat) => sum + (sat ?? 0), 0)
-    : Math.max(0, exit.exit.recoverableValueSat - exit.quotedSweepFeeSat);
-}
-
-/** Whether a quote moves anything worth more than it costs to move. */
-export const isWorthExiting = (
-  quote: PrepareUnilateralExitResponse,
-  receiveSat: number = willReceiveSat(quote),
-): boolean => quote.leaves.length > 0 && quote.totalFeeSat < quote.recoverableValueSat && receiveSat > 0;
-
-/**
  * Where the money is. A leaf sits in Spark until its refund is on-chain, then
  * in an output only the owner can spend, and reaches the destination when the
  * sweep confirms. A co-signed leaf reaches it when its own recovery confirms.
@@ -427,6 +362,33 @@ export type StartOutcome =
   | { type: 'short'; required: Funding }
   | { type: 'nothingToExit' };
 
+/** Coins at the exit fee address and the key that signs for them. */
+export interface BuildFunding {
+  inputs: CpfpInput[];
+  secretKey: Uint8Array;
+}
+
+/**
+ * The one build call, for every start and rebuild. A quote that needs funding
+ * spends `funding` and signs for it; one that needs none takes no inputs and
+ * no signer, whatever it is handed.
+ */
+export function buildFromQuote(
+  sdk: ExitSdk,
+  prepared: PrepareUnilateralExitResponse,
+  funding: BuildFunding | null,
+): Promise<UnilateralExitResponse> {
+  // The recover-funds API takes no signer here; the published type still asks for one.
+  const build = (request: UnilateralExitRequest, signer?: CpfpSigner) =>
+    sdk.unilateralExit(request, signer as CpfpSigner);
+  if (!needsFunding(prepared) || !funding) return build({ prepared, fundingInputs: [] });
+  return build({ prepared, fundingInputs: funding.inputs }, singleKeyCpfpSigner(funding.secretKey));
+}
+
+/** Coins at the exit fee address, as a build spends them. */
+export const fundingInputsOf = (coins: { txid: string; vout: number; value: number }[], pubkey: string): CpfpInput[] =>
+  coins.map(({ txid, vout, value }) => ({ type: 'p2wpkh', txid, vout, value, pubkey }));
+
 /**
  * Builds a pending exit from its confirmed fee coins, on the user's tap. It
  * quotes again first, so it exits what the wallet holds now: a payment or a
@@ -456,16 +418,9 @@ export async function startExit(
   });
   if (!isWorthExiting(quote)) return { type: 'nothingToExit' };
 
-  const fundingInputs: CpfpInput[] = coins.map(({ txid, vout, value }) => ({
-    type: 'p2wpkh',
-    txid,
-    vout,
-    value,
-    pubkey: publicKeyHex,
-  }));
   let exit: UnilateralExitResponse;
   try {
-    exit = await sdk.unilateralExit({ prepared: quote, fundingInputs }, singleKeyCpfpSigner(secretKey));
+    exit = await buildFromQuote(sdk, quote, { inputs: fundingInputsOf(coins, publicKeyHex), secretKey });
   } catch (e) {
     const required = requiredFundingOf(e instanceof Error ? e.message : String(e));
     if (required === null) throw e;
@@ -477,7 +432,7 @@ export async function startExit(
     .exportUnilateralExitState()
     .then(r => r.exitState)
     .catch(() => undefined);
-  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quotedSweepFeeSat(quote, null), quotedExitFeeSat: quote.singleUtxoFundingSat, mode };
+  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quotedSweepFeeSat(quote, null), quotedExitFeeSat: exitFeeSat(quote), mode };
   return { type: 'started', plan: { ...planFromExitResponse(exit, meta), exitStateSnapshot } };
 }
 
@@ -564,10 +519,7 @@ export async function rebuildExit(
   });
   if (prepared.leaves.length === 0) return null;
 
-  const rebuilt = await sdk.unilateralExit(
-    { prepared, fundingInputs: plan.exit.fundingInputs },
-    singleKeyCpfpSigner(key.secretKey),
-  );
+  const rebuilt = await buildFromQuote(sdk, prepared, { inputs: plan.exit.fundingInputs, secretKey: key.secretKey });
   if (rebuilt.transactions.length === 0) return null;
 
   // A leaf the watchtower moved comes back co-signed, and that fee comes off what arrives too.

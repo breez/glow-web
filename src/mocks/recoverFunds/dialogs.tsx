@@ -4,23 +4,26 @@
 import type React from 'react';
 import { ArchivedExitDialog } from '@/features/unilateral-exit/ArchivedExitDialog';
 import type { ArchivedExit } from '@/features/unilateral-exit/archive';
+import { quoteFigures } from '@/features/unilateral-exit/quote';
 import type { ChainClient } from '@/services/chain';
-import { ARCHIVED, DESTINATION, EXIT_FEE_ADDRESS, FEE_RATES, NETWORK } from './fixtures';
+import { DESTINATION, EXIT_FEE_ADDRESS, FEE_RATES, NETWORK, STRANDED_QUOTE, UNSPENT_EXIT_FEE_SAT } from './fixtures';
 import { seedArchive, type WalletScene } from './wallet';
 
 const noop = () => {};
 
 const SWEEP_TXID = '7c1e4b9a2f06d853e1a4c07b95d23f6e8a0b41c79d2e5f3a86b0c14d7e92a5f1';
 
-/** The stranded ₿120 000 recovery, landed a minute ago. */
+const stranded = quoteFigures(STRANDED_QUOTE);
+
+/** The stranded recovery landed a minute ago, its sweep paying what the quote said. */
 const archivedRecovery: ArchivedExit = {
   id: SWEEP_TXID,
   destination: DESTINATION,
-  deliveredSat: ARCHIVED.receivedSat,
+  deliveredSat: stranded.willReceiveSat,
   completedAt: Date.now() - 60_000,
   network: NETWORK,
-  exitedSat: ARCHIVED.recoveredSat,
-  exitFeePaidSat: ARCHIVED.exitFeePaidSat,
+  exitedSat: stranded.fundsSat,
+  exitFeePaidSat: stranded.exitFeeSat,
   exitFeeAddress: EXIT_FEE_ADDRESS,
   mode: 'recover',
 };
@@ -29,7 +32,7 @@ const archivedRecovery: ArchivedExit = {
 const feeAddressChain: ChainClient = {
   feeRates: async () => FEE_RATES,
   addressUtxos: async () => [
-    { txid: SWEEP_TXID, vout: 1, value: ARCHIVED.unspentExitFeeSat, confirmed: true, blockHeight: 915_402 },
+    { txid: SWEEP_TXID, vout: 1, value: UNSPENT_EXIT_FEE_SAT, confirmed: true, blockHeight: 915_402 },
   ],
   tipHeight: async () => 915_408,
   broadcast: async () => {},

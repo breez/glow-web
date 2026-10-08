@@ -1,21 +1,11 @@
-import { CopyableRow, ErrorMessageBox, LoadingSpinner } from '@/components/ui';
+import { ErrorMessageBox, LoadingSpinner } from '@/components/ui';
 import React from 'react';
 import { AlertCard, SimpleAlert } from '@/components/AlertCard';
-import { FeeBreakdownCard, type FeeBreakdownItem } from '@/components/FeeBreakdownCard';
 import { SatAmount } from '@/components/SatAmount';
-import { truncateAddress } from '@/utils/crossChainFormat';
-import { cooperativeFeeSats } from '../driver';
 import type { QuoteFields } from '../hooks/useUnilateralExitFlow';
+import { DestinationRow, LeftOutCard, ReceiveHero, ReviewBreakdown } from './ReviewParts';
 
-export const QuoteStep: React.FC<QuoteFields> = ({
-  quote,
-  sweepFeeSat,
-  willReceiveSat,
-  isQuoting,
-  error,
-  leftBehindSat,
-  recoverableFundsSat = 0,
-}) => {
+export const QuoteStep: React.FC<QuoteFields> = ({ quote, figures, isQuoting, error }) => {
   if (isQuoting) {
     return (
       <div className="py-16 flex justify-center">
@@ -32,7 +22,7 @@ export const QuoteStep: React.FC<QuoteFields> = ({
     );
   }
 
-  if (!quote || quote.leaves.length === 0) {
+  if (!quote || !figures || figures.isEmpty) {
     return (
       <div className="space-y-6">
         <AlertCard variant="warning" title="Nothing here to exit">
@@ -45,7 +35,7 @@ export const QuoteStep: React.FC<QuoteFields> = ({
     );
   }
 
-  if (quote.totalFeeSat >= quote.recoverableValueSat || willReceiveSat <= 0) {
+  if (!figures.isWorthMoving) {
     return (
       <div className="space-y-6">
         <AlertCard variant="warning" title="Nothing is worth exiting right now">
@@ -58,51 +48,35 @@ export const QuoteStep: React.FC<QuoteFields> = ({
     );
   }
 
-  // Recoverable funds sit outside the balance, so they get their own row rather
-  // than a Balance that no longer matches the wallet's. Co-signed recoveries
-  // add their fee to the sweep's, so the row is no longer the sweep's alone.
-  const isCosigned = recoverableFundsSat > 0 || cooperativeFeeSats(quote) > 0;
-  const items: FeeBreakdownItem[] = [
-    { label: 'Balance', value: quote.recoverableValueSat - recoverableFundsSat },
-    ...(recoverableFundsSat > 0 ? [{ label: 'Recoverable Funds', value: recoverableFundsSat }] : []),
-    { label: isCosigned ? 'Network fee' : 'Sweep fee', value: sweepFeeSat, approximate: true },
-    { label: 'Exit fee', value: quote.singleUtxoFundingSat, highlight: true },
-  ];
-
   return (
     <div className="space-y-4">
-      <div className="text-center py-2">
-        <p className="text-spark-text-muted text-sm mb-2">You&apos;ll receive</p>
-        {/* Approximate: a refund the operators' watchtower lands first pays
-            its own fee, which the quote cannot know in advance. */}
-        <SatAmount
-          sats={willReceiveSat}
-          approximate
-          className="text-4xl font-bold text-spark-text-primary"
-        />
-      </div>
+      <ReceiveHero figures={figures} />
 
-      <CopyableRow
-        label="To address"
-        value={quote.destination}
-        display={truncateAddress(quote.destination, 32)}
-        data-testid="unilateral-exit-quote-destination"
+      <DestinationRow address={quote.destination} testId="unilateral-exit-quote-destination" />
+
+      {/* Recoverable funds sit outside the balance, so they get their own row
+          rather than a Balance that no longer matches the wallet's. */}
+      <ReviewBreakdown
+        figures={figures}
+        amounts={[
+          { label: 'Balance', value: figures.balanceSat },
+          ...(figures.recoverableSat > 0 ? [{ label: 'Recoverable Funds', value: figures.recoverableSat }] : []),
+        ]}
+        feeLabel={figures.isCooperative ? 'Network fee' : 'Sweep fee'}
       />
 
-      <FeeBreakdownCard items={items} />
+      {figures.needsFunding && (
+        <SimpleAlert variant="warning" hideIcon>
+          To start the process you need to pay the exit fee. These are the mining fees required to
+          move the Spark tree on-chain.
+        </SimpleAlert>
+      )}
 
-      <SimpleAlert variant="warning" hideIcon>
-        To start the process you need to pay the exit fee. These are the mining fees required to
-        move the Spark tree on-chain.
-      </SimpleAlert>
-
-      {leftBehindSat > 0 && (
-        <AlertCard variant="warning" title="Some of your balance stays behind">
-          <p className="text-sm">
-            <SatAmount sats={leftBehindSat} /> sits in pieces too small to be worth their own
-            on-chain fee at this rate, so they are left out of this exit.
-          </p>
-        </AlertCard>
+      {figures.leftOutSat > 0 && (
+        <LeftOutCard title="Some of your balance stays behind">
+          <SatAmount sats={figures.leftOutSat} /> sits in pieces too small to be worth their own
+          on-chain fee at this rate, so they are left out of this exit.
+        </LeftOutCard>
       )}
 
     </div>

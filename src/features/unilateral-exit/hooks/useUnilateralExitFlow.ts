@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { singleKeyCpfpSigner } from '@breeztech/breez-sdk-spark';
 import type { CpfpInput, InputType, PrepareUnilateralExitResponse } from '@breeztech/breez-sdk-spark';
 import { useWallet, useWalletInfo } from '@/contexts/WalletContext';
 import { holdIdleLock } from '@/services/appLock';
@@ -8,21 +7,19 @@ import type { ChainUtxo, FeeRates } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { destinationErrorMessage } from '@/utils/destinationAddress';
 import {
-  cooperativeValueSat,
-  isWorthExiting,
-  planFromExitResponse,
-  quotedSweepFeeSat,
-  rebuildExit,
+  buildFromQuote,
   destinationAddressOf,
+  fundingInputsOf,
+  planFromExitResponse,
+  rebuildExit,
   requiredFundingOf,
   sentFunding,
   topUpFor,
-  willReceiveSat,
   type Funding,
   type TopUp,
-  type UnilateralExitPlan,
   type WalletKey,
 } from '../driver';
+import { quoteFigures, quotedSweepFeeSat, type QuoteFigures } from '../quote';
 import {
   setPendingExit,
   setUnilateralExitPlan,
@@ -83,30 +80,10 @@ export interface FeeFields {
 
 export interface QuoteFields {
   quote: PrepareUnilateralExitResponse | null;
-  /** The one fee that comes off the balance, and what the destination gets after it. */
-  sweepFeeSat: number;
-  willReceiveSat: number;
+  /** Everything the step shows, read off the quote. Null until one lands. */
+  figures: QuoteFigures | null;
   isQuoting: boolean;
   error: string | null;
-  /** Balance in pieces too small to be worth their own fee at this rate. */
-  leftBehindSat: number;
-  /** The part of the quote that lies outside the balance. */
-  recoverableFundsSat?: number;
-}
-
-/** The quote's figures as the step shows them. `balanceSat` is the wallet's, which excludes recoverable funds. */
-export function quoteFiguresOf(
-  quote: PrepareUnilateralExitResponse,
-  resuming: UnilateralExitPlan | null,
-  balanceSat: number,
-): Pick<QuoteFields, 'sweepFeeSat' | 'willReceiveSat' | 'leftBehindSat' | 'recoverableFundsSat'> {
-  const recoverableFundsSat = cooperativeValueSat(quote);
-  return {
-    sweepFeeSat: quotedSweepFeeSat(quote, resuming),
-    willReceiveSat: willReceiveSat(quote, resuming),
-    leftBehindSat: Math.max(0, balanceSat - (quote.recoverableValueSat - recoverableFundsSat)),
-    recoverableFundsSat,
-  };
 }
 
 /** An exit under way keeps its funding address, and what it holds pays for the rest. */
@@ -129,9 +106,8 @@ export interface FundingFields {
  * Whether the quote is one an exit can be started from. The step renders a dead
  * end for each of these, and the page's call to action follows it.
  */
-export function canContinueFromQuote(fields: QuoteFields): boolean {
-  if (fields.isQuoting || fields.error || !fields.quote) return false;
-  return isWorthExiting(fields.quote, fields.willReceiveSat);
+export function canContinueFromQuote({ isQuoting, error, figures }: QuoteFields): boolean {
+  return !isQuoting && !error && !!figures?.isWorthMoving;
 }
 
 export interface UnilateralExitFlow {
@@ -146,6 +122,10 @@ export interface UnilateralExitFlow {
   funding: FundingFields | null;
   submitDestination: () => Promise<void>;
   submitFee: () => Promise<void>;
+  /** The quote step's call to action, for either flow's screens. */
+  continueFromQuote: () => void;
+  /** Why building a quote that needs no funding failed, shown on that quote. */
+  startError: string | null;
   unlock: () => Promise<void>;
   unlockError: string | null;
   build: () => Promise<void>;
@@ -199,6 +179,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   const [fundingUtxos, setFundingUtxos] = useState<ChainUtxo[]>([]);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [buildError, setBuildError] = useState<string | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);
   // Only the build knows what an exit still needs, and it says so by refusing.
   // Held with the inputs it had, for this quote's rate, so a new quote clears it.
   const [shortfall, setShortfall] = useState<Funding | null>(null);
@@ -275,6 +256,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     const request = ++quoteRequest.current;
     setIsQuoting(true);
     setQuoteError(null);
+    setStartError(null);
     setShortfall(null);
     try {
       // Quoted against the backed-up leaf data, not only what the operators still report.
@@ -308,11 +290,16 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     await refreshQuote();
   }, [refreshQuote]);
 
+  const figures = useMemo(
+    () => (quote ? quoteFigures(quote, { resuming: plan, walletBalanceSat: balanceSat }) : null),
+    [quote, plan, balanceSat],
+  );
+
   // The index, not the plan: every engine pass emits a new plan object, and
   // the page re-runs unlock whenever this callback changes.
   const planFundingIndex = plan?.fundingAddressIndex;
   const unlock = useCallback(async () => {
-    if (!walletKey || !quote) return;
+    if (!walletKey || !quote || !figures) return;
     setUnlockError(null);
     try {
       const mnemonic = await readWalletMnemonic({ interactive: true });
@@ -336,8 +323,8 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
           feeRateSatPerVbyte: quote.feeRateSatPerVbyte,
           fundingAddressIndex: index,
           fundingAddress: key.address,
-          required: { sat: quote.singleUtxoFundingSat, inputs: 1 },
-          willReceiveSat: willReceiveSat(quote),
+          required: { sat: figures.exitFeeSat, inputs: 1 },
+          willReceiveSat: figures.willReceiveSat,
         },
         key,
       );
@@ -345,7 +332,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     } catch (e) {
       setUnlockError(message(e));
     }
-  }, [walletKey, quote, network, planFundingIndex]);
+  }, [walletKey, quote, figures, network, planFundingIndex]);
 
   const confirmedUtxos = useMemo(() => fundingUtxos.filter(utxo => utxo.confirmed), [fundingUtxos]);
   const sent = useMemo(() => sentFunding(plan, confirmedUtxos), [plan, confirmedUtxos]);
@@ -355,33 +342,34 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
   // build has said what it needs, the address has to hold it.
   const isFunded = quote !== null && (!topUp || topUp.stillToSendSat === 0);
 
+  // Builds the reviewed quote: an exit under way from the coins at its fee
+  // address, or, when the quote needs no funding, any exit straight away.
   const build = useCallback(async () => {
-    if (!walletKey || !plan || !quote || !fundingKey || !mnemonicRef.current) return;
+    if (!walletKey || !quote || !figures) return;
+    const funded = figures.needsFunding;
+    if (funded && (!plan || !fundingKey || !mnemonicRef.current)) return;
     setPhase('building');
     setBuildError(null);
+    setStartError(null);
     const release = holdIdleLock();
     try {
       // The funding an earlier attempt was built from still pays: the sdk
       // follows a spent outpoint to what it became. Fresh coins at the same
       // address are offered alongside it.
-      const fresh: CpfpInput[] = confirmedUtxos.map(utxo => ({
-        type: 'p2wpkh',
-        txid: utxo.txid,
-        vout: utxo.vout,
-        value: utxo.value,
-        pubkey: fundingKey.publicKeyHex,
-      }));
-      const fundingInputs = mergeFunding(plan.exit.fundingInputs, fresh);
+      const funding =
+        funded && plan && fundingKey
+          ? {
+              inputs: mergeFunding(plan.exit.fundingInputs, fundingInputsOf(confirmedUtxos, fundingKey.publicKeyHex)),
+              secretKey: fundingKey.secretKey,
+            }
+          : null;
       await restoreExitState(wallet, plan, await loadExitState(walletKey.identityPubkey));
-      const response = await wallet.unilateralExit(
-        { prepared: quote, fundingInputs },
-        singleKeyCpfpSigner(fundingKey.secretKey),
-      );
+      const response = await buildFromQuote(wallet, quote, funding);
       // Frozen against the leaves this exit moves: from here the operators stop
       // reporting them, so a later export is worth less. An exit already
       // holding a snapshot keeps it.
       const exitStateSnapshot =
-        plan.exitStateSnapshot ??
+        plan?.exitStateSnapshot ??
         (await wallet
           .exportUnilateralExitState()
           .then(r => r.exitState)
@@ -390,16 +378,21 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
         network,
         destination: quote.destination,
         feeRateSatPerVbyte: quote.feeRateSatPerVbyte,
-        fundingAddressIndex: plan.fundingAddressIndex,
+        fundingAddressIndex: plan?.fundingAddressIndex ?? 0,
         quotedSweepFeeSat: quotedSweepFeeSat(quote, plan),
-        quotedExitFeeSat: quote.singleUtxoFundingSat,
-        mode: plan.mode,
+        quotedExitFeeSat: figures.exitFeeSat,
+        mode: plan?.mode,
       });
       setUnilateralExitPlan(walletKey, { ...built, exitStateSnapshot });
       mnemonicRef.current = null;
       setPhase('tracker');
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to build unilateral exit', { error: message(e) });
+      if (!funded) {
+        setStartError(message(e));
+        setPhase('quote');
+        return;
+      }
       setBuildError(message(e));
       const required = requiredFundingOf(message(e));
       setShortfall(required === null ? null : { sat: required, inputs: sent.inputs });
@@ -407,7 +400,15 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     } finally {
       release();
     }
-  }, [wallet, walletKey, quote, fundingKey, confirmedUtxos, sent, network, plan]);
+  }, [wallet, walletKey, quote, figures, fundingKey, confirmedUtxos, sent, network, plan]);
+
+  // A quote that needs funding goes on to the phrase and the fee address. One
+  // that needs none has nothing to sign and nothing to wait for, so it builds.
+  const continueFromQuote = useCallback(() => {
+    if (!figures) return;
+    if (figures.needsFunding) setPhase('unlock');
+    else void build();
+  }, [figures, build]);
 
   // What a resumed exit already holds may pay the new rate, and only a build can
   // tell. So it tries once, and the step asks for more only when that falls short.
@@ -475,14 +476,7 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
       effectiveFeeRate,
       onSelect: setFeeChoice,
     },
-    quote: {
-      quote,
-      ...(quote
-        ? quoteFiguresOf(quote, plan, balanceSat)
-        : { sweepFeeSat: 0, willReceiveSat: 0, leftBehindSat: 0, recoverableFundsSat: 0 }),
-      isQuoting,
-      error: quoteError,
-    },
+    quote: { quote, figures, isQuoting, error: quoteError },
     funding: fundingKey && {
       address: fundingKey.address,
       isFunded,
@@ -496,6 +490,8 @@ export function useUnilateralExitFlow(network: string): UnilateralExitFlow {
     },
     submitDestination,
     submitFee,
+    continueFromQuote,
+    startError,
     unlock,
     unlockError,
     build,

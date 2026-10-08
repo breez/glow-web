@@ -28,19 +28,21 @@ import {
 } from '@/features/unilateral-exit/driver';
 import { startUnilateralExitEngine } from '@/features/unilateral-exit/engine';
 import type { ArchivedExit } from '@/features/unilateral-exit/archive';
+import { cooperativeFeeSats, quoteFigures, quotedSweepFeeSat } from '@/features/unilateral-exit/quote';
 import { plan, ready, tx } from '@/features/unilateral-exit/testFixtures';
 import type { ChainClient, ChainUtxo } from '@/services/chain';
 import {
   BALANCE_SATS,
-  COSIGNED,
+  COSIGNED_LEAVES,
+  COSIGNED_QUOTE,
   COSIGNED_TXIDS,
   DESTINATION,
   EXIT_FEE_ADDRESS,
   FEE_RATES,
   IDENTITY_PUBKEY,
-  MIXED,
+  MIXED_QUOTE,
   NETWORK,
-  STRANDED,
+  STRANDED_QUOTE,
 } from './fixtures';
 
 export const WALLET_KEY: WalletKey = { identityPubkey: IDENTITY_PUBKEY, network: NETWORK };
@@ -186,7 +188,7 @@ export const MockProviders: React.FC<{ children: React.ReactNode; walletInfo?: G
   children,
   walletInfo,
 }) => {
-  const info = walletInfo ?? mockWalletInfo(COSIGNED.totalSat);
+  const info = walletInfo ?? mockWalletInfo(COSIGNED_QUOTE.recoverableValueSat);
   const [sdk] = useState(() => mockClient(info));
   return (
     <AppShell>
@@ -246,7 +248,7 @@ export interface WalletScene {
 }
 
 /** Shot 01: the co-signed funds found, nothing recovered yet. */
-export const FOUND: WalletScene = { recoverableFundsSats: COSIGNED.totalSat };
+export const FOUND: WalletScene = { recoverableFundsSats: COSIGNED_QUOTE.recoverableValueSat };
 
 export const WalletBackdrop: React.FC<{ scene?: WalletScene }> = ({ scene = FOUND }) => {
   const [transactions] = useState(() => (scene.history ?? historyPayments)());
@@ -287,36 +289,30 @@ export const seedArchive = (entries: ArchivedExit[]) => (): void => {
   startUnilateralExitEngine(WALLET_KEY, mockChain());
 };
 
-// What the recover-funds API adds to today's types: a recovery method per leaf
-// and a co-signed transaction kind.
+// What the recover-funds API adds to today's transaction kinds.
 export const COOPERATIVE = 'cooperative' as UnilateralExitTransaction['kind'];
-export const cosignedLeaves = COSIGNED.leafSats.map((value, i) => ({
-  leafId: `cosigned-${i + 1}`,
-  value,
-  method: 'cooperative' as const,
-}));
 
 /** Glow's record of the co-signed recovery, kept from recoverFunds' response: both transactions out, unconfirmed. */
 export const keptRecovery: UnilateralExitPlan = plan(
-  COSIGNED_TXIDS.map((txid, i) => tx({ txid, kind: COOPERATIVE, nodeId: cosignedLeaves[i].leafId, status: ready })),
+  COSIGNED_TXIDS.map((txid, i) => tx({ txid, kind: COOPERATIVE, nodeId: COSIGNED_LEAVES[i].leafId, status: ready })),
   {
     network: NETWORK,
     destination: DESTINATION,
     feeRateSatPerVbyte: FEE_RATES.medium,
-    quotedSweepFeeSat: COSIGNED.networkFeeSat,
+    quotedSweepFeeSat: quotedSweepFeeSat(COSIGNED_QUOTE, null),
     mode: 'recover',
     exit: {
-      leaves: cosignedLeaves,
-      recoverableValueSat: COSIGNED.totalSat,
-      totalFeeSat: COSIGNED.networkFeeSat,
-      cooperativeFeeSats: COSIGNED.networkFeeSat,
+      leaves: COSIGNED_LEAVES,
+      recoverableValueSat: COSIGNED_QUOTE.recoverableValueSat,
+      totalFeeSat: COSIGNED_QUOTE.totalFeeSat,
+      cooperativeFeeSats: cooperativeFeeSats(COSIGNED_QUOTE),
       cpfpFeeSat: 0,
       sweepFeeSat: 0,
     } as Partial<UnilateralExitResponse>,
   },
 );
 
-export const keepCosigned = (): void => saveRecoveries(WALLET_KEY, [keptRecovery]);
+const keepCosigned = (): void => saveRecoveries(WALLET_KEY, [keptRecovery]);
 
 /**
  * Shot 06: the recovery is out and Glow keeps it. Its leaves stay in getInfo's
@@ -324,22 +320,24 @@ export const keepCosigned = (): void => saveRecoveries(WALLET_KEY, [keptRecovery
  * takes them out of the Recoverable Funds row.
  */
 export const afterCosigned: WalletScene = {
-  recoverableFundsSats: COSIGNED.totalSat,
+  recoverableFundsSats: COSIGNED_QUOTE.recoverableValueSat,
   seed: () => {
     keepCosigned();
     startUnilateralExitEngine(WALLET_KEY, mockChain());
   },
 };
 
-/** The stranded part of the mixed recovery, saved at the fee screen and owing its whole exit fee. */
-const pendingStranded: PendingExit = {
+const stranded = quoteFigures(STRANDED_QUOTE);
+
+/** A stranded recovery saved at the fee screen, owing its whole exit fee, as the flow saves one. */
+export const strandedPending: PendingExit = {
   network: NETWORK,
-  destination: DESTINATION,
-  feeRateSatPerVbyte: FEE_RATES.medium,
+  destination: STRANDED_QUOTE.destination,
+  feeRateSatPerVbyte: STRANDED_QUOTE.feeRateSatPerVbyte,
   fundingAddressIndex: 0,
   fundingAddress: EXIT_FEE_ADDRESS,
-  required: { sat: STRANDED.exitFeeSat, inputs: 1 },
-  willReceiveSat: STRANDED.willReceiveSat,
+  required: { sat: stranded.exitFeeSat, inputs: 1 },
+  willReceiveSat: stranded.willReceiveSat,
   mode: 'recover',
 };
 
@@ -349,10 +347,10 @@ export const walletShots: Record<string, WalletScene> = {
   // Both parts stay in the total until their transactions confirm and are read
   // back. The kept recovery and the saved exit each take a row in its place.
   '13-wallet-after-split': {
-    recoverableFundsSats: MIXED.totalSat,
+    recoverableFundsSats: MIXED_QUOTE.recoverableValueSat,
     seed: () => {
       keepCosigned();
-      seedPending(pendingStranded)();
+      seedPending(strandedPending)();
     },
   },
 };
