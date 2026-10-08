@@ -159,7 +159,7 @@
     <div class="refs">
       <a href="https://github.com/breez/glow-web/issues/503">glow-web#503</a>
       <a href="https://github.com/breez/spark-sdk/issues/1161">spark-sdk#1161</a>
-      <span><a href="https://github.com/breez/spark-sdk/pull/1173">spark-sdk#1173</a> at <a class="mono" href="https://github.com/breez/spark-sdk/pull/1173/commits/2380cd18e55ace4b42ae611162feee446f5680de">2380cd1</a></span>
+      <span><a href="https://github.com/breez/spark-sdk/pull/1173">spark-sdk#1173</a> at <a class="mono" href="https://github.com/breez/spark-sdk/pull/1173/commits/8e201f354c293b39a57d57734f047f2de32461a2">8e201f3</a></span>
     </div>
   </header>
 
@@ -169,9 +169,9 @@
     <div class="section-head">
       <span class="eyebrow">For Jesse and Roei</span>
       <h2 id="api">API notes</h2>
-      <p>Questions that came up while building these screens, rechecked at 2380cd1. None blocks the flow above.</p>
-      <p>Resolved since the last review: funding is checked before co-signing, <code>Specific</code> and <code>All</code> route watchtower-exited leaves to <code>Cooperative</code>, one value is used throughout, and a replaced recovery reads as done.</p>
-      <p class="pins">Current behaviour is <code>#1173</code>. Evidence line numbers are at <a href="https://github.com/breez/spark-sdk/pull/1173/commits/2380cd18e55ace4b42ae611162feee446f5680de">2380cd1</a>.</p>
+      <p>Questions that came up while building these screens, rechecked at 8e201f3. None blocks the flow above.</p>
+      <p>Resolved so far: the SDK checks funding before co-signing, routes watchtower-exited leaves to <code>Cooperative</code> under <code>Specific</code> and <code>All</code>, uses one value throughout, reads a replaced recovery as done, and now reads the chain on every quote, so it leaves out a leaf whose recovery is in a block.</p>
+      <p class="pins">Current behaviour is <code>#1173</code>. Evidence line numbers are at <a href="https://github.com/breez/spark-sdk/pull/1173/commits/8e201f354c293b39a57d57734f047f2de32461a2">8e201f3</a>.</p>
     </div>
     <div class="notes">
       __NOTES__
