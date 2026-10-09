@@ -32,7 +32,13 @@ function classify(e: unknown, opts?: { isGrapheneOs?: boolean }): FailureKind | 
     return 'gpm-loop';
   }
 
-  if (code === 'PRF_NOT_SUPPORTED' || /PrfNotSupported/.test(raw)) {
+  // Web has no code and no variant name: the SDK's JS provider throws plain
+  // Errors that reach the app as text ("PRF not supported by authenticator"
+  // on sign-in, "does not support the WebAuthn PRF extension" on create).
+  if (
+    code === 'PRF_NOT_SUPPORTED'
+    || /PrfNotSupported|PRF not supported|does not support the WebAuthn PRF/.test(raw)
+  ) {
     return 'prf-unsupported';
   }
   // Covers Google Password Manager's device-unlock loop ending in

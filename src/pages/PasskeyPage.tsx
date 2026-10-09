@@ -730,7 +730,10 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           errorCode,
           elapsedMs,
         });
-        setError('Could not sign in with your passkey. Please try again.');
+        setError(
+          friendlyPasskeyError(e, { isGrapheneOs: isGrapheneOsDevice() })
+            ?? 'Could not sign in with your passkey. Please try again.',
+        );
         setErrorKind(null);
       }
     };
