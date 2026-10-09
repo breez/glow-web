@@ -363,7 +363,11 @@ export const logger = {
         }
       });
     } catch (e) {
-      console.warn('Failed to initialize log session:', e);
+      // Buffer, not console: loggingBehavior 'none' suppresses console in
+      // production, and this is what tells an export the session was lost.
+      log('WARN', LogCategory.SESSION, 'Log session unavailable, buffering in memory only', {
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
   },
 

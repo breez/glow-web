@@ -14,6 +14,14 @@ const STORE_NAME = 'sessions';
 const KEY_STORE_NAME = 'encryption';
 const MAX_SESSIONS = 10;
 
+/**
+ * Cap on `indexedDB.open`, which can fire no event at all: a version
+ * change held open elsewhere blocks, and WebKit can leave the origin's
+ * store wedged after an unclean kill. Covers onupgradeneeded, so raise it
+ * with any DB_VERSION bump whose migration walks the stored sessions.
+ */
+const OPEN_TIMEOUT_MS = 5000;
+
 export interface LogSession {
   id: string;
   startedAt: string;
@@ -49,12 +57,27 @@ async function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    request.onerror = () => reject(request.error);
-
-    request.onsuccess = () => {
-      db = request.result;
-      resolve(db);
+    const timer = setTimeout(
+      () => reject(new Error('indexedDB.open timed out')),
+      OPEN_TIMEOUT_MS,
+    );
+    // A success landing after the timeout still caches `db`, so the next
+    // caller reuses the handle instead of opening a second connection.
+    const settle = (finish: () => void) => {
+      clearTimeout(timer);
+      finish();
     };
+
+    request.onerror = () => settle(() => reject(request.error));
+
+    request.onblocked = () =>
+      settle(() => reject(new Error('indexedDB.open blocked by another connection')));
+
+    request.onsuccess = () =>
+      settle(() => {
+        db = request.result;
+        resolve(db);
+      });
 
     request.onupgradeneeded = (event) => {
       const database = (event.target as IDBOpenDBRequest).result;
