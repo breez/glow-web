@@ -34,6 +34,11 @@ import {
   setPasskeyRpId,
   isMigrationInProgress,
   isPasskeyMigrated,
+  isPasskeyCheckDue,
+  getPasskeyCheckSnoozedUntil,
+  getPasskeyMeta,
+  getPasskeyLabel,
+  snoozePasskeyCheck,
 } from '../services/passkeyService';
 import { LEGACY_RP_ID, SHARED_RP_ID, rpId as defaultRpId } from '../services/passkeyPrfProvider';
 import { secureStorage, deviceOnlyStorage, SecureStorageError, resetSecureStorageInit } from '../services/secureStorage';
@@ -141,6 +146,12 @@ export interface BreezSdkState {
    * no Face ID prompt; the retry bridges that window.
    */
   isFreshInstallRestore: boolean;
+  /**
+   * The lock screen is showing because a passkey sign-in was refused,
+   * not because the app failed to start. Drives UnlockPage's wording and
+   * makes its retry go through the passkey again.
+   */
+  passkeyRefused: boolean;
   startupState: StartupState;
 }
 
@@ -244,6 +255,7 @@ export function useBreezSdk(
   const [celebrationPayment, setCelebrationPayment] = useState<Payment | null>(null);
   const [needsPasskeyMigration, setNeedsPasskeyMigration] = useState(false);
   const [prfAvailable, setPrfAvailable] = useState(false);
+  const [passkeyRefused, setPasskeyRefused] = useState(false);
   const [startupState, setStartupState] = useState<StartupState>('loading');
 
   // Refs
@@ -251,6 +263,7 @@ export function useBreezSdk(
   const eventListenerIdRef = useRef<string | null>(null);
   const shownPaymentIdsRef = useRef<Set<string>>(new Set());
   const sdkRef = useLatest(sdk);
+  const passkeyRefusedRef = useLatest(passkeyRefused);
   // Guards the retryUnlock flow against concurrent invocation. The
   // app-resume listener and checkForExistingWallet both try to fire
   // retryUnlock on their own schedules, and BiometricPrompt crashes
@@ -949,6 +962,7 @@ export function useBreezSdk(
         await connectWallet(response.wallet.seed, false, response.wallet.label);
       } catch (e) {
         logger.error(LogCategory.AUTH, 'Web passkey retry failed', { error: formatError(e) });
+        setPasskeyRefused(true);
         setError('Failed to authenticate with passkey. Please try again.');
         setStartupState('native-locked');
         setIsLoading(false);
@@ -965,6 +979,23 @@ export function useBreezSdk(
       // to retry, so this is a plain reconnect retry after a failed
       // silent start.
       if (!(await secureStorage.hasStoredSeed())) {
+        // A lock that came from a refused passkey retries the passkey
+        // first, so the button does what it says and a passkey that
+        // answers moves its timestamp on. The vault still opens the
+        // wallet when it does not: this screen must not be a dead end
+        // for someone whose passkey is genuinely gone.
+        if (passkeyRefusedRef.current) {
+          try {
+            await signInPinnedToActiveCredential(
+              getPasskeyLabel() ?? undefined,
+              getPasskeyRpId() ?? LEGACY_RP_ID,
+            );
+          } catch (e) {
+            logger.warn(LogCategory.AUTH, 'Passkey retry from the lock screen failed', {
+              error: formatError(e),
+            });
+          }
+        }
         logger.info(LogCategory.AUTH, 'retryUnlock:deviceOnlyReconnect');
         const seed = await deviceOnlyStorage.retrieveSeed();
         await connectWallet(seed, false, undefined, 'secureStorage');
@@ -1040,7 +1071,7 @@ export function useBreezSdk(
     } finally {
       retryUnlockInFlightRef.current = false;
     }
-  }, [connectWallet]);
+  }, [connectWallet, passkeyRefusedRef]);
 
   const handleBuyBitcoin = useCallback(async (provider: BuyBitcoinProvider) => {
     if (!sdk) return;
@@ -1213,26 +1244,73 @@ export function useBreezSdk(
         //     redundant re-write.
         useLegacy = false;
         setIsLoading(true);
-        try {
-          const seed = await deviceOnlyStorage.retrieveSeed();
-          await connectWallet(seed, false, undefined, 'secureStorage');
-        } catch (e) {
-          logger.error(
-            LogCategory.SDK,
-            'Failed to silently reconnect from device-only storage',
-            { error: formatError(e) },
-          );
-          setIsLoading(false);
-          // The seed is still in the vault unless the vault itself lost
-          // it, so anything else (connect threw, SDK init failed) must
-          // route to UnlockPage's retry. Falling through to 'no-wallet'
-          // showed the welcome screen after one transient failure and
-          // read as "the app forgot my account".
-          const vaultEmpty = e instanceof SecureStorageError
-            && (e.code === 'NO_STORED_SEED' || e.code === 'KEY_INVALIDATED');
-          if (!vaultEmpty) {
-            setError('Could not reconnect. Please try again.');
+        // Periodic re-auth. This is the one tier that never touches the
+        // passkey, so a passkey that has been wiped or revoked stays
+        // invisible here until the vault is gone too. Once a month the
+        // launch goes through the passkey instead, which is the prompt
+        // every other tier already shows.
+        let refused = false;
+        if (
+          isPasskeyMode()
+          && isPasskeyCheckDue(
+            getPasskeyMeta().lastSeenAt,
+            getPasskeyCheckSnoozedUntil(),
+            Date.now(),
+          )
+        ) {
+          // Same order as the passkey branch below: commit
+          // UnlockingPage, then drop the splash, so the OS sheet lands
+          // on a painted screen rather than a black one.
+          flushSync(() => {
+            setStartupState('native-unlocking');
+          });
+          if (isInitialLoadRef.current) {
+            isInitialLoadRef.current = false;
+            await hideSplash();
+          }
+          try {
+            await signInPinnedToActiveCredential(
+              getPasskeyLabel() ?? undefined,
+              getPasskeyRpId() ?? LEGACY_RP_ID,
+            );
+          } catch (e) {
+            logger.warn(LogCategory.AUTH, 'Periodic passkey re-auth failed', {
+              error: formatError(e),
+            });
+            snoozePasskeyCheck();
+            // Stop at the lock screen, where a failed sign-in already
+            // belongs, rather than opening the wallet with a notice on
+            // it. Nobody is stranded: the retry there falls back to the
+            // vault, which still holds the seed.
+            refused = true;
+            setPasskeyRefused(true);
+            setError('Could not sign in with your passkey. Please try again.');
             setStartupState('native-locked');
+            setIsLoading(false);
+          }
+        }
+        if (!refused) {
+          try {
+            const seed = await deviceOnlyStorage.retrieveSeed();
+            await connectWallet(seed, false, undefined, 'secureStorage');
+          } catch (e) {
+            logger.error(
+              LogCategory.SDK,
+              'Failed to silently reconnect from device-only storage',
+              { error: formatError(e) },
+            );
+            setIsLoading(false);
+            // The seed is still in the vault unless the vault itself lost
+            // it, so anything else (connect threw, SDK init failed) must
+            // route to UnlockPage's retry. Falling through to 'no-wallet'
+            // showed the welcome screen after one transient failure and
+            // read as "the app forgot my account".
+            const vaultEmpty = e instanceof SecureStorageError
+              && (e.code === 'NO_STORED_SEED' || e.code === 'KEY_INVALIDATED');
+            if (!vaultEmpty) {
+              setError('Could not reconnect. Please try again.');
+              setStartupState('native-locked');
+            }
           }
         }
       }
@@ -1282,6 +1360,7 @@ export function useBreezSdk(
             wallet = result.wallet;
           } catch (e) {
             logger.error(LogCategory.AUTH, 'Passkey authentication failed', { error: formatError(e) });
+            setPasskeyRefused(true);
             setError('Failed to authenticate with passkey. Please try again.');
             setStartupState('native-locked');
             setIsLoading(false);
@@ -1450,6 +1529,7 @@ export function useBreezSdk(
     prfAvailable,
     hasPasskeyBefore: hasPasskeyHistory(),
     isFreshInstallRestore: freshInstallRestore,
+    passkeyRefused,
     startupState,
     // Actions
     connectWallet,

@@ -282,6 +282,7 @@ const AppContent: React.FC = () => {
     if (sdk.startupState === 'native-locked') {
       return (
         <UnlockPage
+          passkeyRefused={sdk.passkeyRefused}
           isLoading={sdk.isLoading}
           error={sdk.error}
           onUnlock={sdk.retryUnlock}
