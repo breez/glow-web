@@ -83,6 +83,7 @@
   .section-head h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; }
   .section-head p { color: var(--text-2); max-width: 760px; }
   .section-head .pins { font-size: 14px; }
+  .section-head ul { margin: 0; padding-left: 18px; color: var(--text-2); max-width: 760px; display: flex; flex-direction: column; gap: 2px; }
   .pins a, .pins code { font-family: var(--mono); font-size: 0.9em; }
 
   /* Storyboard */
@@ -159,7 +160,7 @@
     <div class="refs">
       <a href="https://github.com/breez/glow-web/issues/503">glow-web#503</a>
       <a href="https://github.com/breez/spark-sdk/issues/1161">spark-sdk#1161</a>
-      <span><a href="https://github.com/breez/spark-sdk/pull/1173">spark-sdk#1173</a> at <a class="mono" href="https://github.com/breez/spark-sdk/pull/1173/commits/351fd1db6c8713bb09a4bf0b41fd09d863557029">351fd1d</a></span>
+      <span><a href="https://github.com/breez/spark-sdk/pull/1173">spark-sdk#1173</a> at <a class="mono" href="https://github.com/breez/spark-sdk/pull/1173/commits/52f925402bf4eee3027ef7206960ef3bdf564612">52f9254</a></span>
     </div>
   </header>
 
@@ -169,9 +170,10 @@
     <div class="section-head">
       <span class="eyebrow">For Jesse and Roei</span>
       <h2 id="api">API notes</h2>
-      <p>Questions that came up while building these screens, rechecked at 351fd1d. None blocks the flow above.</p>
-      <p>Resolved so far: the SDK checks funding before co-signing, routes watchtower-exited leaves to <code>Cooperative</code> under <code>Specific</code> and <code>All</code>, uses one value throughout, reads a replaced recovery as done, and now reads the chain on every quote, so it leaves out a leaf whose recovery is in a block.</p>
-      <p class="pins">Current behaviour is <code>#1173</code>. Evidence line numbers are at <a href="https://github.com/breez/spark-sdk/pull/1173/commits/351fd1db6c8713bb09a4bf0b41fd09d863557029">351fd1d</a>.</p>
+      <p>Questions that came up while building these screens, rechecked at 52f9254. None blocks the flow above.</p>
+      <p>Resolved so far, the SDK:</p>
+      <ul><li>checks funding before co-signing</li><li>routes watchtower-exited leaves to <code>Cooperative</code> under <code>Specific</code> and <code>All</code></li><li>uses one value throughout</li><li>reads a replaced recovery as done</li><li>leaves out of the quote a leaf whose recovery is in a block</li><li>in <code>recover_funds</code>, lists in <code>failed</code> a leaf it cannot build, and builds the rest</li><li>outside a sync, keeps sending chain requests after the chain service fails one</li><li>returns a co-signed recovery as <code>Unverified</code> when it did not see the output in a block</li><li>in <code>prepare_recover_funds</code>, checks a recorded recovery or sweep again until it is 6 blocks deep</li></ul>
+      <p class="pins">Current behaviour is <code>#1173</code>. Evidence line numbers are at <a href="https://github.com/breez/spark-sdk/pull/1173/commits/52f925402bf4eee3027ef7206960ef3bdf564612">52f9254</a>.</p>
     </div>
     <div class="notes">
       __NOTES__
