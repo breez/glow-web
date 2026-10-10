@@ -13,17 +13,10 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug",
-    "regtest:up": "node local-regtest/up.mjs",
-    "regtest:down": "node local-regtest/down.mjs",
-    "regtest:address": "node local-regtest/btc.mjs address",
-    "regtest:send": "node local-regtest/btc.mjs send",
-    "regtest:mine": "node local-regtest/btc.mjs mine",
-    "regtest:balance": "node local-regtest/btc.mjs balance",
-    "regtest:fund": "node local-regtest/fund.mjs"
+    "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
-    "@breeztech/breez-sdk-spark": "0.26.1",
+    "@breeztech/breez-sdk-spark": "0.27.0-dev2",
     "@capacitor/app": "^8.1.0",
     "@capacitor/app-launcher": "^8.0.1",
     "@capacitor/browser": "^8.0.3",

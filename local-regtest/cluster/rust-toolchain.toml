@@ -1,4 +1,0 @@
-# Matches the sdk's own, since this builds its crates: `platform-utils` uses
-# `Duration::from_mins`, which the default stable toolchain has yet to stabilize.
-[toolchain]
-channel = "1.95.0"
