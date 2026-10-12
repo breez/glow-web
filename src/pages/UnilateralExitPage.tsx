@@ -18,7 +18,7 @@ import { FeeStep } from '@/features/unilateral-exit/steps/FeeStep';
 import { QuoteStep } from '@/features/unilateral-exit/steps/QuoteStep';
 import { RecoverReviewStep } from '@/features/unilateral-exit/steps/RecoverReviewStep';
 import { FundStep, FundingStatus, PendingExitStep, Receipt, Status } from '@/features/unilateral-exit/steps/FundStep';
-import { TrackerView } from '@/features/unilateral-exit/TrackerView';
+import { RedoActions, TrackerView } from '@/features/unilateral-exit/TrackerView';
 import { SatAmount } from '@/components/SatAmount';
 import { recoveryTxid } from '@/features/unilateral-exit/archive';
 import { cancelPendingExit, startPendingExit } from '@/features/unilateral-exit/engine';
@@ -182,6 +182,17 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
           </>
         );
       }
+      case 'tracker':
+        if (flow.engine.plan?.phase !== 'redo') return null;
+        return (
+          <RedoActions
+            onContinue={() => void flow.continueExit()}
+            onRebuild={flow.rebuild}
+            isContinuing={flow.isContinuing}
+            continueError={flow.continueError}
+            noun={recovering ? 'recovery' : undefined}
+          />
+        );
       case 'sent':
         return (
           <PrimaryButton onClick={onFinished} className="w-full" data-testid="unilateral-exit-sent-done">
@@ -295,8 +306,6 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                 tipHeight={flow.engine.tipHeight}
                 isAdvancing={flow.engine.isAdvancing}
                 onRebuild={flow.rebuild}
-                onContinue={() => void flow.continueExit()}
-                isContinuing={flow.isContinuing}
                 continueError={flow.continueError}
                 justStarted={!openedOnTracker}
                 noun={recovering ? 'recovery' : undefined}

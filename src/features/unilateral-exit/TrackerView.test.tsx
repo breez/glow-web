@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { TrackerView } from './TrackerView';
+import { RedoActions, TrackerView } from './TrackerView';
 
 // The backup card reads the connected wallet; the tracker itself works off the
 // plan it is handed.
@@ -81,13 +81,9 @@ describe('what the exit is worth right now', () => {
     expect(screen.getByText(/599 785/)).toBeInTheDocument();
   });
 
-  it('marks what will arrive approximate only when an exit fee paid for it', () => {
-    const hero = () => screen.getByText(/599 785/).closest('span') as HTMLElement;
-    const { unmount } = renderTracker(twoLeaves([tx({ txid: 'a' })], { quotedExitFeeSat: 3_122 }));
-    expect(hero()).toHaveTextContent('~');
-    unmount();
-    renderTracker(twoLeaves([tx({ txid: 'a', kind: 'sweep' })]));
-    expect(hero()).not.toHaveTextContent('~');
+  it('shows what will arrive without a marker, even when an exit fee paid for it', () => {
+    renderTracker(twoLeaves([tx({ txid: 'a' })], { quotedExitFeeSat: 3_122 }));
+    expect(screen.getByText(/599 785/).closest('span')).not.toHaveTextContent('~');
   });
 
   it('counts the transactions done against the total', () => {
@@ -127,13 +123,13 @@ describe('what the exit is worth right now', () => {
 });
 
 describe('TrackerView', () => {
-  it('continues a diverged exit in place, without the wizard', () => {
+  it('explains a diverged exit and continues it in place, without the wizard', () => {
     const onRebuild = vi.fn();
     const onContinue = vi.fn();
-    render(
-      <TrackerView plan={plan([tx({ txid: 'a' })], { phase: 'redo' })} tipHeight={1000} isAdvancing={false} onRebuild={onRebuild} onContinue={onContinue} />,
-    );
-    expect(screen.getByText('Your exit needs an update')).toBeInTheDocument();
+    render(<TrackerView plan={plan([tx({ txid: 'a' })], { phase: 'redo' })} tipHeight={1000} isAdvancing={false} onRebuild={onRebuild} />);
+    expect(screen.getByText(/Part of your exit didn't confirm in time/)).toBeInTheDocument();
+    render(<RedoActions onContinue={onContinue} onRebuild={onRebuild} isContinuing={false} continueError={null} />);
+    expect(screen.getByTestId('unilateral-exit-rebuild')).toHaveTextContent(/^Update & Continue Exit$/);
     fireEvent.click(screen.getByTestId('unilateral-exit-rebuild'));
     expect(onContinue).toHaveBeenCalled();
     expect(onRebuild).not.toHaveBeenCalled();
@@ -142,19 +138,16 @@ describe('TrackerView', () => {
 
   it('offers the wizard when continuing in place fails', () => {
     const onRebuild = vi.fn();
+    const error = 'Insufficient CPFP funding: need at least 5000 sats';
     render(
-      <TrackerView
-        plan={plan([tx({ txid: 'a' })], { phase: 'redo' })}
-        tipHeight={1000}
-        isAdvancing={false}
-        onRebuild={onRebuild}
-        onContinue={vi.fn()}
-        continueError="Insufficient CPFP funding: need at least 5000 sats"
-      />,
+      <TrackerView plan={plan([tx({ txid: 'a' })], { phase: 'redo' })} tipHeight={1000} isAdvancing={false} onRebuild={onRebuild} continueError={error} />,
     );
-    expect(screen.getByText('Glow could not continue the exit.')).toBeInTheDocument();
+    expect(screen.getByText('Could not update the exit')).toBeInTheDocument();
+    expect(screen.queryByText(/Part of your exit didn't confirm in time/)).not.toBeInTheDocument();
+    expect(screen.getByText('Please try again or choose a different fee.')).toBeInTheDocument();
     fireEvent.click(within(screen.getByTestId('unilateral-exit-continue-error')).getByText('Details'));
     expect(screen.getByTestId('unilateral-exit-continue-error')).toHaveTextContent('need at least 5000 sats');
+    render(<RedoActions onContinue={vi.fn()} onRebuild={onRebuild} isContinuing={false} continueError={error} />);
     fireEvent.click(screen.getByTestId('unilateral-exit-rebuild-wizard'));
     expect(onRebuild).toHaveBeenCalled();
   });

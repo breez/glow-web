@@ -14,7 +14,6 @@ export const ReceiveHero: React.FC<{ figures: QuoteFigures }> = ({ figures }) =>
     <p className="text-spark-text-muted text-sm mb-2">You&apos;ll receive</p>
     <SatAmount
       sats={figures.willReceiveSat}
-      approximate={figures.isEstimate}
       className="text-4xl font-bold text-spark-text-primary"
     />
   </div>
@@ -33,7 +32,7 @@ export const ReviewBreakdown: React.FC<{ figures: QuoteFigures; amounts: FeeBrea
   <FeeBreakdownCard
     items={[
       ...amounts,
-      { label: feeLabel, value: figures.networkFeeSat, approximate: figures.isEstimate },
+      { label: feeLabel, value: figures.networkFeeSat },
       ...(figures.needsFunding ? [{ label: 'Exit fee', value: figures.exitFeeSat, highlight: true }] : []),
     ]}
   />

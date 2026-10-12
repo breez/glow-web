@@ -1,12 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BackupActions, ExitActionRow } from './BackupCard';
-import { AlertCard } from '@/components/AlertCard';
+import { AlertCard, SimpleAlert } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
 import { CollapsibleCodeField, CollapsibleSection, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { RefreshIcon } from '@/components/Icons';
 import { blocksToFinish, exitStages, nextAction, planProgress } from './driver';
 import type { NextAction, PlanProgress, UnilateralExitPlan } from './driver';
-import { isCooperative, isEstimate } from './quote';
+import { isCooperative } from './quote';
 import { formatDaysLeft } from '@/utils/blockTime';
 import { formatWithSpaces } from '@/utils/formatNumber';
 
@@ -86,7 +86,6 @@ const ExitSummary: React.FC<{
         </p>
         <SatAmount
           sats={stages.willReceive}
-          approximate={isEstimate(plan)}
           className="text-4xl font-bold text-spark-text-primary"
         />
       </div>
@@ -122,21 +121,58 @@ const ExitSummary: React.FC<{
   );
 };
 
+/** Scrolled into view as it appears: the tap that failed sits in the action bar, below the fold. */
+const UpdateError: React.FC<{ noun: string; error: string }> = ({ noun, error }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => ref.current?.scrollIntoView?.({ block: 'nearest' }), [error]);
+  return (
+    <div ref={ref}>
+      <AlertCard variant="error" title={`Could not update the ${noun}`}>
+        <p className="text-sm">Please try again or choose a different fee.</p>
+        <ErrorDetails text={error} testId="unilateral-exit-continue-error" />
+      </AlertCard>
+    </div>
+  );
+};
+
+/**
+ * A paused exit's buttons, for the sheet's action bar: inside the scroller they
+ * fell below the fold at the sheet's resting height.
+ */
+export const RedoActions: React.FC<{
+  /** Rebuilds the exit in place, at its own fee rate. */
+  onContinue: () => void;
+  /** Opens the wizard, for a new fee rate. */
+  onRebuild?: () => void;
+  isContinuing: boolean;
+  continueError: string | null;
+  noun?: string;
+}> = ({ onContinue, onRebuild, isContinuing, continueError, noun = 'exit' }) => (
+  <div className="space-y-3">
+    <PrimaryButton onClick={onContinue} disabled={isContinuing} className="w-full" data-testid="unilateral-exit-rebuild">
+      {isContinuing ? 'Updating...' : `Update & Continue ${noun.charAt(0).toUpperCase()}${noun.slice(1)}`}
+    </PrimaryButton>
+    {/* When the exit's own fee rate no longer works, the wizard can pick another. */}
+    {continueError && onRebuild && (
+      <SecondaryButton onClick={onRebuild} className="w-full" data-testid="unilateral-exit-rebuild-wizard">
+        Choose a Different Fee
+      </SecondaryButton>
+    )}
+  </div>
+);
+
 export const TrackerView: React.FC<{
   plan: UnilateralExitPlan;
   tipHeight: number | null;
   isAdvancing: boolean;
   /** Opens the wizard, for a new fee rate. Without it the tracker only follows. */
   onRebuild?: () => void;
-  /** Rebuilds a diverged exit in place, at its own fee rate. */
-  onContinue?: () => void;
-  isContinuing?: boolean;
   continueError?: string | null;
   /** The exit started while this sheet was open, so nothing has said yet that it can close. */
   justStarted?: boolean;
   /** What the closing line calls this, such as "recovery". */
   noun?: string;
-}> = ({ plan, tipHeight, isAdvancing, onRebuild, onContinue, isContinuing = false, continueError = null, justStarted = false, noun = 'exit' }) => {
+}> = ({ plan, tipHeight, isAdvancing, onRebuild, continueError = null, justStarted = false, noun = 'exit' }) => {
   const { transactions } = plan.exit;
   const [advanced, setAdvanced] = useState(false);
   const progress = useMemo(() => planProgress(plan), [plan]);
@@ -178,37 +214,6 @@ export const TrackerView: React.FC<{
         </p>
       )}
 
-      {plan.phase === 'redo' && (
-        <AlertCard variant="warning" title="Your exit needs an update">
-          <p className="text-sm">
-            Part of your exit already went through, so the remaining transactions need an update.
-            Your money is safe.
-          </p>
-          {continueError && (
-            <>
-              <p className="text-sm mt-2">Glow could not continue the exit.</p>
-              <ErrorDetails text={continueError} testId="unilateral-exit-continue-error" />
-            </>
-          )}
-          <div className="mt-3 space-y-2">
-            <PrimaryButton
-              onClick={onContinue ?? onRebuild}
-              disabled={isContinuing}
-              className="w-full"
-              data-testid="unilateral-exit-rebuild"
-            >
-              {isContinuing ? 'Rebuilding...' : 'Continue Exit'}
-            </PrimaryButton>
-            {/* When the exit's own fee rate no longer works, the wizard can pick another. */}
-            {continueError && (
-              <SecondaryButton onClick={onRebuild} className="w-full" data-testid="unilateral-exit-rebuild-wizard">
-                Choose a Different Fee
-              </SecondaryButton>
-            )}
-          </div>
-        </AlertCard>
-      )}
-
       {/* A co-signed recovery has nothing here but the fee bump. */}
       {(!isCosignedRecovery || rebuildRow) && (
         <CollapsibleSection
@@ -223,6 +228,24 @@ export const TrackerView: React.FC<{
             <BackupActions frozen={plan.exitStateSnapshot}>{rebuildRow}</BackupActions>
           )}
         </CollapsibleSection>
+      )}
+
+      {/* One box at a time: a failed update replaces the explanation the user read before tapping.
+          A little room below, or the scroller's edge clips the box's border. */}
+      {plan.phase === 'redo' && (
+        <div className="pb-1">
+          {continueError ? (
+            <UpdateError noun={noun} error={continueError} />
+          ) : (
+            <SimpleAlert variant="warning" hideIcon>
+              <p>
+                Part of your {noun} didn&apos;t confirm in time, so the Spark operators moved some of your funds
+                on-chain to keep them safe. Please update your {noun === 'exit' ? 'unilateral exit' : noun} to recover
+                all your funds.
+              </p>
+            </SimpleAlert>
+          )}
+        </div>
       )}
     </div>
   );

@@ -48,7 +48,7 @@ export const RecoverReviewStep: React.FC<{
           {figures.isCooperative ? (
             <>
               <SatAmount sats={figures.recoverableReceiveSat} /> goes to this address now. The other{' '}
-              <SatAmount sats={figures.balanceReceiveSat} approximate={figures.isEstimate} /> needs the exit fee from another wallet, then
+              <SatAmount sats={figures.balanceReceiveSat} /> needs the exit fee from another wallet, then
               takes several days.
             </>
           ) : (

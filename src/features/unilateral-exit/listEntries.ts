@@ -10,7 +10,7 @@ import {
   type PendingExit,
   type UnilateralExitPlan,
 } from './driver';
-import { isCooperativeLeaf, isEstimate, willReceiveSat } from './quote';
+import { isCooperativeLeaf, willReceiveSat } from './quote';
 import { recoveryTxid, type ArchivedExit } from './archive';
 import type { UnilateralExitEngineState } from './engine';
 
@@ -26,8 +26,6 @@ export interface UnilateralExitEntry {
   /** The subtitle asks for a tap, so it takes the amount's color, as "Tap to claim" does. */
   isAction?: boolean;
   amountSat: number;
-  /** `amountSat` is what an exit still under way expects to deliver. */
-  isEstimate?: boolean;
   /**
    * `active` is in flight, so it pulses and opens the flow. `recoverable` opens
    * Recover Funds, or beside an exit under way that exit's tracker. `recovery`
@@ -42,7 +40,7 @@ export interface UnilateralExitEntry {
 const activeSubtitle = (state: UnilateralExitEngineState): string | null => {
   const plan = state.plan;
   if (!plan) return null;
-  if (plan.phase === 'redo') return 'Tap to continue';
+  if (plan.phase === 'redo') return 'Tap to update';
 
   const { confirmed, total } = planProgress(plan);
   const blocks =
@@ -90,7 +88,6 @@ const recoveryEntry = (recovery: UnilateralExitPlan): UnilateralExitEntry => ({
   title: 'BTC Transfer',
   subtitle: 'Waiting for a confirmation',
   amountSat: willReceiveSat(recovery),
-  isEstimate: isEstimate(recovery),
   kind: 'recovery',
 });
 
@@ -167,7 +164,6 @@ const liveEntry = (state: UnilateralExitEngineState): UnilateralExitEntry | null
       id: 'pending',
       ...pendingText(state, pending),
       amountSat: pending.willReceiveSat,
-      isEstimate: isEstimate(pending),
       kind: 'active',
     };
   }
@@ -178,7 +174,6 @@ const liveEntry = (state: UnilateralExitEngineState): UnilateralExitEntry | null
     subtitle: activeSubtitle(state),
     isAction: plan.phase === 'redo',
     amountSat: willReceiveSat(plan),
-    isEstimate: isEstimate(plan),
     kind: 'active',
   };
 };

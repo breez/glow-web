@@ -5,7 +5,7 @@ import type {
   RecoveryTransaction,
 } from '@breeztech/breez-sdk-spark';
 import { outputTotalSat } from '@/utils/rawTx';
-import type { PendingExit, UnilateralExitPlan } from './driver';
+import type { UnilateralExitPlan } from './driver';
 import { fundingAddressOf } from './funding';
 
 // Everything read off a quote, for Recover Funds and the Unilateral Exit alike:
@@ -62,23 +62,6 @@ export const builtExitFeeRecord = (
   paid: ExitFeeRecord,
   address = paid.exitFeeAddress,
 ): ExitFeeRecord => (needsFunding(quote) ? { quotedExitFeeSat: exitFeeSat(quote), exitFeeAddress: address } : paid);
-
-const tookFunding = (plan: UnilateralExitPlan): boolean => exitFeeRecordOf(plan).quotedExitFeeSat !== undefined;
-
-/**
- * Whether what arrives is an estimate. A refund the operators' watchtower lands
- * first pays its own fee, which no quote can know, so an exit paid for from
- * another wallet stays one until it lands. Funds that need no funding move in
- * transactions whose outputs are already known. A pending exit waits on its fee.
- */
-export function isEstimate(
-  exit: Quote | UnilateralExitPlan | PendingExit,
-  resuming: UnilateralExitPlan | null = null,
-): boolean {
-  if ('fundingAddress' in exit) return true;
-  if ('exit' in exit) return tookFunding(exit);
-  return needsFunding(exit) || (resuming !== null && tookFunding(resuming));
-}
 
 /**
  * What comes off the value moved: the sweep's fee and the co-signed recoveries'.
@@ -149,7 +132,6 @@ export interface QuoteFigures {
   leftOutForFees: boolean;
   /** Some of it is co-signed, so the fee is more than the sweep's. */
   isCooperative: boolean;
-  isEstimate: boolean;
   isEmpty: boolean;
   isWorthMoving: boolean;
 }
@@ -176,7 +158,6 @@ export function quoteFigures(
     leftOutSat: leftOutSat(quote),
     leftOutForFees: leftOutForFees(quote),
     isCooperative: recoverableSat > 0 || coopFeeSat > 0,
-    isEstimate: isEstimate(quote, resuming),
     isEmpty: quote.leaves.length === 0,
     isWorthMoving: isWorthExiting(quote, receiveSat),
   };

@@ -7,14 +7,13 @@ import {
   builtSweepFeeSat,
   exitFeeRecordOf,
   exitFeeSat,
-  isEstimate,
   leftOutSat,
   needsFunding,
   quoteFigures,
   quotedSweepFeeSat,
   willReceiveSat,
 } from './quote';
-import { checked, confirmed, funding, MNEMONIC, pendingExit, plan, prepared, sweepHex, twoLeaves, tx } from './testFixtures';
+import { checked, confirmed, funding, MNEMONIC, plan, prepared, sweepHex, twoLeaves, tx } from './testFixtures';
 
 const meta = {
   network: 'mainnet',
@@ -130,23 +129,6 @@ describe('the exit fee record', () => {
   });
 });
 
-describe('isEstimate', () => {
-  const funded = plan([], { quotedExitFeeSat: 14_350 });
-
-  it('marks what an exit fee pays for as an estimate, and nothing else', () => {
-    expect(isEstimate(prepared({ funding: funding(3_000) }))).toBe(true);
-    expect(isEstimate(prepared({ funding: undefined }))).toBe(false);
-    expect(isEstimate(funded)).toBe(true);
-    expect(isEstimate(plan([]))).toBe(false);
-    expect(isEstimate(pendingExit())).toBe(true);
-  });
-
-  it('keeps a rebuild of a funded exit an estimate, even once it needs no more funding', () => {
-    expect(isEstimate(prepared({ funding: undefined }), funded)).toBe(true);
-    expect(quoteFigures(prepared({ funding: undefined }), { resuming: funded }).isEstimate).toBe(true);
-  });
-});
-
 describe('leftOutSat', () => {
   const dust: SkippedLeaf = { leafId: 'dust', valueSats: 350, reason: { type: 'feeExceedsValue' } };
   const lost: SkippedLeaf = { leafId: 'lost', valueSats: 1_000, reason: { type: 'fundsNotFound' } };
@@ -185,7 +167,6 @@ describe('quoteFigures', () => {
       needsFunding: false,
       willReceiveSat: 45_300,
       isCooperative: true,
-      isEstimate: false,
       isWorthMoving: true,
     });
   });
@@ -206,7 +187,6 @@ describe('quoteFigures', () => {
       willReceiveSat: 164_200,
       recoverableReceiveSat: 45_300,
       balanceReceiveSat: 118_900,
-      isEstimate: true,
     });
   });
 
@@ -226,7 +206,6 @@ describe('quoteFigures', () => {
       needsFunding: false,
       willReceiveSat: 118_900,
       isCooperative: false,
-      isEstimate: false,
     });
   });
 
