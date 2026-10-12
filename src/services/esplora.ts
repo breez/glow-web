@@ -13,8 +13,10 @@ export function esploraBaseUrl(network: string): string {
   switch (network) {
     case 'testnet':
       return 'https://mempool.space/testnet/api';
+    // Lightspark's hosted regtest, the one the SDK itself uses. A local
+    // cluster overrides it through .env.local.
     case 'regtest':
-      return 'http://localhost:3002';
+      return 'https://regtest-mempool.us-west-2.sparkinfra.net/api';
     default:
       return 'https://mempool.space/api';
   }
@@ -28,7 +30,7 @@ export function esploraBaseUrl(network: string): string {
 export function mempoolBaseUrl(network: string): string {
   const override = import.meta.env?.VITE_MEMPOOL_BASE_URL;
   if (override) return trim(override);
-  return network === 'regtest' ? 'http://localhost:8999/api' : esploraBaseUrl(network);
+  return esploraBaseUrl(network);
 }
 
 const atLeastOne = (rate: number | undefined): number => Math.max(1, Math.round(rate ?? 1));
