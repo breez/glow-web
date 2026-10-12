@@ -238,11 +238,18 @@ export const TrackerView: React.FC<{
             <UpdateError noun={noun} error={continueError} />
           ) : (
             <SimpleAlert variant="warning" hideIcon>
-              <p>
-                Part of your {noun} didn&apos;t confirm in time, so the Spark operators moved some of your funds
-                on-chain to keep them safe. Please update your {noun === 'exit' ? 'unilateral exit' : noun} to recover
-                all your funds.
-              </p>
+              {plan.redoCause === 'unverified' ? (
+                <p>
+                  Glow couldn&apos;t check part of your {noun} on-chain. Please update your{' '}
+                  {noun === 'exit' ? 'unilateral exit' : noun} to continue.
+                </p>
+              ) : (
+                <p>
+                  Part of your {noun} didn&apos;t confirm in time, so the Spark operators moved some of your funds
+                  on-chain to keep them safe. Please update your {noun === 'exit' ? 'unilateral exit' : noun} to
+                  recover all your funds.
+                </p>
+              )}
             </SimpleAlert>
           )}
         </div>

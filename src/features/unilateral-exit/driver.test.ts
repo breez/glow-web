@@ -894,6 +894,77 @@ describe('a plan stored under SDK 0.26', () => {
   });
 });
 
+describe('an exit holding a step the SDK could not read', () => {
+  // Glow never sends an Unverified unilateral step, and a check never settles one.
+  const stuck = (over: Parameters<typeof plan>[1] = {}) =>
+    plan([tx({ txid: 'node', status: { type: 'unverified' } })], { feeRateSatPerVbyte: 4, destination: 'bc1qmine', ...over });
+  const rebuilt = checked([{ txid: 'fresh', status: { type: 'ready' } }]);
+  const quote = prepared({ feeRateSatPerVbyte: 4, destination: 'bc1qmine' });
+
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('walletMnemonic', MNEMONIC);
+  });
+
+  it('rebuilds by name at its own rate once nothing is in flight, and marks the block', async () => {
+    const prepareRecoverFunds = vi.fn(async () => quote);
+    const recoverFunds = vi.fn(async () => rebuilt);
+    const { plan: next } = await advanceUnilateralExit(stuck(), chain(), sdk({ prepareRecoverFunds, recoverFunds }), '02abc');
+    expect(prepareRecoverFunds).toHaveBeenCalledWith(
+      expect.objectContaining({ feeRateSatPerVbyte: 4, destination: 'bc1qmine', selection: { type: 'specific', leafIds: ['leaf-1'] } }),
+    );
+    expect(next.exit).toBe(rebuilt);
+    expect(next.unverifiedRebuiltAt).toBe(100);
+  });
+
+  it('tries once a block, so a failing chain service is not asked on every pass', async () => {
+    const prepareRecoverFunds = vi.fn(async () => quote);
+    await advanceUnilateralExit(stuck({ unverifiedRebuiltAt: 100 }), chain(), sdk({ prepareRecoverFunds }), '02abc');
+    expect(prepareRecoverFunds).not.toHaveBeenCalled();
+    await advanceUnilateralExit(stuck({ unverifiedRebuiltAt: 99 }), chain(), sdk({ prepareRecoverFunds }), '02abc');
+    expect(prepareRecoverFunds).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends what is in flight rather than rebuilding over it', async () => {
+    const prepareRecoverFunds = vi.fn(async () => quote);
+    const broadcastPackage = vi.fn(async () => undefined);
+    const mixed = plan([
+      tx({ txid: 'node', status: { type: 'unverified' } }),
+      tx({ txid: 'other', cpfpTxHex: 'bb', status: { type: 'ready' } }),
+    ]);
+    await advanceUnilateralExit(mixed, chain({ broadcastPackage }), sdk({ prepareRecoverFunds }), '02abc');
+    expect(prepareRecoverFunds).not.toHaveBeenCalled();
+    expect(broadcastPackage).toHaveBeenCalledWith('aa', 'bb');
+  });
+
+  it('leaves an unverified co-signed recovery alone, since Glow sends that one', async () => {
+    const prepareRecoverFunds = vi.fn(async () => quote);
+    const cosigned = plan([tx({ txid: 'rec', kind: 'cooperative', status: { type: 'unverified' } })]);
+    await advanceUnilateralExit(cosigned, chain(), sdk({ prepareRecoverFunds }), '02abc');
+    expect(prepareRecoverFunds).not.toHaveBeenCalled();
+  });
+
+  it('asks a passkey wallet for the tap, since the exit cannot move on its own', async () => {
+    localStorage.removeItem('walletMnemonic');
+    localStorage.setItem('passkeyLabel', 'Default');
+    const recoverFunds = vi.fn(async () => rebuilt);
+    const { plan: next } = await advanceUnilateralExit(stuck(), chain(), sdk({ prepareRecoverFunds: async () => quote, recoverFunds }), '02abc');
+    expect(next).toMatchObject({ phase: 'redo', needsSignIn: true, redoCause: 'unverified' });
+    expect(recoverFunds).not.toHaveBeenCalled();
+  });
+
+  it('keeps the exit and marks the block when the rebuild fails', async () => {
+    const failing = sdk({
+      prepareRecoverFunds: async () => {
+        throw new Error('chain service unavailable');
+      },
+    });
+    const { plan: next } = await advanceUnilateralExit(stuck(), chain(), failing, '02abc');
+    expect(next).toMatchObject({ phase: 'active', unverifiedRebuiltAt: 100 });
+    expect(next.exit.transactions[0].txid).toBe('node');
+  });
+});
+
 describe('a converted plan on its next passes', () => {
   const wallet = { identityPubkey: '02abcdef0123456789', network: 'mainnet' };
   const converted = (over: Record<string, unknown> = {}) => {

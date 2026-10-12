@@ -136,6 +136,12 @@ describe('TrackerView', () => {
     expect(screen.queryByTestId('unilateral-exit-rebuild-wizard')).not.toBeInTheDocument();
   });
 
+  it('says Glow could not check the exit when that is why it needs the tap', () => {
+    render(<TrackerView plan={plan([tx({ txid: 'a' })], { phase: 'redo', redoCause: 'unverified' })} tipHeight={1000} isAdvancing={false} />);
+    expect(screen.getByText(/Glow couldn't check part of your exit on-chain/)).toBeInTheDocument();
+    expect(screen.queryByText(/Spark operators moved/)).not.toBeInTheDocument();
+  });
+
   it('offers the wizard when continuing in place fails', () => {
     const onRebuild = vi.fn();
     const error = 'Insufficient CPFP funding: need at least 5000 sats';

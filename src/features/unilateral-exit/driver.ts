@@ -84,6 +84,10 @@ export interface UnilateralExitPlan {
   needsRebuild?: true;
   /** A rebuild needs the passkey, which only a tap can ask for, so the engine leaves it to the tracker's button. */
   needsSignIn?: true;
+  /** The tip of Glow's last rebuild over an Unverified step: once a block, so a failing chain service is not asked every pass. */
+  unverifiedRebuiltAt?: number;
+  /** Why a redo waits on the user when the chain did not diverge: a step the SDK could not read, which only a rebuild settles. */
+  redoCause?: 'unverified';
 }
 
 /**
@@ -340,6 +344,10 @@ export type ExitSdk = Pick<
  */
 export const isSendable = (tx: RecoveryTransaction): boolean =>
   tx.status.type === 'ready' || (isCooperative(tx) && tx.status.type === 'unverified');
+
+/** A unilateral step the SDK could not read while building: never sent, and a check never settles it. */
+const hasUnverifiedStep = (plan: UnilateralExitPlan): boolean =>
+  plan.exit.transactions.some(tx => tx.status.type === 'unverified' && !isCooperative(tx));
 
 export { destinationAddressOf } from '@/utils/destinationAddress';
 
@@ -799,6 +807,31 @@ export async function broadcastReadyTransactions(
 }
 
 /**
+ * Builds an exit again over a step the SDK could not read, which is how the
+ * guide settles one: a fresh build reads the chain again. Same rate and
+ * funding as a Redo rebuild.
+ */
+async function rebuildUnverified(
+  plan: UnilateralExitPlan,
+  sdk: ExitSdk,
+  identityPubkey: string,
+  tipHeight: number,
+): Promise<UnilateralExitPlan> {
+  try {
+    return { ...(await rebuildExit(plan, sdk, identityPubkey)), unverifiedRebuiltAt: tipHeight };
+  } catch (e) {
+    // The exit cannot move on its own, so unlike a converted one it asks for the tap.
+    if (e instanceof MnemonicNeedsPasskeyError) {
+      return { ...plan, phase: 'redo', needsSignIn: true, redoCause: 'unverified', unverifiedRebuiltAt: tipHeight };
+    }
+    if (!(e instanceof RebuildLaterError)) {
+      logger.warn(LogCategory.SDK, `Failed to rebuild over an unverified step: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    return { ...plan, unverifiedRebuiltAt: tipHeight };
+  }
+}
+
+/**
  * Builds a converted 0.26 exit again with this SDK. Best effort: until it
  * works, the converted set keeps running as it is, and one with nothing left
  * to build simply finishes that way.
@@ -857,13 +890,15 @@ export async function advanceUnilateralExit(
     checked &&
     sdk &&
     identityPubkey &&
-    next.needsRebuild &&
     !next.needsSignIn &&
     next.phase === 'active' &&
     // A rebuild now would conflict with what is in the mempool at the same fee.
     !next.exit.transactions.some(isSendable)
   ) {
-    next = await rebuildConverted(next, sdk, identityPubkey);
+    if (next.needsRebuild) next = await rebuildConverted(next, sdk, identityPubkey);
+    else if (hasUnverifiedStep(next) && next.unverifiedRebuiltAt !== tipHeight) {
+      next = await rebuildUnverified(next, sdk, identityPubkey, tipHeight);
+    }
   }
 
   if (next.phase !== 'active') return { plan: next, tipHeight };
