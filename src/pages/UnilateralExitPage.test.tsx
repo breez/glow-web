@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import type { FeeRates } from '@/services/chain';
@@ -6,7 +6,7 @@ import type { UnilateralExitFlow } from '@/features/unilateral-exit/hooks/useUni
 import { quoteFigures } from '@/features/unilateral-exit/quote';
 import type { ArchivedExit } from '@/features/unilateral-exit/archive';
 import type { UnilateralExitPlan } from '@/features/unilateral-exit/driver';
-import { confirmed, funding, plan, prepared, tx } from '@/features/unilateral-exit/testFixtures';
+import { confirmed, funding, pendingExit, plan, prepared, tx } from '@/features/unilateral-exit/testFixtures';
 
 // The page is the switch under test; the flow behind it is stubbed per step.
 const flow = vi.hoisted(() => ({ current: null as unknown as UnilateralExitFlow }));
@@ -18,7 +18,19 @@ vi.mock('@/features/unilateral-exit/hooks/useUnilateralExitFlow', async () => ({
 // The scanner pulls in a wasm barcode reader the test env cannot resolve.
 vi.mock('@/components/QrScannerDialog', () => ({ default: () => null }));
 
+vi.mock('@/features/unilateral-exit/engine', async () => ({
+  ...(await vi.importActual('@/features/unilateral-exit/engine')),
+  cancelPendingExit: vi.fn(),
+}));
+
+// The backup rows under Advanced read the connected wallet.
+vi.mock('@/contexts/WalletContext', async () => ({
+  ...(await vi.importActual('@/contexts/WalletContext')),
+  useWallet: () => ({ exportUnilateralExitState: async () => ({ exitState: '{}' }) }),
+}));
+
 import UnilateralExitPage from './UnilateralExitPage';
+import { cancelPendingExit } from '@/features/unilateral-exit/engine';
 
 const feeFlow = (feeRates: FeeRates | null) =>
   ({
@@ -189,5 +201,44 @@ describe('the quote step', () => {
   it('says the exit could not continue when rebuilding one under way failed', async () => {
     await renderQuote(0, { underWay: true, startError: 'operators unreachable' });
     expect(screen.getByText('Could not continue the exit')).toBeInTheDocument();
+  });
+});
+
+describe('cancelling an exit that waits on its fee', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  async function cancel(mode?: 'recover') {
+    const onBack = vi.fn();
+    flow.current = {
+      phase: 'pending',
+      mode,
+      engine: {
+        plan: null,
+        pending: pendingExit({ mode }),
+        pendingCoins: [],
+        nothingToExit: false,
+        isStarting: false,
+        startError: null,
+        archive: [],
+      },
+      canGoBack: false,
+      back: vi.fn(),
+    } as unknown as UnilateralExitFlow;
+    render(<UnilateralExitPage network="regtest" onBack={onBack} onFinished={vi.fn()} />);
+    await waitForSheetOpen();
+    fireEvent.click(screen.getByText('Advanced'));
+    fireEvent.click(screen.getByTestId('unilateral-exit-cancel'));
+    expect(cancelPendingExit).toHaveBeenCalled();
+    return onBack;
+  }
+
+  it("closes the sheet on a recovery, rather than land on the exit's intro", async () => {
+    expect(await cancel('recover')).toHaveBeenCalled();
+  });
+
+  it('stays open on an exit, which starts again from its intro', async () => {
+    expect(await cancel()).not.toHaveBeenCalled();
   });
 });

@@ -82,11 +82,11 @@ async function quoted(
   }: { mode?: ExitMode; prepareRecoverFunds?: Mock<ExitSdk['prepareRecoverFunds']> } = {},
 ) {
   wallet.current = sdk({ prepareRecoverFunds, recoverFunds });
-  const { result } = renderHook(() => useUnilateralExitFlow('regtest', mode));
+  const { result, rerender } = renderHook(() => useUnilateralExitFlow('regtest', mode));
   act(() => result.current.goTo('fee'));
   await waitFor(() => expect(result.current.fee.feeRates).not.toBeNull());
   await act(() => result.current.submitFee());
-  return { result, recoverFunds, prepareRecoverFunds };
+  return { result, rerender, recoverFunds, prepareRecoverFunds };
 }
 
 describe('continuing from the quote', () => {
@@ -161,6 +161,24 @@ describe('continuing from the quote', () => {
   });
 });
 
+describe('unlocking the phrase', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    saved.plan = null;
+  });
+
+  // The page runs unlock again whenever it changes, and each run asks for the passkey.
+  it('keeps one unlock across engine passes, which emit a new plan each time', async () => {
+    saved.plan = plan([], { fundingAddressIndex: 2 });
+    const { result, rerender } = await quoted(prepared({ funding: funding(3_000) }));
+    const unlock = result.current.unlock;
+
+    saved.plan = { ...saved.plan };
+    rerender();
+    expect(result.current.unlock).toBe(unlock);
+  });
+});
+
 describe('which leaves a quote takes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -196,6 +214,19 @@ describe('Recover Funds', () => {
     expect(result.current.phase).toBe('destination');
     expect(result.current.canGoBack).toBe(false);
     expect(result.current.mode).toBe('recover');
+  });
+
+  it("goes back from a rebuild's destination to its tracker", () => {
+    saved.plan = plan([], { mode: 'recover' });
+    wallet.current = sdk();
+    const { result } = renderHook(() => useUnilateralExitFlow('regtest'));
+    act(() => result.current.rebuild());
+    act(() => result.current.back());
+
+    expect(result.current.phase).toBe('destination');
+    expect(result.current.canGoBack).toBe(true);
+    act(() => result.current.back());
+    expect(result.current.phase).toBe('tracker');
   });
 
   it('quotes only the funds outside the balance', async () => {

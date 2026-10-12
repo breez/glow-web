@@ -82,6 +82,14 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
     true,
   );
 
+  // A cancelled exit falls back to its intro to start again. A recovery has
+  // no intro, and one opened from its row would land on the exit's, which
+  // quotes the whole balance. So the sheet closes instead.
+  const cancelPending = useCallback(() => {
+    cancelPendingExit();
+    if (recovering) onBack();
+  }, [recovering, onBack]);
+
   const stepAction = (() => {
     switch (flow.phase) {
       case 'intro':
@@ -280,7 +288,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                 nothingToExit={flow.engine.nothingToExit}
                 isStarting={flow.engine.isStarting}
                 startError={flow.engine.startError}
-                onCancel={cancelPendingExit}
+                onCancel={cancelPending}
                 cancelLabel={recovering ? 'Cancel recovery' : undefined}
               />
             )}

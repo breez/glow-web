@@ -181,9 +181,8 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
   // one waiting on its fee on where to pay it. The engine moves it from one to
   // the other, so these steps follow it rather than holding their own place.
   // A recovery has no intro: it opens on where to send the funds.
-  const [step, setPhase] = useState<UnilateralExitPhase>(() =>
-    openedMode === 'recover' && !plan && !pending ? 'destination' : 'intro',
-  );
+  const freshRecovery = mode === 'recover' && !plan && !pending;
+  const [step, setPhase] = useState<UnilateralExitPhase>(() => (freshRecovery ? 'destination' : 'intro'));
   const phase: UnilateralExitPhase =
     step === 'intro' || step === 'pending' || step === 'tracker'
       ? plan
@@ -321,11 +320,12 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
 
   const figures = useMemo(() => (quote ? quoteFigures(quote, { resuming: plan }) : null), [quote, plan]);
 
-  // The index, not the plan: every engine pass emits a new plan object, and
-  // the page re-runs unlock whenever this callback changes.
+  // The index, not the plan, and no figures, which follow the plan: every
+  // engine pass emits a new plan object, and the page re-runs unlock whenever
+  // this callback changes.
   const planFundingIndex = plan?.fundingAddressIndex;
   const unlock = useCallback(async () => {
-    if (!walletKey || !quote || !figures) return;
+    if (!walletKey || !quote) return;
     setUnlockError(null);
     try {
       const mnemonic = await readWalletMnemonic({ interactive: true });
@@ -341,6 +341,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
       }
       // Saved before anything is paid, so closing the sheet keeps the address
       // and the amount.
+      const figures = quoteFigures(quote);
       setPendingExit(
         walletKey,
         {
@@ -359,7 +360,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
     } catch (e) {
       setUnlockError(message(e));
     }
-  }, [walletKey, quote, figures, network, planFundingIndex, splitOff, mode]);
+  }, [walletKey, quote, network, planFundingIndex, splitOff, mode]);
 
   const confirmedUtxos = useMemo(() => fundingUtxos.filter(utxo => utxo.confirmed), [fundingUtxos]);
   const sent = useMemo(() => sentFunding(plan, confirmedUtxos), [plan, confirmedUtxos]);
@@ -530,7 +531,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
     mode,
     engine,
     /** False where back leaves the flow: the first step, and an exit already saved. */
-    canGoBack: BACK[phase] !== undefined && !(phase === 'destination' && mode === 'recover'),
+    canGoBack: BACK[phase] !== undefined && !(phase === 'destination' && freshRecovery),
     destination: { destination, onChange: setDestination, error: destinationError },
     fee: {
       feeRates,
