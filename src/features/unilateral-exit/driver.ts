@@ -84,6 +84,8 @@ export interface UnilateralExitPlan {
   needsRebuild?: true;
   /** A rebuild needs the passkey, which only a tap can ask for, so the engine leaves it to the tracker's button. */
   needsSignIn?: true;
+  /** The last background rebuild of a diverged exit failed for a reason other than waiting on the chain, so the exit asks for the update tap. */
+  rebuildFailed?: true;
   /** The tip of Glow's last rebuild over an Unverified step: once a block, so a failing chain service is not asked every pass. */
   unverifiedRebuiltAt?: number;
   /**
@@ -132,13 +134,16 @@ const hasUnverifiedStep = (plan: UnilateralExitPlan): boolean =>
   plan.exit.transactions.some(tx => tx.status.type === 'unverified' && !isCooperative(tx));
 
 /**
- * Whether the exit waits on the user's update tap: a diverged one, or an active
- * one whose Unverified step needs a rebuild only the passkey can sign. The
- * second keeps running meanwhile, so its other steps still go out. A tap whose
- * rebuild finished the exit keeps the flags until the engine archives it.
+ * Whether the exit waits on the user's update tap. Glow rebuilds a diverged
+ * exit on every pass, so it asks only when that rebuild needs the passkey or
+ * has failed. An active exit asks when its Unverified step needs a rebuild only
+ * the passkey can sign, and keeps running meanwhile. A finished one never asks,
+ * though a tap that finished it leaves the flags until the engine archives it.
  */
 export const awaitsUpdate = (plan: UnilateralExitPlan): boolean =>
-  plan.phase === 'redo' || (plan.phase === 'active' && !!plan.needsSignIn && plan.redoCause === 'unverified');
+  plan.phase === 'redo'
+    ? !!plan.needsSignIn || !!plan.rebuildFailed
+    : plan.phase === 'active' && !!plan.needsSignIn && plan.redoCause === 'unverified';
 
 /** Folds a check onto the plan. The sdk owns the exit and the phase; glow keeps only what the network told it about its own sends. */
 export function applyExitCheck(
@@ -906,10 +911,14 @@ export async function advanceUnilateralExit(
       // Waiting on the user to sign in is the designed path, not a fault: the
       // exit stays in `redo` and the tracker offers the rebuild as a button.
       if (e instanceof MnemonicNeedsPasskeyError) return { plan: { ...next, needsSignIn: true }, tipHeight };
-      if (!(e instanceof RebuildLaterError)) {
+      // Waiting on the chain is not a failure: the next pass tries again, so
+      // only another error asks for the tap.
+      const failed = !(e instanceof RebuildLaterError);
+      if (failed) {
         const error = e instanceof Error ? e.message : String(e);
         logger.warn(LogCategory.SDK, `Failed to rebuild the exit: ${error}`);
       }
+      next = { ...next, rebuildFailed: failed ? true : undefined };
     }
   } else if (
     checked &&

@@ -80,6 +80,13 @@ describe('QuoteStep', () => {
     expect(screen.queryByText('Change fee rate')).not.toBeInTheDocument();
   });
 
+  it('says an exit under way has nothing to rebuild yet, rather than that the wallet holds nothing', () => {
+    render(<QuoteStep {...fields(quote({ leaves: [], recoverableValueSats: 0 }))} underWay />);
+    expect(screen.getByText('Nothing to rebuild right now')).toBeInTheDocument();
+    expect(screen.getByText('Glow keeps your exit moving on its own.')).toBeInTheDocument();
+    expect(screen.queryByText('Nothing here to exit')).not.toBeInTheDocument();
+  });
+
   const dust: SkippedLeaf = { leafId: 'dust', valueSats: 2_500, reason: { type: 'feeExceedsValue' } };
   const gone: SkippedLeaf = { leafId: 'gone', valueSats: 1_000, reason: { type: 'fundsNotFound' } };
 

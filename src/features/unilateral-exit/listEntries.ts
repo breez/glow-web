@@ -44,8 +44,9 @@ const activeSubtitle = (state: UnilateralExitEngineState): string | null => {
   if (awaitsUpdate(plan)) return 'Tap to update';
 
   const { confirmed, total } = planProgress(plan);
+  // A diverged exit's timelocks belong to the set its rebuild replaces.
   const blocks =
-    state.tipHeight === null
+    state.tipHeight === null || plan.phase === 'redo'
       ? null
       : (nextAction(plan.exit.transactions, state.tipHeight)?.blocks ?? null);
   // The row's title already says these are transactions.

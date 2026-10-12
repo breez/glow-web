@@ -123,8 +123,16 @@ describe('applyExitCheck', () => {
 });
 
 describe('awaitsUpdate', () => {
-  it('asks for the tap on a diverged exit, and on one that has to sign over a step it could not read', () => {
-    expect(awaitsUpdate(plan([], { phase: 'redo' }))).toBe(true);
+  it('asks for the tap on a diverged exit only when its rebuild needs the passkey or failed', () => {
+    expect(awaitsUpdate(plan([], { phase: 'redo', needsSignIn: true }))).toBe(true);
+    expect(awaitsUpdate(plan([], { phase: 'redo', rebuildFailed: true }))).toBe(true);
+  });
+
+  it('leaves a diverged exit Glow rebuilds by itself alone', () => {
+    expect(awaitsUpdate(plan([], { phase: 'redo' }))).toBe(false);
+  });
+
+  it('asks for the tap on a running exit that has to sign over a step it could not read', () => {
     expect(awaitsUpdate(plan([], { needsSignIn: true, redoCause: 'unverified' }))).toBe(true);
   });
 
@@ -133,6 +141,8 @@ describe('awaitsUpdate', () => {
     expect(awaitsUpdate(plan([], { needsRebuild: true, needsSignIn: true }))).toBe(false);
     // A tap that found nothing to rebuild yet hands the step back to the engine.
     expect(awaitsUpdate(plan([], { redoCause: 'unverified' }))).toBe(false);
+    // Left from a divergence the chain has since settled.
+    expect(awaitsUpdate(plan([], { rebuildFailed: true }))).toBe(false);
   });
 
   it('asks nothing of a tap whose rebuild finished the exit, while it waits to be archived', () => {
@@ -370,6 +380,8 @@ describe('advanceUnilateralExit', () => {
       const first = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain({ broadcast }), driver, '02abc');
       expect(first.plan.phase).toBe('redo');
       expect(first.plan.needsSignIn).toBeUndefined();
+      expect(first.plan.rebuildFailed).toBeUndefined();
+      expect(awaitsUpdate(first.plan)).toBe(false);
       await advanceUnilateralExit(first.plan, chain({ broadcast }), driver, '02abc');
       expect(prepareRecoverFunds).toHaveBeenCalledTimes(2);
       expect(broadcast).not.toHaveBeenCalled();
@@ -503,6 +515,39 @@ describe('advanceUnilateralExit', () => {
     });
     const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain(), driver, '02abc');
     expect(next.phase).toBe('redo');
+    expect(next.rebuildFailed).toBe(true);
+    expect(awaitsUpdate(next)).toBe(true);
+  });
+
+  it('stops asking for the tap once a pass finds the failed rebuild only waiting on the chain', async () => {
+    const driver = sdk({
+      checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: redo }),
+      prepareRecoverFunds: async () => skippedOnly({ type: 'unverified' }),
+    });
+    const { plan: next } = await advanceUnilateralExit(
+      plan([tx({ txid: 'a' })], { phase: 'redo', rebuildFailed: true }),
+      chain(),
+      driver,
+      '02abc',
+    );
+    expect(next.phase).toBe('redo');
+    expect(next.rebuildFailed).toBeUndefined();
+  });
+
+  it('stops asking for the tap once a pass rebuilds what had failed', async () => {
+    const driver = sdk({
+      checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: redo }),
+      prepareRecoverFunds: async () => prepared(),
+      recoverFunds: async () => checked([{ txid: 'fresh', status: ready }]),
+    });
+    const { plan: next } = await advanceUnilateralExit(
+      plan([tx({ txid: 'a' })], { phase: 'redo', rebuildFailed: true }),
+      chain(),
+      driver,
+      '02abc',
+    );
+    expect(next.phase).toBe('active');
+    expect(next.rebuildFailed).toBeUndefined();
   });
 
   it('keeps going on the set it holds when the check fails', async () => {

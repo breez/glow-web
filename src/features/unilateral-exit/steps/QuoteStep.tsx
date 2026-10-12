@@ -5,7 +5,12 @@ import { SatAmount } from '@/components/SatAmount';
 import type { QuoteFields } from '../hooks/useUnilateralExitFlow';
 import { DestinationRow, LeftOutCard, ReceiveHero, ReviewBreakdown } from './ReviewParts';
 
-export const QuoteStep: React.FC<QuoteFields> = ({ quote, figures, isQuoting, error }) => {
+export const QuoteStep: React.FC<
+  QuoteFields & {
+    /** An exit is under way, so the quote named only its leaves, which Glow rebuilds by itself. */
+    underWay?: boolean;
+  }
+> = ({ quote, figures, isQuoting, error, underWay = false }) => {
   if (isQuoting) {
     return (
       <div className="py-16 flex justify-center">
@@ -23,6 +28,15 @@ export const QuoteStep: React.FC<QuoteFields> = ({ quote, figures, isQuoting, er
   }
 
   if (!quote || !figures || figures.isEmpty) {
+    if (underWay) {
+      return (
+        <div className="space-y-6">
+          <AlertCard variant="info" title="Nothing to rebuild right now">
+            <p className="text-sm">Glow keeps your exit moving on its own.</p>
+          </AlertCard>
+        </div>
+      );
+    }
     return (
       <div className="space-y-6">
         <AlertCard variant="warning" title="Nothing here to exit">

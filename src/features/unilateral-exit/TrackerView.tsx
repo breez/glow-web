@@ -70,19 +70,26 @@ const ExitSummary: React.FC<{
   const total = stages.inSpark + stages.onChain + stages.delivered;
 
   const isChecking = useHeldFor(isAdvancing, CHECKING_VISIBLE_AFTER_MS);
+  // A diverged exit sends nothing until its rebuild replaces the set, so the
+  // set's next step is not what it is doing.
+  const paused = plan.phase === 'redo' && awaitsUpdate(plan);
   const status = isChecking
     ? 'Checking the blockchain...'
-    : next === null
-      ? 'Waiting for confirmations'
-      : next.blocks > 0
-        ? 'Waiting for timelock'
-        : `Sending ${next.transactions === 1 ? 'a transaction' : `${next.transactions} transactions`}`;
+    : plan.phase === 'redo'
+      ? paused
+        ? 'Update needed'
+        : 'Updating automatically'
+      : next === null
+        ? 'Waiting for confirmations'
+        : next.blocks > 0
+          ? 'Waiting for timelock'
+          : `Sending ${next.transactions === 1 ? 'a transaction' : `${next.transactions} transactions`}`;
 
   return (
     <div className="space-y-6">
       <div className="text-center py-4">
         <p className="text-spark-text-muted text-sm mb-2">
-          {plan.phase === 'redo' ? 'Paused' : 'Processing'}
+          {paused ? 'Paused' : 'Processing'}
         </p>
         <SatAmount
           sats={stages.willReceive}

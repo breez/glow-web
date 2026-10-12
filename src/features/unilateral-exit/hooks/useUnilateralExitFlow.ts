@@ -7,6 +7,7 @@ import type { ChainUtxo, FeeRates } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { destinationErrorMessage } from '@/utils/destinationAddress';
 import {
+  awaitsUpdate,
   buildFromQuote,
   destinationAddressOf,
   fundingInputsOf,
@@ -35,6 +36,7 @@ import {
   type QuoteFigures,
 } from '../quote';
 import {
+  advanceNow,
   keepRecovery,
   setPendingExit,
   setUnilateralExitPlan,
@@ -514,17 +516,30 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
       const tip = await chain.tipHeight().catch(() => tipHeight ?? undefined);
       setUnilateralExitPlan(walletKey, { ...rebuilt, unverifiedRebuiltAt: tip });
     } catch (e) {
+      // Nothing to build until the chain shows where a leaf went: waiting, not
+      // failure. A sign-in request stays until a tap lifts it, so this one
+      // does. A failed rebuild is the engine's to clear on its next pass, and
+      // the plan held here may already be stale.
+      if (e instanceof RebuildLaterError) {
+        if (plan.needsSignIn) setUnilateralExitPlan(walletKey, { ...plan, needsSignIn: undefined, rebuildFailed: undefined });
+        else void advanceNow();
+        return;
+      }
       logger.error(LogCategory.SDK, 'Failed to continue unilateral exit', { error: message(e) });
       setContinueError(message(e));
-      // Nothing to sign yet: the engine's passes try again, and ask for the tap
-      // once there is.
-      if (e instanceof RebuildLaterError && plan.needsSignIn) {
-        setUnilateralExitPlan(walletKey, { ...plan, needsSignIn: undefined });
-      }
     } finally {
       setIsContinuing(false);
     }
   }, [plan, wallet, walletKey, chain, tipHeight]);
+
+  // A card that comes back explains itself again rather than showing an error
+  // from before. Cleared on the way out, not in the body, which would set
+  // state during the effect.
+  const asksForUpdate = !!plan && awaitsUpdate(plan);
+  useEffect(() => {
+    if (!asksForUpdate) return;
+    return () => setContinueError(null);
+  }, [asksForUpdate]);
 
   const back = useCallback(() => setPhase(current => BACK[current] ?? current), []);
 

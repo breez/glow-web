@@ -178,7 +178,7 @@ describe('the sheet once a recovery lands', () => {
 });
 
 describe('updating an exit from the tracker', () => {
-  const diverged = plan([tx({ txid: 'a' })], { phase: 'redo' });
+  const diverged = plan([tx({ txid: 'a' })], { phase: 'redo', needsSignIn: true });
   const waitingOnTap = plan([tx({ txid: 'a', status: { type: 'unverified' } })], { needsSignIn: true, redoCause: 'unverified' });
 
   async function renderTracker(current: UnilateralExitPlan, continueError: string | null = null) {
@@ -197,7 +197,8 @@ describe('updating an exit from the tracker', () => {
   }
 
   it.each([
-    ['a diverged exit', diverged],
+    ['a diverged exit whose rebuild needs the passkey', diverged],
+    ['a diverged exit whose rebuild failed', plan([tx({ txid: 'a' })], { phase: 'redo', rebuildFailed: true })],
     ['a running exit whose update waits on the passkey', waitingOnTap],
   ])('offers the update on %s, which continues it at its own fee', async (_, current) => {
     await renderTracker(current);
@@ -214,6 +215,7 @@ describe('updating an exit from the tracker', () => {
 
   it.each([
     ['a running exit', plan([tx({ txid: 'a' })])],
+    ['a diverged exit Glow rebuilds by itself', plan([tx({ txid: 'a' })], { phase: 'redo' })],
     ['a converted exit waiting on sign-in over no unread step', plan([tx({ txid: 'a' })], { needsRebuild: true, needsSignIn: true })],
   ])('offers neither on %s', async (_, current) => {
     await renderTracker(current, 'Please try again.');
@@ -247,6 +249,18 @@ describe('the quote step', () => {
   it('says the exit could not continue when rebuilding one under way failed', async () => {
     await renderQuote(0, { underWay: true, startError: 'operators unreachable' });
     expect(screen.getByText('Could not continue the exit')).toBeInTheDocument();
+  });
+
+  it('says an exit under way has nothing to rebuild yet when the quote names none of its leaves', async () => {
+    const empty = prepared({ leaves: [], recoverableValueSats: 0 });
+    flow.current = {
+      ...quoteFlow(0, { underWay: true }),
+      quote: { quote: empty, figures: quoteFigures(empty), isQuoting: false, error: null },
+    } as UnilateralExitFlow;
+    render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
+    await waitForSheetOpen();
+    expect(screen.getByText('Nothing to rebuild right now')).toBeInTheDocument();
+    expect(screen.queryByTestId('unilateral-exit-quote-continue')).not.toBeInTheDocument();
   });
 });
 

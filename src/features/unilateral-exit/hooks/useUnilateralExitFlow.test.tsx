@@ -41,13 +41,14 @@ vi.mock('./useUnilateralExitEngineLifecycle', () => ({
 }));
 vi.mock('../engine', async () => ({
   ...(await vi.importActual('../engine')),
+  advanceNow: vi.fn(),
   keepRecovery: vi.fn(),
   setPendingExit: vi.fn(),
   setUnilateralExitPlan: vi.fn(),
 }));
 
 import { useUnilateralExitFlow } from './useUnilateralExitFlow';
-import { keepRecovery, setPendingExit, setUnilateralExitPlan } from '../engine';
+import { advanceNow, keepRecovery, setPendingExit, setUnilateralExitPlan } from '../engine';
 import { readWalletMnemonic } from '../funding';
 
 const unfunded = () => prepared({ funding: undefined, cpfpFeeSats: 0 });
@@ -360,5 +361,69 @@ describe('the update tap', () => {
     const stored = await tapOn(plan([tx({ txid: 'moved' })], { phase: 'redo', needsSignIn: true }));
 
     expect(stored).toMatchObject({ phase: 'active', unverifiedRebuiltAt: 811 });
+  });
+
+  describe('when the chain has yet to show where a leaf went', () => {
+    const waiting = prepared({ leaves: [], skipped: [{ leafId: 'leaf-1', valueSats: 100_000, reason: { type: 'unverified' } }] });
+
+    const tapWaiting = async (stalled: UnilateralExitPlan) => {
+      saved.plan = stalled;
+      wallet.current = sdk({ prepareRecoverFunds: async () => waiting });
+      vi.mocked(readWalletMnemonic).mockResolvedValueOnce(MNEMONIC);
+      const { result } = renderHook(() => useUnilateralExitFlow('regtest'));
+      await act(() => result.current.continueExit());
+      return result.current;
+    };
+
+    it('lifts the sign-in request, without an error, so the engine waits it out', async () => {
+      const after = await tapWaiting(plan([tx({ txid: 'moved' })], { phase: 'redo', needsSignIn: true, rebuildFailed: true }));
+
+      expect(after.continueError).toBeNull();
+      const stored = vi.mocked(setUnilateralExitPlan).mock.calls[0][1];
+      expect(stored.phase).toBe('redo');
+      expect(stored.needsSignIn).toBeUndefined();
+      expect(stored.rebuildFailed).toBeUndefined();
+      expect(advanceNow).not.toHaveBeenCalled();
+    });
+
+    it("leaves a failed rebuild's plan to the engine, whose next pass clears it", async () => {
+      const after = await tapWaiting(plan([tx({ txid: 'moved' })], { phase: 'redo', rebuildFailed: true }));
+
+      expect(after.continueError).toBeNull();
+      expect(setUnilateralExitPlan).not.toHaveBeenCalled();
+      expect(advanceNow).toHaveBeenCalled();
+    });
+  });
+
+  describe('when the update fails for another reason', () => {
+    const tapFailing = async () => {
+      saved.plan = plan([tx({ txid: 'moved' })], { phase: 'redo', rebuildFailed: true });
+      wallet.current = sdk({
+        prepareRecoverFunds: async () => {
+          throw new Error('operators unreachable');
+        },
+      });
+      vi.mocked(readWalletMnemonic).mockResolvedValueOnce(MNEMONIC);
+      const hook = renderHook(() => useUnilateralExitFlow('regtest'));
+      await act(() => hook.result.current.continueExit());
+      return hook;
+    };
+
+    it('shows it, so a different fee stays on offer', async () => {
+      const { result } = await tapFailing();
+
+      expect(result.current.continueError).toBe('operators unreachable');
+      expect(setUnilateralExitPlan).not.toHaveBeenCalled();
+    });
+
+    it('drops it once the card goes, so a card that comes back explains itself again', async () => {
+      const { result, rerender } = await tapFailing();
+
+      saved.plan = plan([tx({ txid: 'moved' })], { phase: 'redo' });
+      rerender();
+      saved.plan = plan([tx({ txid: 'moved' })], { phase: 'redo', rebuildFailed: true });
+      rerender();
+      expect(result.current.continueError).toBeNull();
+    });
   });
 });

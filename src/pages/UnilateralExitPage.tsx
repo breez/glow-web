@@ -260,7 +260,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                 />
               ) : (
                 <>
-                  <QuoteStep {...flow.quote} />
+                  <QuoteStep {...flow.quote} underWay={!!flow.engine.plan} />
                   {flow.startError && (
                     <ErrorMessageBox
                       title={flow.engine.plan ? 'Could not continue the exit' : 'Could not start the exit'}
