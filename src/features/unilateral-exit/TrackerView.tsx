@@ -126,8 +126,8 @@ export const TrackerView: React.FC<{
   plan: UnilateralExitPlan;
   tipHeight: number | null;
   isAdvancing: boolean;
-  /** Opens the wizard, for a new fee rate. */
-  onRebuild: () => void;
+  /** Opens the wizard, for a new fee rate. Without it the tracker only follows. */
+  onRebuild?: () => void;
   /** Rebuilds a diverged exit in place, at its own fee rate. */
   onContinue?: () => void;
   isContinuing?: boolean;
@@ -151,7 +151,7 @@ export const TrackerView: React.FC<{
   // A co-signed recovery is Glow's own record, which the exit-data export does
   // not hold, so saving or restoring exit data would not bring it back.
   const isCosignedRecovery = transactions.length > 0 && transactions.every(isCooperative);
-  const rebuildRow = plan.phase === 'active' && (
+  const rebuildRow = plan.phase === 'active' && onRebuild && (
     <ExitActionRow
       label="Rebuild at a higher fee"
       icon={<RefreshIcon size="md" />}
@@ -209,18 +209,21 @@ export const TrackerView: React.FC<{
         </AlertCard>
       )}
 
-      <CollapsibleSection
-        label="Advanced"
-        isVisible={advanced}
-        onToggle={() => setAdvanced(v => !v)}
-        bare
-      >
-        {isCosignedRecovery ? (
-          rebuildRow
-        ) : (
-          <BackupActions frozen={plan.exitStateSnapshot}>{rebuildRow}</BackupActions>
-        )}
-      </CollapsibleSection>
+      {/* A co-signed recovery has nothing here but the fee bump. */}
+      {(!isCosignedRecovery || rebuildRow) && (
+        <CollapsibleSection
+          label="Advanced"
+          isVisible={advanced}
+          onToggle={() => setAdvanced(v => !v)}
+          bare
+        >
+          {isCosignedRecovery ? (
+            rebuildRow
+          ) : (
+            <BackupActions frozen={plan.exitStateSnapshot}>{rebuildRow}</BackupActions>
+          )}
+        </CollapsibleSection>
+      )}
     </div>
   );
 };

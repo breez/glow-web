@@ -73,16 +73,16 @@ export const QuoteStep: React.FC<QuoteFields> = ({ quote, figures, isQuoting, er
       )}
 
       {/* The SDK skips leaves for many reasons, few the user can act on, so
-          Glow names only the amount. */}
+          Glow names a reason only when every one is that the fee eats it. */}
       {figures.leftOutSat > 0 &&
-        (figures.leftOutFromSkipped ? (
-          <LeftOutCard title="Some funds stay behind">
-            <SatAmount sats={figures.leftOutSat} /> is left out of this exit.
-          </LeftOutCard>
-        ) : (
+        (figures.leftOutForFees ? (
           <LeftOutCard title="Some of your balance stays behind">
             <SatAmount sats={figures.leftOutSat} /> sits in pieces too small to be worth their own
             on-chain fee at this rate, so they are left out of this exit.
+          </LeftOutCard>
+        ) : (
+          <LeftOutCard title="Some funds stay behind">
+            <SatAmount sats={figures.leftOutSat} /> is left out of this exit.
           </LeftOutCard>
         ))}
 

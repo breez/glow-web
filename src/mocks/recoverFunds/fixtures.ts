@@ -1,7 +1,7 @@
 // THROWAWAY: what the SDK hands the ?recovermock screenshots. Every shot reads
 // these, so the walkthrough adds up from one screen to the next. What a screen
 // shows is read off them by quote.ts, as in the app.
-import type { PrepareUnilateralExitResponse } from '@breeztech/breez-sdk-spark';
+import type { PrepareRecoverFundsResponse, RecoverFundsLeaf, SkippedLeaf } from '@breeztech/breez-sdk-spark';
 import { prepared } from '@/features/unilateral-exit/testFixtures';
 
 export const IDENTITY_PUBKEY = `02ab${'c3'.repeat(31)}`;
@@ -21,46 +21,32 @@ const RECOVERY_VBYTES = 99;
 /** The SDK's cooperative fee for `leaves` leaves at `rate`: the watchtower part plus the recovery's own. */
 const cooperativeFee = (leaves: number, rate: number) => leaves * (WATCHTOWER_FEE_SAT + RECOVERY_VBYTES * rate);
 
-interface SkippedLeaf {
-  leafId: string;
-  valueSats: number;
-  reason: { type: string };
-}
-
-/** A quote as the recover-funds API returns it, on today's type: leaf methods, the co-signed fee, the skipped list. */
-const quote = (
-  over: Partial<PrepareUnilateralExitResponse>,
-  api: { cooperativeFeeSats?: number; skipped?: SkippedLeaf[] } = {},
-): PrepareUnilateralExitResponse =>
-  ({
-    ...prepared({
-      destination: DESTINATION,
-      feeRateSatPerVbyte: FEE_RATES.medium,
-      cpfpFeeSat: 0,
-      fanoutFeeSat: 0,
-      sweepFeeSat: 0,
-      singleUtxoFundingSat: 0,
-      ...over,
-    }),
+/** A quote as prepareRecoverFunds returns it, with no funding unless `over` asks for some. */
+const quote = (over: Partial<PrepareRecoverFundsResponse>): PrepareRecoverFundsResponse =>
+  prepared({
+    destination: DESTINATION,
+    feeRateSatPerVbyte: FEE_RATES.medium,
+    cpfpFeeSats: 0,
+    fanoutFeeSats: 0,
+    sweepFeeSats: 0,
     cooperativeFeeSats: 0,
     skipped: [],
-    ...api,
-  }) as PrepareUnilateralExitResponse;
-
-type Leaf = { leafId: string; value: number; method: 'cooperative' | 'unilateral' };
+    funding: undefined,
+    ...over,
+  });
 
 /** Watchtower-exited leaves the operators co-sign a recovery for, one transaction each. */
-export const COSIGNED_LEAVES: Leaf[] = [
-  { leafId: 'cosigned-1', value: 30_000, method: 'cooperative' },
-  { leafId: 'cosigned-2', value: 18_200, method: 'cooperative' },
+export const COSIGNED_LEAVES: RecoverFundsLeaf[] = [
+  { leafId: 'cosigned-1', valueSats: 30_000, method: 'cooperative' },
+  { leafId: 'cosigned-2', valueSats: 18_200, method: 'cooperative' },
 ];
 const COSIGNED_SAT = 48_200;
 
 /** Leaves stranded by a sibling exit or an old state: today's exit machinery. */
-export const STRANDED_LEAVES: Leaf[] = [
-  { leafId: 'leaf-1', value: 60_000, method: 'unilateral' },
-  { leafId: 'leaf-2', value: 40_000, method: 'unilateral' },
-  { leafId: 'leaf-3', value: 20_000, method: 'unilateral' },
+export const STRANDED_LEAVES: RecoverFundsLeaf[] = [
+  { leafId: 'leaf-1', valueSats: 60_000, method: 'unilateral' },
+  { leafId: 'leaf-2', valueSats: 40_000, method: 'unilateral' },
+  { leafId: 'leaf-3', valueSats: 20_000, method: 'unilateral' },
 ];
 export const STRANDED_SAT = 120_000;
 
@@ -70,58 +56,70 @@ const dustSkipped = (leafId: string): SkippedLeaf => ({ leafId, valueSats: DUST_
 
 /** The co-signed leaves at `rate`: no funding, the operators' fee off the funds. */
 export const cosignedQuote = (rate = FEE_RATES.medium, skipped: SkippedLeaf[] = []) =>
-  quote(
-    { leaves: COSIGNED_LEAVES, recoverableValueSat: COSIGNED_SAT, totalFeeSat: cooperativeFee(2, rate), feeRateSatPerVbyte: rate },
-    { cooperativeFeeSats: cooperativeFee(2, rate), skipped },
-  );
+  quote({
+    leaves: COSIGNED_LEAVES,
+    recoverableValueSats: COSIGNED_SAT,
+    totalFeeSats: cooperativeFee(2, rate),
+    cooperativeFeeSats: cooperativeFee(2, rate),
+    skipped,
+    feeRateSatPerVbyte: rate,
+  });
 export const COSIGNED_QUOTE = cosignedQuote();
 
 /** The same, with a dust leaf left out: at this rate its recovery costs more than it holds. */
 export const LEFT_OUT_QUOTE = cosignedQuote(FEE_RATES.medium, [dustSkipped('cosigned-3')]);
 
-const STRANDED_FUNDING = { cpfpFeeSat: 13_000, fanoutFeeSat: 1_350, singleUtxoFundingSat: 14_350 };
+/** One coin funds all three branches through a fan-out; per-branch funding skips it. */
+const STRANDED_FUNDING = {
+  cpfpFeeSats: 13_000,
+  fanoutFeeSats: 1_350,
+  funding: {
+    singleUtxoSats: 14_350,
+    perBranch: STRANDED_LEAVES.map(leaf => ({ leafId: leaf.leafId, fundingSats: 4_334 })),
+  },
+};
 
 /** The stranded leaves before anything is on-chain: funded from another wallet. */
 export const STRANDED_QUOTE = quote({
   leaves: STRANDED_LEAVES,
-  recoverableValueSat: STRANDED_SAT,
-  sweepFeeSat: 1_100,
+  recoverableValueSats: STRANDED_SAT,
+  sweepFeeSats: 1_100,
   ...STRANDED_FUNDING,
-  totalFeeSat: 15_450,
+  totalFeeSats: 15_450,
 });
 
 /** Those leaves once their refunds are on-chain: only the sweep is left, and it pays its own fee. */
 export const SWEEP_ONLY_QUOTE = quote({
   leaves: STRANDED_LEAVES,
-  recoverableValueSat: STRANDED_SAT,
-  sweepFeeSat: 1_100,
-  totalFeeSat: 1_100,
+  recoverableValueSats: STRANDED_SAT,
+  sweepFeeSats: 1_100,
+  totalFeeSats: 1_100,
 });
 
 /** Both kinds at once, as one sync finds them. */
-export const MIXED_QUOTE = quote(
-  {
-    leaves: [...STRANDED_LEAVES, ...COSIGNED_LEAVES],
-    recoverableValueSat: STRANDED_SAT + COSIGNED_SAT,
-    sweepFeeSat: 1_100,
-    ...STRANDED_FUNDING,
-    totalFeeSat: 15_450 + cooperativeFee(2, FEE_RATES.medium),
-  },
-  { cooperativeFeeSats: cooperativeFee(2, FEE_RATES.medium) },
-);
+export const MIXED_QUOTE = quote({
+  leaves: [...STRANDED_LEAVES, ...COSIGNED_LEAVES],
+  recoverableValueSats: STRANDED_SAT + COSIGNED_SAT,
+  sweepFeeSats: 1_100,
+  ...STRANDED_FUNDING,
+  cooperativeFeeSats: cooperativeFee(2, FEE_RATES.medium),
+  totalFeeSats: 15_450 + cooperativeFee(2, FEE_RATES.medium),
+});
 
 /** Nothing but a dust leaf, which the quote leaves out. */
-export const DUST_QUOTE = quote({ leaves: [], recoverableValueSat: 0, totalFeeSat: 0 }, { skipped: [dustSkipped('dust-1')] });
+export const DUST_QUOTE = quote({ leaves: [], recoverableValueSats: 0, totalFeeSats: 0, skipped: [dustSkipped('dust-1')] });
 
-/** The wallet's own unilateral exit in ux-13: today's `auto` quote of its balance. */
+/** Only the tracker's transaction count shows how the balance splits. */
+const DEV_EXIT_LEAVES: RecoverFundsLeaf[] = [
+  { leafId: 'leaf-1', valueSats: 131_072, method: 'unilateral' },
+  { leafId: 'leaf-2', valueSats: 65_536, method: 'unilateral' },
+  { leafId: 'leaf-3', valueSats: 58_202, method: 'unilateral' },
+];
+
+/** The wallet's own unilateral exit in ux-13: an `all` quote of its balance. */
 export const DEV_EXIT = {
-  /** Only the tracker's transaction count shows how the balance splits. */
-  leaves: [
-    { leafId: 'leaf-1', value: 131_072 },
-    { leafId: 'leaf-2', value: 65_536 },
-    { leafId: 'leaf-3', value: 58_202 },
-  ],
-  sweepFeeSat: 3_200,
+  leaves: DEV_EXIT_LEAVES,
+  sweepFeeSats: 3_200,
   exitFeeSat: 36_900,
 };
 
@@ -133,7 +131,7 @@ export const DEV_EXIT = {
 export const MOVED = {
   leafId: 'leaf-3',
   cooperativeFeeSats: cooperativeFee(1, FEE_RATES.medium),
-  sweepFeeSat: DEV_EXIT.sweepFeeSat - RECOVERY_VBYTES * FEE_RATES.medium,
+  sweepFeeSats: DEV_EXIT.sweepFeeSats - RECOVERY_VBYTES * FEE_RATES.medium,
 };
 
 /** The co-signed recovery's two transactions, as Glow keeps them. */

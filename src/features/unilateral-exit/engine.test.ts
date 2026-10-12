@@ -3,6 +3,7 @@ import {
   cancelPendingExit,
   dismissUnilateralExitPlan,
   getUnilateralExitState,
+  keepRecovery,
   pollIntervalMs,
   setPendingExit,
   setUnilateralExitPlan,
@@ -10,9 +11,10 @@ import {
   startUnilateralExitEngine,
   stopUnilateralExitEngine,
 } from './engine';
-import { loadPendingExit, loadPlan } from './driver';
+import { loadPendingExit, loadPlan, loadRecoveries, saveRecoveries, type UnilateralExitPlan } from './driver';
+import { loadArchive } from './archive';
 import { deriveFundingKey } from './funding';
-import { checked, coin, confirmed, MNEMONIC, pendingExit, plan, prepared, sdk, tx } from './testFixtures';
+import { checked, coin, confirmed, MNEMONIC, pendingExit, plan, prepared, ready, sdk, tx } from './testFixtures';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChainClient, ChainUtxo } from '@/services/chain';
 
@@ -136,8 +138,8 @@ describe('a pass that outlives its plan', () => {
 describe('an exit waiting on its fee', () => {
   const holding = (coins: ChainUtxo[]): ChainClient => ({ ...chain, addressUtxos: async () => coins });
   const building = () => {
-    const unilateralExit = vi.fn(async () => checked([{ txid: 'fan', kind: 'fanOut' }]));
-    return { unilateralExit, driver: sdk({ prepareUnilateralExit: async () => prepared(), unilateralExit }) };
+    const recoverFunds = vi.fn(async () => checked([{ txid: 'fan', kind: 'fanOut' }]));
+    return { recoverFunds, driver: sdk({ prepareRecoverFunds: async () => prepared(), recoverFunds }) };
   };
 
   beforeEach(() => {
@@ -151,13 +153,13 @@ describe('an exit waiting on its fee', () => {
   });
 
   it('does not start when its fee confirms, only when the user taps', async () => {
-    const { unilateralExit, driver } = building();
+    const { recoverFunds, driver } = building();
     startUnilateralExitEngine(wallet, holding([coin(5_898)]), driver);
     setPendingExit(wallet, pendingExit());
 
     await vi.waitFor(() => expect(getUnilateralExitState().pendingCoins).toHaveLength(1));
     await advanceNow();
-    expect(unilateralExit).not.toHaveBeenCalled();
+    expect(recoverFunds).not.toHaveBeenCalled();
 
     await startPendingExit();
     expect(getUnilateralExitState().plan?.exit.transactions[0].txid).toBe('fan');
@@ -166,20 +168,20 @@ describe('an exit waiting on its fee', () => {
   });
 
   it('ignores a tap before the fee has confirmed', async () => {
-    const { unilateralExit, driver } = building();
+    const { recoverFunds, driver } = building();
     startUnilateralExitEngine(wallet, holding([coin(5_898, false)]), driver);
     setPendingExit(wallet, pendingExit());
 
     await vi.waitFor(() => expect(getUnilateralExitState().pendingCoins).toHaveLength(1));
     await startPendingExit();
-    expect(unilateralExit).not.toHaveBeenCalled();
+    expect(recoverFunds).not.toHaveBeenCalled();
   });
 
   it('asks for what the build says it still needs', async () => {
-    const unilateralExit = vi.fn(async () => {
+    const recoverFunds = vi.fn(async () => {
       throw new Error('Insufficient CPFP funding: need at least 6400 sats');
     });
-    startUnilateralExitEngine(wallet, holding([coin(5_898)]), sdk({ prepareUnilateralExit: async () => prepared(), unilateralExit }));
+    startUnilateralExitEngine(wallet, holding([coin(5_898)]), sdk({ prepareRecoverFunds: async () => prepared(), recoverFunds }));
     setPendingExit(wallet, pendingExit());
 
     await vi.waitFor(() => expect(getUnilateralExitState().pendingCoins).toHaveLength(1));
@@ -191,8 +193,8 @@ describe('an exit waiting on its fee', () => {
 
   it('keeps why a start failed, so the user can try again', async () => {
     const driver = sdk({
-      prepareUnilateralExit: async () => prepared(),
-      unilateralExit: async () => {
+      prepareRecoverFunds: async () => prepared(),
+      recoverFunds: async () => {
         throw new Error('chain service unreachable');
       },
     });
@@ -227,5 +229,172 @@ describe('an exit waiting on its fee', () => {
     cancelPendingExit();
     expect(getUnilateralExitState().pending).toBeNull();
     expect(loadPendingExit(wallet)).toBeNull();
+  });
+});
+
+describe('kept co-signed recoveries', () => {
+  const settle = async () => {
+    for (let i = 0; i < 5; i++) await new Promise(resolve => setTimeout(resolve, 0));
+  };
+  const cosigned = (txid: string, leafId = 'c-1', over: Partial<UnilateralExitPlan> = {}) =>
+    plan([tx({ txid, kind: 'cooperative', nodeId: leafId, txHex: `hex-${txid}`, status: ready })], {
+      network: 'regtest',
+      mode: 'recover',
+      ...over,
+      exit: { leaves: [{ leafId, valueSats: 30_000, method: 'cooperative' }] },
+    });
+
+  beforeEach(() => {
+    localStorage.clear();
+    stopUnilateralExitEngine();
+  });
+
+  afterEach(() => {
+    stopUnilateralExitEngine();
+  });
+
+  it('are sent on their own, with no exit to drive', async () => {
+    const broadcast = vi.fn(async () => undefined);
+    saveRecoveries(wallet, [cosigned('c1')]);
+    startUnilateralExitEngine(wallet, { ...chain, broadcast }, sdk());
+    await vi.waitFor(() => expect(broadcast).toHaveBeenCalledWith('hex-c1'));
+    expect(getUnilateralExitState().recoveries).toHaveLength(1);
+  });
+
+  it('are archived once done, and the wallet syncs so getInfo stops counting them', async () => {
+    const syncWallet = vi.fn(async () => ({}));
+    const driver = sdk({
+      checkRecoverFunds: async ({ recovery }) => ({
+        recovery: { ...recovery, transactions: recovery.transactions.map(t => ({ ...t, status: confirmed(12) })) },
+        verdict: { type: 'done' },
+      }),
+      syncWallet,
+    });
+    saveRecoveries(wallet, [cosigned('c1')]);
+    startUnilateralExitEngine(wallet, chain, driver);
+
+    await vi.waitFor(() => expect(getUnilateralExitState().recoveries).toEqual([]));
+    expect(loadRecoveries(wallet)).toEqual([]);
+    expect(loadArchive(wallet)).toEqual([expect.objectContaining({ id: 'c1', mode: 'recover' })]);
+    expect(getUnilateralExitState().archive).toHaveLength(1);
+    expect(syncWallet).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps one kept while a pass is out', async () => {
+    let release: (height: number) => void = () => {};
+    const slow: ChainClient = { ...chain, tipHeight: () => new Promise(resolve => (release = resolve)) };
+    saveRecoveries(wallet, [cosigned('c1')]);
+    startUnilateralExitEngine(wallet, slow, sdk());
+
+    keepRecovery(wallet, cosigned('c2', 'c-2'));
+    release(101);
+    await settle();
+    expect(getUnilateralExitState().recoveries.map(r => r.exit.transactions[0].txid)).toEqual(['c1', 'c2']);
+    expect(loadRecoveries(wallet)).toHaveLength(2);
+  });
+
+  it('replaces a recovery kept again, rather than listing it twice, even mid-pass', async () => {
+    let release: (height: number) => void = () => {};
+    const slow: ChainClient = { ...chain, tipHeight: () => new Promise(resolve => (release = resolve)) };
+    saveRecoveries(wallet, [cosigned('c1')]);
+    startUnilateralExitEngine(wallet, slow, sdk());
+
+    keepRecovery(wallet, cosigned('c1', 'c-1', { quotedSweepFeeSat: 999 }));
+    release(101);
+    await settle();
+    expect(getUnilateralExitState().recoveries).toEqual([expect.objectContaining({ quotedSweepFeeSat: 999 })]);
+    expect(loadRecoveries(wallet)).toHaveLength(1);
+  });
+
+  it('replaces one of the same leaves built again', () => {
+    startUnilateralExitEngine(wallet, chain);
+    keepRecovery(wallet, cosigned('c1'));
+    keepRecovery(wallet, cosigned('c1-again'));
+    expect(loadRecoveries(wallet).map(r => r.exit.transactions[0].txid)).toEqual(['c1-again']);
+  });
+
+  it('keep their leaves out of an exit started beside them', async () => {
+    localStorage.setItem('walletMnemonic', MNEMONIC);
+    const prepareRecoverFunds = vi
+      .fn()
+      .mockResolvedValueOnce(
+        prepared({
+          leaves: [
+            { leafId: 'c-1', valueSats: 30_000, method: 'cooperative' },
+            { leafId: 'leaf-1', valueSats: 100_000, method: 'unilateral' },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(prepared());
+    const driver = sdk({ prepareRecoverFunds, recoverFunds: async () => checked([{ txid: 'fan', kind: 'fanOut' }]) });
+    saveRecoveries(wallet, [cosigned('c1')]);
+    startUnilateralExitEngine(wallet, { ...chain, addressUtxos: async () => [coin(5_898)] }, driver);
+    setPendingExit(wallet, pendingExit());
+    await vi.waitFor(() => expect(getUnilateralExitState().pendingCoins).toHaveLength(1));
+
+    await startPendingExit();
+    expect(prepareRecoverFunds).toHaveBeenLastCalledWith(
+      expect.objectContaining({ selection: { type: 'specific', leafIds: ['leaf-1'] } }),
+    );
+  });
+});
+
+describe('a pass over an exit', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    stopUnilateralExitEngine();
+  });
+
+  afterEach(() => {
+    stopUnilateralExitEngine();
+  });
+
+  it('archives a finished exit and syncs the wallet', async () => {
+    const syncWallet = vi.fn(async () => ({}));
+    const driver = sdk({
+      checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: { type: 'done' } }),
+      syncWallet,
+    });
+    setUnilateralExitPlan(wallet, plan([tx({ txid: 's', kind: 'sweep', status: confirmed(1) })], { network: 'regtest' }));
+    startUnilateralExitEngine(wallet, chain, driver);
+    await vi.waitFor(() => expect(getUnilateralExitState().plan).toBeNull());
+    expect(loadArchive(wallet).map(e => e.id)).toEqual(['s']);
+    expect(syncWallet).toHaveBeenCalledTimes(1);
+  });
+
+  it('archives a finished plan it is handed', async () => {
+    startUnilateralExitEngine(wallet, chain);
+    setUnilateralExitPlan(wallet, done);
+    await vi.waitFor(() => expect(getUnilateralExitState().plan).toBeNull());
+    expect(loadPlan(wallet)).toBeNull();
+    expect(getUnilateralExitState().archive.map(e => e.id)).toEqual(['s']);
+  });
+
+  it('runs no pass over a diverged exit that waits for the user to sign in', async () => {
+    const checkRecoverFunds = vi.fn(async ({ recovery }: { recovery: UnilateralExitPlan['exit'] }) => ({
+      recovery,
+      verdict: { type: 'valid' as const },
+    }));
+    setUnilateralExitPlan(wallet, plan([tx({ txid: 'a' })], { network: 'regtest', phase: 'redo', needsSignIn: true }));
+    startUnilateralExitEngine(wallet, chain, sdk({ checkRecoverFunds }));
+    await advanceNow();
+    expect(checkRecoverFunds).not.toHaveBeenCalled();
+  });
+
+  it('keeps trying to rebuild a diverged exit that waits on nothing from the user', async () => {
+    const checkRecoverFunds = vi.fn(async ({ recovery }: { recovery: UnilateralExitPlan['exit'] }) => ({
+      recovery,
+      verdict: { type: 'redo' as const, reason: 'onChainStateDiverged' as const },
+    }));
+    const prepareRecoverFunds = vi.fn(async () => {
+      throw new Error('chain service unavailable');
+    });
+    setUnilateralExitPlan(wallet, plan([tx({ txid: 'a' })], { network: 'regtest', phase: 'redo' }));
+    startUnilateralExitEngine(wallet, chain, sdk({ checkRecoverFunds, prepareRecoverFunds }));
+    await vi.waitFor(() => expect(prepareRecoverFunds).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(getUnilateralExitState().isAdvancing).toBe(false));
+    await advanceNow();
+    expect(prepareRecoverFunds).toHaveBeenCalledTimes(2);
+    expect(getUnilateralExitState().plan?.phase).toBe('redo');
   });
 });

@@ -101,7 +101,7 @@ export const ArchivedExitDialog: React.FC<{
               onToggle={() => toggle('exitFeeAddress')}
             />
           )}
-          {/* The sweep: the transaction that delivered the money. */}
+          {/* What delivered the money: the sweep, or for a co-signed recovery its first transaction. */}
           <CollapsibleCodeField
             label="Transaction ID"
             value={exit.id}

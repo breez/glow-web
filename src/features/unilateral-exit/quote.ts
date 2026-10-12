@@ -1,8 +1,8 @@
 import type {
-  PrepareUnilateralExitResponse,
-  UnilateralExitLeaf,
-  UnilateralExitResponse,
-  UnilateralExitTransaction,
+  PrepareRecoverFundsResponse,
+  RecoverFundsLeaf,
+  RecoverFundsResponse,
+  RecoveryTransaction,
 } from '@breeztech/breez-sdk-spark';
 import { outputTotalSat } from '@/utils/rawTx';
 import type { PendingExit, UnilateralExitPlan } from './driver';
@@ -12,51 +12,27 @@ import { fundingAddressOf } from './funding';
 // the SDK quotes both through one API, so the screens differ but the figures
 // do not. Steps render these and compute none of their own.
 
-type Quote = PrepareUnilateralExitResponse;
-
-/**
- * What the recover-funds API adds to a quote or an exit, read through these
- * casts while the published types predate it. `skipped` is typed as the API
- * ships it, and its reason is never read: few are the user's to act on.
- */
-interface ProposedFields {
-  cooperativeFeeSats?: number;
-  skipped?: { valueSats: number }[];
-}
-
-const proposed = (exit: Quote | UnilateralExitResponse): ProposedFields => exit as ProposedFields;
+type Quote = PrepareRecoverFundsResponse;
 
 /** A co-signed recovery: ready at once, and paying the destination directly rather than through the sweep. */
-export const isCooperative = (tx: UnilateralExitTransaction): boolean => (tx.kind as string) === 'cooperative';
+export const isCooperative = (tx: RecoveryTransaction): boolean => tx.kind === 'cooperative';
 
-/**
- * A leaf the operators co-sign out. A stranded leaf quotes like a balance one.
- * Only `method` is cast: a leaf's value stays on the typed `value`, which the
- * API renames `valueSats`, so the port fails to compile rather than sum nothing.
- */
-const isCooperativeLeaf = (leaf: UnilateralExitLeaf): boolean =>
-  (leaf as { method?: string }).method === 'cooperative';
-
-/**
- * The fee the operators' co-signed recoveries cost, off the value they move:
- * what each leaf's watchtower transaction already took plus the recovery's own.
- */
-export const cooperativeFeeSats = (exit: Quote | UnilateralExitResponse): number =>
-  proposed(exit).cooperativeFeeSats ?? 0;
+/** A leaf the operators co-sign out. A stranded leaf quotes like a balance one. */
+export const isCooperativeLeaf = (leaf: RecoverFundsLeaf): boolean => leaf.method === 'cooperative';
 
 /** The part of a quote or an exit that lies outside the balance. */
-export const cooperativeValueSat = (exit: Quote | UnilateralExitResponse): number =>
-  exit.leaves.filter(isCooperativeLeaf).reduce((sum, leaf) => sum + leaf.value, 0);
+export const cooperativeValueSat = (exit: Quote | RecoverFundsResponse): number =>
+  exit.leaves.filter(isCooperativeLeaf).reduce((sum, leaf) => sum + leaf.valueSats, 0);
 
 /**
- * What the funding pays, from another wallet. The API leaves funding unset when
+ * What the funding pays, from another wallet. The SDK leaves funding unset when
  * nothing needs it: every leaf co-signed, or only the sweep left, which pays its
- * own fee from the refunds it spends. Today's quote says so with a zero.
+ * own fee from the refunds it spends.
  */
-export const exitFeeSat = (quote: Quote): number => quote.singleUtxoFundingSat;
+export const exitFeeSat = (quote: Quote): number => quote.funding?.singleUtxoSats ?? 0;
 
 /** Whether the exit needs coins from another wallet, and so the phrase, the fee address and the wait for it. */
-export const needsFunding = (quote: Quote): boolean => exitFeeSat(quote) > 0;
+export const needsFunding = (quote: Quote): boolean => quote.funding !== undefined;
 
 /** What an exit's fee address was asked for, and where it is. Both absent when the exit never needed funding. */
 export interface ExitFeeRecord {
@@ -70,7 +46,7 @@ export function exitFeeRecordOf(plan: UnilateralExitPlan): ExitFeeRecord {
   const keyed = inputs.find(input => input.type === 'p2wpkh');
   return {
     quotedExitFeeSat:
-      plan.quotedExitFeeSat ?? (inputs.length > 0 ? inputs.reduce((sum, input) => sum + input.value, 0) : undefined),
+      plan.quotedExitFeeSat ?? (inputs.length > 0 ? inputs.reduce((sum, input) => sum + input.valueSats, 0) : undefined),
     exitFeeAddress: plan.exitFeeAddress ?? (keyed ? fundingAddressOf(keyed.pubkey, plan.network) : undefined),
   };
 }
@@ -110,7 +86,16 @@ export function isEstimate(
  * stays the floor; a quote at a higher rate replaces it.
  */
 export function quotedSweepFeeSat(quote: Quote, resuming: UnilateralExitPlan | null): number {
-  return Math.max(quote.sweepFeeSat + cooperativeFeeSats(quote), resuming?.quotedSweepFeeSat ?? 0);
+  return Math.max(quote.sweepFeeSats + quote.cooperativeFeeSats, resuming?.quotedSweepFeeSat ?? 0);
+}
+
+/**
+ * The same figure once `built`: its co-signed fee leaves out the leaves the
+ * operators did not co-sign. The sweep's stays the quote's, since the built
+ * sweep also spends the funding's change, and its fee pays for those inputs too.
+ */
+export function builtSweepFeeSat(quote: Quote, built: RecoverFundsResponse, resuming: UnilateralExitPlan | null): number {
+  return Math.max(quote.sweepFeeSats + built.cooperativeFeeSats, resuming?.quotedSweepFeeSat ?? 0);
 }
 
 /**
@@ -121,30 +106,26 @@ export function quotedSweepFeeSat(quote: Quote, resuming: UnilateralExitPlan | n
  */
 export function willReceiveSat(exit: Quote | UnilateralExitPlan, resuming: UnilateralExitPlan | null = null): number {
   if (!('exit' in exit)) {
-    return Math.max(0, exit.recoverableValueSat - quotedSweepFeeSat(exit, resuming));
+    return Math.max(0, exit.recoverableValueSats - quotedSweepFeeSat(exit, resuming));
   }
   const landing = exit.exit.transactions.filter(tx => tx.kind === 'sweep' || isCooperative(tx));
   const outputs = landing.every(tx => tx.status.type === 'confirmed') ? landing.map(tx => outputTotalSat(tx.txHex)) : [];
   const landed = outputs.length > 0 && outputs.every(sat => sat !== null);
   return landed
     ? outputs.reduce<number>((sum, sat) => sum + (sat ?? 0), 0)
-    : Math.max(0, exit.exit.recoverableValueSat - exit.quotedSweepFeeSat);
+    : Math.max(0, exit.exit.recoverableValueSats - exit.quotedSweepFeeSat);
 }
 
 /** Whether a quote moves anything worth more than it costs to move. */
 export const isWorthExiting = (quote: Quote, receiveSat: number = willReceiveSat(quote)): boolean =>
-  quote.leaves.length > 0 && quote.totalFeeSat < quote.recoverableValueSat && receiveSat > 0;
+  quote.leaves.length > 0 && quote.totalFeeSats < quote.recoverableValueSats && receiveSat > 0;
 
-/**
- * What the quote leaves behind: the leaves it skipped, whatever the reason,
- * including one the SDK adds later. Today's quote lists none, so the part of
- * the wallet's balance it does not move stands in.
- */
-export function leftOutSat(quote: Quote, walletBalanceSat: number): number {
-  const { skipped } = proposed(quote);
-  if (skipped) return skipped.reduce((sum, leaf) => sum + leaf.valueSats, 0);
-  return Math.max(0, walletBalanceSat - (quote.recoverableValueSat - cooperativeValueSat(quote)));
-}
+/** What the quote leaves behind: the leaves it skipped, whatever the reason. */
+export const leftOutSat = (quote: Quote): number => quote.skipped.reduce((sum, leaf) => sum + leaf.valueSats, 0);
+
+/** Every leaf the quote leaves behind is worth less than its own fee at this rate. */
+const leftOutForFees = (quote: Quote): boolean =>
+  quote.skipped.length > 0 && quote.skipped.every(leaf => leaf.reason.type === 'feeExceedsValue');
 
 export interface QuoteFigures {
   /** Everything the quote moves. */
@@ -164,12 +145,8 @@ export interface QuoteFigures {
   /** What the rest delivers, once the exit fee is paid. */
   balanceReceiveSat: number;
   leftOutSat: number;
-  /**
-   * The quote listed what it leaves out, for any reason. Without that list the
-   * part of the balance it does not move stands in, which today's quote leaves
-   * out as pieces too small to be worth their fee.
-   */
-  leftOutFromSkipped: boolean;
+  /** Everything left out costs more to move than it holds, which the Unilateral Exit's card says. */
+  leftOutForFees: boolean;
   /** Some of it is co-signed, so the fee is more than the sweep's. */
   isCooperative: boolean;
   isEstimate: boolean;
@@ -177,21 +154,18 @@ export interface QuoteFigures {
   isWorthMoving: boolean;
 }
 
-/**
- * A quote's figures as both flows show them. `resuming` is the exit a rebuild
- * re-quotes. `walletBalanceSat` stands in for a skipped list the quote lacks.
- */
+/** A quote's figures as both flows show them. `resuming` is the exit a rebuild re-quotes. */
 export function quoteFigures(
   quote: Quote,
-  { resuming = null, walletBalanceSat = 0 }: { resuming?: UnilateralExitPlan | null; walletBalanceSat?: number } = {},
+  { resuming = null }: { resuming?: UnilateralExitPlan | null } = {},
 ): QuoteFigures {
   const recoverableSat = cooperativeValueSat(quote);
-  const coopFeeSat = cooperativeFeeSats(quote);
+  const coopFeeSat = quote.cooperativeFeeSats;
   const receiveSat = willReceiveSat(quote, resuming);
   const recoverableReceiveSat = Math.max(0, recoverableSat - coopFeeSat);
   return {
-    fundsSat: quote.recoverableValueSat,
-    balanceSat: quote.recoverableValueSat - recoverableSat,
+    fundsSat: quote.recoverableValueSats,
+    balanceSat: quote.recoverableValueSats - recoverableSat,
     recoverableSat,
     networkFeeSat: quotedSweepFeeSat(quote, resuming),
     exitFeeSat: exitFeeSat(quote),
@@ -199,8 +173,8 @@ export function quoteFigures(
     willReceiveSat: receiveSat,
     recoverableReceiveSat,
     balanceReceiveSat: Math.max(0, receiveSat - recoverableReceiveSat),
-    leftOutSat: leftOutSat(quote, walletBalanceSat),
-    leftOutFromSkipped: proposed(quote).skipped !== undefined,
+    leftOutSat: leftOutSat(quote),
+    leftOutForFees: leftOutForFees(quote),
     isCooperative: recoverableSat > 0 || coopFeeSat > 0,
     isEstimate: isEstimate(quote, resuming),
     isEmpty: quote.leaves.length === 0,

@@ -138,7 +138,7 @@ test.describe('Unilateral exit', () => {
     page.on('console', m => {
       const text = m.text();
       if (
-        /check_unilateral_exit|resolve_exit_check|resolve_funding|resolve_exit_chain_state|unilateral_exit:|prepare_unilateral_exit|read the exit back|broadcast recovery/.test(
+        /recover_funds:|resolve_exit_check|resolve_funding|resolve_exit_chain_state|unilateral_exit:|read the exit back|broadcast recovery/.test(
           text,
         )
       ) {
@@ -254,7 +254,7 @@ test.describe('Unilateral exit', () => {
       // That makes it a floor: the sweep also collects the change its fee-paying
       // children left, and then more arrives than was promised. Under it, never
       // over.
-      const funded = built!.exit.fundingInputs.reduce((sum, input) => sum + input.value, 0);
+      const funded = built!.exit.fundingInputs.reduce((sum, input) => sum + input.valueSats, 0);
       expect(balance).toBeGreaterThanOrEqual(promised);
       expect(balance).toBeLessThanOrEqual(promised + funded);
 
@@ -267,7 +267,7 @@ test.describe('Unilateral exit', () => {
 
       // The exit cost something, so it is not silently a no-op. Against balance
       // plus funding, since the funding can arrive too.
-      expect(balance).toBeLessThan(built!.exit.recoverableValueSat + funded);
+      expect(balance).toBeLessThan(built!.exit.recoverableValueSats + funded);
     });
   });
 

@@ -5,7 +5,7 @@
 // The shot registries export records of components; fast refresh does not matter here.
 /* eslint-disable react-refresh/only-export-components */
 import React from 'react';
-import type { UnilateralExitResponse, UnilateralExitTransaction } from '@breeztech/breez-sdk-spark';
+import type { RecoverFundsLeaf, RecoveryTransaction } from '@breeztech/breez-sdk-spark';
 import UnilateralExitPage from '@/pages/UnilateralExitPage';
 import { ArchivedExitDialog } from '@/features/unilateral-exit/ArchivedExitDialog';
 import type { ArchivedExit } from '@/features/unilateral-exit/archive';
@@ -34,8 +34,8 @@ const MOVED_TXID = `c5${'3f'.repeat(31)}`;
 /** The balance's node transactions confirmed, the refunds waiting out their timelock, the sweep behind them. */
 const balanceTransactions = (
   sweepTxid: string,
-  cosigned: Record<string, UnilateralExitTransaction> = {},
-): UnilateralExitTransaction[] => {
+  cosigned: Record<string, RecoveryTransaction> = {},
+): RecoveryTransaction[] => {
   const nodes = DEV_EXIT.leaves.map((_, i) =>
     tx({ txid: `node-${i + 1}`, kind: 'node', nodeId: `node-${i + 1}`, status: confirmed(OWN_NODES_AT) }),
   );
@@ -68,8 +68,8 @@ const ownMeta = {
 /** The exit as it stood when the leaf moved. */
 const movedBeforePlan = plan(balanceTransactions(OWN_SWEEP_TXID), {
   ...ownMeta,
-  quotedSweepFeeSat: DEV_EXIT.sweepFeeSat,
-  exit: { leaves: DEV_EXIT.leaves, recoverableValueSat: BALANCE_SATS },
+  quotedSweepFeeSat: DEV_EXIT.sweepFeeSats,
+  exit: { leaves: DEV_EXIT.leaves, recoverableValueSats: BALANCE_SATS },
 });
 
 /**
@@ -78,26 +78,31 @@ const movedBeforePlan = plan(balanceTransactions(OWN_SWEEP_TXID), {
  * update cannot run by itself and the pass leaves the exit on redo, as the
  * engine does in the app, with the tip it read.
  */
-const maturedAtTip = (t: UnilateralExitTransaction): UnilateralExitTransaction =>
+const maturedAtTip = (t: RecoveryTransaction): RecoveryTransaction =>
   t.status.type === 'waitingForTimelock' && (t.status.spendableAtHeight ?? Infinity) <= TIP_HEIGHT
     ? { ...t, status: ready }
     : t;
-const divergedSdk = exitSdk({
-  checkUnilateralExit: async ({ exit }) => ({
-    exit: { ...exit, transactions: exit.transactions.map(maturedAtTip) },
-    verdict: { type: 'redo', reason: 'onChainStateDiverged' },
-  }),
-});
 
 /** What rebuildExit's `specific` re-quote returns: the moved leaf co-signed, the sweep one input lighter. */
-const movedLeaves = DEV_EXIT.leaves.map(leaf => ({
+const movedLeaves: RecoverFundsLeaf[] = DEV_EXIT.leaves.map(leaf => ({
   ...leaf,
   method: leaf.leafId === MOVED.leafId ? 'cooperative' : 'unilateral',
 }));
-const movedQuote = {
-  ...prepared({ leaves: movedLeaves, recoverableValueSat: BALANCE_SATS, sweepFeeSat: MOVED.sweepFeeSat }),
+// Refunds are left, so the update has an exit fee to sign for: on a passkey
+// wallet the pass can only wait for the tap.
+const movedQuote = prepared({
+  leaves: movedLeaves,
+  recoverableValueSats: BALANCE_SATS,
+  sweepFeeSats: MOVED.sweepFeeSats,
   cooperativeFeeSats: MOVED.cooperativeFeeSats,
-};
+});
+const divergedSdk = exitSdk({
+  checkRecoverFunds: async ({ recovery }) => ({
+    recovery: { ...recovery, transactions: recovery.transactions.map(maturedAtTip) },
+    verdict: { type: 'redo', reason: 'onChainStateDiverged' },
+  }),
+  prepareRecoverFunds: async () => movedQuote,
+});
 
 /**
  * After the update: the moved leaf's co-signed transaction has confirmed.
@@ -113,10 +118,10 @@ const movedPlan = plan(
     quotedSweepFeeSat: quotedSweepFeeSat(movedQuote, movedBeforePlan),
     exit: {
       leaves: movedLeaves,
-      recoverableValueSat: BALANCE_SATS,
-      sweepFeeSat: MOVED.sweepFeeSat,
+      recoverableValueSats: BALANCE_SATS,
+      sweepFeeSats: MOVED.sweepFeeSats,
       cooperativeFeeSats: MOVED.cooperativeFeeSats,
-    } as Partial<UnilateralExitResponse>,
+    },
   },
 );
 

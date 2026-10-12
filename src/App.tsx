@@ -43,6 +43,7 @@ const UnilateralExitPage = lazy(() => import('./pages/UnilateralExitPage'));
 const PasskeyMigrationModal = lazy(() => import('./features/passkey-migration/PasskeyMigrationModal'));
 import { ContactsProvider } from './contexts/ContactsContext';
 import { useUnilateralExitEngineLifecycle } from './features/unilateral-exit/hooks/useUnilateralExitEngineLifecycle';
+import type { ExitMode } from './features/unilateral-exit/driver';
 
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
 import { useStatusBarColor } from './hooks/useStatusBarColor';
@@ -84,6 +85,8 @@ const AppContent: React.FC = () => {
   // `currentScreen` below.
   const [userScreen, setUserScreen] = useState<Screen>('home');
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
+  // What the exit sheet was opened for: `recover` from the Recoverable Funds row.
+  const [exitMode, setExitMode] = useState<ExitMode | undefined>(undefined);
   const [passkeySdkConnected, setPasskeySdkConnected] = useState(false);
   // True when the user entered the passkey screen via the explicit
   // "Create Passkey" CTA in the web two-CTA flow. Skips PasskeyPage's
@@ -337,7 +340,10 @@ const AppContent: React.FC = () => {
             setUserScreen('getRefund');
           }}
           onOpenSettings={() => setUserScreen('settings')}
-          onOpenUnilateralExit={() => setUserScreen('unilateralExit')}
+          onOpenUnilateralExit={(mode?: ExitMode) => {
+            setExitMode(mode);
+            setUserScreen('unilateralExit');
+          }}
           onBuyBitcoin={sdk.handleBuyBitcoin}
           network={sdk.config?.network}
           onDepositChanged={sdk.fetchUnclaimedDeposits}
@@ -359,7 +365,10 @@ const AppContent: React.FC = () => {
         onOpenPasskeySettings={() => setUserScreen('passkeySettings')}
         onOpenSecurity={() => setUserScreen('security')}
         onOpenBackup={() => setUserScreen('backup')}
-        onOpenUnilateralExit={() => setUserScreen('unilateralExit')}
+        onOpenUnilateralExit={() => {
+          setExitMode(undefined);
+          setUserScreen('unilateralExit');
+        }}
       />
     );
 
@@ -477,6 +486,7 @@ const AppContent: React.FC = () => {
             <Suspense fallback={null}>
               <UnilateralExitPage
                 network={sdk.config?.network ?? 'mainnet'}
+                mode={exitMode}
                 onBack={() => setUserScreen('wallet')}
                 onFinished={() => setUserScreen('wallet')}
               />

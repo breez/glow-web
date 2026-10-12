@@ -1,5 +1,5 @@
 import { logger, LogCategory } from '@/services/logger';
-import { cooperativeValueSat, exitFeeRecordOf, willReceiveSat } from './quote';
+import { exitFeeRecordOf, isCooperative, willReceiveSat } from './quote';
 import type { ExitMode, UnilateralExitPlan, WalletKey } from './driver';
 
 /**
@@ -8,7 +8,7 @@ import type { ExitMode, UnilateralExitPlan, WalletKey } from './driver';
  * record of the first.
  */
 export interface ArchivedExit {
-  /** The sweep that delivered the money, which is what makes an exit unique. */
+  /** The transaction that delivered the money (`recoveryTxid`), which is what makes an exit unique. */
   id: string;
   destination: string;
   deliveredSat: number;
@@ -17,7 +17,7 @@ export interface ArchivedExit {
   network?: string;
   /** What left Spark, recoverable funds included. */
   exitedSat?: number;
-  /** The part of `exitedSat` that was outside the balance. */
+  /** The part of `exitedSat` that was outside the balance when the exit began. Absent on a recovery, all of which was. */
   recoverableFundsSat?: number;
   /** What was sent to the exit fee address, from another wallet. */
   exitFeePaidSat?: number;
@@ -32,9 +32,14 @@ export interface ArchivedExit {
 const key = ({ identityPubkey, network }: WalletKey): string =>
   `unilateral-exit-archive:${identityPubkey.slice(0, 16)}:${network}`;
 
-/** The sweep's txid, or null for a plan that never built one. */
-export const sweepTxid = (plan: UnilateralExitPlan): string | null =>
-  plan.exit.transactions.find(tx => tx.kind === 'sweep')?.txid ?? null;
+/**
+ * The transaction that delivers a plan's money: its sweep, or for one with only
+ * co-signed recoveries the first of those. Null for a plan with neither.
+ */
+export const recoveryTxid = (plan: UnilateralExitPlan): string | null =>
+  plan.exit.transactions.find(tx => tx.kind === 'sweep')?.txid ??
+  plan.exit.transactions.find(isCooperative)?.txid ??
+  null;
 
 export function loadArchive(wallet: WalletKey): ArchivedExit[] {
   const raw = localStorage.getItem(key(wallet));
@@ -48,11 +53,11 @@ export function loadArchive(wallet: WalletKey): ArchivedExit[] {
 }
 
 /**
- * Records a finished exit, newest first. Keyed on the sweep, so an engine that
- * reports the same completion on every pass does not stack up duplicates.
+ * Records a finished exit, newest first. Keyed on `recoveryTxid`, so an engine
+ * that reports the same completion on every pass does not stack up duplicates.
  */
 export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): ArchivedExit[] {
-  const id = sweepTxid(plan);
+  const id = recoveryTxid(plan);
   if (id === null) return loadArchive(wallet);
 
   const existing = loadArchive(wallet);
@@ -69,8 +74,10 @@ export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): Archiv
       deliveredSat: willReceiveSat(plan),
       completedAt: Date.now(),
       network: plan.network,
-      exitedSat: plan.exit.recoverableValueSat,
-      recoverableFundsSat: cooperativeValueSat(plan.exit) || undefined,
+      exitedSat: plan.exit.recoverableValueSats,
+      // Not the final build's co-signed part: a leaf the watchtower moved
+      // mid-exit is co-signed back, and was still part of the balance exited.
+      recoverableFundsSat: plan.mode === 'recover' ? undefined : plan.recoverableFundsSat || undefined,
       exitFeePaidSat: quotedExitFeeSat,
       exitFeeAddress,
       mode: plan.mode,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { exitGroupTitle, unilateralExitEntries } from './listEntries';
-import { coin, pendingExit, plan, ready, tx } from './testFixtures';
+import { exitGroupTitle, recoveryEntryId, unilateralExitEntries } from './listEntries';
+import { coin, confirmed, locked, pendingExit, plan, ready, tx } from './testFixtures';
 import type { ArchivedExit } from './archive';
 import type { UnilateralExitEngineState } from './engine';
 
@@ -67,16 +67,19 @@ describe('a pending exit in the wallet list', () => {
 });
 
 describe('recoverable funds in the wallet list', () => {
-  it('offers them with their exact total while nothing is saved, and only then', () => {
+  it('offers them with their exact total while nothing is saved', () => {
     expect(row({ pending: null }, 48_200)).toMatchObject({
       title: 'Recoverable Funds',
       subtitle: 'Tap to recover',
+      isAction: true,
       amountSat: 48_200,
       kind: 'recoverable',
     });
-    expect(row({}, 48_200).kind).toBe('active');
-    expect(row({ pending: null, plan: plan([]) }, 48_200).kind).toBe('active');
     expect(row({ pending: null }, 48_200).isEstimate).toBeFalsy();
+  });
+
+  it('waits for a pending exit, whose start takes every leaf in', () => {
+    expect(entries({}, 48_200).map(r => r.kind)).toEqual(['active']);
   });
 
   it('sits above a finished exit, in the same group', () => {
@@ -92,18 +95,18 @@ describe('a kept co-signed recovery in the wallet list', () => {
   // Two leaves, 48 200 in all, 2 900 of fees off what arrives.
   const recovery = plan(
     [
-      tx({ txid: 'c1', kind: 'cooperative' as never, nodeId: 'leaf-1', status: ready }),
-      tx({ txid: 'c2', kind: 'cooperative' as never, nodeId: 'leaf-2', status: ready }),
+      tx({ txid: 'c1', kind: 'cooperative', nodeId: 'leaf-1', status: ready }),
+      tx({ txid: 'c2', kind: 'cooperative', nodeId: 'leaf-2', status: ready }),
     ],
     {
       mode: 'recover',
       quotedSweepFeeSat: 2_900,
       exit: {
         leaves: [
-          { leafId: 'leaf-1', value: 30_000 },
-          { leafId: 'leaf-2', value: 18_200 },
+          { leafId: 'leaf-1', valueSats: 30_000, method: 'cooperative' },
+          { leafId: 'leaf-2', valueSats: 18_200, method: 'cooperative' },
         ],
-        recoverableValueSat: 48_200,
+        recoverableValueSats: 48_200,
       },
     },
   );
@@ -133,6 +136,95 @@ describe('a kept co-signed recovery in the wallet list', () => {
     expect(entries({ pending: null, recoveries: [{ ...recovery, phase: 'complete' }] }, 11_800)).toEqual([
       expect.objectContaining({ kind: 'recoverable', amountSat: 11_800 }),
     ]);
+  });
+
+  it('gives back a leaf the network refused while unverified, for a new recovery to find', () => {
+    const refused = {
+      ...recovery,
+      refusals: { c2: 'bad-txns-inputs-missingorspent' },
+      exit: {
+        ...recovery.exit,
+        transactions: [recovery.exit.transactions[0], { ...recovery.exit.transactions[1], status: { type: 'unverified' as const } }],
+      },
+    };
+    expect(entries({ pending: null, recoveries: [refused] }, 48_200)[1]).toMatchObject({ kind: 'recoverable', amountSat: 18_200 });
+  });
+
+  it('is found by the id of its row', () => {
+    expect(entries({ pending: null, recoveries: [recovery] })[0].id).toBe(recoveryEntryId(recovery));
+    expect(recoveryEntryId(recovery)).toBe('recovery:c1');
+  });
+});
+
+describe('recoverable funds beside an exit under way', () => {
+  // Two balance leaves, each behind its own node; leaf-2's node is on-chain.
+  const running = (over: Parameters<typeof plan>[1] = {}) =>
+    plan(
+      [
+        tx({ txid: 'node-1', kind: 'node', status: ready }),
+        tx({ txid: 'node-2', kind: 'node', status: confirmed(10) }),
+        tx({ txid: 'refund-1', kind: 'refund', nodeId: 'leaf-1', dependsOn: ['node-1'], status: locked() }),
+        tx({ txid: 'refund-2', kind: 'refund', nodeId: 'leaf-2', dependsOn: ['node-2'], status: locked(900) }),
+      ],
+      {
+        ...over,
+        exit: {
+          leaves: [
+            { leafId: 'leaf-1', valueSats: 180_000, method: 'unilateral' },
+            { leafId: 'leaf-2', valueSats: 420_000, method: 'unilateral' },
+          ],
+          ...over.exit,
+        },
+      },
+    );
+  const recoverable = (state: Parameters<typeof entries>[0], sat: number) =>
+    entries({ pending: null, ...state }, sat).find(r => r.kind === 'recoverable');
+
+  it('takes out a balance leaf only once its branch is on-chain, when getInfo starts counting it', () => {
+    expect(recoverable({ plan: running() }, 450_000)).toMatchObject({ amountSat: 30_000 });
+  });
+
+  it('asks for no tap, since the tracker it opens cannot recover them', () => {
+    expect(recoverable({ plan: running() }, 450_000)).toMatchObject({ subtitle: null, isAction: false });
+  });
+
+  it('is hidden once the exit accounts for everything getInfo counts', () => {
+    expect(recoverable({ plan: running() }, 420_000)).toBeUndefined();
+    expect(recoverable({ plan: running() }, 400_000)).toBeUndefined();
+  });
+
+  it('takes out every leaf of a recovery, all of which was outside the balance', () => {
+    expect(recoverable({ plan: running({ mode: 'recover' }) }, 600_000)).toBeUndefined();
+  });
+
+  it('takes out a co-signed leaf, and a leaf the last rebuild skipped, but not one whose co-signing failed', () => {
+    const mixed = running({
+      namedLeaves: [
+        { leafId: 'leaf-1', valueSats: 180_000 },
+        { leafId: 'leaf-2', valueSats: 420_000 },
+        { leafId: 'moved', valueSats: 30_000 },
+        { leafId: 'skipped', valueSats: 5_000 },
+        { leafId: 'failed', valueSats: 7_000 },
+      ],
+      exit: {
+        leaves: [
+          { leafId: 'leaf-1', valueSats: 180_000, method: 'unilateral' },
+          { leafId: 'leaf-2', valueSats: 420_000, method: 'unilateral' },
+          { leafId: 'moved', valueSats: 30_000, method: 'cooperative' },
+        ],
+        failed: [{ leafId: 'failed', outputTxid: 'o', outputVout: 0, error: { type: 'generic', message: 'refused' } }],
+      },
+    });
+    // 420 000 + 30 000 + 5 000 are on their way; the failed 7 000 is not.
+    expect(recoverable({ plan: mixed }, 462_000)).toMatchObject({ amountSat: 7_000 });
+  });
+
+  it('counts a leaf both the exit and a kept recovery hold once', () => {
+    const kept = plan([tx({ txid: 'c', kind: 'cooperative', nodeId: 'leaf-2', status: ready })], {
+      mode: 'recover',
+      exit: { leaves: [{ leafId: 'leaf-2', valueSats: 420_000, method: 'cooperative' }] },
+    });
+    expect(recoverable({ plan: running(), recoveries: [kept] }, 430_000)).toMatchObject({ amountSat: 10_000 });
   });
 });
 

@@ -16,7 +16,7 @@ const finished = (txid: string, deliveredSat: number) =>
     phase: 'complete',
     destination: `bcrt1-${txid}`,
     quotedSweepFeeSat: 0,
-    exit: { recoverableValueSat: deliveredSat },
+    exit: { recoverableValueSats: deliveredSat },
   });
 
 describe('archiveExit', () => {
@@ -39,7 +39,7 @@ describe('archiveExit', () => {
       wallet,
       plan([tx({ txid: 'sweep-real', kind: 'sweep', txHex: sweepHex, status: confirmed(10) })], {
         phase: 'complete',
-        exit: { recoverableValueSat: 600_000 },
+        exit: { recoverableValueSats: 600_000 },
       }),
     );
 
@@ -73,17 +73,17 @@ describe('archiveExit', () => {
       'regtest',
       0,
     );
-    const input = { txid: 'fund', vout: 0, value: 12_000, pubkey: key.publicKeyHex };
+    const input = { txid: 'fund', vout: 0, valueSats: 12_000, pubkey: key.publicKeyHex };
     archiveExit(
       wallet,
       plan([tx({ txid: 'sweep-a', kind: 'sweep', txHex: '00', status: confirmed(10) })], {
         phase: 'complete',
         network: 'regtest',
         exit: {
-          recoverableValueSat: 600_000,
+          recoverableValueSats: 600_000,
           fundingInputs: [
             { type: 'p2wpkh', ...input },
-            { type: 'p2wpkh', ...input, txid: 'fund-2', value: 8_000 },
+            { type: 'p2wpkh', ...input, txid: 'fund-2', valueSats: 8_000 },
           ],
         },
       }),
@@ -103,11 +103,11 @@ describe('archiveExit', () => {
       'regtest',
       0,
     );
-    const coin = (txid: string, value: number) => ({
+    const coin = (txid: string, valueSats: number) => ({
       type: 'p2wpkh' as const,
       txid,
       vout: 0,
-      value,
+      valueSats,
       pubkey: key.publicKeyHex,
     });
     archiveExit(
@@ -117,7 +117,7 @@ describe('archiveExit', () => {
         network: 'regtest',
         quotedExitFeeSat: 58_534,
         exit: {
-          recoverableValueSat: 600_000,
+          recoverableValueSats: 600_000,
           // The fee, the top-up, and change the exit's own transactions
           // returned to the address: summing these counts sats twice.
           fundingInputs: [coin('fee', 3_122), coin('top-up', 55_412), coin('change', 31_939)],
@@ -135,7 +135,7 @@ describe('archiveExit', () => {
         phase: 'complete',
         quotedExitFeeSat: 14_350,
         exitFeeAddress: 'bcrt1qfee',
-        exit: { recoverableValueSat: 120_000, fundingInputs: [] },
+        exit: { recoverableValueSats: 120_000, fundingInputs: [] },
       }),
     );
 
@@ -149,10 +149,55 @@ describe('archiveExit', () => {
     expect(loadArchive(wallet)[0].exitFeeAddress).toBeUndefined();
   });
 
-  it('ignores a plan that never built a sweep', () => {
+  it('ignores a plan that built neither a sweep nor a co-signed recovery', () => {
     archiveExit(wallet, plan([tx({ txid: 'node-a' })], { phase: 'complete' }));
 
     expect(loadArchive(wallet)).toEqual([]);
+  });
+
+  it('keeps a co-signed recovery, which has no sweep, under its first transaction', () => {
+    archiveExit(
+      wallet,
+      plan(
+        [
+          tx({ txid: 'coop-a', kind: 'cooperative', nodeId: 'c-1', txHex: '00', status: confirmed(10) }),
+          tx({ txid: 'coop-b', kind: 'cooperative', nodeId: 'c-2', txHex: '00', status: confirmed(10) }),
+        ],
+        { phase: 'complete', mode: 'recover', recoverableFundsSat: 48_200, exit: { recoverableValueSats: 48_200 } },
+      ),
+    );
+
+    const [record] = loadArchive(wallet);
+    expect(record).toMatchObject({ id: 'coop-a', mode: 'recover', exitedSat: 48_200 });
+    // All of a recovery was outside the balance, so none of it reads as a part.
+    expect(record.recoverableFundsSat).toBeUndefined();
+  });
+
+  it('keeps the part of an exit that was outside the balance when it began', () => {
+    archiveExit(wallet, { ...finished('sweep-f', 150_000), recoverableFundsSat: 48_200 });
+    expect(loadArchive(wallet)[0].recoverableFundsSat).toBe(48_200);
+  });
+
+  it('does not count a leaf the watchtower moved mid-exit as recoverable funds', () => {
+    const moved = plan(
+      [
+        tx({ txid: 'coop', kind: 'cooperative', nodeId: 'leaf-2', txHex: '00', status: confirmed(10) }),
+        tx({ txid: 'sweep-g', kind: 'sweep', txHex: '00', status: confirmed(10) }),
+      ],
+      {
+        phase: 'complete',
+        exit: {
+          recoverableValueSats: 600_000,
+          leaves: [
+            { leafId: 'leaf-1', valueSats: 180_000, method: 'unilateral' },
+            { leafId: 'leaf-2', valueSats: 420_000, method: 'cooperative' },
+          ],
+        },
+      },
+    );
+    archiveExit(wallet, moved);
+    expect(loadArchive(wallet)[0]).toMatchObject({ id: 'sweep-g', exitedSat: 600_000 });
+    expect(loadArchive(wallet)[0].recoverableFundsSat).toBeUndefined();
   });
 
   it('keeps each wallet\'s exits apart', () => {

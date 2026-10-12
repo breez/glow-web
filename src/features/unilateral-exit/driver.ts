@@ -1,26 +1,30 @@
 import { singleKeyCpfpSigner } from '@breeztech/breez-sdk-spark';
 import type {
   BreezSdk,
-  CheckUnilateralExitResponse,
+  CooperativeRecoveryFailure,
+  CpfpFundingKind,
   CpfpInput,
-  CpfpSigner,
-  PrepareUnilateralExitResponse,
-  UnilateralExitRequest,
-  UnilateralExitResponse,
-  UnilateralExitTransaction,
+  PrepareRecoverFundsResponse,
+  RecoverFundsLeaf,
+  RecoverFundsResponse,
+  RecoveryTransaction,
+  RecoveryVerdict,
 } from '@breeztech/breez-sdk-spark';
 import type { ChainClient, ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { loadExitState, restoreExitState, saveExitState } from './exitState';
 import { deriveFundingKey, MnemonicNeedsPasskeyError, readWalletMnemonic, type FundingKey } from './funding';
+import { planFromV4, type V4Plan } from './legacyPlan';
 import {
   builtExitFeeRecord,
+  builtSweepFeeSat,
+  cooperativeValueSat,
   exitFeeRecordOf,
   isCooperative,
   isWorthExiting,
   needsFunding,
-  quotedSweepFeeSat,
   willReceiveSat,
+  type ExitFeeRecord,
 } from './quote';
 
 /**
@@ -29,8 +33,14 @@ import {
  */
 export type ExitPhase = 'active' | 'complete' | 'redo';
 
+/** A leaf an exit set out to move, at the value it was quoted. */
+export interface NamedLeaf {
+  leafId: string;
+  valueSats: number;
+}
+
 export interface UnilateralExitPlan {
-  version: 4;
+  version: 5;
   network: string;
   destination: string;
   feeRateSatPerVbyte: number;
@@ -49,8 +59,17 @@ export interface UnilateralExitPlan {
    */
   quotedExitFeeSat?: number;
   exitFeeAddress?: string;
-  /** The sdk's latest word on the exit, handed back to `checkUnilateralExit` unchanged. */
-  exit: UnilateralExitResponse;
+  /** The sdk's latest word on the exit, handed back to `checkRecoverFunds` unchanged. */
+  exit: RecoverFundsResponse;
+  /**
+   * Every leaf the exit set out to move. A rebuild names them all, so a leaf one
+   * quote skipped is named again in the next; a leaf drops out once a quote names
+   * it nowhere, which means it landed. Absent on a plan from before this was
+   * kept: the exit's leaves and failures stand in (`namedLeavesOf`).
+   */
+  namedLeaves?: NamedLeaf[];
+  /** The co-signed part of the first build: funds that were outside the balance before the exit began. */
+  recoverableFundsSat?: number;
   /**
    * Why the network last refused each transaction, by txid, for diagnostics. The
    * tracker shows none: Glow retries a refusal on every check. Cleared once the
@@ -61,6 +80,10 @@ export interface UnilateralExitPlan {
   /** Frozen when the exit was built: the operators stop reporting the leaves it moves. */
   exitStateSnapshot?: string;
   mode?: ExitMode;
+  /** Glow's conversion of an exit stored under SDK 0.26, built again once nothing of it is in flight. */
+  needsRebuild?: true;
+  /** A rebuild needs the passkey, which only a tap can ask for, so the engine leaves it to the tracker's button. */
+  needsSignIn?: true;
 }
 
 /**
@@ -69,7 +92,7 @@ export interface UnilateralExitPlan {
  */
 export type ExitMode = 'recover';
 
-const PLAN_VERSION = 4;
+const PLAN_VERSION = 5;
 
 export interface WalletKey {
   identityPubkey: string;
@@ -84,20 +107,22 @@ export interface PlanMeta {
   quotedSweepFeeSat: number;
   quotedExitFeeSat?: number;
   exitFeeAddress?: string;
+  namedLeaves?: NamedLeaf[];
+  recoverableFundsSat?: number;
   mode?: ExitMode;
 }
 
 const storageKey = ({ identityPubkey, network }: WalletKey): string =>
   `recovery-plan:${identityPubkey.slice(0, 16)}:${network}`;
 
-export function planFromExitResponse(exit: UnilateralExitResponse, meta: PlanMeta): UnilateralExitPlan {
+export function planFromExitResponse(exit: RecoverFundsResponse, meta: PlanMeta): UnilateralExitPlan {
   return { version: PLAN_VERSION, ...meta, exit, refusals: {}, phase: 'active' };
 }
 
 /** Folds a check onto the plan. The sdk owns the exit and the phase; glow keeps only what the network told it about its own sends. */
 export function applyExitCheck(
   plan: UnilateralExitPlan,
-  checked: UnilateralExitResponse,
+  checked: RecoverFundsResponse,
   phase: ExitPhase,
 ): UnilateralExitPlan {
   const open = new Set(
@@ -139,12 +164,14 @@ export function savePlan(wallet: WalletKey, plan: UnilateralExitPlan): void {
   }
 }
 
+/** A version 4 plan, from SDK 0.26, is converted rather than dropped: it may be part-way through an exit. */
 export function loadPlan(wallet: WalletKey): UnilateralExitPlan | null {
   const raw = localStorage.getItem(storageKey(wallet));
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as UnilateralExitPlan;
+    const parsed = JSON.parse(raw) as UnilateralExitPlan | V4Plan;
     if (!Array.isArray(parsed?.exit?.transactions)) return null;
+    if (parsed.version === 4) return planFromV4(parsed);
     return parsed.version === PLAN_VERSION ? parsed : null;
   } catch {
     return null;
@@ -250,13 +277,13 @@ export function exitStages(plan: UnilateralExitPlan): ExitStages {
     return { inSpark: 0, onChain: 0, delivered: willReceive, willReceive };
   }
 
-  const confirmedFor = (matches: (tx: UnilateralExitTransaction) => boolean) =>
+  const confirmedFor = (matches: (tx: RecoveryTransaction) => boolean) =>
     new Set(transactions.filter(tx => matches(tx) && tx.status.type === 'confirmed').map(tx => tx.nodeId));
   const refunded = confirmedFor(tx => tx.kind === 'refund');
   const recovered = confirmedFor(isCooperative);
   const valueOf = (ids: Set<string | undefined>) =>
-    leaves.filter(leaf => ids.has(leaf.leafId)).reduce((sum, leaf) => sum + leaf.value, 0);
-  const total = leaves.reduce((sum, leaf) => sum + leaf.value, 0);
+    leaves.filter(leaf => ids.has(leaf.leafId)).reduce((sum, leaf) => sum + leaf.valueSats, 0);
+  const total = leaves.reduce((sum, leaf) => sum + leaf.valueSats, 0);
   const onChain = valueOf(refunded);
   const delivered = valueOf(recovered);
   return { inSpark: total - onChain - delivered, onChain, delivered, willReceive };
@@ -268,7 +295,7 @@ export function exitStages(plan: UnilateralExitPlan): ExitStages {
  * Null once nothing is left to send. Relies on the sdk returning the set in
  * broadcast order, so a dependency is always reached before what depends on it.
  */
-export function blocksToFinish(all: UnilateralExitTransaction[], tipHeight: number): number | null {
+export function blocksToFinish(all: RecoveryTransaction[], tipHeight: number): number | null {
   const after = new Map<string, number>();
   let longest: number | null = null;
 
@@ -298,22 +325,29 @@ export function blocksToFinish(all: UnilateralExitTransaction[], tipHeight: numb
 /** The slice of the sdk a pass drives. */
 export type ExitSdk = Pick<
   BreezSdk,
-  | 'checkUnilateralExit'
-  | 'prepareUnilateralExit'
-  | 'unilateralExit'
+  | 'checkRecoverFunds'
+  | 'prepareRecoverFunds'
+  | 'recoverFunds'
   | 'importUnilateralExitState'
   | 'exportUnilateralExitState'
+  | 'syncWallet'
 >;
 
-/** The sdk resolves this against the chain tip, timelock included. */
-export const isReady = (tx: UnilateralExitTransaction): boolean => tx.status.type === 'ready';
+/**
+ * What a pass sends: whatever the sdk resolved as ready against the chain tip,
+ * timelock included. A co-signed recovery also goes out unverified, since the
+ * network refuses it if its funds already moved.
+ */
+export const isSendable = (tx: RecoveryTransaction): boolean =>
+  tx.status.type === 'ready' || (isCooperative(tx) && tx.status.type === 'unverified');
 
 export { destinationAddressOf } from '@/utils/destinationAddress';
 
 /** What a build said it needs: the sdk's error reaches the page only as its message. */
 export function requiredFundingOf(error: string): number | null {
   const match = /need at least (\d+) sats/i.exec(error);
-  return match ? Number(match[1]) : null;
+  const sat = match ? Number(match[1]) : 0;
+  return sat > 0 ? sat : null;
 }
 
 export interface Funding {
@@ -323,8 +357,9 @@ export interface Funding {
 
 /**
  * What a build counts as sent to the exit fee address: the exit's own funding
- * until one of its transactions confirms, since the sdk replaces an unconfirmed
- * spender rather than building on it, plus every confirmed coin there.
+ * until one of its funded transactions confirms, since the sdk replaces an
+ * unconfirmed spender rather than building on it, plus every confirmed coin
+ * there. A co-signed recovery spends no funding, so its confirming says nothing.
  * ponytail: mirrors the sdk's rules; take the figure from the sdk once its
  * shortfall error reports what it counted.
  */
@@ -332,7 +367,8 @@ export function sentFunding(
   plan: UnilateralExitPlan | null,
   confirmed: { txid: string; vout: number; value: number }[],
 ): Funding {
-  const own = plan && !plan.exit.transactions.some(tx => tx.status.type === 'confirmed') ? plan.exit.fundingInputs : [];
+  const spent = plan?.exit.transactions.some(tx => !isCooperative(tx) && tx.status.type === 'confirmed');
+  const own = plan && !spent ? plan.exit.fundingInputs.map(({ txid, vout, valueSats }) => ({ txid, vout, value: valueSats })) : [];
   const coins = new Map([...own, ...confirmed].map(coin => [`${coin.txid}:${coin.vout}`, coin.value]));
   return { sat: [...coins.values()].reduce((total, value) => total + value, 0), inputs: coins.size };
 }
@@ -380,32 +416,215 @@ export interface BuildFunding {
   secretKey: Uint8Array;
 }
 
+/** Passed on every quote: the sdk needs it only while unilateral steps are left, and ignores it otherwise. */
+const P2WPKH: CpfpFundingKind = { type: 'p2wpkh' };
+
+/** Every leaf a plan names. One from before `namedLeaves` names its exit's leaves and failures. */
+export function namedLeavesOf(plan: UnilateralExitPlan): NamedLeaf[] {
+  if (plan.namedLeaves) return plan.namedLeaves;
+  const built = plan.exit.leaves.map(({ leafId, valueSats }) => ({ leafId, valueSats }));
+  const seen = new Set(built.map(leaf => leaf.leafId));
+  const failed = [...new Set(plan.exit.failed.map(f => f.leafId))].filter(id => !seen.has(id));
+  return [...built, ...failed.map(leafId => ({ leafId, valueSats: 0 }))];
+}
+
+/** What `resuming` still names once `quote` has priced its leaves: a leaf it lists nowhere has landed. */
+function stillNamed(resuming: UnilateralExitPlan, quote: PrepareRecoverFundsResponse): NamedLeaf[] {
+  const priced = new Map([...quote.skipped, ...quote.leaves].map(leaf => [leaf.leafId, leaf.valueSats]));
+  const named = namedLeavesOf(resuming).flatMap(leaf => {
+    const valueSats = priced.get(leaf.leafId);
+    return valueSats === undefined ? [] : [{ leafId: leaf.leafId, valueSats }];
+  });
+  const seen = new Set(named.map(leaf => leaf.leafId));
+  return [...named, ...quote.leaves.filter(leaf => !seen.has(leaf.leafId)).map(({ leafId, valueSats }) => ({ leafId, valueSats }))];
+}
+
+/** Quotes exactly `leafIds`, whatever each costs to move. */
+export function quoteLeaves(
+  sdk: Pick<ExitSdk, 'prepareRecoverFunds'>,
+  leafIds: string[],
+  { feeRateSatPerVbyte, destination }: { feeRateSatPerVbyte: number; destination: string },
+): Promise<PrepareRecoverFundsResponse> {
+  // The sdk refuses a selection that names nothing.
+  if (leafIds.length === 0) return Promise.reject(new Error('No leaves to recover'));
+  return sdk.prepareRecoverFunds({
+    feeRateSatPerVbyte,
+    fundingKind: P2WPKH,
+    destination,
+    selection: { type: 'specific', leafIds },
+  });
+}
+
+/**
+ * Quotes the plan's own leaves again, by name: the dependable way to pick an
+ * exit back up, a leaf waiting out its refund timelock included.
+ */
+export const quoteNamed = (
+  sdk: Pick<ExitSdk, 'prepareRecoverFunds'>,
+  plan: UnilateralExitPlan,
+  { feeRateSatPerVbyte = plan.feeRateSatPerVbyte, destination = plan.destination } = {},
+): Promise<PrepareRecoverFundsResponse> =>
+  quoteLeaves(
+    sdk,
+    namedLeavesOf(plan).map(leaf => leaf.leafId),
+    { feeRateSatPerVbyte, destination },
+  );
+
+/**
+ * The leaves of a kept co-signed recovery that it is moving. One the network
+ * refused while still unverified is not held: its funds may sit elsewhere, and
+ * a new quote finds them again.
+ */
+export function heldRecoveryLeaves(recovery: UnilateralExitPlan): RecoverFundsLeaf[] {
+  if (recovery.phase === 'complete') return [];
+  const held = new Set(
+    recovery.exit.transactions
+      .filter(tx => isCooperative(tx) && (tx.status.type !== 'unverified' || !recovery.refusals[tx.txid]))
+      .map(tx => tx.nodeId),
+  );
+  return recovery.exit.leaves.filter(leaf => held.has(leaf.leafId));
+}
+
+/** Leaves the kept co-signed recoveries are moving, which a new quote leaves to them. */
+export const keptLeafIds = (recoveries: UnilateralExitPlan[]): Set<string> =>
+  new Set(recoveries.flatMap(heldRecoveryLeaves).map(leaf => leaf.leafId));
+
+/**
+ * A quote of what the wallet holds now: everything for an exit, only what left
+ * the balance for a recovery. Either selection also takes leaves a kept
+ * recovery is already moving, and building those would compete with it, so
+ * the rest is quoted again by name. Nothing left gives an empty quote.
+ */
+export async function quoteFresh(
+  sdk: Pick<ExitSdk, 'prepareRecoverFunds'>,
+  { feeRateSatPerVbyte, destination }: { feeRateSatPerVbyte: number; destination: string },
+  mode: ExitMode | undefined,
+  kept: Set<string>,
+): Promise<PrepareRecoverFundsResponse> {
+  const first = await sdk.prepareRecoverFunds({
+    feeRateSatPerVbyte,
+    fundingKind: P2WPKH,
+    destination,
+    selection: mode === 'recover' ? { type: 'recoverableOnly' } : { type: 'all' },
+  });
+  const skipped = first.skipped.filter(leaf => !kept.has(leaf.leafId));
+  if (!first.leaves.some(leaf => kept.has(leaf.leafId))) return { ...first, skipped };
+
+  // Only leaves the first quote kept: a named leaf is taken whatever it costs.
+  const rest = first.leaves.filter(leaf => !kept.has(leaf.leafId)).map(leaf => leaf.leafId);
+  if (rest.length === 0) {
+    return {
+      ...first,
+      funding: undefined,
+      leaves: [],
+      skipped,
+      recoverableValueSats: 0,
+      totalFeeSats: 0,
+      cooperativeFeeSats: 0,
+      cpfpFeeSats: 0,
+      fanoutFeeSats: 0,
+      sweepFeeSats: 0,
+    };
+  }
+  const second = await quoteLeaves(sdk, rest, { feeRateSatPerVbyte, destination });
+  const own = new Set(second.skipped.map(leaf => leaf.leafId));
+  return { ...second, skipped: [...second.skipped, ...skipped.filter(leaf => !own.has(leaf.leafId))] };
+}
+
+/**
+ * A build that came back with no transactions: every co-signed leaf failed, or
+ * landed meanwhile. Shown as a retry; the failures go to the log.
+ */
+export class EmptyRecoveryError extends Error {
+  readonly failed: CooperativeRecoveryFailure[];
+
+  constructor(failed: CooperativeRecoveryFailure[]) {
+    super('Please try again.');
+    this.name = 'EmptyRecoveryError';
+    this.failed = failed;
+  }
+}
+
+/** A rebuild found nothing to build yet: the chain has not shown where a leaf's funds went. */
+export class RebuildLaterError extends Error {
+  constructor() {
+    super('Nothing is left to rebuild. The exit updates on its next check.');
+    this.name = 'RebuildLaterError';
+  }
+}
+
+const describeFailure = ({ error }: CooperativeRecoveryFailure): string =>
+  error.type === 'replacementFeeTooLow'
+    ? `replacementFeeTooLow (needs ${error.requiredFeeRateSatPerVbyte} sat/vB)`
+    : `${error.type}: ${error.message}`;
+
 /**
  * The one build call, for every start and rebuild. A quote that needs funding
  * spends `funding` and signs for it; one that needs none takes no inputs and
  * no signer, whatever it is handed.
  */
-export function buildFromQuote(
-  sdk: ExitSdk,
-  prepared: PrepareUnilateralExitResponse,
+export async function buildFromQuote(
+  sdk: Pick<ExitSdk, 'recoverFunds'>,
+  prepared: PrepareRecoverFundsResponse,
   funding: BuildFunding | null,
-): Promise<UnilateralExitResponse> {
-  // The recover-funds API takes no signer here; the published type still asks for one.
-  const build = (request: UnilateralExitRequest, signer?: CpfpSigner) =>
-    sdk.unilateralExit(request, signer as CpfpSigner);
-  if (!needsFunding(prepared) || !funding) return build({ prepared, fundingInputs: [] });
-  return build({ prepared, fundingInputs: funding.inputs }, singleKeyCpfpSigner(funding.secretKey));
+): Promise<RecoverFundsResponse> {
+  let built: RecoverFundsResponse;
+  if (!needsFunding(prepared) || !funding) {
+    built = await sdk.recoverFunds({ prepared });
+  } else {
+    // Holds the key in wasm memory until freed.
+    const signer = singleKeyCpfpSigner(funding.secretKey);
+    try {
+      built = await sdk.recoverFunds({ prepared, fundingInputs: funding.inputs }, signer);
+    } finally {
+      signer.free();
+    }
+  }
+  if (built.failed.length > 0) {
+    logger.warn(LogCategory.SDK, 'The operators did not co-sign every recovery', {
+      failures: built.failed.map(describeFailure).join('; '),
+    });
+  }
+  if (built.transactions.length === 0) throw new EmptyRecoveryError(built.failed);
+  return built;
 }
 
 /** Coins at the exit fee address, as a build spends them. */
 export const fundingInputsOf = (coins: { txid: string; vout: number; value: number }[], pubkey: string): CpfpInput[] =>
-  coins.map(({ txid, vout, value }) => ({ type: 'p2wpkh', txid, vout, value, pubkey }));
+  coins.map(({ txid, vout, value }) => ({ type: 'p2wpkh', txid, vout, valueSats: value, pubkey }));
+
+/** What a plan keeps besides the build: where the money goes, how it was funded, and what kind of record it is. */
+export type BuildMeta = Pick<PlanMeta, 'network' | 'fundingAddressIndex' | 'mode'> & ExitFeeRecord;
+
+/**
+ * The plan a build of `quote` makes. A rebuild of `resuming` carries over the
+ * leaves it names and its fee floor; a first build records which part of it
+ * was already outside the balance.
+ */
+export function planFromBuild(
+  quote: PrepareRecoverFundsResponse,
+  built: RecoverFundsResponse,
+  resuming: UnilateralExitPlan | null,
+  meta: BuildMeta,
+): UnilateralExitPlan {
+  return planFromExitResponse(built, {
+    ...meta,
+    destination: quote.destination,
+    feeRateSatPerVbyte: quote.feeRateSatPerVbyte,
+    quotedSweepFeeSat: builtSweepFeeSat(quote, built, resuming),
+    namedLeaves: resuming
+      ? stillNamed(resuming, quote)
+      : quote.leaves.map(({ leafId, valueSats }) => ({ leafId, valueSats })),
+    recoverableFundsSat: resuming ? resuming.recoverableFundsSat : cooperativeValueSat(built) || undefined,
+  });
+}
 
 /**
  * Builds a pending exit from its confirmed fee coins, on the user's tap. It
  * quotes again first, so it exits what the wallet holds now: a payment or a
  * leaf swap since the first quote would fail a build that names the leaves
- * that quote picked.
+ * that quote picked. Leaves a kept co-signed recovery holds (`kept`) are left
+ * to it.
  *
  * The key is read before anything else, while the tap is fresh enough for a
  * passkey prompt. `key` is one the wizard already derived.
@@ -416,21 +635,17 @@ export async function startExit(
   sdk: ExitSdk,
   identityPubkey: string,
   key?: FundingKey,
+  kept: Set<string> = new Set(),
 ): Promise<StartOutcome> {
   const { network, destination, feeRateSatPerVbyte, fundingAddressIndex, mode } = pending;
   const { publicKeyHex, secretKey } =
     key ?? deriveFundingKey(await readWalletMnemonic({ interactive: true }), network, fundingAddressIndex);
   await restoreExitState(sdk, null, await loadExitState(identityPubkey).catch(() => null));
 
-  const quote = await sdk.prepareUnilateralExit({
-    feeRateSatPerVbyte,
-    fundingKind: { type: 'p2wpkh' },
-    destination,
-    selection: { type: 'auto' },
-  });
+  const quote = await quoteFresh(sdk, { feeRateSatPerVbyte, destination }, mode, kept);
   if (!isWorthExiting(quote)) return { type: 'nothingToExit' };
 
-  let exit: UnilateralExitResponse;
+  let exit: RecoverFundsResponse;
   try {
     exit = await buildFromQuote(sdk, quote, { inputs: fundingInputsOf(coins, publicKeyHex), secretKey });
   } catch (e) {
@@ -447,8 +662,8 @@ export async function startExit(
   // The user paid the fee even if this quote no longer needs it. Glow then
   // builds without it and keeps the pending exit's record of where it went.
   const fee = builtExitFeeRecord(quote, { quotedExitFeeSat: pending.required.sat, exitFeeAddress: pending.fundingAddress });
-  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quotedSweepFeeSat(quote, null), ...fee, mode };
-  return { type: 'started', plan: { ...planFromExitResponse(exit, meta), exitStateSnapshot } };
+  const plan = planFromBuild(quote, exit, null, { network, fundingAddressIndex, mode, ...fee });
+  return { type: 'started', plan: { ...plan, exitStateSnapshot } };
 }
 
 export interface PlanProgress {
@@ -457,7 +672,7 @@ export interface PlanProgress {
   isComplete: boolean;
 }
 
-/** `isComplete` follows the sdk's verdict: only a confirmed sweep finishes an exit. */
+/** `isComplete` follows the sdk's verdict: every transaction confirmed, co-signed ones included. */
 export function planProgress(plan: UnilateralExitPlan): PlanProgress {
   const { transactions } = plan.exit;
   const confirmed = transactions.filter(tx => tx.status.type === 'confirmed').length;
@@ -474,7 +689,7 @@ export interface NextAction {
  * The next timelock to mature, and what it frees. A step that is ready is
  * already being sent, so it is not something to wait for.
  */
-export function nextAction(all: UnilateralExitTransaction[], tipHeight: number): NextAction | null {
+export function nextAction(all: RecoveryTransaction[], tipHeight: number): NextAction | null {
   const waits = all.flatMap(tx =>
     tx.status.type === 'waitingForTimelock' && tx.status.spendableAtHeight !== undefined
       ? [Math.max(0, tx.status.spendableAtHeight - tipHeight)]
@@ -485,7 +700,7 @@ export function nextAction(all: UnilateralExitTransaction[], tipHeight: number):
   return { blocks, transactions: waits.filter(w => w === blocks).length };
 }
 
-const phaseOf = (verdict: CheckUnilateralExitResponse['verdict']): ExitPhase => {
+const phaseOf = (verdict: RecoveryVerdict): ExitPhase => {
   switch (verdict.type) {
     case 'done':
       return 'complete';
@@ -497,15 +712,18 @@ const phaseOf = (verdict: CheckUnilateralExitResponse['verdict']): ExitPhase => 
 };
 
 /** Reads the exit back against the chain. Needs nothing but the stored response, so it works with the leaves gone from the operators' view. */
-export async function checkExit(plan: UnilateralExitPlan, sdk: ExitSdk): Promise<UnilateralExitPlan> {
-  const checked = await sdk.checkUnilateralExit({ exit: plan.exit });
-  return applyExitCheck(plan, checked.exit, phaseOf(checked.verdict));
+export async function checkExit(plan: UnilateralExitPlan, sdk: Pick<ExitSdk, 'checkRecoverFunds'>): Promise<UnilateralExitPlan> {
+  const checked = await sdk.checkRecoverFunds({ recovery: plan.exit });
+  return applyExitCheck(plan, checked.recovery, phaseOf(checked.verdict));
 }
 
+const RETRY_LATER_REASONS = new Set(['unverified', 'fundsNotFound']);
+
 /**
- * Builds the exit again over whatever the chain now holds, keeping its leaves,
- * destination, fee rate and funding. Null when there is nothing left to build,
- * which leaves the stored exit as it was.
+ * Builds the exit again over whatever the chain now holds, naming its leaves
+ * and keeping its destination, fee rate and funding. When the quote has no
+ * leaves left, the plan comes back `complete`; a leaf whose funds the chain has
+ * not shown yet throws `RebuildLaterError` instead.
  *
  * Glow reads the recovery phrase only when the rebuild has funding to sign
  * for, and quotes first to find out. From the tracker's button (`interactive`)
@@ -518,31 +736,41 @@ export async function rebuildExit(
   sdk: ExitSdk,
   identityPubkey: string,
   { interactive = false }: { interactive?: boolean } = {},
-): Promise<UnilateralExitPlan | null> {
+): Promise<UnilateralExitPlan> {
+  const finished: UnilateralExitPlan = { ...plan, phase: 'complete', needsRebuild: undefined };
+  const named = new Set(namedLeavesOf(plan).map(leaf => leaf.leafId));
+  if (named.size === 0) return finished;
+
   const readKey = async () =>
     deriveFundingKey(await readWalletMnemonic({ interactive }), plan.network, plan.fundingAddressIndex);
   const tapKey = interactive ? await readKey() : null;
   await restoreExitState(sdk, plan, await loadExitState(identityPubkey).catch(() => null));
 
-  // Named, not reselected: `auto` can drop a leaf that is part-way out.
-  const prepared = await sdk.prepareUnilateralExit({
-    feeRateSatPerVbyte: plan.feeRateSatPerVbyte,
-    fundingKind: { type: 'p2wpkh' },
-    destination: plan.destination,
-    selection: { type: 'specific', leafIds: plan.exit.leaves.map(leaf => leaf.leafId) },
-  });
-  if (prepared.leaves.length === 0) return null;
+  const prepared = await quoteNamed(sdk, plan);
+  if (prepared.leaves.length === 0) {
+    // A leaf left out as too dear or unrecoverable stays in getInfo's
+    // recoverable total, where Recover Funds offers it once this exit is done.
+    const waiting = prepared.skipped.some(leaf => named.has(leaf.leafId) && RETRY_LATER_REASONS.has(leaf.reason.type));
+    if (waiting) throw new RebuildLaterError();
+    return finished;
+  }
 
   const key = needsFunding(prepared) ? (tapKey ?? (await readKey())) : null;
-  const rebuilt = await buildFromQuote(sdk, prepared, key && { inputs: plan.exit.fundingInputs, secretKey: key.secretKey });
-  if (rebuilt.transactions.length === 0) return null;
+  let rebuilt: RecoverFundsResponse;
+  try {
+    rebuilt = await buildFromQuote(sdk, prepared, key && { inputs: plan.exit.fundingInputs, secretKey: key.secretKey });
+  } catch (e) {
+    // Everything it named landed between the quote and the build.
+    if (e instanceof EmptyRecoveryError && e.failed.length === 0) return finished;
+    throw e;
+  }
 
   // A leaf the watchtower moved comes back co-signed, and that fee comes off
   // what arrives too. The fee record carries over: at the same rate and with
   // the same funding, the user paid the fee address what they paid before.
-  const { network, destination, feeRateSatPerVbyte, fundingAddressIndex, mode } = plan;
-  const meta = { network, destination, feeRateSatPerVbyte, fundingAddressIndex, quotedSweepFeeSat: quotedSweepFeeSat(prepared, plan), ...exitFeeRecordOf(plan), mode };
-  return { ...planFromExitResponse(rebuilt, meta), exitStateSnapshot: plan.exitStateSnapshot };
+  const { network, fundingAddressIndex, mode } = plan;
+  const next = planFromBuild(prepared, rebuilt, plan, { network, fundingAddressIndex, mode, ...exitFeeRecordOf(plan) });
+  return { ...next, exitStateSnapshot: plan.exitStateSnapshot };
 }
 
 /**
@@ -556,7 +784,7 @@ export async function broadcastReadyTransactions(
   chain: ChainClient,
 ): Promise<UnilateralExitPlan> {
   const refusals = { ...plan.refusals };
-  for (const tx of plan.exit.transactions.filter(isReady)) {
+  for (const tx of plan.exit.transactions.filter(isSendable)) {
     try {
       if (tx.cpfpTxHex) await chain.broadcastPackage(tx.txHex, tx.cpfpTxHex);
       else await chain.broadcast(tx.txHex);
@@ -570,6 +798,24 @@ export async function broadcastReadyTransactions(
   return { ...plan, refusals };
 }
 
+/**
+ * Builds a converted 0.26 exit again with this SDK. Best effort: until it
+ * works, the converted set keeps running as it is, and one with nothing left
+ * to build simply finishes that way.
+ */
+async function rebuildConverted(plan: UnilateralExitPlan, sdk: ExitSdk, identityPubkey: string): Promise<UnilateralExitPlan> {
+  try {
+    const rebuilt = await rebuildExit(plan, sdk, identityPubkey);
+    return rebuilt.phase === 'complete' ? { ...plan, needsRebuild: undefined } : rebuilt;
+  } catch (e) {
+    if (e instanceof MnemonicNeedsPasskeyError) return { ...plan, needsSignIn: true };
+    if (!(e instanceof RebuildLaterError)) {
+      logger.warn(LogCategory.SDK, `Failed to rebuild the converted exit: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    return plan;
+  }
+}
+
 export async function advanceUnilateralExit(
   plan: UnilateralExitPlan,
   chain: ChainClient,
@@ -577,10 +823,15 @@ export async function advanceUnilateralExit(
   identityPubkey?: string,
 ): Promise<{ plan: UnilateralExitPlan; tipHeight: number }> {
   const tipHeight = await chain.tipHeight();
+  // Finished, whatever a check would now say: it only waits to be archived.
+  if (plan.phase === 'complete') return { plan, tipHeight };
+
   let next = plan;
+  let checked = false;
   if (sdk) {
     try {
       next = await checkExit(next, sdk);
+      checked = true;
     } catch (e) {
       // Not shown: the next pass tries again, and the log keeps the reason.
       const error = e instanceof Error ? e.message : String(e);
@@ -588,18 +839,31 @@ export async function advanceUnilateralExit(
     }
   }
 
-  // The chain diverging is routine: the operators' watchtower publishes its own
-  // copy of a refund. The exit is rebuilt over what is now on-chain.
   if (next.phase === 'redo' && sdk && identityPubkey) {
+    // The chain diverging is routine: the operators' watchtower publishes its
+    // own copy of a refund. The exit is rebuilt over what is now on-chain.
     try {
-      next = (await rebuildExit(next, sdk, identityPubkey)) ?? next;
+      next = await rebuildExit(next, sdk, identityPubkey);
     } catch (e) {
       // Waiting on the user to sign in is the designed path, not a fault: the
       // exit stays in `redo` and the tracker offers the rebuild as a button.
-      if (e instanceof MnemonicNeedsPasskeyError) return { plan: next, tipHeight };
-      const error = e instanceof Error ? e.message : String(e);
-      logger.warn(LogCategory.SDK, `Failed to rebuild the exit: ${error}`);
+      if (e instanceof MnemonicNeedsPasskeyError) return { plan: { ...next, needsSignIn: true }, tipHeight };
+      if (!(e instanceof RebuildLaterError)) {
+        const error = e instanceof Error ? e.message : String(e);
+        logger.warn(LogCategory.SDK, `Failed to rebuild the exit: ${error}`);
+      }
     }
+  } else if (
+    checked &&
+    sdk &&
+    identityPubkey &&
+    next.needsRebuild &&
+    !next.needsSignIn &&
+    next.phase === 'active' &&
+    // A rebuild now would conflict with what is in the mempool at the same fee.
+    !next.exit.transactions.some(isSendable)
+  ) {
+    next = await rebuildConverted(next, sdk, identityPubkey);
   }
 
   if (next.phase !== 'active') return { plan: next, tipHeight };

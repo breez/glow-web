@@ -20,8 +20,16 @@ import SaveContactDialog from '../features/send/components/SaveContactDialog';
 import BuyBitcoinDialog from '../features/buy/BuyBitcoinDialog';
 import { getBuyProviderSettings, filterProvidersByNetwork, filterProvidersByPlatform } from '../services/settings';
 import { useCashAppInstalled } from '../hooks/useCashAppInstalled';
-import { exitGroupTitle, unilateralExitEntries, type UnilateralExitEntry } from '../features/unilateral-exit/listEntries';
+import {
+  exitGroupTitle,
+  recoveryEntryId,
+  unilateralExitEntries,
+  type UnilateralExitEntry,
+} from '../features/unilateral-exit/listEntries';
 import { ArchivedExitDialog } from '../features/unilateral-exit/ArchivedExitDialog';
+import { TrackerView } from '../features/unilateral-exit/TrackerView';
+import type { ExitMode } from '../features/unilateral-exit/driver';
+import { BottomSheetCard, BottomSheetContainer, DialogHeader } from '../components/ui';
 import { useUnilateralExitEngineState } from '../features/unilateral-exit/hooks/useUnilateralExitEngineLifecycle';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';
 import { STATUS_BAR_WALLET_GLASS } from '../utils/statusBarManager';
@@ -39,7 +47,8 @@ interface WalletPageProps {
   hasRejectedDeposits: boolean;
   onOpenGetRefund: (source?: 'menu' | 'icon') => void;
   onOpenSettings: () => void;
-  onOpenUnilateralExit: () => void;
+  /** `recover` opens it on the funds outside the balance. */
+  onOpenUnilateralExit: (mode?: ExitMode) => void;
   onBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
   network?: Network;
   onDepositChanged?: () => void;
@@ -137,14 +146,17 @@ const WalletPage: React.FC<WalletPageProps> = ({
   }, [wallet]);
 
   const exitState = useUnilateralExitEngineState();
-  // The published sdk types predate `recoverableFundsSats`.
-  const recoverableSat = (walletInfo as { recoverableFundsSats?: number } | null)?.recoverableFundsSats ?? 0;
+  const recoverableSat = walletInfo?.recoverableFundsSats ?? 0;
   const exitEntries = useMemo(() => unilateralExitEntries(exitState, recoverableSat), [exitState, recoverableSat]);
   const selectedExit = exitState.archive.find(exit => exit.id === selectedExitId) ?? null;
+  // Closes by itself once the recovery lands and moves to the archive.
+  const [selectedRecoveryId, setSelectedRecoveryId] = useState<string | null>(null);
+  const selectedRecovery = exitState.recoveries.find(r => recoveryEntryId(r) === selectedRecoveryId) ?? null;
   const handleExitSelected = useCallback((entry: UnilateralExitEntry) => {
     if (entry.kind === 'archived') setSelectedExitId(entry.id);
-    // A kept recovery's tracker has no route yet, and the exit flow is not it.
-    else if (entry.kind !== 'recovery') onOpenUnilateralExit();
+    // A kept recovery is followed on its own tracker, not the exit flow's.
+    else if (entry.kind === 'recovery') setSelectedRecoveryId(entry.id);
+    else onOpenUnilateralExit(entry.kind === 'recoverable' ? 'recover' : undefined);
   }, [onOpenUnilateralExit]);
 
   // Refs for dialog states to use in stable callbacks (advanced-event-handler-refs optimization)
@@ -367,7 +379,21 @@ const WalletPage: React.FC<WalletPageProps> = ({
       )}
 
       {selectedExit && (
-        <ArchivedExitDialog exit={selectedExit} onClose={() => setSelectedExitId(null)} />
+        <ArchivedExitDialog
+          exit={selectedExit}
+          onClose={() => setSelectedExitId(null)}
+          subtitle={selectedExit.mode === 'recover' ? 'Recovery' : undefined}
+          exitedLabel={selectedExit.mode === 'recover' ? 'Funds Recovered' : undefined}
+        />
+      )}
+
+      {selectedRecovery && (
+        <BottomSheetContainer isOpen onClose={() => setSelectedRecoveryId(null)}>
+          <BottomSheetCard>
+            <DialogHeader title="Recover Funds" onClose={() => setSelectedRecoveryId(null)} />
+            <TrackerView plan={selectedRecovery} tipHeight={exitState.tipHeight} isAdvancing={false} noun="recovery" />
+          </BottomSheetCard>
+        </BottomSheetContainer>
       )}
 
       {/* Keyed on deposit identity so the page remounts on a new

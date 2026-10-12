@@ -16,21 +16,26 @@ import { IntroStep } from '@/features/unilateral-exit/steps/IntroStep';
 import { DestinationField } from '@/components/DestinationField';
 import { FeeStep } from '@/features/unilateral-exit/steps/FeeStep';
 import { QuoteStep } from '@/features/unilateral-exit/steps/QuoteStep';
-import { FundStep, FundingStatus, PendingExitStep } from '@/features/unilateral-exit/steps/FundStep';
+import { RecoverReviewStep } from '@/features/unilateral-exit/steps/RecoverReviewStep';
+import { FundStep, FundingStatus, PendingExitStep, Receipt, Status } from '@/features/unilateral-exit/steps/FundStep';
 import { TrackerView } from '@/features/unilateral-exit/TrackerView';
-import { sweepTxid } from '@/features/unilateral-exit/archive';
+import { SatAmount } from '@/components/SatAmount';
+import { recoveryTxid } from '@/features/unilateral-exit/archive';
 import { cancelPendingExit, startPendingExit } from '@/features/unilateral-exit/engine';
-import { isPendingFunded } from '@/features/unilateral-exit/driver';
+import { isPendingFunded, type ExitMode } from '@/features/unilateral-exit/driver';
 
 interface UnilateralExitPageProps {
   network: string;
+  /** `recover` when opened from the Recoverable Funds row. A saved exit's own mode wins. */
+  mode?: ExitMode;
   onBack: () => void;
   /** Where to go once the exit lands, since the tracker has nothing left to show. */
   onFinished: () => void;
 }
 
-const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack, onFinished }) => {
-  const flow = useUnilateralExitFlow(network);
+const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, onBack, onFinished }) => {
+  const flow = useUnilateralExitFlow(network, mode);
+  const recovering = flow.mode === 'recover';
 
   // Reading the recovery phrase is gated on a PIN where one is set. Where none
   // is, the step passes straight through.
@@ -54,15 +59,15 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
   }, [flow.phase, unlock]);
 
   // Once the exit lands the wallet list carries it, so the sheet closes,
-  // whatever the step. The signal is the exit's sweep reaching the archive.
-  // The phase cannot serve: a tracker opened from the list is derived from the
-  // plan, and without one it reads as the intro. Nor can a missing plan, which
-  // is also what a stopped engine reports while the SDK reconnects.
+  // whatever the step. The signal is the exit's `recoveryTxid` reaching the
+  // archive. The phase cannot serve: a tracker opened from the list is derived
+  // from the plan, and without one it reads as the intro. Nor can a missing
+  // plan, which is also what a stopped engine reports while the SDK reconnects.
   const { plan, archive } = flow.engine;
-  const shownSweep = useRef<string | null>(null);
+  const shownTxid = useRef<string | null>(null);
   useEffect(() => {
-    if (plan) shownSweep.current = sweepTxid(plan);
-    if (archive.some(exit => exit.id === shownSweep.current)) onFinished();
+    if (plan) shownTxid.current = recoveryTxid(plan);
+    if (archive.some(exit => exit.id === shownTxid.current)) onFinished();
   }, [plan, archive, onFinished]);
 
   // One call to action per step, in the bar the rest of the app puts it in.
@@ -111,14 +116,33 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
             Get Quote
           </PrimaryButton>
         );
-      case 'quote':
+      case 'quote': {
         if (!canContinueFromQuote(flow.quote)) return null;
-        // A quote that needs no funding builds on this tap, so it names what the tap does.
+        // A quote that needs no funding builds on this tap, so it names what the
+        // tap does. So does a recovery that sends its co-signed part on it.
+        const figures = flow.quote.figures;
+        const underWay = !!flow.engine.plan;
+        const sendsNow = recovering && !underWay && !!figures?.recoverableSat;
+        const label =
+          figures?.needsFunding && !sendsNow
+            ? 'Continue'
+            : recovering
+              ? underWay
+                ? 'Continue Recovery'
+                : 'Recover Funds'
+              : underWay
+                ? 'Continue Exit'
+                : 'Exit Spark';
         return (
-          <PrimaryButton onClick={flow.continueFromQuote} className="w-full" data-testid="unilateral-exit-quote-continue">
-            {flow.quote.figures?.needsFunding ? 'Continue' : flow.engine.plan ? 'Continue Exit' : 'Exit Spark'}
+          <PrimaryButton
+            onClick={() => void flow.continueFromQuote()}
+            className="w-full"
+            data-testid="unilateral-exit-quote-continue"
+          >
+            {label}
           </PrimaryButton>
         );
+      }
       case 'pending': {
         // Paying never starts the exit: coins an earlier attempt left at the
         // shared address can already cover the fee, so the user decides.
@@ -130,7 +154,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
             className="w-full"
             data-testid="unilateral-exit-start-exit"
           >
-            Exit Spark
+            {recovering ? 'Recover Funds' : 'Exit Spark'}
           </PrimaryButton>
         );
       }
@@ -158,6 +182,12 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
           </>
         );
       }
+      case 'sent':
+        return (
+          <PrimaryButton onClick={onFinished} className="w-full" data-testid="unilateral-exit-sent-done">
+            Done
+          </PrimaryButton>
+        );
       default:
         return null;
     }
@@ -172,7 +202,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
           <DialogHeader
             // Names the flow, not the step: each step already labels its own
             // field, and the send sheet titles itself the same way.
-            title="Unilateral Exit"
+            title={recovering ? 'Recover Funds' : 'Unilateral Exit'}
             onClose={onBack}
             onBack={flow.canGoBack ? flow.back : undefined}
           />
@@ -201,13 +231,25 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
 
             {flow.phase === 'fee' && <FeeStep {...flow.fee} />}
 
-            {flow.phase === 'quote' && <QuoteStep {...flow.quote} />}
-            {flow.phase === 'quote' && flow.startError && (
-              <ErrorMessageBox
-                title={flow.engine.plan ? 'Could not continue the exit' : 'Could not start the exit'}
-                error={flow.startError}
-              />
-            )}
+            {flow.phase === 'quote' &&
+              (recovering && flow.quote.figures && !flow.quote.isQuoting && !flow.quote.error ? (
+                // The same quote in this flow's words, which shows why a start failed itself.
+                <RecoverReviewStep
+                  figures={flow.quote.figures}
+                  destination={flow.quote.quote?.destination ?? flow.destination.destination}
+                  error={flow.startError}
+                />
+              ) : (
+                <>
+                  <QuoteStep {...flow.quote} />
+                  {flow.startError && (
+                    <ErrorMessageBox
+                      title={flow.engine.plan ? 'Could not continue the exit' : 'Could not start the exit'}
+                      error={flow.startError}
+                    />
+                  )}
+                </>
+              ))}
 
             {flow.phase === 'unlock' && (
               <>
@@ -228,6 +270,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
                 isStarting={flow.engine.isStarting}
                 startError={flow.engine.startError}
                 onCancel={cancelPendingExit}
+                cancelLabel={recovering ? 'Cancel recovery' : undefined}
               />
             )}
 
@@ -256,7 +299,16 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
                 isContinuing={flow.isContinuing}
                 continueError={flow.continueError}
                 justStarted={!openedOnTracker}
+                noun={recovering ? 'recovery' : undefined}
               />
+            )}
+
+            {flow.phase === 'sent' && (
+              <Receipt title="Funds sent">
+                <Status>
+                  <SatAmount sats={flow.sentSat} /> on its way
+                </Status>
+              </Receipt>
             )}
 
           </div>
