@@ -105,8 +105,8 @@ CASES = [
 # (severity, title, why, ask, [(ref, what it shows)]). A why or ask may end in '- ' bullet lines.
 NOTES = [
     ('should', 'Can the SDK record a payment for a recovery or a unilateral exit?',
-     'The proposal had one payment per co-signed recovery, but the SDK records none now, and none for a finished unilateral exit either. Once the SDK has seen a recovery in a block, it drops the recovered funds from recoverable_funds_sats at the next sync. The user then sees them nowhere in the history, except in a record the app keeps on that one device. Glow keeps the same kind of record for each unilateral exit.',
-     'Record one payment per co-signed recovery, and one per unilateral exit once miners confirm its sweep, with the leaf IDs and destination in the details. Say whether the SDK restores these payments on a reinstall or a second device. If the SDK records neither, confirm that the app should keep its own records, which a restored device will not have.',
+     'The user sees recovered funds and finished unilateral exits nowhere in the payment history, except in a record Glow keeps on that one device. On a restored or second device, the user sees neither.',
+     'Record one payment per co-signed recovery and one per unilateral exit, and restore them on a reinstall or a second device. If not, confirm that the app should keep its own records.',
      [('#1173 crates/breez-sdk/core/src/models/mod.rs:198-205', 'PaymentMethod has no recovery or unilateral exit method'),
       ('#1173 crates/breez-sdk/core/src/models/mod.rs:393-446', 'PaymentDetails has no recovery or unilateral exit variant'),
       ('#1173 crates/breez-sdk/core/src/sdk/watchtower_exit.rs:290-314', "the SDK has the operators co-sign, then stores the transaction in the leaf's row; no payment"),
@@ -116,17 +116,17 @@ NOTES = [
       ('#1173 crates/breez-sdk/core/src/realtime_sync/storage.rs:639-640', 'the SDK does not replicate the rows to other devices'),
       ('#1173 docs/breez-sdk/src/guide/recover_funds.md:176', 'the SDK does not keep the response')]),
     ('should', 'Should the SDK count funds it can never recover?',
-     'The SDK lists some leaves as NotRecoverable in a quote, such as a leaf the watchtower moved on-chain without paying anything to its key. It keeps counting them in a sync. In a sync it now also counts, without a chain check, a leaf too small to send at the lowest relay fee rate. Glow then keeps showing a Recoverable Funds row for funds the user cannot recover.',
-     'Leave NotRecoverable leaves, and leaves too small to send at any fee rate, out of the total, or report them separately.',
+     'Glow keeps showing a Recoverable Funds row for funds the user can never recover. The SDK counts leaves no recovery can move (NotRecoverable) and leaves too small to send at the lowest relay fee rate.',
+     'Leave those leaves out of recoverable_funds_sats, or report them separately.',
      [('#1173 crates/breez-sdk/core/src/sdk/recover_funds.rs:1049-1054', 'the SDK marks a leaf NotRecoverable when the watchtower paid nothing to its key'),
       ('#1173 crates/breez-sdk/core/src/sdk/unilateral_exit.rs:612-631', "the SDK marks a leaf NotRecoverable when it cannot continue the leaf's unilateral exit from what is on-chain"),
       ('#1173 crates/breez-sdk/core/src/sdk/recover_funds.rs:980-1001', "the SDK counts every leaf it lists until it stores the leaf's recovery or sweep in a block"),
       ('#1173 crates/breez-sdk/core/src/sdk/recover_funds.rs:940-945, 957-978, 1244-1250', 'in a sync the SDK stores a recovered leaf below 393 sats, or a leaf of 58 sats or less after its unilateral exit, without a chain check'),
       ('#1173 docs/breez-sdk/src/guide/recover_funds.md:15-17', 'per the docs, the SDK keeps such leaves in the total'),
       ('#1173 docs/breez-sdk/src/guide/recover_funds.md:203', 'per the docs, the operators cannot co-sign a recovery for some leaves')]),
-    ('should', 'Can the SDK mark, in the quote, a leaf whose recovery is already signed?',
-     'Under RecoverableOnly and All, the SDK still includes in the quote a leaf whose co-signed recovery is in the mempool, without saying so. The SDK then requires the new recovery to pay a higher fee than that one, even when another device sent it, and otherwise fails with ReplacementFeeTooLow.',
-     'Mark such a leaf on the quote, with the fee rate a replacement has to beat. The app can then offer a fee bump or say the funds are on their way.',
+    ('should', 'Can the SDK mark a leaf whose recovery is already on its way?',
+     'The SDK still includes a leaf in the quote when its co-signed recovery is already in the mempool, for example one another device sent. The user then gets a ReplacementFeeTooLow error instead of learning the funds are on their way.',
+     'Mark such a leaf on the quote, with the fee rate a replacement has to beat.',
      [('#1173 crates/breez-sdk/core/src/sdk/recover_funds.rs:657-662, 687-691, 907-922', 'the SDK leaves a leaf out of the quote only once it counts as recovered'),
       ('#1173 crates/breez-sdk/core/src/sdk/watchtower_exit.rs:347-360', 'the SDK counts a leaf as recovered only for a spend in a block, found now or stored'),
       ('#1173 crates/breez-sdk/core/src/sdk/watchtower_exit.rs:437-460, 704-716', 'in prepare_recover_funds the SDK reads the spend of the output of each leaf with a co-signed recovery, one in the mempool included, and does not pass it on'),
@@ -135,8 +135,8 @@ NOTES = [
       ('#1173 crates/breez-sdk/core/src/sdk/watchtower_exit.rs:344-346, 420-428', 'in recover_funds the SDK also takes a recovery it stored as proof of a co-sign, so it reads the spend even before its next refresh of the leaf'),
       ('#1173 crates/breez-sdk/breez-itest/tests/unilateral_exit.rs:3851-3862, 3868-3905', 'when the test prepares again, the SDK returns the kept transaction, and refuses a lower rate, or another address at the same rate')]),
     ('should', 'Can stranded funds become unrecoverable if the user waits?',
-     "Once a stranded leaf's branch is on-chain, a previous owner's refund can become valid after enough blocks pass. Glow cannot tell the user when this can happen, because the SDK reports no such block height.",
-     "If this window exists, expose the block height at which a previous owner's refund becomes valid for each affected leaf, so the user knows when they need to act.",
+     "Once a stranded leaf's branch is on-chain, a previous owner's refund may become valid after enough blocks. Glow cannot warn the user in time, because the SDK reports no such block height.",
+     'If this window exists, expose that block height for each affected leaf.',
      [('#1173 crates/spark/src/core/constants.rs:10', 'TIME_LOCK_INTERVAL = 100'),
       ('#1173 crates/breez-sdk/core/src/models/mod.rs:3284-3291', 'RecoverFundsLeaf has no deadline'),
       ('#1173 docs/breez-sdk/src/guide/recover_funds.md:198-206', "per the docs, the operators can send their own version of each transaction; nothing on a previous owner's refund")]),
@@ -233,8 +233,6 @@ NOTES = [
       ('#1173 review thread on crates/breez-sdk/core/src/sdk/chain_queries.rs (danielgranhao, Oct 8)', 'a reviewer asks to keep the stop for sync only; done in 4adfb8f26')]),
 ]
 
-SEVERITY_LABELS = {'blocking': 'Blocking', 'should': 'Should have', 'nice': 'Nice to have'}
-
 # API names in the notes' prose, drawn as code.
 IDENTIFIERS = [
     'recoverable_funds_sats', 'prepare_recover_funds', 'check_recover_funds', 'recover_funds', 'get_info', 'RecoverFundsLeaf',
@@ -318,18 +316,25 @@ def storyboard():
     return '\n'.join(parts)
 
 
-def notes():
-    out = []
-    for i, (severity, title, why, ask, evidence) in enumerate(NOTES, 1):
-        refs = '\n'.join(f'<li><code>{html.escape(ref)}</code><span>{fmt(what)}</span></li>' for ref, what in evidence)
-        out.append(f'''<article class="note" id="n{i}">
-  <div class="note-head"><span class="note-num">N{i}</span><span class="chip chip-{severity}">{SEVERITY_LABELS[severity]}</span></div>
+def note_card(i, title, why, ask, evidence):
+    refs = '\n'.join(f'<li><code>{html.escape(ref)}</code><span>{fmt(what)}</span></li>' for ref, what in evidence)
+    return f'''<article class="note" id="n{i}">
+  <div class="note-head"><span class="note-num">N{i}</span></div>
   <h3>{fmt(title)}</h3>
   <div class="row"><b>Why</b><div>{rich(why)}</div></div>
   <div class="row"><b>Ask</b><div>{rich(ask)}</div></div>
   <details><summary>Evidence</summary><ul class="refs-list">{refs}</ul></details>
-</article>''')
-    return '\n'.join(out)
+</article>'''
+
+
+def notes():
+    """The questions users would notice first; the rest folded into one group."""
+    cards = [(severity, note_card(i, *rest)) for i, (severity, *rest) in enumerate(NOTES, 1)]
+    main = [card for severity, card in cards if severity == 'should']
+    rest = [card for severity, card in cards if severity != 'should']
+    group = (f'''<details class="more-notes"><summary>Nice to have: {len(rest)} more questions</summary>
+<div class="notes">{''.join(rest)}</div></details>''' if rest else '')
+    return '\n'.join(main) + '\n' + group
 
 
 def shot_ids():
