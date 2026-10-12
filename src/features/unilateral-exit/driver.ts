@@ -132,12 +132,13 @@ const hasUnverifiedStep = (plan: UnilateralExitPlan): boolean =>
   plan.exit.transactions.some(tx => tx.status.type === 'unverified' && !isCooperative(tx));
 
 /**
- * Whether the exit waits on the user's update tap: a diverged one, or one whose
- * Unverified step needs a rebuild only the passkey can sign. The second keeps
- * running meanwhile, so its other steps still go out.
+ * Whether the exit waits on the user's update tap: a diverged one, or an active
+ * one whose Unverified step needs a rebuild only the passkey can sign. The
+ * second keeps running meanwhile, so its other steps still go out. A tap whose
+ * rebuild finished the exit keeps the flags until the engine archives it.
  */
 export const awaitsUpdate = (plan: UnilateralExitPlan): boolean =>
-  plan.phase === 'redo' || (!!plan.needsSignIn && plan.redoCause === 'unverified');
+  plan.phase === 'redo' || (plan.phase === 'active' && !!plan.needsSignIn && plan.redoCause === 'unverified');
 
 /** Folds a check onto the plan. The sdk owns the exit and the phase; glow keeps only what the network told it about its own sends. */
 export function applyExitCheck(

@@ -9,8 +9,13 @@ vi.mock('@/contexts/WalletContext', () => ({
   useWallet: () => wallet.current,
   useWalletInfo: () => ({ identityPubkey: '02abc', balanceSats: 100_000 }),
 }));
+const chainTip = vi.hoisted(() => vi.fn(async () => 812));
 vi.mock('@/services/chain', () => ({
-  createChainClient: () => ({ feeRates: async () => ({ slow: 1, medium: 2, fast: 3 }), addressUtxos: async () => [] }),
+  createChainClient: () => ({
+    feeRates: async () => ({ slow: 1, medium: 2, fast: 3 }),
+    addressUtxos: async () => [],
+    tipHeight: chainTip,
+  }),
 }));
 vi.mock('@/services/appLock', () => ({ holdIdleLock: () => () => {} }));
 vi.mock('../exitState', () => ({ loadExitState: async () => null, restoreExitState: async () => {} }));
@@ -320,9 +325,8 @@ describe('the update tap', () => {
     saved.tipHeight = null;
   });
 
-  it('stamps the block on the rebuild, so a step it still could not read does not ask again at once', async () => {
-    saved.plan = plan([tx({ txid: 'stuck', status: { type: 'unverified' } })], { needsSignIn: true, redoCause: 'unverified' });
-    saved.tipHeight = 812;
+  const tapOn = async (stalled: UnilateralExitPlan) => {
+    saved.plan = stalled;
     wallet.current = sdk({
       prepareRecoverFunds: async () => unfunded(),
       recoverFunds: async () => checked([{ txid: 'again', status: { type: 'unverified' } }]),
@@ -330,11 +334,31 @@ describe('the update tap', () => {
     vi.mocked(readWalletMnemonic).mockResolvedValueOnce(MNEMONIC);
     const { result } = renderHook(() => useUnilateralExitFlow('regtest'));
     await act(() => result.current.continueExit());
-
     expect(result.current.continueError).toBeNull();
-    const stored = vi.mocked(setUnilateralExitPlan).mock.calls[0][1];
+    return vi.mocked(setUnilateralExitPlan).mock.calls[0][1];
+  };
+
+  it('stamps the block on the rebuild, so a step it still could not read does not ask again at once', async () => {
+    saved.tipHeight = 811;
+    const stored = await tapOn(plan([tx({ txid: 'stuck', status: { type: 'unverified' } })], { needsSignIn: true, redoCause: 'unverified' }));
+
     expect(stored).toMatchObject({ phase: 'active', unverifiedRebuiltAt: 812 });
     expect(stored.needsSignIn).toBeUndefined();
     expect(stored.redoCause).toBeUndefined();
+  });
+
+  it('reads the block itself on a diverged exit, whose paused engine holds no tip', async () => {
+    const stored = await tapOn(plan([tx({ txid: 'moved' })], { phase: 'redo', needsSignIn: true }));
+
+    expect(chainTip).toHaveBeenCalled();
+    expect(stored).toMatchObject({ phase: 'active', unverifiedRebuiltAt: 812 });
+  });
+
+  it("falls back to the engine's block when the chain cannot be read", async () => {
+    saved.tipHeight = 811;
+    chainTip.mockRejectedValueOnce(new Error('chain service unavailable'));
+    const stored = await tapOn(plan([tx({ txid: 'moved' })], { phase: 'redo', needsSignIn: true }));
+
+    expect(stored).toMatchObject({ phase: 'active', unverifiedRebuiltAt: 811 });
   });
 });

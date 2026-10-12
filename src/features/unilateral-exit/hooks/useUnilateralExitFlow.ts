@@ -509,8 +509,10 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
       // A rebuild with nothing left comes back complete, and the engine archives it.
       const rebuilt = await rebuildExit(plan, wallet, walletKey.identityPubkey, { interactive: true });
       // This build just read the chain, so a step it still could not read waits
-      // for the next block instead of asking for the tap again at once.
-      setUnilateralExitPlan(walletKey, { ...rebuilt, unverifiedRebuiltAt: tipHeight ?? undefined });
+      // for the next block instead of asking for the tap again at once. Read
+      // here, after the prompt: the engine's tip is stale while a redo waits.
+      const tip = await chain.tipHeight().catch(() => tipHeight ?? undefined);
+      setUnilateralExitPlan(walletKey, { ...rebuilt, unverifiedRebuiltAt: tip });
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to continue unilateral exit', { error: message(e) });
       setContinueError(message(e));
@@ -522,7 +524,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
     } finally {
       setIsContinuing(false);
     }
-  }, [plan, wallet, walletKey, tipHeight]);
+  }, [plan, wallet, walletKey, chain, tipHeight]);
 
   const back = useCallback(() => setPhase(current => BACK[current] ?? current), []);
 

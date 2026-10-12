@@ -134,6 +134,10 @@ describe('awaitsUpdate', () => {
     // A tap that found nothing to rebuild yet hands the step back to the engine.
     expect(awaitsUpdate(plan([], { redoCause: 'unverified' }))).toBe(false);
   });
+
+  it('asks nothing of a tap whose rebuild finished the exit, while it waits to be archived', () => {
+    expect(awaitsUpdate(plan([], { phase: 'complete', needsSignIn: true, redoCause: 'unverified' }))).toBe(false);
+  });
 });
 
 describe('storing a plan', () => {
