@@ -1,6 +1,7 @@
 import { formatBlockWait } from '@/utils/blockTime';
 import { formatWithSpaces } from '@/utils/formatNumber';
 import {
+  awaitsUpdate,
   heldRecoveryLeaves,
   isPendingFunded,
   namedLeavesOf,
@@ -40,7 +41,7 @@ export interface UnilateralExitEntry {
 const activeSubtitle = (state: UnilateralExitEngineState): string | null => {
   const plan = state.plan;
   if (!plan) return null;
-  if (plan.phase === 'redo') return 'Tap to update';
+  if (awaitsUpdate(plan)) return 'Tap to update';
 
   const { confirmed, total } = planProgress(plan);
   const blocks =
@@ -170,9 +171,9 @@ const liveEntry = (state: UnilateralExitEngineState): UnilateralExitEntry | null
   if (!plan || plan.phase === 'complete') return null;
   return {
     id: 'active',
-    title: plan.phase === 'redo' ? 'Update needed' : 'Transactions in progress',
+    title: awaitsUpdate(plan) ? 'Update needed' : 'Transactions in progress',
     subtitle: activeSubtitle(state),
-    isAction: plan.phase === 'redo',
+    isAction: awaitsUpdate(plan),
     amountSat: willReceiveSat(plan),
     kind: 'active',
   };

@@ -381,6 +381,17 @@ describe('a pass over an exit', () => {
     expect(checkRecoverFunds).not.toHaveBeenCalled();
   });
 
+  it('keeps sending the other steps of an exit whose tap waits on a step it could not read', async () => {
+    const broadcastPackage = vi.fn(async () => undefined);
+    const waiting = plan(
+      [tx({ txid: 'stuck', status: { type: 'unverified' } }), tx({ txid: 'due', cpfpTxHex: 'bb', status: ready })],
+      { network: 'regtest', needsSignIn: true, redoCause: 'unverified' },
+    );
+    setUnilateralExitPlan(wallet, waiting);
+    startUnilateralExitEngine(wallet, { ...chain, broadcastPackage }, sdk());
+    await vi.waitFor(() => expect(broadcastPackage).toHaveBeenCalledWith('aa', 'bb'));
+  });
+
   it('keeps trying to rebuild a diverged exit that waits on nothing from the user', async () => {
     const checkRecoverFunds = vi.fn(async ({ recovery }: { recovery: UnilateralExitPlan['exit'] }) => ({
       recovery,

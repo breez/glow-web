@@ -4,7 +4,7 @@ import { AlertCard, SimpleAlert } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
 import { CollapsibleCodeField, CollapsibleSection, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { RefreshIcon } from '@/components/Icons';
-import { blocksToFinish, exitStages, nextAction, planProgress } from './driver';
+import { awaitsUpdate, blocksToFinish, exitStages, nextAction, planProgress } from './driver';
 import type { NextAction, PlanProgress, UnilateralExitPlan } from './driver';
 import { isCooperative } from './quote';
 import { formatDaysLeft } from '@/utils/blockTime';
@@ -136,7 +136,7 @@ const UpdateError: React.FC<{ noun: string; error: string }> = ({ noun, error })
 };
 
 /**
- * A paused exit's buttons, for the sheet's action bar: inside the scroller they
+ * The update buttons, for the sheet's action bar: inside the scroller they
  * fell below the fold at the sheet's resting height.
  */
 export const RedoActions: React.FC<{
@@ -208,7 +208,7 @@ export const TrackerView: React.FC<{
 
       {/* The engine only runs while the app is open, so leaving the sheet is
           fine but leaving Glow for good is not. */}
-      {justStarted && plan.phase === 'active' && (
+      {justStarted && plan.phase === 'active' && !awaitsUpdate(plan) && (
         <p className="text-spark-text-muted text-xs text-center text-balance">
           You can close this. Open Glow regularly until the {noun} finishes.
         </p>
@@ -232,7 +232,7 @@ export const TrackerView: React.FC<{
 
       {/* One box at a time: a failed update replaces the explanation the user read before tapping.
           A little room below, or the scroller's edge clips the box's border. */}
-      {plan.phase === 'redo' && (
+      {awaitsUpdate(plan) && (
         <div className="pb-1">
           {continueError ? (
             <UpdateError noun={noun} error={continueError} />

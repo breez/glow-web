@@ -173,7 +173,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
   );
   const chain = useMemo(() => createChainClient(network), [network]);
   const engine = useUnilateralExitEngineState();
-  const { plan, pending, recoveries } = engine;
+  const { plan, pending, recoveries, tipHeight } = engine;
   // A saved record keeps what it is, whichever row opened the sheet.
   const mode = plan ? plan.mode : pending ? pending.mode : openedMode;
 
@@ -506,7 +506,10 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
     setContinueError(null);
     try {
       // A rebuild with nothing left comes back complete, and the engine archives it.
-      setUnilateralExitPlan(walletKey, await rebuildExit(plan, wallet, walletKey.identityPubkey, { interactive: true }));
+      const rebuilt = await rebuildExit(plan, wallet, walletKey.identityPubkey, { interactive: true });
+      // This build just read the chain, so a step it still could not read waits
+      // for the next block instead of asking for the tap again at once.
+      setUnilateralExitPlan(walletKey, { ...rebuilt, unverifiedRebuiltAt: tipHeight ?? undefined });
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to continue unilateral exit', { error: message(e) });
       setContinueError(message(e));
@@ -518,7 +521,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
     } finally {
       setIsContinuing(false);
     }
-  }, [plan, wallet, walletKey]);
+  }, [plan, wallet, walletKey, tipHeight]);
 
   const back = useCallback(() => setPhase(current => BACK[current] ?? current), []);
 

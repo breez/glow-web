@@ -22,7 +22,7 @@ import { RedoActions, TrackerView } from '@/features/unilateral-exit/TrackerView
 import { SatAmount } from '@/components/SatAmount';
 import { recoveryTxid } from '@/features/unilateral-exit/archive';
 import { cancelPendingExit, startPendingExit } from '@/features/unilateral-exit/engine';
-import { isPendingFunded, type ExitMode } from '@/features/unilateral-exit/driver';
+import { awaitsUpdate, isPendingFunded, type ExitMode } from '@/features/unilateral-exit/driver';
 
 interface UnilateralExitPageProps {
   network: string;
@@ -183,7 +183,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
         );
       }
       case 'tracker':
-        if (flow.engine.plan?.phase !== 'redo') return null;
+        if (!flow.engine.plan || !awaitsUpdate(flow.engine.plan)) return null;
         return (
           <RedoActions
             onContinue={() => void flow.continueExit()}

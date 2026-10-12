@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { PrepareRecoverFundsResponse, RecoverFundsLeaf, RecoverFundsResponse } from '@breeztech/breez-sdk-spark';
 import type { ExitMode, ExitSdk, UnilateralExitPlan } from '../driver';
-import { checked, funding, MNEMONIC, plan, prepared, sdk } from '../testFixtures';
+import { checked, funding, MNEMONIC, plan, prepared, sdk, tx } from '../testFixtures';
 
 const wallet = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('@/contexts/WalletContext', () => ({
@@ -19,7 +19,7 @@ vi.mock('../funding', async () => ({
   readWalletMnemonic: vi.fn(async () => 'never read'),
 }));
 // The exit the flow resumes, if any; the engine itself is not running here.
-const saved = vi.hoisted(() => ({ plan: null as UnilateralExitPlan | null }));
+const saved = vi.hoisted(() => ({ plan: null as UnilateralExitPlan | null, tipHeight: null as number | null }));
 vi.mock('./useUnilateralExitEngineLifecycle', () => ({
   useUnilateralExitEngineState: () => ({
     plan: saved.plan,
@@ -30,7 +30,7 @@ vi.mock('./useUnilateralExitEngineLifecycle', () => ({
     startError: null,
     archive: [],
     recoveries: [],
-    tipHeight: null,
+    tipHeight: saved.tipHeight,
     isAdvancing: false,
   }),
 }));
@@ -280,5 +280,30 @@ describe('Recover Funds', () => {
       expect(result.current.startError).toBe('operators unreachable');
       expect(keepRecovery).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('the update tap', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    saved.tipHeight = null;
+  });
+
+  it('stamps the block on the rebuild, so a step it still could not read does not ask again at once', async () => {
+    saved.plan = plan([tx({ txid: 'stuck', status: { type: 'unverified' } })], { needsSignIn: true, redoCause: 'unverified' });
+    saved.tipHeight = 812;
+    wallet.current = sdk({
+      prepareRecoverFunds: async () => unfunded(),
+      recoverFunds: async () => checked([{ txid: 'again', status: { type: 'unverified' } }]),
+    });
+    vi.mocked(readWalletMnemonic).mockResolvedValueOnce(MNEMONIC);
+    const { result } = renderHook(() => useUnilateralExitFlow('regtest'));
+    await act(() => result.current.continueExit());
+
+    expect(result.current.continueError).toBeNull();
+    const stored = vi.mocked(setUnilateralExitPlan).mock.calls[0][1];
+    expect(stored).toMatchObject({ phase: 'active', unverifiedRebuiltAt: 812 });
+    expect(stored.needsSignIn).toBeUndefined();
+    expect(stored.redoCause).toBeUndefined();
   });
 });

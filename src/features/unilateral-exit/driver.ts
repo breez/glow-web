@@ -86,7 +86,11 @@ export interface UnilateralExitPlan {
   needsSignIn?: true;
   /** The tip of Glow's last rebuild over an Unverified step: once a block, so a failing chain service is not asked every pass. */
   unverifiedRebuiltAt?: number;
-  /** Why a redo waits on the user when the chain did not diverge: a step the SDK could not read, which only a rebuild settles. */
+  /**
+   * Why an active exit asks for the update tap: a step the SDK could not read,
+   * which only a rebuild settles, and that rebuild needs the passkey. It asks
+   * only while `needsSignIn` is set too (`awaitsUpdate`).
+   */
   redoCause?: 'unverified';
 }
 
@@ -123,6 +127,18 @@ export function planFromExitResponse(exit: RecoverFundsResponse, meta: PlanMeta)
   return { version: PLAN_VERSION, ...meta, exit, refusals: {}, phase: 'active' };
 }
 
+/** A unilateral step the SDK could not read while building: never sent, and a check never settles it. */
+const hasUnverifiedStep = (plan: UnilateralExitPlan): boolean =>
+  plan.exit.transactions.some(tx => tx.status.type === 'unverified' && !isCooperative(tx));
+
+/**
+ * Whether the exit waits on the user's update tap: a diverged one, or one whose
+ * Unverified step needs a rebuild only the passkey can sign. The second keeps
+ * running meanwhile, so its other steps still go out.
+ */
+export const awaitsUpdate = (plan: UnilateralExitPlan): boolean =>
+  plan.phase === 'redo' || (!!plan.needsSignIn && plan.redoCause === 'unverified');
+
 /** Folds a check onto the plan. The sdk owns the exit and the phase; glow keeps only what the network told it about its own sends. */
 export function applyExitCheck(
   plan: UnilateralExitPlan,
@@ -135,7 +151,13 @@ export function applyExitCheck(
   const refusals = Object.fromEntries(
     Object.entries(plan.refusals).filter(([txid]) => open.has(txid)),
   );
-  return { ...plan, exit: checked, refusals, phase };
+  const next = { ...plan, exit: checked, refusals, phase };
+  // The tap asked for over an Unverified step ends with that step, or with a
+  // divergence, whose own rebuild asks again if it has to sign.
+  if (plan.redoCause === 'unverified' && (phase === 'redo' || !hasUnverifiedStep(next))) {
+    return { ...next, redoCause: undefined, needsSignIn: undefined };
+  }
+  return next;
 }
 
 export function savePlan(wallet: WalletKey, plan: UnilateralExitPlan): void {
@@ -344,10 +366,6 @@ export type ExitSdk = Pick<
  */
 export const isSendable = (tx: RecoveryTransaction): boolean =>
   tx.status.type === 'ready' || (isCooperative(tx) && tx.status.type === 'unverified');
-
-/** A unilateral step the SDK could not read while building: never sent, and a check never settles it. */
-const hasUnverifiedStep = (plan: UnilateralExitPlan): boolean =>
-  plan.exit.transactions.some(tx => tx.status.type === 'unverified' && !isCooperative(tx));
 
 export { destinationAddressOf } from '@/utils/destinationAddress';
 
@@ -820,9 +838,11 @@ async function rebuildUnverified(
   try {
     return { ...(await rebuildExit(plan, sdk, identityPubkey)), unverifiedRebuiltAt: tipHeight };
   } catch (e) {
-    // The exit cannot move on its own, so unlike a converted one it asks for the tap.
+    // Only the tap settles the step, but the exit stays active: pausing it
+    // would leave the other leaves' steps unsent until the operators' copy
+    // takes its fee from the funds.
     if (e instanceof MnemonicNeedsPasskeyError) {
-      return { ...plan, phase: 'redo', needsSignIn: true, redoCause: 'unverified', unverifiedRebuiltAt: tipHeight };
+      return { ...plan, needsSignIn: true, redoCause: 'unverified', unverifiedRebuiltAt: tipHeight };
     }
     if (!(e instanceof RebuildLaterError)) {
       logger.warn(LogCategory.SDK, `Failed to rebuild over an unverified step: ${e instanceof Error ? e.message : String(e)}`);
@@ -841,7 +861,11 @@ async function rebuildConverted(plan: UnilateralExitPlan, sdk: ExitSdk, identity
     const rebuilt = await rebuildExit(plan, sdk, identityPubkey);
     return rebuilt.phase === 'complete' ? { ...plan, needsRebuild: undefined } : rebuilt;
   } catch (e) {
-    if (e instanceof MnemonicNeedsPasskeyError) return { ...plan, needsSignIn: true };
+    // The set runs as it is, except a step it could not read, which only the
+    // tap's rebuild settles.
+    if (e instanceof MnemonicNeedsPasskeyError) {
+      return { ...plan, needsSignIn: true, redoCause: hasUnverifiedStep(plan) ? 'unverified' : undefined };
+    }
     if (!(e instanceof RebuildLaterError)) {
       logger.warn(LogCategory.SDK, `Failed to rebuild the converted exit: ${e instanceof Error ? e.message : String(e)}`);
     }

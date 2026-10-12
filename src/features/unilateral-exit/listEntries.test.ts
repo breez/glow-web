@@ -223,6 +223,22 @@ describe('recoverable funds beside an exit under way', () => {
 });
 
 
+describe('an exit under way in the wallet list', () => {
+  it('asks for a tap on a diverged exit, and on one that has to sign over a step it could not read', () => {
+    for (const over of [{ phase: 'redo' as const }, { needsSignIn: true as const, redoCause: 'unverified' as const }]) {
+      expect(row({ pending: null, plan: plan([tx({ txid: 'a' })], over) })).toMatchObject({
+        title: 'Update needed',
+        subtitle: 'Tap to update',
+        isAction: true,
+      });
+    }
+  });
+
+  it('asks for none while it runs on its own', () => {
+    expect(row({ pending: null, plan: plan([tx({ txid: 'a' })]) })).toMatchObject({ title: 'Transactions in progress', isAction: false });
+  });
+});
+
 describe('the exit group heading', () => {
   it('reads Recovery for a wallet that never started an exit', () => {
     expect(exitGroupTitle(engine({ pending: null }))).toBe('Recovery');

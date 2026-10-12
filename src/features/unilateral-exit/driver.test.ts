@@ -1,6 +1,7 @@
 import {
   advanceUnilateralExit,
   applyExitCheck,
+  awaitsUpdate,
   blocksToFinish,
   broadcastReadyTransactions,
   buildFromQuote,
@@ -93,6 +94,45 @@ describe('applyExitCheck', () => {
   it('sets the phase', () => {
     const next = applyExitCheck(plan([tx({ txid: 'a' })]), checked([{ txid: 'a' }]), 'complete');
     expect(next.phase).toBe('complete');
+  });
+
+  describe('a tap asked for over a step the SDK could not read', () => {
+    const unverified = { type: 'unverified' } as const;
+    const waiting = plan([tx({ txid: 'a', status: unverified })], { needsSignIn: true, redoCause: 'unverified' });
+
+    it('stands while the step does', () => {
+      expect(applyExitCheck(waiting, checked([{ txid: 'a', status: unverified }]), 'active')).toMatchObject({
+        needsSignIn: true,
+        redoCause: 'unverified',
+      });
+    });
+
+    it('ends once the step settles, or the chain diverges, so a later divergence reads as one', () => {
+      for (const [status, phase] of [[ready, 'active'], [unverified, 'redo']] as const) {
+        const next = applyExitCheck(waiting, checked([{ txid: 'a', status }]), phase);
+        expect(next.redoCause).toBeUndefined();
+        expect(next.needsSignIn).toBeUndefined();
+      }
+    });
+
+    it("leaves a converted exit's sign-in alone, which waits on no such step", () => {
+      const converted = plan([tx({ txid: 'a' })], { needsRebuild: true, needsSignIn: true });
+      expect(applyExitCheck(converted, checked([{ txid: 'a' }]), 'active').needsSignIn).toBe(true);
+    });
+  });
+});
+
+describe('awaitsUpdate', () => {
+  it('asks for the tap on a diverged exit, and on one that has to sign over a step it could not read', () => {
+    expect(awaitsUpdate(plan([], { phase: 'redo' }))).toBe(true);
+    expect(awaitsUpdate(plan([], { needsSignIn: true, redoCause: 'unverified' }))).toBe(true);
+  });
+
+  it('leaves a running exit alone, a converted one waiting to sign included', () => {
+    expect(awaitsUpdate(plan([]))).toBe(false);
+    expect(awaitsUpdate(plan([], { needsRebuild: true, needsSignIn: true }))).toBe(false);
+    // A tap that found nothing to rebuild yet hands the step back to the engine.
+    expect(awaitsUpdate(plan([], { redoCause: 'unverified' }))).toBe(false);
   });
 });
 
@@ -944,13 +984,25 @@ describe('an exit holding a step the SDK could not read', () => {
     expect(prepareRecoverFunds).not.toHaveBeenCalled();
   });
 
-  it('asks a passkey wallet for the tap, since the exit cannot move on its own', async () => {
+  it('asks a passkey wallet for the tap, and keeps sending the other steps meanwhile', async () => {
     localStorage.removeItem('walletMnemonic');
     localStorage.setItem('passkeyLabel', 'Default');
+    const prepareRecoverFunds = vi.fn(async () => quote);
     const recoverFunds = vi.fn(async () => rebuilt);
-    const { plan: next } = await advanceUnilateralExit(stuck(), chain(), sdk({ prepareRecoverFunds: async () => quote, recoverFunds }), '02abc');
-    expect(next).toMatchObject({ phase: 'redo', needsSignIn: true, redoCause: 'unverified' });
+    const driver = sdk({ prepareRecoverFunds, recoverFunds });
+    const { plan: next } = await advanceUnilateralExit(stuck(), chain(), driver, '02abc');
+    expect(next).toMatchObject({ phase: 'active', needsSignIn: true, redoCause: 'unverified', unverifiedRebuiltAt: 100 });
+    expect(awaitsUpdate(next)).toBe(true);
     expect(recoverFunds).not.toHaveBeenCalled();
+
+    // Another leaf's step comes due while the tap waits.
+    const due = { ...next, exit: { ...next.exit, transactions: [...next.exit.transactions, tx({ txid: 'other', cpfpTxHex: 'bb' })] } };
+    const broadcastPackage = vi.fn(async () => undefined);
+    const { plan: after } = await advanceUnilateralExit(due, chain({ tipHeight: async () => 101, broadcastPackage }), driver, '02abc');
+    expect(broadcastPackage).toHaveBeenCalledWith('aa', 'bb');
+    expect(prepareRecoverFunds).toHaveBeenCalledTimes(1);
+    expect(after).toMatchObject({ phase: 'active', needsSignIn: true, redoCause: 'unverified' });
+    localStorage.removeItem('passkeyLabel');
   });
 
   it('keeps the exit and marks the block when the rebuild fails', async () => {
@@ -1042,6 +1094,18 @@ describe('a converted plan on its next passes', () => {
     await advanceUnilateralExit(due, chain({ broadcastPackage }), driver, '02abc');
     expect(broadcastPackage).toHaveBeenCalled();
     expect(prepareRecoverFunds).toHaveBeenCalledTimes(1);
+    localStorage.removeItem('passkeyLabel');
+  });
+
+  it('asks for the tap on a passkey wallet when a step it could not read holds it up', async () => {
+    localStorage.removeItem('walletMnemonic');
+    localStorage.setItem('passkeyLabel', 'Default');
+    const stuck = converted();
+    stuck.exit.transactions[0].status = { type: 'unverified' };
+    const driver = sdk({ prepareRecoverFunds: async () => prepared() });
+    const { plan: next } = await advanceUnilateralExit(stuck, chain(), driver, '02abc');
+    expect(next).toMatchObject({ phase: 'active', needsRebuild: true, needsSignIn: true, redoCause: 'unverified' });
+    expect(awaitsUpdate(next)).toBe(true);
     localStorage.removeItem('passkeyLabel');
   });
 
