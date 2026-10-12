@@ -3,7 +3,7 @@
 // The shot registries export records of components; fast refresh does not matter here.
 /* eslint-disable react-refresh/only-export-components */
 import React, { useEffect, useRef, useState } from 'react';
-import type { BreezSdk, PrepareUnilateralExitResponse, UnilateralExitTransaction } from '@breeztech/breez-sdk-spark';
+import type { BreezSdk, PrepareRecoverFundsResponse, RecoveryTransaction } from '@breeztech/breez-sdk-spark';
 import { BottomSheetCard, BottomSheetContainer, DialogHeader, PrimaryButton } from '@/components/ui';
 import { DestinationField } from '@/components/DestinationField';
 import { FeeRateSelector, type FeeSpeed } from '@/components/FeeRateSelector';
@@ -125,11 +125,11 @@ const FeeOptions: React.FC<{ rates: Record<FeeSpeed, number> }> = ({ rates }) =>
   );
 };
 
-const Review: React.FC<{ quote: PrepareUnilateralExitResponse; error?: string }> = ({ quote, error }) => (
+const Review: React.FC<{ quote: PrepareRecoverFundsResponse; error?: string }> = ({ quote, error }) => (
   <RecoverReviewStep figures={quoteFigures(quote)} destination={quote.destination} error={error} />
 );
 
-const strandedMeta = (quote: PrepareUnilateralExitResponse) => ({
+const strandedMeta = (quote: PrepareRecoverFundsResponse) => ({
   network: NETWORK,
   destination: quote.destination,
   feeRateSatPerVbyte: quote.feeRateSatPerVbyte,
@@ -154,17 +154,17 @@ const strandedPlan = (() => {
     }),
   );
   const sweep = tx({ txid: 'sweep', kind: 'sweep', dependsOn: refunds.map(r => r.txid), status: blocked });
-  const transactions: UnilateralExitTransaction[] = [...nodes, ...refunds, sweep];
+  const transactions: RecoveryTransaction[] = [...nodes, ...refunds, sweep];
   return plan(transactions, {
     ...strandedMeta(STRANDED_QUOTE),
-    exit: { leaves: STRANDED_LEAVES, recoverableValueSat: STRANDED_SAT },
+    exit: { leaves: STRANDED_LEAVES, recoverableValueSats: STRANDED_SAT },
   });
 })();
 
 /** The same funds once only the sweep was left: built straight from the review, nothing funded. */
 const sweepOnlyPlan = plan([tx({ txid: 'sweep', kind: 'sweep', status: ready })], {
   ...strandedMeta(SWEEP_ONLY_QUOTE),
-  exit: { leaves: STRANDED_LEAVES, recoverableValueSat: STRANDED_SAT, fundingInputs: [] },
+  exit: { leaves: STRANDED_LEAVES, recoverableValueSats: STRANDED_SAT, fundingInputs: [] },
 });
 
 const OwedStep: React.FC = () => (
@@ -293,7 +293,7 @@ export const sheetShots: Record<string, React.FC> = {
   ),
 
   // The bump opens from the kept recovery's own tracker, under its existing Advanced row.
-  // Built directly: the list row's tap has no route to this tracker yet, and does nothing.
+  // The list row's tap opens this tracker; only the bump under it is mock-only.
   '17-tracker-bump': () => (
     <MockSheet>
       <ExpandAdvanced>
@@ -321,7 +321,7 @@ const stranded = (seed?: () => void): WalletScene => ({ recoverableFundsSats: ST
 /** The wallet page behind each sheet, where it differs from shot 01's. */
 export const sheetScenes: Record<string, WalletScene> = {
   // getInfo counts the dust leaf the quote leaves out.
-  '04b-review-left-out': { recoverableFundsSats: LEFT_OUT_QUOTE.recoverableValueSat + DUST_SAT },
+  '04b-review-left-out': { recoverableFundsSats: LEFT_OUT_QUOTE.recoverableValueSats + DUST_SAT },
   '05-sent': afterCosigned,
   '07-review-stranded': stranded(),
   '07b-review-no-exit-fee': stranded(),
@@ -329,7 +329,7 @@ export const sheetScenes: Record<string, WalletScene> = {
   '08-pending-owed': stranded(seedPending(strandedPending)),
   '09-pending-funded': stranded(seedPending(strandedPending, [coin(strandedPending.required.sat, true)])),
   '10-tracker-stranded': stranded(seedPlan(strandedPlan, TIP_HEIGHT)),
-  '12-review-mixed': { recoverableFundsSats: MIXED_QUOTE.recoverableValueSat },
+  '12-review-mixed': { recoverableFundsSats: MIXED_QUOTE.recoverableValueSats },
   '15-fee-nothing-worth': { recoverableFundsSats: DUST_SAT },
   // A bump opens from the recovery's tracker, so the page is shot 06's, hours later.
   '17-tracker-bump': afterCosigned,

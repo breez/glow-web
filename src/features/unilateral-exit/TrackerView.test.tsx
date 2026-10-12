@@ -17,13 +17,13 @@ const twoLeaves = (transactions: Parameters<typeof plan>[0], over: Parameters<ty
     ...over,
     exit: {
       leaves: [
-        { leafId: 'leaf-1', value: 180_000 },
-        { leafId: 'leaf-2', value: 420_000 },
+        { leafId: 'leaf-1', valueSats: 180_000, method: 'unilateral' },
+        { leafId: 'leaf-2', valueSats: 420_000, method: 'unilateral' },
       ],
-      recoverableValueSat: 600_000,
-      totalFeeSat: 3_122,
-      cpfpFeeSat: 2_907,
-      sweepFeeSat: 0,
+      recoverableValueSats: 600_000,
+      totalFeeSats: 3_122,
+      cpfpFeeSats: 2_907,
+      sweepFeeSats: 0,
       ...over.exit,
     },
   });
@@ -183,11 +183,31 @@ describe('TrackerView', () => {
   });
 
   it('offers only the fee bump for a co-signed recovery, which exit data cannot restore', () => {
-    renderTracker(plan([tx({ txid: 'c1', kind: 'cooperative' as never }), tx({ txid: 'c2', kind: 'cooperative' as never })]));
+    renderTracker(plan([tx({ txid: 'c1', kind: 'cooperative' }), tx({ txid: 'c2', kind: 'cooperative' })]));
     fireEvent.click(screen.getByText('Advanced'));
     expect(screen.getByTestId('unilateral-exit-bump-fee')).toBeInTheDocument();
     expect(screen.queryByTestId('unilateral-exit-backup-save')).not.toBeInTheDocument();
     expect(screen.queryByTestId('unilateral-exit-backup-restore')).not.toBeInTheDocument();
+  });
+
+  it('leaves out Advanced for a co-signed recovery it only follows, which has nothing to put there', () => {
+    render(
+      <TrackerView
+        plan={plan([tx({ txid: 'c1', kind: 'cooperative' })], { mode: 'recover' })}
+        tipHeight={1000}
+        isAdvancing={false}
+        noun="recovery"
+      />,
+    );
+    expect(screen.queryByText('Advanced')).not.toBeInTheDocument();
+    expect(screen.getByTestId('unilateral-exit-stages')).toBeInTheDocument();
+  });
+
+  it('keeps the exit data under Advanced for an exit it only follows', () => {
+    render(<TrackerView plan={plan([tx({ txid: 'a' })])} tipHeight={1000} isAdvancing={false} />);
+    fireEvent.click(screen.getByText('Advanced'));
+    expect(screen.getByText('Save exit data')).toBeInTheDocument();
+    expect(screen.queryByTestId('unilateral-exit-bump-fee')).not.toBeInTheDocument();
   });
 });
 

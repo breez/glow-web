@@ -3,13 +3,7 @@
 // Shot registries and fixture helpers sit beside components; fast refresh does not matter here.
 /* eslint-disable react-refresh/only-export-components */
 import React, { useState } from 'react';
-import type {
-  BreezSdk,
-  GetInfoResponse,
-  Payment,
-  UnilateralExitResponse,
-  UnilateralExitTransaction,
-} from '@breeztech/breez-sdk-spark';
+import type { BreezSdk, GetInfoResponse, Payment, RecoveryTxKind } from '@breeztech/breez-sdk-spark';
 import AppShell from '@/components/layout/AppShell';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { WalletInfoProvider, WalletProvider } from '@/contexts/WalletContext';
@@ -28,7 +22,7 @@ import {
 } from '@/features/unilateral-exit/driver';
 import { startUnilateralExitEngine } from '@/features/unilateral-exit/engine';
 import type { ArchivedExit } from '@/features/unilateral-exit/archive';
-import { cooperativeFeeSats, quoteFigures, quotedSweepFeeSat } from '@/features/unilateral-exit/quote';
+import { quoteFigures, quotedSweepFeeSat } from '@/features/unilateral-exit/quote';
 import { plan, ready, tx } from '@/features/unilateral-exit/testFixtures';
 import type { ChainClient, ChainUtxo } from '@/services/chain';
 import {
@@ -47,14 +41,13 @@ import {
 
 export const WALLET_KEY: WalletKey = { identityPubkey: IDENTITY_PUBKEY, network: NETWORK };
 
-/** getInfo as the proposed API returns it: the recoverable total sits beside the balance, not in it. */
-export const mockWalletInfo = (recoverableFundsSats: number, balanceSats = BALANCE_SATS): GetInfoResponse =>
-  ({
-    identityPubkey: IDENTITY_PUBKEY,
-    balanceSats,
-    tokenBalances: new Map(),
-    recoverableFundsSats,
-  }) as GetInfoResponse;
+/** getInfo's recoverable total sits beside the balance, not in it. */
+export const mockWalletInfo = (recoverableFundsSats: number, balanceSats = BALANCE_SATS): GetInfoResponse => ({
+  identityPubkey: IDENTITY_PUBKEY,
+  balanceSats,
+  tokenBalances: new Map(),
+  recoverableFundsSats,
+});
 
 const now = () => Math.floor(Date.now() / 1000);
 const DAY = 86_400;
@@ -188,7 +181,7 @@ export const MockProviders: React.FC<{ children: React.ReactNode; walletInfo?: G
   children,
   walletInfo,
 }) => {
-  const info = walletInfo ?? mockWalletInfo(COSIGNED_QUOTE.recoverableValueSat);
+  const info = walletInfo ?? mockWalletInfo(COSIGNED_QUOTE.recoverableValueSats);
   const [sdk] = useState(() => mockClient(info));
   return (
     <AppShell>
@@ -248,7 +241,7 @@ export interface WalletScene {
 }
 
 /** Shot 01: the co-signed funds found, nothing recovered yet. */
-export const FOUND: WalletScene = { recoverableFundsSats: COSIGNED_QUOTE.recoverableValueSat };
+export const FOUND: WalletScene = { recoverableFundsSats: COSIGNED_QUOTE.recoverableValueSats };
 
 export const WalletBackdrop: React.FC<{ scene?: WalletScene }> = ({ scene = FOUND }) => {
   const [transactions] = useState(() => (scene.history ?? historyPayments)());
@@ -289,8 +282,7 @@ export const seedArchive = (entries: ArchivedExit[]) => (): void => {
   startUnilateralExitEngine(WALLET_KEY, mockChain());
 };
 
-// What the recover-funds API adds to today's transaction kinds.
-export const COOPERATIVE = 'cooperative' as UnilateralExitTransaction['kind'];
+export const COOPERATIVE: RecoveryTxKind = 'cooperative';
 
 /** Glow's record of the co-signed recovery, kept from recoverFunds' response: both transactions out, unconfirmed. */
 export const keptRecovery: UnilateralExitPlan = plan(
@@ -303,12 +295,14 @@ export const keptRecovery: UnilateralExitPlan = plan(
     mode: 'recover',
     exit: {
       leaves: COSIGNED_LEAVES,
-      recoverableValueSat: COSIGNED_QUOTE.recoverableValueSat,
-      totalFeeSat: COSIGNED_QUOTE.totalFeeSat,
-      cooperativeFeeSats: cooperativeFeeSats(COSIGNED_QUOTE),
-      cpfpFeeSat: 0,
-      sweepFeeSat: 0,
-    } as Partial<UnilateralExitResponse>,
+      recoverableValueSats: COSIGNED_QUOTE.recoverableValueSats,
+      totalFeeSats: COSIGNED_QUOTE.totalFeeSats,
+      cooperativeFeeSats: COSIGNED_QUOTE.cooperativeFeeSats,
+      cpfpFeeSats: 0,
+      sweepFeeSats: 0,
+      feeRateSatPerVbyte: FEE_RATES.medium,
+      destination: DESTINATION,
+    },
   },
 );
 
@@ -320,7 +314,7 @@ const keepCosigned = (): void => saveRecoveries(WALLET_KEY, [keptRecovery]);
  * takes them out of the Recoverable Funds row.
  */
 export const afterCosigned: WalletScene = {
-  recoverableFundsSats: COSIGNED_QUOTE.recoverableValueSat,
+  recoverableFundsSats: COSIGNED_QUOTE.recoverableValueSats,
   seed: () => {
     keepCosigned();
     startUnilateralExitEngine(WALLET_KEY, mockChain());
@@ -347,7 +341,7 @@ export const walletShots: Record<string, WalletScene> = {
   // Both parts stay in the total until their transactions confirm and are read
   // back. The kept recovery and the saved exit each take a row in its place.
   '13-wallet-after-split': {
-    recoverableFundsSats: MIXED_QUOTE.recoverableValueSat,
+    recoverableFundsSats: MIXED_QUOTE.recoverableValueSats,
     seed: () => {
       keepCosigned();
       seedPending(strandedPending)();

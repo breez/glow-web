@@ -4,7 +4,9 @@ import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import type { FeeRates } from '@/services/chain';
 import type { UnilateralExitFlow } from '@/features/unilateral-exit/hooks/useUnilateralExitFlow';
 import { quoteFigures } from '@/features/unilateral-exit/quote';
-import { plan, prepared } from '@/features/unilateral-exit/testFixtures';
+import type { ArchivedExit } from '@/features/unilateral-exit/archive';
+import type { UnilateralExitPlan } from '@/features/unilateral-exit/driver';
+import { confirmed, funding, plan, prepared, tx } from '@/features/unilateral-exit/testFixtures';
 
 // The page is the switch under test; the flow behind it is stubbed per step.
 const flow = vi.hoisted(() => ({ current: null as unknown as UnilateralExitFlow }));
@@ -49,12 +51,25 @@ describe('the fee step while its rates load', () => {
 });
 
 const quoteFlow = (
-  singleUtxoFundingSat: number,
-  { underWay = false, startError = null }: { underWay?: boolean; startError?: string | null } = {},
+  exitFeeSat: number,
+  {
+    underWay = false,
+    startError = null,
+    mode,
+    cosignedSat = 0,
+  }: { underWay?: boolean; startError?: string | null; mode?: 'recover'; cosignedSat?: number } = {},
 ) => {
-  const quote = prepared({ singleUtxoFundingSat });
+  const quote = prepared({
+    funding: exitFeeSat > 0 ? funding(exitFeeSat) : undefined,
+    leaves: [
+      { leafId: 'leaf-1', valueSats: 100_000, method: 'unilateral' },
+      ...(cosignedSat > 0 ? [{ leafId: 'c-1', valueSats: cosignedSat, method: 'cooperative' as const }] : []),
+    ],
+    recoverableValueSats: 100_000 + cosignedSat,
+  });
   return {
     phase: 'quote',
+    mode,
     engine: { plan: underWay ? plan([]) : null, pending: null, archive: [] },
     canGoBack: true,
     back: vi.fn(),
@@ -71,6 +86,84 @@ async function renderQuote(...args: Parameters<typeof quoteFlow>) {
   await waitForSheetOpen();
   return screen.getByTestId('unilateral-exit-quote-continue');
 }
+
+describe('the quote step of a recovery', () => {
+  it('is titled and reviewed as a recovery', async () => {
+    await renderQuote(0, { mode: 'recover' });
+    expect(screen.getByRole('heading', { name: 'Recover Funds' })).toBeInTheDocument();
+    expect(screen.getByText('Funds')).toBeInTheDocument();
+    expect(screen.queryByText('Balance')).not.toBeInTheDocument();
+  });
+
+  it('names the tap that sends funds that need no exit fee', async () => {
+    expect(await renderQuote(0, { mode: 'recover' })).toHaveTextContent(/^Recover Funds$/);
+  });
+
+  it('names the tap that sends the co-signed part of a quote that needs the exit fee for the rest', async () => {
+    expect(await renderQuote(3_000, { mode: 'recover', cosignedSat: 48_200 })).toHaveTextContent(/^Recover Funds$/);
+  });
+
+  it('only continues, to the phrase and the fee, when nothing goes out on the tap', async () => {
+    expect(await renderQuote(3_000, { mode: 'recover' })).toHaveTextContent(/^Continue$/);
+  });
+
+  it('continues a recovery under way', async () => {
+    expect(await renderQuote(0, { mode: 'recover', underWay: true })).toHaveTextContent(/^Continue Recovery$/);
+  });
+
+  it('shows why it could not start under the review', async () => {
+    await renderQuote(0, { mode: 'recover', startError: 'Please try again.' });
+    expect(screen.getByText('Could not recover the funds')).toBeInTheDocument();
+    expect(screen.queryByText('Could not start the exit')).not.toBeInTheDocument();
+  });
+});
+
+describe('a co-signed recovery on its way', () => {
+  it('says what was sent, and closes on Done', async () => {
+    const onFinished = vi.fn();
+    flow.current = {
+      phase: 'sent',
+      mode: 'recover',
+      sentSat: 45_300,
+      engine: { plan: null, pending: null, archive: [] },
+      canGoBack: false,
+      back: vi.fn(),
+    } as unknown as UnilateralExitFlow;
+    render(<UnilateralExitPage network="regtest" mode="recover" onBack={vi.fn()} onFinished={onFinished} />);
+    await waitForSheetOpen();
+    expect(screen.getByText('Funds sent')).toBeInTheDocument();
+    expect(screen.getByText(/on its way/)).toHaveTextContent('45 300');
+    fireEvent.click(screen.getByTestId('unilateral-exit-sent-done'));
+    expect(onFinished).toHaveBeenCalled();
+  });
+});
+
+describe('the sheet once a recovery lands', () => {
+  it('closes when a co-signed recovery, which has no sweep, reaches the archive', async () => {
+    const onFinished = vi.fn();
+    const cosigned = plan([tx({ txid: 'coop-1', kind: 'cooperative', status: confirmed(9) })], { mode: 'recover' });
+    const tracking = (archive: ArchivedExit[], current: UnilateralExitPlan | null = cosigned) =>
+      ({
+        phase: 'tracker',
+        mode: 'recover',
+        engine: { plan: current, pending: null, archive, tipHeight: 10, isAdvancing: false },
+        canGoBack: false,
+        back: vi.fn(),
+        rebuild: vi.fn(),
+        continueExit: vi.fn(),
+        isContinuing: false,
+        continueError: null,
+      }) as unknown as UnilateralExitFlow;
+    flow.current = tracking([]);
+    const { rerender } = render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={onFinished} />);
+    await waitForSheetOpen();
+    expect(onFinished).not.toHaveBeenCalled();
+
+    flow.current = tracking([{ id: 'coop-1', destination: 'bc1qdest', deliveredSat: 1, completedAt: 0 }], null);
+    rerender(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={onFinished} />);
+    expect(onFinished).toHaveBeenCalled();
+  });
+});
 
 describe('the quote step', () => {
   it('names the tap that starts the exit when the quote needs no funding', async () => {

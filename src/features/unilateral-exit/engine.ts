@@ -4,15 +4,17 @@ import {
   advanceUnilateralExit,
   clearPendingExit,
   clearPlan,
+  keptLeafIds,
   loadPendingExit,
   isPendingFunded,
   loadPlan,
   loadRecoveries,
   savePendingExit,
   savePlan,
+  saveRecoveries,
   startExit,
 } from './driver';
-import { archiveExit, loadArchive, type ArchivedExit } from './archive';
+import { archiveExit, loadArchive, recoveryTxid, type ArchivedExit } from './archive';
 import type { FundingKey } from './funding';
 import type { ExitSdk, PendingExit, UnilateralExitPlan, WalletKey } from './driver';
 
@@ -40,9 +42,8 @@ export interface UnilateralExitEngineState {
   /** Exits that already finished, newest first. Outlives the plan slot. */
   archive: ArchivedExit[];
   /**
-   * Co-signed recoveries kept until they confirm, never in the plan slot. Not
-   * driven yet, as that takes `checkRecoverFunds`, which the published sdk
-   * lacks: rebroadcast, check, then sync and archive (`archiveExit`) on complete.
+   * Co-signed recoveries kept until they confirm, never in the plan slot. Each
+   * pass checks and rebroadcasts them, and archives one once it is done.
    */
   recoveries: UnilateralExitPlan[];
   tipHeight: number | null;
@@ -75,6 +76,8 @@ let generation = 0;
 // The key the wizard derived, so a passkey wallet starts without a second
 // prompt while the app stays open. Never stored.
 let heldKey: FundingKey | null = null;
+// The plan's pass has `isAdvancing`; the kept recoveries' pass runs beside it.
+let recoveriesBusy = false;
 const listeners = new Set<Listener>();
 
 const emit = (next: Partial<UnilateralExitEngineState>): void => {
@@ -93,7 +96,38 @@ const stopPolling = (): void => {
   timer = null;
 };
 
+/** A redo that needs the user's sign-in waits for the tracker's button, so it has no passes to run. */
+const planRuns = (plan: UnilateralExitPlan): boolean => plan.phase !== 'redo' || !plan.needsSignIn;
+
+const syncPolling = (): void => {
+  const running = (state.plan !== null && planRuns(state.plan)) || state.pending !== null || state.recoveries.length > 0;
+  if (running) startPolling();
+  else stopPolling();
+};
+
+/** getInfo counts a landed recovery's leaves as recoverable until a sync sees it in a block. */
+const syncAfterLanding = (driver: ExitSdk | null): void => {
+  if (!driver) return;
+  driver.syncWallet({}).catch(e =>
+    logger.warn(LogCategory.SDK, 'Failed to sync after a recovery landed', {
+      error: e instanceof Error ? e.message : String(e),
+    }),
+  );
+};
+
+/** `list` with `recovery` in place of an entry it replaces: the same recovery, or one of no other leaves. */
+function withRecovery(list: UnilateralExitPlan[], recovery: UnilateralExitPlan): UnilateralExitPlan[] {
+  const id = recoveryTxid(recovery);
+  const leaves = new Set(recovery.exit.leaves.map(leaf => leaf.leafId));
+  const replaced = (kept: UnilateralExitPlan) =>
+    recoveryTxid(kept) === id || (kept.exit.leaves.length > 0 && kept.exit.leaves.every(leaf => leaves.has(leaf.leafId)));
+  return [...list.filter(kept => !replaced(kept)), recovery];
+}
+
 export const getUnilateralExitState = (): UnilateralExitEngineState => state;
+
+const isRunningFor = (target: WalletKey): boolean =>
+  wallet?.identityPubkey === target.identityPubkey && wallet.network === target.network;
 
 export function subscribeUnilateralExit(listener: Listener): () => void {
   listeners.add(listener);
@@ -130,7 +164,8 @@ export async function startPendingExit(): Promise<void> {
   emit({ isStarting: true, startError: null, nothingToExit: false });
   try {
     const key = heldKey?.address === pending.fundingAddress ? heldKey : undefined;
-    const outcome = await startExit(pending, confirmed, sdk, passWallet.identityPubkey, key);
+    const kept = keptLeafIds(state.recoveries);
+    const outcome = await startExit(pending, confirmed, sdk, passWallet.identityPubkey, key, kept);
     if (generation !== passGeneration) return;
     switch (outcome.type) {
       case 'started':
@@ -157,21 +192,27 @@ export async function startPendingExit(): Promise<void> {
 }
 
 export async function advanceNow(): Promise<void> {
-  if (!state.plan) return watchPending();
+  await Promise.all([advancePlan(), advanceRecoveries()]);
+}
+
+async function advancePlan(): Promise<void> {
+  const current = state.plan;
+  if (!current) return watchPending();
   if (!wallet || !chain || state.isAdvancing) return;
-  if (state.plan.phase !== 'active') {
-    stopPolling();
+  if (!planRuns(current)) {
+    syncPolling();
     return;
   }
 
   const passGeneration = generation;
   const passWallet = wallet;
+  const passSdk = sdk;
   emit({ isAdvancing: true });
   try {
     const { plan, tipHeight } = await advanceUnilateralExit(
-      state.plan,
+      current,
       chain,
-      sdk ?? undefined,
+      passSdk ?? undefined,
       passWallet.identityPubkey,
     );
     // Whoever replaced the wallet or plan while this pass was out owns the state now.
@@ -182,18 +223,61 @@ export async function advanceNow(): Promise<void> {
       const archive = archiveExit(passWallet, plan);
       clearPlan(passWallet);
       emit({ plan: null, archive, tipHeight, isAdvancing: false });
-      stopPolling();
+      syncPolling();
+      syncAfterLanding(passSdk);
       return;
     }
 
     savePlan(passWallet, plan);
     emit({ plan, tipHeight, isAdvancing: false });
-    if (plan.phase !== 'active') stopPolling();
+    syncPolling();
   } catch (e) {
     logger.warn(LogCategory.SDK, 'Recovery engine pass failed', {
       error: e instanceof Error ? e.message : String(e),
     });
     if (generation === passGeneration) emit({ isAdvancing: false });
+  }
+}
+
+/**
+ * Checks and rebroadcasts each kept co-signed recovery, and archives the ones
+ * done. They need no rebuild: a recovery that never lands leaves its leaves to
+ * the next quote (`keptLeafIds`).
+ */
+async function advanceRecoveries(): Promise<void> {
+  const client = chain;
+  if (recoveriesBusy || !wallet || !client || state.recoveries.length === 0) return;
+  recoveriesBusy = true;
+  const passGeneration = generation;
+  const passWallet = wallet;
+  const passSdk = sdk;
+  const before = state.recoveries;
+  try {
+    const passes = await Promise.all(before.map(r => advanceUnilateralExit(r, client, passSdk ?? undefined)));
+    if (generation !== passGeneration) return;
+
+    let archive = state.archive;
+    let landed = false;
+    let recoveries: UnilateralExitPlan[] = [];
+    for (const { plan } of passes) {
+      if (plan.phase !== 'complete') recoveries.push(plan);
+      else {
+        archive = archiveExit(passWallet, plan);
+        landed = true;
+      }
+    }
+    // One kept while this pass was out replaces what the pass holds for it.
+    recoveries = state.recoveries.filter(r => !before.includes(r)).reduce(withRecovery, recoveries);
+    saveRecoveries(passWallet, recoveries);
+    emit({ recoveries, archive, tipHeight: passes[0]?.tipHeight ?? state.tipHeight });
+    if (landed) syncAfterLanding(passSdk);
+  } catch (e) {
+    logger.warn(LogCategory.SDK, 'Co-signed recovery pass failed', {
+      error: e instanceof Error ? e.message : String(e),
+    });
+  } finally {
+    recoveriesBusy = false;
+    syncPolling();
   }
 }
 
@@ -214,11 +298,10 @@ export function startUnilateralExitEngine(
   // Left behind by a start that saved its plan and stopped before clearing it.
   if (plan) clearPendingExit(target);
   const pending = plan ? null : loadPendingExit(target);
-  emit({ ...idle, plan, pending, archive: loadArchive(target), recoveries: loadRecoveries(target) });
-  if (!plan && !pending) return;
-
-  void advanceNow();
-  startPolling();
+  const recoveries = loadRecoveries(target);
+  emit({ ...idle, plan, pending, archive: loadArchive(target), recoveries });
+  syncPolling();
+  if (plan || pending || recoveries.length > 0) void advanceNow();
 }
 
 export function stopUnilateralExitEngine(): void {
@@ -233,12 +316,12 @@ export function stopUnilateralExitEngine(): void {
 /** Stores the plan for `target` and, if the engine is running for it, starts driving it. */
 export function setUnilateralExitPlan(target: WalletKey, plan: UnilateralExitPlan): void {
   savePlan(target, plan);
-  if (wallet?.identityPubkey !== target.identityPubkey || wallet.network !== target.network) return;
+  if (!isRunningFor(target)) return;
   // A pass still out for the old plan is discarded when it lands, so this one
   // does not wait for it.
   generation++;
   emit({ plan, isAdvancing: false });
-  startPolling();
+  syncPolling();
   void advanceNow();
 }
 
@@ -249,25 +332,40 @@ export function setUnilateralExitPlan(target: WalletKey, plan: UnilateralExitPla
 export function setPendingExit(target: WalletKey, pending: PendingExit, key?: FundingKey): void {
   savePendingExit(target, pending);
   heldKey = key ?? null;
-  if (wallet?.identityPubkey !== target.identityPubkey || wallet.network !== target.network) return;
+  if (!isRunningFor(target)) return;
   generation++;
   emit({ pending, pendingCoins: [], nothingToExit: false, startError: null, isStarting: false });
-  startPolling();
+  syncPolling();
   void advanceNow();
+}
+
+/**
+ * Keeps a co-signed recovery Glow just built, in place of one it replaces, and
+ * if the engine is running for `target`, starts following it.
+ */
+export function keepRecovery(target: WalletKey, recovery: UnilateralExitPlan): void {
+  const running = isRunningFor(target);
+  const recoveries = withRecovery(running ? state.recoveries : loadRecoveries(target), recovery);
+  saveRecoveries(target, recoveries);
+  if (!running) return;
+  emit({ recoveries });
+  syncPolling();
+  void advanceRecoveries();
 }
 
 /** Coins already at the fee address stay there, and the next exit uses the same address. */
 export function cancelPendingExit(): void {
   if (!wallet) return;
   generation++;
-  stopPolling();
   clearPendingExit(wallet);
   heldKey = null;
   emit({ pending: null, pendingCoins: [], nothingToExit: false, startError: null, isStarting: false });
+  syncPolling();
 }
 
 export function dismissUnilateralExitPlan(): void {
   if (!wallet) return;
   clearPlan(wallet);
   emit({ plan: null });
+  syncPolling();
 }
