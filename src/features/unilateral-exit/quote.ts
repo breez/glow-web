@@ -5,7 +5,7 @@ import type {
   RecoveryTransaction,
 } from '@breeztech/breez-sdk-spark';
 import { outputTotalSat } from '@/utils/rawTx';
-import type { UnilateralExitPlan } from './driver';
+import type { Landing, UnilateralExitPlan } from './driver';
 import { fundingAddressOf } from './funding';
 
 // Everything read off a quote, for Recover Funds and the Unilateral Exit alike:
@@ -81,11 +81,44 @@ export function builtSweepFeeSat(quote: Quote, built: RecoverFundsResponse, resu
   return Math.max(quote.sweepFeeSats + built.cooperativeFeeSats, resuming?.quotedSweepFeeSat ?? 0);
 }
 
+/** Ledger entries of builds the plan replaced: none of this build's leaves or transactions. */
+export function priorLandings(plan: UnilateralExitPlan): Landing[] {
+  const leaves = new Set(plan.exit.leaves.map(leaf => leaf.leafId));
+  const txids = new Set(plan.exit.transactions.map(tx => tx.txid));
+  return (plan.landed ?? []).filter(
+    entry => !(entry.txid && txids.has(entry.txid)) && !entry.leafIds.some(id => leaves.has(id)),
+  );
+}
+
+export interface PaidOut {
+  /** Each transaction that paid the destination, once, in block order. */
+  txids: string[];
+  paidSat: number;
+  /** What the leaves those transactions paid were quoted at. */
+  valueSat: number;
+}
+
+/** What ledger entries paid the destination. An entry still waiting, or one that paid it nothing, adds nothing. */
+export function paidOut(entries: Landing[]): PaidOut {
+  const paid = entries.filter(entry => entry.txid && (entry.paidSat ?? 0) > 0);
+  const byTxid = new Map<string, Landing>();
+  for (const entry of paid) if (entry.txid && !byTxid.has(entry.txid)) byTxid.set(entry.txid, entry);
+  const ordered = [...byTxid.values()].sort(
+    (a, b) => (a.blockHeight ?? Number.MAX_SAFE_INTEGER) - (b.blockHeight ?? Number.MAX_SAFE_INTEGER),
+  );
+  return {
+    txids: ordered.flatMap(entry => entry.txid ?? []),
+    paidSat: ordered.reduce((sum, entry) => sum + (entry.paidSat ?? 0), 0),
+    valueSat: paid.reduce((sum, entry) => sum + entry.valueSat, 0),
+  };
+}
+
 /**
  * What the destination address ends up with: the value moved less what comes
  * off it, until the sweep and any co-signed recoveries confirm and the figure
- * is read off them. The funding is not counted: it pays the other fees, and
- * what it has left comes back only if the sweep Glow built is the one that lands.
+ * is read off them, plus what builds the plan replaced already paid it. The
+ * funding is not counted: it pays the other fees, and what it has left comes
+ * back only if the sweep Glow built is the one that lands.
  */
 export function willReceiveSat(exit: Quote | UnilateralExitPlan, resuming: UnilateralExitPlan | null = null): number {
   if (!('exit' in exit)) {
@@ -94,9 +127,10 @@ export function willReceiveSat(exit: Quote | UnilateralExitPlan, resuming: Unila
   const landing = exit.exit.transactions.filter(tx => tx.kind === 'sweep' || isCooperative(tx));
   const outputs = landing.every(tx => tx.status.type === 'confirmed') ? landing.map(tx => outputTotalSat(tx.txHex)) : [];
   const landed = outputs.length > 0 && outputs.every(sat => sat !== null);
-  return landed
+  const current = landed
     ? outputs.reduce<number>((sum, sat) => sum + (sat ?? 0), 0)
     : Math.max(0, exit.exit.recoverableValueSats - exit.quotedSweepFeeSat);
+  return current + paidOut(priorLandings(exit)).paidSat;
 }
 
 /** Whether a quote moves anything worth more than it costs to move. */

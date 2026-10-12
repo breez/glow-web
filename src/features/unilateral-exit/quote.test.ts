@@ -89,6 +89,20 @@ describe('willReceiveSat', () => {
   it('ignores an unconfirmed sweep, which may still be rebuilt', () => {
     expect(willReceiveSat(twoLeaves([tx({ txid: 's', kind: 'sweep', txHex: sweepHex })]))).toBe(599_785);
   });
+
+  it('adds what replaced builds paid the destination, once per transaction', () => {
+    const rebuilt = twoLeaves([tx({ txid: 's', kind: 'sweep', txHex: sweepHex })], {
+      landed: [
+        // One older sweep paid two leaves the rebuild no longer names.
+        { leafIds: ['old-1'], valueSat: 20_000, txid: 'old-sweep', paidSat: 39_000, blockHeight: 5 },
+        { leafIds: ['old-2'], valueSat: 20_000, txid: 'old-sweep', paidSat: 39_000, blockHeight: 5 },
+        // Still waiting on its read, and one of this build's own leaves.
+        { leafIds: ['old-3'], valueSat: 9_000, outpoint: 'refund:0' },
+        { leafIds: ['leaf-1'], valueSat: 180_000, txid: 'coop', paidSat: 179_000 },
+      ],
+    });
+    expect(willReceiveSat(rebuilt)).toBe(599_785 + 39_000);
+  });
 });
 
 describe('needsFunding', () => {

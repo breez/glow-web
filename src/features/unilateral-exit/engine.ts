@@ -4,6 +4,7 @@ import {
   advanceUnilateralExit,
   clearPendingExit,
   clearPlan,
+  hasWaitingLanding,
   keptLeafIds,
   loadPendingExit,
   isPendingFunded,
@@ -218,8 +219,9 @@ async function advancePlan(): Promise<void> {
     // Whoever replaced the wallet or plan while this pass was out owns the state now.
     if (generation !== passGeneration) return;
     // A finished exit hands its slot back: the record lives in the archive from
-    // here, and the wizard has to be free to quote the next one.
-    if (plan.phase === 'complete') {
+    // here, and the wizard has to be free to quote the next one. Archived while
+    // a read waits, the record would miss what landed.
+    if (plan.phase === 'complete' && !hasWaitingLanding(plan)) {
       const archive = archiveExit(passWallet, plan);
       clearPlan(passWallet);
       emit({ plan: null, archive, tipHeight, isAdvancing: false });
@@ -260,7 +262,8 @@ async function advanceRecoveries(): Promise<void> {
     let landed = false;
     let recoveries: UnilateralExitPlan[] = [];
     for (const { plan } of passes) {
-      if (plan.phase !== 'complete') recoveries.push(plan);
+      // Archived while a read waits, the record would miss what landed.
+      if (plan.phase !== 'complete' || hasWaitingLanding(plan)) recoveries.push(plan);
       else {
         archive = archiveExit(passWallet, plan);
         landed = true;

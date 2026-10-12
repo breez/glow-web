@@ -95,6 +95,27 @@ export const sweepHex =
   '0200000001' + '00'.repeat(32) + '00000000' + '00' + 'ffffffff' +
   '01' + '2c1a090000000000' + '160014' + 'ab'.repeat(20) + '00000000';
 
+/** A txid as the chain writes it, for a test that reads which outpoint a transaction spends. */
+export const txidOf = (n: number): string => n.toString(16).padStart(64, '0');
+
+const littleEndian = (value: number, bytes: number): string =>
+  (value.toString(16).padStart(bytes * 2, '0').match(/../g) ?? []).reverse().join('');
+
+/** A raw transaction spending each `txid:vout` of `inputs` and paying one output per value. */
+export function rawTx(inputs: string[], values: number[]): string {
+  const input = (outpoint: string) => {
+    const [txid, vout] = outpoint.split(':');
+    return (txid.match(/../g) ?? []).reverse().join('') + littleEndian(Number(vout), 4) + '00' + 'ffffffff';
+  };
+  const output = (value: number) => littleEndian(value, 8) + '160014' + 'ab'.repeat(20);
+  return (
+    '02000000' +
+    littleEndian(inputs.length, 1) + inputs.map(input).join('') +
+    littleEndian(values.length, 1) + values.map(output).join('') +
+    '00000000'
+  );
+}
+
 /** An exit of two leaves worth 600 000, held to a 215 sat sweep fee. */
 export const twoLeaves = (transactions: Parameters<typeof plan>[0], over: Parameters<typeof plan>[1] = {}) =>
   plan(transactions, {

@@ -1,5 +1,5 @@
 import { logger, LogCategory } from '@/services/logger';
-import { exitFeeRecordOf, isCooperative, willReceiveSat } from './quote';
+import { exitFeeRecordOf, isCooperative, paidOut } from './quote';
 import type { ExitMode, UnilateralExitPlan, WalletKey } from './driver';
 
 /**
@@ -8,7 +8,10 @@ import type { ExitMode, UnilateralExitPlan, WalletKey } from './driver';
  * record of the first.
  */
 export interface ArchivedExit {
-  /** The transaction that delivered the money (`recoveryTxid`), which is what makes an exit unique. */
+  /**
+   * The key it is stored under: the last build's own sweep or first co-signed
+   * recovery (`recoveryTxid`), not necessarily a transaction that landed.
+   */
   id: string;
   destination: string;
   deliveredSat: number;
@@ -27,6 +30,11 @@ export interface ArchivedExit {
    */
   exitFeeAddress?: string;
   mode?: ExitMode;
+  /**
+   * Each transaction in a block that paid the destination, in block order.
+   * Absent on records from before the ledger, whose `id` stands in.
+   */
+  txids?: string[];
 }
 
 const key = ({ identityPubkey, network }: WalletKey): string =>
@@ -53,12 +61,18 @@ export function loadArchive(wallet: WalletKey): ArchivedExit[] {
 }
 
 /**
- * Records a finished exit, newest first. Keyed on `recoveryTxid`, so an engine
- * that reports the same completion on every pass does not stack up duplicates.
+ * Records a finished exit, newest first, from its ledger of what landed. Keyed
+ * on `recoveryTxid`, so an engine that reports the same completion on every
+ * pass does not stack up duplicates.
  */
 export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): ArchivedExit[] {
-  const id = recoveryTxid(plan);
-  if (id === null) return loadArchive(wallet);
+  const { txids, paidSat, valueSat } = paidOut(plan.landed ?? []);
+  if (txids.length === 0) {
+    logger.warn(LogCategory.SDK, 'Finished exit delivered nothing to archive');
+    return loadArchive(wallet);
+  }
+  // A plan that ended with no transactions of its own falls back to what landed.
+  const id = recoveryTxid(plan) ?? txids[0];
 
   const existing = loadArchive(wallet);
   if (existing.some(entry => entry.id === id)) return existing;
@@ -71,16 +85,18 @@ export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): Archiv
     {
       id,
       destination: plan.destination,
-      deliveredSat: willReceiveSat(plan),
+      deliveredSat: paidSat,
       completedAt: Date.now(),
       network: plan.network,
-      exitedSat: plan.exit.recoverableValueSats,
+      exitedSat: valueSat,
       // Not the final build's co-signed part: a leaf the watchtower moved
       // mid-exit is co-signed back, and was still part of the balance exited.
-      recoverableFundsSat: plan.mode === 'recover' ? undefined : plan.recoverableFundsSat || undefined,
+      // Capped, since part of what was outside the balance may not have landed.
+      recoverableFundsSat: plan.mode === 'recover' ? undefined : Math.min(plan.recoverableFundsSat ?? 0, valueSat) || undefined,
       exitFeePaidSat: quotedExitFeeSat,
       exitFeeAddress,
       mode: plan.mode,
+      txids,
     },
     ...existing,
   ];

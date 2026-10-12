@@ -14,7 +14,7 @@ import {
 import { loadPendingExit, loadPlan, loadRecoveries, saveRecoveries, type UnilateralExitPlan } from './driver';
 import { loadArchive } from './archive';
 import { deriveFundingKey } from './funding';
-import { checked, coin, confirmed, MNEMONIC, pendingExit, plan, prepared, ready, sdk, tx } from './testFixtures';
+import { checked, coin, confirmed, MNEMONIC, pendingExit, plan, prepared, rawTx, ready, sdk, tx, txidOf } from './testFixtures';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChainClient, ChainUtxo } from '@/services/chain';
 
@@ -26,9 +26,16 @@ const chain: ChainClient = {
   tipHeight: async () => 100,
   broadcast: async () => undefined,
   broadcastPackage: async () => undefined,
+  confirmedSpender: async () => null,
 };
 
-const done = plan([tx({ txid: 's', kind: 'sweep', status: confirmed(1) })], { network: 'regtest', phase: 'complete' });
+/** A refund and the sweep that paid it out: 99 000 sats to the destination. */
+const swept = (status = confirmed(1)) => [
+  tx({ txid: txidOf(1), kind: 'refund', nodeId: 'leaf-1', status }),
+  tx({ txid: 's', kind: 'sweep', txHex: rawTx([`${txidOf(1)}:0`], [99_000]), dependsOn: [txidOf(1)], status }),
+];
+
+const done = plan(swept(), { network: 'regtest', phase: 'complete' });
 
 describe('the plan the engine holds', () => {
   beforeEach(() => {
@@ -261,23 +268,63 @@ describe('kept co-signed recoveries', () => {
     expect(getUnilateralExitState().recoveries).toHaveLength(1);
   });
 
-  it('are archived once done, and the wallet syncs so getInfo stops counting them', async () => {
-    const syncWallet = vi.fn(async () => ({}));
-    const driver = sdk({
+  // The SDK confirms a co-signed recovery once anything spends its output.
+  const confirming = (syncWallet = vi.fn(async () => ({}))) =>
+    sdk({
       checkRecoverFunds: async ({ recovery }) => ({
         recovery: { ...recovery, transactions: recovery.transactions.map(t => ({ ...t, status: confirmed(12) })) },
         verdict: { type: 'done' },
       }),
       syncWallet,
     });
-    saveRecoveries(wallet, [cosigned('c1')]);
-    startUnilateralExitEngine(wallet, chain, driver);
+  const spending = (txid: string, outputs: { address?: string; value: number }[]): ChainClient => ({
+    ...chain,
+    confirmedSpender: async () => ({ txid, blockHeight: 12, outputs }),
+  });
+  const landing = (txid: string) =>
+    plan([tx({ txid, kind: 'cooperative', nodeId: 'c-1', txHex: rawTx([`${txidOf(7)}:0`], [29_000]), status: ready })], {
+      network: 'regtest',
+      mode: 'recover',
+      exit: { leaves: [{ leafId: 'c-1', valueSats: 30_000, method: 'cooperative' }] },
+    });
+
+  it('are archived once done, and the wallet syncs so getInfo stops counting them', async () => {
+    const syncWallet = vi.fn(async () => ({}));
+    saveRecoveries(wallet, [landing('c1')]);
+    startUnilateralExitEngine(wallet, spending('c1', [{ address: 'bc1qdest', value: 29_000 }]), confirming(syncWallet));
 
     await vi.waitFor(() => expect(getUnilateralExitState().recoveries).toEqual([]));
     expect(loadRecoveries(wallet)).toEqual([]);
-    expect(loadArchive(wallet)).toEqual([expect.objectContaining({ id: 'c1', mode: 'recover' })]);
+    expect(loadArchive(wallet)).toEqual([expect.objectContaining({ id: 'c1', mode: 'recover', deliveredSat: 29_000 })]);
     expect(getUnilateralExitState().archive).toHaveLength(1);
     expect(syncWallet).toHaveBeenCalledTimes(1);
+  });
+
+  it('archive the replacement that confirmed in place of one, with what it paid', async () => {
+    saveRecoveries(wallet, [landing('c1')]);
+    const replacement = spending('c1-bumped', [
+      { address: 'BC1QDEST', value: 28_400 },
+      { address: 'bc1qother', value: 500 },
+    ]);
+    startUnilateralExitEngine(wallet, replacement, confirming());
+
+    await vi.waitFor(() => expect(getUnilateralExitState().recoveries).toEqual([]));
+    expect(loadArchive(wallet)).toEqual([expect.objectContaining({ id: 'c1', txids: ['c1-bumped'], deliveredSat: 28_400 })]);
+  });
+
+  it('stay followed while the spender of a done one cannot be read', async () => {
+    saveRecoveries(wallet, [landing('c1')]);
+    const failing: ChainClient = {
+      ...chain,
+      confirmedSpender: async () => {
+        throw new Error('rate limited');
+      },
+    };
+    startUnilateralExitEngine(wallet, failing, confirming());
+
+    await vi.waitFor(() => expect(getUnilateralExitState().recoveries[0]?.phase).toBe('complete'));
+    expect(loadArchive(wallet)).toEqual([]);
+    expect(loadRecoveries(wallet)).toHaveLength(1);
   });
 
   it('keeps one kept while a pass is out', async () => {
@@ -355,11 +402,33 @@ describe('a pass over an exit', () => {
       checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: { type: 'done' } }),
       syncWallet,
     });
-    setUnilateralExitPlan(wallet, plan([tx({ txid: 's', kind: 'sweep', status: confirmed(1) })], { network: 'regtest' }));
+    setUnilateralExitPlan(wallet, plan(swept(), { network: 'regtest' }));
     startUnilateralExitEngine(wallet, chain, driver);
     await vi.waitFor(() => expect(getUnilateralExitState().plan).toBeNull());
-    expect(loadArchive(wallet).map(e => e.id)).toEqual(['s']);
+    expect(loadArchive(wallet)).toEqual([expect.objectContaining({ id: 's', deliveredSat: 99_000, txids: ['s'] })]);
     expect(syncWallet).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a finished exit until what paid it out is read, and archives it on the pass that reads it', async () => {
+    const confirmedSpender = vi
+      .fn<ChainClient['confirmedSpender']>()
+      .mockRejectedValueOnce(new Error('rate limited'))
+      .mockResolvedValue({ txid: 'replacement', blockHeight: 90, outputs: [{ address: 'bc1qdest', value: 29_000 }] });
+    const finished = plan([tx({ txid: 'c1', kind: 'cooperative', nodeId: 'c-1', status: confirmed(90) })], {
+      network: 'regtest',
+      phase: 'complete',
+      landed: [{ leafIds: ['c-1'], valueSat: 30_000, outpoint: `${txidOf(7)}:0` }],
+    });
+    setUnilateralExitPlan(wallet, finished);
+    startUnilateralExitEngine(wallet, { ...chain, confirmedSpender }, sdk());
+    await vi.waitFor(() => expect(getUnilateralExitState().tipHeight).toBe(100));
+    expect(getUnilateralExitState().plan?.phase).toBe('complete');
+    expect(loadPlan(wallet)).not.toBeNull();
+    expect(loadArchive(wallet)).toEqual([]);
+
+    await advanceNow();
+    expect(getUnilateralExitState().plan).toBeNull();
+    expect(loadArchive(wallet)).toEqual([expect.objectContaining({ id: 'c1', txids: ['replacement'], deliveredSat: 29_000 })]);
   });
 
   it('archives a finished plan it is handed', async () => {

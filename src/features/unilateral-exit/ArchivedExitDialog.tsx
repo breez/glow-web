@@ -27,8 +27,15 @@ export const ArchivedExitDialog: React.FC<{
   /** Reads the unspent exit fee. Absent means the backend for the exit's network. */
   chain?: ChainClient;
 }> = ({ exit, onClose, subtitle = 'Unilateral Exit', exitedLabel = 'Balance Exited', chain }) => {
-  const [shown, setShown] = useState({ destination: false, exitFeeAddress: false, txid: false });
+  const [shown, setShown] = useState({ destination: false, exitFeeAddress: false });
   const toggle = (field: keyof typeof shown) => setShown(current => ({ ...current, [field]: !current[field] }));
+  const [openTxids, setOpenTxids] = useState<ReadonlySet<string>>(new Set());
+  const toggleTxid = (txid: string) =>
+    setOpenTxids(current => {
+      const next = new Set(current);
+      if (!next.delete(txid)) next.add(txid);
+      return next;
+    });
 
   // Read live rather than kept: the leftover is the user's to move, and a figure
   // saved when the exit landed would still show it after they had.
@@ -63,7 +70,7 @@ export const ArchivedExitDialog: React.FC<{
             {exit.exitedSat !== undefined && (
               <PaymentInfoRow
                 label={exitedLabel}
-                value={<SatAmount sats={exit.exitedSat - (exit.recoverableFundsSat ?? 0)} />}
+                value={<SatAmount sats={Math.max(0, exit.exitedSat - (exit.recoverableFundsSat ?? 0))} />}
               />
             )}
             {!!exit.recoverableFundsSat && (
@@ -101,14 +108,17 @@ export const ArchivedExitDialog: React.FC<{
               onToggle={() => toggle('exitFeeAddress')}
             />
           )}
-          {/* What delivered the money: the sweep, or for a co-signed recovery its first transaction. */}
-          <CollapsibleCodeField
-            label="Transaction ID"
-            value={exit.id}
-            isVisible={shown.txid}
-            onToggle={() => toggle('txid')}
-            href={explorerTxUrl(exit.id)}
-          />
+          {/* Each transaction in a block that paid the destination. */}
+          {(exit.txids ?? [exit.id]).map(txid => (
+            <CollapsibleCodeField
+              key={txid}
+              label="Transaction ID"
+              value={txid}
+              isVisible={openTxids.has(txid)}
+              onToggle={() => toggleTxid(txid)}
+              href={explorerTxUrl(txid)}
+            />
+          ))}
         </div>
       </BottomSheetCard>
     </BottomSheetContainer>
