@@ -11,6 +11,8 @@ import { SatAmount } from '@/components/SatAmount';
 import { WalletProvider, useWalletConnection } from '@/contexts/WalletContext';
 import { builtExitFeeRecord, quoteFigures, quotedSweepFeeSat } from '@/features/unilateral-exit/quote';
 import { RecoverReviewStep } from '@/features/unilateral-exit/steps/RecoverReviewStep';
+import { FeeStep } from '@/features/unilateral-exit/steps/FeeStep';
+import type { FeeChoice } from '@/features/unilateral-exit/hooks/useUnilateralExitFlow';
 import { PendingExitStep, Receipt, Status } from '@/features/unilateral-exit/steps/FundStep';
 import { TrackerView } from '@/features/unilateral-exit/TrackerView';
 import { blocked, coin, locked, plan, ready, tx } from '@/features/unilateral-exit/testFixtures';
@@ -113,7 +115,13 @@ const Destination: React.FC = () => {
   );
 };
 
-/** Recover mode's fee step: each speed shows what its quote takes off the funds. */
+/** The fee step Glow ships, as the Recover Funds flow shows it. */
+const Fee: React.FC = () => {
+  const [choice, setChoice] = useState<FeeChoice>('medium');
+  return <FeeStep feeRates={FEE_RATES} feeChoice={choice} effectiveFeeRate={FEE_RATES[choice]} onSelect={setChoice} />;
+};
+
+/** The planned fee bump's step: each speed shows what its quote takes off the funds. */
 const FeeOptions: React.FC<{ rates: Record<FeeSpeed, number> }> = ({ rates }) => {
   const [speed, setSpeed] = useState<FeeSpeed>('medium');
   return (
@@ -188,7 +196,7 @@ export const sheetShots: Record<string, React.FC> = {
 
   '03-fee-cosigned': () => (
     <MockSheet back cta="Continue">
-      <FeeOptions rates={FEE_RATES} />
+      <Fee />
     </MockSheet>
   ),
 

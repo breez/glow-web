@@ -154,13 +154,14 @@
 
 <div class="wrap">
   <header>
-    <span class="eyebrow">Glow · proposal mock · Sep 28 2026 · updated Oct 9 2026</span>
+    <span class="eyebrow">Glow · Sep 28 2026 · updated Oct 12 2026</span>
     <h1>How Recover Funds and Unilateral Exit work together in Glow</h1>
-    <p class="lede">How the combined <span class="mono">recover_funds</span> API would look in Glow's current Unilateral Exit flow.</p>
+    <p class="lede">How Glow uses the combined <span class="mono">recover_funds</span> API in its Unilateral Exit flow.</p>
     <div class="refs">
       <a href="https://github.com/breez/glow-web/issues/503">glow-web#503</a>
+      <a href="https://github.com/breez/glow-web/pull/515">glow-web#515</a>
       <a href="https://github.com/breez/spark-sdk/issues/1161">spark-sdk#1161</a>
-      <span><a href="https://github.com/breez/spark-sdk/pull/1173">spark-sdk#1173</a> at <a class="mono" href="https://github.com/breez/spark-sdk/pull/1173/commits/52f925402bf4eee3027ef7206960ef3bdf564612">52f9254</a></span>
+      <span><a href="https://github.com/breez/spark-sdk/pull/1173">spark-sdk#1173</a> on main at <a class="mono" href="https://github.com/breez/spark-sdk/tree/3f7780bce2cdd278fb148a068a1d9d6bf09c3e13">3f7780b</a></span>
     </div>
   </header>
 
@@ -170,10 +171,10 @@
     <div class="section-head">
       <span class="eyebrow">For Jesse and Roei</span>
       <h2 id="api">API notes</h2>
-      <p>Questions that came up while building these screens, rechecked at 52f9254. None blocks the flow above.</p>
+      <p>Questions that came up while building these screens, rechecked at 3f7780b. None blocks the flow above.</p>
       <p>Resolved so far, the SDK:</p>
       <ul><li>checks funding before co-signing</li><li>routes watchtower-exited leaves to <code>Cooperative</code> under <code>Specific</code> and <code>All</code></li><li>uses one value throughout</li><li>reads a replaced recovery as done</li><li>leaves out of the quote a leaf whose recovery is in a block</li><li>in <code>recover_funds</code>, lists in <code>failed</code> a leaf it cannot build, and builds the rest</li><li>outside a sync, keeps sending chain requests after the chain service fails one</li><li>returns a co-signed recovery as <code>Unverified</code> when it did not see the output in a block</li><li>in <code>prepare_recover_funds</code>, checks a recorded recovery or sweep again until it is 6 blocks deep</li></ul>
-      <p class="pins">Current behaviour is <code>#1173</code>. Evidence line numbers are at <a href="https://github.com/breez/spark-sdk/pull/1173/commits/52f925402bf4eee3027ef7206960ef3bdf564612">52f9254</a>.</p>
+      <p class="pins">Current behaviour is <code>#1173</code>, merged into main. Evidence line numbers are at <a href="https://github.com/breez/spark-sdk/tree/3f7780bce2cdd278fb148a068a1d9d6bf09c3e13">3f7780b</a>, the commit on main that Glow vendors.</p>
     </div>
     <div class="notes">
       __NOTES__
@@ -181,7 +182,7 @@
   </section>
 
   <footer>
-    <p>Built with Glow's own components on branch <span class="mono">claude/recoverable-funds-api-84efc4</span> (glow-web), rendered at 402 × 874. Fee figures are illustrative: the stranded ones especially depend on the tree. Co-signed fees include the fee each leaf's watchtower transaction already took.</p>
+    <p>Built with Glow's own components on branch <span class="mono">feat/recoverable-funds</span> (glow-web), rendered at 402 × 874. Fee figures are illustrative: the stranded ones especially depend on the tree. Co-signed fees include the fee each leaf's watchtower transaction already took.</p>
     <p>Not shown: the recovery phrase prompt before a recovery that needs an exit fee (unchanged). Tap any screen to enlarge it.</p>
   </footer>
 </div>
