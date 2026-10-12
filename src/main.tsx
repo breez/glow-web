@@ -418,15 +418,6 @@ async function init() {
     await mountClaimTest(Number(claimTest) || 1500);
     return;
   }
-  // THROWAWAY: ?recovermock=<shot> mounts one screen of the Recover Funds mock.
-  const recoverMock = new URLSearchParams(window.location.search).get('recovermock');
-  if (recoverMock !== null) {
-    const { mountRecoverMock } = await import('@/mocks/recoverFunds');
-    await mountRecoverMock(recoverMock);
-    await hideSplash();
-    (window as unknown as { __recoverMockReady: boolean }).__recoverMockReady = true;
-    return;
-  }
   // Lockdown Mode leaves the WebView running but takes WebAssembly with it, so
   // startup would otherwise paint a working-looking welcome screen and fail at
   // the first SDK call. Bail out here with something actionable instead.
