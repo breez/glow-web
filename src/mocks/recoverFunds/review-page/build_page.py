@@ -20,7 +20,7 @@ EXIT_CASE = [
     ], [
         ('ux-13a-tracker-after-update', 'Running', 'today', '', ''),
         ('ux-13b2-wallet-update-needed', 'Wallet', 'today', '', ''),
-        ('ux-13b-update-needed', 'Paused', 'today', 'Update needed',
+        ('ux-13b-update-needed', 'Paused', 'new', 'Update needed',
          'The update recovers the moved funds as part of the unilateral exit. It usually runs by itself.'),
         ('ux-13c-wallet-landed', 'Wallet', 'today', '',
          'One BTC Transfer for the whole unilateral exit, the moved funds included.'),
