@@ -43,7 +43,7 @@ import {
   tx,
 } from './testFixtures';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CheckRecoverFundsRequest, RecoveryVerdict } from '@breeztech/breez-sdk-spark';
+import type { CheckRecoverFundsRequest, RecoveryVerdict, SkippedLeafReason } from '@breeztech/breez-sdk-spark';
 import type { ChainClient } from '@/services/chain';
 import { deriveFundingKey } from './funding';
 import { exitFeeRecordOf } from './quote';
@@ -353,34 +353,36 @@ describe('advanceUnilateralExit', () => {
     expect(broadcast).not.toHaveBeenCalled();
   });
 
-  it('waits on a diverged exit while the chain has yet to show where a leaf went, and tries again next pass', async () => {
-    const broadcast = vi.fn(async () => undefined);
-    const prepareRecoverFunds = vi.fn(async () =>
-      prepared({ leaves: [], skipped: [{ leafId: 'leaf-1', valueSats: 100_000, reason: { type: 'unverified' } }] }),
-    );
-    const driver = sdk({ checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: redo }), prepareRecoverFunds });
-    const first = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain({ broadcast }), driver, '02abc');
-    expect(first.plan.phase).toBe('redo');
-    expect(first.plan.needsSignIn).toBeUndefined();
-    await advanceUnilateralExit(first.plan, chain({ broadcast }), driver, '02abc');
-    expect(prepareRecoverFunds).toHaveBeenCalledTimes(2);
-    expect(broadcast).not.toHaveBeenCalled();
-  });
+  // The two cases below cover all four skip reasons, so moving any of them in
+  // or out of RETRY_LATER_REASONS fails one.
+  const skippedOnly = (reason: SkippedLeafReason) => prepared({ leaves: [], skipped: [{ leafId: 'leaf-1', valueSats: 100_000, reason }] });
 
-  it('finishes a diverged exit whose only leaves left cost more than they hold, leaving them to Recover Funds', async () => {
-    const driver = sdk({
-      checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: redo }),
-      prepareRecoverFunds: async () =>
-        prepared({
-          leaves: [],
-          skipped: [
-            { leafId: 'leaf-1', valueSats: 100_000, reason: { type: 'notRecoverable', message: 'stopped' } },
-          ],
-        }),
-    });
-    const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain(), driver, '02abc');
-    expect(next.phase).toBe('complete');
-  });
+  it.each([{ type: 'unverified' }, { type: 'fundsNotFound' }] satisfies SkippedLeafReason[])(
+    'waits on a diverged exit while the chain has yet to show where a leaf went ($type), and tries again next pass',
+    async reason => {
+      const broadcast = vi.fn(async () => undefined);
+      const prepareRecoverFunds = vi.fn(async () => skippedOnly(reason));
+      const driver = sdk({ checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: redo }), prepareRecoverFunds });
+      const first = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain({ broadcast }), driver, '02abc');
+      expect(first.plan.phase).toBe('redo');
+      expect(first.plan.needsSignIn).toBeUndefined();
+      await advanceUnilateralExit(first.plan, chain({ broadcast }), driver, '02abc');
+      expect(prepareRecoverFunds).toHaveBeenCalledTimes(2);
+      expect(broadcast).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([{ type: 'feeExceedsValue' }, { type: 'notRecoverable', message: 'stopped' }] satisfies SkippedLeafReason[])(
+    'finishes a diverged exit whose only leaves left cost too much or cannot be recovered ($type), leaving them to Recover Funds',
+    async reason => {
+      const driver = sdk({
+        checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: redo }),
+        prepareRecoverFunds: async () => skippedOnly(reason),
+      });
+      const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain(), driver, '02abc');
+      expect(next.phase).toBe('complete');
+    },
+  );
 
   it('rebuilds itself when the chain diverges, rather than waiting on the user', async () => {
     const driver = sdk({

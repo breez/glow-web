@@ -177,6 +177,52 @@ describe('the sheet once a recovery lands', () => {
   });
 });
 
+describe('updating an exit from the tracker', () => {
+  const diverged = plan([tx({ txid: 'a' })], { phase: 'redo' });
+  const waitingOnTap = plan([tx({ txid: 'a', status: { type: 'unverified' } })], { needsSignIn: true, redoCause: 'unverified' });
+
+  async function renderTracker(current: UnilateralExitPlan, continueError: string | null = null) {
+    flow.current = {
+      phase: 'tracker',
+      engine: { plan: current, pending: null, archive: [], tipHeight: 10, isAdvancing: false },
+      canGoBack: false,
+      back: vi.fn(),
+      rebuild: vi.fn(),
+      continueExit: vi.fn(),
+      isContinuing: false,
+      continueError,
+    } as unknown as UnilateralExitFlow;
+    render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
+    await waitForSheetOpen();
+  }
+
+  it.each([
+    ['a diverged exit', diverged],
+    ['a running exit whose update waits on the passkey', waitingOnTap],
+  ])('offers the update on %s, which continues it at its own fee', async (_, current) => {
+    await renderTracker(current);
+    fireEvent.click(screen.getByTestId('unilateral-exit-rebuild'));
+    expect(flow.current.continueExit).toHaveBeenCalled();
+    expect(screen.queryByTestId('unilateral-exit-rebuild-wizard')).not.toBeInTheDocument();
+  });
+
+  it('offers a different fee once the update failed', async () => {
+    await renderTracker(diverged, 'Please try again.');
+    fireEvent.click(screen.getByTestId('unilateral-exit-rebuild-wizard'));
+    expect(flow.current.rebuild).toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a running exit', plan([tx({ txid: 'a' })])],
+    ['a converted exit waiting on sign-in over no unread step', plan([tx({ txid: 'a' })], { needsRebuild: true, needsSignIn: true })],
+  ])('offers neither on %s', async (_, current) => {
+    await renderTracker(current, 'Please try again.');
+    expect(screen.getByTestId('unilateral-exit-tracker')).toBeInTheDocument();
+    expect(screen.queryByTestId('unilateral-exit-rebuild')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('unilateral-exit-rebuild-wizard')).not.toBeInTheDocument();
+  });
+});
+
 describe('the quote step', () => {
   it('names the tap that starts the exit when the quote needs no funding', async () => {
     const cta = await renderQuote(0);
