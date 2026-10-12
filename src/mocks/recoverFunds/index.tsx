@@ -13,7 +13,7 @@ export const SHOT_IDS = [
   '06-wallet-after-cosigned', '07-review-stranded', '07b-review-no-exit-fee', '07c-running-no-exit-fee',
   '08-pending-owed', '09-pending-funded', '10-tracker-stranded', '11-archived-dialog', '12-review-mixed',
   '13-wallet-after-split', '14-review-error', '15-fee-nothing-worth', '17-tracker-bump', '18-bump-fee',
-  '19-bump-review', 'ux-13a-tracker-after-update', 'ux-13b-update-needed', 'ux-13b2-wallet-update-needed',
+  '19-bump-review', 'ux-13a-tracker-after-update', 'ux-13b-update-needed', 'ux-13b2-wallet-update-needed', 'ux-13b3-updating', 'ux-13b4-update-error',
   'ux-13c-wallet-landed', 'ux-13d-archived-details',
 ];
 

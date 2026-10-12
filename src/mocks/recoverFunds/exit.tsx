@@ -13,6 +13,8 @@ import { quotedSweepFeeSat, willReceiveSat } from '@/features/unilateral-exit/qu
 import { blocked, confirmed, locked, plan, prepared, ready, sdk as exitSdk, tx } from '@/features/unilateral-exit/testFixtures';
 import { BALANCE_SATS, DESTINATION, DEV_EXIT, EXIT_FEE_ADDRESS, FEE_RATES, MOVED, NETWORK } from './fixtures';
 import { COOPERATIVE, historyPayments, mockChain, seedArchive, seedPlan, type WalletScene } from './wallet';
+import { MockSheet } from './sheet';
+import { RedoActions, TrackerView } from '@/features/unilateral-exit/TrackerView';
 
 const noop = () => {};
 
@@ -143,9 +145,22 @@ const movedExit: ArchivedExit = {
 
 const ExitPage: React.FC = () => <UnilateralExitPage network={NETWORK} onBack={noop} onFinished={noop} />;
 
+/** The paused tracker mid-tap, rendered straight from its props: the real tap would need a passkey. Read a block
+ * before the first refund matures, so its status reads as 13b's does. */
+const PausedTracker: React.FC<{ isContinuing?: boolean; continueError?: string }> = ({ isContinuing = false, continueError }) => (
+  <MockSheet
+    title="Unilateral Exit"
+    footer={<RedoActions onContinue={noop} onRebuild={noop} isContinuing={isContinuing} continueError={continueError ?? null} />}
+  >
+    <TrackerView plan={{ ...movedBeforePlan, phase: 'redo' }} tipHeight={OWN_NODES_AT + MOVED_REFUND_CSV_BLOCKS - 1} isAdvancing={false} onRebuild={noop} continueError={continueError} />
+  </MockSheet>
+);
+
 export const exitShots: Record<string, React.FC> = {
   'ux-13a-tracker-after-update': ExitPage,
   'ux-13b-update-needed': ExitPage,
+  'ux-13b3-updating': () => <PausedTracker isContinuing />,
+  'ux-13b4-update-error': () => <PausedTracker continueError="Insufficient CPFP funding: need at least 4870 sats" />,
   'ux-13d-archived-details': () => <ArchivedExitDialog exit={movedExit} onClose={noop} chain={mockChain()} />,
 };
 
@@ -178,6 +193,8 @@ export const exitScenes: Record<string, WalletScene> = {
   'ux-13b-update-needed': movedRedo,
   // The redo card makes 13b's sheet tall enough to cover the row, so the row gets its own shot.
   'ux-13b2-wallet-update-needed': movedRedo,
+  'ux-13b3-updating': movedRedo,
+  'ux-13b4-update-error': movedRedo,
   'ux-13c-wallet-landed': movedLanded,
   'ux-13d-archived-details': movedLanded,
 };

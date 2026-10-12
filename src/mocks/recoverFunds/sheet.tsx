@@ -49,14 +49,16 @@ const WithWallet: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   useWalletConnection().sdk ? <>{children}</> : <WalletProvider client={stubSdk} isConnected>{children}</WalletProvider>;
 
 /** UnilateralExitPage's frame: header, the 62dvh scroller, and the CTA row outside it. */
-const MockSheet: React.FC<{
+export const MockSheet: React.FC<{
   title?: string;
   back?: boolean;
   /** The destination step's quick actions sit 16pt above the CTA, every other step 24pt. */
   destination?: boolean;
   cta?: string;
+  /** An action bar of the step's own, in place of `cta`. */
+  footer?: React.ReactNode;
   children: React.ReactNode;
-}> = ({ title = 'Recover Funds', back = false, destination = false, cta, children }) => (
+}> = ({ title = 'Recover Funds', back = false, destination = false, cta, footer, children }) => (
   <WithWallet>
     <BottomSheetContainer isOpen onClose={noop} zIndex={70} showBackdrop>
       <BottomSheetCard>
@@ -67,6 +69,7 @@ const MockSheet: React.FC<{
         >
           {children}
         </div>
+        {footer && <div className="pt-6">{footer}</div>}
         {cta && (
           <div className={destination ? 'pt-4' : 'pt-6'}>
             <PrimaryButton onClick={noop} className="w-full">
