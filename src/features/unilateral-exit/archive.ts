@@ -1,6 +1,6 @@
 import { logger, LogCategory } from '@/services/logger';
 import { exitFeeRecordOf, isCooperative, paidOut } from './quote';
-import type { ExitMode, UnilateralExitPlan, WalletKey } from './driver';
+import type { ExitMode, NamedLeaf, UnilateralExitPlan, WalletKey } from './driver';
 
 /**
  * A finished exit, kept once its plan slot is handed to the next one. The plan
@@ -35,6 +35,8 @@ export interface ArchivedExit {
    * Absent on records from before the ledger, whose `id` stands in.
    */
   txids?: string[];
+  /** Leaves the exit named that a quote found unrecoverable, kept so the Recoverable Funds row still leaves them out. */
+  droppedLeaves?: NamedLeaf[];
 }
 
 const key = ({ identityPubkey, network }: WalletKey): string =>
@@ -48,6 +50,10 @@ export const recoveryTxid = (plan: UnilateralExitPlan): string | null =>
   plan.exit.transactions.find(tx => tx.kind === 'sweep')?.txid ??
   plan.exit.transactions.find(isCooperative)?.txid ??
   null;
+
+/** Leaves a plan or record dropped as unrecoverable, which Glow's fresh quotes leave out. */
+export const droppedLeafIds = (records: { droppedLeaves?: NamedLeaf[] }[]): Set<string> =>
+  new Set(records.flatMap(record => record.droppedLeaves ?? []).map(leaf => leaf.leafId));
 
 export function loadArchive(wallet: WalletKey): ArchivedExit[] {
   const raw = localStorage.getItem(key(wallet));
@@ -97,6 +103,7 @@ export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): Archiv
       exitFeeAddress,
       mode: plan.mode,
       txids,
+      droppedLeaves: plan.droppedLeaves?.length ? plan.droppedLeaves : undefined,
     },
     ...existing,
   ];

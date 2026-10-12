@@ -19,9 +19,12 @@ Funds, which the wallet list offers as its own row.
 **Co-signed recoveries.** A leaf the operators moved on-chain comes back as a
 cooperative recovery: one transaction they co-sign, paying its fee from the
 leaf, so it needs no funding. It goes out when `ready`, and also while
-`unverified`, since the network refuses it if its funds already moved. One the
-operators did not co-sign is listed in `failed`, outside the transactions, and
-stays in the wallet's recoverable funds.
+`unverified`, since the network refuses it if its funds already moved. One
+still `unverified` six blocks on may never confirm, so this app prepares it
+again by name at the same rate, holding its leaf meanwhile, and lets the leaf
+go back to the recoverable funds after about a week. One the operators did not
+co-sign is listed in `failed`, outside the transactions, and stays in the
+wallet's recoverable funds.
 
 ## The flow
 

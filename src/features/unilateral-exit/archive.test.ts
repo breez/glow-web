@@ -1,4 +1,4 @@
-import { archiveExit, loadArchive } from './archive';
+import { archiveExit, droppedLeafIds, loadArchive } from './archive';
 import type { Landing } from './driver';
 import { deriveFundingKey } from './funding';
 import { confirmed, plan, tx } from './testFixtures';
@@ -97,6 +97,13 @@ describe('archiveExit', () => {
     archiveExit(wallet, plan([tx({ txid: 'node-a' })], { phase: 'complete' }));
 
     expect(loadArchive(wallet)).toEqual([]);
+  });
+
+  it('keeps the leaves the exit dropped as unrecoverable, and no empty list', () => {
+    const droppedLeaves = [{ leafId: 'd-1', valueSats: 5_000 }];
+    archiveExit(wallet, { ...finished('sweep-a', 50_000), droppedLeaves });
+    archiveExit(wallet, { ...finished('sweep-b', 70_000), droppedLeaves: [] });
+    expect(loadArchive(wallet).map(entry => entry.droppedLeaves)).toEqual([undefined, droppedLeaves]);
   });
 
   it('keeps whether it was a recovery, and nothing for an exit the user started', () => {
@@ -261,5 +268,12 @@ describe('archiveExit', () => {
     archiveExit(wallet, finished('sweep-a', 50_000));
 
     expect(loadArchive({ ...wallet, network: 'mainnet' })).toEqual([]);
+  });
+});
+
+describe('droppedLeafIds', () => {
+  it('collects the dropped leaves of every record it is handed', () => {
+    const records = [{ droppedLeaves: [{ leafId: 'd-1', valueSats: 5 }] }, {}, { droppedLeaves: [{ leafId: 'd-2', valueSats: 7 }] }];
+    expect(droppedLeafIds(records)).toEqual(new Set(['d-1', 'd-2']));
   });
 });

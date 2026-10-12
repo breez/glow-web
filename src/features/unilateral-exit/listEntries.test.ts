@@ -132,7 +132,7 @@ describe('a kept co-signed recovery in the wallet list', () => {
     ]);
   });
 
-  it('gives back a leaf the network refused while unverified, for a new recovery to find', () => {
+  it('keeps a leaf the network refused while unverified out of the Recoverable Funds row, since Glow builds it again', () => {
     const refused = {
       ...recovery,
       refusals: { c2: 'bad-txns-inputs-missingorspent' },
@@ -141,7 +141,7 @@ describe('a kept co-signed recovery in the wallet list', () => {
         transactions: [recovery.exit.transactions[0], { ...recovery.exit.transactions[1], status: { type: 'unverified' as const } }],
       },
     };
-    expect(entries({ pending: null, recoveries: [refused] }, 48_200)[1]).toMatchObject({ kind: 'recoverable', amountSat: 18_200 });
+    expect(entries({ pending: null, recoveries: [refused] }, 48_200).map(r => r.kind)).toEqual(['recovery']);
   });
 
   it('is found by the id of its row', () => {
@@ -211,6 +211,22 @@ describe('recoverable funds beside an exit under way', () => {
     });
     // 420 000 + 30 000 + 5 000 are on their way; the failed 7 000 is not.
     expect(recoverable({ plan: mixed }, 462_000)).toMatchObject({ amountSat: 7_000 });
+  });
+
+  it('leaves out what the exit, a kept recovery or a finished exit dropped as unrecoverable, counting each leaf once', () => {
+    const dropped = (leafId: string, valueSats: number) => ({ leafId, valueSats });
+    const kept = plan([tx({ txid: 'c', kind: 'cooperative', nodeId: 'c-9', status: ready })], {
+      mode: 'recover',
+      droppedLeaves: [dropped('d-1', 5_000), dropped('d-2', 3_000)],
+      exit: { leaves: [{ leafId: 'c-9', valueSats: 10_000, method: 'cooperative' }] },
+    });
+    const state = {
+      plan: running({ droppedLeaves: [dropped('d-1', 5_000)] }),
+      recoveries: [kept],
+      archive: [landed({ droppedLeaves: [dropped('d-3', 2_000)] })],
+    };
+    // 420 000 on its way, 10 000 kept, and 10 000 dropped.
+    expect(recoverable(state, 441_000)).toMatchObject({ amountSat: 1_000 });
   });
 
   it('counts a leaf both the exit and a kept recovery hold once', () => {

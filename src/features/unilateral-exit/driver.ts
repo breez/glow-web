@@ -113,6 +113,19 @@ export interface UnilateralExitPlan {
   /** The tip of Glow's last rebuild over an Unverified step: once a block, so a failing chain service is not asked every pass. */
   unverifiedRebuiltAt?: number;
   /**
+   * The tip at which a checked pass first found a co-signed recovery stuck
+   * unverified, which Glow prepares again by itself (`retryDue`). Cleared once
+   * none is left.
+   */
+  retrySince?: number;
+  /** The tip of the last of those retries. */
+  retriedAt?: number;
+  /**
+   * Leaves the exit named that a quote then found unrecoverable. Hidden from
+   * the Recoverable Funds row by ID, and left out of Glow's fresh quotes.
+   */
+  droppedLeaves?: NamedLeaf[];
+  /**
    * Why an active exit asks for the update tap: a step the SDK could not read,
    * which only a rebuild settles, and that rebuild needs the passkey. It asks
    * only while `needsSignIn` is set too (`awaitsUpdate`).
@@ -143,6 +156,9 @@ export interface PlanMeta {
   exitFeeAddress?: string;
   namedLeaves?: NamedLeaf[];
   landed?: Landing[];
+  droppedLeaves?: NamedLeaf[];
+  retrySince?: number;
+  retriedAt?: number;
   recoverableFundsSat?: number;
   mode?: ExitMode;
 }
@@ -442,6 +458,51 @@ export type ExitSdk = Pick<
 export const isSendable = (tx: RecoveryTransaction): boolean =>
   tx.status.type === 'ready' || (isCooperative(tx) && tx.status.type === 'unverified');
 
+/** A co-signed recovery whose input is not in a block. It may never be, so Glow prepares it again. */
+const isUnverifiedCosigned = (tx: RecoveryTransaction): boolean => isCooperative(tx) && tx.status.type === 'unverified';
+
+/** The leaves Glow prepares again by itself. */
+const retryTargetsOf = (plan: UnilateralExitPlan): string[] =>
+  plan.exit.transactions.flatMap(tx => (isUnverifiedCosigned(tx) && tx.nodeId ? [tx.nodeId] : []));
+
+const RETRY_BLOCKS = 6;
+const RETRY_MAX_BLOCKS = 144;
+/** About a week. */
+const RELEASE_BLOCKS = 1_008;
+
+/**
+ * Six blocks after the clock starts, then at doubling gaps up to a day, so a
+ * recovery that never moves costs one prepare a day.
+ */
+export function retryDue(plan: UnilateralExitPlan, tipHeight: number): boolean {
+  const since = plan.retrySince;
+  if (since === undefined) return false;
+  const last = Math.max(since, plan.retriedAt ?? since);
+  const gap = Math.min(RETRY_MAX_BLOCKS, Math.max(RETRY_BLOCKS, last - since));
+  return tipHeight - last >= gap;
+}
+
+/** What is still stuck after about a week is let go, so the exit can finish and the leaf shows as Recoverable Funds again. */
+export const releaseDue = (plan: UnilateralExitPlan, tipHeight: number): boolean =>
+  plan.retrySince !== undefined && tipHeight - plan.retrySince >= RELEASE_BLOCKS;
+
+/** Starts the clock on the first checked pass that finds a recovery stuck, and stops it once none is. */
+function paceRetry(plan: UnilateralExitPlan, tipHeight: number): UnilateralExitPlan {
+  if (retryTargetsOf(plan).length > 0) return plan.retrySince === undefined ? { ...plan, retrySince: tipHeight } : plan;
+  if (plan.retrySince === undefined && plan.retriedAt === undefined) return plan;
+  return { ...plan, retrySince: undefined, retriedAt: undefined };
+}
+
+/**
+ * Nothing can move but through a retry: every transaction confirmed except
+ * co-signed recoveries stuck unverified. The engine polls less often then.
+ */
+export const isStalled = (plan: UnilateralExitPlan): boolean =>
+  plan.phase === 'active' &&
+  !hasWaitingLanding(plan) &&
+  plan.exit.transactions.some(isUnverifiedCosigned) &&
+  plan.exit.transactions.every(tx => tx.status.type === 'confirmed' || isUnverifiedCosigned(tx));
+
 export { destinationAddressOf } from '@/utils/destinationAddress';
 
 /** What a build said it needs: the sdk's error reaches the page only as its message. */
@@ -611,17 +672,13 @@ export const quoteNamed = (
   );
 
 /**
- * The leaves of a kept co-signed recovery that it is moving. One the network
- * refused while still unverified is not held: its funds may sit elsewhere, and
- * a new quote finds them again.
+ * The leaves of a kept co-signed recovery that it is moving, refused or not.
+ * Glow builds a stuck recovery again instead of letting its leaves go, so
+ * their amount never also shows as Recoverable Funds.
  */
 export function heldRecoveryLeaves(recovery: UnilateralExitPlan): RecoverFundsLeaf[] {
   if (recovery.phase === 'complete') return [];
-  const held = new Set(
-    recovery.exit.transactions
-      .filter(tx => isCooperative(tx) && (tx.status.type !== 'unverified' || !recovery.refusals[tx.txid]))
-      .map(tx => tx.nodeId),
-  );
+  const held = new Set(recovery.exit.transactions.filter(isCooperative).map(tx => tx.nodeId));
   return recovery.exit.leaves.filter(leaf => held.has(leaf.leafId));
 }
 
@@ -738,8 +795,9 @@ export type BuildMeta = Pick<PlanMeta, 'network' | 'fundingAddressIndex' | 'mode
 
 /**
  * The plan a build of `quote` makes. A rebuild of `resuming` carries over the
- * leaves it names, its ledger and its fee floor; a first build records which
- * part of it was already outside the balance.
+ * leaves it names, its ledger, the leaves it dropped and its fee floor; a
+ * first build records which part of it was already outside the balance. The
+ * retry clock carries too: a rebuild hands back the same stuck recovery.
  */
 export function planFromBuild(
   quote: PrepareRecoverFundsResponse,
@@ -756,6 +814,9 @@ export function planFromBuild(
       ? stillNamed(resuming, quote)
       : quote.leaves.map(({ leafId, valueSats }) => ({ leafId, valueSats })),
     landed: resuming ? withLanded(resuming, quote) : undefined,
+    droppedLeaves: resuming?.droppedLeaves,
+    retrySince: resuming?.retrySince,
+    retriedAt: resuming?.retriedAt,
     recoverableFundsSat: resuming ? resuming.recoverableFundsSat : cooperativeValueSat(built) || undefined,
   });
 }
@@ -1023,6 +1084,116 @@ async function rebuildUnverified(
   }
 }
 
+/** What a co-signed recovery takes off its leaf, read off what it pays. */
+const cosignedCostSat = (valueSats: number, tx: RecoveryTransaction): number =>
+  valueSats - (outputTotalSat(tx.txHex) ?? valueSats);
+
+/**
+ * `plan` with each co-signed recovery of `built` in place of its leaf's
+ * unconfirmed one, or added, and each leaf in `gone` taken out with its
+ * unconfirmed recovery. `checkRecoverFunds` reads each co-signed recovery on
+ * its own, so a plan holding two builds' recoveries checks as one.
+ */
+function withCosigned(
+  plan: UnilateralExitPlan,
+  built: RecoverFundsResponse | null,
+  gone: Set<string>,
+  dropped: NamedLeaf[],
+): UnilateralExitPlan {
+  const { exit } = plan;
+  const values = new Map([...exit.leaves, ...(built?.leaves ?? [])].map(leaf => [leaf.leafId, leaf.valueSats]));
+  const costOf = (tx: RecoveryTransaction) => {
+    const valueSats = tx.nodeId ? values.get(tx.nodeId) : undefined;
+    return valueSats === undefined ? 0 : cosignedCostSat(valueSats, tx);
+  };
+  const fresh = new Map(
+    (built?.transactions ?? []).flatMap(tx => (isCooperative(tx) && tx.nodeId && !gone.has(tx.nodeId) ? [[tx.nodeId, tx] as const] : [])),
+  );
+
+  let costSat = 0;
+  const swapped = new Set<string>();
+  const transactions = exit.transactions.flatMap(tx => {
+    if (!isCooperative(tx) || tx.status.type === 'confirmed' || !tx.nodeId) return [tx];
+    if (gone.has(tx.nodeId)) {
+      costSat -= costOf(tx);
+      return [];
+    }
+    const next = fresh.get(tx.nodeId);
+    if (!next) return [tx];
+    swapped.add(tx.nodeId);
+    if (next.txid === tx.txid) return [tx];
+    costSat += costOf(next) - costOf(tx);
+    return [next];
+  });
+  for (const [leafId, tx] of fresh) {
+    if (swapped.has(leafId)) continue;
+    costSat += costOf(tx);
+    transactions.push(tx);
+  }
+
+  const held = new Set(exit.leaves.map(leaf => leaf.leafId));
+  const added = (built?.leaves ?? []).filter(leaf => fresh.has(leaf.leafId) && !held.has(leaf.leafId));
+  const removed = exit.leaves.filter(leaf => gone.has(leaf.leafId));
+  const sum = (leaves: RecoverFundsLeaf[]) => leaves.reduce((total, leaf) => total + leaf.valueSats, 0);
+  const droppedIds = new Set(dropped.map(leaf => leaf.leafId));
+  return {
+    ...plan,
+    quotedSweepFeeSat: Math.max(0, plan.quotedSweepFeeSat + costSat),
+    namedLeaves: plan.namedLeaves?.filter(leaf => !gone.has(leaf.leafId)),
+    droppedLeaves:
+      dropped.length > 0 ? [...(plan.droppedLeaves ?? []).filter(leaf => !droppedIds.has(leaf.leafId)), ...dropped] : plan.droppedLeaves,
+    exit: {
+      ...exit,
+      transactions,
+      leaves: [...exit.leaves.filter(leaf => !gone.has(leaf.leafId)), ...added],
+      failed: exit.failed.filter(failure => !gone.has(failure.leafId) && !fresh.has(failure.leafId)),
+      recoverableValueSats: exit.recoverableValueSats + sum(added) - sum(removed),
+    },
+  };
+}
+
+const completeIfEmpty = (plan: UnilateralExitPlan): UnilateralExitPlan =>
+  plan.exit.transactions.length > 0 ? plan : { ...plan, phase: 'complete' };
+
+/** Skips that take a leaf out of the exit. Only an unrecoverable one is hidden as well. */
+const LEAVES_EXIT_SKIPS = new Set(['notRecoverable', 'feeExceedsValue']);
+
+/**
+ * Prepares the stuck co-signed recoveries again by name, at the plan's own
+ * rate and destination. At that rate the SDK hands back the recovery it kept,
+ * so a new one means the funds turned up in another output. Needs no key, so
+ * it runs in the background on any wallet, kept recoveries included.
+ */
+async function retryCosigned(plan: UnilateralExitPlan, sdk: ExitSdk, tipHeight: number): Promise<UnilateralExitPlan> {
+  const paced = { ...plan, retriedAt: tipHeight };
+  const targets = retryTargetsOf(plan);
+  try {
+    const quote = await quoteLeaves(sdk, targets, plan);
+    const built = quote.leaves.length > 0 ? await buildFromQuote(sdk, quote, null) : null;
+    const listed = new Set([...quote.leaves, ...quote.skipped].map(leaf => leaf.leafId));
+    const landedIds = targets.filter(id => !listed.has(id));
+    const leaving = quote.skipped.filter(leaf => targets.includes(leaf.leafId) && LEAVES_EXIT_SKIPS.has(leaf.reason.type));
+    // A leaf too dear at the exit's rate stays on offer, for a recovery at a lower one.
+    const dropped = leaving.flatMap(({ leafId, valueSats, reason }) => (reason.type === 'notRecoverable' ? [{ leafId, valueSats }] : []));
+    const gone = new Set([...landedIds, ...leaving.map(leaf => leaf.leafId)]);
+    return completeIfEmpty(withCosigned({ ...paced, landed: withLanded(paced, quote, landedIds) }, built, gone, dropped));
+  } catch (e) {
+    // An empty build means the operators did not co-sign: the stuck one stays.
+    if (!(e instanceof EmptyRecoveryError)) {
+      logger.warn(LogCategory.SDK, `Failed to build a stuck co-signed recovery again: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    return paced;
+  }
+}
+
+/** Lets go of what is still stuck at the deadline. Not dropped, so it shows as Recoverable Funds again. */
+const releaseStuck = (plan: UnilateralExitPlan): UnilateralExitPlan =>
+  completeIfEmpty({
+    ...withCosigned(plan, null, new Set(retryTargetsOf(plan)), []),
+    retrySince: undefined,
+    retriedAt: undefined,
+  });
+
 /**
  * Builds a converted 0.26 exit again with this SDK. Best effort: until it
  * works, the converted set keeps running as it is, and one with nothing left
@@ -1060,7 +1231,7 @@ export async function advanceUnilateralExit(
   let checked = false;
   if (sdk) {
     try {
-      next = await checkExit(next, sdk);
+      next = paceRetry(await checkExit(next, sdk), tipHeight);
       checked = true;
     } catch (e) {
       // Not shown: the next pass tries again, and the log keeps the reason.
@@ -1068,6 +1239,7 @@ export async function advanceUnilateralExit(
       logger.warn(LogCategory.SDK, `Failed to read the exit back from the sdk: ${error}`);
     }
   }
+  const checkedExit = next.exit;
 
   if (next.phase === 'redo' && sdk && identityPubkey) {
     // The chain diverging is routine: the operators' watchtower publishes its
@@ -1097,12 +1269,20 @@ export async function advanceUnilateralExit(
     !next.needsSignIn &&
     next.phase === 'active' &&
     // A rebuild now would conflict with what is in the mempool at the same fee.
-    !next.exit.transactions.some(isSendable)
+    // A co-signed recovery does not: at that rate the SDK hands back the one it
+    // kept.
+    !next.exit.transactions.some(tx => isSendable(tx) && !isCooperative(tx))
   ) {
     if (next.needsRebuild) next = await rebuildConverted(next, sdk, identityPubkey);
     else if (hasUnverifiedStep(next) && next.unverifiedRebuiltAt !== tipHeight) {
       next = await rebuildUnverified(next, sdk, identityPubkey, tipHeight);
     }
+  }
+
+  // Skipped in a pass that rebuilt, which already prepared every leaf again.
+  if (checked && sdk && next.phase === 'active' && next.exit === checkedExit) {
+    if (releaseDue(next, tipHeight)) next = releaseStuck(next);
+    else if (retryDue(next, tipHeight)) next = await retryCosigned(next, sdk, tipHeight);
   }
 
   // Sent before the reads, so a failing chain service never holds a step back.

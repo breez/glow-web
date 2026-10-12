@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { PrepareRecoverFundsResponse, RecoverFundsLeaf, RecoverFundsResponse } from '@breeztech/breez-sdk-spark';
+import type { ArchivedExit } from '../archive';
 import type { ExitMode, ExitSdk, UnilateralExitPlan } from '../driver';
 import { checked, funding, MNEMONIC, plan, prepared, sdk, tx } from '../testFixtures';
 
@@ -24,7 +25,11 @@ vi.mock('../funding', async () => ({
   readWalletMnemonic: vi.fn(async () => 'never read'),
 }));
 // The exit the flow resumes, if any; the engine itself is not running here.
-const saved = vi.hoisted(() => ({ plan: null as UnilateralExitPlan | null, tipHeight: null as number | null }));
+const saved = vi.hoisted(() => ({
+  plan: null as UnilateralExitPlan | null,
+  tipHeight: null as number | null,
+  archive: [] as ArchivedExit[],
+}));
 vi.mock('./useUnilateralExitEngineLifecycle', () => ({
   useUnilateralExitEngineState: () => ({
     plan: saved.plan,
@@ -33,7 +38,7 @@ vi.mock('./useUnilateralExitEngineLifecycle', () => ({
     nothingToExit: false,
     isStarting: false,
     startError: null,
-    archive: [],
+    archive: saved.archive,
     recoveries: [],
     tipHeight: saved.tipHeight,
     isAdvancing: false,
@@ -189,12 +194,34 @@ describe('which leaves a quote takes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     saved.plan = null;
+    saved.archive = [];
   });
 
   it('takes every leaf for a fresh exit', async () => {
     const { prepareRecoverFunds, result } = await quoted(unfunded());
     expect(prepareRecoverFunds).toHaveBeenCalledWith(expect.objectContaining({ selection: { type: 'all' } }));
     expect(result.current.mode).toBeUndefined();
+  });
+
+  it('leaves out the leaves a finished exit dropped as unrecoverable', async () => {
+    saved.archive = [
+      { id: 'old', destination: 'bcrt1qdest', deliveredSat: 1, completedAt: 0, droppedLeaves: [{ leafId: 'd-1', valueSats: 5_000 }] },
+    ];
+    const prepareRecoverFunds = vi
+      .fn<ExitSdk['prepareRecoverFunds']>()
+      .mockResolvedValueOnce(
+        prepared({
+          leaves: [
+            { leafId: 'd-1', valueSats: 5_000, method: 'cooperative' },
+            { leafId: 'leaf-1', valueSats: 100_000, method: 'unilateral' },
+          ],
+        }),
+      )
+      .mockResolvedValue(unfunded());
+    await quoted(unfunded(), undefined, { prepareRecoverFunds });
+    expect(prepareRecoverFunds).toHaveBeenLastCalledWith(
+      expect.objectContaining({ selection: { type: 'specific', leafIds: ['leaf-1'] } }),
+    );
   });
 
   it("names a saved exit's leaves, the ones whose co-signing failed too", async () => {

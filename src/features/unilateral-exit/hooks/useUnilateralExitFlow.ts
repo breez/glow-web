@@ -11,7 +11,6 @@ import {
   buildFromQuote,
   destinationAddressOf,
   fundingInputsOf,
-  keptLeafIds,
   planFromBuild,
   quoteFresh,
   quoteLeaves,
@@ -37,6 +36,7 @@ import {
 } from '../quote';
 import {
   advanceNow,
+  excludedLeafIds,
   keepRecovery,
   setPendingExit,
   setUnilateralExitPlan,
@@ -175,7 +175,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
   );
   const chain = useMemo(() => createChainClient(network), [network]);
   const engine = useUnilateralExitEngineState();
-  const { plan, pending, recoveries, tipHeight } = engine;
+  const { plan, pending, recoveries, archive, tipHeight } = engine;
   // A saved record keeps what it is, whichever row opened the sheet.
   const mode = plan ? plan.mode : pending ? pending.mode : openedMode;
 
@@ -301,7 +301,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
       // A resumed exit names its leaves: a fresh selection can drop one part-way out.
       const prepared = plan
         ? await quoteNamed(wallet, plan, at)
-        : await quoteFresh(wallet, at, mode, keptLeafIds(recoveries));
+        : await quoteFresh(wallet, at, mode, excludedLeafIds({ recoveries, archive }));
       if (request !== quoteRequest.current) return;
       setQuote(prepared);
       setQuotedAt(Date.now());
@@ -313,7 +313,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
     } finally {
       if (request === quoteRequest.current) setIsQuoting(false);
     }
-  }, [wallet, destination, effectiveFeeRate, walletKey, plan, mode, recoveries]);
+  }, [wallet, destination, effectiveFeeRate, walletKey, plan, mode, recoveries, archive]);
 
   const submitFee = useCallback(async () => {
     setPhase('quote');

@@ -5,6 +5,7 @@ import {
   clearPendingExit,
   clearPlan,
   hasWaitingLanding,
+  isStalled,
   keptLeafIds,
   loadPendingExit,
   isPendingFunded,
@@ -15,7 +16,7 @@ import {
   saveRecoveries,
   startExit,
 } from './driver';
-import { archiveExit, loadArchive, recoveryTxid, type ArchivedExit } from './archive';
+import { archiveExit, droppedLeafIds, loadArchive, recoveryTxid, type ArchivedExit } from './archive';
 import type { FundingKey } from './funding';
 import type { ExitSdk, PendingExit, UnilateralExitPlan, WalletKey } from './driver';
 
@@ -44,7 +45,8 @@ export interface UnilateralExitEngineState {
   archive: ArchivedExit[];
   /**
    * Co-signed recoveries kept until they confirm, never in the plan slot. Each
-   * pass checks and rebroadcasts them, and archives one once it is done.
+   * pass checks and rebroadcasts them, builds a stuck one again, and archives
+   * one once it is done.
    */
   recoveries: UnilateralExitPlan[];
   tipHeight: number | null;
@@ -71,6 +73,7 @@ let wallet: WalletKey | null = null;
 let chain: ChainClient | null = null;
 let sdk: ExitSdk | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;
+let timerMs = 0;
 // Bumped whenever the wallet or its plan is replaced. A pass that started under
 // an older generation is for something no longer current, so it must not write.
 let generation = 0;
@@ -86,24 +89,34 @@ const emit = (next: Partial<UnilateralExitEngineState>): void => {
   listeners.forEach(listener => listener(state));
 };
 
-const startPolling = (): void => {
-  if (timer !== null || !wallet) return;
-  timer = setInterval(() => void advanceNow(), pollIntervalMs(wallet.network));
-};
-
 const stopPolling = (): void => {
   if (timer === null) return;
   clearInterval(timer);
   timer = null;
 };
 
+const startPolling = (ms: number): void => {
+  if (timer !== null && timerMs === ms) return;
+  stopPolling();
+  timerMs = ms;
+  timer = setInterval(() => void advanceNow(), ms);
+};
+
 /** A redo that needs the user's sign-in waits for the tracker's button, so it has no passes to run. */
 const planRuns = (plan: UnilateralExitPlan): boolean => plan.phase !== 'redo' || !plan.needsSignIn;
 
+/**
+ * While all that is left is co-signed recoveries stuck unverified, nothing
+ * moves between Glow's retries, which are blocks apart: polling then runs
+ * about once a block. Coming back to the app still runs a pass at once.
+ */
+const STALLED_POLL_FACTOR = 20;
+
 const syncPolling = (): void => {
-  const running = (state.plan !== null && planRuns(state.plan)) || state.pending !== null || state.recoveries.length > 0;
-  if (running) startPolling();
-  else stopPolling();
+  const plan = state.plan && planRuns(state.plan) ? state.plan : null;
+  if (!wallet || (!plan && !state.pending && state.recoveries.length === 0)) return stopPolling();
+  const stalled = !state.pending && [plan, ...state.recoveries].every(p => !p || isStalled(p));
+  startPolling(pollIntervalMs(wallet.network) * (stalled ? STALLED_POLL_FACTOR : 1));
 };
 
 /** getInfo counts a landed recovery's leaves as recoverable until a sync sees it in a block. */
@@ -126,6 +139,10 @@ function withRecovery(list: UnilateralExitPlan[], recovery: UnilateralExitPlan):
 }
 
 export const getUnilateralExitState = (): UnilateralExitEngineState => state;
+
+/** What a fresh quote leaves out: the leaves kept recoveries hold, and those Glow dropped as unrecoverable. */
+export const excludedLeafIds = ({ recoveries, archive }: Pick<UnilateralExitEngineState, 'recoveries' | 'archive'>): Set<string> =>
+  new Set([...keptLeafIds(recoveries), ...droppedLeafIds([...recoveries, ...archive])]);
 
 const isRunningFor = (target: WalletKey): boolean =>
   wallet?.identityPubkey === target.identityPubkey && wallet.network === target.network;
@@ -165,8 +182,7 @@ export async function startPendingExit(): Promise<void> {
   emit({ isStarting: true, startError: null, nothingToExit: false });
   try {
     const key = heldKey?.address === pending.fundingAddress ? heldKey : undefined;
-    const kept = keptLeafIds(state.recoveries);
-    const outcome = await startExit(pending, confirmed, sdk, passWallet.identityPubkey, key, kept);
+    const outcome = await startExit(pending, confirmed, sdk, passWallet.identityPubkey, key, excludedLeafIds(state));
     if (generation !== passGeneration) return;
     switch (outcome.type) {
       case 'started':
@@ -243,8 +259,8 @@ async function advancePlan(): Promise<void> {
 
 /**
  * Checks and rebroadcasts each kept co-signed recovery, and archives the ones
- * done. They need no rebuild: a recovery that never lands leaves its leaves to
- * the next quote (`keptLeafIds`).
+ * done. A stuck one is built again by the pass itself, which needs no key, so
+ * its leaves stay held (`keptLeafIds`) rather than going to the next quote.
  */
 async function advanceRecoveries(): Promise<void> {
   const client = chain;

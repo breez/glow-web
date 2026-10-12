@@ -132,21 +132,28 @@ function planLeavesOutside(plan: UnilateralExitPlan): Map<string, number> {
   return outside;
 }
 
-/** What getInfo's recoverable total holds that the plan and the kept recoveries are already moving. */
-function inFlightSat({ plan, recoveries }: UnilateralExitEngineState): number {
-  const moving = plan ? planLeavesOutside(plan) : new Map<string, number>();
-  for (const leaf of inFlight(recoveries).flatMap(heldRecoveryLeaves)) moving.set(leaf.leafId, leaf.valueSats);
-  return [...moving.values()].reduce((sum, sat) => sum + sat, 0);
+/**
+ * What getInfo's recoverable total holds that is accounted for already: what
+ * the plan and the kept recoveries are moving, and the leaves any of them or a
+ * finished exit dropped as unrecoverable, which getInfo goes on counting.
+ */
+function accountedSat({ plan, recoveries, archive }: UnilateralExitEngineState): number {
+  const accounted = plan ? planLeavesOutside(plan) : new Map<string, number>();
+  for (const leaf of inFlight(recoveries).flatMap(heldRecoveryLeaves)) accounted.set(leaf.leafId, leaf.valueSats);
+  for (const record of [plan, ...recoveries, ...archive]) {
+    for (const leaf of record?.droppedLeaves ?? []) accounted.set(leaf.leafId, leaf.valueSats);
+  }
+  return [...accounted.values()].reduce((sum, sat) => sum + sat, 0);
 }
 
 /**
- * What getInfo's `recoverableSat` holds beyond what is already on its way. A
+ * What getInfo's `recoverableSat` holds beyond what is accounted for. A
  * pending exit's start takes every leaf in, so the row waits for it. Beside a
  * running exit the row has nothing to offer yet, so it asks for no tap.
  */
 const recoverableEntry = (state: UnilateralExitEngineState, recoverableSat: number): UnilateralExitEntry | null => {
   if (state.pending) return null;
-  const leftSat = recoverableSat - inFlightSat(state);
+  const leftSat = recoverableSat - accountedSat(state);
   if (leftSat <= 0) return null;
   const canRecover = !state.plan;
   return {

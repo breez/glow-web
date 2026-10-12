@@ -360,6 +360,59 @@ describe('kept co-signed recoveries', () => {
     expect(loadRecoveries(wallet).map(r => r.exit.transactions[0].txid)).toEqual(['c1-again']);
   });
 
+  describe('stuck unverified', () => {
+    // Due a retry on the first pass, at tip 100, unless `over` says otherwise.
+    const stuck = (over: Partial<UnilateralExitPlan> = {}) =>
+      plan([tx({ txid: 'c-old', kind: 'cooperative', nodeId: 'c-1', txHex: 'hex-c-old', status: { type: 'unverified' } })], {
+        network: 'regtest',
+        mode: 'recover',
+        retrySince: 90,
+        ...over,
+        exit: { leaves: [{ leafId: 'c-1', valueSats: 30_000, method: 'cooperative' }] },
+      });
+    const quoting = (over: Parameters<typeof prepared>[0]) => async () =>
+      prepared({ leaves: [{ leafId: 'c-1', valueSats: 30_000, method: 'cooperative' }], funding: undefined, ...over });
+
+    it("replaces a stuck kept recovery's transaction with the one a fresh build makes, and saves it", async () => {
+      const recoverFunds = async () =>
+        checked([{ txid: 'c-new', kind: 'cooperative', nodeId: 'c-1', txHex: 'hex-c-new', status: { type: 'unverified' } }], {
+          leaves: [{ leafId: 'c-1', valueSats: 30_000, method: 'cooperative' }],
+        });
+      saveRecoveries(wallet, [stuck()]);
+      startUnilateralExitEngine(wallet, chain, sdk({ prepareRecoverFunds: quoting({}), recoverFunds }));
+
+      await vi.waitFor(() => expect(getUnilateralExitState().recoveries[0]?.exit.transactions[0].txid).toBe('c-new'));
+      expect(loadRecoveries(wallet)[0].exit.transactions[0].txid).toBe('c-new');
+    });
+
+    it('drops a kept recovery whose only leaf a quote finds unrecoverable, with no archive record', async () => {
+      const skipped = [{ leafId: 'c-1', valueSats: 30_000, reason: { type: 'notRecoverable' as const, message: 'paid elsewhere' } }];
+      saveRecoveries(wallet, [stuck()]);
+      startUnilateralExitEngine(wallet, chain, sdk({ prepareRecoverFunds: quoting({ leaves: [], skipped }) }));
+
+      await vi.waitFor(() => expect(getUnilateralExitState().recoveries).toEqual([]));
+      expect(loadRecoveries(wallet)).toEqual([]);
+      expect(loadArchive(wallet)).toEqual([]);
+    });
+
+    it('are polled about once a block, and at the usual pace again once something can move', async () => {
+      const setInterval = vi.spyOn(globalThis, 'setInterval');
+      const lastInterval = () => setInterval.mock.lastCall?.[1];
+      try {
+        saveRecoveries(wallet, [stuck({ retrySince: undefined })]);
+        startUnilateralExitEngine(wallet, chain, sdk());
+        await settle();
+        expect(getUnilateralExitState().recoveries[0].retrySince).toBe(100);
+        expect(lastInterval()).toBe(100_000);
+
+        keepRecovery(wallet, cosigned('c2', 'c-2'));
+        expect(lastInterval()).toBe(5_000);
+      } finally {
+        setInterval.mockRestore();
+      }
+    });
+  });
+
   it('keep their leaves out of an exit started beside them', async () => {
     localStorage.setItem('walletMnemonic', MNEMONIC);
     const prepareRecoverFunds = vi
@@ -375,6 +428,43 @@ describe('kept co-signed recoveries', () => {
       .mockResolvedValueOnce(prepared());
     const driver = sdk({ prepareRecoverFunds, recoverFunds: async () => checked([{ txid: 'fan', kind: 'fanOut' }]) });
     saveRecoveries(wallet, [cosigned('c1')]);
+    startUnilateralExitEngine(wallet, { ...chain, addressUtxos: async () => [coin(5_898)] }, driver);
+    setPendingExit(wallet, pendingExit());
+    await vi.waitFor(() => expect(getUnilateralExitState().pendingCoins).toHaveLength(1));
+
+    await startPendingExit();
+    expect(prepareRecoverFunds).toHaveBeenLastCalledWith(
+      expect.objectContaining({ selection: { type: 'specific', leafIds: ['leaf-1'] } }),
+    );
+  });
+});
+
+describe('a fresh quote beside finished exits', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    stopUnilateralExitEngine();
+    localStorage.setItem('walletMnemonic', MNEMONIC);
+  });
+
+  afterEach(() => {
+    stopUnilateralExitEngine();
+  });
+
+  it('leaves out the leaves a finished exit dropped as unrecoverable', async () => {
+    const finished = { id: 'old', destination: 'bcrt1qdest', deliveredSat: 1, completedAt: 0, droppedLeaves: [{ leafId: 'd-1', valueSats: 5_000 }] };
+    localStorage.setItem(`unilateral-exit-archive:${wallet.identityPubkey.slice(0, 16)}:${wallet.network}`, JSON.stringify([finished]));
+    const prepareRecoverFunds = vi
+      .fn()
+      .mockResolvedValueOnce(
+        prepared({
+          leaves: [
+            { leafId: 'd-1', valueSats: 5_000, method: 'cooperative' },
+            { leafId: 'leaf-1', valueSats: 100_000, method: 'unilateral' },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(prepared());
+    const driver = sdk({ prepareRecoverFunds, recoverFunds: async () => checked([{ txid: 'fan', kind: 'fanOut' }]) });
     startUnilateralExitEngine(wallet, { ...chain, addressUtxos: async () => [coin(5_898)] }, driver);
     setPendingExit(wallet, pendingExit());
     await vi.waitFor(() => expect(getUnilateralExitState().pendingCoins).toHaveLength(1));
