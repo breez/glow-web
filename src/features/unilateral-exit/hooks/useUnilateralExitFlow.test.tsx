@@ -12,13 +12,19 @@ vi.mock('@/contexts/WalletContext', () => ({
   useWalletInfo: () => ({ identityPubkey: '02abc', balanceSats: 100_000 }),
 }));
 const chainTip = vi.hoisted(() => vi.fn(async () => 812));
+const addressUtxos = vi.hoisted(() => vi.fn(async (): Promise<ChainUtxo[]> => []));
 vi.mock('@/services/chain', () => ({
   createChainClient: () => ({
     feeRates: async () => ({ slow: 1, medium: 2, fast: 3 }),
-    addressUtxos: async () => [],
+    addressUtxos,
     tipHeight: chainTip,
   }),
 }));
+// Still the real signer: the spy only records which key it was made from.
+vi.mock('@breeztech/breez-sdk-spark', async importOriginal => {
+  const actual = await importOriginal<typeof import('@breeztech/breez-sdk-spark')>();
+  return { ...actual, singleKeyCpfpSigner: vi.fn(actual.singleKeyCpfpSigner) };
+});
 vi.mock('@/services/appLock', () => ({ holdIdleLock: () => () => {} }));
 vi.mock('../exitState', () => ({ loadExitState: async () => null, restoreExitState: async () => {} }));
 vi.mock('../funding', async () => ({
@@ -55,9 +61,10 @@ vi.mock('../engine', async () => ({
   setUnilateralExitPlan: vi.fn(),
 }));
 
+import { singleKeyCpfpSigner } from '@breeztech/breez-sdk-spark';
 import { useUnilateralExitFlow } from './useUnilateralExitFlow';
 import { advanceNow, keepRecovery, setPendingExit, setUnilateralExitPlan } from '../engine';
-import { readWalletMnemonic } from '../funding';
+import { deriveFundingKey, readWalletMnemonic } from '../funding';
 
 const unfunded = () => prepared({ funding: undefined, cpfpFeeSats: 0 });
 
@@ -634,6 +641,72 @@ describe('a leaf the exit left out, waiting on more exit fee', () => {
 
     expect(readWalletMnemonic).not.toHaveBeenCalled();
     expect(recoverFunds).not.toHaveBeenCalled();
+  });
+});
+
+describe('rebuilding an exit under way at a higher fee that needs more exit fee', () => {
+  // Not the first index, so a key derived at the wrong one shows.
+  const key = deriveFundingKey(MNEMONIC, 'regtest', 2);
+  const stored = { type: 'p2wpkh' as const, txid: 'fund', vout: 0, valueSats: 6_000, pubkey: key.publicKeyHex };
+  const higher = prepared({ funding: funding(9_000) });
+  const short = new Error('Insufficient CPFP funding: need at least 9500 sats');
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    saved.plan = plan([tx({ txid: 'stuck' })], {
+      network: 'regtest',
+      feeRateSatPerVbyte: 1,
+      fundingAddressIndex: 2,
+      exit: { fundingInputs: [stored] },
+    });
+  });
+
+  afterEach(() => addressUtxos.mockReset());
+
+  /** Rebuilds at 2 sat/vB through the phrase, whose first build tries the exit's own funding and falls short. */
+  async function fallsShort(recoverFunds = vi.fn<ExitSdk['recoverFunds']>(async () => Promise.reject(short))) {
+    wallet.current = sdk({ prepareRecoverFunds: async () => higher, recoverFunds });
+    const hook = renderHook(() => useUnilateralExitFlow('regtest'));
+    act(() => hook.result.current.rebuild());
+    await waitFor(() => expect(hook.result.current.fee.feeRates).not.toBeNull());
+    await act(() => hook.result.current.submitFee());
+    await act(() => hook.result.current.continueFromQuote());
+    vi.mocked(readWalletMnemonic).mockResolvedValueOnce(MNEMONIC);
+    await act(() => hook.result.current.unlock());
+    await waitFor(() => expect(hook.result.current.buildError).toBe(short.message));
+    return { ...hook, recoverFunds };
+  }
+
+  it('asks for the shortfall the build names, counting the funding the exit was built with', async () => {
+    const { result } = await fallsShort();
+
+    expect(result.current.phase).toBe('fund');
+    expect(result.current.funding).toMatchObject({
+      address: key.address,
+      isFunded: false,
+      topUp: { neededSat: 9_636, sentSat: 6_000, stillToSendSat: 3_636 },
+    });
+    expect(setUnilateralExitPlan).not.toHaveBeenCalled();
+  });
+
+  it("builds from that funding and the coins sent since, signed with the fee key at the exit's index", async () => {
+    const recoverFunds = vi
+      .fn<ExitSdk['recoverFunds']>()
+      .mockRejectedValueOnce(short)
+      .mockResolvedValue(checked([{ txid: 'rebuilt' }]));
+    const { result } = await fallsShort(recoverFunds);
+
+    addressUtxos.mockResolvedValue([coin(4_000)]);
+    act(() => result.current.goTo('topUp'));
+    await waitFor(() => expect(result.current.funding?.isFunded).toBe(true));
+    await act(() => result.current.build());
+
+    const sent = { type: 'p2wpkh', txid: 'coin-4000', vout: 0, valueSats: 4_000, pubkey: key.publicKeyHex };
+    expect(recoverFunds.mock.calls.map(([request]) => request.fundingInputs)).toEqual([[stored], [stored, sent]]);
+    expect(vi.mocked(singleKeyCpfpSigner).mock.calls).toEqual([[key.secretKey], [key.secretKey]]);
+    expect(recoverFunds.mock.lastCall?.[1]).toBe(vi.mocked(singleKeyCpfpSigner).mock.results[1].value);
+    expect(setUnilateralExitPlan).toHaveBeenCalledTimes(1);
+    expect(result.current.phase).toBe('tracker');
   });
 });
 
