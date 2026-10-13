@@ -177,6 +177,79 @@ describe('the sheet once a recovery lands', () => {
   });
 });
 
+describe('raising the fee of a kept co-signed recovery', () => {
+  const record = (id: string): ArchivedExit => ({ id, destination: 'bcrt1qmine', deliveredSat: 1, completedAt: 0 });
+  const bumpFlow = ({
+    phase = 'fee',
+    bumpedTxid = 'c1',
+    archive = [],
+    plan: current = null,
+  }: { phase?: string; bumpedTxid?: string | null; archive?: ArchivedExit[]; plan?: UnilateralExitPlan | null } = {}) =>
+    ({
+      phase,
+      mode: 'recover',
+      bumping: true,
+      bumpedTxid,
+      engine: { plan: current, pending: null, archive },
+      canGoBack: false,
+      back: vi.fn(),
+      fee: { feeRates: { slow: 2, medium: 2, fast: 3 }, feeChoice: 'medium', effectiveFeeRate: 2, onSelect: vi.fn() },
+      submitFee: vi.fn(),
+      sentSat: 47_200,
+      goTo: vi.fn(),
+    }) as unknown as UnilateralExitFlow;
+
+  async function renderBump(first: UnilateralExitFlow) {
+    const onFinished = vi.fn();
+    flow.current = first;
+    const view = render(<UnilateralExitPage network="regtest" bumpTxid="c1" onBack={vi.fn()} onFinished={onFinished} />);
+    await waitForSheetOpen();
+    const show = (next: UnilateralExitFlow) => {
+      flow.current = next;
+      view.rerender(<UnilateralExitPage network="regtest" bumpTxid="c1" onBack={vi.fn()} onFinished={onFinished} />);
+    };
+    return { onFinished, show };
+  }
+
+  it('continues the recovery from its review, though no exit is under way', async () => {
+    flow.current = { ...quoteFlow(0, { mode: 'recover', cosignedSat: 48_200 }), bumping: true, bumpedTxid: 'c1' } as UnilateralExitFlow;
+    render(<UnilateralExitPage network="regtest" bumpTxid="c1" onBack={vi.fn()} onFinished={vi.fn()} />);
+    await waitForSheetOpen();
+    expect(screen.getByTestId('unilateral-exit-quote-continue')).toHaveTextContent(/^Continue Recovery$/);
+  });
+
+  it('closes once the recovery holding its leaves lands, under a transaction a retry swapped in', async () => {
+    const { onFinished, show } = await renderBump(bumpFlow());
+    show(bumpFlow({ bumpedTxid: 'c1-retried' }));
+    show(bumpFlow({ bumpedTxid: null }));
+    expect(onFinished).not.toHaveBeenCalled();
+
+    show(bumpFlow({ bumpedTxid: null, archive: [record('c1-retried')] }));
+    expect(onFinished).toHaveBeenCalled();
+  });
+
+  it('keeps its receipt until Done, though the new recovery lands', async () => {
+    const { onFinished, show } = await renderBump(bumpFlow({ phase: 'sent' }));
+    show(bumpFlow({ phase: 'sent', bumpedTxid: 'c1-bumped' }));
+    show(bumpFlow({ phase: 'sent', bumpedTxid: null, archive: [record('c1-bumped')] }));
+    expect(onFinished).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('unilateral-exit-sent-done'));
+    expect(onFinished).toHaveBeenCalled();
+  });
+
+  it('stays open when an exit under way beside it lands', async () => {
+    const exit = plan([tx({ txid: 'sweep-1', kind: 'sweep' })]);
+    const { onFinished, show } = await renderBump(bumpFlow({ plan: exit }));
+    show(bumpFlow({ archive: [record('sweep-1')] }));
+    expect(onFinished).not.toHaveBeenCalled();
+  });
+
+  it('closes at once when no kept recovery held its leaves as it opened', async () => {
+    const { onFinished } = await renderBump(bumpFlow({ bumpedTxid: null }));
+    expect(onFinished).toHaveBeenCalled();
+  });
+});
+
 describe('updating an exit from the tracker', () => {
   const diverged = plan([tx({ txid: 'a' })], { phase: 'redo', needsSignIn: true });
   const waitingOnTap = plan([tx({ txid: 'a', status: { type: 'unverified' } })], { needsSignIn: true, redoCause: 'unverified' });

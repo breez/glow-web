@@ -22,6 +22,7 @@ import {
   cooperativeValueSat,
   exitFeeRecordOf,
   isCooperative,
+  isCooperativeLeaf,
   isWorthExiting,
   needsFunding,
   paidOut,
@@ -687,6 +688,32 @@ export const keptLeafIds = (recoveries: UnilateralExitPlan[]): Set<string> =>
   new Set(recoveries.flatMap(heldRecoveryLeaves).map(leaf => leaf.leafId));
 
 /**
+ * Whether a kept recovery can be built again at a higher fee. Once part of it
+ * confirms, a bump rebuilds only the rest, and two records would claim the
+ * leaves still open.
+ */
+export const canBumpRecovery = (recovery: UnilateralExitPlan): boolean =>
+  recovery.phase === 'active' && !recovery.exit.transactions.some(tx => tx.status.type === 'confirmed');
+
+/** `quote` with nothing left in it to build. */
+const emptyQuote = (quote: PrepareRecoverFundsResponse): PrepareRecoverFundsResponse => ({
+  ...quote,
+  funding: undefined,
+  leaves: [],
+  recoverableValueSats: 0,
+  totalFeeSats: 0,
+  cooperativeFeeSats: 0,
+  cpfpFeeSats: 0,
+  fanoutFeeSats: 0,
+  sweepFeeSats: 0,
+});
+
+const coversLeaves = (leaves: RecoverFundsLeaf[], ids: string[]): boolean => {
+  const got = new Set(leaves.map(leaf => leaf.leafId));
+  return ids.every(id => got.has(id));
+};
+
+/**
  * A quote of what the wallet holds now: everything for an exit, only what left
  * the balance for a recovery. Either selection also takes leaves a kept
  * recovery is already moving, and building those would compete with it, so
@@ -709,20 +736,7 @@ export async function quoteFresh(
 
   // Only leaves the first quote kept: a named leaf is taken whatever it costs.
   const rest = first.leaves.filter(leaf => !kept.has(leaf.leafId)).map(leaf => leaf.leafId);
-  if (rest.length === 0) {
-    return {
-      ...first,
-      funding: undefined,
-      leaves: [],
-      skipped,
-      recoverableValueSats: 0,
-      totalFeeSats: 0,
-      cooperativeFeeSats: 0,
-      cpfpFeeSats: 0,
-      fanoutFeeSats: 0,
-      sweepFeeSats: 0,
-    };
-  }
+  if (rest.length === 0) return { ...emptyQuote(first), skipped };
   const second = await quoteLeaves(sdk, rest, { feeRateSatPerVbyte, destination });
   const own = new Set(second.skipped.map(leaf => leaf.leafId));
   return { ...second, skipped: [...second.skipped, ...skipped.filter(leaf => !own.has(leaf.leafId))] };
@@ -730,7 +744,8 @@ export async function quoteFresh(
 
 /**
  * A build that came back with no transactions: every co-signed leaf failed, or
- * landed meanwhile. Shown as a retry; the failures go to the log.
+ * landed meanwhile. Or a fee bump that left out a leaf it had to replace.
+ * Shown as a retry; the failures go to the log.
  */
 export class EmptyRecoveryError extends Error {
   readonly failed: CooperativeRecoveryFailure[];
@@ -819,6 +834,39 @@ export function planFromBuild(
     retriedAt: resuming?.retriedAt,
     recoverableFundsSat: resuming ? resuming.recoverableFundsSat : cooperativeValueSat(built) || undefined,
   });
+}
+
+/**
+ * Quotes a kept co-signed recovery's leaves again at `feeRateSatPerVbyte`, to
+ * its own address. A partial replacement beside the original would list the
+ * same leaves twice, so a quote that cannot co-sign every leaf comes back empty.
+ */
+export async function quoteRecoveryBump(
+  sdk: Pick<ExitSdk, 'prepareRecoverFunds'>,
+  recovery: UnilateralExitPlan,
+  feeRateSatPerVbyte: number,
+): Promise<PrepareRecoverFundsResponse> {
+  const ids = recovery.exit.leaves.map(leaf => leaf.leafId);
+  const quote = await quoteLeaves(sdk, ids, { feeRateSatPerVbyte, destination: recovery.destination });
+  const whole = !needsFunding(quote) && quote.leaves.every(isCooperativeLeaf) && coversLeaves(quote.leaves, ids);
+  return whole ? quote : emptyQuote(quote);
+}
+
+/**
+ * Builds the bump, which replaces `recovery` once kept. Nothing is broadcast
+ * yet, so a build that left out a leaf (a replacement fee too low, operators
+ * unavailable, or a leaf that landed meanwhile) is dropped rather than kept.
+ * What the recovery dropped and what landed elsewhere carry over.
+ */
+export async function buildRecoveryBump(
+  sdk: Pick<ExitSdk, 'recoverFunds'>,
+  recovery: UnilateralExitPlan,
+  quote: PrepareRecoverFundsResponse,
+): Promise<UnilateralExitPlan> {
+  const built = await buildFromQuote(sdk, quote, null);
+  if (!coversLeaves(built.leaves, recovery.exit.leaves.map(leaf => leaf.leafId))) throw new EmptyRecoveryError(built.failed);
+  const { network, fundingAddressIndex, mode, landed, droppedLeaves } = recovery;
+  return { ...planFromBuild(quote, built, null, { network, fundingAddressIndex, mode }), landed, droppedLeaves };
 }
 
 /**

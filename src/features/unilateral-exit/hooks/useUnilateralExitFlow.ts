@@ -9,12 +9,14 @@ import { destinationErrorMessage } from '@/utils/destinationAddress';
 import {
   awaitsUpdate,
   buildFromQuote,
+  buildRecoveryBump,
   destinationAddressOf,
   fundingInputsOf,
   planFromBuild,
   quoteFresh,
   quoteLeaves,
   quoteNamed,
+  quoteRecoveryBump,
   RebuildLaterError,
   rebuildExit,
   requiredFundingOf,
@@ -42,6 +44,7 @@ import {
   setUnilateralExitPlan,
   type UnilateralExitEngineState,
 } from '../engine';
+import { recoveryTxid } from '../archive';
 import { loadExitState, restoreExitState } from '../exitState';
 import { deriveFundingKey, readWalletMnemonic, type FundingKey } from '../funding';
 import { useUnilateralExitEngineState } from './useUnilateralExitEngineLifecycle';
@@ -78,6 +81,13 @@ const FUNDING_POLL_MS = 15_000;
 const FALLBACK_FEE_RATES: FeeRates = { slow: 2, medium: 5, fast: 10 };
 
 const message = (e: unknown): string => (e instanceof Error ? e.message : String(e));
+
+// A replacement pays at least a sat/vB more than what it replaces (BIP 125).
+const liftRates = (rates: FeeRates, floor: number): FeeRates => ({
+  slow: Math.max(rates.slow, floor),
+  medium: Math.max(rates.medium, floor),
+  fast: Math.max(rates.fast, floor),
+});
 
 const outpoint = (input: CpfpInput): string => `${input.txid}:${input.vout}`;
 
@@ -155,6 +165,10 @@ export interface UnilateralExitFlow {
   buildError: string | null;
   /** What the co-signed recovery just sent will deliver. */
   sentSat: number;
+  /** Raises the fee of a kept co-signed recovery, and starts nothing. */
+  bumping: boolean;
+  /** The kept recovery that holds the bumped leaves now, by its txid. Null while none does. */
+  bumpedTxid: string | null;
   rebuild: () => void;
   /** Rebuilds a diverged exit in place, at its own fee rate, without the wizard. */
   continueExit: () => Promise<void>;
@@ -164,8 +178,12 @@ export interface UnilateralExitFlow {
   back: () => void;
 }
 
-/** `openedMode` is what the sheet was opened for: `recover` from the Recoverable Funds row. */
-export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): UnilateralExitFlow {
+/**
+ * `openedMode` is what the sheet was opened for: `recover` from the Recoverable
+ * Funds row. `bumpTxid` is a kept co-signed recovery to build again at a
+ * higher fee, from its tracker.
+ */
+export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bumpTxid?: string): UnilateralExitFlow {
   const wallet = useWallet();
   const info = useWalletInfo();
   const identityPubkey = info?.identityPubkey;
@@ -176,15 +194,29 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
   const chain = useMemo(() => createChainClient(network), [network]);
   const engine = useUnilateralExitEngineState();
   const { plan, pending, recoveries, archive, tipHeight } = engine;
+  // Every bump branch keys on the prop, so a bump never falls through to the
+  // exit's quote or plan slot, whether or not its recovery is still there.
+  const bumping = !!bumpTxid;
+  // A snapshot: a retry can swap the recovery's transaction while the sheet is
+  // open, but not its leaves, address or rate.
+  const [bumpTarget] = useState(() => (bumpTxid ? (recoveries.find(r => recoveryTxid(r) === bumpTxid) ?? null) : null));
+  const bumpedTxid = useMemo(() => {
+    const ids = new Set(bumpTarget?.exit.leaves.map(leaf => leaf.leafId));
+    const holder = recoveries.find(r => r.exit.leaves.some(leaf => ids.has(leaf.leafId)));
+    return holder ? recoveryTxid(holder) : null;
+  }, [bumpTarget, recoveries]);
   // A saved record keeps what it is, whichever row opened the sheet.
-  const mode = plan ? plan.mode : pending ? pending.mode : openedMode;
+  const mode = bumping ? 'recover' : plan ? plan.mode : pending ? pending.mode : openedMode;
 
   // A saved exit decides where the sheet opens: one under way on its tracker,
   // one waiting on its fee on where to pay it. The engine moves it from one to
   // the other, so these steps follow it rather than holding their own place.
-  // A recovery has no intro: it opens on where to send the funds.
+  // A recovery has no intro: it opens on where to send the funds. A bump keeps
+  // the recovery's address, so it opens on the fee.
   const freshRecovery = mode === 'recover' && !plan && !pending;
-  const [step, setPhase] = useState<UnilateralExitPhase>(() => (freshRecovery ? 'destination' : 'intro'));
+  const [step, setPhase] = useState<UnilateralExitPhase>(() =>
+    bumping ? 'fee' : freshRecovery ? 'destination' : 'intro',
+  );
   const phase: UnilateralExitPhase =
     step === 'intro' || step === 'pending' || step === 'tracker'
       ? plan
@@ -228,6 +260,8 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
     mnemonicRef.current = null;
   }, []);
 
+  // A bump offers no rate at or below the recovery's own.
+  const bumpFloor = bumpTarget ? bumpTarget.feeRateSatPerVbyte + 1 : 0;
   useEffect(() => {
     if (phase !== 'fee' || feeRates) return;
     let cancelled = false;
@@ -238,12 +272,12 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
         return FALLBACK_FEE_RATES;
       })
       .then(rates => {
-        if (!cancelled) setFeeRates(rates);
+        if (!cancelled) setFeeRates(liftRates(rates, bumpFloor));
       });
     return () => {
       cancelled = true;
     };
-  }, [phase, feeRates, chain]);
+  }, [phase, feeRates, chain, bumpFloor]);
 
   useEffect(() => {
     if ((phase !== 'fund' && phase !== 'topUp') || !fundingKey) return;
@@ -284,7 +318,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
   }, [destination, wallet]);
 
   const refreshQuote = useCallback(async () => {
-    if (effectiveFeeRate <= 0) return;
+    if (effectiveFeeRate <= 0 || (bumping && !bumpTarget)) return;
     // Back is open while a quote is out, so a slower, older one can land last.
     const request = ++quoteRequest.current;
     setIsQuoting(true);
@@ -299,9 +333,12 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
       }
       const at = { feeRateSatPerVbyte: effectiveFeeRate, destination: destination.trim() };
       // A resumed exit names its leaves: a fresh selection can drop one part-way out.
-      const prepared = plan
-        ? await quoteNamed(wallet, plan, at)
-        : await quoteFresh(wallet, at, mode, excludedLeafIds({ recoveries, archive }));
+      const prepared =
+        bumping && bumpTarget
+          ? await quoteRecoveryBump(wallet, bumpTarget, effectiveFeeRate)
+          : plan
+            ? await quoteNamed(wallet, plan, at)
+            : await quoteFresh(wallet, at, mode, excludedLeafIds({ recoveries, archive }));
       if (request !== quoteRequest.current) return;
       setQuote(prepared);
       setQuotedAt(Date.now());
@@ -313,14 +350,16 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
     } finally {
       if (request === quoteRequest.current) setIsQuoting(false);
     }
-  }, [wallet, destination, effectiveFeeRate, walletKey, plan, mode, recoveries, archive]);
+  }, [wallet, destination, effectiveFeeRate, walletKey, plan, mode, recoveries, archive, bumping, bumpTarget]);
 
   const submitFee = useCallback(async () => {
     setPhase('quote');
     await refreshQuote();
   }, [refreshQuote]);
 
-  const figures = useMemo(() => (quote ? quoteFigures(quote, { resuming: plan }) : null), [quote, plan]);
+  // An exit under way sets no floor on a bump's figures, which are its own.
+  const resuming = bumping ? null : plan;
+  const figures = useMemo(() => (quote ? quoteFigures(quote, { resuming }) : null), [quote, resuming]);
 
   // The index, not the plan, and no figures, which follow the plan: every
   // engine pass emits a new plan object, and the page re-runs unlock whenever
@@ -375,7 +414,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
   // Builds the reviewed quote: an exit under way from the coins at its fee
   // address, or, when the quote needs no funding, any exit straight away.
   const build = useCallback(async () => {
-    if (!walletKey || !quote || !figures) return;
+    if (!walletKey || !quote || !figures || (bumping && !bumpTarget)) return;
     const funded = figures.needsFunding;
     if (funded && (!plan || !fundingKey || !mnemonicRef.current)) return;
     setPhase('building');
@@ -383,6 +422,14 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
     setStartError(null);
     const release = holdIdleLock();
     try {
+      // Before anything that reads the exit: a bump never writes to its slot.
+      if (bumping && bumpTarget) {
+        const next = await buildRecoveryBump(wallet, bumpTarget, quote);
+        keepRecovery(walletKey, next);
+        setSentSat(willReceiveSat(next));
+        setPhase('sent');
+        return;
+      }
       // The funding an earlier attempt was built from still pays: the sdk
       // follows a spent outpoint to what it became. Fresh coins at the same
       // address are offered alongside it.
@@ -435,7 +482,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
     } finally {
       release();
     }
-  }, [wallet, walletKey, quote, figures, fundingKey, confirmedUtxos, sent, network, plan, mode]);
+  }, [wallet, walletKey, quote, figures, fundingKey, confirmedUtxos, sent, network, plan, mode, bumping, bumpTarget]);
 
   // A quote that needs funding goes on to the phrase and the fee address. One
   // that needs none has nothing to sign and nothing to wait for, so it builds.
@@ -548,7 +595,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
     mode,
     engine,
     /** False where back leaves the flow: the first step, and an exit already saved. */
-    canGoBack: BACK[phase] !== undefined && !(phase === 'destination' && freshRecovery),
+    canGoBack: BACK[phase] !== undefined && !(phase === 'destination' && freshRecovery) && !(phase === 'fee' && bumping),
     destination: { destination, onChange: setDestination, error: destinationError },
     fee: {
       feeRates,
@@ -577,6 +624,8 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode): U
     build,
     buildError,
     sentSat,
+    bumping,
+    bumpedTxid,
     rebuild,
     continueExit,
     isContinuing,

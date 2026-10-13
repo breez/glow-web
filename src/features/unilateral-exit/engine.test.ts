@@ -353,6 +353,72 @@ describe('kept co-signed recoveries', () => {
     expect(loadRecoveries(wallet)).toHaveLength(1);
   });
 
+  describe('raised to a higher fee', () => {
+    const slowTip = () => {
+      let release: (height: number) => void = () => {};
+      const tipHeight = vi
+        .fn<ChainClient['tipHeight']>()
+        .mockImplementationOnce(() => new Promise(resolve => (release = resolve)))
+        .mockResolvedValue(101);
+      return { tipHeight, release: (height: number) => release(height) };
+    };
+
+    it('replaces the recovery it bumps, even mid-pass', async () => {
+      const { tipHeight, release } = slowTip();
+      saveRecoveries(wallet, [cosigned('c1')]);
+      startUnilateralExitEngine(wallet, { ...chain, tipHeight }, sdk());
+
+      keepRecovery(wallet, cosigned('c1-bumped'));
+      release(101);
+      await settle();
+      expect(getUnilateralExitState().recoveries.map(r => r.exit.transactions[0].txid)).toEqual(['c1-bumped']);
+      expect(loadRecoveries(wallet).map(r => r.exit.transactions[0].txid)).toEqual(['c1-bumped']);
+    });
+
+    it('archives what landed once when the recovery it bumped confirms during a pass', async () => {
+      const { tipHeight, release } = slowTip();
+      const bumped = plan(
+        [tx({ txid: 'c1-bumped', kind: 'cooperative', nodeId: 'c-1', txHex: rawTx([`${txidOf(7)}:0`], [28_000]), status: ready })],
+        { network: 'regtest', mode: 'recover', exit: { leaves: [{ leafId: 'c-1', valueSats: 30_000, method: 'cooperative' }] } },
+      );
+      saveRecoveries(wallet, [landing('c1')]);
+      startUnilateralExitEngine(wallet, { ...spending('c1', [{ address: 'bc1qdest', value: 29_000 }]), tipHeight }, confirming());
+
+      keepRecovery(wallet, bumped);
+      release(101);
+      await settle();
+      expect(loadArchive(wallet)).toEqual([]);
+
+      // The bump reads as done once anything spends its input, and names the original as what paid.
+      await advanceNow();
+      await vi.waitFor(() => expect(getUnilateralExitState().recoveries).toEqual([]));
+      expect(loadArchive(wallet)).toEqual([expect.objectContaining({ id: 'c1-bumped', txids: ['c1'], deliveredSat: 29_000 })]);
+    });
+
+    it('replaces the record a retry just swapped the transaction of', async () => {
+      const stuck = plan([tx({ txid: 'c-old', kind: 'cooperative', nodeId: 'c-1', txHex: 'hex-c-old', status: { type: 'unverified' } })], {
+        network: 'regtest',
+        mode: 'recover',
+        retrySince: 90,
+        exit: { leaves: [{ leafId: 'c-1', valueSats: 30_000, method: 'cooperative' }] },
+      });
+      const prepareRecoverFunds = async () =>
+        prepared({ leaves: [{ leafId: 'c-1', valueSats: 30_000, method: 'cooperative' }], funding: undefined });
+      const recoverFunds = async () =>
+        checked([{ txid: 'c-new', kind: 'cooperative', nodeId: 'c-1', txHex: 'hex-c-new', status: { type: 'unverified' } }], {
+          leaves: [{ leafId: 'c-1', valueSats: 30_000, method: 'cooperative' }],
+        });
+      saveRecoveries(wallet, [stuck]);
+      startUnilateralExitEngine(wallet, chain, sdk({ prepareRecoverFunds, recoverFunds }));
+      await vi.waitFor(() => expect(getUnilateralExitState().recoveries[0]?.exit.transactions[0].txid).toBe('c-new'));
+
+      // Bumped from the snapshot the sheet took of `c-old`.
+      keepRecovery(wallet, cosigned('c-bumped'));
+      expect(getUnilateralExitState().recoveries.map(r => r.exit.transactions[0].txid)).toEqual(['c-bumped']);
+      expect(loadRecoveries(wallet).map(r => r.exit.transactions[0].txid)).toEqual(['c-bumped']);
+    });
+  });
+
   it('replaces one of the same leaves built again', () => {
     startUnilateralExitEngine(wallet, chain);
     keepRecovery(wallet, cosigned('c1'));

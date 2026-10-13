@@ -277,7 +277,10 @@ async function advanceRecoveries(): Promise<void> {
     let archive = state.archive;
     let landed = false;
     let recoveries: UnilateralExitPlan[] = [];
-    for (const { plan } of passes) {
+    for (const [i, { plan }] of passes.entries()) {
+      // One replaced while this pass was out, such as by a fee bump, belongs to
+      // its replacement now, which archives what landed once.
+      if (!state.recoveries.includes(before[i])) continue;
       // Archived while a read waits, the record would miss what landed.
       if (plan.phase !== 'complete' || hasWaitingLanding(plan)) recoveries.push(plan);
       else {

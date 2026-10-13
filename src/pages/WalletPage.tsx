@@ -28,7 +28,8 @@ import {
 } from '../features/unilateral-exit/listEntries';
 import { ArchivedExitDialog } from '../features/unilateral-exit/ArchivedExitDialog';
 import { TrackerView } from '../features/unilateral-exit/TrackerView';
-import type { ExitMode } from '../features/unilateral-exit/driver';
+import { canBumpRecovery, type ExitMode } from '../features/unilateral-exit/driver';
+import { recoveryTxid } from '../features/unilateral-exit/archive';
 import { BottomSheetCard, BottomSheetContainer, DialogHeader } from '../components/ui';
 import { useUnilateralExitEngineState } from '../features/unilateral-exit/hooks/useUnilateralExitEngineLifecycle';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';
@@ -47,8 +48,11 @@ interface WalletPageProps {
   hasRejectedDeposits: boolean;
   onOpenGetRefund: (source?: 'menu' | 'icon') => void;
   onOpenSettings: () => void;
-  /** `recover` opens it on the funds outside the balance. */
-  onOpenUnilateralExit: (mode?: ExitMode) => void;
+  /**
+   * `recover` opens it on the funds outside the balance. `bumpTxid` opens it
+   * on a new fee for that kept co-signed recovery.
+   */
+  onOpenUnilateralExit: (mode?: ExitMode, bumpTxid?: string) => void;
   onBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
   network?: Network;
   onDepositChanged?: () => void;
@@ -152,6 +156,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   // Closes by itself once the recovery lands and moves to the archive.
   const [selectedRecoveryId, setSelectedRecoveryId] = useState<string | null>(null);
   const selectedRecovery = exitState.recoveries.find(r => recoveryEntryId(r) === selectedRecoveryId) ?? null;
+  const bumpTxid = selectedRecovery && canBumpRecovery(selectedRecovery) ? recoveryTxid(selectedRecovery) : null;
   const handleExitSelected = useCallback((entry: UnilateralExitEntry) => {
     if (entry.kind === 'archived') setSelectedExitId(entry.id);
     // A kept recovery is followed on its own tracker, not the exit flow's.
@@ -391,7 +396,21 @@ const WalletPage: React.FC<WalletPageProps> = ({
         <BottomSheetContainer isOpen onClose={() => setSelectedRecoveryId(null)}>
           <BottomSheetCard>
             <DialogHeader title="Recover Funds" onClose={() => setSelectedRecoveryId(null)} />
-            <TrackerView plan={selectedRecovery} tipHeight={exitState.tipHeight} isAdvancing={false} noun="recovery" />
+            <TrackerView
+              plan={selectedRecovery}
+              tipHeight={exitState.tipHeight}
+              isAdvancing={false}
+              noun="recovery"
+              // Closed first, so only the fee sheet is up.
+              onRebuild={
+                bumpTxid
+                  ? () => {
+                      setSelectedRecoveryId(null);
+                      onOpenUnilateralExit('recover', bumpTxid);
+                    }
+                  : undefined
+              }
+            />
           </BottomSheetCard>
         </BottomSheetContainer>
       )}

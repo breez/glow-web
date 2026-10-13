@@ -68,7 +68,11 @@ otherwise stall.
 exit that has stopped confirming because fees rose needs a new quote at a higher
 rate. Offer that at any point, not only when something has gone wrong. A
 confirmed fan-out does not cap it: pass the exit's funding back with the new
-coins, and the sdk spends them together, fanning out again if it has to.
+coins, and the sdk spends them together, fanning out again if it has to. A
+co-signed recovery is bumped the same way: quote its leaves again at a higher
+rate, to the same address, and the build replaces it on the network. This app
+keeps such a build only when it holds every leaf, since a partial one beside
+the original would list the same leaf twice.
 
 ## Reading this folder
 

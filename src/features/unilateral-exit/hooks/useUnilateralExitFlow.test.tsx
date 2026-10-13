@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { PrepareRecoverFundsResponse, RecoverFundsLeaf, RecoverFundsResponse } from '@breeztech/breez-sdk-spark';
 import type { ArchivedExit } from '../archive';
@@ -29,6 +29,7 @@ const saved = vi.hoisted(() => ({
   plan: null as UnilateralExitPlan | null,
   tipHeight: null as number | null,
   archive: [] as ArchivedExit[],
+  recoveries: [] as UnilateralExitPlan[],
 }));
 vi.mock('./useUnilateralExitEngineLifecycle', () => ({
   useUnilateralExitEngineState: () => ({
@@ -39,7 +40,7 @@ vi.mock('./useUnilateralExitEngineLifecycle', () => ({
     isStarting: false,
     startError: null,
     archive: saved.archive,
-    recoveries: [],
+    recoveries: saved.recoveries,
     tipHeight: saved.tipHeight,
     isAdvancing: false,
   }),
@@ -452,5 +453,159 @@ describe('the update tap', () => {
       rerender();
       expect(result.current.continueError).toBeNull();
     });
+  });
+});
+
+describe('raising the fee of a kept co-signed recovery', () => {
+  // Sent at 1 sat/vB, below what the network now takes.
+  const kept = (txid = 'c1') =>
+    plan(
+      [
+        tx({ txid, kind: 'cooperative', nodeId: 'c-1', status: { type: 'unverified' } }),
+        tx({ txid: `${txid}-2`, kind: 'cooperative', nodeId: 'c-2', status: { type: 'unverified' } }),
+      ],
+      {
+        network: 'regtest',
+        mode: 'recover',
+        destination: 'bcrt1qmine',
+        feeRateSatPerVbyte: 1,
+        exit: { leaves: cosignedLeaves, recoverableValueSats: 48_200 },
+      },
+    );
+  const bumpQuote = prepared({
+    leaves: cosignedLeaves,
+    recoverableValueSats: 48_200,
+    sweepFeeSats: 0,
+    cpfpFeeSats: 0,
+    cooperativeFeeSats: 1_000,
+    totalFeeSats: 1_000,
+    funding: undefined,
+    feeRateSatPerVbyte: 2,
+    destination: 'bcrt1qmine',
+  });
+  const bumpBuild = (over: Partial<RecoverFundsResponse> = {}) =>
+    cosignedBuild({
+      transactions: checked([
+        { txid: 'c1-bumped', kind: 'cooperative', nodeId: 'c-1' },
+        { txid: 'c2-bumped', kind: 'cooperative', nodeId: 'c-2' },
+      ]).transactions,
+      cooperativeFeeSats: 1_000,
+      feeRateSatPerVbyte: 2,
+      destination: 'bcrt1qmine',
+      ...over,
+    });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    saved.plan = null;
+    saved.archive = [];
+    saved.recoveries = [kept()];
+  });
+
+  afterEach(() => {
+    saved.recoveries = [];
+  });
+
+  /** Opens the flow on the bump of `bumpTxid`, once its rates load. */
+  async function bumping(
+    bumpTxid = 'c1',
+    recoverFunds = vi.fn<ExitSdk['recoverFunds']>(async () => bumpBuild()),
+    prepareRecoverFunds = vi.fn<ExitSdk['prepareRecoverFunds']>(async () => bumpQuote),
+  ) {
+    wallet.current = sdk({ prepareRecoverFunds, recoverFunds });
+    const hook = renderHook(() => useUnilateralExitFlow('regtest', undefined, bumpTxid));
+    await waitFor(() => expect(hook.result.current.fee.feeRates).not.toBeNull());
+    return { ...hook, prepareRecoverFunds, recoverFunds };
+  }
+
+  it('opens on the fee as a recovery, with nothing to go back to', async () => {
+    const { result } = await bumping();
+    expect(result.current.phase).toBe('fee');
+    expect(result.current.mode).toBe('recover');
+    expect(result.current.canGoBack).toBe(false);
+    expect(result.current.bumping).toBe(true);
+    expect(result.current.bumpedTxid).toBe('c1');
+  });
+
+  it("offers no rate at or below the recovery's own", async () => {
+    const { result } = await bumping();
+    expect(result.current.fee.feeRates).toEqual({ slow: 2, medium: 2, fast: 3 });
+  });
+
+  it("quotes the recovery's own leaves to its own address beside an exit under way, with the quote's own fee", async () => {
+    saved.plan = plan([], { quotedSweepFeeSat: 9_999 });
+    const { result, prepareRecoverFunds } = await bumping();
+    await act(() => result.current.submitFee());
+
+    expect(prepareRecoverFunds).toHaveBeenCalledWith(
+      expect.objectContaining({
+        feeRateSatPerVbyte: 2,
+        destination: 'bcrt1qmine',
+        selection: { type: 'specific', leafIds: ['c-1', 'c-2'] },
+      }),
+    );
+    expect(result.current.quote.figures?.networkFeeSat).toBe(1_000);
+  });
+
+  it('keeps the rebuilt recovery in place of the old one, and touches nothing of the exit', async () => {
+    saved.plan = plan([], { quotedSweepFeeSat: 9_999 });
+    const { result, recoverFunds } = await bumping();
+    await act(() => result.current.submitFee());
+    await act(() => result.current.continueFromQuote());
+
+    expect(recoverFunds.mock.calls[0]).toEqual([{ prepared: bumpQuote }]);
+    const next = vi.mocked(keepRecovery).mock.calls[0][1];
+    expect(next.exit.transactions.map(t => t.txid)).toEqual(['c1-bumped', 'c2-bumped']);
+    expect(next).toMatchObject({ mode: 'recover', feeRateSatPerVbyte: 2, destination: 'bcrt1qmine' });
+    expect(setUnilateralExitPlan).not.toHaveBeenCalled();
+    expect(setPendingExit).not.toHaveBeenCalled();
+    expect(readWalletMnemonic).not.toHaveBeenCalled();
+    expect(result.current.phase).toBe('sent');
+    expect(result.current.sentSat).toBe(47_200);
+  });
+
+  it('asks to try again, keeping nothing, when the operators co-signed only part of it', async () => {
+    const partial = bumpBuild({
+      leaves: [cosignedLeaves[0]],
+      transactions: [checked([{ txid: 'c1-bumped', kind: 'cooperative', nodeId: 'c-1' }]).transactions[0]],
+      failed: [
+        {
+          leafId: 'c-2',
+          outputTxid: 'o',
+          outputVout: 0,
+          error: { type: 'replacementFeeTooLow', requiredFeeSats: 600, requiredFeeRateSatPerVbyte: 3 },
+        },
+      ],
+    });
+    const { result } = await bumping('c1', vi.fn(async () => partial));
+    await act(() => result.current.submitFee());
+    await act(() => result.current.continueFromQuote());
+
+    expect(result.current.phase).toBe('quote');
+    expect(result.current.startError).toBe('Please try again.');
+    expect(keepRecovery).not.toHaveBeenCalled();
+  });
+
+  it('follows the recovery to the transaction a retry swapped in, and still bumps what the sheet opened on', async () => {
+    const { result, rerender, prepareRecoverFunds } = await bumping();
+    saved.recoveries = [kept('c1-retried')];
+    rerender();
+    expect(result.current.bumpedTxid).toBe('c1-retried');
+
+    await act(() => result.current.submitFee());
+    expect(prepareRecoverFunds).toHaveBeenCalledWith(
+      expect.objectContaining({ destination: 'bcrt1qmine', selection: { type: 'specific', leafIds: ['c-1', 'c-2'] } }),
+    );
+    await act(() => result.current.continueFromQuote());
+    expect(keepRecovery).toHaveBeenCalled();
+    expect(setUnilateralExitPlan).not.toHaveBeenCalled();
+  });
+
+  it('quotes nothing when the recovery was gone before the sheet opened', async () => {
+    const { result, prepareRecoverFunds } = await bumping('gone');
+    expect(result.current.bumpedTxid).toBeNull();
+    await act(() => result.current.submitFee());
+    expect(prepareRecoverFunds).not.toHaveBeenCalled();
+    expect(result.current.mode).toBe('recover');
   });
 });

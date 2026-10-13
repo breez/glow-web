@@ -87,6 +87,8 @@ const AppContent: React.FC = () => {
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
   // What the exit sheet was opened for: `recover` from the Recoverable Funds row.
   const [exitMode, setExitMode] = useState<ExitMode | undefined>(undefined);
+  // A kept co-signed recovery the exit sheet raises the fee of, by its txid.
+  const [exitBumpTxid, setExitBumpTxid] = useState<string | undefined>(undefined);
   const [passkeySdkConnected, setPasskeySdkConnected] = useState(false);
   // True when the user entered the passkey screen via the explicit
   // "Create Passkey" CTA in the web two-CTA flow. Skips PasskeyPage's
@@ -340,8 +342,9 @@ const AppContent: React.FC = () => {
             setUserScreen('getRefund');
           }}
           onOpenSettings={() => setUserScreen('settings')}
-          onOpenUnilateralExit={(mode?: ExitMode) => {
+          onOpenUnilateralExit={(mode?: ExitMode, bumpTxid?: string) => {
             setExitMode(mode);
+            setExitBumpTxid(bumpTxid);
             setUserScreen('unilateralExit');
           }}
           onBuyBitcoin={sdk.handleBuyBitcoin}
@@ -367,6 +370,7 @@ const AppContent: React.FC = () => {
         onOpenBackup={() => setUserScreen('backup')}
         onOpenUnilateralExit={() => {
           setExitMode(undefined);
+          setExitBumpTxid(undefined);
           setUserScreen('unilateralExit');
         }}
       />
@@ -487,6 +491,7 @@ const AppContent: React.FC = () => {
               <UnilateralExitPage
                 network={sdk.config?.network ?? 'mainnet'}
                 mode={exitMode}
+                bumpTxid={exitBumpTxid}
                 onBack={() => setUserScreen('wallet')}
                 onFinished={() => setUserScreen('wallet')}
               />

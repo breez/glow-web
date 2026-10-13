@@ -28,13 +28,15 @@ interface UnilateralExitPageProps {
   network: string;
   /** `recover` when opened from the Recoverable Funds row. A saved exit's own mode wins. */
   mode?: ExitMode;
+  /** A kept co-signed recovery whose fee this raises, by its txid. */
+  bumpTxid?: string;
   onBack: () => void;
   /** Where to go once the exit lands, since the tracker has nothing left to show. */
   onFinished: () => void;
 }
 
-const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, onBack, onFinished }) => {
-  const flow = useUnilateralExitFlow(network, mode);
+const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, bumpTxid, onBack, onFinished }) => {
+  const flow = useUnilateralExitFlow(network, mode, bumpTxid);
   const recovering = flow.mode === 'recover';
 
   // Reading the recovery phrase is gated on a PIN where one is set. Where none
@@ -64,11 +66,17 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
   // from the plan, and without one it reads as the intro. Nor can a missing
   // plan, which is also what a stopped engine reports while the SDK reconnects.
   const { plan, archive } = flow.engine;
+  const { bumping, bumpedTxid, phase } = flow;
   const shownTxid = useRef<string | null>(null);
   useEffect(() => {
-    if (plan) shownTxid.current = recoveryTxid(plan);
-    if (archive.some(exit => exit.id === shownTxid.current)) onFinished();
-  }, [plan, archive, onFinished]);
+    if (!bumping && plan) shownTxid.current = recoveryTxid(plan);
+    // A bump follows the kept recovery holding its leaves, whose txid a retry
+    // can swap. With none to follow there is nothing to bump. Its receipt
+    // waits for Done.
+    if (bumping && bumpedTxid) shownTxid.current = bumpedTxid;
+    if (bumping && phase === 'sent') return;
+    if ((bumping && !shownTxid.current) || archive.some(exit => exit.id === shownTxid.current)) onFinished();
+  }, [plan, archive, onFinished, bumping, bumpedTxid, phase]);
 
   // One call to action per step, in the bar the rest of the app puts it in.
   // A step with nothing to press, such as the pin gate or the build, has none.
@@ -129,7 +137,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
         // A quote that needs no funding builds on this tap, so it names what the
         // tap does. So does a recovery that sends its co-signed part on it.
         const figures = flow.quote.figures;
-        const underWay = !!flow.engine.plan;
+        const underWay = !!flow.engine.plan || flow.bumping;
         const sendsNow = recovering && !underWay && !!figures?.recoverableSat;
         const label =
           figures?.needsFunding && !sendsNow
