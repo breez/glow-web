@@ -116,7 +116,7 @@ export const FundStep: React.FC<
     isPaying: boolean;
     onTopUp: () => void;
   }
-> = ({ address, topUp, feeRate, currentFeeRate, networkFloorFeeRate, error, isPaying, onTopUp }) => {
+> = ({ address, topUp, waitsForConfirmation, feeRate, currentFeeRate, networkFloorFeeRate, error, isPaying, onTopUp }) => {
   // The build is tried before anything is asked for, so without a top-up there
   // is nothing to pay here: only a failure to explain.
   if (!topUp) {
@@ -129,7 +129,10 @@ export const FundStep: React.FC<
     );
   }
 
-  if (topUp.stillToSendSat === 0) return <Receipt />;
+  // Says why Continue Exit is not yet open, as the pending exit's receipt does.
+  if (topUp.stillToSendSat === 0) {
+    return <Receipt>{waitsForConfirmation && <Status>Waiting for a confirmation</Status>}</Receipt>;
+  }
 
   // Waiting costs nothing, so the step shows what continuing now costs before
   // it shows anywhere to pay.

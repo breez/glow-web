@@ -477,6 +477,26 @@ describe('kept co-signed recoveries', () => {
         setInterval.mockRestore();
       }
     });
+
+    it.each([
+      ['an exit with a step to send', () => setUnilateralExitPlan(wallet, plan([tx({ txid: 'r', kind: 'refund', status: ready })], { network: 'regtest' }))],
+      ['an exit waiting on its fee', () => setPendingExit(wallet, pendingExit())],
+    ])('keep the usual pace beside %s', async (_, open) => {
+      const setInterval = vi.spyOn(globalThis, 'setInterval');
+      const lastInterval = () => setInterval.mock.lastCall?.[1];
+      try {
+        saveRecoveries(wallet, [stuck({ retrySince: undefined })]);
+        startUnilateralExitEngine(wallet, chain, sdk());
+        await settle();
+        expect(lastInterval()).toBe(100_000);
+
+        open();
+        await settle();
+        expect(lastInterval()).toBe(5_000);
+      } finally {
+        setInterval.mockRestore();
+      }
+    });
   });
 
   it('keep their leaves out of an exit started beside them', async () => {
@@ -705,6 +725,31 @@ describe('an exit holding a leaf it left out', () => {
     );
     await vi.waitFor(() => expect(getUnilateralExitState().plan?.topUp).toBeUndefined());
     expect(getUnilateralExitState().pendingCoins).toEqual([]);
+  });
+
+  it('hands the pass no coins when the read of the fee address fails, so what it held before the ask is not set too low', async () => {
+    const key = deriveFundingKey(MNEMONIC, 'regtest', 0);
+    const addressUtxos = vi.fn(async (): Promise<ChainUtxo[]> => {
+      throw new Error('rate limited');
+    });
+    const waiting = plan(swept(), {
+      network: 'regtest',
+      exitFeeAddress: key.address,
+      // No retry due, so the request stands.
+      retrySince: 98,
+      retriedAt: 98,
+      topUp: { required: { sat: 3_000, inputs: 1 } },
+      namedLeaves: [
+        { leafId: 'leaf-1', valueSats: 100_000 },
+        { leafId: 'leaf-2', valueSats: 50_000 },
+      ],
+    });
+    setUnilateralExitPlan(wallet, waiting);
+    startUnilateralExitEngine(wallet, { ...chain, addressUtxos }, sdk());
+
+    await vi.waitFor(() => expect(addressUtxos).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(getUnilateralExitState().isAdvancing).toBe(false));
+    expect(getUnilateralExitState().plan?.topUp).toEqual({ required: { sat: 3_000, inputs: 1 } });
   });
 
   it('keeps a kept recovery to the leaves it built', () => {

@@ -27,7 +27,8 @@ co-sign is listed in `failed`, outside the transactions. `done` covers only the
 transactions, so this app keeps such a leaf, and one a rebuild skipped for
 now, part of the exit: it prepares it again on the same schedule, builds a
 co-signed one into the exit, and asks for more exit fee for a unilateral one
-once the rest has landed.
+once the exit's unilateral steps have landed. The week then starts over, so
+the user has all of it to pay.
 
 ## The flow
 

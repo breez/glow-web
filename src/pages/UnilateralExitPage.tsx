@@ -68,14 +68,22 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
   const { plan, archive } = flow.engine;
   const { bumping, bumpedTxid, phase } = flow;
   const shownTxid = useRef<string | null>(null);
+  // A plan can finish with no transaction of its own, and so be archived
+  // under another txid or not at all. A missing plan does say it landed when
+  // the last one seen had finished.
+  const sawComplete = useRef(false);
   useEffect(() => {
-    if (!bumping && plan) shownTxid.current = recoveryTxid(plan);
+    if (!bumping && plan) {
+      shownTxid.current = recoveryTxid(plan) ?? shownTxid.current;
+      sawComplete.current = plan.phase === 'complete';
+    }
     // A bump follows the kept recovery holding its leaves, whose txid a retry
     // can swap. With none to follow there is nothing to bump. Its receipt
     // waits for Done.
     if (bumping && bumpedTxid) shownTxid.current = bumpedTxid;
     if (bumping && phase === 'sent') return;
-    if ((bumping && !shownTxid.current) || archive.some(exit => exit.id === shownTxid.current)) onFinished();
+    const leftFinished = !bumping && !plan && sawComplete.current;
+    if (leftFinished || (bumping && !shownTxid.current) || archive.some(exit => exit.id === shownTxid.current)) onFinished();
   }, [plan, archive, onFinished, bumping, bumpedTxid, phase]);
 
   // One call to action per step, in the bar the rest of the app puts it in.
@@ -193,7 +201,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
               className="w-full"
               data-testid="unilateral-exit-build"
             >
-              Continue Exit
+              {flow.isContinuing ? 'Updating...' : 'Continue Exit'}
             </PrimaryButton>
           </>
         );
@@ -310,7 +318,9 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                   onTopUp={() => flow.goTo('topUp')}
                 />
                 {/* FundStep shows no error beside a top-up, so a leftover's failed build says so here. */}
-                {flow.continueError && <ErrorMessageBox title="Could not continue the exit" error={flow.continueError} />}
+                {flow.engine.plan?.topUp && flow.continueError && (
+                  <ErrorMessageBox title="Could not continue the exit" error={flow.continueError} />
+                )}
               </>
             )}
 

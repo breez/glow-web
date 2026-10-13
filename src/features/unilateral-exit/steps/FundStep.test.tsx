@@ -12,6 +12,7 @@ const props = {
   address: 'bcrt1qfund',
   isFunded: false,
   topUp: null,
+  waitsForConfirmation: false,
   feeRate: 42,
   currentFeeRate: 24,
   networkFloorFeeRate: 30,
@@ -74,6 +75,13 @@ describe('FundStep', () => {
     expect(screen.getByText('Exit fee received')).toBeInTheDocument();
     expect(screen.queryByTestId('unilateral-exit-funding-address')).not.toBeInTheDocument();
     expect(screen.queryByText('Still to send')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('unilateral-exit-pending-status')).not.toBeInTheDocument();
+  });
+
+  it('says why Continue Exit waits once the payment is on its way but not confirmed', () => {
+    render(<FundStep {...props} topUp={{ ...topUp, sentSat: 7_856, stillToSendSat: 0 }} waitsForConfirmation />);
+    expect(screen.getByText('Exit fee received')).toBeInTheDocument();
+    expect(screen.getByTestId('unilateral-exit-pending-status')).toHaveTextContent('Waiting for a confirmation');
   });
 });
 

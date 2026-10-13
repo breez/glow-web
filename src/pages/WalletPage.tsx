@@ -21,6 +21,7 @@ import BuyBitcoinDialog from '../features/buy/BuyBitcoinDialog';
 import { getBuyProviderSettings, filterProvidersByNetwork, filterProvidersByPlatform } from '../services/settings';
 import { useCashAppInstalled } from '../hooks/useCashAppInstalled';
 import {
+  bumpTxidOf,
   exitGroupTitle,
   recoveryEntryId,
   unilateralExitEntries,
@@ -28,8 +29,7 @@ import {
 } from '../features/unilateral-exit/listEntries';
 import { ArchivedExitDialog } from '../features/unilateral-exit/ArchivedExitDialog';
 import { TrackerView } from '../features/unilateral-exit/TrackerView';
-import { canBumpRecovery, type ExitMode } from '../features/unilateral-exit/driver';
-import { recoveryTxid } from '../features/unilateral-exit/archive';
+import type { ExitMode } from '../features/unilateral-exit/driver';
 import { BottomSheetCard, BottomSheetContainer, DialogHeader } from '../components/ui';
 import { useUnilateralExitEngineState } from '../features/unilateral-exit/hooks/useUnilateralExitEngineLifecycle';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';
@@ -156,7 +156,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   // Closes by itself once the recovery lands and moves to the archive.
   const [selectedRecoveryId, setSelectedRecoveryId] = useState<string | null>(null);
   const selectedRecovery = exitState.recoveries.find(r => recoveryEntryId(r) === selectedRecoveryId) ?? null;
-  const bumpTxid = selectedRecovery && canBumpRecovery(selectedRecovery) ? recoveryTxid(selectedRecovery) : null;
+  const bumpTxid = selectedRecovery && bumpTxidOf(selectedRecovery);
   const handleExitSelected = useCallback((entry: UnilateralExitEntry) => {
     if (entry.kind === 'archived') setSelectedExitId(entry.id);
     // A kept recovery is followed on its own tracker, not the exit flow's.

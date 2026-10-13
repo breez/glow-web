@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { exitGroupTitle, recoveryEntryId, unilateralExitEntries } from './listEntries';
+import { bumpTxidOf, exitGroupTitle, recoveryEntryId, unilateralExitEntries } from './listEntries';
 import { coin, confirmed, locked, pendingExit, plan, ready, tx } from './testFixtures';
 import type { ArchivedExit } from './archive';
 import type { UnilateralExitEngineState } from './engine';
@@ -314,6 +314,49 @@ describe('an exit holding a leaf it left out in the wallet list', () => {
       row({ pending: null, plan: asking({ topUp: { required: { sat: 3_000, inputs: 1 }, needsSignIn: true } }), pendingCoins: coins });
     expect(at([coin(3_000)])).toMatchObject({ title: 'Exit fee received', subtitle: 'Tap to update', isAction: true });
     expect(at([])).toMatchObject({ title: 'Waiting for exit fee', subtitle: 'Tap to update', isAction: true });
+  });
+
+  it('asks for no tap while a unilateral step is in flight, which the tap cannot build over', () => {
+    const inFlight = asking({
+      topUp: { required: { sat: 3_000, inputs: 1 }, needsSignIn: true },
+      exit: { transactions: [tx({ txid: 's', kind: 'sweep', status: ready })] },
+    });
+    expect(row({ pending: null, plan: inFlight, pendingCoins: [coin(3_000)] })).toMatchObject({
+      title: 'Exit fee received',
+      subtitle: 'Waiting for a confirmation',
+    });
+    expect(row({ pending: null, plan: inFlight, pendingCoins: [coin(3_000)] }).isAction).toBeFalsy();
+  });
+});
+
+describe("a kept recovery's fee bump", () => {
+  const kept = (status: ReturnType<typeof confirmed> | typeof ready) =>
+    plan(
+      [
+        tx({ txid: 'c1', kind: 'cooperative', nodeId: 'c-1', status: ready }),
+        tx({ txid: 'c2', kind: 'cooperative', nodeId: 'c-2', status }),
+      ],
+      { mode: 'recover' },
+    );
+
+  it('is offered for the recovery while nothing of it has confirmed, and not once part has', () => {
+    expect(bumpTxidOf(kept(ready))).toBe('c1');
+    expect(bumpTxidOf(kept(confirmed(9)))).toBeNull();
+  });
+});
+
+describe('a finished exit waiting on a read of what landed', () => {
+  it('keeps its row until the archive takes it over', () => {
+    const finished = plan([tx({ txid: 's', kind: 'sweep', status: confirmed(9) })], {
+      phase: 'complete',
+      landed: [{ leafIds: ['leaf-1'], valueSat: 100_000, outpoint: 'x:0' }],
+    });
+    expect(row({ pending: null, plan: finished })).toMatchObject({
+      id: 'active',
+      title: 'Transactions in progress',
+      subtitle: '1 of 1 processed',
+      isAction: false,
+    });
   });
 });
 

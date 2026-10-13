@@ -13,7 +13,7 @@ import {
   buildRecoveryBump,
   destinationAddressOf,
   fundingInputsOf,
-  isLanded,
+  isUnilateralLanded,
   leftoverTopUp,
   mergeFunding,
   planFromBuild,
@@ -88,11 +88,14 @@ const FALLBACK_FEE_RATES: FeeRates = { slow: 2, medium: 5, fast: 10 };
 const message = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
 // A replacement pays at least a sat/vB more than what it replaces (BIP 125).
-const liftRates = (rates: FeeRates, floor: number): FeeRates => ({
-  slow: Math.max(rates.slow, floor),
-  medium: Math.max(rates.medium, floor),
-  fast: Math.max(rates.fast, floor),
-});
+// Each option stays a sat/vB above the one before, so a floor above today's
+// rates does not leave three that read the same.
+const liftRates = (rates: FeeRates, floor: number): FeeRates => {
+  if (floor <= 0) return rates;
+  const slow = Math.max(rates.slow, floor);
+  const medium = Math.max(rates.medium, slow + 1);
+  return { slow, medium, fast: Math.max(rates.fast, medium + 1) };
+};
 
 export interface DestinationFields {
   destination: string;
@@ -121,6 +124,8 @@ export interface FundingFields {
   isFunded: boolean;
   /** What to send after a build at this quote fell short, or null before one does. */
   topUp: TopUp | null;
+  /** Nothing is left to send, but the build waits for a confirmation: of what was sent, or of the exit's own steps. */
+  waitsForConfirmation: boolean;
   /** The quote's rate, which the build pays. */
   feeRate: number;
   /** The rate the exit runs at until the build replaces it. */
@@ -446,8 +451,9 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
       // does. A failed rebuild is the engine's to clear on its next pass, and
       // the plan held here may already be stale.
       if (e instanceof RebuildLaterError) {
-        if (plan.needsSignIn) setUnilateralExitPlan(walletKey, { ...plan, needsSignIn: undefined, rebuildFailed: undefined });
-        else void advanceNow();
+        if (plan.needsSignIn) {
+          setUnilateralExitPlan(walletKey, { ...plan, needsSignIn: undefined, rebuildFailed: undefined, rebuildFailingSince: undefined });
+        } else void advanceNow();
         return;
       }
       logger.error(LogCategory.SDK, 'Failed to continue unilateral exit', { error: message(e) });
@@ -590,6 +596,8 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
     setQuote(null);
     setQuoteError(null);
     setBuildError(null);
+    // The failed tap that offered this belongs to the tracker, not the wizard's screens.
+    setContinueError(null);
     // The rates read when the page opened can be hours old by now.
     setFeeRates(null);
     setPhase('fee');
@@ -613,6 +621,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
     address: fundingKey.address,
     isFunded,
     topUp,
+    waitsForConfirmation: false,
     feeRate: quote?.feeRateSatPerVbyte ?? 0,
     currentFeeRate: plan?.feeRateSatPerVbyte ?? null,
     // The slowest rate the network is taking: above the exit's own rate, the
@@ -623,12 +632,17 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
   const leftoverFunding = useMemo<FundingFields | null>(() => {
     if (!plan?.topUp) return null;
     const address = exitFeeRecordOf(plan).exitFeeAddress;
-    // With no address yet, the tap derives it and asks again.
-    const asked = address ? leftoverTopUp(plan, pendingCoins.filter(coin => coin.confirmed)) : null;
+    // With no address yet, the tap derives it and asks again. A payment on its
+    // way counts toward the ask, as on the list row, so it is not asked for
+    // twice; only confirmed coins fund the build.
+    const asked = address ? leftoverTopUp(plan, pendingCoins) : null;
+    const paid = !address || leftoverTopUp(plan, pendingCoins.filter(coin => coin.confirmed)).stillToSendSat === 0;
+    const isFunded = isUnilateralLanded(plan.exit) && paid;
     return {
       address: address ?? '',
-      isFunded: isLanded(plan.exit) && (!asked || asked.stillToSendSat === 0),
+      isFunded,
       topUp: asked,
+      waitsForConfirmation: !!asked && asked.stillToSendSat === 0 && !isFunded,
       feeRate: plan.feeRateSatPerVbyte,
       currentFeeRate: plan.feeRateSatPerVbyte,
       networkFloorFeeRate: null,

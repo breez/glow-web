@@ -2,8 +2,10 @@ import { formatBlockWait } from '@/utils/blockTime';
 import { formatWithSpaces } from '@/utils/formatNumber';
 import {
   awaitsUpdate,
+  canBumpRecovery,
   heldRecoveryLeaves,
   isPendingFunded,
+  isUnilateralLanded,
   leftoverTopUp,
   namedLeavesOf,
   nextAction,
@@ -83,7 +85,10 @@ const topUpText = (
   const coins = state.pendingCoins;
   const received = leftoverTopUp(plan, coins.filter(coin => coin.confirmed)).stillToSendSat === 0;
   if (plan.topUp?.needsSignIn) {
-    return { title: received ? 'Exit fee received' : 'Waiting for exit fee', subtitle: 'Tap to update', isAction: true };
+    const title = received ? 'Exit fee received' : 'Waiting for exit fee';
+    // The tap builds nothing over a unilateral step in flight, so it is not asked for yet.
+    if (!isUnilateralLanded(plan.exit)) return { title, subtitle: 'Waiting for a confirmation' };
+    return { title, subtitle: 'Tap to update', isAction: true };
   }
   const stillToSend = leftoverTopUp(plan, coins).stillToSendSat;
   if (stillToSend > 0) return { title: 'Waiting for exit fee', subtitle: `Send ₿${formatWithSpaces(stillToSend)} more` };
@@ -103,6 +108,10 @@ const archivedEntry = (exit: ArchivedExit): UnilateralExitEntry => ({
 
 /** The list row of a kept co-signed recovery, which the wallet page also finds it by. */
 export const recoveryEntryId = (recovery: UnilateralExitPlan): string => `recovery:${recoveryTxid(recovery) ?? ''}`;
+
+/** What a kept recovery's tracker opens Rebuild at a higher fee for, or null where it offers none. */
+export const bumpTxidOf = (recovery: UnilateralExitPlan): string | null =>
+  canBumpRecovery(recovery) ? recoveryTxid(recovery) : null;
 
 // The same words as a finished one: it is already on its way on-chain.
 const recoveryEntry = (recovery: UnilateralExitPlan): UnilateralExitEntry => ({
@@ -201,9 +210,11 @@ const liveEntry = (state: UnilateralExitEngineState): UnilateralExitEntry | null
       kind: 'active',
     };
   }
-  if (!plan || plan.phase === 'complete') return null;
+  if (!plan) return null;
   // Ahead of the update tap: an exit waiting on its fee says what to send.
   if (plan.topUp) return { id: 'active', ...topUpText(state, plan), amountSat: willReceiveSat(plan), kind: 'active' };
+  // A finished exit waiting on a read of what landed keeps its row until the
+  // archive's takes over, so the exit never drops out of the list meanwhile.
   return {
     id: 'active',
     title: awaitsUpdate(plan) ? 'Update needed' : 'Transactions in progress',

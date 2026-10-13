@@ -446,6 +446,13 @@ describe('the update tap', () => {
       expect(setUnilateralExitPlan).not.toHaveBeenCalled();
     });
 
+    it('drops it on the way to a different fee, whose own screens it does not belong on', async () => {
+      const { result } = await tapFailing();
+      act(() => result.current.rebuild());
+      expect(result.current.phase).toBe('fee');
+      expect(result.current.continueError).toBeNull();
+    });
+
     it('drops it once the card goes, so a card that comes back explains itself again', async () => {
       const { result, rerender } = await tapFailing();
 
@@ -495,10 +502,12 @@ describe('a leaf the exit left out, waiting on more exit fee', () => {
 
     expect(result.current.phase).toBe('fund');
     expect(result.current.canGoBack).toBe(false);
+    // The coin on its way counts toward what is still to send, as on the list row.
     expect(result.current.funding).toEqual({
       address: 'bcrt1qfee',
       isFunded: false,
-      topUp: { neededSat: 3_272, sentSat: 1_000, stillToSendSat: 2_272 },
+      topUp: { neededSat: 3_544, sentSat: 1_500, stillToSendSat: 2_044 },
+      waitsForConfirmation: false,
       feeRate: 4,
       currentFeeRate: 4,
       networkFloorFeeRate: null,
@@ -513,8 +522,33 @@ describe('a leaf the exit left out, waiting on more exit fee', () => {
     expect(result.current.phase).toBe('tracker');
   });
 
-  it('builds it from the tap once the fee confirms, reading the phrase first, and stores what it built', async () => {
+  it('asks for nothing more once the payment is on its way, and waits for it to confirm', () => {
+    saved.pendingCoins = [coin(3_000, false)];
+    wallet.current = sdk();
+    const { result } = renderHook(() => useUnilateralExitFlow('regtest'));
+    expect(result.current.funding?.topUp?.stillToSendSat).toBe(0);
+    expect(result.current.funding?.waitsForConfirmation).toBe(true);
+    expect(result.current.funding?.isFunded).toBe(false);
+  });
+
+  it('waits for a unilateral step in flight, but not for a co-signed recovery, which the build carries', () => {
     saved.pendingCoins = [coin(3_000)];
+    wallet.current = sdk();
+    const sweep = tx({ txid: 's', kind: 'sweep', status: confirmed(9) });
+    saved.plan = waiting({ exit: { transactions: [{ ...sweep, status: { type: 'ready' } }] } });
+    const { result, rerender } = renderHook(() => useUnilateralExitFlow('regtest'));
+    expect(result.current.funding?.isFunded).toBe(false);
+    expect(result.current.funding?.waitsForConfirmation).toBe(true);
+
+    saved.plan = waiting({ exit: { transactions: [sweep, tx({ txid: 'c9', kind: 'cooperative', nodeId: 'c-9', status: { type: 'unverified' } })] } });
+    rerender();
+    expect(result.current.funding?.isFunded).toBe(true);
+    expect(result.current.funding?.waitsForConfirmation).toBe(false);
+  });
+
+  it('builds it from the tap once the fee confirms, reading the phrase first, and stores what it built', async () => {
+    // Only the confirmed coin funds it: a build spends nothing from the mempool.
+    saved.pendingCoins = [coin(3_000), coin(1_000, false)];
     const recoverFunds = vi.fn<ExitSdk['recoverFunds']>(async () => nextPart());
     wallet.current = sdk({ prepareRecoverFunds: async () => askQuote, recoverFunds });
     vi.mocked(readWalletMnemonic).mockResolvedValueOnce(MNEMONIC);
@@ -546,6 +580,25 @@ describe('a leaf the exit left out, waiting on more exit fee', () => {
 
     expect(result.current.continueError).toBe('operators unreachable');
     expect(setUnilateralExitPlan).not.toHaveBeenCalled();
+  });
+
+  it('drops that error once the request goes, so a later request starts clean', async () => {
+    saved.pendingCoins = [coin(3_000)];
+    wallet.current = sdk({
+      prepareRecoverFunds: async () => {
+        throw new Error('operators unreachable');
+      },
+    });
+    vi.mocked(readWalletMnemonic).mockResolvedValueOnce(MNEMONIC);
+    const { result, rerender } = renderHook(() => useUnilateralExitFlow('regtest'));
+    await act(() => result.current.build());
+    expect(result.current.continueError).toBe('operators unreachable');
+
+    saved.plan = waiting({ topUp: undefined });
+    rerender();
+    saved.plan = waiting();
+    rerender();
+    expect(result.current.continueError).toBeNull();
   });
 
   it('builds nothing by itself on its fee screen, which waits for the tap', async () => {
@@ -632,9 +685,10 @@ describe('raising the fee of a kept co-signed recovery', () => {
     expect(result.current.bumpedTxid).toBe('c1');
   });
 
-  it("offers no rate at or below the recovery's own", async () => {
+  it("offers no rate at or below the recovery's own, and no two that read the same", async () => {
     const { result } = await bumping();
-    expect(result.current.fee.feeRates).toEqual({ slow: 2, medium: 2, fast: 3 });
+    // Today's rates are 1, 2 and 3, against a recovery sent at 1.
+    expect(result.current.fee.feeRates).toEqual({ slow: 2, medium: 3, fast: 4 });
   });
 
   it("quotes the recovery's own leaves to its own address beside an exit under way, with the quote's own fee", async () => {
@@ -644,7 +698,7 @@ describe('raising the fee of a kept co-signed recovery', () => {
 
     expect(prepareRecoverFunds).toHaveBeenCalledWith(
       expect.objectContaining({
-        feeRateSatPerVbyte: 2,
+        feeRateSatPerVbyte: 3,
         destination: 'bcrt1qmine',
         selection: { type: 'specific', leafIds: ['c-1', 'c-2'] },
       }),

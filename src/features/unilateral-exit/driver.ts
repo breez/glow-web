@@ -110,8 +110,10 @@ export interface UnilateralExitPlan {
   needsRebuild?: true;
   /** A rebuild needs the passkey, which only a tap can ask for, so the engine leaves it to the tracker's button. */
   needsSignIn?: true;
-  /** The last background rebuild of a diverged exit failed for a reason other than waiting on the chain, so the exit asks for the update tap. */
+  /** The background rebuilds of a diverged exit have failed across a block, for a reason other than waiting on the chain, so the exit asks for the update tap. */
   rebuildFailed?: true;
+  /** The tip of the first of those failures in a row: one passing outage within a block asks nothing. */
+  rebuildFailingSince?: number;
   /** The tip of Glow's last rebuild over an Unverified step: once a block, so a failing chain service is not asked every pass. */
   unverifiedRebuiltAt?: number;
   /**
@@ -518,9 +520,7 @@ export function retryDue(plan: UnilateralExitPlan, tipHeight: number): boolean {
  * short.
  */
 export const releaseDue = (plan: UnilateralExitPlan, tipHeight: number): boolean =>
-  plan.retrySince !== undefined &&
-  tipHeight - plan.retrySince >= RELEASE_BLOCKS &&
-  plan.exit.transactions.every(tx => isCooperative(tx) || tx.status.type === 'confirmed');
+  plan.retrySince !== undefined && tipHeight - plan.retrySince >= RELEASE_BLOCKS && isUnilateralLanded(plan.exit);
 
 /** Starts the clock on the first checked pass that finds a target, and stops it once none is left. */
 function paceRetry(plan: UnilateralExitPlan, tipHeight: number, withLeftovers: boolean): UnilateralExitPlan {
@@ -653,6 +653,14 @@ const leftoverValueSat = (plan: UnilateralExitPlan): number => {
 
 /** Nothing of the build is in flight. True of a plan with no transactions, which has nothing to replace. */
 export const isLanded = (exit: RecoverFundsResponse): boolean => exit.transactions.every(tx => tx.status.type === 'confirmed');
+
+/** No unilateral step is in flight: only co-signed recoveries can be, which a build of the next part hands back. */
+export const isUnilateralLanded = (exit: RecoverFundsResponse): boolean =>
+  exit.transactions.every(tx => isCooperative(tx) || tx.status.type === 'confirmed');
+
+/** Leaves whose co-signed recovery has not confirmed. */
+const cosignedInFlight = (plan: UnilateralExitPlan): string[] =>
+  plan.exit.transactions.flatMap(tx => (isCooperative(tx) && tx.status.type !== 'confirmed' && tx.nodeId ? [tx.nodeId] : []));
 
 const outpointOf = (input: CpfpInput): string => `${input.txid}:${input.vout}`;
 
@@ -921,15 +929,20 @@ export function planFromBuild(
   meta: BuildMeta,
 ): UnilateralExitPlan {
   const named = resuming ? namedLeavesOf(resuming).map(leaf => leaf.leafId) : [];
+  // The SDK builds no recovery for a co-signed leaf whose recovery is already
+  // in a block, so one the build neither holds nor failed has landed. Recorded
+  // now, while the replaced build still says what its recovery spends.
+  const held = new Set([...built.leaves, ...built.failed].map(leaf => leaf.leafId));
+  const priced = { ...quote, leaves: quote.leaves.filter(leaf => held.has(leaf.leafId) || !isCooperativeLeaf(leaf)) };
   return planFromExitResponse(built, {
     ...meta,
     destination: quote.destination,
     feeRateSatPerVbyte: quote.feeRateSatPerVbyte,
     quotedSweepFeeSat: builtSweepFeeSat(quote, built, resuming),
     namedLeaves: resuming
-      ? stillNamed(resuming, quote)
+      ? stillNamed(resuming, priced)
       : quote.leaves.map(({ leafId, valueSats }) => ({ leafId, valueSats })),
-    landed: resuming ? withLanded(resuming, quote) : undefined,
+    landed: resuming ? withLanded(resuming, priced) : undefined,
     droppedLeaves: resuming ? withDropped(resuming.droppedLeaves, leavingSkips(quote, named).dropped) : undefined,
     retrySince: resuming?.retrySince,
     retriedAt: resuming?.retriedAt,
@@ -1345,8 +1358,9 @@ async function buildNextPart(
 /**
  * Applies a quote of the leaves Glow prepares again by itself. Co-signed ones
  * are built at once and merged into the plan. In the plan slot a unilateral
- * one waits for the rest of the exit to land: it is then built as the exit's
- * next part when it needs no funding, and asks for more exit fee when it does.
+ * one waits for the exit's unilateral steps to land: it is then built as the
+ * exit's next part when it needs no funding, and asks for more exit fee when
+ * it does. A co-signed recovery still in flight holds neither back.
  */
 async function applyRetryQuote(
   plan: UnilateralExitPlan,
@@ -1360,8 +1374,12 @@ async function applyRetryQuote(
   const { leaving, dropped } = leavingSkips(quote, targets);
   const gone = new Set([...landedIds, ...leaving]);
   const unilateral = quote.leaves.some(leaf => !isCooperativeLeaf(leaf));
-  const landed = isLanded(plan.exit);
-  if (inSlot && unilateral && landed && !needsFunding(quote)) return buildNextPart(plan, sdk, quote, null, exitFeeRecordOf(plan));
+  const landed = isUnilateralLanded(plan.exit);
+  // The next part replaces the build, so it has to hand back every co-signed recovery still in flight.
+  const carries = cosignedInFlight(plan).every(id => targets.includes(id));
+  if (inSlot && unilateral && landed && carries && !needsFunding(quote)) {
+    return buildNextPart(plan, sdk, quote, null, exitFeeRecordOf(plan));
+  }
 
   // On their own, so none waits on a unilateral leaf's fee (guide: recovering without funding).
   const cosigned = quote.leaves.filter(isCooperativeLeaf).map(leaf => leaf.leafId);
@@ -1413,14 +1431,16 @@ export async function buildLeftover(
   coins: ChainUtxo[],
   { interactive = false }: { interactive?: boolean } = {},
 ): Promise<UnilateralExitPlan> {
-  // Built over what is in flight, it would replace a transaction Glow follows.
-  if (!isLanded(plan.exit)) throw new RebuildLaterError();
+  // Built over a unilateral step in flight, it would replace a transaction Glow follows.
+  if (!isUnilateralLanded(plan.exit)) throw new RebuildLaterError();
   const readKey = async () =>
     deriveFundingKey(await readWalletMnemonic({ interactive }), plan.network, plan.fundingAddressIndex);
   const tapKey = interactive ? await readKey() : null;
   await restoreExitState(sdk, plan, await loadExitState(identityPubkey).catch(() => null));
 
-  const targets = leftoverIdsOf(plan);
+  // A co-signed recovery still in flight is named too: at the plan's rate the
+  // SDK hands back the one it kept, so the next part carries it.
+  const targets = [...cosignedInFlight(plan), ...leftoverIdsOf(plan)];
   const quote = await quoteLeaves(sdk, targets, plan);
   if (!needsFunding(quote)) return applyRetryQuote({ ...plan, topUp: undefined }, sdk, quote, targets, true);
 
@@ -1456,7 +1476,7 @@ const leftoverFunded = (plan: UnilateralExitPlan, confirmed: ChainUtxo[], tipHei
   !!plan.topUp &&
   !plan.topUp.needsSignIn &&
   plan.retriedAt !== tipHeight &&
-  isLanded(plan.exit) &&
+  isUnilateralLanded(plan.exit) &&
   leftoverTopUp(plan, confirmed).stillToSendSat === 0;
 
 async function buildFundedLeftover(
@@ -1470,12 +1490,27 @@ async function buildFundedLeftover(
   try {
     return await buildLeftover(paced, sdk, identityPubkey, confirmed);
   } catch (e) {
-    if (!(e instanceof EmptyRecoveryError)) {
-      logger.warn(LogCategory.SDK, `Failed to build what the exit left out: ${e instanceof Error ? e.message : String(e)}`);
-    }
+    // An empty build too: this runs every block, so a silent loop would hide.
+    const reason = e instanceof EmptyRecoveryError ? 'the build came back empty' : e instanceof Error ? e.message : String(e);
+    logger.warn(LogCategory.SDK, `Failed to build what the exit left out: ${reason}`);
     return paced;
   }
 }
+
+/** What the exit fee address holds, or null while it is not known or cannot be read. */
+async function readFeeCoins(chain: ChainClient, address: string | undefined): Promise<ChainUtxo[] | null> {
+  if (!address) return null;
+  try {
+    return await chain.addressUtxos(address);
+  } catch (e) {
+    logger.warn(LogCategory.SDK, 'Failed to read the exit fee address', { error: e instanceof Error ? e.message : String(e) });
+    return null;
+  }
+}
+
+/** What the confirmed coins hold. */
+const confirmedSat = (coins: ChainUtxo[]): number =>
+  coins.filter(coin => coin.confirmed).reduce((sum, coin) => sum + coin.value, 0);
 
 /** Lets go of what is still stuck at the deadline, leftovers included. Not dropped, so it shows as Recoverable Funds again. */
 const releaseStuck = (plan: UnilateralExitPlan, withLeftovers: boolean): UnilateralExitPlan =>
@@ -1511,7 +1546,8 @@ async function rebuildConverted(plan: UnilateralExitPlan, sdk: ExitSdk, identity
 /**
  * One pass over an exit. `identityPubkey` marks the plan slot, the one place a
  * leaf the exit left out stays part of it. `feeCoins` are what its fee
- * address holds while a leftover waits on more exit fee.
+ * address holds while a leftover waits on more exit fee, as last read; absent
+ * when that read failed.
  */
 export async function advanceUnilateralExit(
   plan: UnilateralExitPlan,
@@ -1529,6 +1565,7 @@ export async function advanceUnilateralExit(
   let next = plan;
   let checked = false;
   let doneSet = false;
+  let landsNow = false;
   if (sdk) {
     try {
       // With nothing built there is nothing to read back, only leftovers to try.
@@ -1536,11 +1573,20 @@ export async function advanceUnilateralExit(
       next = unbuilt ? next : await checkExit(next, sdk);
       if (inSlot && next.phase === 'complete' && leftoverIdsOf(next).length > 0) {
         // The Done verdict covers only the set, so a leaf it left out is still
-        // part of the exit. On the pass the set lands, the clock starts over
-        // and the leftovers are tried at once.
+        // part of the exit.
         doneSet = true;
-        next = { ...next, phase: 'active', ...(isLanded(plan.exit) ? {} : { retrySince: tipHeight, retriedAt: undefined }) };
+        next = { ...next, phase: 'active' };
       }
+      // The week runs from the pass the last unilateral step lands, whatever
+      // the verdict: the leftovers are tried at once then, so a fee they need
+      // is asked with the whole week to pay it.
+      landsNow =
+        inSlot &&
+        next.phase === 'active' &&
+        leftoverIdsOf(next).length > 0 &&
+        !isUnilateralLanded(plan.exit) &&
+        isUnilateralLanded(next.exit);
+      if (landsNow) next = { ...next, retrySince: tipHeight, retriedAt: undefined };
       next = paceRetry(next, tipHeight, inSlot);
       checked = true;
     } catch (e) {
@@ -1563,13 +1609,15 @@ export async function advanceUnilateralExit(
         next = { ...next, needsSignIn: true };
       } else {
         // Waiting on the chain is not a failure: the next pass tries again, so
-        // only another error asks for the tap.
+        // only another error asks for the tap, and only once failures span a
+        // block, since a rate limit or a brief outage passes within one.
         const failed = !(e instanceof RebuildLaterError);
         if (failed) {
           const error = e instanceof Error ? e.message : String(e);
           logger.warn(LogCategory.SDK, `Failed to rebuild the exit: ${error}`);
         }
-        next = { ...next, rebuildFailed: failed ? true : undefined };
+        const since = failed ? (next.rebuildFailingSince ?? tipHeight) : undefined;
+        next = { ...next, rebuildFailingSince: since, rebuildFailed: since !== undefined && tipHeight > since ? true : undefined };
       }
     }
   } else if (
@@ -1591,16 +1639,26 @@ export async function advanceUnilateralExit(
 
   const confirmedFee = (feeCoins ?? []).filter(coin => coin.confirmed);
   if (next.topUp && feeCoins && next.topUp.heldSat === undefined) {
-    next = { ...next, topUp: { ...next.topUp, heldSat: confirmedFee.reduce((sum, coin) => sum + coin.value, 0) } };
+    next = { ...next, topUp: { ...next.topUp, heldSat: confirmedSat(feeCoins) } };
   }
 
   // Skipped in a pass that rebuilt, which already prepared every leaf again.
   if (checked && sdk && next.phase === 'active' && next.exit === checkedExit) {
-    const retryNow = doneSet && next.retriedAt === undefined;
+    // At once on the first Done verdict too, which can come after the last
+    // unilateral step landed, once a co-signed recovery confirms.
+    const retryNow = landsNow || (doneSet && (!isLanded(plan.exit) || plan.retriedAt === undefined));
     if (identityPubkey && feeCoins && leftoverFunded(next, confirmedFee, tipHeight)) {
       next = await buildFundedLeftover(next, sdk, identityPubkey, confirmedFee, tipHeight);
+      // A build that keeps failing holds the leftover no longer than the week.
+      if (next.topUp && releaseDue(next, tipHeight)) next = releaseStuck(next, inSlot);
     } else if (releaseDue(next, tipHeight)) next = releaseStuck(next, inSlot);
     else if (retryNow || retryDue(next, tipHeight)) next = await retryCosigned(next, sdk, tipHeight, identityPubkey);
+  }
+  // A request made in this pass is read against what the address holds now,
+  // before the user can have paid it, so the fee paid counts only what they add.
+  if (next.topUp && next.topUp.heldSat === undefined) {
+    const coins = feeCoins ?? (await readFeeCoins(chain, exitFeeRecordOf(next).exitFeeAddress));
+    if (coins) next = { ...next, topUp: { ...next.topUp, heldSat: confirmedSat(coins) } };
   }
   // What the Done verdict waited on is settled, so the exit is finished.
   if (doneSet && next.phase === 'active' && isLanded(next.exit) && leftoverIdsOf(next).length === 0) {

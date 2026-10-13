@@ -4,7 +4,7 @@ import { AlertCard, SimpleAlert } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
 import { CollapsibleCodeField, CollapsibleSection, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { RefreshIcon } from '@/components/Icons';
-import { awaitsUpdate, blocksToFinish, exitStages, isLanded, nextAction, planProgress } from './driver';
+import { awaitsUpdate, blocksToFinish, exitStages, isLanded, leftoverIdsOf, nextAction, planProgress } from './driver';
 import type { NextAction, PlanProgress, UnilateralExitPlan } from './driver';
 import { isCooperative } from './quote';
 import { formatDaysLeft } from '@/utils/blockTime';
@@ -71,11 +71,14 @@ const ExitSummary: React.FC<{
 
   const isChecking = useHeldFor(isAdvancing, CHECKING_VISIBLE_AFTER_MS);
   // A diverged exit sends nothing until its rebuild replaces the set, so the
-  // set's next step is not what it is doing.
+  // set's next step is not what it is doing. Nor is it once the set has
+  // landed and only leaves it left out remain, which Glow tries again by
+  // itself for up to a week.
   const paused = plan.phase === 'redo' && awaitsUpdate(plan);
+  const retrying = plan.phase === 'active' && isLanded(plan.exit) && leftoverIdsOf(plan).length > 0;
   const status = isChecking
     ? 'Checking the blockchain...'
-    : plan.phase === 'redo'
+    : plan.phase === 'redo' || retrying
       ? paused
         ? 'Update needed'
         : 'Updating automatically'
@@ -101,12 +104,17 @@ const ExitSummary: React.FC<{
         className="bg-spark-dark border border-spark-border rounded-2xl p-4 space-y-3"
         data-testid="unilateral-exit-stages"
       >
-        <Row label="Days left">
-          <span data-testid="unilateral-exit-eta">
-            {blocksLeft === null ? 'almost there' : formatDaysLeft(blocksLeft)}
-          </span>
-        </Row>
-        <div className="border-t border-spark-border/50" />
+        {/* Nothing in flight to count down, and no telling when a leftover lands. */}
+        {!retrying && (
+          <>
+            <Row label="Days left">
+              <span data-testid="unilateral-exit-eta">
+                {blocksLeft === null ? 'almost there' : formatDaysLeft(blocksLeft)}
+              </span>
+            </Row>
+            <div className="border-t border-spark-border/50" />
+          </>
+        )}
         <Row label="Processed transactions">
           <Ratio done={progress.confirmed} total={progress.total} />
         </Row>

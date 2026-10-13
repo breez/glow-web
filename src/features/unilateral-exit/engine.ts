@@ -158,19 +158,21 @@ export function subscribeUnilateralExit(listener: Listener): () => void {
   return () => listeners.delete(listener);
 }
 
-/** Reads what the fee address holds. Nothing starts without the user. */
-async function watchPending(): Promise<void> {
+/** Reads what the fee address holds, or null when it could not. Nothing starts without the user. */
+async function watchPending(): Promise<ChainUtxo[] | null> {
   const address =
     state.pending?.fundingAddress ?? (state.plan?.topUp ? exitFeeRecordOf(state.plan).exitFeeAddress : undefined);
-  if (!chain || !address) return;
+  if (!chain || !address) return null;
   const passGeneration = generation;
   try {
     const coins = await chain.addressUtxos(address);
     if (generation === passGeneration) emit({ pendingCoins: coins });
+    return coins;
   } catch (e) {
     logger.warn(LogCategory.SDK, 'Failed to read the exit fee address', {
       error: e instanceof Error ? e.message : String(e),
     });
+    return null;
   }
 }
 
@@ -220,7 +222,10 @@ export async function advanceNow(): Promise<void> {
 
 async function advancePlan(): Promise<void> {
   const current = state.plan;
-  if (!current) return watchPending();
+  if (!current) {
+    await watchPending();
+    return;
+  }
   if (!wallet || !chain || state.isAdvancing) return;
   if (!planRuns(current)) {
     syncPolling();
@@ -234,14 +239,15 @@ async function advancePlan(): Promise<void> {
   try {
     // Read before the pass, which builds the leftover once its fee confirms.
     // With no address yet there is nothing to read, and no coins to hand on.
-    const watched = !!current.topUp && !!exitFeeRecordOf(current).exitFeeAddress;
-    if (watched) await watchPending();
+    // Nor after a failed read: what was last read, or nothing, would set what
+    // the address held before the ask too low.
+    const coins = current.topUp ? await watchPending() : null;
     const { plan, tipHeight } = await advanceUnilateralExit(
       current,
       chain,
       passSdk ?? undefined,
       passWallet.identityPubkey,
-      watched ? state.pendingCoins : undefined,
+      coins ?? undefined,
     );
     // Whoever replaced the wallet or plan while this pass was out owns the state now.
     if (generation !== passGeneration) return;

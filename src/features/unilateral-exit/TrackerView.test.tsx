@@ -141,6 +141,20 @@ describe('what the exit is worth right now', () => {
     expect(screen.queryByText(/Part of your exit didn't confirm in time/)).not.toBeInTheDocument();
     expect(screen.queryByText('Could not update the exit')).not.toBeInTheDocument();
   });
+
+  it('says Glow is updating an exit whose set has landed while a leaf it left out is tried again, naming no days left', () => {
+    renderTracker(
+      plan([tx({ txid: 's', kind: 'sweep', status: confirmed(900) })], {
+        namedLeaves: [
+          { leafId: 'leaf-1', valueSats: 100_000 },
+          { leafId: 'c-9', valueSats: 30_000 },
+        ],
+      }),
+    );
+    expect(screen.getByText('Processing')).toBeInTheDocument();
+    expect(screen.getByTestId('unilateral-exit-status')).toHaveTextContent('Updating automatically');
+    expect(screen.queryByTestId('unilateral-exit-eta')).not.toBeInTheDocument();
+  });
 });
 
 describe('TrackerView', () => {

@@ -175,6 +175,58 @@ describe('the sheet once a recovery lands', () => {
     rerender(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={onFinished} />);
     expect(onFinished).toHaveBeenCalled();
   });
+
+  it('closes when a plan that finished with no transaction of its own leaves the slot, archived under another txid', async () => {
+    const onFinished = vi.fn();
+    const at = (current: UnilateralExitPlan | null, archive: ArchivedExit[] = []) =>
+      ({
+        phase: 'tracker',
+        mode: 'recover',
+        engine: { plan: current, pending: null, archive, tipHeight: 10, isAdvancing: false },
+        canGoBack: false,
+        back: vi.fn(),
+        rebuild: vi.fn(),
+        continueExit: vi.fn(),
+        isContinuing: false,
+        continueError: null,
+      }) as unknown as UnilateralExitFlow;
+    flow.current = at(plan([tx({ txid: 'stuck', kind: 'cooperative', status: { type: 'unverified' } })], { mode: 'recover' }));
+    const { rerender } = render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={onFinished} />);
+    await waitForSheetOpen();
+    const show = (next: UnilateralExitFlow) => {
+      flow.current = next;
+      rerender(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={onFinished} />);
+    };
+
+    // The stuck recovery was let go, and an earlier one landed.
+    show(at(plan([], { mode: 'recover', phase: 'complete' })));
+    expect(onFinished).not.toHaveBeenCalled();
+    show(at(null, [{ id: 'earlier', destination: 'bc1qdest', deliveredSat: 1, completedAt: 0 }]));
+    expect(onFinished).toHaveBeenCalled();
+  });
+
+  it('stays open when the plan goes missing while it still runs, as while the engine restarts', async () => {
+    const onFinished = vi.fn();
+    const running = plan([tx({ txid: 'sweep-1', kind: 'sweep' })]);
+    const at = (current: UnilateralExitPlan | null) =>
+      ({
+        phase: current ? 'tracker' : 'intro',
+        engine: { plan: current, pending: null, archive: [], tipHeight: 10, isAdvancing: false },
+        canGoBack: false,
+        back: vi.fn(),
+        goTo: vi.fn(),
+        rebuild: vi.fn(),
+        continueExit: vi.fn(),
+        isContinuing: false,
+        continueError: null,
+      }) as unknown as UnilateralExitFlow;
+    flow.current = at(running);
+    const { rerender } = render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={onFinished} />);
+    await waitForSheetOpen();
+    flow.current = at(null);
+    rerender(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={onFinished} />);
+    expect(onFinished).not.toHaveBeenCalled();
+  });
 });
 
 describe('raising the fee of a kept co-signed recovery', () => {
@@ -266,6 +318,7 @@ describe('the fee screen of a leaf the exit left out', () => {
         address: 'bcrt1qfee',
         isFunded: true,
         topUp: { neededSat: 3_000, sentSat: 3_000, stillToSendSat: 0 },
+        waitsForConfirmation: false,
         feeRate: 4,
         currentFeeRate: 4,
         networkFloorFeeRate: null,
@@ -286,8 +339,25 @@ describe('the fee screen of a leaf the exit left out', () => {
     expect(flow.current.build).toHaveBeenCalled();
   });
 
-  it('holds the button while the build is out', async () => {
+  it('holds the button while the build is out, and says it is under way', async () => {
     await renderFund({ isContinuing: true });
+    expect(screen.getByTestId('unilateral-exit-build')).toBeDisabled();
+    expect(screen.getByTestId('unilateral-exit-build')).toHaveTextContent(/^Updating\.\.\.$/);
+  });
+
+  it('says why continuing waits while the payment has yet to confirm', async () => {
+    const funding = {
+      address: 'bcrt1qfee',
+      isFunded: false,
+      topUp: { neededSat: 3_000, sentSat: 3_000, stillToSendSat: 0 },
+      waitsForConfirmation: true,
+      feeRate: 4,
+      currentFeeRate: 4,
+      networkFloorFeeRate: null,
+      quotedAt: null,
+    };
+    await renderFund({ funding });
+    expect(screen.getByText('Waiting for a confirmation')).toBeInTheDocument();
     expect(screen.getByTestId('unilateral-exit-build')).toBeDisabled();
   });
 
@@ -295,6 +365,12 @@ describe('the fee screen of a leaf the exit left out', () => {
     await renderFund({ continueError: 'operators unreachable' });
     expect(screen.getByText('Exit fee received')).toBeInTheDocument();
     expect(screen.getByText('Could not continue the exit')).toBeInTheDocument();
+  });
+
+  it("keeps a failed update's error off the wizard's own fee screen", async () => {
+    const exit = plan([tx({ txid: 'a' })], { phase: 'redo', rebuildFailed: true });
+    await renderFund({ engine: { plan: exit, pending: null, archive: [] } as unknown as UnilateralExitFlow['engine'], continueError: 'passkey cancelled' });
+    expect(screen.queryByText('Could not continue the exit')).not.toBeInTheDocument();
   });
 });
 
