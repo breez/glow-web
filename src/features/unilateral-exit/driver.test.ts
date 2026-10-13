@@ -450,13 +450,22 @@ describe('advanceUnilateralExit', () => {
 
   // The two cases below cover all four skip reasons, so moving any of them in
   // or out of RETRY_LATER_REASONS fails one.
-  const skippedOnly = (reason: SkippedLeafReason) => prepared({ leaves: [], skipped: [{ leafId: 'leaf-1', valueSats: 100_000, reason }] });
+  const skippedOnly = (reason: SkippedLeafReason, stoppedLeafIds: string[] = []) =>
+    prepared({
+      leaves: [],
+      skipped: [{ leafId: 'leaf-1', valueSats: 100_000, reason }],
+      exitChainState: { ...prepared().exitChainState, stoppedLeafIds },
+    });
 
-  it.each([{ type: 'unverified' }, { type: 'fundsNotFound' }] satisfies SkippedLeafReason[])(
-    'waits on a diverged exit while the chain has yet to show where a leaf went ($type), and tries again next pass',
-    async reason => {
+  it.each([
+    [{ type: 'unverified' }, []],
+    [{ type: 'fundsNotFound' }, []],
+    [{ type: 'notRecoverable', message: 'stopped' }, ['leaf-1']],
+  ] satisfies [SkippedLeafReason, string[]][])(
+    'waits on a diverged exit while a leaf may yet move (%o, stopped: %o), and tries again next pass',
+    async (reason, stopped) => {
       const broadcast = vi.fn(async () => undefined);
-      const prepareRecoverFunds = vi.fn(async () => skippedOnly(reason));
+      const prepareRecoverFunds = vi.fn(async () => skippedOnly(reason, stopped));
       const driver = sdk({ checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: redo }), prepareRecoverFunds });
       const first = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain({ broadcast }), driver, '02abc');
       expect(first.plan.phase).toBe('redo');
@@ -1611,14 +1620,21 @@ describe('rebuildExit', () => {
     );
   });
 
-  it('keeps naming a leaf a quote skipped while its funds were not found yet', async () => {
-    const quote = prepared({ skipped: [{ leafId: 'leaf-2', valueSats: 420_000, reason: { type: 'unverified' } }] });
+  it.each([
+    ['its funds were not found yet', { type: 'unverified' }, []],
+    ['the operators stopped it', { type: 'notRecoverable', message: 'stopped' }, ['leaf-2']],
+  ] satisfies [string, SkippedLeafReason, string[]][])('keeps naming a leaf a quote skipped while %s', async (_, reason, stoppedLeafIds) => {
+    const quote = prepared({
+      skipped: [{ leafId: 'leaf-2', valueSats: 420_000, reason }],
+      exitChainState: { ...prepared().exitChainState, stoppedLeafIds },
+    });
     const prepareRecoverFunds = vi.fn(async () => quote);
     const first = await rebuildExit(twoLeaves([tx({ txid: 'a' })]), sdk({ prepareRecoverFunds }), '02abc');
     expect(first.namedLeaves).toEqual([
       { leafId: 'leaf-1', valueSats: 100_000, feeSat: 200 },
       { leafId: 'leaf-2', valueSats: 420_000 },
     ]);
+    expect(first.droppedLeaves).toBeUndefined();
     await rebuildExit({ ...first, phase: 'redo' }, sdk({ prepareRecoverFunds }), '02abc');
     expect(prepareRecoverFunds).toHaveBeenLastCalledWith(
       expect.objectContaining({ selection: { type: 'specific', leafIds: ['leaf-1', 'leaf-2'] } }),
@@ -2507,6 +2523,31 @@ describe('a leaf the exit left out', () => {
       expect(prepareRecoverFunds).toHaveBeenCalledTimes(2);
     },
   );
+
+  it('keeps a leftover the operators stopped and tries it again, building it into the exit once it quotes co-signed', async () => {
+    const notRecoverable = { type: 'notRecoverable' as const, message: 'paid elsewhere' };
+    const stopped = leftoverQuote({
+      leaves: [],
+      skipped: [{ ...coLeaf, reason: notRecoverable }, { ...soloLeaf, reason: notRecoverable }],
+      exitChainState: { ...prepared().exitChainState, stoppedLeafIds: ['c-9'] },
+    });
+    const prepareRecoverFunds = quoting(stopped, leftoverQuote());
+    const recoverFunds = vi.fn(async () => cosignedBuild());
+    const at = (tip: number) => chain({ tipHeight: async () => tip });
+    const first = await advanceUnilateralExit(exit(), at(100), done({ prepareRecoverFunds, recoverFunds }), '02abc');
+    expect(first.plan.phase).toBe('active');
+    expect(leftoverIdsOf(first.plan)).toEqual(['c-9']);
+    // Only the leaf no stop explains is gone for good.
+    expect(first.plan.droppedLeaves).toEqual([{ leafId: 'leaf-2', valueSats: 50_000 }]);
+    expect(recoverFunds).not.toHaveBeenCalled();
+
+    const { plan: next } = await advanceUnilateralExit(first.plan, at(106), done({ prepareRecoverFunds, recoverFunds }), '02abc');
+    expect(prepareRecoverFunds).toHaveBeenLastCalledWith(expect.objectContaining({ selection: { type: 'specific', leafIds: ['c-9'] } }));
+    expect(next.exit.leaves.map(leaf => leaf.leafId)).toEqual(['leaf-1', 'c-9']);
+    expect(next.exit.transactions.map(t => t.txid)).toContain('c9');
+    expect(leftoverIdsOf(next)).toEqual([]);
+    expect(next.droppedLeaves).toEqual([{ leafId: 'leaf-2', valueSats: 50_000 }]);
+  });
 
   it('keeps an exit with nothing built while a leftover waits, without reading it back', async () => {
     const checkRecoverFunds = vi.fn(sdk().checkRecoverFunds);

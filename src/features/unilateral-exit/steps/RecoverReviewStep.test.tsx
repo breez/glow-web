@@ -41,7 +41,14 @@ const renderReview = (
     <RecoverReviewStep figures={quoteFigures(quote)} destination="bc1qdest" error={error} underWay={underWay} paused={paused} />,
   );
 
-const empty = (skipped: SkippedLeaf[] = []) => prepared({ leaves: [], recoverableValueSats: 0, totalFeeSats: 0, skipped });
+const empty = (skipped: SkippedLeaf[] = [], stoppedLeafIds: string[] = []) =>
+  prepared({
+    leaves: [],
+    recoverableValueSats: 0,
+    totalFeeSats: 0,
+    skipped,
+    exitChainState: { ...prepared().exitChainState, stoppedLeafIds },
+  });
 const skip = (type: 'feeExceedsValue' | 'fundsNotFound' | 'unverified'): SkippedLeaf => ({ leafId: type, valueSats: 350, reason: { type } });
 const unrecoverable: SkippedLeaf = { leafId: 'gone', valueSats: 350, reason: { type: 'notRecoverable', message: 'spent' } };
 const tooDear = prepared({ recoverableValueSats: 1_000, totalFeeSats: 4_000 });
@@ -93,10 +100,11 @@ describe('RecoverReviewStep', () => {
     });
 
     it.each([
-      ['Glow could not check', [unrecoverable, skip('feeExceedsValue'), skip('unverified')]],
-      ['Glow could not find', [unrecoverable, skip('feeExceedsValue'), skip('fundsNotFound')]],
-    ])('asks to try later when any leaf is one %s, whatever else was skipped', (_, skipped) => {
-      renderReview(empty(skipped));
+      ['Glow could not check', [unrecoverable, skip('feeExceedsValue'), skip('unverified')], []],
+      ['Glow could not find', [unrecoverable, skip('feeExceedsValue'), skip('fundsNotFound')], []],
+      ['the operators stopped, unrecoverable only until they relabel it', [unrecoverable, skip('feeExceedsValue')], ['gone']],
+    ])('asks to try later when any leaf is one %s, whatever else was skipped', (_, skipped, stopped) => {
+      renderReview(empty(skipped, stopped));
       expect(screen.getByText('Nothing can be recovered right now')).toBeInTheDocument();
       expect(screen.getByText('Try again later.')).toBeInTheDocument();
     });

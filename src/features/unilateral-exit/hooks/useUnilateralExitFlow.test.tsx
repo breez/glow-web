@@ -308,8 +308,11 @@ describe('Recover Funds', () => {
     const skipped = [
       { leafId: 'd-1', valueSats: 5_000, reason: { type: 'notRecoverable' as const, message: 'paid elsewhere' } },
       { leafId: 'x', valueSats: 350, reason: { type: 'unverified' as const } },
+      // Unrecoverable only until the operators relabel it.
+      { leafId: 's-1', valueSats: 7_000, reason: { type: 'notRecoverable' as const, message: 'stopped' } },
     ];
-    await quoted({ ...cosignedQuote, skipped }, undefined, { mode: 'recover' });
+    const exitChainState = { ...cosignedQuote.exitChainState, stoppedLeafIds: ['s-1'] };
+    await quoted({ ...cosignedQuote, skipped, exitChainState }, undefined, { mode: 'recover' });
     expect(noteDropped).toHaveBeenCalledWith({ identityPubkey: '02abc', network: 'regtest' }, [{ leafId: 'd-1', valueSats: 5_000 }]);
 
     saved.accounting = { droppedLeaves: [{ leafId: 'd-1', valueSats: 5_000 }], unsettledLeaves: [] };

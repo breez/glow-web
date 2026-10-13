@@ -37,6 +37,7 @@ import {
   exitFeeRecordOf,
   isCooperative,
   isCooperativeLeaf,
+  isProvisionalSkip,
   quoteFigures,
   willReceiveSat,
   type QuoteFigures,
@@ -359,7 +360,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
       setQuote(prepared);
       setQuotedAt(Date.now());
       if (walletKey && mode === 'recover' && !plan && !bumping) {
-        const dropped = prepared.skipped.filter(leaf => leaf.reason.type === 'notRecoverable');
+        const dropped = prepared.skipped.filter(leaf => leaf.reason.type === 'notRecoverable' && !isProvisionalSkip(leaf, prepared));
         noteDropped(walletKey, dropped.map(({ leafId, valueSats }) => ({ leafId, valueSats })));
       }
       // Preparing records a recovery the SDK finds in a block, but the total only

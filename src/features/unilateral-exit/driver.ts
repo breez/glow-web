@@ -23,6 +23,7 @@ import {
   exitFeeSat,
   isCooperative,
   isCooperativeLeaf,
+  isProvisionalSkip,
   isWorthExiting,
   leafFeesSat,
   needsFunding,
@@ -683,7 +684,9 @@ const LEAVES_EXIT_SKIPS = new Set(['notRecoverable', 'feeExceedsValue']);
  * recovery at a lower one.
  */
 function leavingSkips(quote: PrepareRecoverFundsResponse, ids?: string[]): { leaving: Set<string>; dropped: NamedLeaf[] } {
-  const skips = quote.skipped.filter(leaf => LEAVES_EXIT_SKIPS.has(leaf.reason.type) && (!ids || ids.includes(leaf.leafId)));
+  const skips = quote.skipped.filter(
+    leaf => LEAVES_EXIT_SKIPS.has(leaf.reason.type) && !isProvisionalSkip(leaf, quote) && (!ids || ids.includes(leaf.leafId)),
+  );
   return {
     leaving: new Set(skips.map(leaf => leaf.leafId)),
     dropped: skips.flatMap(({ leafId, valueSats, reason }) => (reason.type === 'notRecoverable' ? [{ leafId, valueSats }] : [])),
@@ -1116,13 +1119,11 @@ export async function checkExit(plan: UnilateralExitPlan, sdk: Pick<ExitSdk, 'ch
   return applyExitCheck(plan, checked.recovery, phaseOf(checked.verdict));
 }
 
-const RETRY_LATER_REASONS = new Set(['unverified', 'fundsNotFound']);
-
 /**
  * Builds the exit again over whatever the chain now holds, naming its leaves
  * and keeping its destination, fee rate and funding. When the quote has no
  * leaves left, the plan comes back `complete`, its ledger naming what landed
- * since the build; a leaf whose funds the chain has not shown yet throws
+ * since the build; a leaf that may yet move (`isProvisionalSkip`) throws
  * `RebuildLaterError` instead.
  *
  * Glow reads the recovery phrase only when the rebuild has funding to sign
@@ -1161,7 +1162,7 @@ export async function rebuildExit(
     // A leaf left out as too dear or unrecoverable leaves the exit, so it
     // finishes. Only an unrecoverable one stays hidden; Recover Funds offers a
     // dear one once this exit is done.
-    const waiting = prepared.skipped.some(leaf => named.has(leaf.leafId) && RETRY_LATER_REASONS.has(leaf.reason.type));
+    const waiting = prepared.skipped.some(leaf => named.has(leaf.leafId) && isProvisionalSkip(leaf, prepared));
     if (waiting) throw new RebuildLaterError();
     return finish(prepared);
   }

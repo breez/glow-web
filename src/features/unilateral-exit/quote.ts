@@ -177,18 +177,30 @@ export const leftOutSat = (quote: Quote): number => quote.skipped.reduce((sum, l
 const leftOutForFees = (quote: Quote): boolean =>
   quote.skipped.length > 0 && quote.skipped.every(leaf => leaf.reason.type === 'feeExceedsValue');
 
+const RETRY_LATER_REASONS = new Set(['unverified', 'fundsNotFound']);
+
+/**
+ * A skip that may yet move, so its leaf is tried again rather than let go. A
+ * leaf the operators' watchtower stopped quotes as unrecoverable until they
+ * relabel it, then quotes co-signed. A quote saved without `exitChainState`
+ * stops none.
+ */
+export const isProvisionalSkip = (skip: SkippedLeaf, quote: Quote): boolean =>
+  RETRY_LATER_REASONS.has(skip.reason.type) ||
+  (skip.reason.type === 'notRecoverable' && !!quote.exitChainState?.stoppedLeafIds?.includes(skip.leafId));
+
 export type LeftOutReason = 'unavailable' | 'fees' | 'notRecoverable';
 
 /**
  * The one reason an empty quote gives, null when it skipped nothing. A leaf
- * Glow could not check or find may yet move later, so it outranks one the fee
- * eats, and only skips that are all unrecoverable say so.
+ * that may yet move outranks one the fee eats, and only skips that are all
+ * unrecoverable say so.
  */
-export function leftOutReason(skipped: SkippedLeaf[]): LeftOutReason | null {
-  const any = (...types: SkippedLeaf['reason']['type'][]) => skipped.some(leaf => types.includes(leaf.reason.type));
+export function leftOutReason(quote: Quote): LeftOutReason | null {
+  const { skipped } = quote;
   if (skipped.length === 0) return null;
-  if (any('unverified', 'fundsNotFound')) return 'unavailable';
-  return any('feeExceedsValue') ? 'fees' : 'notRecoverable';
+  if (skipped.some(leaf => isProvisionalSkip(leaf, quote))) return 'unavailable';
+  return skipped.some(leaf => leaf.reason.type === 'feeExceedsValue') ? 'fees' : 'notRecoverable';
 }
 
 export interface QuoteFigures {
@@ -239,7 +251,7 @@ export function quoteFigures(
     balanceReceiveSat: Math.max(0, receiveSat - recoverableReceiveSat),
     leftOutSat: leftOutSat(quote),
     leftOutForFees: leftOutForFees(quote),
-    leftOutReason: leftOutReason(quote.skipped),
+    leftOutReason: leftOutReason(quote),
     isCooperative: recoverableSat > 0 || coopFeeSat > 0,
     isEmpty: quote.leaves.length === 0,
     isWorthMoving: isWorthExiting(quote, receiveSat),
