@@ -18,6 +18,14 @@ export const RecoverReviewStep: React.FC<{
 }> = ({ figures, destination, error = null }) => {
   // The SDK may have skipped every leaf of an empty quote for any reason, fees
   // among them, so Glow blames the fees only for a quote that moves something.
+  // With nothing skipped either, it left out leaves it found already recovered.
+  if (figures.isEmpty && figures.leftOutSat === 0) {
+    return (
+      <AlertCard variant="info" title="Nothing left to recover">
+        <p className="text-sm">These funds were already recovered.</p>
+      </AlertCard>
+    );
+  }
   if (figures.isEmpty) {
     return (
       <AlertCard variant="warning" title="Nothing can be recovered right now">

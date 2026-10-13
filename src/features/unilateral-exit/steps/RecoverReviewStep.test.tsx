@@ -86,6 +86,13 @@ describe('RecoverReviewStep', () => {
     expect(screen.queryByText(/cost more to move/)).not.toBeInTheDocument();
   });
 
+  it('says the funds were already recovered when the quote skipped nothing either', () => {
+    renderReview(prepared({ leaves: [], recoverableValueSats: 0, totalFeeSats: 0, skipped: [] }));
+    expect(screen.getByText('Nothing left to recover')).toBeInTheDocument();
+    expect(screen.getByText('These funds were already recovered.')).toBeInTheDocument();
+    expect(screen.queryByText('Try again later.')).not.toBeInTheDocument();
+  });
+
   it('blames the fees only when they eat what the quote moves', () => {
     renderReview(prepared({ recoverableValueSats: 1_000, totalFeeSats: 4_000 }));
     expect(screen.getByText('Nothing is worth recovering right now')).toBeInTheDocument();

@@ -265,6 +265,29 @@ describe('Recover Funds', () => {
     expect(result.current.phase).toBe('tracker');
   });
 
+  it('syncs after an empty quote that skipped nothing, so the row stops offering recovered funds', async () => {
+    const syncWallet = vi.fn<ExitSdk['syncWallet']>(async () => ({}));
+    const empty = prepared({ leaves: [], recoverableValueSats: 0, totalFeeSats: 0, skipped: [], funding: undefined });
+    wallet.current = sdk({ prepareRecoverFunds: async () => empty, syncWallet });
+    const { result } = renderHook(() => useUnilateralExitFlow('regtest', 'recover'));
+    act(() => result.current.goTo('fee'));
+    await waitFor(() => expect(result.current.fee.feeRates).not.toBeNull());
+    await act(() => result.current.submitFee());
+    expect(syncWallet).toHaveBeenCalledTimes(1);
+
+    // A quote that skipped something is not a recovery found on-chain.
+    syncWallet.mockClear();
+    wallet.current = sdk({
+      prepareRecoverFunds: async () => ({ ...empty, skipped: [{ leafId: 'x', valueSats: 350, reason: { type: 'unverified' } }] }),
+      syncWallet,
+    });
+    const second = renderHook(() => useUnilateralExitFlow('regtest', 'recover'));
+    act(() => second.result.current.goTo('fee'));
+    await waitFor(() => expect(second.result.current.fee.feeRates).not.toBeNull());
+    await act(() => second.result.current.submitFee());
+    expect(syncWallet).not.toHaveBeenCalled();
+  });
+
   it('quotes only the funds outside the balance', async () => {
     const { prepareRecoverFunds } = await quoted(cosignedQuote, undefined, { mode: 'recover' });
     expect(prepareRecoverFunds).toHaveBeenCalledWith(expect.objectContaining({ selection: { type: 'recoverableOnly' } }));

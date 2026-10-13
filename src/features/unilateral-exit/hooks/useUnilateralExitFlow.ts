@@ -352,6 +352,11 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
       if (request !== quoteRequest.current) return;
       setQuote(prepared);
       setQuotedAt(Date.now());
+      // Preparing records a recovery the SDK finds in a block, but the total only
+      // drops at the next sync, so until then the row still offers those funds.
+      if (mode === 'recover' && !plan && prepared.leaves.length === 0 && prepared.skipped.length === 0) {
+        void wallet.syncWallet({}).catch(e => logger.warn(LogCategory.SDK, 'Sync after an empty quote failed', { error: message(e) }));
+      }
     } catch (e) {
       if (request !== quoteRequest.current) return;
       logger.error(LogCategory.SDK, 'Failed to quote unilateral exit', { error: message(e) });
