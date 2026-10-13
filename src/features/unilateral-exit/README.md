@@ -65,8 +65,9 @@ own, anywhere.
 because the operators' watchtower published a refund first. Nothing is lost:
 quote and build again, naming the same leaves with a `specific` selection and
 passing back the `fundingInputs` you stored. This app does that on its own,
-since it needs nothing from the user and an exit left alone for days would
-otherwise stall.
+since an exit left alone for days would otherwise stall. A passkey wallet is
+the exception: its fee key needs the passkey, which only a tap can ask for, so
+its rebuild waits for the tracker's Update & Continue button.
 
 **Let them pay more.** A rebuild reuses the fee rate it was quoted at, so an
 exit that has stopped confirming because fees rose needs a new quote at a higher
