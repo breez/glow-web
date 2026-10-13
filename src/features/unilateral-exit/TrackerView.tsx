@@ -261,11 +261,16 @@ export const TrackerView: React.FC<{
                   Glow couldn&apos;t check part of your {noun} on-chain. Please update your{' '}
                   {noun === 'exit' ? 'unilateral exit' : noun} to continue.
                 </p>
-              ) : (
+              ) : plan.redoCause === 'watchtower' ? (
                 <p>
                   Part of your {noun} didn&apos;t confirm in time, so the Spark operators moved some of your funds
                   on-chain to keep them safe. Please update your {noun === 'exit' ? 'unilateral exit' : noun} to
                   recover all your funds.
+                </p>
+              ) : (
+                <p>
+                  Part of your {noun} changed on-chain. Please update your{' '}
+                  {noun === 'exit' ? 'unilateral exit' : noun} to recover all your funds.
                 </p>
               )}
             </SimpleAlert>

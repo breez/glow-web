@@ -468,7 +468,13 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
       // the plan held here may already be stale.
       if (e instanceof RebuildLaterError) {
         if (plan.needsSignIn) {
-          setUnilateralExitPlan(walletKey, { ...plan, needsSignIn: undefined, rebuildFailed: undefined, rebuildFailingSince: undefined });
+          setUnilateralExitPlan(walletKey, {
+            ...plan,
+            needsSignIn: undefined,
+            redoCause: undefined,
+            rebuildFailed: undefined,
+            rebuildFailingSince: undefined,
+          });
         } else void advanceNow();
         return;
       }

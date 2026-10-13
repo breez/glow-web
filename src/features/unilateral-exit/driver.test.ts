@@ -653,6 +653,54 @@ describe('advanceUnilateralExit', () => {
     expect(next.rebuildFailed).toBeUndefined();
   });
 
+  describe('naming why a diverged exit asks for the update', () => {
+    // Built with both leaves unilateral, so leaf-1 quoting co-signed means the operators moved it.
+    const moved = prepared({
+      leaves: [
+        { leafId: 'leaf-1', valueSats: 180_000, method: 'cooperative' },
+        { leafId: 'leaf-2', valueSats: 420_000, method: 'unilateral' },
+      ],
+    });
+    const unmoved = prepared({
+      leaves: [
+        { leafId: 'leaf-1', valueSats: 180_000, method: 'unilateral' },
+        { leafId: 'leaf-2', valueSats: 420_000, method: 'unilateral' },
+      ],
+    });
+    const cases = [
+      ['the operators moved a leaf it built', moved, undefined, 'watchtower'],
+      ['nothing it built moved, clearing a stale cause', unmoved, 'watchtower', undefined],
+    ] as const;
+    const redoing = (over: Partial<ExitSdk>) => sdk({ checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: redo }), ...over });
+
+    it.each(cases)('on sign-in, when %s', async (_, quote, before, after) => {
+      localStorage.removeItem('walletMnemonic');
+      localStorage.setItem('passkeyLabel', 'Default');
+      try {
+        const driver = redoing({ prepareRecoverFunds: async () => quote });
+        const { plan: next } = await advanceUnilateralExit(twoLeaves([tx({ txid: 'a' })], { redoCause: before }), chain(), driver, '02abc');
+        expect(next).toMatchObject({ phase: 'redo', needsSignIn: true });
+        expect(next.redoCause).toBe(after);
+      } finally {
+        localStorage.removeItem('passkeyLabel');
+      }
+    });
+
+    it.each(cases)('on a rebuild failing across a block, when %s', async (_, quote, before, after) => {
+      const driver = redoing({
+        prepareRecoverFunds: async () => quote,
+        recoverFunds: async () => {
+          throw new Error('operators unavailable');
+        },
+      });
+      const at = (tip: number) => chain({ tipHeight: async () => tip });
+      const first = await advanceUnilateralExit(twoLeaves([tx({ txid: 'a' })], { redoCause: before }), at(100), driver, '02abc');
+      const { plan: next } = await advanceUnilateralExit(first.plan, at(101), driver, '02abc');
+      expect(next).toMatchObject({ phase: 'redo', rebuildFailed: true });
+      expect(next.redoCause).toBe(after);
+    });
+  });
+
   it('keeps going on the set it holds when the check fails', async () => {
     const failing = sdk({
       checkRecoverFunds: async () => {

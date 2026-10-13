@@ -147,11 +147,13 @@ export interface UnilateralExitPlan {
   /** A unilateral leaf the exit left out, waiting on more exit fee. Plan slot only. */
   topUp?: ExitTopUp;
   /**
-   * Why an active exit asks for the update tap: a step the SDK could not read,
-   * which only a rebuild settles, and that rebuild needs the passkey. It asks
-   * only while `needsSignIn` is set too (`awaitsUpdate`).
+   * Why the exit asks for the update tap. `unverified`: a step the SDK could
+   * not read, which only a rebuild settles, and that rebuild needs the passkey;
+   * an active exit asks only while `needsSignIn` is set too (`awaitsUpdate`).
+   * `watchtower`: a diverged exit's last rebuild found a leaf it built quoting
+   * co-signed, so the operators moved it. Absent, no cause is known.
    */
-  redoCause?: 'unverified';
+  redoCause?: 'unverified' | 'watchtower';
 }
 
 /**
@@ -1119,6 +1121,12 @@ export async function checkExit(plan: UnilateralExitPlan, sdk: Pick<ExitSdk, 'ch
   return applyExitCheck(plan, checked.recovery, phaseOf(checked.verdict));
 }
 
+/** A leaf the exit built to go out unilaterally that `quote` co-signs: the operators' watchtower moved it. */
+const watchtowerMoved = (plan: UnilateralExitPlan, quote: PrepareRecoverFundsResponse): boolean => {
+  const unilateral = new Set(plan.exit.leaves.filter(leaf => leaf.method === 'unilateral').map(leaf => leaf.leafId));
+  return quote.leaves.some(leaf => isCooperativeLeaf(leaf) && unilateral.has(leaf.leafId));
+};
+
 /**
  * Builds the exit again over whatever the chain now holds, naming its leaves
  * and keeping its destination, fee rate and funding. When the quote has no
@@ -1130,13 +1138,15 @@ export async function checkExit(plan: UnilateralExitPlan, sdk: Pick<ExitSdk, 'ch
  * for, and quotes first to find out. From the tracker's button (`interactive`)
  * Glow reads it first instead, while the tap is fresh enough for a passkey
  * prompt. In the background Glow cannot prompt, so on a passkey wallet the
- * read fails and the tracker offers the rebuild as that button.
+ * read fails and the tracker offers the rebuild as that button. `onCause`
+ * hears why the exit diverged, as far as the quote shows, before the key read
+ * or the build can fail.
  */
 export async function rebuildExit(
   plan: UnilateralExitPlan,
   sdk: ExitSdk,
   identityPubkey: string,
-  { interactive = false }: { interactive?: boolean } = {},
+  { interactive = false, onCause }: { interactive?: boolean; onCause?: (cause: UnilateralExitPlan['redoCause']) => void } = {},
 ): Promise<UnilateralExitPlan> {
   const finish = (quote: PrepareRecoverFundsResponse | null): UnilateralExitPlan => {
     const { leaving, dropped } = quote ? leavingSkips(quote) : { leaving: new Set<string>(), dropped: [] };
@@ -1158,6 +1168,7 @@ export async function rebuildExit(
   await restoreExitState(sdk, plan, await loadExitState(identityPubkey).catch(() => null));
 
   const prepared = await quoteNamed(sdk, plan);
+  onCause?.(watchtowerMoved(plan, prepared) ? 'watchtower' : undefined);
   if (prepared.leaves.length === 0) {
     // A leaf left out as too dear or unrecoverable leaves the exit, so it
     // finishes. Only an unrecoverable one stays hidden; Recover Funds offers a
@@ -1636,13 +1647,18 @@ export async function advanceUnilateralExit(
   if (next.phase === 'redo' && sdk && identityPubkey) {
     // The chain diverging is routine: the operators' watchtower publishes its
     // own copy of a refund. The exit is rebuilt over what is now on-chain.
+    let cause: UnilateralExitPlan['redoCause'];
     try {
-      next = await rebuildExit(next, sdk, identityPubkey);
+      next = await rebuildExit(next, sdk, identityPubkey, {
+        onCause: found => {
+          cause = found;
+        },
+      });
     } catch (e) {
       if (e instanceof MnemonicNeedsPasskeyError) {
         // Waiting on the user to sign in is the designed path, not a fault: the
         // exit stays in `redo` and the tracker offers the rebuild as a button.
-        next = { ...next, needsSignIn: true };
+        next = { ...next, needsSignIn: true, redoCause: cause };
       } else {
         // Waiting on the chain is not a failure: the next pass tries again, so
         // only another error asks for the tap, and only once failures span a
@@ -1653,7 +1669,8 @@ export async function advanceUnilateralExit(
           logger.warn(LogCategory.SDK, `Failed to rebuild the exit: ${error}`);
         }
         const since = failed ? (next.rebuildFailingSince ?? tipHeight) : undefined;
-        next = { ...next, rebuildFailingSince: since, rebuildFailed: since !== undefined && tipHeight > since ? true : undefined };
+        const rebuildFailed = since !== undefined && tipHeight > since ? true : undefined;
+        next = { ...next, rebuildFailingSince: since, rebuildFailed, redoCause: rebuildFailed ? cause : undefined };
       }
     }
   } else if (

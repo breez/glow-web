@@ -494,13 +494,16 @@ describe('the update tap', () => {
     };
 
     it('lifts the sign-in request, without an error, so the engine waits it out', async () => {
-      const after = await tapWaiting(plan([tx({ txid: 'moved' })], { phase: 'redo', needsSignIn: true, rebuildFailed: true }));
+      const after = await tapWaiting(
+        plan([tx({ txid: 'moved' })], { phase: 'redo', needsSignIn: true, rebuildFailed: true, redoCause: 'watchtower' }),
+      );
 
       expect(after.continueError).toBeNull();
       const stored = vi.mocked(setUnilateralExitPlan).mock.calls[0][1];
       expect(stored.phase).toBe('redo');
       expect(stored.needsSignIn).toBeUndefined();
       expect(stored.rebuildFailed).toBeUndefined();
+      expect(stored.redoCause).toBeUndefined();
       expect(advanceNow).not.toHaveBeenCalled();
     });
 
