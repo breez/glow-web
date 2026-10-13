@@ -1,5 +1,5 @@
 import type { CpfpInput, ExitTransactionStatus, RecoverFundsResponse } from '@breeztech/breez-sdk-spark';
-import type { UnilateralExitPlan } from './driver';
+import type { UnilateralExitPlan } from '../model/plan';
 
 // The plan Glow stored under SDK 0.26 (version 4). Its exit no longer parses
 // as this SDK's recovery, so a stored one is converted on load.
@@ -73,7 +73,6 @@ export function planFromV4(old: V4Plan): UnilateralExitPlan {
     feeRateSatPerVbyte: old.feeRateSatPerVbyte,
     destination: old.destination,
   };
-  // The literal, not driver's constant: driver imports this module.
   const plan: UnilateralExitPlan = { ...rest, version: 5, exit: converted };
   return old.phase === 'complete' ? plan : { ...plan, needsRebuild: true };
 }

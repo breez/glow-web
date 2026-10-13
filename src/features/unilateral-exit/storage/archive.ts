@@ -1,6 +1,6 @@
 import { logger, LogCategory } from '@/services/logger';
-import { exitFeeRecordOf, isCooperative, paidOut } from './quote';
-import type { ExitMode, NamedLeaf, UnilateralExitPlan, WalletKey } from './driver';
+import type { ExitMode, NamedLeaf, UnilateralExitPlan, WalletKey } from '../model/plan';
+import { exitFeeRecordOf, isCooperative, paidOut, type PaidOut } from '../quote';
 
 /**
  * A finished exit, kept once its plan slot is handed to the next one. The plan
@@ -67,51 +67,58 @@ export function loadArchive(wallet: WalletKey): ArchivedExit[] {
 }
 
 /**
+ * What landed of the leaves outside the balance when the exit began. Not the
+ * final build's co-signed part: a leaf the watchtower moved mid-exit comes
+ * back co-signed, and was balance. A plan from before `recoverableLeafIds`
+ * has only its first build's figure, capped at what exited.
+ */
+function recoverableLandedSat(plan: UnilateralExitPlan, valueSat: number): number {
+  const outside = new Set(plan.recoverableLeafIds ?? []);
+  return plan.recoverableLeafIds
+    ? paidOut((plan.landed ?? []).filter(entry => entry.leafIds.length > 0 && entry.leafIds.every(id => outside.has(id)))).valueSat
+    : Math.min(plan.recoverableFundsSat ?? 0, valueSat);
+}
+
+function archivedExitOf(plan: UnilateralExitPlan, id: string, { txids, paidSat, valueSat }: PaidOut): ArchivedExit {
+  // What the exit was quoted to need, not what the address holds: a rebuild
+  // takes in every confirmed coin there, the exit's own change included, so
+  // summing those counts the same sats twice.
+  const { quotedExitFeeSat, exitFeeAddress } = exitFeeRecordOf(plan);
+  const recoverableSat = recoverableLandedSat(plan, valueSat);
+  return {
+    id,
+    destination: plan.destination,
+    deliveredSat: paidSat,
+    completedAt: Date.now(),
+    network: plan.network,
+    exitedSat: valueSat,
+    recoverableFundsSat: plan.mode === 'recover' ? undefined : recoverableSat || undefined,
+    exitFeePaidSat: quotedExitFeeSat,
+    exitFeeAddress,
+    mode: plan.mode,
+    txids,
+    droppedLeaves: plan.droppedLeaves?.length ? plan.droppedLeaves : undefined,
+  };
+}
+
+/**
  * Records a finished exit, newest first, from its ledger of what landed. Keyed
  * on `recoveryTxid`, so an engine that reports the same completion on every
  * pass does not stack up duplicates.
  */
 export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): ArchivedExit[] {
-  const { txids, paidSat, valueSat } = paidOut(plan.landed ?? []);
-  if (txids.length === 0) {
+  const paid = paidOut(plan.landed ?? []);
+  if (paid.txids.length === 0) {
     logger.warn(LogCategory.SDK, 'Finished exit delivered nothing to archive');
     return loadArchive(wallet);
   }
   // A plan that ended with no transactions of its own falls back to what landed.
-  const id = recoveryTxid(plan) ?? txids[0];
+  const id = recoveryTxid(plan) ?? paid.txids[0];
 
   const existing = loadArchive(wallet);
   if (existing.some(entry => entry.id === id)) return existing;
 
-  // What the exit was quoted to need, not what the address holds: a rebuild
-  // takes in every confirmed coin there, the exit's own change included, so
-  // summing those counts the same sats twice.
-  const { quotedExitFeeSat, exitFeeAddress } = exitFeeRecordOf(plan);
-  // What landed of the leaves outside the balance when the exit began. Not the
-  // final build's co-signed part: a leaf the watchtower moved mid-exit comes
-  // back co-signed, and was balance. A plan from before `recoverableLeafIds`
-  // has only its first build's figure, capped at what exited.
-  const outside = new Set(plan.recoverableLeafIds ?? []);
-  const recoverableSat = plan.recoverableLeafIds
-    ? paidOut((plan.landed ?? []).filter(entry => entry.leafIds.length > 0 && entry.leafIds.every(id => outside.has(id)))).valueSat
-    : Math.min(plan.recoverableFundsSat ?? 0, valueSat);
-  const next = [
-    {
-      id,
-      destination: plan.destination,
-      deliveredSat: paidSat,
-      completedAt: Date.now(),
-      network: plan.network,
-      exitedSat: valueSat,
-      recoverableFundsSat: plan.mode === 'recover' ? undefined : recoverableSat || undefined,
-      exitFeePaidSat: quotedExitFeeSat,
-      exitFeeAddress,
-      mode: plan.mode,
-      txids,
-      droppedLeaves: plan.droppedLeaves?.length ? plan.droppedLeaves : undefined,
-    },
-    ...existing,
-  ];
+  const next = [archivedExitOf(plan, id, paid), ...existing];
   try {
     localStorage.setItem(key(wallet), JSON.stringify(next));
   } catch (e) {

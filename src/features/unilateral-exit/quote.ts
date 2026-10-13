@@ -6,7 +6,7 @@ import type {
   SkippedLeaf,
 } from '@breeztech/breez-sdk-spark';
 import { outputTotalSat } from '@/utils/rawTx';
-import type { Landing, NamedLeaf, UnilateralExitPlan } from './driver';
+import type { Landing, NamedLeaf, UnilateralExitPlan } from './model/plan';
 import { fundingAddressOf } from './funding';
 
 // Everything read off a quote, for Recover Funds and the Unilateral Exit alike:

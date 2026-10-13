@@ -5,33 +5,21 @@ import { holdIdleLock } from '@/services/appLock';
 import { createChainClient } from '@/services/chain';
 import type { ChainUtxo, FeeRates } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
-import { destinationErrorMessage } from '@/utils/destinationAddress';
+import { destinationAddressOf, destinationErrorMessage } from '@/utils/destinationAddress';
+import { buildFromQuote, fundingInputsOf, mergeFunding, planFromBuild, RebuildLaterError } from '../building';
+import { leftoverTopUp, requiredFundingOf, sentFunding, topUpFor, type TopUp } from '../exitFee';
+import { buildLeftover } from '../leftovers';
 import {
   asKeptRecovery,
   awaitsUpdate,
-  buildFromQuote,
-  buildLeftover,
-  buildRecoveryBump,
-  destinationAddressOf,
-  fundingInputsOf,
   isUnilateralLanded,
-  leftoverTopUp,
-  mergeFunding,
-  planFromBuild,
-  quoteFresh,
-  quoteLeaves,
-  quoteNamed,
-  quoteRecoveryBump,
-  RebuildLaterError,
-  rebuildExit,
-  requiredFundingOf,
-  sentFunding,
-  topUpFor,
   type ExitMode,
   type Funding,
-  type TopUp,
   type WalletKey,
-} from '../driver';
+} from '../model/plan';
+import { quoteFresh, quoteLeaves, quoteNamed } from '../quoting';
+import { rebuildExit } from '../rebuild';
+import { buildRecoveryBump, quoteRecoveryBump } from '../recoveries';
 import {
   builtExitFeeRecord,
   exitFeeRecordOf,
@@ -42,16 +30,10 @@ import {
   willReceiveSat,
   type QuoteFigures,
 } from '../quote';
-import {
-  advanceNow,
-  excludedLeafIds,
-  keepRecovery,
-  noteDropped,
-  setPendingExit,
-  setUnilateralExitPlan,
-  type UnilateralExitEngineState,
-} from '../engine';
-import { recoveryTxid } from '../archive';
+import { keepRecovery, noteDropped, setPendingExit, setUnilateralExitPlan } from '../engine/api';
+import { advanceNow } from '../engine/polling';
+import { excludedLeafIds, type UnilateralExitEngineState } from '../engine/state';
+import { recoveryTxid } from '../storage/archive';
 import { loadExitState, restoreExitState } from '../exitState';
 import { deriveFundingKey, readWalletMnemonic, type FundingKey } from '../funding';
 import { useUnilateralExitEngineState } from './useUnilateralExitEngineLifecycle';

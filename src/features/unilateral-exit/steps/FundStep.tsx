@@ -6,7 +6,8 @@ import { SatAmount } from '@/components/SatAmount';
 import { CheckIcon, ClockIcon, CloseIcon } from '@/components/Icons';
 import { useToast } from '@/contexts/ToastContext';
 import type { ChainUtxo } from '@/services/chain';
-import { isPendingFunded, pendingTopUp, type PendingExit, type TopUp } from '../driver';
+import { isPendingFunded, pendingTopUp, type TopUp } from '../exitFee';
+import type { PendingExit } from '../model/plan';
 import { BackupActions, ExitActionRow } from '../BackupCard';
 import type { FundingFields } from '../hooks/useUnilateralExitFlow';
 

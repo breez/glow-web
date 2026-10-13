@@ -20,9 +20,10 @@ import { RecoverReviewStep } from '@/features/unilateral-exit/steps/RecoverRevie
 import { FundStep, FundingStatus, PendingExitStep, Receipt, Status } from '@/features/unilateral-exit/steps/FundStep';
 import { RedoActions, TrackerView } from '@/features/unilateral-exit/TrackerView';
 import { SatAmount } from '@/components/SatAmount';
-import { recoveryTxid } from '@/features/unilateral-exit/archive';
-import { cancelPendingExit, startPendingExit } from '@/features/unilateral-exit/engine';
-import { awaitsUpdate, isPendingFunded, type ExitMode } from '@/features/unilateral-exit/driver';
+import { recoveryTxid } from '@/features/unilateral-exit/storage/archive';
+import { cancelPendingExit, startPendingExit } from '@/features/unilateral-exit/engine/api';
+import { isPendingFunded } from '@/features/unilateral-exit/exitFee';
+import { awaitsUpdate, type ExitMode } from '@/features/unilateral-exit/model/plan';
 
 interface UnilateralExitPageProps {
   network: string;

@@ -1,7 +1,9 @@
 import { archiveExit, droppedLeafIds, loadArchive } from './archive';
-import { advanceUnilateralExit, type ExitSdk, type Landing, type UnilateralExitPlan } from './driver';
-import { deriveFundingKey } from './funding';
-import { checked, coin, confirmed, funding, MNEMONIC, plan, prepared, rawTx, sdk, tx, txidOf } from './testFixtures';
+import type { Landing, UnilateralExitPlan } from '../model/plan';
+import { advanceUnilateralExit } from '../pass';
+import type { ExitSdk } from '../quoting';
+import { deriveFundingKey } from '../funding';
+import { checked, coin, confirmed, funding, MNEMONIC, plan, prepared, rawTx, sdk, tx, txidOf } from '../testFixtures';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { ChainClient } from '@/services/chain';
 

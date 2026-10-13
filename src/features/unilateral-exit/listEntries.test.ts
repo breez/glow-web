@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { bumpTxidOf, exitGroupTitle, recoveryEntryId, unilateralExitEntries } from './listEntries';
 import { coin, confirmed, locked, pendingExit, plan, ready, tx } from './testFixtures';
-import type { ArchivedExit } from './archive';
-import type { UnilateralExitEngineState } from './engine';
+import type { ArchivedExit } from './storage/archive';
+import type { UnilateralExitEngineState } from './engine/state';
 
 const engine = (over: Partial<UnilateralExitEngineState> = {}): UnilateralExitEngineState => ({
   plan: null,

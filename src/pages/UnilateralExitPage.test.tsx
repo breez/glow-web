@@ -4,8 +4,8 @@ import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import type { FeeRates } from '@/services/chain';
 import type { UnilateralExitFlow } from '@/features/unilateral-exit/hooks/useUnilateralExitFlow';
 import { quoteFigures } from '@/features/unilateral-exit/quote';
-import type { ArchivedExit } from '@/features/unilateral-exit/archive';
-import type { UnilateralExitPlan } from '@/features/unilateral-exit/driver';
+import type { ArchivedExit } from '@/features/unilateral-exit/storage/archive';
+import type { UnilateralExitPlan } from '@/features/unilateral-exit/model/plan';
 import { confirmed, funding, pendingExit, plan, prepared, tx } from '@/features/unilateral-exit/testFixtures';
 
 // The page is the switch under test; the flow behind it is stubbed per step.
@@ -18,8 +18,8 @@ vi.mock('@/features/unilateral-exit/hooks/useUnilateralExitFlow', async () => ({
 // The scanner pulls in a wasm barcode reader the test env cannot resolve.
 vi.mock('@/components/QrScannerDialog', () => ({ default: () => null }));
 
-vi.mock('@/features/unilateral-exit/engine', async () => ({
-  ...(await vi.importActual('@/features/unilateral-exit/engine')),
+vi.mock('@/features/unilateral-exit/engine/api', async () => ({
+  ...(await vi.importActual('@/features/unilateral-exit/engine/api')),
   cancelPendingExit: vi.fn(),
 }));
 
@@ -39,7 +39,7 @@ vi.mock('@/contexts/WalletContext', async () => ({
 }));
 
 import UnilateralExitPage from './UnilateralExitPage';
-import { cancelPendingExit } from '@/features/unilateral-exit/engine';
+import { cancelPendingExit } from '@/features/unilateral-exit/engine/api';
 
 const feeFlow = (feeRates: FeeRates | null) =>
   ({

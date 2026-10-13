@@ -1,6 +1,6 @@
 import { logger, LogCategory } from '@/services/logger';
-import { namedLeavesOf, type NamedLeaf, type UnilateralExitPlan, type WalletKey } from './driver';
-import type { UnilateralExitEngineState } from './engine';
+import type { UnilateralExitEngineState } from '../engine/state';
+import { namedLeavesOf, type NamedLeaf, type UnilateralExitPlan, type WalletKey } from '../model/plan';
 
 /**
  * What the Recoverable Funds row subtracts that no live record holds. getInfo

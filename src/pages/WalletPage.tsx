@@ -29,7 +29,7 @@ import {
 } from '../features/unilateral-exit/listEntries';
 import { ArchivedExitDialog } from '../features/unilateral-exit/ArchivedExitDialog';
 import { TrackerView } from '../features/unilateral-exit/TrackerView';
-import type { ExitMode } from '../features/unilateral-exit/driver';
+import type { ExitMode } from '../features/unilateral-exit/model/plan';
 import { BottomSheetCard, BottomSheetContainer, DialogHeader } from '../components/ui';
 import { useUnilateralExitEngineState } from '../features/unilateral-exit/hooks/useUnilateralExitEngineLifecycle';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';

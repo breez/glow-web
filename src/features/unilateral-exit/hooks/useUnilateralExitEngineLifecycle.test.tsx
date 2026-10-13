@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
-vi.mock('../engine', async () => ({
-  ...(await vi.importActual('../engine')),
+vi.mock('../engine/api', async () => ({
+  ...(await vi.importActual('../engine/api')),
   startUnilateralExitEngine: vi.fn(),
   stopUnilateralExitEngine: vi.fn(),
 }));
 
-import { startUnilateralExitEngine } from '../engine';
+import { startUnilateralExitEngine } from '../engine/api';
 import { useUnilateralExitEngineLifecycle } from './useUnilateralExitEngineLifecycle';
 
 describe('useUnilateralExitEngineLifecycle', () => {

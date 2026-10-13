@@ -1,14 +1,9 @@
 import { backUpWhenExitLands, captureExitState, saveExitState } from '../exitState';
 import { useEffect, useState } from 'react';
 import type { BreezSdk, SdkEvent } from '@breeztech/breez-sdk-spark';
-import {
-  advanceNow,
-  getUnilateralExitState,
-  startUnilateralExitEngine,
-  stopUnilateralExitEngine,
-  subscribeUnilateralExit,
-  type UnilateralExitEngineState,
-} from '../engine';
+import { startUnilateralExitEngine, stopUnilateralExitEngine } from '../engine/api';
+import { advanceNow } from '../engine/polling';
+import { getUnilateralExitState, subscribeUnilateralExit, type UnilateralExitEngineState } from '../engine/state';
 import { createChainClient } from '@/services/chain';
 import { useLatest } from '@/hooks/useLatest';
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RecoverFundsLeaf, SkippedLeaf } from '@breeztech/breez-sdk-spark';
-import { leftoverIdsOf, planFromBuild, planFromExitResponse } from './driver';
+import { planFromBuild } from './building';
+import { leftoverIdsOf, planFromExitResponse } from './model/plan';
 import { deriveFundingKey } from './funding';
 import {
   builtExitFeeRecord,

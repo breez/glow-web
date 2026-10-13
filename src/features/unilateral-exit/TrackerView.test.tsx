@@ -10,7 +10,7 @@ vi.mock('@/contexts/WalletContext', () => ({
     importUnilateralExitState: async () => ({ importedLeaves: 2, skippedForeignLeaves: 0, skippedConflictingLeaves: 0, skippedChains: 0 }),
   }),
 }));
-import type { UnilateralExitPlan } from './driver';
+import type { UnilateralExitPlan } from './model/plan';
 import { blocked, confirmed, locked, plan, ready, tx } from './testFixtures';
 
 // one input, one 596 524 sat output

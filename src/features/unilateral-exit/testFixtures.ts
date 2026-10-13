@@ -4,9 +4,12 @@ import type {
   RecoverFundsResponse,
   RecoveryFunding,
   RecoveryTransaction,
+  RecoveryVerdict,
 } from '@breeztech/breez-sdk-spark';
-import type { ChainUtxo } from '@/services/chain';
-import type { ExitSdk, PendingExit, UnilateralExitPlan } from './driver';
+import type { ChainClient, ChainUtxo } from '@/services/chain';
+import { deriveFundingKey } from './funding';
+import type { PendingExit, UnilateralExitPlan } from './model/plan';
+import type { ExitSdk } from './quoting';
 
 /** The phrase the fee key derives from in tests that start or rebuild an exit. */
 export const MNEMONIC = 'legal winner thank year wave sausage worth useful legal winner thank yellow';
@@ -179,5 +182,51 @@ export const sdk = (over: Partial<ExitSdk> = {}): ExitSdk => ({
   recoverFunds: async () => checked([{ txid: 'built' }]),
   exportUnilateralExitState: async () => ({ exitState: 'snapshot' }),
   syncWallet: async () => ({}),
+  ...over,
+});
+
+export const chain = (over: Partial<ChainClient> = {}): ChainClient => ({
+  feeRates: async () => ({ slow: 1, medium: 2, fast: 3 }),
+  addressUtxos: async () => [],
+  tipHeight: async () => 100,
+  broadcast: async () => undefined,
+  broadcastPackage: async () => undefined,
+  confirmedSpender: async () => null,
+  ...over,
+});
+
+export const redo: RecoveryVerdict = { type: 'redo', reason: 'onChainStateDiverged' };
+
+export const checking = (exit: ReturnType<typeof checked>, verdict: RecoveryVerdict = { type: 'valid' }) =>
+  sdk({ checkRecoverFunds: async () => ({ recovery: exit, verdict }) });
+
+/** A plan as SDK 0.26 builds left it on main: `value` fields, no exit fee address. */
+export const v4Plan = (over: Record<string, unknown> = {}) => ({
+  version: 4,
+  network: 'mainnet',
+  destination: 'bc1qold',
+  feeRateSatPerVbyte: 3,
+  fundingAddressIndex: 1,
+  quotedSweepFeeSat: 215,
+  quotedExitFeeSat: 14_350,
+  exit: {
+    recoverableValueSat: 600_000,
+    totalFeeSat: 3_122,
+    cpfpFeeSat: 2_907,
+    fanoutFeeSat: 0,
+    sweepFeeSat: 215,
+    leaves: [
+      { leafId: 'leaf-1', value: 180_000 },
+      { leafId: 'leaf-2', value: 420_000 },
+    ],
+    transactions: [
+      { kind: 'node', nodeId: 'node-1', txid: 'node-1', txHex: 'aa', cpfpTxHex: 'bb', dependsOn: [], status: confirmed(10) },
+      { kind: 'refund', nodeId: 'leaf-1', txid: 'refund-1', txHex: 'aa', dependsOn: ['node-1'], status: locked(900) },
+    ],
+    fundingInputs: [{ type: 'p2wpkh', txid: 'fund', vout: 0, value: 14_350, pubkey: deriveFundingKey(MNEMONIC, 'mainnet', 1).publicKeyHex }],
+  },
+  refusals: { 'refund-1': 'non-BIP68-final' },
+  phase: 'active',
+  exitStateSnapshot: 'frozen',
   ...over,
 });

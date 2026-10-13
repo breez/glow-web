@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { landedLeavesOf, loadAccounting, recordDropped, retireRecord, settleLeaves } from './accounting';
-import { plan } from './testFixtures';
+import { plan } from '../testFixtures';
 
 const wallet = { identityPubkey: 'pubkey-0000000000000000', network: 'regtest' };
 const key = `unilateral-exit-accounting:${wallet.identityPubkey.slice(0, 16)}:${wallet.network}`;

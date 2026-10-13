@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vite
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { PrepareRecoverFundsResponse, RecoverFundsLeaf, RecoverFundsResponse } from '@breeztech/breez-sdk-spark';
 import type { ChainUtxo } from '@/services/chain';
-import type { ExitAccounting } from '../accounting';
-import type { ArchivedExit } from '../archive';
-import type { ExitMode, ExitSdk, UnilateralExitPlan } from '../driver';
+import type { ExitAccounting } from '../storage/accounting';
+import type { ArchivedExit } from '../storage/archive';
+import type { ExitMode, UnilateralExitPlan } from '../model/plan';
+import type { ExitSdk } from '../quoting';
 import { checked, coin, confirmed, funding, MNEMONIC, plan, prepared, sdk, tx } from '../testFixtures';
 
 const wallet = vi.hoisted(() => ({ current: null as unknown }));
@@ -56,18 +57,22 @@ vi.mock('./useUnilateralExitEngineLifecycle', () => ({
     isAdvancing: false,
   }),
 }));
-vi.mock('../engine', async () => ({
-  ...(await vi.importActual('../engine')),
-  advanceNow: vi.fn(),
+vi.mock('../engine/api', async () => ({
+  ...(await vi.importActual('../engine/api')),
   keepRecovery: vi.fn(),
   noteDropped: vi.fn(),
   setPendingExit: vi.fn(),
   setUnilateralExitPlan: vi.fn(),
 }));
+vi.mock('../engine/polling', async () => ({
+  ...(await vi.importActual('../engine/polling')),
+  advanceNow: vi.fn(),
+}));
 
 import { singleKeyCpfpSigner } from '@breeztech/breez-sdk-spark';
 import { useUnilateralExitFlow } from './useUnilateralExitFlow';
-import { advanceNow, keepRecovery, noteDropped, setPendingExit, setUnilateralExitPlan } from '../engine';
+import { keepRecovery, noteDropped, setPendingExit, setUnilateralExitPlan } from '../engine/api';
+import { advanceNow } from '../engine/polling';
 import { deriveFundingKey, readWalletMnemonic } from '../funding';
 
 const unfunded = () => prepared({ funding: undefined, cpfpFeeSats: 0 });

@@ -1,22 +1,19 @@
 import { formatBlockWait } from '@/utils/blockTime';
 import { formatWithSpaces } from '@/utils/formatNumber';
+import { isPendingFunded, leftoverTopUp, pendingTopUp } from './exitFee';
 import {
   awaitsUpdate,
   canBumpRecovery,
   heldRecoveryLeaves,
-  isPendingFunded,
   isUnilateralLanded,
-  leftoverTopUp,
-  nextAction,
-  pendingTopUp,
-  planProgress,
   type PendingExit,
   type UnilateralExitPlan,
-} from './driver';
+} from './model/plan';
+import { nextAction, planProgress } from './model/progress';
 import { isCooperativeLeaf, unbuiltLeaves, willReceiveSat } from './quote';
-import { recoveryTxid, type ArchivedExit } from './archive';
-import { landedLeavesOf, unsettledLeaves } from './accounting';
-import type { UnilateralExitEngineState } from './engine';
+import { recoveryTxid, type ArchivedExit } from './storage/archive';
+import { landedLeavesOf, unsettledLeaves } from './storage/accounting';
+import type { UnilateralExitEngineState } from './engine/state';
 
 /**
  * One row of the transaction list's exit group. An exit is not a payment the

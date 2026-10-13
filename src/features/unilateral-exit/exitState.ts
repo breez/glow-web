@@ -1,6 +1,6 @@
 import type { BreezSdk } from '@breeztech/breez-sdk-spark';
 import { LogCategory, logger } from '@/services/logger';
-import type { UnilateralExitPlan } from './driver';
+import type { UnilateralExitPlan } from './model/plan';
 
 export type ExitStateExporter = Pick<BreezSdk, 'exportUnilateralExitState'>;
 export type ExitStateImporter = Pick<BreezSdk, 'importUnilateralExitState'>;

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { explorerTxUrl } from '@/utils/explorer';
 import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
-import type { ArchivedExit } from './archive';
+import type { ArchivedExit } from './storage/archive';
 import { ArchivedExitDialog } from './ArchivedExitDialog';
 
 const openExternalUrl = vi.hoisted(() => vi.fn(async () => undefined));

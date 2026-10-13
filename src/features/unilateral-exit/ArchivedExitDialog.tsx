@@ -11,7 +11,7 @@ import { SatAmount } from '@/components/SatAmount';
 import { createChainClient, type ChainClient } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { explorerTxUrl } from '@/utils/explorer';
-import type { ArchivedExit } from './archive';
+import type { ArchivedExit } from './storage/archive';
 
 /**
  * A finished exit's details, laid out the way PaymentDetailsDialog shows a

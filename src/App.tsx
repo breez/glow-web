@@ -43,7 +43,7 @@ const UnilateralExitPage = lazy(() => import('./pages/UnilateralExitPage'));
 const PasskeyMigrationModal = lazy(() => import('./features/passkey-migration/PasskeyMigrationModal'));
 import { ContactsProvider } from './contexts/ContactsContext';
 import { useUnilateralExitEngineLifecycle } from './features/unilateral-exit/hooks/useUnilateralExitEngineLifecycle';
-import type { ExitMode } from './features/unilateral-exit/driver';
+import type { ExitMode } from './features/unilateral-exit/model/plan';
 
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
 import { useStatusBarColor } from './hooks/useStatusBarColor';
