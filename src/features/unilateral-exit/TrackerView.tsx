@@ -241,7 +241,9 @@ export const TrackerView: React.FC<{
           {isCosignedRecovery ? (
             rebuildRow
           ) : (
-            <BackupActions frozen={plan.exitStateSnapshot}>{rebuildRow}</BackupActions>
+            <BackupActions frozen={plan.exitStateSnapshot} started>
+              {rebuildRow}
+            </BackupActions>
           )}
         </CollapsibleSection>
       )}

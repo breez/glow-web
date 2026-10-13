@@ -706,14 +706,18 @@ describe('rebuilding an exit under way at a higher fee that needs more exit fee'
   const higher = prepared({ funding: funding(9_000) });
   const short = new Error('Insufficient CPFP funding: need at least 9500 sats');
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    saved.plan = plan([tx({ txid: 'stuck' })], {
+  const underWay = (over: Parameters<typeof plan>[1] = {}) =>
+    plan([tx({ txid: 'stuck' })], {
       network: 'regtest',
       feeRateSatPerVbyte: 1,
       fundingAddressIndex: 2,
       exit: { fundingInputs: [stored] },
+      ...over,
     });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    saved.plan = underWay();
   });
 
   afterEach(() => addressUtxos.mockReset());
@@ -742,6 +746,18 @@ describe('rebuilding an exit under way at a higher fee that needs more exit fee'
       topUp: { neededSat: 9_636, sentSat: 6_000, stillToSendSat: 3_636 },
     });
     expect(setUnilateralExitPlan).not.toHaveBeenCalled();
+  });
+
+  it("gives the network's slowest rate, so a stall by fees reads as the network's doing", async () => {
+    const { result } = await fallsShort();
+    expect(result.current.funding?.networkFloorFeeRate).toBe(1);
+  });
+
+  it('gives no network floor while the exit waits on its update tap, which fees dropping would not continue', async () => {
+    saved.plan = underWay({ phase: 'redo', needsSignIn: true });
+    const { result } = await fallsShort();
+    expect(result.current.phase).toBe('fund');
+    expect(result.current.funding?.networkFloorFeeRate).toBeNull();
   });
 
   it("builds from that funding and the coins sent since, signed with the fee key at the exit's index", async () => {
@@ -920,7 +936,7 @@ describe('raising the fee of a kept co-signed recovery', () => {
     await act(() => result.current.continueFromQuote());
 
     expect(result.current.phase).toBe('quote');
-    expect(result.current.startError).toBe('Please try again.');
+    expect(result.current.startError).toBe('Please try again or choose a different fee.');
     expect(keepRecovery).not.toHaveBeenCalled();
   });
 

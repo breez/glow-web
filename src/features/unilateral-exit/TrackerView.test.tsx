@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { RedoActions, TrackerView } from './TrackerView';
 
 // The backup card reads the connected wallet; the tracker itself works off the
 // plan it is handed.
 vi.mock('@/contexts/WalletContext', () => ({
-  useWallet: () => ({ exportUnilateralExitState: async () => ({ exitState: '{}' }) }),
+  useWallet: () => ({
+    exportUnilateralExitState: async () => ({ exitState: '{}' }),
+    importUnilateralExitState: async () => ({ importedLeaves: 2, skippedForeignLeaves: 0, skippedConflictingLeaves: 0, skippedChains: 0 }),
+  }),
 }));
 import type { UnilateralExitPlan } from './driver';
 import { blocked, confirmed, locked, plan, ready, tx } from './testFixtures';
@@ -232,6 +235,15 @@ describe('TrackerView', () => {
     fireEvent.click(screen.getByText('Advanced'));
     expect(screen.getByText('Save exit data')).toBeInTheDocument();
     expect(screen.getByTestId('unilateral-exit-backup-save')).toBeInTheDocument();
+  });
+
+  it('says what a restore brought back, and offers no start, since the exit already started', async () => {
+    renderTracker(plan([tx({ txid: 'a' })]));
+    fireEvent.click(screen.getByText('Advanced'));
+    fireEvent.change(screen.getByTestId('unilateral-exit-backup-file'), {
+      target: { files: [new File(['{"leaves":[]}'], 'exit-state.json')] },
+    });
+    await waitFor(() => expect(screen.getByTestId('unilateral-exit-backup-result')).toHaveTextContent(/^Restored 2 leaves\.$/));
   });
 
   it('offers only the fee bump for a co-signed recovery, which exit data cannot restore', () => {

@@ -38,6 +38,7 @@ interface UnilateralExitPageProps {
 const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, bumpTxid, onBack, onFinished }) => {
   const flow = useUnilateralExitFlow(network, mode, bumpTxid);
   const recovering = flow.mode === 'recover';
+  const noun = recovering ? 'recovery' : 'exit';
 
   // Reading the recovery phrase is gated on a PIN where one is set. Where none
   // is, the step passes straight through.
@@ -86,9 +87,17 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
     if (leftFinished || (bumping && !shownTxid.current) || archive.some(exit => exit.id === shownTxid.current)) onFinished();
   }, [plan, archive, onFinished, bumping, bumpedTxid, phase]);
 
+  // A bump sheet can sit beside a paused exit or recovery, which is not its own.
+  const paused = !bumping && !!plan && awaitsUpdate(plan);
+  // An empty quote of a paused exit stays empty at any rate, since a named
+  // quote takes each leaf whatever it costs. So Back skips the fee picker for
+  // the tracker, whose update button is what continues the exit.
+  const { canGoBack, back: stepBack, goTo, quote } = flow;
+  const backToTracker = paused && phase === 'quote' && !quote.isQuoting && !quote.error && !!quote.figures?.isEmpty;
+  const back = useCallback(() => (backToTracker ? goTo('tracker') : stepBack()), [backToTracker, goTo, stepBack]);
+
   // One call to action per step, in the bar the rest of the app puts it in.
   // A step with nothing to press, such as the pin gate or the build, has none.
-  const { canGoBack, back } = flow;
   useBackButton(
     useCallback(() => {
       if (!canGoBack) return false;
@@ -201,7 +210,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
               className="w-full"
               data-testid="unilateral-exit-build"
             >
-              {flow.isContinuing ? 'Updating...' : 'Continue Exit'}
+              {flow.isContinuing ? 'Updating...' : recovering ? 'Continue Recovery' : 'Continue Exit'}
             </PrimaryButton>
           </>
         );
@@ -214,7 +223,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
             onRebuild={flow.rebuild}
             isContinuing={flow.isContinuing}
             continueError={flow.continueError}
-            noun={recovering ? 'recovery' : undefined}
+            noun={noun}
           />
         );
       case 'sent':
@@ -239,7 +248,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
             // field, and the send sheet titles itself the same way.
             title={recovering ? 'Recover Funds' : 'Unilateral Exit'}
             onClose={onBack}
-            onBack={flow.canGoBack ? flow.back : undefined}
+            onBack={canGoBack ? back : undefined}
           />
 
           {/* Bounded so the sheet stays content-sized: past 90% of the
@@ -273,10 +282,12 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                   figures={flow.quote.figures}
                   destination={flow.quote.quote?.destination ?? flow.destination.destination}
                   error={flow.startError}
+                  underWay={!!plan || bumping}
+                  paused={paused}
                 />
               ) : (
                 <>
-                  <QuoteStep {...flow.quote} underWay={!!flow.engine.plan} />
+                  <QuoteStep {...flow.quote} underWay={!!plan} paused={paused} noun={noun} />
                   {flow.startError && (
                     <ErrorMessageBox
                       title={flow.engine.plan ? 'Could not continue the exit' : 'Could not start the exit'}
@@ -289,7 +300,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
             {flow.phase === 'unlock' && (
               <>
                 {gate === 'pin' && (
-                  <PinGate reason="Unilateral exit" onUnlocked={() => void flow.unlock()} />
+                  <PinGate reason={recovering ? 'Recover funds' : 'Unilateral exit'} onUnlocked={() => void flow.unlock()} />
                 )}
                 {flow.unlockError && (
                   <ErrorMessageBox title="Cannot reach your recovery phrase" error={flow.unlockError} />
@@ -305,7 +316,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                 isStarting={flow.engine.isStarting}
                 startError={flow.engine.startError}
                 onCancel={cancelPending}
-                cancelLabel={recovering ? 'Cancel recovery' : undefined}
+                noun={noun}
               />
             )}
 
@@ -316,17 +327,18 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                   error={flow.buildError}
                   isPaying={flow.phase === 'topUp'}
                   onTopUp={() => flow.goTo('topUp')}
+                  noun={noun}
                 />
                 {/* FundStep shows no error beside a top-up, so a leftover's failed build says so here. */}
                 {flow.engine.plan?.topUp && flow.continueError && (
-                  <ErrorMessageBox title="Could not continue the exit" error={flow.continueError} />
+                  <ErrorMessageBox title={`Could not continue the ${noun}`} error={flow.continueError} />
                 )}
               </>
             )}
 
             {flow.phase === 'building' && (
               <div className="py-16 flex justify-center">
-                <LoadingSpinner text="Building and signing the exit..." />
+                <LoadingSpinner text={`Building and signing the ${noun}...`} />
               </div>
             )}
 
@@ -338,7 +350,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                 onRebuild={flow.rebuild}
                 continueError={flow.continueError}
                 justStarted={!openedOnTracker}
-                noun={recovering ? 'recovery' : undefined}
+                noun={noun}
               />
             )}
 

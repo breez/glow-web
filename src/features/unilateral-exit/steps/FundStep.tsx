@@ -115,16 +115,17 @@ export const FundStep: React.FC<
     /** A top-up opens on what it costs, and shows where to pay once asked. */
     isPaying: boolean;
     onTopUp: () => void;
+    noun?: string;
   }
-> = ({ address, topUp, waitsForConfirmation, feeRate, currentFeeRate, networkFloorFeeRate, error, isPaying, onTopUp }) => {
+> = ({ address, topUp, waitsForConfirmation, feeRate, currentFeeRate, networkFloorFeeRate, error, isPaying, onTopUp, noun = 'exit' }) => {
   // The build is tried before anything is asked for, so without a top-up there
   // is nothing to pay here: only a failure to explain.
   if (!topUp) {
     return error ? (
-      <ErrorMessageBox title="Could not continue the exit" error={error} />
+      <ErrorMessageBox title={`Could not continue the ${noun}`} error={error} />
     ) : (
       <p className="text-sm text-spark-text-secondary text-center">
-        Continue the exit at {feeRate} sat/vB.
+        Continue the {noun} at {feeRate} sat/vB.
       </p>
     );
   }
@@ -144,11 +145,11 @@ export const FundStep: React.FC<
     return (
       <div className="space-y-4">
         <Breakdown topUp={topUp} feeRate={feeRate} />
-        <AlertCard variant="warning" title={feesRose ? 'Network fees went up' : 'The exit needs more'}>
+        <AlertCard variant="warning" title={feesRose ? 'Network fees went up' : 'More exit fee needed'}>
           <p className="text-sm">
             {feesRose
-              ? `Your exit started at ${currentFeeRate} sat/vB and continues on its own once fees drop, but they can also keep rising. To continue now at ${feeRate} sat/vB, top up the exit fee address.`
-              : `At ${feeRate} sat/vB, the exit needs more at its fee address.`}
+              ? `Your ${noun} started at ${currentFeeRate} sat/vB and continues on its own once fees drop, but they can also keep rising. To continue now at ${feeRate} sat/vB, top up the exit fee address.`
+              : `At ${feeRate} sat/vB, the ${noun} needs more exit fee than its fee address holds.`}
           </p>
           <div className="mt-3">
             <PrimaryButton onClick={onTopUp} className="w-full" data-testid="unilateral-exit-top-up">
@@ -162,7 +163,7 @@ export const FundStep: React.FC<
 
   return (
     <div className="space-y-4">
-      <Ask label="Send to Continue Exit" sat={topUp.stillToSendSat} />
+      <Ask label={`Send to Continue ${noun.charAt(0).toUpperCase()}${noun.slice(1)}`} sat={topUp.stillToSendSat} />
       <PaymentTarget address={address} amountSat={topUp.stillToSendSat} />
     </div>
   );
@@ -176,15 +177,15 @@ export const PendingExitStep: React.FC<{
   isStarting: boolean;
   startError: string | null;
   onCancel: () => void;
-  cancelLabel?: string;
-}> = ({ pending, coins, nothingToExit, isStarting, startError, onCancel, cancelLabel = 'Cancel exit' }) => {
+  noun?: string;
+}> = ({ pending, coins, nothingToExit, isStarting, startError, onCancel, noun = 'exit' }) => {
   const [advanced, setAdvanced] = useState(false);
   const topUp = pendingTopUp(pending, coins);
 
   if (isStarting) {
     return (
       <div className="py-16 flex justify-center">
-        <LoadingSpinner text="Building and signing the exit..." />
+        <LoadingSpinner text={`Building and signing the ${noun}...`} />
       </div>
     );
   }
@@ -192,11 +193,14 @@ export const PendingExitStep: React.FC<{
   const body = (() => {
     if (nothingToExit) {
       return (
-        <AlertCard variant="warning" title="Nothing is worth exiting right now">
+        <AlertCard
+          variant="warning"
+          title={noun === 'exit' ? 'Nothing is worth exiting right now' : 'Nothing is worth recovering right now'}
+        >
           <p className="text-sm">
-            At {pending.feeRateSatPerVbyte} sat/vB your balance would cost more to move on-chain than it
-            is worth. Cancel it under Advanced and start again at a lower rate. The fee you sent counts
-            toward it.
+            {noun === 'exit'
+              ? `At ${pending.feeRateSatPerVbyte} sat/vB your balance would cost more to move on-chain than it is worth. Cancel it under Advanced and start again at a lower rate. The fee you sent counts toward it.`
+              : `At ${pending.feeRateSatPerVbyte} sat/vB these funds would cost more to move on-chain than they are worth. Cancel the ${noun} under Advanced and start again at a lower rate. The fee you sent counts toward it.`}
           </p>
         </AlertCard>
       );
@@ -218,7 +222,7 @@ export const PendingExitStep: React.FC<{
           <Status>Waiting for a confirmation</Status>
           {/* Paid is where the wait is, so it is where closing needs saying. */}
           <p className="text-spark-text-muted text-xs text-center text-balance">
-            You can close this. Come back to start the exit once the fee confirms.
+            You can close this. Come back to start the {noun} once the fee confirms.
           </p>
         </Receipt>
       );
@@ -226,7 +230,7 @@ export const PendingExitStep: React.FC<{
     return (
       <>
         <Receipt />
-        {startError && <ErrorMessageBox title="Could not start the exit" error={startError} />}
+        {startError && <ErrorMessageBox title={`Could not start the ${noun}`} error={startError} />}
       </>
     );
   })();
@@ -237,8 +241,8 @@ export const PendingExitStep: React.FC<{
       {/* Out of the way, as on the intro and the tracker. Nothing is lost by
           cancelling: coins already sent count toward the next exit. */}
       <CollapsibleSection label="Advanced" isVisible={advanced} onToggle={() => setAdvanced(v => !v)} bare>
-        <BackupActions>
-          <ExitActionRow label={cancelLabel} icon={<CloseIcon size="md" />} onClick={onCancel} testId="unilateral-exit-cancel" />
+        <BackupActions noun={noun}>
+          <ExitActionRow label={`Cancel ${noun}`} icon={<CloseIcon size="md" />} onClick={onCancel} testId="unilateral-exit-cancel" />
         </BackupActions>
       </CollapsibleSection>
     </div>

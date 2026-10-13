@@ -23,6 +23,15 @@ vi.mock('@/features/unilateral-exit/engine', async () => ({
   cancelPendingExit: vi.fn(),
 }));
 
+// The PIN gate's reason is what the OS biometric prompt shows.
+vi.mock('@/services/appLock', async () => ({
+  ...(await vi.importActual('@/services/appLock')),
+  isPinEnabled: async () => true,
+}));
+vi.mock('@/components/PinEntry', () => ({
+  PinGate: ({ reason }: { reason: string }) => <p data-testid="pin-gate-reason">{reason}</p>,
+}));
+
 // The backup rows under Advanced read the connected wallet.
 vi.mock('@/contexts/WalletContext', async () => ({
   ...(await vi.importActual('@/contexts/WalletContext')),
@@ -127,6 +136,106 @@ describe('the quote step of a recovery', () => {
     await renderQuote(0, { mode: 'recover', startError: 'Please try again.' });
     expect(screen.getByText('Could not recover the funds')).toBeInTheDocument();
     expect(screen.queryByText('Could not start the exit')).not.toBeInTheDocument();
+  });
+
+  it('says a recovery under way could not continue when its rebuild failed', async () => {
+    await renderQuote(0, { mode: 'recover', underWay: true, startError: 'operators unreachable' });
+    expect(screen.getByText('Could not continue the recovery')).toBeInTheDocument();
+    expect(screen.queryByText('Could not recover the funds')).not.toBeInTheDocument();
+  });
+
+  it('asks for no start while a recovery is under way', async () => {
+    await renderQuote(3_000, { mode: 'recover', underWay: true });
+    expect(screen.getByText('Exit fee')).toBeInTheDocument();
+    expect(screen.queryByText(/To start the recovery/)).not.toBeInTheDocument();
+  });
+
+  it('speaks of a recovery while it quotes one, and when that quote fails', async () => {
+    const quoting = (fields: Partial<UnilateralExitFlow['quote']>) =>
+      ({
+        ...quoteFlow(0, { mode: 'recover' }),
+        quote: { quote: null, figures: null, isQuoting: false, error: null, ...fields },
+      }) as UnilateralExitFlow;
+    flow.current = quoting({ isQuoting: true });
+    const { rerender } = render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
+    await waitForSheetOpen();
+    expect(screen.getByText('Working out what can be recovered...')).toBeInTheDocument();
+
+    flow.current = quoting({ error: 'operators unreachable' });
+    rerender(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
+    expect(screen.getByText('Could not quote the recovery')).toBeInTheDocument();
+  });
+});
+
+describe('a paused exit or recovery whose quote at the new fee moves nothing', () => {
+  const emptyQuote = prepared({ leaves: [], recoverableValueSats: 0, totalFeeSats: 0 });
+  const quoting = (
+    current: UnilateralExitPlan,
+    { mode, bumping = false, quote = emptyQuote }: { mode?: 'recover'; bumping?: boolean; quote?: typeof emptyQuote } = {},
+  ) =>
+    ({
+      phase: 'quote',
+      mode,
+      bumping,
+      bumpedTxid: bumping ? 'c1' : null,
+      engine: { plan: current, pending: null, archive: [] },
+      canGoBack: true,
+      back: vi.fn(),
+      goTo: vi.fn(),
+      quote: { quote, figures: quoteFigures(quote), isQuoting: false, error: null },
+      startError: null,
+      continueFromQuote: vi.fn(),
+    }) as unknown as UnilateralExitFlow;
+
+  async function show(next: UnilateralExitFlow) {
+    flow.current = next;
+    render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
+    await waitForSheetOpen();
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+  }
+
+  it.each([
+    ['a diverged exit whose rebuild needs the passkey', plan([tx({ txid: 'a' })], { phase: 'redo', needsSignIn: true })],
+    ['a diverged exit whose rebuild failed', plan([tx({ txid: 'a' })], { phase: 'redo', rebuildFailed: true })],
+    [
+      'a running exit whose update waits on the passkey',
+      plan([tx({ txid: 'a', status: { type: 'unverified' } })], { needsSignIn: true, redoCause: 'unverified' }),
+    ],
+  ])('points %s at its update, and goes back straight to the tracker that holds it', async (_, current) => {
+    await show(quoting(current));
+    expect(screen.getByText('Nothing to rebuild right now')).toBeInTheDocument();
+    expect(screen.getByText('Please update your unilateral exit to continue.')).toBeInTheDocument();
+    expect(flow.current.goTo).toHaveBeenCalledWith('tracker');
+    expect(flow.current.back).not.toHaveBeenCalled();
+  });
+
+  it('points a paused recovery at its update, and goes back straight to its tracker', async () => {
+    await show(quoting(plan([tx({ txid: 'a' })], { mode: 'recover', phase: 'redo', rebuildFailed: true }), { mode: 'recover' }));
+    expect(screen.getByText('Please update your recovery to continue.')).toBeInTheDocument();
+    expect(flow.current.goTo).toHaveBeenCalledWith('tracker');
+    expect(flow.current.back).not.toHaveBeenCalled();
+  });
+
+  it('says a running exit carries on by itself, and goes back to the fee', async () => {
+    await show(quoting(plan([tx({ txid: 'a' })])));
+    expect(screen.getByText('Glow keeps your exit moving on its own.')).toBeInTheDocument();
+    expect(flow.current.back).toHaveBeenCalled();
+    expect(flow.current.goTo).not.toHaveBeenCalled();
+  });
+
+  it('goes back to the fee from a paused exit whose quote moves something, since another rate may suit', async () => {
+    await show(quoting(plan([tx({ txid: 'a' })], { phase: 'redo', needsSignIn: true }), { quote: prepared({ funding: undefined }) }));
+    expect(flow.current.back).toHaveBeenCalled();
+    expect(flow.current.goTo).not.toHaveBeenCalled();
+  });
+
+  it("says a fee raise beside a paused exit has nothing to rebuild, rather than pointing at the exit's update", async () => {
+    const paused = plan([tx({ txid: 'a' })], { phase: 'redo', needsSignIn: true });
+    await show(quoting(paused, { mode: 'recover', bumping: true }));
+    expect(screen.getByText('Glow keeps your recovery moving on its own.')).toBeInTheDocument();
+    expect(screen.queryByText(/Please update/)).not.toBeInTheDocument();
+    expect(flow.current.back).toHaveBeenCalled();
+    expect(flow.current.goTo).not.toHaveBeenCalled();
   });
 });
 
@@ -270,6 +379,23 @@ describe('raising the fee of a kept co-signed recovery', () => {
     expect(screen.getByTestId('unilateral-exit-quote-continue')).toHaveTextContent(/^Continue Recovery$/);
   });
 
+  it('says the recovery could not continue when its build failed, though no exit is under way', async () => {
+    flow.current = {
+      ...quoteFlow(0, { mode: 'recover', cosignedSat: 48_200, startError: 'Please try again or choose a different fee.' }),
+      bumping: true,
+      bumpedTxid: 'c1',
+    } as UnilateralExitFlow;
+    render(<UnilateralExitPage network="regtest" bumpTxid="c1" onBack={vi.fn()} onFinished={vi.fn()} />);
+    await waitForSheetOpen();
+    expect(screen.getByText('Could not continue the recovery')).toBeInTheDocument();
+    expect(screen.getByText('Please try again or choose a different fee.')).toBeInTheDocument();
+  });
+
+  it('says what is being built while it builds', async () => {
+    await renderBump(bumpFlow({ phase: 'building' }));
+    expect(screen.getByText('Building and signing the recovery...')).toBeInTheDocument();
+  });
+
   it('closes once the recovery holding its leaves lands, under a transaction a retry swapped in', async () => {
     const { onFinished, show } = await renderBump(bumpFlow());
     show(bumpFlow({ bumpedTxid: 'c1-retried' }));
@@ -367,6 +493,17 @@ describe('the fee screen of a leaf the exit left out', () => {
     expect(screen.getByText('Could not continue the exit')).toBeInTheDocument();
   });
 
+  it('continues a recovery in its own words', async () => {
+    await renderFund({ mode: 'recover', continueError: 'operators unreachable' });
+    expect(screen.getByTestId('unilateral-exit-build')).toHaveTextContent(/^Continue Recovery$/);
+    expect(screen.getByText('Could not continue the recovery')).toBeInTheDocument();
+  });
+
+  it('continues an exit in its own', async () => {
+    await renderFund();
+    expect(screen.getByTestId('unilateral-exit-build')).toHaveTextContent(/^Continue Exit$/);
+  });
+
   it("keeps a failed update's error off the wizard's own fee screen", async () => {
     const exit = plan([tx({ txid: 'a' })], { phase: 'redo', rebuildFailed: true });
     await renderFund({ engine: { plan: exit, pending: null, archive: [] } as unknown as UnilateralExitFlow['engine'], continueError: 'passkey cancelled' });
@@ -448,6 +585,12 @@ describe('the quote step', () => {
     expect(screen.getByText('Could not continue the exit')).toBeInTheDocument();
   });
 
+  it('asks for no start while an exit is under way', async () => {
+    await renderQuote(3_000, { underWay: true });
+    expect(screen.getByText('Exit fee')).toBeInTheDocument();
+    expect(screen.queryByText(/To start the process/)).not.toBeInTheDocument();
+  });
+
   it('says an exit under way has nothing to rebuild yet when the quote names none of its leaves', async () => {
     const empty = prepared({ leaves: [], recoverableValueSats: 0 });
     flow.current = {
@@ -458,6 +601,35 @@ describe('the quote step', () => {
     await waitForSheetOpen();
     expect(screen.getByText('Nothing to rebuild right now')).toBeInTheDocument();
     expect(screen.queryByTestId('unilateral-exit-quote-continue')).not.toBeInTheDocument();
+  });
+});
+
+describe('the phrase unlock', () => {
+  it.each([
+    ['Unilateral Exit', undefined, 'Unilateral exit'],
+    ['Recover Funds', 'recover' as const, 'Recover funds'],
+  ])('names what it authorizes in %s', async (_, mode, reason) => {
+    flow.current = {
+      ...quoteFlow(3_000, { mode }),
+      phase: 'unlock',
+      unlock: vi.fn(async () => {}),
+      unlockError: null,
+    } as unknown as UnilateralExitFlow;
+    render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
+    await waitForSheetOpen();
+    expect(await screen.findByTestId('pin-gate-reason')).toHaveTextContent(reason);
+  });
+});
+
+describe('the build', () => {
+  it.each([
+    ['Unilateral Exit', undefined, 'Building and signing the exit...'],
+    ['Recover Funds', 'recover' as const, 'Building and signing the recovery...'],
+  ])('says what it builds in %s', async (_, mode, text) => {
+    flow.current = { ...quoteFlow(0, { mode }), phase: 'building' } as unknown as UnilateralExitFlow;
+    render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
+    await waitForSheetOpen();
+    expect(screen.getByText(text)).toBeInTheDocument();
   });
 });
 

@@ -5,45 +5,79 @@ import { SatAmount } from '@/components/SatAmount';
 import type { QuoteFigures } from '../quote';
 import { DestinationRow, LeftOutCard, ReceiveHero, ReviewBreakdown } from './ReviewParts';
 
+const Verdict: React.FC<{ variant: 'info' | 'warning'; title: string; children: React.ReactNode }> = ({
+  variant,
+  title,
+  children,
+}) => (
+  <AlertCard variant={variant} title={title}>
+    <p className="text-sm">{children}</p>
+  </AlertCard>
+);
+
 /**
  * The Recover Funds review: the same quote as the Unilateral Exit's, in this
- * flow's words. Whatever the quote leaves out is shown as an amount, never a
- * reason: few reasons are anything the user can act on.
+ * flow's words. What a quote that moves something leaves out is shown as an
+ * amount, never a reason: few reasons are anything the user can act on.
  */
 export const RecoverReviewStep: React.FC<{
   figures: QuoteFigures;
   destination: string;
   /** Why the recovery did not start, under the review it was started from. */
   error?: string | null;
-}> = ({ figures, destination, error = null }) => {
-  // The SDK may have skipped every leaf of an empty quote for any reason, fees
-  // among them, so Glow blames the fees only for a quote that moves something.
-  // With nothing skipped either, it left out leaves it found already recovered.
-  if (figures.isEmpty && figures.leftOutSat === 0) {
-    return (
-      <AlertCard variant="info" title="Nothing left to recover">
-        <p className="text-sm">These funds were already recovered.</p>
-      </AlertCard>
-    );
-  }
+  /** A recovery is under way or its fee is being raised, so the quote named only its leaves. */
+  underWay?: boolean;
+  /** The recovery under way waits on the update tap rather than rebuilding by itself. */
+  paused?: boolean;
+}> = ({ figures, destination, error = null, underWay = false, paused = false }) => {
+  const notWorthIt = (
+    <Verdict variant="warning" title="Nothing is worth recovering right now">
+      {underWay
+        ? 'At this fee rate these funds would cost more to move on-chain than they are worth. Try a lower fee rate, or wait for the network to get cheaper.'
+        : "At today's fee rates these funds would cost more to move on-chain than they are worth. Try again once the network is cheaper."}
+    </Verdict>
+  );
+
   if (figures.isEmpty) {
-    return (
-      <AlertCard variant="warning" title="Nothing can be recovered right now">
-        <p className="text-sm">Try again later.</p>
-      </AlertCard>
-    );
+    if (paused) {
+      return (
+        <Verdict variant="info" title="Nothing to rebuild right now">
+          Please update your recovery to continue.
+        </Verdict>
+      );
+    }
+    if (underWay) {
+      return (
+        <Verdict variant="info" title="Nothing to rebuild right now">
+          Glow keeps your recovery moving on its own.
+        </Verdict>
+      );
+    }
+    switch (figures.leftOutReason) {
+      case null:
+        return (
+          <Verdict variant="info" title="Nothing left to recover">
+            These funds were already recovered.
+          </Verdict>
+        );
+      case 'unavailable':
+        return (
+          <Verdict variant="warning" title="Nothing can be recovered right now">
+            Try again later.
+          </Verdict>
+        );
+      case 'fees':
+        return notWorthIt;
+      case 'notRecoverable':
+        return (
+          <Verdict variant="info" title="Nothing left to recover">
+            These funds can&apos;t be recovered.
+          </Verdict>
+        );
+    }
   }
 
-  if (!figures.isWorthMoving) {
-    return (
-      <AlertCard variant="warning" title="Nothing is worth recovering right now">
-        <p className="text-sm">
-          At today&apos;s fee rates these funds would cost more to move on-chain than they are worth. Try again
-          once the network is cheaper.
-        </p>
-      </AlertCard>
-    );
-  }
+  if (!figures.isWorthMoving) return notWorthIt;
 
   return (
     <div className="space-y-4">
@@ -51,7 +85,8 @@ export const RecoverReviewStep: React.FC<{
       <DestinationRow address={destination} />
       <ReviewBreakdown figures={figures} amounts={[{ label: 'Funds', value: figures.fundsSat }]} feeLabel="Network fee" />
 
-      {figures.needsFunding && (
+      {/* Under way, the build spends what the fee address holds first, so this may cost nothing. */}
+      {figures.needsFunding && !underWay && (
         <SimpleAlert variant="warning" hideIcon>
           {figures.isCooperative ? (
             <>
@@ -74,7 +109,9 @@ export const RecoverReviewStep: React.FC<{
         </LeftOutCard>
       )}
 
-      {error && <ErrorMessageBox title="Could not recover the funds" error={error} />}
+      {error && (
+        <ErrorMessageBox title={underWay ? 'Could not continue the recovery' : 'Could not recover the funds'} error={error} />
+      )}
     </div>
   );
 };

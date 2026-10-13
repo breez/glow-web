@@ -70,7 +70,19 @@ describe('QuoteStep', () => {
     const tooDear = quote({ recoverableValueSats: 1_000, totalFeeSats: 4_000 });
     renderStep(tooDear);
     expect(screen.getByText('Nothing is worth exiting right now')).toBeInTheDocument();
+    expect(screen.getByText(/every part of your balance would cost more/)).toBeInTheDocument();
     expect(canContinueFromQuote(fields(tooDear))).toBe(false);
+  });
+
+  it('says what is left of an exit under way costs more than it holds, rather than the balance', () => {
+    render(<QuoteStep {...fields(quote({ recoverableValueSats: 1_000, totalFeeSats: 4_000 }))} underWay />);
+    expect(screen.getByText('Nothing is worth exiting right now')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'At this fee rate what is left of your exit would cost more to move on-chain than it is worth. Try a lower fee rate, or wait for the network to get cheaper.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/your balance/)).not.toBeInTheDocument();
   });
 
   it('distinguishes having no leaves at all from the fees being too high', () => {
@@ -87,8 +99,39 @@ describe('QuoteStep', () => {
     expect(screen.queryByText('Nothing here to exit')).not.toBeInTheDocument();
   });
 
+  it('points a paused exit with nothing to rebuild at its update, since it will not move by itself', () => {
+    render(<QuoteStep {...fields(quote({ leaves: [], recoverableValueSats: 0 }))} underWay paused />);
+    expect(screen.getByText('Nothing to rebuild right now')).toBeInTheDocument();
+    expect(screen.getByText('Please update your unilateral exit to continue.')).toBeInTheDocument();
+    expect(screen.queryByText(/on its own/)).not.toBeInTheDocument();
+  });
+
+  it('asks for no start under way, where the build first spends what the fee address holds', () => {
+    render(<QuoteStep {...fields()} underWay />);
+    expect(screen.getByText('Exit fee')).toBeInTheDocument();
+    expect(screen.queryByText(/To start the process/)).not.toBeInTheDocument();
+  });
+
   const dust: SkippedLeaf = { leafId: 'dust', valueSats: 2_500, reason: { type: 'feeExceedsValue' } };
   const gone: SkippedLeaf = { leafId: 'gone', valueSats: 1_000, reason: { type: 'fundsNotFound' } };
+  const spent: SkippedLeaf = { leafId: 'spent', valueSats: 700, reason: { type: 'notRecoverable', message: 'spent' } };
+  const empty = (skipped: SkippedLeaf[]) => quote({ leaves: [], recoverableValueSats: 0, skipped });
+
+  it('says nothing is worth exiting when the fee is why a fresh quote moves nothing', () => {
+    renderStep(empty([dust, spent]));
+    expect(screen.getByText('Nothing is worth exiting right now')).toBeInTheDocument();
+    expect(screen.getByText(/every part of your balance would cost more/)).toBeInTheDocument();
+    expect(screen.queryByText('Nothing here to exit')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['a leaf Glow could not find is among the skips', [dust, gone]],
+    ['every skip is unrecoverable', [spent]],
+  ])('says there is nothing here to exit when %s', (_, skipped) => {
+    renderStep(empty(skipped));
+    expect(screen.getByText('Nothing here to exit')).toBeInTheDocument();
+    expect(screen.queryByText('Nothing is worth exiting right now')).not.toBeInTheDocument();
+  });
 
   it('names the balance being left behind as dust when the fee is why every piece stays', () => {
     renderStep(quote({ skipped: [dust] }));
@@ -125,5 +168,12 @@ describe('QuoteStep', () => {
   it('reports a quote that failed outright', () => {
     renderStep(quote(), { error: 'operators unreachable' });
     expect(screen.getByText('Could not quote the exit')).toBeInTheDocument();
+  });
+
+  it('speaks of a recovery while it quotes one, and when that quote fails', () => {
+    const { rerender } = render(<QuoteStep {...fields()} isQuoting noun="recovery" />);
+    expect(screen.getByText('Working out what can be recovered...')).toBeInTheDocument();
+    rerender(<QuoteStep {...fields(quote(), { error: 'operators unreachable' })} noun="recovery" />);
+    expect(screen.getByText('Could not quote the recovery')).toBeInTheDocument();
   });
 });

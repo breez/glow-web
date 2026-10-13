@@ -877,8 +877,8 @@ export async function quoteFresh(
 export class EmptyRecoveryError extends Error {
   readonly failed: CooperativeRecoveryFailure[];
 
-  constructor(failed: CooperativeRecoveryFailure[]) {
-    super('Please try again.');
+  constructor(failed: CooperativeRecoveryFailure[], message = 'Please try again.') {
+    super(message);
     this.name = 'EmptyRecoveryError';
     this.failed = failed;
   }
@@ -990,6 +990,9 @@ export async function quoteRecoveryBump(
   return whole ? quote : emptyQuote(quote);
 }
 
+/** A bump's retry: a replacement fee too low is the common cause, and Back reopens the fee picker. */
+const BUMP_RETRY = 'Please try again or choose a different fee.';
+
 /**
  * Builds the bump, which replaces `recovery` once kept. Nothing is broadcast
  * yet, so a build that left out a leaf (a replacement fee too low, operators
@@ -1001,8 +1004,10 @@ export async function buildRecoveryBump(
   recovery: UnilateralExitPlan,
   quote: PrepareRecoverFundsResponse,
 ): Promise<UnilateralExitPlan> {
-  const built = await buildFromQuote(sdk, quote, null);
-  if (!coversLeaves(built.leaves, recovery.exit.leaves.map(leaf => leaf.leafId))) throw new EmptyRecoveryError(built.failed);
+  const built = await buildFromQuote(sdk, quote, null).catch((e: unknown) => {
+    throw e instanceof EmptyRecoveryError ? new EmptyRecoveryError(e.failed, BUMP_RETRY) : e;
+  });
+  if (!coversLeaves(built.leaves, recovery.exit.leaves.map(leaf => leaf.leafId))) throw new EmptyRecoveryError(built.failed, BUMP_RETRY);
   const { network, fundingAddressIndex, mode, landed, droppedLeaves } = recovery;
   return { ...planFromBuild(quote, built, null, { network, fundingAddressIndex, mode }), landed, droppedLeaves };
 }

@@ -7,14 +7,17 @@ import { DestinationRow, LeftOutCard, ReceiveHero, ReviewBreakdown } from './Rev
 
 export const QuoteStep: React.FC<
   QuoteFields & {
-    /** An exit is under way, so the quote named only its leaves, which Glow rebuilds by itself. */
+    /** An exit is under way, so the quote named only its leaves. */
     underWay?: boolean;
+    /** That exit waits on the update tap rather than rebuilding by itself. */
+    paused?: boolean;
+    noun?: string;
   }
-> = ({ quote, figures, isQuoting, error, underWay = false }) => {
+> = ({ quote, figures, isQuoting, error, underWay = false, paused = false, noun = 'exit' }) => {
   if (isQuoting) {
     return (
       <div className="py-16 flex justify-center">
-        <LoadingSpinner text="Working out what can be exited..." />
+        <LoadingSpinner text={`Working out what can be ${noun === 'exit' ? 'exited' : 'recovered'}...`} />
       </div>
     );
   }
@@ -22,21 +25,36 @@ export const QuoteStep: React.FC<
   if (error) {
     return (
       <div className="space-y-6">
-        <ErrorMessageBox title="Could not quote the exit" error={error} />
+        <ErrorMessageBox title={`Could not quote the ${noun}`} error={error} />
       </div>
     );
   }
+
+  const notWorthIt = (
+    <div className="space-y-6">
+      <AlertCard variant="warning" title="Nothing is worth exiting right now">
+        <p className="text-sm">
+          {underWay
+            ? 'At this fee rate what is left of your exit would cost more to move on-chain than it is worth. Try a lower fee rate, or wait for the network to get cheaper.'
+            : 'At this fee rate every part of your balance would cost more to move on-chain than it is worth. Try a lower fee rate, or wait for the network to get cheaper.'}
+        </p>
+      </AlertCard>
+    </div>
+  );
 
   if (!quote || !figures || figures.isEmpty) {
     if (underWay) {
       return (
         <div className="space-y-6">
           <AlertCard variant="info" title="Nothing to rebuild right now">
-            <p className="text-sm">Glow keeps your exit moving on its own.</p>
+            <p className="text-sm">
+              {paused ? 'Please update your unilateral exit to continue.' : 'Glow keeps your exit moving on its own.'}
+            </p>
           </AlertCard>
         </div>
       );
     }
+    if (figures?.leftOutReason === 'fees') return notWorthIt;
     return (
       <div className="space-y-6">
         <AlertCard variant="warning" title="Nothing here to exit">
@@ -49,18 +67,7 @@ export const QuoteStep: React.FC<
     );
   }
 
-  if (!figures.isWorthMoving) {
-    return (
-      <div className="space-y-6">
-        <AlertCard variant="warning" title="Nothing is worth exiting right now">
-          <p className="text-sm">
-            At this fee rate every part of your balance would cost more to move on-chain than it is
-            worth. Try a lower fee rate, or wait for the network to get cheaper.
-          </p>
-        </AlertCard>
-      </div>
-    );
-  }
+  if (!figures.isWorthMoving) return notWorthIt;
 
   return (
     <div className="space-y-4">
@@ -79,7 +86,8 @@ export const QuoteStep: React.FC<
         feeLabel={figures.isCooperative ? 'Network fee' : 'Sweep fee'}
       />
 
-      {figures.needsFunding && (
+      {/* Under way, the build spends what the fee address holds first, so this may cost nothing. */}
+      {figures.needsFunding && !underWay && (
         <SimpleAlert variant="warning" hideIcon>
           To start the process you need to pay the exit fee. These are the mining fees required to
           move the Spark tree on-chain.

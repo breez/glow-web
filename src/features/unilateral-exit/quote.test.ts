@@ -8,6 +8,7 @@ import {
   exitFeeRecordOf,
   exitFeeSat,
   leafFeesSat,
+  leftOutReason,
   leftOutSat,
   needsFunding,
   quoteFigures,
@@ -225,6 +226,38 @@ describe('leftOutSat', () => {
     expect(quoteFigures(prepared({ skipped: [dust] })).leftOutForFees).toBe(true);
     expect(quoteFigures(prepared({ skipped: [dust, lost] })).leftOutForFees).toBe(false);
     expect(quoteFigures(prepared({ skipped: [] })).leftOutForFees).toBe(false);
+  });
+});
+
+describe('leftOutReason', () => {
+  const skip = (type: 'feeExceedsValue' | 'fundsNotFound' | 'unverified'): SkippedLeaf => ({
+    leafId: type,
+    valueSats: 350,
+    reason: { type },
+  });
+  const unrecoverable: SkippedLeaf = { leafId: 'gone', valueSats: 350, reason: { type: 'notRecoverable', message: 'spent' } };
+
+  it('gives none when nothing was skipped', () => {
+    expect(leftOutReason([])).toBeNull();
+  });
+
+  it.each([
+    ['unverified', [skip('unverified'), skip('feeExceedsValue'), unrecoverable]],
+    ['missing', [unrecoverable, skip('feeExceedsValue'), skip('fundsNotFound')]],
+  ])('puts a leaf Glow could not check or find first, as %s, since it may yet move', (_, skipped) => {
+    expect(leftOutReason(skipped)).toBe('unavailable');
+  });
+
+  it('blames the fee over a leaf that cannot be recovered', () => {
+    expect(leftOutReason([unrecoverable, skip('feeExceedsValue')])).toBe('fees');
+  });
+
+  it('says the funds cannot be recovered only when that is the reason for every leaf', () => {
+    expect(leftOutReason([unrecoverable, { ...unrecoverable, leafId: 'gone-2' }])).toBe('notRecoverable');
+  });
+
+  it('is read off the quote with its other figures', () => {
+    expect(quoteFigures(prepared({ leaves: [], skipped: [skip('feeExceedsValue')] })).leftOutReason).toBe('fees');
   });
 });
 

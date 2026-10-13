@@ -62,6 +62,17 @@ describe('a pending exit in the wallet list', () => {
       isAction: true,
     });
   });
+
+  it.each([
+    ['an exit', undefined, 'Nothing to exit'],
+    ['a recovery', 'recover' as const, 'Nothing to recover'],
+  ])('offers to cancel %s whose start found nothing worth moving', (_, mode, title) => {
+    expect(row({ pending: pendingExit({ mode }), pendingCoins: [coin(5_898)], nothingToExit: true })).toMatchObject({
+      title,
+      subtitle: 'Tap to cancel',
+      isAction: true,
+    });
+  });
 });
 
 describe('recoverable funds in the wallet list', () => {

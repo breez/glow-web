@@ -3,6 +3,7 @@ import type {
   RecoverFundsLeaf,
   RecoverFundsResponse,
   RecoveryTransaction,
+  SkippedLeaf,
 } from '@breeztech/breez-sdk-spark';
 import { outputTotalSat } from '@/utils/rawTx';
 import type { Landing, NamedLeaf, UnilateralExitPlan } from './driver';
@@ -176,6 +177,20 @@ export const leftOutSat = (quote: Quote): number => quote.skipped.reduce((sum, l
 const leftOutForFees = (quote: Quote): boolean =>
   quote.skipped.length > 0 && quote.skipped.every(leaf => leaf.reason.type === 'feeExceedsValue');
 
+export type LeftOutReason = 'unavailable' | 'fees' | 'notRecoverable';
+
+/**
+ * The one reason an empty quote gives, null when it skipped nothing. A leaf
+ * Glow could not check or find may yet move later, so it outranks one the fee
+ * eats, and only skips that are all unrecoverable say so.
+ */
+export function leftOutReason(skipped: SkippedLeaf[]): LeftOutReason | null {
+  const any = (...types: SkippedLeaf['reason']['type'][]) => skipped.some(leaf => types.includes(leaf.reason.type));
+  if (skipped.length === 0) return null;
+  if (any('unverified', 'fundsNotFound')) return 'unavailable';
+  return any('feeExceedsValue') ? 'fees' : 'notRecoverable';
+}
+
 export interface QuoteFigures {
   /** Everything the quote moves. */
   fundsSat: number;
@@ -196,6 +211,7 @@ export interface QuoteFigures {
   leftOutSat: number;
   /** Everything left out costs more to move than it holds, which the Unilateral Exit's card says. */
   leftOutForFees: boolean;
+  leftOutReason: LeftOutReason | null;
   /** Some of it is co-signed, so the fee is more than the sweep's. */
   isCooperative: boolean;
   isEmpty: boolean;
@@ -223,6 +239,7 @@ export function quoteFigures(
     balanceReceiveSat: Math.max(0, receiveSat - recoverableReceiveSat),
     leftOutSat: leftOutSat(quote),
     leftOutForFees: leftOutForFees(quote),
+    leftOutReason: leftOutReason(quote.skipped),
     isCooperative: recoverableSat > 0 || coopFeeSat > 0,
     isEmpty: quote.leaves.length === 0,
     isWorthMoving: isWorthExiting(quote, receiveSat),

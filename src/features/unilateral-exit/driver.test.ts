@@ -1882,7 +1882,27 @@ describe('raising the fee of a kept co-signed recovery', () => {
       });
       const bump = buildRecoveryBump(sdk({ recoverFunds: async () => partial }), kept(), bumpQuote());
       await expect(bump).rejects.toBeInstanceOf(EmptyRecoveryError);
-      await expect(bump).rejects.toThrow('Please try again.');
+      await expect(bump).rejects.toMatchObject({ failed: partial.failed, message: 'Please try again or choose a different fee.' });
+    });
+
+    it('offers a different fee too when the build comes back with nothing at all', async () => {
+      const failed = [
+        {
+          leafId: 'c-1',
+          outputTxid: 'o',
+          outputVout: 0,
+          error: { type: 'replacementFeeTooLow' as const, requiredFeeSats: 1_600, requiredFeeRateSatPerVbyte: 8 },
+        },
+      ];
+      const bump = buildRecoveryBump(sdk({ recoverFunds: async () => bumpBuild({ leaves: [], transactions: [], failed }) }), kept(), bumpQuote());
+      await expect(bump).rejects.toBeInstanceOf(EmptyRecoveryError);
+      await expect(bump).rejects.toMatchObject({ failed, message: 'Please try again or choose a different fee.' });
+    });
+
+    it('passes on any other refusal as the SDK gave it', async () => {
+      const refused = new Error('operators unavailable');
+      const bump = buildRecoveryBump(sdk({ recoverFunds: async () => Promise.reject(refused) }), kept(), bumpQuote());
+      await expect(bump).rejects.toBe(refused);
     });
   });
 });

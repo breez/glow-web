@@ -63,7 +63,10 @@ const pendingText = (
   pending: PendingExit,
 ): Pick<UnilateralExitEntry, 'title' | 'subtitle' | 'isAction'> => {
   const coins = state.pendingCoins;
-  if (state.nothingToExit) return { title: 'Nothing to exit', subtitle: 'Tap to cancel', isAction: true };
+  if (state.nothingToExit) {
+    const title = pending.mode === 'recover' ? 'Nothing to recover' : 'Nothing to exit';
+    return { title, subtitle: 'Tap to cancel', isAction: true };
+  }
 
   const stillToSend = pendingTopUp(pending, coins).stillToSendSat;
   if (stillToSend > 0) {

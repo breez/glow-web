@@ -132,7 +132,11 @@ export interface FundingFields {
   feeRate: number;
   /** The rate the exit runs at until the build replaces it. */
   currentFeeRate: number | null;
-  /** The slowest rate the network is taking, or null before the rates load. */
+  /**
+   * The slowest rate the network is taking. Null before the rates load, and
+   * where fees dropping would not continue the exit: a leftover, or an exit
+   * that waits on the update tap.
+   */
   networkFloorFeeRate: number | null;
   /** When the quote the figures come from was taken, in ms. */
   quotedAt: number | null;
@@ -637,7 +641,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
     currentFeeRate: plan?.feeRateSatPerVbyte ?? null,
     // The slowest rate the network is taking: above the exit's own rate, the
     // exit is stalled by fees rather than by the rate the user just picked.
-    networkFloorFeeRate: feeRates?.slow ?? null,
+    networkFloorFeeRate: plan && awaitsUpdate(plan) ? null : (feeRates?.slow ?? null),
     quotedAt,
   };
   const leftoverFunding = useMemo<FundingFields | null>(() => {

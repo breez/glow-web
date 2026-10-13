@@ -1,11 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { FundStep, FundingStatus, PendingExitStep } from './FundStep';
 import { coin, pendingExit } from '../testFixtures';
 
 // The backup rows under Advanced read the connected wallet.
 vi.mock('@/contexts/WalletContext', () => ({
-  useWallet: () => ({ exportUnilateralExitState: async () => ({ exitState: '{}' }) }),
+  useWallet: () => ({
+    exportUnilateralExitState: async () => ({ exitState: '{}' }),
+    importUnilateralExitState: async () => ({ importedLeaves: 2, skippedForeignLeaves: 0, skippedConflictingLeaves: 0, skippedChains: 0 }),
+  }),
 }));
 
 const props = {
@@ -59,8 +62,37 @@ describe('FundStep', () => {
     // Exit built at 24, network still taking 24, the 42 is the user's own.
     render(<FundStep {...props} networkFloorFeeRate={24} topUp={topUp} />);
 
-    expect(screen.getByText('The exit needs more')).toBeInTheDocument();
+    expect(screen.getByText('More exit fee needed')).toBeInTheDocument();
+    expect(screen.getByText('At 42 sat/vB, the exit needs more exit fee than its fee address holds.')).toBeInTheDocument();
     expect(screen.queryByText('Network fees went up')).toBeNull();
+  });
+
+  it('promises nothing about fees dropping where there is no network floor, as for a paused exit', () => {
+    render(<FundStep {...props} networkFloorFeeRate={null} topUp={topUp} />);
+    expect(screen.getByText('More exit fee needed')).toBeInTheDocument();
+    expect(screen.queryByText(/continues on its own once fees drop/)).not.toBeInTheDocument();
+  });
+
+  describe('for a recovery', () => {
+    it('asks for more exit fee in its own words', () => {
+      render(<FundStep {...props} networkFloorFeeRate={24} topUp={topUp} noun="recovery" />);
+      expect(screen.getByText('More exit fee needed')).toBeInTheDocument();
+      expect(screen.getByText('At 42 sat/vB, the recovery needs more exit fee than its fee address holds.')).toBeInTheDocument();
+    });
+
+    it('says the recovery started at the lower rate when fees went up', () => {
+      render(<FundStep {...props} topUp={topUp} noun="recovery" />);
+      expect(screen.getByText(/^Your recovery started at 24 sat\/vB/)).toBeInTheDocument();
+    });
+
+    it('names the recovery before its build, where to pay, and when the build fails', () => {
+      const { rerender } = render(<FundStep {...props} noun="recovery" />);
+      expect(screen.getByText('Continue the recovery at 42 sat/vB.')).toBeInTheDocument();
+      rerender(<FundStep {...props} topUp={topUp} isPaying noun="recovery" />);
+      expect(screen.getByText('Send to Continue Recovery')).toBeInTheDocument();
+      rerender(<FundStep {...props} error="signing failed" noun="recovery" />);
+      expect(screen.getByText('Could not continue the recovery')).toBeInTheDocument();
+    });
   });
 
   it('asks for the amount, with where to send it, once the user chooses to top up', () => {
@@ -158,11 +190,66 @@ describe('PendingExitStep', () => {
     expect(screen.queryByTestId('unilateral-exit-funding-address')).not.toBeInTheDocument();
   });
 
+  describe('for a recovery', () => {
+    it('names the recovery while it builds, while the fee confirms, and when the start fails', () => {
+      const { rerender } = step({ coins: [coin(5_898)], isStarting: true, noun: 'recovery' });
+      expect(screen.getByText('Building and signing the recovery...')).toBeInTheDocument();
+      rerender(
+        <PendingExitStep
+          pending={pendingExit()}
+          coins={[coin(5_898, false)]}
+          nothingToExit={false}
+          isStarting={false}
+          startError={null}
+          onCancel={() => {}}
+          noun="recovery"
+        />,
+      );
+      expect(screen.getByText('You can close this. Come back to start the recovery once the fee confirms.')).toBeInTheDocument();
+      rerender(
+        <PendingExitStep
+          pending={pendingExit()}
+          coins={[coin(5_898)]}
+          nothingToExit={false}
+          isStarting={false}
+          startError="chain service unreachable"
+          onCancel={() => {}}
+          noun="recovery"
+        />,
+      );
+      expect(screen.getByText('Could not start the recovery')).toBeInTheDocument();
+    });
+
+    it('says the funds, not the balance, are not worth recovering, and cancels the recovery', () => {
+      step({ coins: [coin(5_898)], nothingToExit: true, noun: 'recovery' });
+      expect(screen.getByText('Nothing is worth recovering right now')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'At 2 sat/vB these funds would cost more to move on-chain than they are worth. Cancel the recovery under Advanced and start again at a lower rate. The fee you sent counts toward it.',
+        ),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByText('Advanced'));
+      expect(screen.getByTestId('unilateral-exit-cancel')).toHaveTextContent(/^Cancel recovery$/);
+    });
+
+    it('says a restore lets the recovery start', async () => {
+      step({ noun: 'recovery' });
+      fireEvent.click(screen.getByText('Advanced'));
+      fireEvent.change(screen.getByTestId('unilateral-exit-backup-file'), {
+        target: { files: [new File(['{"leaves":[]}'], 'exit-state.json')] },
+      });
+      await waitFor(() =>
+        expect(screen.getByTestId('unilateral-exit-backup-result')).toHaveTextContent(/^Restored 2 leaves\. You can start the recovery\.$/),
+      );
+    });
+  });
+
   it('keeps cancelling under Advanced, out of the way of paying', () => {
     const onCancel = vi.fn();
     step({ onCancel });
     expect(screen.queryByTestId('unilateral-exit-cancel')).not.toBeInTheDocument();
     fireEvent.click(screen.getByText('Advanced'));
+    expect(screen.getByTestId('unilateral-exit-cancel')).toHaveTextContent(/^Cancel exit$/);
     fireEvent.click(screen.getByTestId('unilateral-exit-cancel'));
     expect(onCancel).toHaveBeenCalled();
   });
