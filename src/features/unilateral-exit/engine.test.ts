@@ -634,3 +634,94 @@ describe('a pass over an exit', () => {
     expect(getUnilateralExitState().plan?.phase).toBe('redo');
   });
 });
+
+describe('an exit holding a leaf it left out', () => {
+  const failure = { leafId: 'c-9', outputTxid: txidOf(5), outputVout: 2, error: { type: 'generic' as const, message: 'refused' } };
+  const done = (over: Parameters<typeof sdk>[0] = {}) =>
+    sdk({ checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: { type: 'done' } }), ...over });
+
+  beforeEach(() => {
+    localStorage.clear();
+    stopUnilateralExitEngine();
+    localStorage.setItem('walletMnemonic', MNEMONIC);
+  });
+
+  afterEach(() => {
+    stopUnilateralExitEngine();
+  });
+
+  it('keeps it in its slot on the done verdict, archiving nothing and syncing nothing', async () => {
+    const syncWallet = vi.fn(async () => ({}));
+    const prepareRecoverFunds = vi.fn(async () =>
+      prepared({ leaves: [], skipped: [{ leafId: 'c-9', valueSats: 30_000, reason: { type: 'unverified' } }] }),
+    );
+    const holding = plan(swept(), {
+      network: 'regtest',
+      namedLeaves: [
+        { leafId: 'leaf-1', valueSats: 100_000 },
+        { leafId: 'c-9', valueSats: 30_000 },
+      ],
+      exit: { failed: [failure] },
+    });
+    setUnilateralExitPlan(wallet, holding);
+    startUnilateralExitEngine(wallet, chain, done({ prepareRecoverFunds, syncWallet }));
+
+    await vi.waitFor(() => expect(prepareRecoverFunds).toHaveBeenCalled());
+    await vi.waitFor(() => expect(getUnilateralExitState().isAdvancing).toBe(false));
+    expect(getUnilateralExitState().plan?.phase).toBe('active');
+    expect(loadPlan(wallet)?.phase).toBe('active');
+    expect(loadArchive(wallet)).toEqual([]);
+    expect(syncWallet).not.toHaveBeenCalled();
+  });
+
+  it('reads the fee address of one waiting on more exit fee before each pass, and passes the coins in', async () => {
+    const key = deriveFundingKey(MNEMONIC, 'regtest', 0);
+    const addressUtxos = vi.fn(async () => [coin(3_000)]);
+    const recoverFunds = vi.fn(async () =>
+      checked([{ txid: 'refund-2', kind: 'refund', nodeId: 'leaf-2', status: { type: 'waitingForTimelock', spendableAtHeight: 900 } }], {
+        leaves: [{ leafId: 'leaf-2', valueSats: 50_000, method: 'unilateral' }],
+      }),
+    );
+    const prepareRecoverFunds = async () => prepared({ leaves: [{ leafId: 'leaf-2', valueSats: 50_000, method: 'unilateral' }] });
+    const waiting = plan(swept(), {
+      network: 'regtest',
+      exitFeeAddress: key.address,
+      retrySince: 90,
+      retriedAt: 90,
+      topUp: { required: { sat: 3_000, inputs: 1 }, heldSat: 0 },
+      namedLeaves: [
+        { leafId: 'leaf-1', valueSats: 100_000 },
+        { leafId: 'leaf-2', valueSats: 50_000 },
+      ],
+    });
+    setUnilateralExitPlan(wallet, waiting);
+    startUnilateralExitEngine(wallet, { ...chain, addressUtxos }, done({ prepareRecoverFunds, recoverFunds }));
+
+    await vi.waitFor(() => expect(recoverFunds).toHaveBeenCalled());
+    expect(addressUtxos).toHaveBeenCalledWith(key.address);
+    expect(recoverFunds).toHaveBeenCalledWith(
+      expect.objectContaining({ fundingInputs: [expect.objectContaining({ txid: 'coin-3000', pubkey: key.publicKeyHex })] }),
+      expect.anything(),
+    );
+    await vi.waitFor(() => expect(getUnilateralExitState().plan?.topUp).toBeUndefined());
+    expect(getUnilateralExitState().pendingCoins).toEqual([]);
+  });
+
+  it('keeps a kept recovery to the leaves it built', () => {
+    startUnilateralExitEngine(wallet, chain);
+    keepRecovery(
+      wallet,
+      plan([tx({ txid: 'c1', kind: 'cooperative', nodeId: 'c-1', status: ready })], {
+        network: 'regtest',
+        mode: 'recover',
+        namedLeaves: [
+          { leafId: 'c-1', valueSats: 30_000 },
+          { leafId: 'c-9', valueSats: 30_000 },
+        ],
+        exit: { leaves: [{ leafId: 'c-1', valueSats: 30_000, method: 'cooperative' }], failed: [failure] },
+      }),
+    );
+    expect(getUnilateralExitState().recoveries[0].namedLeaves).toEqual([{ leafId: 'c-1', valueSats: 30_000 }]);
+    expect(loadRecoveries(wallet)[0].namedLeaves).toEqual([{ leafId: 'c-1', valueSats: 30_000 }]);
+  });
+});

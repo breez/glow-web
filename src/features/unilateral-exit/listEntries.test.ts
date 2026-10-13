@@ -191,7 +191,7 @@ describe('recoverable funds beside an exit under way', () => {
     expect(recoverable({ plan: running({ mode: 'recover' }) }, 600_000)).toBeUndefined();
   });
 
-  it('takes out a co-signed leaf, and a leaf the last rebuild skipped, but not one whose co-signing failed', () => {
+  it('takes out a co-signed leaf, a leaf the last rebuild skipped, and one whose co-signing failed, which the exit still holds', () => {
     const mixed = running({
       namedLeaves: [
         { leafId: 'leaf-1', valueSats: 180_000 },
@@ -209,8 +209,25 @@ describe('recoverable funds beside an exit under way', () => {
         failed: [{ leafId: 'failed', outputTxid: 'o', outputVout: 0, error: { type: 'generic', message: 'refused' } }],
       },
     });
-    // 420 000 + 30 000 + 5 000 are on their way; the failed 7 000 is not.
-    expect(recoverable({ plan: mixed }, 462_000)).toMatchObject({ amountSat: 7_000 });
+    // 420 000 + 30 000 + 5 000 are on their way, and the failed 7 000 is built again.
+    expect(recoverable({ plan: mixed }, 462_000)).toBeUndefined();
+    expect(recoverable({ plan: mixed }, 470_000)).toMatchObject({ amountSat: 8_000 });
+  });
+
+  it('leaves out what the exit and the kept recoveries landed, which getInfo counts until a sync, each leaf once', () => {
+    const kept = plan([tx({ txid: 'c', kind: 'cooperative', nodeId: 'c-9', status: ready })], {
+      mode: 'recover',
+      landed: [{ leafIds: ['c-5'], valueSat: 2_000, outpoint: 'o:0' }],
+      exit: { leaves: [{ leafId: 'c-9', valueSats: 10_000, method: 'cooperative' }] },
+    });
+    const exit = running({
+      landed: [
+        { leafIds: ['leaf-2'], valueSat: 420_000, txid: 'early', paidSat: 419_000 },
+        { leafIds: ['old-1', 'old-2'], valueSat: 9_000, txid: 'old-sweep', paidSat: 8_500 },
+      ],
+    });
+    // 420 000 on its way, 9 000 and 2 000 landed, and 10 000 kept.
+    expect(recoverable({ plan: exit, recoveries: [kept] }, 442_000)).toMatchObject({ amountSat: 1_000 });
   });
 
   it('leaves out what the exit, a kept recovery or a finished exit dropped as unrecoverable, counting each leaf once', () => {
@@ -266,6 +283,37 @@ describe('an exit under way in the wallet list', () => {
       subtitle: '0 of 1 processed',
       isAction: false,
     });
+  });
+});
+
+describe('an exit holding a leaf it left out in the wallet list', () => {
+  const landed = (over: Parameters<typeof plan>[1] = {}) =>
+    plan([tx({ txid: 's', kind: 'sweep', status: confirmed(9) })], {
+      namedLeaves: [
+        { leafId: 'leaf-1', valueSats: 100_000 },
+        { leafId: 'c-9', valueSats: 30_000 },
+      ],
+      ...over,
+    });
+  const asking = (over: Parameters<typeof plan>[1] = {}) => landed({ topUp: { required: { sat: 3_000, inputs: 1 } }, ...over });
+
+  it('counts a leaf still to build as a transaction still to go', () => {
+    expect(row({ pending: null, plan: landed() })).toMatchObject({ title: 'Transactions in progress', subtitle: '1 of 2 processed' });
+  });
+
+  it('says what to send while one waits on more exit fee, then waits on its confirmation, then on Glow', () => {
+    const at = (coins: ReturnType<typeof coin>[]) => row({ pending: null, plan: asking(), pendingCoins: coins });
+    expect(at([])).toMatchObject({ id: 'active', kind: 'active', title: 'Waiting for exit fee', subtitle: 'Send ₿3 000 more', amountSat: 99_800 });
+    expect(at([coin(3_000, false)])).toMatchObject({ title: 'Exit fee sent', subtitle: 'Waiting for a confirmation' });
+    expect(at([coin(3_000)])).toMatchObject({ title: 'Exit fee received', subtitle: null });
+    expect(at([coin(3_000)]).isAction).toBeFalsy();
+  });
+
+  it('asks for the tap only when the build needs the passkey', () => {
+    const at = (coins: ReturnType<typeof coin>[]) =>
+      row({ pending: null, plan: asking({ topUp: { required: { sat: 3_000, inputs: 1 }, needsSignIn: true } }), pendingCoins: coins });
+    expect(at([coin(3_000)])).toMatchObject({ title: 'Exit fee received', subtitle: 'Tap to update', isAction: true });
+    expect(at([])).toMatchObject({ title: 'Waiting for exit fee', subtitle: 'Tap to update', isAction: true });
   });
 });
 

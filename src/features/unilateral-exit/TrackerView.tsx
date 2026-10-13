@@ -4,7 +4,7 @@ import { AlertCard, SimpleAlert } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
 import { CollapsibleCodeField, CollapsibleSection, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { RefreshIcon } from '@/components/Icons';
-import { awaitsUpdate, blocksToFinish, exitStages, nextAction, planProgress } from './driver';
+import { awaitsUpdate, blocksToFinish, exitStages, isLanded, nextAction, planProgress } from './driver';
 import type { NextAction, PlanProgress, UnilateralExitPlan } from './driver';
 import { isCooperative } from './quote';
 import { formatDaysLeft } from '@/utils/blockTime';
@@ -194,7 +194,8 @@ export const TrackerView: React.FC<{
   // A co-signed recovery is Glow's own record, which the exit-data export does
   // not hold, so saving or restoring exit data would not bring it back.
   const isCosignedRecovery = transactions.length > 0 && transactions.every(isCooperative);
-  const rebuildRow = plan.phase === 'active' && onRebuild && (
+  // With everything confirmed, nothing is left at the old rate to pay more for.
+  const rebuildRow = plan.phase === 'active' && !isLanded(plan.exit) && onRebuild && (
     <ExitActionRow
       label="Rebuild at a higher fee"
       icon={<RefreshIcon size="md" />}

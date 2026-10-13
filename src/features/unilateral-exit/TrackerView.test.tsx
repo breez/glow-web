@@ -195,6 +195,12 @@ describe('TrackerView', () => {
     expect(screen.queryByTestId('unilateral-exit-bump-fee')).not.toBeInTheDocument();
   });
 
+  it('drops the fee bump once every transaction is confirmed, leaving nothing at the old rate', () => {
+    renderTracker(plan([tx({ txid: 'r', kind: 'refund', status: confirmed(9) }), tx({ txid: 's', kind: 'sweep', status: confirmed(9) })]));
+    fireEvent.click(screen.getByText('Advanced'));
+    expect(screen.queryByTestId('unilateral-exit-bump-fee')).not.toBeInTheDocument();
+  });
+
   it('keeps an off-device copy reachable, since only this device holds what an exit needs', () => {
     renderTracker(plan([tx({ txid: 'a' })]));
     expect(screen.queryByTestId('unilateral-exit-backup-save')).not.toBeInTheDocument();

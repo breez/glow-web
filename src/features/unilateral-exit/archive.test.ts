@@ -1,8 +1,9 @@
 import { archiveExit, droppedLeafIds, loadArchive } from './archive';
-import type { Landing } from './driver';
+import { advanceUnilateralExit, type ExitSdk, type Landing, type UnilateralExitPlan } from './driver';
 import { deriveFundingKey } from './funding';
-import { confirmed, plan, tx } from './testFixtures';
+import { checked, coin, confirmed, funding, MNEMONIC, plan, prepared, rawTx, sdk, tx, txidOf } from './testFixtures';
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { ChainClient } from '@/services/chain';
 
 const wallet = { identityPubkey: 'pubkey-0000000000000000', network: 'regtest' };
 
@@ -268,6 +269,99 @@ describe('archiveExit', () => {
     archiveExit(wallet, finished('sweep-a', 50_000));
 
     expect(loadArchive({ ...wallet, network: 'mainnet' })).toEqual([]);
+  });
+});
+
+describe('an exit that built what it left out', () => {
+  const key = deriveFundingKey(MNEMONIC, 'mainnet', 0);
+  const coLeaf = { leafId: 'c-9', valueSats: 30_000, method: 'cooperative' as const };
+  const soloLeaf = { leafId: 'leaf-2', valueSats: 50_000, method: 'unilateral' as const };
+  const chain = (over: Partial<ChainClient> = {}): ChainClient => ({
+    feeRates: async () => ({ slow: 1, medium: 2, fast: 3 }),
+    addressUtxos: async () => [],
+    tipHeight: async () => 100,
+    broadcast: async () => undefined,
+    broadcastPackage: async () => undefined,
+    confirmedSpender: async () => null,
+    ...over,
+  });
+  // Every transaction in a block at `height`, whatever it is handed.
+  const done = (height: number, over: Partial<ExitSdk> = {}) =>
+    sdk({
+      checkRecoverFunds: async ({ recovery }) => ({
+        recovery: { ...recovery, transactions: recovery.transactions.map(t => ({ ...t, status: t.status.type === 'confirmed' ? t.status : confirmed(height) })) },
+        verdict: { type: 'done' },
+      }),
+      ...over,
+    });
+  // leaf-1 swept for 99 000; the leftover is named but not built.
+  const exit = (leftover: string, over: Parameters<typeof plan>[1] = {}) =>
+    plan(
+      [
+        tx({ txid: txidOf(1), kind: 'refund', nodeId: 'leaf-1', status: confirmed(90) }),
+        tx({ txid: 'sweep', kind: 'sweep', txHex: rawTx([`${txidOf(1)}:0`], [99_000]), dependsOn: [txidOf(1)], status: { type: 'ready' } }),
+      ],
+      {
+        destination: 'bc1qmine',
+        quotedExitFeeSat: 5_000,
+        exitFeeAddress: key.address,
+        namedLeaves: [
+          { leafId: 'leaf-1', valueSats: 100_000 },
+          { leafId: leftover, valueSats: leftover === 'c-9' ? 30_000 : 50_000 },
+        ],
+        ...over,
+      },
+    );
+  const archived = async (finished: UnilateralExitPlan) => {
+    expect(finished.phase).toBe('complete');
+    archiveExit(wallet, finished);
+    return loadArchive(wallet)[0];
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('walletMnemonic', MNEMONIC);
+  });
+
+  it('keeps a co-signed leftover built into it as part of one record, under the sweep', async () => {
+    const recoverFunds = async () =>
+      checked([{ txid: 'c9', kind: 'cooperative', nodeId: 'c-9', txHex: rawTx([`${txidOf(5)}:2`], [29_000]), status: { type: 'unverified' } }], {
+        leaves: [coLeaf],
+      });
+    const prepareRecoverFunds = async () => prepared({ leaves: [coLeaf], funding: undefined, destination: 'bc1qmine' });
+    const first = await advanceUnilateralExit(exit('c-9'), chain(), done(91, { prepareRecoverFunds, recoverFunds }), '02abc');
+    const paid = chain({ confirmedSpender: async () => ({ txid: 'c9', blockHeight: 95, outputs: [{ address: 'bc1qmine', value: 29_000 }] }) });
+    const second = await advanceUnilateralExit(first.plan, paid, done(95), '02abc');
+
+    expect(await archived(second.plan)).toMatchObject({ id: 'sweep', txids: ['sweep', 'c9'], deliveredSat: 128_000, exitedSat: 130_000, exitFeePaidSat: 5_000 });
+  });
+
+  it('keeps an exit continued by a unilateral leftover as one record, both sweeps listed and the top-up in its fee', async () => {
+    const asking = prepared({ leaves: [soloLeaf], funding: funding(3_000), destination: 'bc1qmine' });
+    const nextPart = () =>
+      checked(
+        [
+          { txid: txidOf(2), kind: 'refund', nodeId: 'leaf-2', status: { type: 'waitingForTimelock', spendableAtHeight: 900 } },
+          { txid: 'sweep-2', kind: 'sweep', txHex: rawTx([`${txidOf(2)}:0`], [49_500]), dependsOn: [txidOf(2)], status: { type: 'waitingForDependencies' } },
+        ],
+        { leaves: [soloLeaf] },
+      );
+    const driver = (height: number) => done(height, { prepareRecoverFunds: async () => asking, recoverFunds: async () => nextPart() });
+    const asked = await advanceUnilateralExit(exit('leaf-2'), chain(), driver(91), '02abc');
+    expect(asked.plan.topUp?.required).toEqual({ sat: 3_000, inputs: 1 });
+    const held = await advanceUnilateralExit(asked.plan, chain({ tipHeight: async () => 101 }), driver(91), '02abc', []);
+    const built = await advanceUnilateralExit(held.plan, chain({ tipHeight: async () => 102 }), driver(91), '02abc', [coin(3_000)]);
+    expect(built.plan.exit.transactions.map(t => t.txid)).toEqual([txidOf(2), 'sweep-2']);
+    const landed = await advanceUnilateralExit(built.plan, chain({ tipHeight: async () => 120 }), driver(120), '02abc');
+
+    expect(await archived(landed.plan)).toMatchObject({
+      id: 'sweep-2',
+      txids: ['sweep', 'sweep-2'],
+      deliveredSat: 148_500,
+      exitedSat: 150_000,
+      exitFeePaidSat: 8_000,
+      exitFeeAddress: key.address,
+    });
   });
 });
 

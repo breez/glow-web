@@ -23,8 +23,11 @@ leaf, so it needs no funding. It goes out when `ready`, and also while
 still `unverified` six blocks on may never confirm, so this app prepares it
 again by name at the same rate, holding its leaf meanwhile, and lets the leaf
 go back to the recoverable funds after about a week. One the operators did not
-co-sign is listed in `failed`, outside the transactions, and stays in the
-wallet's recoverable funds.
+co-sign is listed in `failed`, outside the transactions. `done` covers only the
+transactions, so this app keeps such a leaf, and one a rebuild skipped for
+now, part of the exit: it prepares it again on the same schedule, builds a
+co-signed one into the exit, and asks for more exit fee for a unilateral one
+once the rest has landed.
 
 ## The flow
 

@@ -2,6 +2,7 @@ import { createChainClient, type ChainClient, type ChainUtxo } from '@/services/
 import { logger, LogCategory } from '@/services/logger';
 import {
   advanceUnilateralExit,
+  asKeptRecovery,
   clearPendingExit,
   clearPlan,
   hasWaitingLanding,
@@ -17,6 +18,7 @@ import {
   startExit,
 } from './driver';
 import { archiveExit, droppedLeafIds, loadArchive, recoveryTxid, type ArchivedExit } from './archive';
+import { exitFeeRecordOf } from './quote';
 import type { FundingKey } from './funding';
 import type { ExitSdk, PendingExit, UnilateralExitPlan, WalletKey } from './driver';
 
@@ -34,7 +36,10 @@ export interface UnilateralExitEngineState {
   plan: UnilateralExitPlan | null;
   /** An exit waiting on its fee. Never held alongside `plan`. */
   pending: PendingExit | null;
-  /** What the pending exit's fee address holds, confirmed or not. */
+  /**
+   * What the fee address holds, confirmed or not: the pending exit's, or the
+   * plan's while a leaf it left out waits on more exit fee.
+   */
   pendingCoins: ChainUtxo[];
   /** A start found nothing in the wallet worth its exit fee at the exit's rate. */
   nothingToExit: boolean;
@@ -153,13 +158,14 @@ export function subscribeUnilateralExit(listener: Listener): () => void {
   return () => listeners.delete(listener);
 }
 
-/** Reads what the pending exit's fee address holds. Nothing starts without the user. */
+/** Reads what the fee address holds. Nothing starts without the user. */
 async function watchPending(): Promise<void> {
-  const pending = state.pending;
-  if (!chain || !pending) return;
+  const address =
+    state.pending?.fundingAddress ?? (state.plan?.topUp ? exitFeeRecordOf(state.plan).exitFeeAddress : undefined);
+  if (!chain || !address) return;
   const passGeneration = generation;
   try {
-    const coins = await chain.addressUtxos(pending.fundingAddress);
+    const coins = await chain.addressUtxos(address);
     if (generation === passGeneration) emit({ pendingCoins: coins });
   } catch (e) {
     logger.warn(LogCategory.SDK, 'Failed to read the exit fee address', {
@@ -226,11 +232,16 @@ async function advancePlan(): Promise<void> {
   const passSdk = sdk;
   emit({ isAdvancing: true });
   try {
+    // Read before the pass, which builds the leftover once its fee confirms.
+    // With no address yet there is nothing to read, and no coins to hand on.
+    const watched = !!current.topUp && !!exitFeeRecordOf(current).exitFeeAddress;
+    if (watched) await watchPending();
     const { plan, tipHeight } = await advanceUnilateralExit(
       current,
       chain,
       passSdk ?? undefined,
       passWallet.identityPubkey,
+      watched ? state.pendingCoins : undefined,
     );
     // Whoever replaced the wallet or plan while this pass was out owns the state now.
     if (generation !== passGeneration) return;
@@ -240,14 +251,15 @@ async function advancePlan(): Promise<void> {
     if (plan.phase === 'complete' && !hasWaitingLanding(plan)) {
       const archive = archiveExit(passWallet, plan);
       clearPlan(passWallet);
-      emit({ plan: null, archive, tipHeight, isAdvancing: false });
+      emit({ plan: null, archive, tipHeight, isAdvancing: false, pendingCoins: [] });
       syncPolling();
       syncAfterLanding(passSdk);
       return;
     }
 
     savePlan(passWallet, plan);
-    emit({ plan, tipHeight, isAdvancing: false });
+    const coinsDone = !plan.topUp && state.pendingCoins.length > 0;
+    emit({ plan, tipHeight, isAdvancing: false, ...(coinsDone ? { pendingCoins: [] } : {}) });
     syncPolling();
   } catch (e) {
     logger.warn(LogCategory.SDK, 'Recovery engine pass failed', {
@@ -367,7 +379,7 @@ export function setPendingExit(target: WalletKey, pending: PendingExit, key?: Fu
  */
 export function keepRecovery(target: WalletKey, recovery: UnilateralExitPlan): void {
   const running = isRunningFor(target);
-  const recoveries = withRecovery(running ? state.recoveries : loadRecoveries(target), recovery);
+  const recoveries = withRecovery(running ? state.recoveries : loadRecoveries(target), asKeptRecovery(recovery));
   saveRecoveries(target, recoveries);
   if (!running) return;
   emit({ recoveries });

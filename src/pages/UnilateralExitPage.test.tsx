@@ -250,6 +250,54 @@ describe('raising the fee of a kept co-signed recovery', () => {
   });
 });
 
+describe('the fee screen of a leaf the exit left out', () => {
+  const asking = plan([tx({ txid: 's', kind: 'sweep', status: confirmed(9) })], { topUp: { required: { sat: 3_000, inputs: 1 } } });
+
+  async function renderFund(over: Partial<UnilateralExitFlow> = {}) {
+    flow.current = {
+      phase: 'fund',
+      engine: { plan: asking, pending: null, archive: [] },
+      canGoBack: false,
+      back: vi.fn(),
+      goTo: vi.fn(),
+      build: vi.fn(),
+      buildError: null,
+      funding: {
+        address: 'bcrt1qfee',
+        isFunded: true,
+        topUp: { neededSat: 3_000, sentSat: 3_000, stillToSendSat: 0 },
+        feeRate: 4,
+        currentFeeRate: 4,
+        networkFloorFeeRate: null,
+        quotedAt: null,
+      },
+      isContinuing: false,
+      continueError: null,
+      ...over,
+    } as unknown as UnilateralExitFlow;
+    render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
+    await waitForSheetOpen();
+  }
+
+  it('continues the exit once its fee arrived', async () => {
+    await renderFund();
+    expect(screen.getByText('Exit fee received')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('unilateral-exit-build'));
+    expect(flow.current.build).toHaveBeenCalled();
+  });
+
+  it('holds the button while the build is out', async () => {
+    await renderFund({ isContinuing: true });
+    expect(screen.getByTestId('unilateral-exit-build')).toBeDisabled();
+  });
+
+  it('says why continuing failed, which the receipt has no room for', async () => {
+    await renderFund({ continueError: 'operators unreachable' });
+    expect(screen.getByText('Exit fee received')).toBeInTheDocument();
+    expect(screen.getByText('Could not continue the exit')).toBeInTheDocument();
+  });
+});
+
 describe('updating an exit from the tracker', () => {
   const diverged = plan([tx({ txid: 'a' })], { phase: 'redo', needsSignIn: true });
   const waitingOnTap = plan([tx({ txid: 'a', status: { type: 'unverified' } })], { needsSignIn: true, redoCause: 'unverified' });

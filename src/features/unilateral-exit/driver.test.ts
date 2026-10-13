@@ -1,18 +1,23 @@
 import {
   advanceUnilateralExit,
   applyExitCheck,
+  asKeptRecovery,
   awaitsUpdate,
   blocksToFinish,
   broadcastReadyTransactions,
   buildFromQuote,
+  buildLeftover,
   buildRecoveryBump,
   canBumpRecovery,
   checkExit,
   clearPlan,
   EmptyRecoveryError,
   hasWaitingLanding,
+  isLanded,
   isStalled,
   keptLeafIds,
+  leftoverIdsOf,
+  leftoverTopUp,
   quoteFresh,
   rebuildExit,
   destinationAddressOf,
@@ -35,7 +40,9 @@ import {
   saveRecoveries,
   settleLanded,
   startExit,
+  RebuildLaterError,
   withLanded,
+  type ExitSdk,
   type Landing,
   type UnilateralExitPlan,
 } from './driver';
@@ -61,8 +68,9 @@ import {
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CheckRecoverFundsRequest, RecoveryTransaction, RecoveryVerdict, SkippedLeafReason } from '@breeztech/breez-sdk-spark';
 import type { ChainClient } from '@/services/chain';
-import { deriveFundingKey } from './funding';
+import { deriveFundingKey, MnemonicUnavailableError } from './funding';
 import { exitFeeRecordOf } from './quote';
+import { recoveryTxid } from './archive';
 
 const meta = {
   network: 'mainnet',
@@ -208,8 +216,23 @@ describe('storing a plan', () => {
     const recovery = plan([tx({ txid: 'c', kind: 'cooperative' })], { mode: 'recover' });
     saveRecoveries(wallet, [recovery]);
     expect(loadPlan(wallet)).toBeNull();
-    expect(loadRecoveries(wallet)).toEqual([recovery]);
+    expect(loadRecoveries(wallet)).toEqual([{ ...recovery, namedLeaves: [{ leafId: 'leaf-1', valueSats: 100_000 }] }]);
     expect(loadRecoveries({ ...wallet, network: 'regtest' })).toEqual([]);
+  });
+
+  it('names only what a kept recovery built, leaving a leaf whose co-signing failed to the Recoverable Funds row', () => {
+    const failed = [{ leafId: 'c-9', outputTxid: 'o', outputVout: 0, error: { type: 'generic' as const, message: 'refused' } }];
+    const recovery = plan([tx({ txid: 'c', kind: 'cooperative', nodeId: 'leaf-1' })], {
+      mode: 'recover',
+      namedLeaves: [
+        { leafId: 'leaf-1', valueSats: 100_000 },
+        { leafId: 'c-9', valueSats: 30_000 },
+      ],
+      exit: { failed },
+    });
+    saveRecoveries(wallet, [recovery]);
+    expect(loadRecoveries(wallet)[0].namedLeaves).toEqual([{ leafId: 'leaf-1', valueSats: 100_000 }]);
+    expect(asKeptRecovery(recovery).namedLeaves).toEqual([{ leafId: 'leaf-1', valueSats: 100_000 }]);
   });
 });
 
@@ -417,15 +440,20 @@ describe('advanceUnilateralExit', () => {
     },
   );
 
-  it.each([{ type: 'feeExceedsValue' }, { type: 'notRecoverable', message: 'stopped' }] satisfies SkippedLeafReason[])(
-    'finishes a diverged exit whose only leaves left cost too much or cannot be recovered ($type), leaving them to Recover Funds',
-    async reason => {
+  it.each([
+    [{ type: 'feeExceedsValue' }, undefined],
+    [{ type: 'notRecoverable', message: 'stopped' }, [{ leafId: 'leaf-1', valueSats: 100_000 }]],
+  ] satisfies [SkippedLeafReason, unknown][])(
+    'finishes a diverged exit whose only leaves left cost too much or cannot be recovered (%o), hiding only an unrecoverable one',
+    async (reason, dropped) => {
       const driver = sdk({
         checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: redo }),
         prepareRecoverFunds: async () => skippedOnly(reason),
       });
       const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain(), driver, '02abc');
       expect(next.phase).toBe('complete');
+      expect(next.namedLeaves).toEqual([]);
+      expect(next.droppedLeaves).toEqual(dropped);
     },
   );
 
@@ -1021,7 +1049,7 @@ describe('a plan stored under SDK 0.26', () => {
       `recovery-cosigned:${wallet.identityPubkey.slice(0, 16)}:mainnet`,
       JSON.stringify([{ ...kept, version: 4 }, kept]),
     );
-    expect(loadRecoveries(wallet)).toEqual([kept]);
+    expect(loadRecoveries(wallet)).toEqual([{ ...kept, namedLeaves: [{ leafId: 'leaf-1', valueSats: 100_000 }] }]);
   });
 });
 
@@ -2090,5 +2118,385 @@ describe('the ledger of what landed', () => {
       expect(next.landed).toEqual([expect.objectContaining({ leafIds: ['c-1'], txid: 'c1', paidSat: 99_000 })]);
       localStorage.removeItem('passkeyLabel');
     });
+  });
+});
+
+describe('a leaf the exit left out', () => {
+  const key = deriveFundingKey(MNEMONIC, 'mainnet', 0);
+  const stored = { type: 'p2wpkh' as const, txid: 'f', vout: 0, valueSats: 5_000, pubkey: key.publicKeyHex };
+  const coLeaf = { leafId: 'c-9', valueSats: 30_000, method: 'cooperative' as const };
+  const soloLeaf = { leafId: 'leaf-2', valueSats: 50_000, method: 'unilateral' as const };
+  const failure = { leafId: 'c-9', outputTxid: txidOf(5), outputVout: 2, error: { type: 'generic' as const, message: 'refused' } };
+  const sweepTx = (status: RecoveryTransaction['status']) =>
+    tx({ txid: 'sweep', kind: 'sweep', txHex: rawTx([`${txidOf(1)}:0`], [99_000]), dependsOn: [txidOf(1)], status });
+  const sweepEntry: Landing = { leafIds: ['leaf-1'], valueSat: 100_000, txid: 'sweep', paidSat: 99_000, blockHeight: 91 };
+  // leaf-1 swept; c-9's co-signing failed and leaf-2 waited on the chain when it was built.
+  const exit = (sweep: RecoveryTransaction['status'] = ready, over: Parameters<typeof plan>[1] = {}) =>
+    plan([tx({ txid: txidOf(1), kind: 'refund', nodeId: 'leaf-1', status: confirmed(90) }), sweepTx(sweep)], {
+      feeRateSatPerVbyte: 4,
+      destination: 'bc1qmine',
+      quotedSweepFeeSat: 1_000,
+      quotedExitFeeSat: 5_000,
+      exitFeeAddress: key.address,
+      exitStateSnapshot: 'frozen',
+      namedLeaves: [
+        { leafId: 'leaf-1', valueSats: 100_000 },
+        { leafId: 'c-9', valueSats: 30_000 },
+        { leafId: 'leaf-2', valueSats: 50_000 },
+      ],
+      ...over,
+      exit: { fundingInputs: [stored], failed: [failure], ...over.exit },
+    });
+  /** Landed and checked before: the sweep is in the ledger. */
+  const landedExit = (over: Parameters<typeof plan>[1] = {}) =>
+    exit(confirmed(91), { landed: [sweepEntry], retrySince: 100, retriedAt: 100, ...over });
+  // Whatever it is handed, every transaction in a block.
+  const done = (over: Partial<ExitSdk> = {}) =>
+    sdk({
+      checkRecoverFunds: async ({ recovery }) => ({
+        recovery: { ...recovery, transactions: recovery.transactions.map(t => ({ ...t, status: t.status.type === 'confirmed' ? t.status : confirmed(91) })) },
+        verdict: { type: 'done' },
+      }),
+      ...over,
+    });
+  const quoting = (...quotes: ReturnType<typeof prepared>[]) => {
+    const fn = vi.fn<ExitSdk['prepareRecoverFunds']>();
+    quotes.forEach(q => fn.mockResolvedValueOnce(q));
+    return fn.mockResolvedValue(quotes[quotes.length - 1]);
+  };
+  const leftoverQuote = (over: Parameters<typeof prepared>[0] = {}) =>
+    prepared({ leaves: [coLeaf], funding: undefined, feeRateSatPerVbyte: 4, destination: 'bc1qmine', ...over });
+  const cosignedBuild = () =>
+    checked([{ txid: 'c9', kind: 'cooperative', nodeId: 'c-9', txHex: rawTx([`${txidOf(5)}:2`], [29_000]), status: { type: 'unverified' } }], {
+      leaves: [coLeaf],
+    });
+  const passkeyWallet = () => {
+    localStorage.removeItem('walletMnemonic');
+    localStorage.setItem('passkeyLabel', 'Default');
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('walletMnemonic', MNEMONIC);
+  });
+
+  it('names what no build holds as a leftover', () => {
+    expect(leftoverIdsOf(exit())).toEqual(['c-9', 'leaf-2']);
+    expect(leftoverIdsOf(plan([tx({ txid: 'a' })], { exit: { failed: [failure] } }))).toEqual(['c-9']);
+    expect(isLanded(exit().exit)).toBe(false);
+    expect(isLanded(landedExit().exit)).toBe(true);
+  });
+
+  it("stays part of the exit on the done verdict, which covers only the set, and is tried at once by name at the plan's rate and destination", async () => {
+    const prepareRecoverFunds = quoting(leftoverQuote({ leaves: [], skipped: [{ ...coLeaf, reason: { type: 'unverified' } }, { ...soloLeaf, reason: { type: 'fundsNotFound' } }] }));
+    const importUnilateralExitState = vi.fn(sdk().importUnilateralExitState);
+    const { plan: next } = await advanceUnilateralExit(exit(ready, { retrySince: 10, retriedAt: 50 }), chain(), done({ prepareRecoverFunds, importUnilateralExitState }), '02abc');
+
+    expect(prepareRecoverFunds).toHaveBeenCalledWith(
+      expect.objectContaining({ feeRateSatPerVbyte: 4, destination: 'bc1qmine', selection: { type: 'specific', leafIds: ['c-9', 'leaf-2'] } }),
+    );
+    expect(importUnilateralExitState).toHaveBeenCalledWith({ exitState: 'frozen' });
+    expect(importUnilateralExitState.mock.invocationCallOrder[0]).toBeLessThan(prepareRecoverFunds.mock.invocationCallOrder[0]);
+    // The set just landed, so the clock starts over.
+    expect(next).toMatchObject({ phase: 'active', retrySince: 100, retriedAt: 100 });
+    expect(next.landed).toEqual([sweepEntry]);
+  });
+
+  it('lets a kept recovery with a failed leaf finish on the done verdict, since it names none as a leftover', async () => {
+    const kept = asKeptRecovery(
+      plan([tx({ txid: 'c1', kind: 'cooperative', nodeId: 'c-1', status: ready })], {
+        mode: 'recover',
+        exit: { leaves: [{ leafId: 'c-1', valueSats: 30_000, method: 'cooperative' }], failed: [failure] },
+      }),
+    );
+    const prepareRecoverFunds = vi.fn(async () => leftoverQuote());
+    const { plan: next } = await advanceUnilateralExit(kept, chain(), done({ prepareRecoverFunds }));
+    expect(next.phase).toBe('complete');
+    expect(prepareRecoverFunds).not.toHaveBeenCalled();
+  });
+
+  it('builds a co-signed leftover into the same plan, with no inputs, no signer and no phrase read', async () => {
+    passkeyWallet();
+    const recoverFunds = vi.fn(async () => cosignedBuild());
+    const broadcast = vi.fn(async () => undefined);
+    const prepareRecoverFunds = quoting(leftoverQuote({ skipped: [{ ...soloLeaf, reason: { type: 'unverified' } }] }));
+    const { plan: next } = await advanceUnilateralExit(exit(), chain({ broadcast }), done({ prepareRecoverFunds, recoverFunds }), '02abc');
+
+    expect(recoverFunds.mock.calls[0]).toEqual([{ prepared: expect.anything() }]);
+    expect(next.exit.transactions.map(t => t.txid)).toEqual([txidOf(1), 'sweep', 'c9']);
+    expect(next.exit.leaves.map(leaf => leaf.leafId)).toEqual(['leaf-1', 'c-9']);
+    expect(next.exit.recoverableValueSats).toBe(130_000);
+    expect(next.exit.failed).toEqual([]);
+    // The recovery pays 1 000 less than its leaf.
+    expect(next.quotedSweepFeeSat).toBe(2_000);
+    expect(recoveryTxid(next)).toBe('sweep');
+    expect(next.landed).toEqual([sweepEntry]);
+    expect(leftoverIdsOf(next)).toEqual(['leaf-2']);
+    expect(next.phase).toBe('active');
+    expect(broadcast).toHaveBeenCalledWith(cosignedBuild().transactions[0].txHex);
+    localStorage.removeItem('passkeyLabel');
+  });
+
+  it("quotes a mixed leftover's co-signed leaves again on their own, and asks for the fee only once the rest has landed", async () => {
+    const mixed = leftoverQuote({ leaves: [coLeaf, soloLeaf], funding: funding(3_000) });
+    const run = async (start: UnilateralExitPlan, driver: (over: Partial<ExitSdk>) => ExitSdk) => {
+      const prepareRecoverFunds = quoting(mixed, leftoverQuote());
+      const recoverFunds = vi.fn(async () => cosignedBuild());
+      const { plan: next } = await advanceUnilateralExit(start, chain(), driver({ prepareRecoverFunds, recoverFunds }), '02abc');
+      expect(prepareRecoverFunds).toHaveBeenLastCalledWith(expect.objectContaining({ selection: { type: 'specific', leafIds: ['c-9'] } }));
+      expect(recoverFunds.mock.calls[0]).toEqual([{ prepared: leftoverQuote() }]);
+      expect(leftoverIdsOf(next)).toEqual(['leaf-2']);
+      return next;
+    };
+
+    const landing = await run(exit(), done);
+    expect(landing.topUp).toEqual({ required: { sat: 3_000, inputs: 1 } });
+
+    const midway = await run(exit(locked(900), { retrySince: 94 }), sdk);
+    expect(midway.topUp).toBeUndefined();
+  });
+
+  it('takes a leftover the quote names nowhere out of the exit, as waiting on the output its co-signing failed to spend', async () => {
+    const { plan: next } = await advanceUnilateralExit(
+      exit(ready, { namedLeaves: exit().namedLeaves?.slice(0, 2) }),
+      chain(),
+      done({ prepareRecoverFunds: quoting(leftoverQuote({ leaves: [] })) }),
+      '02abc',
+    );
+    expect(next.namedLeaves?.map(leaf => leaf.leafId)).toEqual(['leaf-1']);
+    expect(next.exit.failed).toEqual([]);
+    expect(next.landed).toEqual([sweepEntry, { leafIds: ['c-9'], valueSat: 30_000, outpoint: `${txidOf(5)}:2`, unreadSince: 100 }]);
+    expect(next.phase).toBe('complete');
+  });
+
+  it.each([
+    [{ type: 'notRecoverable', message: 'paid elsewhere' }, [{ leafId: 'c-9', valueSats: 30_000 }]],
+    [{ type: 'feeExceedsValue' }, undefined],
+  ] satisfies [SkippedLeafReason, unknown][])(
+    'takes a leftover the quote skips for good (%o) out of the exit, hiding only an unrecoverable one, and finishes',
+    async (reason, dropped) => {
+      const quote = leftoverQuote({ leaves: [], skipped: [{ ...coLeaf, reason }] });
+      const { plan: next } = await advanceUnilateralExit(
+        exit(ready, { namedLeaves: exit().namedLeaves?.slice(0, 2) }),
+        chain(),
+        done({ prepareRecoverFunds: quoting(quote) }),
+        '02abc',
+      );
+      expect(next.namedLeaves?.map(leaf => leaf.leafId)).toEqual(['leaf-1']);
+      expect(next.droppedLeaves).toEqual(dropped);
+      expect(next.phase).toBe('complete');
+    },
+  );
+
+  it.each([{ type: 'unverified' }, { type: 'fundsNotFound' }] satisfies SkippedLeafReason[])(
+    'keeps a leftover the chain has yet to show ($type), trying it again on the paced schedule',
+    async reason => {
+      const prepareRecoverFunds = quoting(leftoverQuote({ leaves: [], skipped: [{ ...coLeaf, reason }, { ...soloLeaf, reason }] }));
+      const at = (tip: number) => chain({ tipHeight: async () => tip });
+      const first = await advanceUnilateralExit(exit(), at(100), done({ prepareRecoverFunds }), '02abc');
+      expect(first.plan).toMatchObject({ phase: 'active', retrySince: 100, retriedAt: 100 });
+      expect(leftoverIdsOf(first.plan)).toEqual(['c-9', 'leaf-2']);
+
+      const next = await advanceUnilateralExit(first.plan, at(101), done({ prepareRecoverFunds }), '02abc');
+      expect(prepareRecoverFunds).toHaveBeenCalledTimes(1);
+      expect(next.plan.phase).toBe('active');
+      await advanceUnilateralExit(next.plan, at(106), done({ prepareRecoverFunds }), '02abc');
+      expect(prepareRecoverFunds).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it('keeps an exit with nothing built while a leftover waits, without reading it back', async () => {
+    const checkRecoverFunds = vi.fn(sdk().checkRecoverFunds);
+    const prepareRecoverFunds = quoting(leftoverQuote({ leaves: [], skipped: [{ ...coLeaf, reason: { type: 'unverified' } }] }));
+    const idle = plan([], { retrySince: 94, namedLeaves: [{ leafId: 'c-9', valueSats: 30_000 }], exit: { leaves: [], failed: [failure] } });
+    const { plan: next } = await advanceUnilateralExit(idle, chain(), sdk({ checkRecoverFunds, prepareRecoverFunds }), '02abc');
+    expect(checkRecoverFunds).not.toHaveBeenCalled();
+    expect(prepareRecoverFunds).toHaveBeenCalledTimes(1);
+    expect(next).toMatchObject({ phase: 'active', retriedAt: 100 });
+  });
+
+  it('builds a unilateral leftover that needs no funding as the next part, once the rest has landed', async () => {
+    passkeyWallet();
+    const quote = leftoverQuote({ leaves: [soloLeaf], sweepFeeSats: 300 });
+    const recoverFunds = vi.fn(async () => checked([{ txid: 'sweep-2', kind: 'sweep' }], { leaves: [soloLeaf] }));
+    const { plan: next } = await advanceUnilateralExit(
+      exit(ready, { namedLeaves: [exit().namedLeaves![0], exit().namedLeaves![2]], exit: { failed: [] } }),
+      chain(),
+      done({ prepareRecoverFunds: quoting(quote), recoverFunds }),
+      '02abc',
+    );
+    expect(recoverFunds.mock.calls[0]).toEqual([{ prepared: quote }]);
+    expect(next.exit.transactions.map(t => t.txid)).toEqual(['sweep-2']);
+    expect(next).toMatchObject({ phase: 'active', quotedSweepFeeSat: 300, quotedExitFeeSat: 5_000, exitFeeAddress: key.address, exitStateSnapshot: 'frozen' });
+    expect(next.namedLeaves).toEqual([{ leafId: 'leaf-2', valueSats: 50_000 }]);
+    expect(next.landed).toEqual([sweepEntry]);
+    localStorage.removeItem('passkeyLabel');
+  });
+
+  describe('that needs more exit fee', () => {
+    const askQuote = () => leftoverQuote({ leaves: [soloLeaf], funding: funding(3_000), sweepFeeSats: 300 });
+    const waiting = (over: Parameters<typeof plan>[1] = {}) =>
+      landedExit({ namedLeaves: [exit().namedLeaves![0], exit().namedLeaves![2]], topUp: { required: { sat: 3_000, inputs: 1 }, heldSat: 1_000 }, ...over, exit: { failed: [], ...over.exit } });
+    const nextPart = () =>
+      checked(
+        [
+          { txid: 'refund-2', kind: 'refund', nodeId: 'leaf-2', status: locked(900) },
+          { txid: 'sweep-2', kind: 'sweep', dependsOn: ['refund-2'], status: blocked },
+        ],
+        { leaves: [soloLeaf] },
+      );
+    const tip = (height: number) => chain({ tipHeight: async () => height });
+
+    it('asks once the rest has landed, reading no phrase and building nothing, and keeps what the address held', async () => {
+      passkeyWallet();
+      const recoverFunds = vi.fn(async () => nextPart());
+      const prepareRecoverFunds = quoting(askQuote());
+      const start = exit(ready, { namedLeaves: [exit().namedLeaves![0], exit().namedLeaves![2]], exit: { failed: [] } });
+      const first = await advanceUnilateralExit(start, chain(), done({ prepareRecoverFunds, recoverFunds }), '02abc');
+      expect(first.plan.topUp).toEqual({ required: { sat: 3_000, inputs: 1 } });
+      expect(recoverFunds).not.toHaveBeenCalled();
+      expect(isStalled(first.plan)).toBe(false);
+
+      const next = await advanceUnilateralExit(first.plan, tip(101), done({ prepareRecoverFunds, recoverFunds }), '02abc', [feeCoin(1_000), feeCoin(800, false)]);
+      expect(next.plan.topUp).toEqual({ required: { sat: 3_000, inputs: 1 }, heldSat: 1_000 });
+      expect(prepareRecoverFunds).toHaveBeenCalledTimes(1);
+      localStorage.removeItem('passkeyLabel');
+    });
+
+    it('asks for the tap when the exit has no fee address yet, which only the key can say', async () => {
+      const start = exit(ready, { exitFeeAddress: undefined, namedLeaves: [exit().namedLeaves![0], exit().namedLeaves![2]], exit: { failed: [], fundingInputs: [] } });
+      const { plan: next } = await advanceUnilateralExit(start, chain(), done({ prepareRecoverFunds: quoting(askQuote()) }), '02abc');
+      expect(next.topUp).toEqual({ required: { sat: 3_000, inputs: 1 }, needsSignIn: true });
+    });
+
+    it('builds the next part from the funding it had and the coins sent, with a signer, once they confirm', async () => {
+      const recoverFunds = vi.fn<ExitSdk['recoverFunds']>(async () => nextPart());
+      const coins = [feeCoin(3_000)];
+      expect(leftoverTopUp(waiting(), coins).stillToSendSat).toBe(0);
+      const { plan: next } = await advanceUnilateralExit(waiting(), tip(101), done({ prepareRecoverFunds: quoting(askQuote()), recoverFunds }), '02abc', coins);
+
+      expect(recoverFunds).toHaveBeenCalledWith(
+        { prepared: askQuote(), fundingInputs: [stored, { type: 'p2wpkh', txid: 'coin-3000', vout: 0, valueSats: 3_000, pubkey: key.publicKeyHex }] },
+        expect.anything(),
+      );
+      expect(next.topUp).toBeUndefined();
+      // What the address held before the ask was not sent for this part.
+      expect(next).toMatchObject({ quotedExitFeeSat: 7_000, exitFeeAddress: key.address, quotedSweepFeeSat: 300, exitStateSnapshot: 'frozen', phase: 'active' });
+      expect(next.exit.transactions.map(t => t.txid)).toEqual(['refund-2', 'sweep-2']);
+      expect(next.landed).toEqual([sweepEntry]);
+    });
+
+    it('waits while what it asked for has not confirmed', async () => {
+      const recoverFunds = vi.fn(async () => nextPart());
+      const { plan: next } = await advanceUnilateralExit(waiting(), tip(101), done({ recoverFunds }), '02abc', [feeCoin(3_000, false)]);
+      expect(recoverFunds).not.toHaveBeenCalled();
+      expect(next.topUp).toEqual(waiting().topUp);
+    });
+
+    it('waits for the tap on a passkey wallet, building nothing', async () => {
+      passkeyWallet();
+      const recoverFunds = vi.fn(async () => nextPart());
+      const prepareRecoverFunds = quoting(askQuote());
+      const first = await advanceUnilateralExit(waiting(), tip(101), done({ prepareRecoverFunds, recoverFunds }), '02abc', [feeCoin(3_000)]);
+      expect(first.plan.topUp).toEqual({ ...waiting().topUp, needsSignIn: true });
+      expect(recoverFunds).not.toHaveBeenCalled();
+
+      await advanceUnilateralExit(first.plan, tip(102), done({ prepareRecoverFunds, recoverFunds }), '02abc', [feeCoin(3_000)]);
+      expect(prepareRecoverFunds).toHaveBeenCalledTimes(1);
+      localStorage.removeItem('passkeyLabel');
+    });
+
+    it('tries a build that failed again only in a later block', async () => {
+      const prepareRecoverFunds = vi.fn(async () => askQuote());
+      const recoverFunds = vi.fn(async () => {
+        throw new Error('operators unreachable');
+      });
+      const driver = done({ prepareRecoverFunds, recoverFunds });
+      const first = await advanceUnilateralExit(waiting(), tip(101), driver, '02abc', [feeCoin(3_000)]);
+      expect(first.plan).toMatchObject({ retriedAt: 101, topUp: waiting().topUp });
+      await advanceUnilateralExit(first.plan, tip(101), driver, '02abc', [feeCoin(3_000)]);
+      expect(recoverFunds).toHaveBeenCalledTimes(1);
+      await advanceUnilateralExit(first.plan, tip(102), driver, '02abc', [feeCoin(3_000)]);
+      expect(recoverFunds).toHaveBeenCalledTimes(2);
+    });
+
+    it('asks for what the build says it needs, sized on the coins it had', async () => {
+      const recoverFunds = vi.fn(async () => {
+        throw new Error('Insufficient CPFP funding: need at least 6400 sats');
+      });
+      const { plan: next } = await advanceUnilateralExit(waiting(), tip(101), done({ prepareRecoverFunds: quoting(askQuote()), recoverFunds }), '02abc', [feeCoin(3_000)]);
+      expect(next.topUp).toEqual({ required: { sat: 6_400, inputs: 1 }, heldSat: 1_000 });
+      expect(next.exit.transactions.map(t => t.txid)).toEqual([txidOf(1), 'sweep']);
+    });
+
+    it('lets go of the leftover after about a week, without hiding it, and finishes', async () => {
+      const prepareRecoverFunds = vi.fn(async () => askQuote());
+      const { plan: next } = await advanceUnilateralExit(waiting(), tip(1_108), done({ prepareRecoverFunds }), '02abc');
+      expect(prepareRecoverFunds).not.toHaveBeenCalled();
+      expect(next.namedLeaves).toEqual([{ leafId: 'leaf-1', valueSats: 100_000 }]);
+      expect(next.topUp).toBeUndefined();
+      expect(next.droppedLeaves).toBeUndefined();
+      expect(next.phase).toBe('complete');
+    });
+
+    it('lets nothing go while a unilateral step is in flight', () => {
+      expect(releaseDue(exit(locked(900), { retrySince: 100 }), 2_000)).toBe(false);
+      expect(releaseDue(waiting(), 1_108)).toBe(true);
+    });
+
+    describe('buildLeftover', () => {
+      it('reads the phrase before anything else from the tap, and passes on a failure', async () => {
+        localStorage.removeItem('walletMnemonic');
+        const prepareRecoverFunds = vi.fn(async () => askQuote());
+        const tap = buildLeftover(waiting(), sdk({ prepareRecoverFunds }), '02abc', [feeCoin(3_000)], { interactive: true });
+        await expect(tap).rejects.toBeInstanceOf(MnemonicUnavailableError);
+        expect(prepareRecoverFunds).not.toHaveBeenCalled();
+      });
+
+      it('builds nothing over a transaction still in flight', async () => {
+        await expect(buildLeftover(waiting({ exit: { transactions: [sweepTx(ready)] } }), sdk(), '02abc', [])).rejects.toBeInstanceOf(RebuildLaterError);
+      });
+
+      it('needs no key once the quote needs no funding, and asks for nothing more', async () => {
+        passkeyWallet();
+        const recoverFunds = vi.fn(async () => nextPart());
+        const quote = leftoverQuote({ leaves: [soloLeaf] });
+        const next = await buildLeftover(waiting(), sdk({ prepareRecoverFunds: quoting(quote), recoverFunds }), '02abc', []);
+        expect(recoverFunds.mock.calls[0]).toEqual([{ prepared: quote }]);
+        expect(next.topUp).toBeUndefined();
+        expect(next.quotedExitFeeSat).toBe(5_000);
+        localStorage.removeItem('passkeyLabel');
+      });
+    });
+  });
+
+  it('counts each leftover as one transaction still to go, and its value as not yet moving', () => {
+    const landed = landedExit({ landed: undefined });
+    expect(planProgress(landed)).toEqual({ confirmed: 2, total: 4, isComplete: false });
+    expect(exitStages(landed)).toMatchObject({ inSpark: 80_000, onChain: 0 });
+    expect(exitStages(exit(locked(900)))).toMatchObject({ inSpark: 80_000 + 0, onChain: 100_000 });
+  });
+
+  it('polls slowly while all that is left waits on a retry, but not while it waits on the exit fee', () => {
+    expect(isStalled(landedExit())).toBe(true);
+    expect(isStalled(landedExit({ topUp: { required: { sat: 3_000, inputs: 1 } } }))).toBe(false);
+  });
+
+  it('drops a leaf a rebuild found unrecoverable or too dear from what the exit names, hiding only the unrecoverable one', () => {
+    const quote = prepared({
+      leaves: [{ leafId: 'leaf-1', valueSats: 100_000, method: 'unilateral' }],
+      skipped: [
+        { ...coLeaf, reason: { type: 'notRecoverable', message: 'paid elsewhere' } },
+        { ...soloLeaf, reason: { type: 'feeExceedsValue' } },
+        { leafId: 'leaf-3', valueSats: 7_000, reason: { type: 'unverified' } },
+      ],
+    });
+    const resuming = exit(ready, {
+      droppedLeaves: [{ leafId: 'gone', valueSats: 700 }],
+      namedLeaves: [...exit().namedLeaves!, { leafId: 'leaf-3', valueSats: 7_000 }],
+    });
+    const next = planFromBuild(quote, checked([{ txid: 'fresh' }]), resuming, { network: 'mainnet', fundingAddressIndex: 0 });
+    expect(next.namedLeaves?.map(leaf => leaf.leafId)).toEqual(['leaf-1', 'leaf-3']);
+    expect(next.droppedLeaves).toEqual([{ leafId: 'gone', valueSats: 700 }, { leafId: 'c-9', valueSats: 30_000 }]);
   });
 });

@@ -4,6 +4,7 @@ import {
   awaitsUpdate,
   heldRecoveryLeaves,
   isPendingFunded,
+  leftoverTopUp,
   namedLeavesOf,
   nextAction,
   pendingTopUp,
@@ -71,6 +72,25 @@ const pendingText = (
   return { title: 'Exit fee received', subtitle: 'Tap to start', isAction: true };
 };
 
+/**
+ * What the row says while a leaf the exit left out waits on more exit fee.
+ * Unconfirmed coins count toward what is still to send, as for a pending exit.
+ */
+const topUpText = (
+  state: UnilateralExitEngineState,
+  plan: UnilateralExitPlan,
+): Pick<UnilateralExitEntry, 'title' | 'subtitle' | 'isAction'> => {
+  const coins = state.pendingCoins;
+  const received = leftoverTopUp(plan, coins.filter(coin => coin.confirmed)).stillToSendSat === 0;
+  if (plan.topUp?.needsSignIn) {
+    return { title: received ? 'Exit fee received' : 'Waiting for exit fee', subtitle: 'Tap to update', isAction: true };
+  }
+  const stillToSend = leftoverTopUp(plan, coins).stillToSendSat;
+  if (stillToSend > 0) return { title: 'Waiting for exit fee', subtitle: `Send ₿${formatWithSpaces(stillToSend)} more` };
+  if (!received) return { title: 'Exit fee sent', subtitle: 'Waiting for a confirmation' };
+  return { title: 'Exit fee received', subtitle: null };
+};
+
 const archivedEntry = (exit: ArchivedExit): UnilateralExitEntry => ({
   id: exit.id,
   // The same words a withdrawal gets, since that is what landed on-chain.
@@ -115,16 +135,13 @@ function branchOnChain(plan: UnilateralExitPlan, leafId: string): boolean {
 
 /**
  * The plan's leaves that getInfo counts as recoverable, by ID. A co-signed leaf
- * and a recovery's leaves were outside the balance from the start; a leaf the
- * last rebuild skipped has left it too. A leaf whose co-signing failed is left
- * out, so it stays in the Recoverable Funds row.
+ * and a recovery's leaves were outside the balance from the start; a leaf no
+ * build holds, skipped or not co-signed, has left it too.
  */
 function planLeavesOutside(plan: UnilateralExitPlan): Map<string, number> {
-  const failed = new Set(plan.exit.failed.map(f => f.leafId));
   const built = new Map(plan.exit.leaves.map(leaf => [leaf.leafId, leaf]));
   const outside = new Map<string, number>();
   for (const { leafId, valueSats } of namedLeavesOf(plan)) {
-    if (failed.has(leafId)) continue;
     const leaf = built.get(leafId);
     const counted = !leaf || isCooperativeLeaf(leaf) || plan.mode === 'recover' || branchOnChain(plan, leafId);
     if (counted) outside.set(leafId, leaf?.valueSats ?? valueSats);
@@ -134,7 +151,8 @@ function planLeavesOutside(plan: UnilateralExitPlan): Map<string, number> {
 
 /**
  * What getInfo's recoverable total holds that is accounted for already: what
- * the plan and the kept recoveries are moving, and the leaves any of them or a
+ * the plan and the kept recoveries are moving or have landed, which getInfo
+ * counts until a sync sees it in a block, and the leaves any of them or a
  * finished exit dropped as unrecoverable, which getInfo goes on counting.
  */
 function accountedSat({ plan, recoveries, archive }: UnilateralExitEngineState): number {
@@ -142,6 +160,13 @@ function accountedSat({ plan, recoveries, archive }: UnilateralExitEngineState):
   for (const leaf of inFlight(recoveries).flatMap(heldRecoveryLeaves)) accounted.set(leaf.leafId, leaf.valueSats);
   for (const record of [plan, ...recoveries, ...archive]) {
     for (const leaf of record?.droppedLeaves ?? []) accounted.set(leaf.leafId, leaf.valueSats);
+  }
+  // An entry holds one value for all its leaves: what the leaves already
+  // counted leave of it goes on the first one not yet counted.
+  for (const entry of [plan, ...recoveries].flatMap(record => record?.landed ?? [])) {
+    const fresh = entry.leafIds.filter(id => !accounted.has(id));
+    const counted = entry.leafIds.reduce((sum, id) => sum + (accounted.get(id) ?? 0), 0);
+    fresh.forEach((id, i) => accounted.set(id, i === 0 ? Math.max(0, entry.valueSat - counted) : 0));
   }
   return [...accounted.values()].reduce((sum, sat) => sum + sat, 0);
 }
@@ -177,6 +202,8 @@ const liveEntry = (state: UnilateralExitEngineState): UnilateralExitEntry | null
     };
   }
   if (!plan || plan.phase === 'complete') return null;
+  // Ahead of the update tap: an exit waiting on its fee says what to send.
+  if (plan.topUp) return { id: 'active', ...topUpText(state, plan), amountSat: willReceiveSat(plan), kind: 'active' };
   return {
     id: 'active',
     title: awaitsUpdate(plan) ? 'Update needed' : 'Transactions in progress',

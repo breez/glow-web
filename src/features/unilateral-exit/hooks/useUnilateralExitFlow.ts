@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CpfpInput, InputType, PrepareRecoverFundsResponse } from '@breeztech/breez-sdk-spark';
+import type { InputType, PrepareRecoverFundsResponse } from '@breeztech/breez-sdk-spark';
 import { useWallet, useWalletInfo } from '@/contexts/WalletContext';
 import { holdIdleLock } from '@/services/appLock';
 import { createChainClient } from '@/services/chain';
@@ -9,9 +9,13 @@ import { destinationErrorMessage } from '@/utils/destinationAddress';
 import {
   awaitsUpdate,
   buildFromQuote,
+  buildLeftover,
   buildRecoveryBump,
   destinationAddressOf,
   fundingInputsOf,
+  isLanded,
+  leftoverTopUp,
+  mergeFunding,
   planFromBuild,
   quoteFresh,
   quoteLeaves,
@@ -50,8 +54,9 @@ import { deriveFundingKey, readWalletMnemonic, type FundingKey } from '../fundin
 import { useUnilateralExitEngineState } from './useUnilateralExitEngineLifecycle';
 
 /**
- * `fund`, `topUp` and `building` raise the fee of an exit under way. A fresh
- * exit's fee is paid on `pending`. `sent` is a co-signed recovery on its way.
+ * `fund`, `topUp` and `building` raise the fee of an exit under way, or pay
+ * for a leaf it left out. A fresh exit's fee is paid on `pending`. `sent` is a
+ * co-signed recovery on its way.
  */
 export type UnilateralExitPhase =
   | 'intro'
@@ -88,13 +93,6 @@ const liftRates = (rates: FeeRates, floor: number): FeeRates => ({
   medium: Math.max(rates.medium, floor),
   fast: Math.max(rates.fast, floor),
 });
-
-const outpoint = (input: CpfpInput): string => `${input.txid}:${input.vout}`;
-
-const mergeFunding = (stored: CpfpInput[], fresh: CpfpInput[]): CpfpInput[] => {
-  const seen = new Set(stored.map(outpoint));
-  return [...stored, ...fresh.filter(input => !seen.has(outpoint(input)))];
-};
 
 export interface DestinationFields {
   destination: string;
@@ -151,7 +149,7 @@ export interface UnilateralExitFlow {
   destination: DestinationFields;
   fee: FeeFields;
   quote: QuoteFields;
-  /** Null until the recovery phrase is unlocked, which the funding key derives from. */
+  /** Null until the recovery phrase is unlocked, which the funding key derives from, or a leftover asks for more exit fee. */
   funding: FundingFields | null;
   submitDestination: () => Promise<void>;
   submitFee: () => Promise<void>;
@@ -170,7 +168,7 @@ export interface UnilateralExitFlow {
   /** The kept recovery that holds the bumped leaves now, by its txid. Null while none does. */
   bumpedTxid: string | null;
   rebuild: () => void;
-  /** Rebuilds a diverged exit in place, at its own fee rate, without the wizard. */
+  /** Rebuilds a diverged exit in place, at its own fee rate, without the wizard, or builds a leftover whose fee arrived. */
   continueExit: () => Promise<void>;
   isContinuing: boolean;
   continueError: string | null;
@@ -193,7 +191,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
   );
   const chain = useMemo(() => createChainClient(network), [network]);
   const engine = useUnilateralExitEngineState();
-  const { plan, pending, recoveries, archive, tipHeight } = engine;
+  const { plan, pending, pendingCoins, recoveries, archive, tipHeight } = engine;
   // Every bump branch keys on the prop, so a bump never falls through to the
   // exit's quote or plan slot, whether or not its recovery is still there.
   const bumping = !!bumpTxid;
@@ -217,14 +215,22 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
   const [step, setPhase] = useState<UnilateralExitPhase>(() =>
     bumping ? 'fee' : freshRecovery ? 'destination' : 'intro',
   );
-  const phase: UnilateralExitPhase =
-    step === 'intro' || step === 'pending' || step === 'tracker'
-      ? plan
-        ? 'tracker'
-        : pending
-          ? 'pending'
-          : 'intro'
-      : step;
+  const [fundingKey, setFundingKey] = useState<FundingKey | null>(null);
+  // A leftover waiting on more exit fee is the engine's too: its fee screen
+  // follows the plan, unless the wizard raising the fee holds its own key.
+  const followsEngine =
+    step === 'intro' || step === 'pending' || step === 'tracker' || ((step === 'fund' || step === 'topUp') && !fundingKey);
+  const phase: UnilateralExitPhase = followsEngine
+    ? plan
+      ? plan.topUp
+        ? step === 'topUp'
+          ? 'topUp'
+          : 'fund'
+        : 'tracker'
+      : pending
+        ? 'pending'
+        : 'intro'
+    : step;
   // A rebuild re-enters the wizard; retyping the address is a chance to get it
   // wrong. A sheet opened while the exit waits on its fee can rebuild it once it
   // starts, so a pending exit seeds the address too.
@@ -236,7 +242,6 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
   const [isQuoting, setIsQuoting] = useState(false);
   const quoteRequest = useRef(0);
   const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [fundingKey, setFundingKey] = useState<FundingKey | null>(null);
   const [fundingUtxos, setFundingUtxos] = useState<ChainUtxo[]>([]);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [buildError, setBuildError] = useState<string | null>(null);
@@ -411,9 +416,53 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
   // build has said what it needs, the address has to hold it.
   const isFunded = quote !== null && (!topUp || topUp.stillToSendSat === 0);
 
+  // The redo card's button: the rebuild the engine runs on its own, from a tap.
+  // A diverged exit needs no new fee rate or funding, so the wizard would only
+  // add steps, and the tap is what lets a passkey wallet sign. A leftover whose
+  // fee arrived is built the same way, from the coins the engine read.
+  const [isContinuing, setIsContinuing] = useState(false);
+  const [continueError, setContinueError] = useState<string | null>(null);
+  const continueExit = useCallback(async () => {
+    if (!plan || !walletKey) return;
+    setIsContinuing(true);
+    setContinueError(null);
+    try {
+      if (plan.topUp) {
+        const confirmed = pendingCoins.filter(coin => coin.confirmed);
+        const built = await buildLeftover(plan, wallet, walletKey.identityPubkey, confirmed, { interactive: true });
+        setUnilateralExitPlan(walletKey, built);
+        return;
+      }
+      // A rebuild with nothing left comes back complete, and the engine archives it.
+      const rebuilt = await rebuildExit(plan, wallet, walletKey.identityPubkey, { interactive: true });
+      // This build just read the chain, so a step it still could not read waits
+      // for the next block instead of asking for the tap again at once. Read
+      // here, after the prompt: the engine's tip is stale while a redo waits.
+      const tip = await chain.tipHeight().catch(() => tipHeight ?? undefined);
+      setUnilateralExitPlan(walletKey, { ...rebuilt, unverifiedRebuiltAt: tip });
+    } catch (e) {
+      // Nothing to build until the chain shows where a leaf went: waiting, not
+      // failure. A sign-in request stays until a tap lifts it, so this one
+      // does. A failed rebuild is the engine's to clear on its next pass, and
+      // the plan held here may already be stale.
+      if (e instanceof RebuildLaterError) {
+        if (plan.needsSignIn) setUnilateralExitPlan(walletKey, { ...plan, needsSignIn: undefined, rebuildFailed: undefined });
+        else void advanceNow();
+        return;
+      }
+      logger.error(LogCategory.SDK, 'Failed to continue unilateral exit', { error: message(e) });
+      setContinueError(message(e));
+    } finally {
+      setIsContinuing(false);
+    }
+  }, [plan, wallet, walletKey, chain, tipHeight, pendingCoins]);
+
   // Builds the reviewed quote: an exit under way from the coins at its fee
-  // address, or, when the quote needs no funding, any exit straight away.
+  // address, or, when the quote needs no funding, any exit straight away. A
+  // leftover's fee screen has no quote: its button continues the exit. A bump
+  // keeps to its own recovery, whatever the exit beside it waits on.
   const build = useCallback(async () => {
+    if (!bumping && !fundingKey && plan?.topUp) return continueExit();
     if (!walletKey || !quote || !figures || (bumping && !bumpTarget)) return;
     const funded = figures.needsFunding;
     if (funded && (!plan || !fundingKey || !mnemonicRef.current)) return;
@@ -482,7 +531,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
     } finally {
       release();
     }
-  }, [wallet, walletKey, quote, figures, fundingKey, confirmedUtxos, sent, network, plan, mode, bumping, bumpTarget]);
+  }, [wallet, walletKey, quote, figures, fundingKey, confirmedUtxos, sent, network, plan, mode, bumping, bumpTarget, continueExit]);
 
   // A quote that needs funding goes on to the phrase and the fee address. One
   // that needs none has nothing to sign and nothing to wait for, so it builds.
@@ -519,9 +568,10 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
   // Keyed on what the address holds as well: a confirmation changes what counts
   // as sent, and any payment, short or over, is worth another build. Amounts
   // rather than objects, since every engine pass emits a fresh plan. It cannot
-  // feed itself: a build leaves this phase on its first line.
+  // feed itself: a build leaves this phase on its first line. Only the wizard's
+  // fee screen, whose key the unlock read: a leftover's waits for the tap.
   useEffect(() => {
-    if (phase !== 'fund' || !quote) return;
+    if (phase !== 'fund' || !quote || !fundingKey) return;
     const attempt = { quote, sat: sent.sat, inputs: sent.inputs };
     if (
       tried.current?.quote === attempt.quote &&
@@ -532,7 +582,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
     }
     tried.current = attempt;
     void build();
-  }, [phase, quote, sent.sat, sent.inputs, build]);
+  }, [phase, quote, fundingKey, sent.sat, sent.inputs, build]);
 
   // Keeps the destination and the leaves, and re-enters at the fee step: the
   // reason to rebuild by hand is almost always to pay more.
@@ -545,44 +595,10 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
     setPhase('fee');
   }, []);
 
-  // The redo card's button: the rebuild the engine runs on its own, from a tap.
-  // A diverged exit needs no new fee rate or funding, so the wizard would only
-  // add steps, and the tap is what lets a passkey wallet sign.
-  const [isContinuing, setIsContinuing] = useState(false);
-  const [continueError, setContinueError] = useState<string | null>(null);
-  const continueExit = useCallback(async () => {
-    if (!plan || !walletKey) return;
-    setIsContinuing(true);
-    setContinueError(null);
-    try {
-      // A rebuild with nothing left comes back complete, and the engine archives it.
-      const rebuilt = await rebuildExit(plan, wallet, walletKey.identityPubkey, { interactive: true });
-      // This build just read the chain, so a step it still could not read waits
-      // for the next block instead of asking for the tap again at once. Read
-      // here, after the prompt: the engine's tip is stale while a redo waits.
-      const tip = await chain.tipHeight().catch(() => tipHeight ?? undefined);
-      setUnilateralExitPlan(walletKey, { ...rebuilt, unverifiedRebuiltAt: tip });
-    } catch (e) {
-      // Nothing to build until the chain shows where a leaf went: waiting, not
-      // failure. A sign-in request stays until a tap lifts it, so this one
-      // does. A failed rebuild is the engine's to clear on its next pass, and
-      // the plan held here may already be stale.
-      if (e instanceof RebuildLaterError) {
-        if (plan.needsSignIn) setUnilateralExitPlan(walletKey, { ...plan, needsSignIn: undefined, rebuildFailed: undefined });
-        else void advanceNow();
-        return;
-      }
-      logger.error(LogCategory.SDK, 'Failed to continue unilateral exit', { error: message(e) });
-      setContinueError(message(e));
-    } finally {
-      setIsContinuing(false);
-    }
-  }, [plan, wallet, walletKey, chain, tipHeight]);
-
   // A card that comes back explains itself again rather than showing an error
   // from before. Cleared on the way out, not in the body, which would set
   // state during the effect.
-  const asksForUpdate = !!plan && awaitsUpdate(plan);
+  const asksForUpdate = !!plan && (awaitsUpdate(plan) || !!plan.topUp);
   useEffect(() => {
     if (!asksForUpdate) return;
     return () => setContinueError(null);
@@ -590,12 +606,46 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
 
   const back = useCallback(() => setPhase(current => BACK[current] ?? current), []);
 
+  // The wizard's fee screen holds its own key and quote. A leftover's has
+  // neither: it shows what the plan asks for at its own address and rate,
+  // against the confirmed coins the engine read there.
+  const wizardFunding: FundingFields | null = fundingKey && {
+    address: fundingKey.address,
+    isFunded,
+    topUp,
+    feeRate: quote?.feeRateSatPerVbyte ?? 0,
+    currentFeeRate: plan?.feeRateSatPerVbyte ?? null,
+    // The slowest rate the network is taking: above the exit's own rate, the
+    // exit is stalled by fees rather than by the rate the user just picked.
+    networkFloorFeeRate: feeRates?.slow ?? null,
+    quotedAt,
+  };
+  const leftoverFunding = useMemo<FundingFields | null>(() => {
+    if (!plan?.topUp) return null;
+    const address = exitFeeRecordOf(plan).exitFeeAddress;
+    // With no address yet, the tap derives it and asks again.
+    const asked = address ? leftoverTopUp(plan, pendingCoins.filter(coin => coin.confirmed)) : null;
+    return {
+      address: address ?? '',
+      isFunded: isLanded(plan.exit) && (!asked || asked.stillToSendSat === 0),
+      topUp: asked,
+      feeRate: plan.feeRateSatPerVbyte,
+      currentFeeRate: plan.feeRateSatPerVbyte,
+      networkFloorFeeRate: null,
+      quotedAt: null,
+    };
+  }, [plan, pendingCoins]);
+
   return {
     phase,
     mode,
     engine,
     /** False where back leaves the flow: the first step, and an exit already saved. */
-    canGoBack: BACK[phase] !== undefined && !(phase === 'destination' && freshRecovery) && !(phase === 'fee' && bumping),
+    canGoBack:
+      BACK[phase] !== undefined &&
+      !(phase === 'destination' && freshRecovery) &&
+      !(phase === 'fee' && bumping) &&
+      !((phase === 'fund' || phase === 'topUp') && !fundingKey),
     destination: { destination, onChange: setDestination, error: destinationError },
     fee: {
       feeRates,
@@ -604,17 +654,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
       onSelect: setFeeChoice,
     },
     quote: { quote, figures, isQuoting, error: quoteError },
-    funding: fundingKey && {
-      address: fundingKey.address,
-      isFunded,
-      topUp,
-      feeRate: quote?.feeRateSatPerVbyte ?? 0,
-      currentFeeRate: plan?.feeRateSatPerVbyte ?? null,
-      // The slowest rate the network is taking: above the exit's own rate, the
-      // exit is stalled by fees rather than by the rate the user just picked.
-      networkFloorFeeRate: feeRates?.slow ?? null,
-      quotedAt,
-    },
+    funding: wizardFunding ?? leftoverFunding,
     submitDestination,
     submitFee,
     continueFromQuote,
