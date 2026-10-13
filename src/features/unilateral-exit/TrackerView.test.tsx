@@ -8,7 +8,7 @@ vi.mock('@/contexts/WalletContext', () => ({
   useWallet: () => ({ exportUnilateralExitState: async () => ({ exitState: '{}' }) }),
 }));
 import type { UnilateralExitPlan } from './driver';
-import { blocked, confirmed, locked, plan, tx } from './testFixtures';
+import { blocked, confirmed, locked, plan, ready, tx } from './testFixtures';
 
 // one input, one 596 524 sat output
 const twoLeaves = (transactions: Parameters<typeof plan>[0], over: Parameters<typeof plan>[1] = {}) =>
@@ -73,6 +73,17 @@ describe('what the exit is worth right now', () => {
     expect(stages).toHaveTextContent('Processed sats');
     // Nothing is spendable until the sweep lands, so the numerator is still 0.
     expect(stages).toHaveTextContent('0/600 000');
+  });
+
+  it('keeps a co-signed recovery still in flight out of what is processed once the sweep confirms, against the same total', () => {
+    renderTracker(
+      twoLeaves([
+        tx({ txid: 'c1', kind: 'cooperative', nodeId: 'leaf-1', status: ready }),
+        tx({ txid: 'r2', kind: 'refund', nodeId: 'leaf-2', status: confirmed(900) }),
+        tx({ txid: 's', kind: 'sweep', dependsOn: ['r2'], status: confirmed(901) }),
+      ]),
+    );
+    expect(screen.getByTestId('unilateral-exit-stages')).toHaveTextContent('420 000/600 000');
   });
 
   it('leads with what will arrive: the balance less the sweep fee', () => {

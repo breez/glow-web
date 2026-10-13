@@ -19,15 +19,16 @@ import { planFromV4, type V4Plan } from './legacyPlan';
 import {
   builtExitFeeRecord,
   builtSweepFeeSat,
-  cooperativeValueSat,
   exitFeeRecordOf,
   exitFeeSat,
   isCooperative,
   isCooperativeLeaf,
   isWorthExiting,
+  leafFeesSat,
   needsFunding,
   paidOut,
   priorLandings,
+  unbuiltLeaves,
   willReceiveSat,
   type ExitFeeRecord,
 } from './quote';
@@ -42,6 +43,11 @@ export type ExitPhase = 'active' | 'complete' | 'redo';
 export interface NamedLeaf {
   leafId: string;
   valueSats: number;
+  /**
+   * What the quote that last priced the leaf takes off its value. Absent on a
+   * plan from before this was kept, which counts the whole value.
+   */
+  feeSat?: number;
 }
 
 /** Leaves paid out on-chain. Waiting until `txid` is read. */
@@ -94,7 +100,15 @@ export interface UnilateralExitPlan {
    * the one record of what earlier builds landed. Absent means none yet.
    */
   landed?: Landing[];
-  /** The co-signed part of the first build: funds that were outside the balance before the exit began. */
+  /**
+   * The first quote's co-signed leaves: outside the balance before the exit
+   * began, whether or not the operators co-signed them at once.
+   */
+  recoverableLeafIds?: string[];
+  /**
+   * What a plan from before `recoverableLeafIds` kept instead: the co-signed
+   * part of its first build. Carried over, never written fresh.
+   */
   recoverableFundsSat?: number;
   /**
    * Why the network last refused each transaction, by txid, for diagnostics. The
@@ -177,6 +191,7 @@ export interface PlanMeta {
   droppedLeaves?: NamedLeaf[];
   retrySince?: number;
   retriedAt?: number;
+  recoverableLeafIds?: string[];
   recoverableFundsSat?: number;
   mode?: ExitMode;
 }
@@ -413,14 +428,7 @@ export interface ExitStages {
 }
 
 export function exitStages(plan: UnilateralExitPlan): ExitStages {
-  const willReceive = willReceiveSat(plan);
   const { transactions, leaves } = plan.exit;
-  // A leaf no build holds yet has not started to move.
-  const waitingSat = leftoverValueSat(plan);
-  if (transactions.find(tx => tx.kind === 'sweep')?.status.type === 'confirmed') {
-    return { inSpark: waitingSat, onChain: 0, delivered: willReceive, willReceive };
-  }
-
   const confirmedFor = (matches: (tx: RecoveryTransaction) => boolean) =>
     new Set(transactions.filter(tx => matches(tx) && tx.status.type === 'confirmed').map(tx => tx.nodeId));
   const refunded = confirmedFor(tx => tx.kind === 'refund');
@@ -428,11 +436,15 @@ export function exitStages(plan: UnilateralExitPlan): ExitStages {
   const valueOf = (ids: Set<string | undefined>) =>
     leaves.filter(leaf => ids.has(leaf.leafId)).reduce((sum, leaf) => sum + leaf.valueSats, 0);
   const total = leaves.reduce((sum, leaf) => sum + leaf.valueSats, 0);
-  const onChain = valueOf(refunded);
-  const recoveredSat = valueOf(recovered);
+  // Leaf values throughout, so the total holds still and willReceive is the one net figure.
+  const swept = transactions.some(tx => tx.kind === 'sweep' && tx.status.type === 'confirmed');
+  const onChain = swept ? 0 : valueOf(refunded);
+  const paidSat = valueOf(recovered) + (swept ? valueOf(refunded) : 0);
+  // A leaf no build holds yet has not started to move.
+  const waitingSat = unbuiltLeaves(plan).reduce((sum, leaf) => sum + leaf.valueSats, 0);
   // Leaves earlier builds paid out are delivered, though this build never held them.
-  const delivered = recoveredSat + paidOut(priorLandings(plan)).valueSat;
-  return { inSpark: total - onChain - recoveredSat + waitingSat, onChain, delivered, willReceive };
+  const delivered = paidSat + paidOut(priorLandings(plan)).valueSat;
+  return { inSpark: total - onChain - paidSat + waitingSat, onChain, delivered, willReceive: willReceiveSat(plan) };
 }
 
 /**
@@ -635,21 +647,13 @@ export function namedLeavesOf(plan: UnilateralExitPlan): NamedLeaf[] {
 }
 
 /**
- * Leaves the exit named that no build of it holds: one whose co-signing
- * failed, or one a rebuild skipped for now. Each stays part of the exit until
- * it lands, is found unrecoverable, or is let go at the deadline.
+ * Leaves the exit named that no build of it holds and its ledger does not
+ * record as landed: one whose co-signing failed, or one a rebuild skipped for
+ * now. Each stays part of the exit until it lands, is found unrecoverable, or
+ * is let go at the deadline.
  */
-export const leftoverIdsOf = (plan: UnilateralExitPlan): string[] => {
-  const built = new Set(plan.exit.leaves.map(leaf => leaf.leafId));
-  return namedLeavesOf(plan)
-    .map(leaf => leaf.leafId)
-    .filter(id => !built.has(id));
-};
-
-const leftoverValueSat = (plan: UnilateralExitPlan): number => {
-  const leftovers = new Set(leftoverIdsOf(plan));
-  return namedLeavesOf(plan).reduce((sum, leaf) => sum + (leftovers.has(leaf.leafId) ? leaf.valueSats : 0), 0);
-};
+export const leftoverIdsOf = (plan: UnilateralExitPlan): string[] =>
+  unbuiltLeaves(plan, namedLeavesOf(plan)).map(leaf => leaf.leafId);
 
 /** Nothing of the build is in flight. True of a plan with no transactions, which has nothing to replace. */
 export const isLanded = (exit: RecoverFundsResponse): boolean => exit.transactions.every(tx => tx.status.type === 'confirmed');
@@ -695,18 +699,34 @@ const withDropped = (dropped: NamedLeaf[] | undefined, added: NamedLeaf[]): Name
 /**
  * What `resuming` still names once `quote` has priced its leaves: a leaf it
  * lists nowhere has landed, and one it skips as unrecoverable or too dear has
- * left the exit.
+ * left the exit. A leaf skipped for now keeps the fee its last quote put on it.
  */
-function stillNamed(resuming: UnilateralExitPlan, quote: PrepareRecoverFundsResponse): NamedLeaf[] {
+function stillNamed(resuming: UnilateralExitPlan, quote: PrepareRecoverFundsResponse, fees: Map<string, number>): NamedLeaf[] {
   const { leaving } = leavingSkips(quote);
   const kept = quote.skipped.filter(leaf => !leaving.has(leaf.leafId));
   const priced = new Map([...kept, ...quote.leaves].map(leaf => [leaf.leafId, leaf.valueSats]));
-  const named = namedLeavesOf(resuming).flatMap(leaf => {
-    const valueSats = priced.get(leaf.leafId);
-    return valueSats === undefined ? [] : [{ leafId: leaf.leafId, valueSats }];
+  const named = namedLeavesOf(resuming).flatMap(({ leafId, feeSat }) => {
+    const valueSats = priced.get(leafId);
+    return valueSats === undefined ? [] : [{ leafId, valueSats, feeSat: fees.get(leafId) ?? feeSat }];
   });
   const seen = new Set(named.map(leaf => leaf.leafId));
-  return [...named, ...quote.leaves.filter(leaf => !seen.has(leaf.leafId)).map(({ leafId, valueSats }) => ({ leafId, valueSats }))];
+  const added = quote.leaves.filter(leaf => !seen.has(leaf.leafId));
+  return [...named, ...added.map(({ leafId, valueSats }) => ({ leafId, valueSats, feeSat: fees.get(leafId) }))];
+}
+
+/**
+ * The fee floor a rebuild of `resuming` carries, less the share of each leaf
+ * it built that `built` leaves unbuilt and `named` still holds: that leaf's
+ * own fee counts its share from here, so the floor must not count it again.
+ */
+function carriedFloorSat(resuming: UnilateralExitPlan, built: RecoverFundsResponse, named: NamedLeaf[]): number {
+  const wasBuilt = new Set(resuming.exit.leaves.map(leaf => leaf.leafId));
+  const isBuilt = new Set(built.leaves.map(leaf => leaf.leafId));
+  const unbuilt = new Set(named.map(leaf => leaf.leafId).filter(id => wasBuilt.has(id) && !isBuilt.has(id)));
+  const shareSat = namedLeavesOf(resuming)
+    .filter(leaf => unbuilt.has(leaf.leafId))
+    .reduce((sum, leaf) => sum + (leaf.feeSat ?? 0), 0);
+  return Math.max(0, resuming.quotedSweepFeeSat - shareSat);
 }
 
 /**
@@ -934,19 +954,23 @@ export function planFromBuild(
   // now, while the replaced build still says what its recovery spends.
   const held = new Set([...built.leaves, ...built.failed].map(leaf => leaf.leafId));
   const priced = { ...quote, leaves: quote.leaves.filter(leaf => held.has(leaf.leafId) || !isCooperativeLeaf(leaf)) };
+  // Off the whole quote, landed leaves included, since its fees cover them too.
+  const fees = leafFeesSat(quote);
+  const namedLeaves = resuming
+    ? stillNamed(resuming, priced, fees)
+    : priced.leaves.map(({ leafId, valueSats }) => ({ leafId, valueSats, feeSat: fees.get(leafId) }));
   return planFromExitResponse(built, {
     ...meta,
     destination: quote.destination,
     feeRateSatPerVbyte: quote.feeRateSatPerVbyte,
-    quotedSweepFeeSat: builtSweepFeeSat(quote, built, resuming),
-    namedLeaves: resuming
-      ? stillNamed(resuming, priced)
-      : quote.leaves.map(({ leafId, valueSats }) => ({ leafId, valueSats })),
+    quotedSweepFeeSat: builtSweepFeeSat(quote, built, resuming ? carriedFloorSat(resuming, built, namedLeaves) : 0),
+    namedLeaves,
     landed: resuming ? withLanded(resuming, priced) : undefined,
     droppedLeaves: resuming ? withDropped(resuming.droppedLeaves, leavingSkips(quote, named).dropped) : undefined,
     retrySince: resuming?.retrySince,
     retriedAt: resuming?.retriedAt,
-    recoverableFundsSat: resuming ? resuming.recoverableFundsSat : cooperativeValueSat(built) || undefined,
+    recoverableLeafIds: resuming ? resuming.recoverableLeafIds : priced.leaves.filter(isCooperativeLeaf).map(leaf => leaf.leafId),
+    recoverableFundsSat: resuming?.recoverableFundsSat,
   });
 }
 
@@ -1331,6 +1355,12 @@ const buildCosigned = (sdk: ExitSdk, quote: PrepareRecoverFundsResponse): Promis
     throw e;
   });
 
+/** `plan` with each named leaf `quote` prices carrying the fee that quote puts on it. */
+const withQuotedFees = (plan: UnilateralExitPlan, quote: PrepareRecoverFundsResponse): UnilateralExitPlan => {
+  const fees = leafFeesSat(quote);
+  return { ...plan, namedLeaves: plan.namedLeaves?.map(leaf => (fees.has(leaf.leafId) ? { ...leaf, feeSat: fees.get(leaf.leafId) } : leaf)) };
+};
+
 const askTopUp = (plan: UnilateralExitPlan, quote: PrepareRecoverFundsResponse): ExitTopUp => ({
   required: { sat: exitFeeSat(quote), inputs: 1 },
   // With no fee address yet, only the key can say where to pay.
@@ -1387,7 +1417,7 @@ async function applyRetryQuote(
   const built = cosignedQuote && cosignedQuote.leaves.length > 0 ? await buildCosigned(sdk, cosignedQuote) : null;
   const asksFee = inSlot && unilateral && needsFunding(quote) && (landed || !!plan.topUp);
   const topUp = asksFee ? (plan.topUp ?? askTopUp(plan, quote)) : undefined;
-  return completeIfEmpty(withCosigned({ ...plan, landed: withLanded(plan, quote, landedIds), topUp }, built, gone, dropped));
+  return completeIfEmpty(withCosigned({ ...withQuotedFees(plan, quote), landed: withLanded(plan, quote, landedIds), topUp }, built, gone, dropped));
 }
 
 /**
@@ -1449,7 +1479,7 @@ export async function buildLeftover(
     key = tapKey ?? (await readKey());
   } catch (e) {
     if (interactive || !(e instanceof MnemonicNeedsPasskeyError)) throw e;
-    return { ...plan, topUp: { ...(plan.topUp ?? askTopUp(plan, quote)), needsSignIn: true } };
+    return { ...withQuotedFees(plan, quote), topUp: { ...(plan.topUp ?? askTopUp(plan, quote)), needsSignIn: true } };
   }
   const { quotedExitFeeSat, exitFeeAddress } = exitFeeRecordOf(plan);
   const address = exitFeeAddress ?? key.address;
@@ -1467,7 +1497,7 @@ export async function buildLeftover(
   } catch (e) {
     const sat = requiredFundingOf(e instanceof Error ? e.message : String(e));
     if (sat === null) throw e;
-    return { ...plan, exitFeeAddress: address, topUp: { required: { sat, inputs: coins.length }, heldSat: plan.topUp?.heldSat } };
+    return { ...withQuotedFees(plan, quote), exitFeeAddress: address, topUp: { required: { sat, inputs: coins.length }, heldSat: plan.topUp?.heldSat } };
   }
 }
 

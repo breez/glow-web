@@ -291,7 +291,7 @@ describe('an exit holding a leaf it left out in the wallet list', () => {
     plan([tx({ txid: 's', kind: 'sweep', status: confirmed(9) })], {
       namedLeaves: [
         { leafId: 'leaf-1', valueSats: 100_000 },
-        { leafId: 'c-9', valueSats: 30_000 },
+        { leafId: 'c-9', valueSats: 30_000, feeSat: 1_000 },
       ],
       ...over,
     });
@@ -303,7 +303,8 @@ describe('an exit holding a leaf it left out in the wallet list', () => {
 
   it('says what to send while one waits on more exit fee, then waits on its confirmation, then on Glow', () => {
     const at = (coins: ReturnType<typeof coin>[]) => row({ pending: null, plan: asking(), pendingCoins: coins });
-    expect(at([])).toMatchObject({ id: 'active', kind: 'active', title: 'Waiting for exit fee', subtitle: 'Send ₿3 000 more', amountSat: 99_800 });
+    // The leaf still to build counts at its value less its fee.
+    expect(at([])).toMatchObject({ id: 'active', kind: 'active', title: 'Waiting for exit fee', subtitle: 'Send ₿3 000 more', amountSat: 128_800 });
     expect(at([coin(3_000, false)])).toMatchObject({ title: 'Exit fee sent', subtitle: 'Waiting for a confirmation' });
     expect(at([coin(3_000)])).toMatchObject({ title: 'Exit fee received', subtitle: null });
     expect(at([coin(3_000)]).isAction).toBeFalsy();

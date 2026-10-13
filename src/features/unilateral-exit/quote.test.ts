@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { RecoverFundsLeaf, SkippedLeaf } from '@breeztech/breez-sdk-spark';
-import { planFromBuild, planFromExitResponse } from './driver';
+import { leftoverIdsOf, planFromBuild, planFromExitResponse } from './driver';
 import { deriveFundingKey } from './funding';
 import {
   builtExitFeeRecord,
   builtSweepFeeSat,
   exitFeeRecordOf,
   exitFeeSat,
+  leafFeesSat,
   leftOutSat,
   needsFunding,
   quoteFigures,
@@ -69,8 +70,9 @@ describe('willReceiveSat', () => {
     expect(willReceiveSat(quote)).toBe(598_795);
   });
 
-  it('takes only the co-signed fee of what was built, so a leaf the operators did not co-sign costs nothing', () => {
-    // Two co-signed leaves quoted at 1 450 each; the build co-signed one.
+  it('takes only the co-signed fee of what was built, leaving out a leaf whose recovery landed before the build', () => {
+    // Two co-signed leaves quoted at 1 450 each. The build co-signed one and did
+    // not list the other as failed, so that one's recovery is already in a block.
     const quote = prepared({ leaves: cosigned, recoverableValueSats: 48_200, sweepFeeSats: 0, cooperativeFeeSats: 2_900, funding: undefined });
     const built = checked([{ txid: 'c1', kind: 'cooperative', nodeId: 'c-1' }], {
       leaves: [cosigned[0]],
@@ -78,8 +80,58 @@ describe('willReceiveSat', () => {
       cooperativeFeeSats: 1_450,
       sweepFeeSats: 0,
     });
-    expect(builtSweepFeeSat(quote, built, null)).toBe(1_450);
-    expect(willReceiveSat(planFromBuild(quote, built, null, { network: 'mainnet', fundingAddressIndex: 0 }))).toBe(28_550);
+    expect(builtSweepFeeSat(quote, built)).toBe(1_450);
+    const started = planFromBuild(quote, built, null, { network: 'mainnet', fundingAddressIndex: 0 });
+    expect(willReceiveSat(started)).toBe(28_550);
+    expect(leftoverIdsOf(started)).toEqual([]);
+  });
+
+  it('counts a leaf the operators did not co-sign at its value less its share of the fee, so the exit starts at the quote', () => {
+    const quote = prepared({ leaves: cosigned, recoverableValueSats: 48_200, sweepFeeSats: 0, cooperativeFeeSats: 2_900, funding: undefined });
+    const built = checked([{ txid: 'c1', kind: 'cooperative', nodeId: 'c-1' }], {
+      leaves: [cosigned[0]],
+      failed: [{ leafId: 'c-2', outputTxid: 'o', outputVout: 0, error: { type: 'operatorsUnavailable', message: 'down' } }],
+      recoverableValueSats: 30_000,
+      cooperativeFeeSats: 1_450,
+      sweepFeeSats: 0,
+    });
+    const started = planFromBuild(quote, built, null, { network: 'mainnet', fundingAddressIndex: 0 });
+    expect(started.namedLeaves).toContainEqual({ leafId: 'c-2', valueSats: 18_200, feeSat: 1_450 });
+    expect(willReceiveSat(started)).toBe(willReceiveSat(quote));
+    expect(willReceiveSat(started)).toBe(45_300);
+  });
+
+  it('takes the fee of a leaf a rebuild no longer co-signed off only once', () => {
+    const quote = prepared({ leaves: cosigned, recoverableValueSats: 48_200, sweepFeeSats: 0, cooperativeFeeSats: 2_900, funding: undefined });
+    const both = checked(
+      [
+        { txid: 'c1', kind: 'cooperative', nodeId: 'c-1' },
+        { txid: 'c2', kind: 'cooperative', nodeId: 'c-2' },
+      ],
+      { leaves: cosigned, recoverableValueSats: 48_200, cooperativeFeeSats: 2_900, sweepFeeSats: 0 },
+    );
+    const started = planFromBuild(quote, both, null, { network: 'mainnet', fundingAddressIndex: 0 });
+    const rebuilt = checked([{ txid: 'c1-again', kind: 'cooperative', nodeId: 'c-1' }], {
+      leaves: [cosigned[0]],
+      failed: [{ leafId: 'c-2', outputTxid: 'o', outputVout: 0, error: { type: 'operatorsUnavailable', message: 'down' } }],
+      recoverableValueSats: 30_000,
+      cooperativeFeeSats: 1_450,
+      sweepFeeSats: 0,
+    });
+    const next = planFromBuild(quote, rebuilt, started, { network: 'mainnet', fundingAddressIndex: 0 });
+    expect(willReceiveSat(started)).toBe(45_300);
+    expect(willReceiveSat(next)).toBe(45_300);
+  });
+
+  it('does not count a leaf again once a ledger entry covers it, though the plan still names it', () => {
+    const finished = plan([tx({ txid: 's', kind: 'sweep' })], {
+      namedLeaves: [
+        { leafId: 'leaf-1', valueSats: 100_000 },
+        { leafId: 'c-9', valueSats: 30_000, feeSat: 1_000 },
+      ],
+      landed: [{ leafIds: ['c-9'], valueSat: 30_000, txid: 'c9', paidSat: 29_000, blockHeight: 9 }],
+    });
+    expect(willReceiveSat(finished)).toBe(99_800 + 29_000);
   });
 
   it('reports what a confirmed sweep actually paid', () => {
@@ -102,6 +154,20 @@ describe('willReceiveSat', () => {
       ],
     });
     expect(willReceiveSat(rebuilt)).toBe(599_785 + 39_000);
+  });
+});
+
+describe('leafFeesSat', () => {
+  it('splits the co-signed fee over the co-signed leaves and the sweep fee over the rest, rounding up', () => {
+    const quote = prepared({ leaves: [...stranded, ...cosigned], sweepFeeSats: 1_101, cooperativeFeeSats: 2_901 });
+    expect(leafFeesSat(quote)).toEqual(
+      new Map([
+        ['s-1', 551],
+        ['s-2', 551],
+        ['c-1', 1_451],
+        ['c-2', 1_451],
+      ]),
+    );
   });
 });
 

@@ -7,6 +7,7 @@ import type { ChainUtxo, FeeRates } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { destinationErrorMessage } from '@/utils/destinationAddress';
 import {
+  asKeptRecovery,
   awaitsUpdate,
   buildFromQuote,
   buildLeftover,
@@ -512,7 +513,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
       // tracker of the exit's and hold up no exit.
       if (!plan && mode === 'recover' && response.transactions.every(isCooperative)) {
         keepRecovery(walletKey, built);
-        setSentSat(willReceiveSat(built));
+        setSentSat(willReceiveSat(asKeptRecovery(built)));
         setPhase('sent');
         return;
       }

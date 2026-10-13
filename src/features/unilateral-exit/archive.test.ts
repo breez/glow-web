@@ -237,9 +237,22 @@ describe('archiveExit', () => {
     expect(record.recoverableFundsSat).toBeUndefined();
   });
 
-  it('keeps the part of an exit that was outside the balance when it began', () => {
+  it('keeps the part a plan from before recoverableLeafIds recorded as outside the balance', () => {
     archiveExit(wallet, { ...finished('sweep-f', 150_000), recoverableFundsSat: 48_200 });
     expect(loadArchive(wallet)[0].recoverableFundsSat).toBe(48_200);
+  });
+
+  it('counts only what landed of the leaves outside the balance, so one let go reduces nothing', () => {
+    archiveExit(
+      wallet,
+      plan([tx({ txid: 'sweep-a', kind: 'sweep', txHex: '00', status: confirmed(10) })], {
+        phase: 'complete',
+        // c-1 was let go and never landed; c-2 landed on its own recovery.
+        recoverableLeafIds: ['c-1', 'c-2'],
+        landed: [paid('sweep-a', ['leaf-1'], 100_000, 99_000), paid('coop-2', ['c-2'], 18_200, 17_000)],
+      }),
+    );
+    expect(loadArchive(wallet)[0]).toMatchObject({ exitedSat: 118_200, deliveredSat: 116_000, recoverableFundsSat: 18_200 });
   });
 
   it('does not count a leaf the watchtower moved mid-exit as recoverable funds', () => {
@@ -250,6 +263,8 @@ describe('archiveExit', () => {
       ],
       {
         phase: 'complete',
+        // Both leaves were balance when the exit began.
+        recoverableLeafIds: [],
         exit: {
           recoverableValueSats: 600_000,
           leaves: [
@@ -305,6 +320,7 @@ describe('an exit that built what it left out', () => {
         destination: 'bc1qmine',
         quotedExitFeeSat: 5_000,
         exitFeeAddress: key.address,
+        recoverableLeafIds: leftover === 'c-9' ? ['c-9'] : [],
         namedLeaves: [
           { leafId: 'leaf-1', valueSats: 100_000 },
           { leafId: leftover, valueSats: leftover === 'c-9' ? 30_000 : 50_000 },
@@ -323,7 +339,7 @@ describe('an exit that built what it left out', () => {
     localStorage.setItem('walletMnemonic', MNEMONIC);
   });
 
-  it('keeps a co-signed leftover built into it as part of one record, under the sweep', async () => {
+  it('keeps a co-signed leftover built into it as part of one record, under the sweep and as recoverable funds', async () => {
     const recoverFunds = async () =>
       checked([{ txid: 'c9', kind: 'cooperative', nodeId: 'c-9', txHex: rawTx([`${txidOf(5)}:2`], [29_000]), status: { type: 'unverified' } }], {
         leaves: [coLeaf],
@@ -333,7 +349,15 @@ describe('an exit that built what it left out', () => {
     const paid = chain({ confirmedSpender: async () => ({ txid: 'c9', blockHeight: 95, outputs: [{ address: 'bc1qmine', value: 29_000 }] }) });
     const second = await advanceUnilateralExit(first.plan, paid, done(95), '02abc');
 
-    expect(await archived(second.plan)).toMatchObject({ id: 'sweep', txids: ['sweep', 'c9'], deliveredSat: 128_000, exitedSat: 130_000, exitFeePaidSat: 5_000 });
+    // Outside the balance when the exit began, though built only on a retry.
+    expect(await archived(second.plan)).toMatchObject({
+      id: 'sweep',
+      txids: ['sweep', 'c9'],
+      deliveredSat: 128_000,
+      exitedSat: 130_000,
+      recoverableFundsSat: 30_000,
+      exitFeePaidSat: 5_000,
+    });
   });
 
   it('keeps an exit continued by a unilateral leftover as one record, both sweeps listed and the top-up in its fee', async () => {

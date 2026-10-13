@@ -31,7 +31,10 @@ interface V4Exit {
 }
 
 export interface V4Plan
-  extends Omit<UnilateralExitPlan, 'version' | 'exit' | 'namedLeaves' | 'recoverableFundsSat' | 'needsRebuild' | 'needsSignIn'> {
+  extends Omit<
+    UnilateralExitPlan,
+    'version' | 'exit' | 'namedLeaves' | 'recoverableLeafIds' | 'recoverableFundsSat' | 'needsRebuild' | 'needsSignIn'
+  > {
   version: 4;
   exit: V4Exit;
 }

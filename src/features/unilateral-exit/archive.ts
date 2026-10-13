@@ -87,6 +87,14 @@ export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): Archiv
   // takes in every confirmed coin there, the exit's own change included, so
   // summing those counts the same sats twice.
   const { quotedExitFeeSat, exitFeeAddress } = exitFeeRecordOf(plan);
+  // What landed of the leaves outside the balance when the exit began. Not the
+  // final build's co-signed part: a leaf the watchtower moved mid-exit comes
+  // back co-signed, and was balance. A plan from before `recoverableLeafIds`
+  // has only its first build's figure, capped at what exited.
+  const outside = new Set(plan.recoverableLeafIds ?? []);
+  const recoverableSat = plan.recoverableLeafIds
+    ? paidOut((plan.landed ?? []).filter(entry => entry.leafIds.length > 0 && entry.leafIds.every(id => outside.has(id)))).valueSat
+    : Math.min(plan.recoverableFundsSat ?? 0, valueSat);
   const next = [
     {
       id,
@@ -95,10 +103,7 @@ export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): Archiv
       completedAt: Date.now(),
       network: plan.network,
       exitedSat: valueSat,
-      // Not the final build's co-signed part: a leaf the watchtower moved
-      // mid-exit is co-signed back, and was still part of the balance exited.
-      // Capped, since part of what was outside the balance may not have landed.
-      recoverableFundsSat: plan.mode === 'recover' ? undefined : Math.min(plan.recoverableFundsSat ?? 0, valueSat) || undefined,
+      recoverableFundsSat: plan.mode === 'recover' ? undefined : recoverableSat || undefined,
       exitFeePaidSat: quotedExitFeeSat,
       exitFeeAddress,
       mode: plan.mode,

@@ -5,7 +5,7 @@ import type {
   RecoveryTransaction,
 } from '@breeztech/breez-sdk-spark';
 import { outputTotalSat } from '@/utils/rawTx';
-import type { Landing, UnilateralExitPlan } from './driver';
+import type { Landing, NamedLeaf, UnilateralExitPlan } from './driver';
 import { fundingAddressOf } from './funding';
 
 // Everything read off a quote, for Recover Funds and the Unilateral Exit alike:
@@ -20,9 +20,9 @@ export const isCooperative = (tx: RecoveryTransaction): boolean => tx.kind === '
 /** A leaf the operators co-sign out. A stranded leaf quotes like a balance one. */
 export const isCooperativeLeaf = (leaf: RecoverFundsLeaf): boolean => leaf.method === 'cooperative';
 
-/** The part of a quote or an exit that lies outside the balance. */
-export const cooperativeValueSat = (exit: Quote | RecoverFundsResponse): number =>
-  exit.leaves.filter(isCooperativeLeaf).reduce((sum, leaf) => sum + leaf.valueSats, 0);
+/** The part of a quote that lies outside the balance. */
+const cooperativeValueSat = (quote: Quote): number =>
+  quote.leaves.filter(isCooperativeLeaf).reduce((sum, leaf) => sum + leaf.valueSats, 0);
 
 /**
  * What the funding pays, from another wallet. The SDK leaves funding unset when
@@ -76,9 +76,39 @@ export function quotedSweepFeeSat(quote: Quote, resuming: UnilateralExitPlan | n
  * The same figure once `built`: its co-signed fee leaves out the leaves the
  * operators did not co-sign. The sweep's stays the quote's, since the built
  * sweep also spends the funding's change, and its fee pays for those inputs too.
+ * `floorSat` is what a rebuild carries over.
  */
-export function builtSweepFeeSat(quote: Quote, built: RecoverFundsResponse, resuming: UnilateralExitPlan | null): number {
-  return Math.max(quote.sweepFeeSats + built.cooperativeFeeSats, resuming?.quotedSweepFeeSat ?? 0);
+export function builtSweepFeeSat(quote: Quote, built: RecoverFundsResponse, floorSat = 0): number {
+  return Math.max(quote.sweepFeeSats + built.cooperativeFeeSats, floorSat);
+}
+
+/**
+ * What `quote` puts on each of its leaves. The SDK quotes these fees only in
+ * total, so each co-signed leaf takes an even share of the co-signed fee, and
+ * each other leaf of the sweep's.
+ */
+export function leafFeesSat(quote: Quote): Map<string, number> {
+  const cosigned = quote.leaves.filter(isCooperativeLeaf).length;
+  const others = quote.leaves.length - cosigned;
+  return new Map(
+    quote.leaves.map(leaf => [
+      leaf.leafId,
+      isCooperativeLeaf(leaf) ? Math.ceil(quote.cooperativeFeeSats / cosigned) : Math.ceil(quote.sweepFeeSats / others),
+    ]),
+  );
+}
+
+/**
+ * Leaves of `named` that no build holds and no ledger entry covers. It
+ * defaults to `namedLeaves` alone, which loses no value: `namedLeavesOf` adds
+ * a plan's failed leaves from before `namedLeaves`, and gives them none.
+ */
+export function unbuiltLeaves(plan: UnilateralExitPlan, named: NamedLeaf[] = plan.namedLeaves ?? []): NamedLeaf[] {
+  const accounted = new Set([
+    ...plan.exit.leaves.map(leaf => leaf.leafId),
+    ...(plan.landed ?? []).flatMap(entry => entry.leafIds),
+  ]);
+  return named.filter(leaf => !accounted.has(leaf.leafId));
 }
 
 /** Ledger entries of builds the plan replaced: none of this build's leaves or transactions. */
@@ -116,7 +146,8 @@ export function paidOut(entries: Landing[]): PaidOut {
 /**
  * What the destination address ends up with: the value moved less what comes
  * off it, until the sweep and any co-signed recoveries confirm and the figure
- * is read off them, plus what builds the plan replaced already paid it. The
+ * is read off them. Each leaf no build holds yet adds its value less what its
+ * quote put on it, and builds the plan replaced add what they paid. The
  * funding is not counted: it pays the other fees, and what it has left comes
  * back only if the sweep Glow built is the one that lands.
  */
@@ -130,7 +161,8 @@ export function willReceiveSat(exit: Quote | UnilateralExitPlan, resuming: Unila
   const current = landed
     ? outputs.reduce<number>((sum, sat) => sum + (sat ?? 0), 0)
     : Math.max(0, exit.exit.recoverableValueSats - exit.quotedSweepFeeSat);
-  return current + paidOut(priorLandings(exit)).paidSat;
+  const unbuilt = unbuiltLeaves(exit).reduce((sum, leaf) => sum + Math.max(0, leaf.valueSats - (leaf.feeSat ?? 0)), 0);
+  return current + unbuilt + paidOut(priorLandings(exit)).paidSat;
 }
 
 /** Whether a quote moves anything worth more than it costs to move. */
