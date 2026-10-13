@@ -10,6 +10,7 @@ import {
   type UnilateralExitEngineState,
 } from '../engine';
 import { createChainClient } from '@/services/chain';
+import { useLatest } from '@/hooks/useLatest';
 
 /** The engine as it stands, re-rendering on every pass. */
 export function useUnilateralExitEngineState(): UnilateralExitEngineState {
@@ -21,17 +22,21 @@ export function useUnilateralExitEngineState(): UnilateralExitEngineState {
 /**
  * Runs the engine for the connected wallet for as long as the app is open: an
  * exit's steps become sendable days apart, whether or not its page is showing.
+ * `refreshWallet` reads getInfo again, false when it could not.
  */
 export function useUnilateralExitEngineLifecycle(
   identityPubkey: string | undefined,
   network: string | undefined,
   sdk?: BreezSdk | null,
+  refreshWallet?: () => Promise<boolean>,
 ): void {
+  const refresh = useLatest(refreshWallet);
   useEffect(() => {
     if (!identityPubkey || !network) return;
-    startUnilateralExitEngine({ identityPubkey, network }, createChainClient(network), sdk);
+    const reread = () => refresh.current?.() ?? Promise.resolve(true);
+    startUnilateralExitEngine({ identityPubkey, network }, createChainClient(network), sdk, reread);
     return () => stopUnilateralExitEngine();
-  }, [identityPubkey, network, sdk]);
+  }, [identityPubkey, network, sdk, refresh]);
 
   useEffect(() => {
     const onVisible = () => {

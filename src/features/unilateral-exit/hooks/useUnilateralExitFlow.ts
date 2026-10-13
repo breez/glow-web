@@ -45,6 +45,7 @@ import {
   advanceNow,
   excludedLeafIds,
   keepRecovery,
+  noteDropped,
   setPendingExit,
   setUnilateralExitPlan,
   type UnilateralExitEngineState,
@@ -197,7 +198,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
   );
   const chain = useMemo(() => createChainClient(network), [network]);
   const engine = useUnilateralExitEngineState();
-  const { plan, pending, pendingCoins, recoveries, archive, tipHeight } = engine;
+  const { plan, pending, pendingCoins, recoveries, archive, accounting, tipHeight } = engine;
   // Every bump branch keys on the prop, so a bump never falls through to the
   // exit's quote or plan slot, whether or not its recovery is still there.
   const bumping = !!bumpTxid;
@@ -349,10 +350,14 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
           ? await quoteRecoveryBump(wallet, bumpTarget, effectiveFeeRate)
           : plan
             ? await quoteNamed(wallet, plan, at)
-            : await quoteFresh(wallet, at, mode, excludedLeafIds({ recoveries, archive }));
+            : await quoteFresh(wallet, at, mode, excludedLeafIds({ recoveries, archive, accounting }));
       if (request !== quoteRequest.current) return;
       setQuote(prepared);
       setQuotedAt(Date.now());
+      if (walletKey && mode === 'recover' && !plan && !bumping) {
+        const dropped = prepared.skipped.filter(leaf => leaf.reason.type === 'notRecoverable');
+        noteDropped(walletKey, dropped.map(({ leafId, valueSats }) => ({ leafId, valueSats })));
+      }
       // Preparing records a recovery the SDK finds in a block, but the total only
       // drops at the next sync, so until then the row still offers those funds.
       if (mode === 'recover' && !plan && prepared.leaves.length === 0 && prepared.skipped.length === 0) {
@@ -366,7 +371,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
     } finally {
       if (request === quoteRequest.current) setIsQuoting(false);
     }
-  }, [wallet, destination, effectiveFeeRate, walletKey, plan, mode, recoveries, archive, bumping, bumpTarget]);
+  }, [wallet, destination, effectiveFeeRate, walletKey, plan, mode, recoveries, archive, accounting, bumping, bumpTarget]);
 
   const submitFee = useCallback(async () => {
     setPhase('quote');

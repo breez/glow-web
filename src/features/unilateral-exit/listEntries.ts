@@ -7,15 +7,15 @@ import {
   isPendingFunded,
   isUnilateralLanded,
   leftoverTopUp,
-  namedLeavesOf,
   nextAction,
   pendingTopUp,
   planProgress,
   type PendingExit,
   type UnilateralExitPlan,
 } from './driver';
-import { isCooperativeLeaf, willReceiveSat } from './quote';
+import { isCooperativeLeaf, unbuiltLeaves, willReceiveSat } from './quote';
 import { recoveryTxid, type ArchivedExit } from './archive';
+import { landedLeavesOf, unsettledLeaves } from './accounting';
 import type { UnilateralExitEngineState } from './engine';
 
 /**
@@ -148,35 +148,29 @@ function branchOnChain(plan: UnilateralExitPlan, leafId: string): boolean {
  * build holds, skipped or not co-signed, has left it too.
  */
 function planLeavesOutside(plan: UnilateralExitPlan): Map<string, number> {
-  const built = new Map(plan.exit.leaves.map(leaf => [leaf.leafId, leaf]));
-  const outside = new Map<string, number>();
-  for (const { leafId, valueSats } of namedLeavesOf(plan)) {
-    const leaf = built.get(leafId);
-    const counted = !leaf || isCooperativeLeaf(leaf) || plan.mode === 'recover' || branchOnChain(plan, leafId);
-    if (counted) outside.set(leafId, leaf?.valueSats ?? valueSats);
+  const outside = new Map(unbuiltLeaves(plan).map(leaf => [leaf.leafId, leaf.valueSats]));
+  for (const leaf of plan.exit.leaves) {
+    const counted = isCooperativeLeaf(leaf) || plan.mode === 'recover' || branchOnChain(plan, leaf.leafId);
+    if (counted) outside.set(leaf.leafId, leaf.valueSats);
   }
   return outside;
 }
 
 /**
  * What getInfo's recoverable total holds that is accounted for already: what
- * the plan and the kept recoveries are moving or have landed, which getInfo
- * counts until a sync sees it in a block, and the leaves any of them or a
- * finished exit dropped as unrecoverable, which getInfo goes on counting.
+ * the plan and the kept recoveries are moving, what any record landed that no
+ * sync has recounted since, and the leaves any record dropped as unrecoverable,
+ * which getInfo goes on counting.
  */
-function accountedSat({ plan, recoveries, archive }: UnilateralExitEngineState): number {
+function accountedSat(state: UnilateralExitEngineState): number {
+  const { plan, recoveries, archive, accounting } = state;
   const accounted = plan ? planLeavesOutside(plan) : new Map<string, number>();
   for (const leaf of inFlight(recoveries).flatMap(heldRecoveryLeaves)) accounted.set(leaf.leafId, leaf.valueSats);
-  for (const record of [plan, ...recoveries, ...archive]) {
-    for (const leaf of record?.droppedLeaves ?? []) accounted.set(leaf.leafId, leaf.valueSats);
+  for (const record of [plan, ...recoveries]) {
+    for (const leaf of record ? landedLeavesOf(record) : []) accounted.delete(leaf.leafId);
   }
-  // An entry holds one value for all its leaves: what the leaves already
-  // counted leave of it goes on the first one not yet counted.
-  for (const entry of [plan, ...recoveries].flatMap(record => record?.landed ?? [])) {
-    const fresh = entry.leafIds.filter(id => !accounted.has(id));
-    const counted = entry.leafIds.reduce((sum, id) => sum + (accounted.get(id) ?? 0), 0);
-    fresh.forEach((id, i) => accounted.set(id, i === 0 ? Math.max(0, entry.valueSat - counted) : 0));
-  }
+  const dropped = [plan, ...recoveries, ...archive, accounting].flatMap(record => record?.droppedLeaves ?? []);
+  for (const leaf of [...unsettledLeaves(state), ...dropped]) accounted.set(leaf.leafId, leaf.valueSats);
   return [...accounted.values()].reduce((sum, sat) => sum + sat, 0);
 }
 
@@ -228,8 +222,8 @@ const liveEntry = (state: UnilateralExitEngineState): UnilateralExitEntry | null
 /**
  * The group's rows: kept co-signed recoveries, the exit's live row, what is
  * left to recover, then finished exits. getInfo's `recoverableSat` counts
- * in-flight leaves until they confirm, so the Recoverable Funds row shows only
- * what the exit and the kept recoveries leave of it.
+ * in-flight leaves, and landed ones until a sync recounts, so the Recoverable
+ * Funds row shows only what the records and their accounting leave of it.
  */
 export function unilateralExitEntries(
   state: UnilateralExitEngineState,

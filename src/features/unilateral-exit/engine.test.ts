@@ -2,8 +2,10 @@ import {
   advanceNow,
   cancelPendingExit,
   dismissUnilateralExitPlan,
+  excludedLeafIds,
   getUnilateralExitState,
   keepRecovery,
+  noteDropped,
   pollIntervalMs,
   setPendingExit,
   setUnilateralExitPlan,
@@ -13,6 +15,7 @@ import {
 } from './engine';
 import { loadPendingExit, loadPlan, loadRecoveries, saveRecoveries, type UnilateralExitPlan } from './driver';
 import { loadArchive } from './archive';
+import { loadAccounting } from './accounting';
 import { deriveFundingKey } from './funding';
 import { checked, coin, confirmed, MNEMONIC, pendingExit, plan, prepared, rawTx, ready, sdk, tx, txidOf } from './testFixtures';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -36,6 +39,21 @@ const swept = (status = confirmed(1)) => [
 ];
 
 const done = plan(swept(), { network: 'regtest', phase: 'complete' });
+
+/** Runs `body` while the accounting cannot be saved, as when storage is full. */
+async function withAccountingUnsaved(body: () => Promise<void>): Promise<void> {
+  const setItem = vi.mocked(localStorage.setItem);
+  const store = setItem.getMockImplementation();
+  setItem.mockImplementation((key, value) => {
+    if (key.startsWith('unilateral-exit-accounting:')) throw new DOMException('quota', 'QuotaExceededError');
+    store?.(key, value);
+  });
+  try {
+    await body();
+  } finally {
+    if (store) setItem.mockImplementation(store);
+  }
+}
 
 describe('the plan the engine holds', () => {
   beforeEach(() => {
@@ -297,7 +315,10 @@ describe('kept co-signed recoveries', () => {
     expect(loadRecoveries(wallet)).toEqual([]);
     expect(loadArchive(wallet)).toEqual([expect.objectContaining({ id: 'c1', mode: 'recover', deliveredSat: 29_000 })]);
     expect(getUnilateralExitState().archive).toHaveLength(1);
+    await vi.waitFor(() => expect(getUnilateralExitState().settledLeafIds).toContain('c-1'));
     expect(syncWallet).toHaveBeenCalledTimes(1);
+    expect(getUnilateralExitState().accounting.unsettledLeaves).toEqual([]);
+    expect(loadAccounting(wallet).unsettledLeaves).toEqual([]);
   });
 
   it('archive the replacement that confirmed in place of one, with what it paid', async () => {
@@ -459,6 +480,24 @@ describe('kept co-signed recoveries', () => {
       await vi.waitFor(() => expect(getUnilateralExitState().recoveries).toEqual([]));
       expect(loadRecoveries(wallet)).toEqual([]);
       expect(loadArchive(wallet)).toEqual([]);
+      // Kept hidden still, since getInfo goes on counting it.
+      expect(loadAccounting(wallet).droppedLeaves).toEqual([{ leafId: 'c-1', valueSats: 30_000 }]);
+      expect(getUnilateralExitState().accounting.droppedLeaves).toEqual([{ leafId: 'c-1', valueSats: 30_000 }]);
+    });
+
+    it('keeps a finished recovery until what it accounted for is stored, then retires it', async () => {
+      const skipped = [{ leafId: 'c-1', valueSats: 30_000, reason: { type: 'notRecoverable' as const, message: 'paid elsewhere' } }];
+      saveRecoveries(wallet, [stuck()]);
+      await withAccountingUnsaved(async () => {
+        startUnilateralExitEngine(wallet, chain, sdk({ prepareRecoverFunds: quoting({ leaves: [], skipped }) }));
+        await vi.waitFor(() => expect(getUnilateralExitState().recoveries[0]?.phase).toBe('complete'));
+        expect(loadRecoveries(wallet)).toHaveLength(1);
+      });
+
+      await advanceNow();
+      expect(getUnilateralExitState().recoveries).toEqual([]);
+      expect(loadRecoveries(wallet)).toEqual([]);
+      expect(loadAccounting(wallet).droppedLeaves).toEqual([{ leafId: 'c-1', valueSats: 30_000 }]);
     });
 
     it('are polled about once a block, and at the usual pace again once something can move', async () => {
@@ -560,6 +599,13 @@ describe('a fresh quote beside finished exits', () => {
       expect.objectContaining({ selection: { type: 'specific', leafIds: ['leaf-1'] } }),
     );
   });
+
+  it('leaves out the leaves a Recover Funds quote found unrecoverable', () => {
+    startUnilateralExitEngine(wallet, chain);
+    noteDropped(wallet, [{ leafId: 'd-1', valueSats: 5_000 }]);
+    expect(loadAccounting(wallet).droppedLeaves).toEqual([{ leafId: 'd-1', valueSats: 5_000 }]);
+    expect(excludedLeafIds(getUnilateralExitState())).toContain('d-1');
+  });
 });
 
 describe('a pass over an exit', () => {
@@ -582,7 +628,44 @@ describe('a pass over an exit', () => {
     startUnilateralExitEngine(wallet, chain, driver);
     await vi.waitFor(() => expect(getUnilateralExitState().plan).toBeNull());
     expect(loadArchive(wallet)).toEqual([expect.objectContaining({ id: 's', deliveredSat: 99_000, txids: ['s'] })]);
+    await vi.waitFor(() => expect(getUnilateralExitState().settledLeafIds).toContain('leaf-1'));
     expect(syncWallet).toHaveBeenCalledTimes(1);
+    expect(getUnilateralExitState().accounting.unsettledLeaves).toEqual([]);
+    expect(loadAccounting(wallet).unsettledLeaves).toEqual([]);
+  });
+
+  it('keeps hidden a leaf a rebuild found unrecoverable, once the exit ends having paid nothing', async () => {
+    const skipped = [{ leafId: 'leaf-1', valueSats: 100_000, reason: { type: 'notRecoverable' as const, message: 'paid elsewhere' } }];
+    const driver = sdk({
+      checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: { type: 'redo', reason: 'onChainStateDiverged' } }),
+      prepareRecoverFunds: async () => prepared({ leaves: [], skipped }),
+    });
+    setUnilateralExitPlan(wallet, plan([tx({ txid: 'a' })], { network: 'regtest' }));
+    startUnilateralExitEngine(wallet, chain, driver);
+    await vi.waitFor(() => expect(getUnilateralExitState().plan).toBeNull());
+    expect(loadPlan(wallet)).toBeNull();
+    expect(loadArchive(wallet)).toEqual([]);
+    expect(loadAccounting(wallet).droppedLeaves).toEqual([{ leafId: 'leaf-1', valueSats: 100_000 }]);
+    expect(excludedLeafIds(getUnilateralExitState())).toContain('leaf-1');
+  });
+
+  it('keeps a finished exit until what it accounted for is stored, then retires it', async () => {
+    const skipped = [{ leafId: 'leaf-1', valueSats: 100_000, reason: { type: 'notRecoverable' as const, message: 'paid elsewhere' } }];
+    const driver = sdk({
+      checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: { type: 'redo', reason: 'onChainStateDiverged' } }),
+      prepareRecoverFunds: async () => prepared({ leaves: [], skipped }),
+    });
+    await withAccountingUnsaved(async () => {
+      setUnilateralExitPlan(wallet, plan([tx({ txid: 'a' })], { network: 'regtest' }));
+      startUnilateralExitEngine(wallet, chain, driver);
+      await vi.waitFor(() => expect(getUnilateralExitState().plan?.phase).toBe('complete'));
+      expect(loadPlan(wallet)?.droppedLeaves).toEqual([{ leafId: 'leaf-1', valueSats: 100_000 }]);
+    });
+
+    await advanceNow();
+    expect(getUnilateralExitState().plan).toBeNull();
+    expect(loadPlan(wallet)).toBeNull();
+    expect(loadAccounting(wallet).droppedLeaves).toEqual([{ leafId: 'leaf-1', valueSats: 100_000 }]);
   });
 
   it('keeps a finished exit until what paid it out is read, and archives it on the pass that reads it', async () => {
@@ -670,7 +753,7 @@ describe('an exit holding a leaf it left out', () => {
     stopUnilateralExitEngine();
   });
 
-  it('keeps it in its slot on the done verdict, archiving nothing and syncing nothing', async () => {
+  it('keeps it in its slot on the done verdict, archiving nothing, and syncs once for the leaf it landed', async () => {
     const syncWallet = vi.fn(async () => ({}));
     const prepareRecoverFunds = vi.fn(async () =>
       prepared({ leaves: [], skipped: [{ leafId: 'c-9', valueSats: 30_000, reason: { type: 'unverified' } }] }),
@@ -691,7 +774,15 @@ describe('an exit holding a leaf it left out', () => {
     expect(getUnilateralExitState().plan?.phase).toBe('active');
     expect(loadPlan(wallet)?.phase).toBe('active');
     expect(loadArchive(wallet)).toEqual([]);
-    expect(syncWallet).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(getUnilateralExitState().settledLeafIds).toContain('leaf-1'));
+    expect(syncWallet).toHaveBeenCalledTimes(1);
+
+    // Ending, it hands on no leaf that sync already recounted.
+    setUnilateralExitPlan(wallet, { ...getUnilateralExitState().plan!, phase: 'complete' });
+    await vi.waitFor(() => expect(getUnilateralExitState().plan).toBeNull());
+    await advanceNow();
+    expect(loadAccounting(wallet).unsettledLeaves).toEqual([]);
+    expect(syncWallet).toHaveBeenCalledTimes(1);
   });
 
   it('reads the fee address of one waiting on more exit fee before each pass, and passes the coins in', async () => {
@@ -768,5 +859,217 @@ describe('an exit holding a leaf it left out', () => {
     );
     expect(getUnilateralExitState().recoveries[0].namedLeaves).toEqual([{ leafId: 'c-1', valueSats: 30_000 }]);
     expect(loadRecoveries(wallet)[0].namedLeaves).toEqual([{ leafId: 'c-1', valueSats: 30_000 }]);
+  });
+});
+
+describe('settling what landed', () => {
+  /** Leaves an ended record landed that no sync has recounted, as a run before this one left them. */
+  const leaveUnsettled = (target: typeof wallet, ...leafIds: string[]) =>
+    localStorage.setItem(
+      `unilateral-exit-accounting:${target.identityPubkey.slice(0, 16)}:${target.network}`,
+      JSON.stringify({ droppedLeaves: [], unsettledLeaves: leafIds.map(leafId => ({ leafId, valueSats: 100_000 })) }),
+    );
+  const held = () => {
+    let release: () => void = () => {};
+    let refuse: (e: Error) => void = () => {};
+    const promise = new Promise<object>((resolve, reject) => {
+      release = () => resolve({});
+      refuse = reject;
+    });
+    return { promise, release, refuse };
+  };
+  const settle = async () => {
+    for (let i = 0; i < 5; i++) await new Promise(resolve => setTimeout(resolve, 0));
+  };
+  const unsettledIds = (target = wallet) => loadAccounting(target).unsettledLeaves.map(leaf => leaf.leafId);
+
+  beforeEach(() => {
+    localStorage.clear();
+    stopUnilateralExitEngine();
+  });
+
+  afterEach(() => {
+    stopUnilateralExitEngine();
+  });
+
+  it('syncs once at start for what an ended record left unsettled, then forgets it', async () => {
+    const syncWallet = vi.fn(async () => ({}));
+    leaveUnsettled(wallet, 'leaf-1');
+    startUnilateralExitEngine(wallet, chain, sdk({ syncWallet }));
+    await vi.waitFor(() => expect(getUnilateralExitState().settledLeafIds).toContain('leaf-1'));
+    expect(syncWallet).toHaveBeenCalledTimes(1);
+    expect(unsettledIds()).toEqual([]);
+  });
+
+  it('settles on a sync that rejects while it runs, since the recount came first, and stops polling', async () => {
+    const setInterval = vi.spyOn(globalThis, 'setInterval');
+    const clearInterval = vi.spyOn(globalThis, 'clearInterval');
+    try {
+      const syncWallet = vi.fn(async () => {
+        throw new Error('exit chain collection failed');
+      });
+      leaveUnsettled(wallet, 'leaf-1');
+      startUnilateralExitEngine(wallet, chain, sdk({ syncWallet }));
+      const timer = setInterval.mock.results[setInterval.mock.results.length - 1]?.value;
+      await vi.waitFor(() => expect(getUnilateralExitState().settledLeafIds).toContain('leaf-1'));
+      expect(unsettledIds()).toEqual([]);
+      expect(clearInterval).toHaveBeenCalledWith(timer);
+
+      await advanceNow();
+      expect(syncWallet).toHaveBeenCalledTimes(1);
+    } finally {
+      setInterval.mockRestore();
+      clearInterval.mockRestore();
+    }
+  });
+
+  it('keeps what a sync the stop rejected was for, and syncs once more at the next start', async () => {
+    const sync = held();
+    leaveUnsettled(wallet, 'leaf-1');
+    startUnilateralExitEngine(wallet, chain, sdk({ syncWallet: () => sync.promise }));
+    await settle();
+    stopUnilateralExitEngine();
+    sync.refuse(new Error('disconnected'));
+    await settle();
+    expect(unsettledIds()).toEqual(['leaf-1']);
+
+    const syncWallet = vi.fn(async () => ({}));
+    startUnilateralExitEngine(wallet, chain, sdk({ syncWallet }));
+    await vi.waitFor(() => expect(unsettledIds()).toEqual([]));
+    expect(syncWallet).toHaveBeenCalledTimes(1);
+  });
+
+  it('settles only what landed before its sync, and the rest on the next pass', async () => {
+    const sync = held();
+    const syncWallet = vi.fn().mockReturnValueOnce(sync.promise).mockResolvedValue({});
+    leaveUnsettled(wallet, 'leaf-1');
+    startUnilateralExitEngine(wallet, chain, sdk({ syncWallet }));
+    await settle();
+
+    setUnilateralExitPlan(
+      wallet,
+      plan([], {
+        network: 'regtest',
+        phase: 'complete',
+        landed: [{ leafIds: ['leaf-2'], valueSat: 50_000, txid: 's2', paidSat: 49_000, blockHeight: 9 }],
+      }),
+    );
+    await vi.waitFor(() => expect(getUnilateralExitState().plan).toBeNull());
+    expect(unsettledIds()).toEqual(['leaf-1', 'leaf-2']);
+    expect(syncWallet).toHaveBeenCalledTimes(1);
+
+    sync.release();
+    await vi.waitFor(() => expect(unsettledIds()).toEqual(['leaf-2']));
+    await advanceNow();
+    expect(syncWallet).toHaveBeenCalledTimes(2);
+    expect(unsettledIds()).toEqual([]);
+  });
+
+  it("settles a wallet's leaves when its sync ends after a switch, leaving the other wallet's state alone", async () => {
+    const other = { identityPubkey: 'other', network: 'regtest' };
+    const sync = held();
+    leaveUnsettled(wallet, 'leaf-1');
+    startUnilateralExitEngine(wallet, chain, sdk({ syncWallet: () => sync.promise }));
+    await settle();
+    stopUnilateralExitEngine();
+    startUnilateralExitEngine(other, chain, sdk());
+
+    sync.release();
+    await vi.waitFor(() => expect(unsettledIds()).toEqual([]));
+    expect(getUnilateralExitState().settledLeafIds.size).toBe(0);
+  });
+
+  it('reads the wallet again before it stops subtracting what landed', async () => {
+    let reread: (ok: boolean) => void = () => {};
+    const refresh = vi.fn(() => new Promise<boolean>(resolve => (reread = resolve)));
+    const syncWallet = vi.fn(async () => ({}));
+    leaveUnsettled(wallet, 'leaf-1');
+    startUnilateralExitEngine(wallet, chain, sdk({ syncWallet }), refresh);
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    expect(syncWallet.mock.invocationCallOrder[0]).toBeLessThan(refresh.mock.invocationCallOrder[0]);
+    expect(unsettledIds()).toEqual(['leaf-1']);
+    expect(getUnilateralExitState().settledLeafIds.size).toBe(0);
+
+    reread(true);
+    await vi.waitFor(() => expect(getUnilateralExitState().settledLeafIds).toContain('leaf-1'));
+    expect(unsettledIds()).toEqual([]);
+  });
+
+  it('keeps what landed while the wallet cannot be read again, and tries once more on the next pass', async () => {
+    const refresh = vi.fn<() => Promise<boolean>>().mockResolvedValueOnce(false).mockResolvedValue(true);
+    const syncWallet = vi.fn(async () => ({}));
+    leaveUnsettled(wallet, 'leaf-1');
+    startUnilateralExitEngine(wallet, chain, sdk({ syncWallet }), refresh);
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    await settle();
+    expect(unsettledIds()).toEqual(['leaf-1']);
+    expect(getUnilateralExitState().settledLeafIds.size).toBe(0);
+
+    await advanceNow();
+    expect(syncWallet).toHaveBeenCalledTimes(2);
+    expect(unsettledIds()).toEqual([]);
+  });
+
+  it("keeps what a replaced sdk's refused sync was for until the new sdk's sync recounts it", async () => {
+    const old = held();
+    leaveUnsettled(wallet, 'leaf-1');
+    startUnilateralExitEngine(wallet, chain, sdk({ syncWallet: () => old.promise }));
+    await settle();
+    stopUnilateralExitEngine();
+    const next = held();
+    startUnilateralExitEngine(wallet, chain, sdk({ syncWallet: () => next.promise }));
+    await settle();
+
+    // Refused by the disconnect, after the restart for the same wallet.
+    old.refuse(new Error('disconnected'));
+    await settle();
+    expect(unsettledIds()).toEqual(['leaf-1']);
+    expect(getUnilateralExitState().settledLeafIds.size).toBe(0);
+
+    next.release();
+    await vi.waitFor(() => expect(unsettledIds()).toEqual([]));
+  });
+
+  it('polls at the usual pace while a landing waits on its sync, beside recoveries stuck unverified', async () => {
+    const setInterval = vi.spyOn(globalThis, 'setInterval');
+    try {
+      const stuck = plan([tx({ txid: 'c-old', kind: 'cooperative', nodeId: 'c-1', status: { type: 'unverified' } })], {
+        network: 'regtest',
+        mode: 'recover',
+        exit: { leaves: [{ leafId: 'c-1', valueSats: 30_000, method: 'cooperative' }] },
+      });
+      saveRecoveries(wallet, [stuck]);
+      leaveUnsettled(wallet, 'leaf-1');
+      startUnilateralExitEngine(wallet, chain, sdk({ syncWallet: () => held().promise }));
+      await settle();
+      expect(getUnilateralExitState().recoveries[0].retrySince).toBe(100);
+      expect(setInterval.mock.lastCall?.[1]).toBe(5_000);
+    } finally {
+      setInterval.mockRestore();
+    }
+  });
+
+  it('does not poll for what landed with no driver to sync it', async () => {
+    const setInterval = vi.spyOn(globalThis, 'setInterval');
+    try {
+      leaveUnsettled(wallet, 'leaf-1');
+      startUnilateralExitEngine(wallet, chain);
+      await settle();
+      expect(setInterval).not.toHaveBeenCalled();
+    } finally {
+      setInterval.mockRestore();
+    }
+  });
+
+  it("does not hold a restart's sync behind one the old sdk still has out", async () => {
+    leaveUnsettled(wallet, 'leaf-1');
+    startUnilateralExitEngine(wallet, chain, sdk({ syncWallet: () => held().promise }));
+    await settle();
+    stopUnilateralExitEngine();
+
+    const syncWallet = vi.fn(async () => ({}));
+    startUnilateralExitEngine(wallet, chain, sdk({ syncWallet }));
+    await vi.waitFor(() => expect(unsettledIds()).toEqual([]));
+    expect(syncWallet).toHaveBeenCalledTimes(1);
   });
 });

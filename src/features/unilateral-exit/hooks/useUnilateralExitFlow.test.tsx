@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vite
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { PrepareRecoverFundsResponse, RecoverFundsLeaf, RecoverFundsResponse } from '@breeztech/breez-sdk-spark';
 import type { ChainUtxo } from '@/services/chain';
+import type { ExitAccounting } from '../accounting';
 import type { ArchivedExit } from '../archive';
 import type { ExitMode, ExitSdk, UnilateralExitPlan } from '../driver';
 import { checked, coin, confirmed, funding, MNEMONIC, plan, prepared, sdk, tx } from '../testFixtures';
@@ -38,6 +39,7 @@ const saved = vi.hoisted(() => ({
   tipHeight: null as number | null,
   archive: [] as ArchivedExit[],
   recoveries: [] as UnilateralExitPlan[],
+  accounting: { droppedLeaves: [], unsettledLeaves: [] } as ExitAccounting,
 }));
 vi.mock('./useUnilateralExitEngineLifecycle', () => ({
   useUnilateralExitEngineState: () => ({
@@ -49,6 +51,7 @@ vi.mock('./useUnilateralExitEngineLifecycle', () => ({
     startError: null,
     archive: saved.archive,
     recoveries: saved.recoveries,
+    accounting: saved.accounting,
     tipHeight: saved.tipHeight,
     isAdvancing: false,
   }),
@@ -57,13 +60,14 @@ vi.mock('../engine', async () => ({
   ...(await vi.importActual('../engine')),
   advanceNow: vi.fn(),
   keepRecovery: vi.fn(),
+  noteDropped: vi.fn(),
   setPendingExit: vi.fn(),
   setUnilateralExitPlan: vi.fn(),
 }));
 
 import { singleKeyCpfpSigner } from '@breeztech/breez-sdk-spark';
 import { useUnilateralExitFlow } from './useUnilateralExitFlow';
-import { advanceNow, keepRecovery, setPendingExit, setUnilateralExitPlan } from '../engine';
+import { advanceNow, keepRecovery, noteDropped, setPendingExit, setUnilateralExitPlan } from '../engine';
 import { deriveFundingKey, readWalletMnemonic } from '../funding';
 
 const unfunded = () => prepared({ funding: undefined, cpfpFeeSats: 0 });
@@ -298,6 +302,57 @@ describe('Recover Funds', () => {
   it('quotes only the funds outside the balance', async () => {
     const { prepareRecoverFunds } = await quoted(cosignedQuote, undefined, { mode: 'recover' });
     expect(prepareRecoverFunds).toHaveBeenCalledWith(expect.objectContaining({ selection: { type: 'recoverableOnly' } }));
+  });
+
+  it('keeps hidden what a quote finds unrecoverable, and leaves it out of the next quote', async () => {
+    const skipped = [
+      { leafId: 'd-1', valueSats: 5_000, reason: { type: 'notRecoverable' as const, message: 'paid elsewhere' } },
+      { leafId: 'x', valueSats: 350, reason: { type: 'unverified' as const } },
+    ];
+    await quoted({ ...cosignedQuote, skipped }, undefined, { mode: 'recover' });
+    expect(noteDropped).toHaveBeenCalledWith({ identityPubkey: '02abc', network: 'regtest' }, [{ leafId: 'd-1', valueSats: 5_000 }]);
+
+    saved.accounting = { droppedLeaves: [{ leafId: 'd-1', valueSats: 5_000 }], unsettledLeaves: [] };
+    try {
+      const prepareRecoverFunds = vi
+        .fn<ExitSdk['prepareRecoverFunds']>()
+        .mockResolvedValueOnce(prepared({ leaves: [{ leafId: 'd-1', valueSats: 5_000, method: 'cooperative' }, ...cosignedLeaves] }))
+        .mockResolvedValue(cosignedQuote);
+      await quoted(cosignedQuote, undefined, { mode: 'recover', prepareRecoverFunds });
+      expect(prepareRecoverFunds).toHaveBeenLastCalledWith(
+        expect.objectContaining({ selection: { type: 'specific', leafIds: ['c-1', 'c-2'] } }),
+      );
+    } finally {
+      saved.accounting = { droppedLeaves: [], unsettledLeaves: [] };
+    }
+  });
+
+  it('notes nothing dropped from a quote for an exit', async () => {
+    await quoted({ ...unfunded(), skipped: [{ leafId: 'd-1', valueSats: 5_000, reason: { type: 'notRecoverable', message: 'gone' } }] });
+    expect(noteDropped).not.toHaveBeenCalled();
+  });
+
+  it('notes nothing dropped from a quote of a recovery under way, which its plan records', async () => {
+    saved.plan = plan([tx({ txid: 'c1', kind: 'cooperative', nodeId: 'c-1' })], {
+      network: 'regtest',
+      mode: 'recover',
+      exit: { leaves: [cosignedLeaves[0]] },
+    });
+    try {
+      const prepareRecoverFunds = vi.fn<ExitSdk['prepareRecoverFunds']>(async () => ({
+        ...cosignedQuote,
+        skipped: [{ leafId: 'c-1', valueSats: 30_000, reason: { type: 'notRecoverable', message: 'gone' } }],
+      }));
+      wallet.current = sdk({ prepareRecoverFunds });
+      const { result } = renderHook(() => useUnilateralExitFlow('regtest'));
+      act(() => result.current.rebuild());
+      await waitFor(() => expect(result.current.fee.feeRates).not.toBeNull());
+      await act(() => result.current.submitFee());
+      expect(prepareRecoverFunds).toHaveBeenCalledWith(expect.objectContaining({ selection: { type: 'specific', leafIds: ['c-1'] } }));
+      expect(noteDropped).not.toHaveBeenCalled();
+    } finally {
+      saved.plan = null;
+    }
   });
 
   it('keeps a co-signed recovery beside the plan slot, and says what is on its way', async () => {
@@ -771,6 +826,14 @@ describe('raising the fee of a kept co-signed recovery', () => {
     await waitFor(() => expect(hook.result.current.fee.feeRates).not.toBeNull());
     return { ...hook, prepareRecoverFunds, recoverFunds };
   }
+
+  it('notes nothing dropped from a bump quote, which only rebuilds what the recovery holds', async () => {
+    const skipped = [{ leafId: 'd-1', valueSats: 5_000, reason: { type: 'notRecoverable' as const, message: 'gone' } }];
+    const { result } = await bumping('c1', undefined, vi.fn(async () => ({ ...bumpQuote, skipped })));
+    await act(() => result.current.submitFee());
+    expect(result.current.quote.figures).not.toBeNull();
+    expect(noteDropped).not.toHaveBeenCalled();
+  });
 
   it('opens on the fee as a recovery, with nothing to go back to', async () => {
     const { result } = await bumping();

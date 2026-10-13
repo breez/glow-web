@@ -120,7 +120,9 @@ const AppContent: React.FC = () => {
   // An in-flight recovery has to keep moving even when its page is
   // closed: each step only becomes broadcastable once the one before it
   // confirms, and those waits run for days.
-  useUnilateralExitEngineLifecycle(sdk.walletInfo?.identityPubkey, sdk.config?.network, sdk.sdk);
+  useUnilateralExitEngineLifecycle(sdk.walletInfo?.identityPubkey, sdk.config?.network, sdk.sdk, () =>
+    sdk.refreshWalletData(false),
+  );
 
   // SDK startup state takes precedence; otherwise the user's screen
   // wins, with one exception: an SDK auto-reconnect (saved mnemonic /

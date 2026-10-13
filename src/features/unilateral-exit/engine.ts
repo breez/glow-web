@@ -18,9 +18,18 @@ import {
   startExit,
 } from './driver';
 import { archiveExit, droppedLeafIds, loadArchive, recoveryTxid, type ArchivedExit } from './archive';
+import {
+  loadAccounting,
+  noAccounting,
+  recordDropped,
+  retireRecord,
+  settleLeaves,
+  unsettledLeaves,
+  type ExitAccounting,
+} from './accounting';
 import { exitFeeRecordOf } from './quote';
 import type { FundingKey } from './funding';
-import type { ExitSdk, PendingExit, UnilateralExitPlan, WalletKey } from './driver';
+import type { ExitSdk, NamedLeaf, PendingExit, UnilateralExitPlan, WalletKey } from './driver';
 
 const POLL_SECS_MAINNET = 30;
 const POLL_SECS_REGTEST = 5;
@@ -54,6 +63,9 @@ export interface UnilateralExitEngineState {
    * one once it is done.
    */
   recoveries: UnilateralExitPlan[];
+  accounting: ExitAccounting;
+  /** Live records' landed leaves a sync has recounted since. In memory only, so a restart syncs once more. */
+  settledLeafIds: ReadonlySet<string>;
   tipHeight: number | null;
   isAdvancing: boolean;
 }
@@ -69,6 +81,8 @@ const idle: UnilateralExitEngineState = {
   startError: null,
   archive: [],
   recoveries: [],
+  accounting: noAccounting,
+  settledLeafIds: new Set(),
   tipHeight: null,
   isAdvancing: false,
 };
@@ -77,6 +91,7 @@ let state: UnilateralExitEngineState = idle;
 let wallet: WalletKey | null = null;
 let chain: ChainClient | null = null;
 let sdk: ExitSdk | null = null;
+let refreshWallet: (() => Promise<boolean>) | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;
 let timerMs = 0;
 // Bumped whenever the wallet or its plan is replaced. A pass that started under
@@ -87,6 +102,8 @@ let generation = 0;
 let heldKey: FundingKey | null = null;
 // The plan's pass has `isAdvancing`; the kept recoveries' pass runs beside it.
 let recoveriesBusy = false;
+// Sdks with a settle sync out. Keyed by instance, so a restart's new one is not held behind it.
+const settling = new WeakSet<ExitSdk>();
 const listeners = new Set<Listener>();
 
 const emit = (next: Partial<UnilateralExitEngineState>): void => {
@@ -119,20 +136,46 @@ const STALLED_POLL_FACTOR = 20;
 
 const syncPolling = (): void => {
   const plan = state.plan && planRuns(state.plan) ? state.plan : null;
-  if (!wallet || (!plan && !state.pending && state.recoveries.length === 0)) return stopPolling();
-  const stalled = !state.pending && [plan, ...state.recoveries].every(p => !p || isStalled(p));
+  // Landed leaves wait on a pass's settle sync, which needs a driver.
+  const unsettled = !!sdk && unsettledLeaves(state).length > 0;
+  if (!wallet || (!plan && !state.pending && state.recoveries.length === 0 && !unsettled)) return stopPolling();
+  const stalled = !unsettled && !state.pending && [plan, ...state.recoveries].every(p => !p || isStalled(p));
   startPolling(pollIntervalMs(wallet.network) * (stalled ? STALLED_POLL_FACTOR : 1));
 };
 
-/** getInfo counts a landed recovery's leaves as recoverable until a sync sees it in a block. */
-const syncAfterLanding = (driver: ExitSdk | null): void => {
-  if (!driver) return;
-  driver.syncWallet({}).catch(e =>
-    logger.warn(LogCategory.SDK, 'Failed to sync after a recovery landed', {
-      error: e instanceof Error ? e.message : String(e),
-    }),
-  );
-};
+/**
+ * Syncs once for the leaves landed so far, which getInfo counts until a sync
+ * recounts after they landed. The recount runs offline too, and a sync whose
+ * exit-chain collection fails after it still rejects. So a rejection settles
+ * as well, unless this run has ended: then it may come from the shutdown.
+ */
+async function settle(): Promise<void> {
+  const passWallet = wallet;
+  const passSdk = sdk;
+  const passRefresh = refreshWallet;
+  const ids = unsettledLeaves(state).map(leaf => leaf.leafId);
+  if (!passWallet || !passSdk || settling.has(passSdk) || ids.length === 0) return;
+  settling.add(passSdk);
+  try {
+    try {
+      await passSdk.syncWallet({});
+    } catch (e) {
+      logger.warn(LogCategory.SDK, 'Failed to sync after a recovery landed', {
+        error: e instanceof Error ? e.message : String(e),
+      });
+      if (!isRunningFor(passWallet) || sdk !== passSdk) return;
+    }
+    // The row stops subtracting these once they settle, so the page reads the
+    // recounted total first. A read that fails leaves them to the next pass.
+    if (passRefresh && isRunningFor(passWallet) && !(await passRefresh().catch(() => false))) return;
+  } finally {
+    settling.delete(passSdk);
+  }
+  const accounting = settleLeaves(passWallet, ids);
+  if (!isRunningFor(passWallet)) return;
+  emit({ accounting, settledLeafIds: new Set([...state.settledLeafIds, ...ids]) });
+  syncPolling();
+}
 
 /** `list` with `recovery` in place of an entry it replaces: the same recovery, or one of no other leaves. */
 function withRecovery(list: UnilateralExitPlan[], recovery: UnilateralExitPlan): UnilateralExitPlan[] {
@@ -146,8 +189,12 @@ function withRecovery(list: UnilateralExitPlan[], recovery: UnilateralExitPlan):
 export const getUnilateralExitState = (): UnilateralExitEngineState => state;
 
 /** What a fresh quote leaves out: the leaves kept recoveries hold, and those Glow dropped as unrecoverable. */
-export const excludedLeafIds = ({ recoveries, archive }: Pick<UnilateralExitEngineState, 'recoveries' | 'archive'>): Set<string> =>
-  new Set([...keptLeafIds(recoveries), ...droppedLeafIds([...recoveries, ...archive])]);
+export const excludedLeafIds = ({
+  recoveries,
+  archive,
+  accounting,
+}: Pick<UnilateralExitEngineState, 'recoveries' | 'archive' | 'accounting'>): Set<string> =>
+  new Set([...keptLeafIds(recoveries), ...droppedLeafIds([...recoveries, ...archive, accounting])]);
 
 const isRunningFor = (target: WalletKey): boolean =>
   wallet?.identityPubkey === target.identityPubkey && wallet.network === target.network;
@@ -218,6 +265,7 @@ export async function startPendingExit(): Promise<void> {
 
 export async function advanceNow(): Promise<void> {
   await Promise.all([advancePlan(), advanceRecoveries()]);
+  await settle();
 }
 
 async function advancePlan(): Promise<void> {
@@ -253,13 +301,15 @@ async function advancePlan(): Promise<void> {
     if (generation !== passGeneration) return;
     // A finished exit hands its slot back: the record lives in the archive from
     // here, and the wizard has to be free to quote the next one. Archived while
-    // a read waits, the record would miss what landed.
-    if (plan.phase === 'complete' && !hasWaitingLanding(plan)) {
+    // a read waits, the record would miss what landed. Cleared only once what
+    // it accounted for is stored, so a restart finds one or the other.
+    const accounting =
+      plan.phase === 'complete' && !hasWaitingLanding(plan) ? retireRecord(passWallet, plan, state.settledLeafIds) : null;
+    if (accounting) {
       const archive = archiveExit(passWallet, plan);
       clearPlan(passWallet);
-      emit({ plan: null, archive, tipHeight, isAdvancing: false, pendingCoins: [] });
+      emit({ plan: null, archive, accounting, tipHeight, isAdvancing: false, pendingCoins: [] });
       syncPolling();
-      syncAfterLanding(passSdk);
       return;
     }
 
@@ -293,24 +343,26 @@ async function advanceRecoveries(): Promise<void> {
     if (generation !== passGeneration) return;
 
     let archive = state.archive;
-    let landed = false;
+    let accounting = state.accounting;
     let recoveries: UnilateralExitPlan[] = [];
     for (const [i, { plan }] of passes.entries()) {
       // One replaced while this pass was out, such as by a fee bump, belongs to
       // its replacement now, which archives what landed once.
       if (!state.recoveries.includes(before[i])) continue;
-      // Archived while a read waits, the record would miss what landed.
-      if (plan.phase !== 'complete' || hasWaitingLanding(plan)) recoveries.push(plan);
+      // Archived while a read waits, the record would miss what landed. Kept
+      // too while what it accounted for cannot be stored.
+      const retired =
+        plan.phase === 'complete' && !hasWaitingLanding(plan) ? retireRecord(passWallet, plan, state.settledLeafIds) : null;
+      if (!retired) recoveries.push(plan);
       else {
+        accounting = retired;
         archive = archiveExit(passWallet, plan);
-        landed = true;
       }
     }
     // One kept while this pass was out replaces what the pass holds for it.
     recoveries = state.recoveries.filter(r => !before.includes(r)).reduce(withRecovery, recoveries);
     saveRecoveries(passWallet, recoveries);
-    emit({ recoveries, archive, tipHeight: passes[0]?.tipHeight ?? state.tipHeight });
-    if (landed) syncAfterLanding(passSdk);
+    emit({ recoveries, archive, accounting, tipHeight: passes[0]?.tipHeight ?? state.tipHeight });
   } catch (e) {
     logger.warn(LogCategory.SDK, 'Co-signed recovery pass failed', {
       error: e instanceof Error ? e.message : String(e),
@@ -324,24 +376,28 @@ async function advanceRecoveries(): Promise<void> {
 /**
  * Without `driver` a pass only re-sends what it already holds: it cannot read
  * the exit back, rebuild it, learn that it has finished, or start a pending one.
+ * `refresh` reads getInfo again for the wallet page, false when it could not.
  */
 export function startUnilateralExitEngine(
   target: WalletKey,
   client: ChainClient = createChainClient(target.network),
   driver?: ExitSdk | null,
+  refresh?: () => Promise<boolean>,
 ): void {
   generation++;
   wallet = target;
   chain = client;
   sdk = driver ?? null;
+  refreshWallet = refresh ?? null;
   const plan = loadPlan(target);
   // Left behind by a start that saved its plan and stopped before clearing it.
   if (plan) clearPendingExit(target);
   const pending = plan ? null : loadPendingExit(target);
   const recoveries = loadRecoveries(target);
-  emit({ ...idle, plan, pending, archive: loadArchive(target), recoveries });
+  const accounting = loadAccounting(target);
+  emit({ ...idle, plan, pending, archive: loadArchive(target), recoveries, accounting });
   syncPolling();
-  if (plan || pending || recoveries.length > 0) void advanceNow();
+  if (plan || pending || recoveries.length > 0 || accounting.unsettledLeaves.length > 0) void advanceNow();
 }
 
 export function stopUnilateralExitEngine(): void {
@@ -350,6 +406,7 @@ export function stopUnilateralExitEngine(): void {
   wallet = null;
   chain = null;
   sdk = null;
+  refreshWallet = null;
   emit(idle);
 }
 
@@ -391,6 +448,16 @@ export function keepRecovery(target: WalletKey, recovery: UnilateralExitPlan): v
   emit({ recoveries });
   syncPolling();
   void advanceRecoveries();
+}
+
+/**
+ * Leaves a Recover Funds quote found unrecoverable that no record holds. Kept
+ * so the row and later quotes leave them out, as they do a record's.
+ */
+export function noteDropped(target: WalletKey, leaves: NamedLeaf[]): void {
+  if (leaves.length === 0) return;
+  const accounting = recordDropped(target, leaves);
+  if (isRunningFor(target)) emit({ accounting });
 }
 
 /** Coins already at the fee address stay there, and the next exit uses the same address. */

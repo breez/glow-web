@@ -13,6 +13,8 @@ const engine = (over: Partial<UnilateralExitEngineState> = {}): UnilateralExitEn
   startError: null,
   archive: [],
   recoveries: [],
+  accounting: { droppedLeaves: [], unsettledLeaves: [] },
+  settledLeafIds: new Set(),
   tipHeight: null,
   isAdvancing: false,
   ...over,
@@ -84,6 +86,17 @@ describe('recoverable funds in the wallet list', () => {
       { id: 'sweep', kind: 'archived' },
     ]);
   });
+
+  it('leaves out what an ended record dropped as unrecoverable, which getInfo goes on counting', () => {
+    const accounting = { droppedLeaves: [{ leafId: 'd-1', valueSats: 5_000 }], unsettledLeaves: [] };
+    expect(entries({ pending: null, accounting }, 5_000)).toEqual([]);
+    expect(row({ pending: null, accounting }, 8_000)).toMatchObject({ kind: 'recoverable', amountSat: 3_000, subtitle: 'Tap to recover' });
+  });
+
+  it('leaves out what an ended record landed until a sync recounts it', () => {
+    const accounting = { droppedLeaves: [], unsettledLeaves: [{ leafId: 'leaf-1', valueSats: 100_000 }] };
+    expect(entries({ pending: null, accounting }, 100_000)).toEqual([]);
+  });
 });
 
 describe('a kept co-signed recovery in the wallet list', () => {
@@ -142,6 +155,21 @@ describe('a kept co-signed recovery in the wallet list', () => {
       },
     };
     expect(entries({ pending: null, recoveries: [refused] }, 48_200).map(r => r.kind)).toEqual(['recovery']);
+  });
+
+  it('offers the other funds once a sync has recounted the leaf it landed', () => {
+    const part = {
+      ...recovery,
+      landed: [{ leafIds: ['leaf-1'], valueSat: 30_000, outpoint: 'o:0' }],
+      exit: { ...recovery.exit, transactions: [{ ...recovery.exit.transactions[0], status: confirmed(9) }, recovery.exit.transactions[1]] },
+    };
+    // 18 200 still held, and 11 800 that nothing holds.
+    expect(entries({ pending: null, recoveries: [part] }, 30_000).map(r => r.kind)).toEqual(['recovery']);
+    expect(entries({ pending: null, recoveries: [part], settledLeafIds: new Set(['leaf-1']) }, 30_000)[1]).toMatchObject({
+      kind: 'recoverable',
+      amountSat: 11_800,
+      isAction: true,
+    });
   });
 
   it('is found by the id of its row', () => {
@@ -244,6 +272,36 @@ describe('recoverable funds beside an exit under way', () => {
     };
     // 420 000 on its way, 10 000 kept, and 10 000 dropped.
     expect(recoverable(state, 441_000)).toMatchObject({ amountSat: 1_000 });
+  });
+
+  it('offers again, with no tap, what remains once a sync has recounted what the exit landed', () => {
+    const exit = running({ landed: [{ leafIds: ['leaf-2'], valueSat: 420_000, txid: 'early', paidSat: 419_000 }] });
+    expect(recoverable({ plan: exit }, 30_000)).toBeUndefined();
+    expect(recoverable({ plan: exit, settledLeafIds: new Set(['leaf-2']) }, 30_000)).toMatchObject({
+      amountSat: 30_000,
+      subtitle: null,
+      isAction: false,
+    });
+  });
+
+  it('counts a co-signed leaf the exit landed and still names once', () => {
+    const exit = running({
+      namedLeaves: [
+        { leafId: 'leaf-1', valueSats: 180_000 },
+        { leafId: 'leaf-2', valueSats: 420_000 },
+        { leafId: 'moved', valueSats: 30_000 },
+      ],
+      landed: [{ leafIds: ['moved'], valueSat: 30_000, outpoint: 'o:0' }],
+      exit: {
+        leaves: [
+          { leafId: 'leaf-1', valueSats: 180_000, method: 'unilateral' },
+          { leafId: 'leaf-2', valueSats: 420_000, method: 'unilateral' },
+          { leafId: 'moved', valueSats: 30_000, method: 'cooperative' },
+        ],
+      },
+    });
+    // 420 000 on its way, and 30 000 landed.
+    expect(recoverable({ plan: exit }, 460_000)).toMatchObject({ amountSat: 10_000 });
   });
 
   it('counts a leaf both the exit and a kept recovery hold once', () => {
