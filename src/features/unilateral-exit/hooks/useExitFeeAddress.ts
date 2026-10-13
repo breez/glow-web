@@ -36,7 +36,7 @@ export function useFeeKey() {
 }
 
 function leftoverFundingOf(plan: UnilateralExitPlan | null, coins: ChainUtxo[]): FundingFields | null {
-  if (!plan?.topUp) return null;
+  if (plan?.status.type !== 'needsExitFee') return null;
   const address = exitFeeRecordOf(plan).exitFeeAddress;
   // With no address yet, the tap derives it and asks again. A payment on its
   // way counts toward the ask, as on the list row, so it is not asked for

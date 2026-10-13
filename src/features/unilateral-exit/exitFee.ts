@@ -1,6 +1,6 @@
 import type { ChainClient, ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
-import type { Funding, PendingExit, UnilateralExitPlan } from './model/plan';
+import { topUpOf, type Funding, type PendingExit, type UnilateralExitPlan } from './model/plan';
 import { exitFeeRecordOf, isCooperative } from './quote';
 
 /** What a build said it needs: the sdk's error reaches the page only as its message. */
@@ -62,7 +62,7 @@ export const isPendingFunded = (pending: PendingExit, coins: ChainUtxo[]): boole
 
 /** What a leftover waiting on its fee still needs at the fee address, from `coins` there. */
 export const leftoverTopUp = (plan: UnilateralExitPlan, coins: ChainUtxo[]): TopUp =>
-  topUpFor(plan.topUp?.required ?? { sat: 0, inputs: 0 }, sentFunding(plan, coins), plan.feeRateSatPerVbyte);
+  topUpFor(topUpOf(plan)?.required ?? { sat: 0, inputs: 0 }, sentFunding(plan, coins), plan.feeRateSatPerVbyte);
 
 /** What the exit fee address holds, or null while it is not known or cannot be read. */
 async function readFeeCoins(chain: ChainClient, address: string | undefined): Promise<ChainUtxo[] | null> {
@@ -79,10 +79,11 @@ async function readFeeCoins(chain: ChainClient, address: string | undefined): Pr
 const confirmedSat = (coins: ChainUtxo[]): number =>
   coins.filter(coin => coin.confirmed).reduce((sum, coin) => sum + coin.value, 0);
 
-export const withHeldSat = (plan: UnilateralExitPlan, coins: ChainUtxo[] | null | undefined): UnilateralExitPlan =>
-  plan.topUp && coins && plan.topUp.heldSat === undefined
-    ? { ...plan, topUp: { ...plan.topUp, heldSat: confirmedSat(coins) } }
-    : plan;
+export function withHeldSat(plan: UnilateralExitPlan, coins: ChainUtxo[] | null | undefined): UnilateralExitPlan {
+  const asked = topUpOf(plan);
+  if (!asked || !coins || asked.heldSat !== undefined) return plan;
+  return { ...plan, status: { type: 'needsExitFee', topUp: { ...asked, heldSat: confirmedSat(coins) } } };
+}
 
 /**
  * A request made in this pass is read against what the address holds now,
@@ -93,6 +94,7 @@ export async function readHeldSat(
   chain: ChainClient,
   feeCoins?: ChainUtxo[],
 ): Promise<UnilateralExitPlan> {
-  if (!plan.topUp || plan.topUp.heldSat !== undefined) return plan;
+  const asked = topUpOf(plan);
+  if (!asked || asked.heldSat !== undefined) return plan;
   return withHeldSat(plan, feeCoins ?? (await readFeeCoins(chain, exitFeeRecordOf(plan).exitFeeAddress)));
 }

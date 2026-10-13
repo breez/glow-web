@@ -26,7 +26,8 @@ export function withRecovery(list: UnilateralExitPlan[], recovery: UnilateralExi
 /** Reads what the fee address holds, or null when it could not. Nothing starts without the user. */
 async function watchPending(): Promise<ChainUtxo[] | null> {
   const address =
-    state.pending?.fundingAddress ?? (state.plan?.topUp ? exitFeeRecordOf(state.plan).exitFeeAddress : undefined);
+    state.pending?.fundingAddress ??
+    (state.plan?.status.type === 'needsExitFee' ? exitFeeRecordOf(state.plan).exitFeeAddress : undefined);
   if (!chain || !address) return null;
   const passGeneration = generation;
   try {
@@ -47,14 +48,14 @@ function archiveOrSavePlan(passWallet: WalletKey, plan: UnilateralExitPlan, tipH
   // a read waits, the record would miss what landed. Cleared only once what
   // it accounted for is stored, so a restart finds one or the other.
   const accounting =
-    plan.phase === 'complete' && !hasWaitingLanding(plan) ? retireRecord(passWallet, plan, state.settledLeafIds) : null;
+    plan.status.type === 'done' && !hasWaitingLanding(plan) ? retireRecord(passWallet, plan, state.settledLeafIds) : null;
   if (accounting) {
     const archive = archiveExit(passWallet, plan);
     clearPlan(passWallet);
     emit({ plan: null, archive, accounting, tipHeight, isAdvancing: false, pendingCoins: [] });
   } else {
     savePlan(passWallet, plan);
-    const coinsDone = !plan.topUp && state.pendingCoins.length > 0;
+    const coinsDone = plan.status.type !== 'needsExitFee' && state.pendingCoins.length > 0;
     emit({ plan, tipHeight, isAdvancing: false, ...(coinsDone ? { pendingCoins: [] } : {}) });
   }
   syncPolling();
@@ -81,7 +82,7 @@ export async function advancePlan(): Promise<void> {
     // With no address yet there is nothing to read, and no coins to hand on.
     // Nor after a failed read: what was last read, or nothing, would set what
     // the address held before the ask too low.
-    const coins = current.topUp ? await watchPending() : null;
+    const coins = current.status.type === 'needsExitFee' ? await watchPending() : null;
     const { plan, tipHeight } = await advanceUnilateralExit(
       current,
       chain,
@@ -115,7 +116,7 @@ function retireFinished(
     // Archived while a read waits, the record would miss what landed. Kept
     // too while what it accounted for cannot be stored.
     const retired =
-      plan.phase === 'complete' && !hasWaitingLanding(plan) ? retireRecord(passWallet, plan, state.settledLeafIds) : null;
+      plan.status.type === 'done' && !hasWaitingLanding(plan) ? retireRecord(passWallet, plan, state.settledLeafIds) : null;
     if (!retired) recoveries.push(plan);
     else {
       accounting = retired;

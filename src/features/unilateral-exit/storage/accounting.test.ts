@@ -31,7 +31,7 @@ describe('the Recoverable Funds accounting', () => {
   it('takes over what an ended record dropped and landed, less what a sync settled, each leaf once at its larger value', () => {
     localStorage.setItem(key, JSON.stringify({ droppedLeaves: [leaf('d-1', 0)], unsettledLeaves: [leaf('other', 7_000)] }));
     const ended = plan([], {
-      phase: 'complete',
+      status: { type: 'done' },
       droppedLeaves: [leaf('d-1', 5_000)],
       landed: [
         { leafIds: ['leaf-1'], valueSat: 100_000, outpoint: 'o:0' },

@@ -1,7 +1,6 @@
 import { advanceUnilateralExit } from './pass';
 import { deriveFundingKey } from './funding';
 import { awaitsUpdate } from './model/plan';
-import type { ExitSdk } from './quoting';
 import {
   checked,
   checking,
@@ -13,7 +12,6 @@ import {
   ready,
   redo,
   sdk,
-  twoLeaves,
   tx,
 } from './testFixtures';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -43,7 +41,7 @@ describe('advanceUnilateralExit', () => {
       chain(),
       checking(checked([{ txid: 's', kind: 'sweep', status: confirmed(9) }]), { type: 'done' }),
     );
-    expect(next.phase).toBe('complete');
+    expect(next.status).toEqual({ type: 'done' });
   });
 
   it('finishes a diverged exit once a quote of its leaves names none of them, since they all landed', async () => {
@@ -54,7 +52,7 @@ describe('advanceUnilateralExit', () => {
       checking(checked([{ txid: 'a' }]), redo),
       '02abc',
     );
-    expect(next.phase).toBe('complete');
+    expect(next.status).toEqual({ type: 'done' });
     expect(broadcast).not.toHaveBeenCalled();
   });
 
@@ -78,9 +76,7 @@ describe('advanceUnilateralExit', () => {
       const prepareRecoverFunds = vi.fn(async () => skippedOnly(reason, stopped));
       const driver = sdk({ checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: redo }), prepareRecoverFunds });
       const first = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain({ broadcast }), driver, '02abc');
-      expect(first.plan.phase).toBe('redo');
-      expect(first.plan.needsSignIn).toBeUndefined();
-      expect(first.plan.rebuildFailed).toBeUndefined();
+      expect(first.plan.status).toEqual({ type: 'rebuilding' });
       expect(awaitsUpdate(first.plan)).toBe(false);
       await advanceUnilateralExit(first.plan, chain({ broadcast }), driver, '02abc');
       expect(prepareRecoverFunds).toHaveBeenCalledTimes(2);
@@ -99,7 +95,7 @@ describe('advanceUnilateralExit', () => {
         prepareRecoverFunds: async () => skippedOnly(reason),
       });
       const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain(), driver, '02abc');
-      expect(next.phase).toBe('complete');
+      expect(next.status).toEqual({ type: 'done' });
       expect(next.namedLeaves).toEqual([]);
       expect(next.droppedLeaves).toEqual(dropped);
     },
@@ -112,7 +108,7 @@ describe('advanceUnilateralExit', () => {
       recoverFunds: async () => checked([{ txid: 'fresh', status: ready }]),
     });
     const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain(), driver, '02abc');
-    expect(next.phase).toBe('active');
+    expect(next.status).toEqual({ type: 'running' });
     expect(next.exit.transactions.map(t => t.txid)).toEqual(['fresh']);
   });
 
@@ -175,8 +171,7 @@ describe('advanceUnilateralExit', () => {
       recoverFunds,
     });
     const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain(), driver, '02abc');
-    expect(next.phase).toBe('redo');
-    expect(next.needsSignIn).toBe(true);
+    expect(next.status).toEqual({ type: 'needsUpdate', why: 'signIn' });
     expect(recoverFunds).not.toHaveBeenCalled();
     localStorage.removeItem('passkeyLabel');
   });
@@ -191,7 +186,7 @@ describe('advanceUnilateralExit', () => {
       recoverFunds,
     });
     const { plan: next } = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), chain(), driver, '02abc');
-    expect(next.phase).toBe('active');
+    expect(next.status).toEqual({ type: 'running' });
     expect(recoverFunds.mock.calls[0]).toEqual([{ prepared: expect.anything() }]);
     localStorage.removeItem('passkeyLabel');
   });
@@ -222,12 +217,11 @@ describe('advanceUnilateralExit', () => {
     // A failure within one block can be a passing outage, so it asks nothing yet.
     const first = await advanceUnilateralExit(plan([tx({ txid: 'a' })]), at(100), driver, '02abc');
     const again = await advanceUnilateralExit(first.plan, at(100), driver, '02abc');
-    expect(again.plan).toMatchObject({ phase: 'redo', rebuildFailingSince: 100 });
+    expect(again.plan).toMatchObject({ status: { type: 'rebuilding' }, rebuildFailingSince: 100 });
     expect(awaitsUpdate(again.plan)).toBe(false);
 
     const { plan: next } = await advanceUnilateralExit(again.plan, at(101), driver, '02abc');
-    expect(next.phase).toBe('redo');
-    expect(next.rebuildFailed).toBe(true);
+    expect(next.status).toEqual({ type: 'needsUpdate', why: 'rebuildFailed' });
     expect(awaitsUpdate(next)).toBe(true);
   });
 
@@ -237,13 +231,12 @@ describe('advanceUnilateralExit', () => {
       prepareRecoverFunds: async () => skippedOnly({ type: 'unverified' }),
     });
     const { plan: next } = await advanceUnilateralExit(
-      plan([tx({ txid: 'a' })], { phase: 'redo', rebuildFailed: true, rebuildFailingSince: 90 }),
+      plan([tx({ txid: 'a' })], { status: { type: 'needsUpdate', why: 'rebuildFailed' }, rebuildFailingSince: 90 }),
       chain(),
       driver,
       '02abc',
     );
-    expect(next.phase).toBe('redo');
-    expect(next.rebuildFailed).toBeUndefined();
+    expect(next.status).toEqual({ type: 'rebuilding' });
     expect(next.rebuildFailingSince).toBeUndefined();
   });
 
@@ -254,61 +247,12 @@ describe('advanceUnilateralExit', () => {
       recoverFunds: async () => checked([{ txid: 'fresh', status: ready }]),
     });
     const { plan: next } = await advanceUnilateralExit(
-      plan([tx({ txid: 'a' })], { phase: 'redo', rebuildFailed: true }),
+      plan([tx({ txid: 'a' })], { status: { type: 'needsUpdate', why: 'rebuildFailed' } }),
       chain(),
       driver,
       '02abc',
     );
-    expect(next.phase).toBe('active');
-    expect(next.rebuildFailed).toBeUndefined();
-  });
-
-  describe('naming why a diverged exit asks for the update', () => {
-    // Built with both leaves unilateral, so leaf-1 quoting co-signed means the operators moved it.
-    const moved = prepared({
-      leaves: [
-        { leafId: 'leaf-1', valueSats: 180_000, method: 'cooperative' },
-        { leafId: 'leaf-2', valueSats: 420_000, method: 'unilateral' },
-      ],
-    });
-    const unmoved = prepared({
-      leaves: [
-        { leafId: 'leaf-1', valueSats: 180_000, method: 'unilateral' },
-        { leafId: 'leaf-2', valueSats: 420_000, method: 'unilateral' },
-      ],
-    });
-    const cases = [
-      ['the operators moved a leaf it built', moved, undefined, 'watchtower'],
-      ['nothing it built moved, clearing a stale cause', unmoved, 'watchtower', undefined],
-    ] as const;
-    const redoing = (over: Partial<ExitSdk>) => sdk({ checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: redo }), ...over });
-
-    it.each(cases)('on sign-in, when %s', async (_, quote, before, after) => {
-      localStorage.removeItem('walletMnemonic');
-      localStorage.setItem('passkeyLabel', 'Default');
-      try {
-        const driver = redoing({ prepareRecoverFunds: async () => quote });
-        const { plan: next } = await advanceUnilateralExit(twoLeaves([tx({ txid: 'a' })], { redoCause: before }), chain(), driver, '02abc');
-        expect(next).toMatchObject({ phase: 'redo', needsSignIn: true });
-        expect(next.redoCause).toBe(after);
-      } finally {
-        localStorage.removeItem('passkeyLabel');
-      }
-    });
-
-    it.each(cases)('on a rebuild failing across a block, when %s', async (_, quote, before, after) => {
-      const driver = redoing({
-        prepareRecoverFunds: async () => quote,
-        recoverFunds: async () => {
-          throw new Error('operators unavailable');
-        },
-      });
-      const at = (tip: number) => chain({ tipHeight: async () => tip });
-      const first = await advanceUnilateralExit(twoLeaves([tx({ txid: 'a' })], { redoCause: before }), at(100), driver, '02abc');
-      const { plan: next } = await advanceUnilateralExit(first.plan, at(101), driver, '02abc');
-      expect(next).toMatchObject({ phase: 'redo', rebuildFailed: true });
-      expect(next.redoCause).toBe(after);
-    });
+    expect(next.status).toEqual({ type: 'running' });
   });
 
   it('keeps going on the set it holds when the check fails', async () => {
@@ -324,7 +268,7 @@ describe('advanceUnilateralExit', () => {
   it('sends nothing once the exit is complete', async () => {
     const broadcast = vi.fn(async () => undefined);
     await advanceUnilateralExit(
-      plan([tx({ txid: 's', kind: 'sweep', status: confirmed(9) })], { phase: 'complete' }),
+      plan([tx({ txid: 's', kind: 'sweep', status: confirmed(9) })], { status: { type: 'done' } }),
       chain({ broadcast }),
     );
     expect(broadcast).not.toHaveBeenCalled();

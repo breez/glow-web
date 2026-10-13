@@ -1,12 +1,6 @@
 import type { RecoverFundsLeaf, RecoverFundsResponse } from '@breeztech/breez-sdk-spark';
 import { isCooperative, unbuiltLeaves } from '../quote';
 
-/**
- * `complete` is the sdk's `done` verdict. `redo` is its `redo`: the chain no
- * longer matches these transactions, so the exit has to be built again.
- */
-export type ExitPhase = 'active' | 'complete' | 'redo';
-
 /** A leaf an exit set out to move, at the value it was quoted. */
 export interface NamedLeaf {
   leafId: string;
@@ -34,7 +28,7 @@ export interface Landing {
 }
 
 export interface UnilateralExitPlan {
-  version: 5;
+  version: 6;
   network: string;
   destination: string;
   feeRateSatPerVbyte: number;
@@ -84,17 +78,15 @@ export interface UnilateralExitPlan {
    * transaction is accepted or confirms.
    */
   refusals: Record<string, string>;
-  phase: ExitPhase;
+  status: ExitStatus;
   /** Frozen when the exit was built: the operators stop reporting the leaves it moves. */
   exitStateSnapshot?: string;
   mode?: ExitMode;
-  /** Glow's conversion of an exit stored under SDK 0.26, built again once nothing of it is in flight. */
-  needsRebuild?: true;
-  /** A rebuild needs the passkey, which only a tap can ask for, so the engine leaves it to the tracker's button. */
-  needsSignIn?: true;
-  /** The background rebuilds of a diverged exit have failed across a block, for a reason other than waiting on the chain, so the exit asks for the update tap. */
-  rebuildFailed?: true;
-  /** The tip of the first of those failures in a row: one passing outage within a block asks nothing. */
+  /**
+   * The tip of the first background rebuild of a diverged exit to fail in a
+   * row, for a reason other than waiting on the chain. Failures across a block
+   * ask for the update tap; one passing outage within a block asks nothing.
+   */
   rebuildFailingSince?: number;
   /** The tip of Glow's last rebuild over an Unverified step: once a block, so a failing chain service is not asked every pass. */
   unverifiedRebuiltAt?: number;
@@ -111,17 +103,28 @@ export interface UnilateralExitPlan {
    * the Recoverable Funds row by ID, and left out of Glow's fresh quotes.
    */
   droppedLeaves?: NamedLeaf[];
-  /** A unilateral leaf the exit left out, waiting on more exit fee. Plan slot only. */
-  topUp?: ExitTopUp;
-  /**
-   * Why the exit asks for the update tap. `unverified`: a step the SDK could
-   * not read, which only a rebuild settles, and that rebuild needs the passkey;
-   * an active exit asks only while `needsSignIn` is set too (`awaitsUpdate`).
-   * `watchtower`: a diverged exit's last rebuild found a leaf it built quoting
-   * co-signed, so the operators moved it. Absent, no cause is known.
-   */
-  redoCause?: 'unverified' | 'watchtower';
 }
+
+/** Where the exit stands. */
+export type ExitStatus =
+  /**
+   * Glow sends each step as its turn comes. `converted`: stored under SDK
+   * 0.26, and built again with this SDK once nothing of it is in flight.
+   */
+  | { type: 'running'; converted?: true }
+  /** The chain no longer matches the build (the SDK's Redo), so Glow builds it again on every pass. */
+  | { type: 'rebuilding' }
+  /**
+   * Waits on the update tap: a diverged exit whose rebuild needs the passkey
+   * (`signIn`) or failed across a block (`rebuildFailed`). With `cause` it has
+   * not diverged: a step the SDK could not read needs a rebuild only the
+   * passkey can sign, and the rest keeps running meanwhile.
+   */
+  | { type: 'needsUpdate'; why: 'signIn' | 'rebuildFailed'; cause?: 'unverified' }
+  /** A unilateral leaf the exit left out waits on more exit fee. Plan slot only. */
+  | { type: 'needsExitFee'; topUp: ExitTopUp }
+  /** The SDK's Done verdict, or nothing left to move: it waits only for its ledger to be read, then the archive. */
+  | { type: 'done' };
 
 /**
  * What a leftover's build needs at the exit fee address, at the plan's rate.
@@ -141,7 +144,7 @@ export interface ExitTopUp {
  */
 export type ExitMode = 'recover';
 
-export const PLAN_VERSION = 5;
+export const PLAN_VERSION = 6;
 
 export interface WalletKey {
   identityPubkey: string;
@@ -189,24 +192,26 @@ export interface PendingExit {
 }
 
 export function planFromExitResponse(exit: RecoverFundsResponse, meta: PlanMeta): UnilateralExitPlan {
-  return { version: PLAN_VERSION, ...meta, exit, refusals: {}, phase: 'active' };
+  return { version: PLAN_VERSION, ...meta, exit, refusals: {}, status: { type: 'running' } };
 }
 
 /** A unilateral step the SDK could not read while building: never sent, and a check never settles it. */
-export const hasUnverifiedStep = (plan: UnilateralExitPlan): boolean =>
-  plan.exit.transactions.some(tx => tx.status.type === 'unverified' && !isCooperative(tx));
+export const hasUnverifiedStep = ({ exit }: Pick<UnilateralExitPlan, 'exit'>): boolean =>
+  exit.transactions.some(tx => tx.status.type === 'unverified' && !isCooperative(tx));
 
-/**
- * Whether the exit waits on the user's update tap. Glow rebuilds a diverged
- * exit on every pass, so it asks only when that rebuild needs the passkey or
- * has failed. An active exit asks when its Unverified step needs a rebuild only
- * the passkey can sign, and keeps running meanwhile. A finished one never asks,
- * though a tap that finished it leaves the flags until the engine archives it.
- */
-export const awaitsUpdate = (plan: UnilateralExitPlan): boolean =>
-  plan.phase === 'redo'
-    ? !!plan.needsSignIn || !!plan.rebuildFailed
-    : plan.phase === 'active' && !!plan.needsSignIn && plan.redoCause === 'unverified';
+export const awaitsUpdate = ({ status }: Pick<UnilateralExitPlan, 'status'>): boolean => status.type === 'needsUpdate';
+
+/** The chain no longer matches the build, so it is built again before anything more is sent. */
+export const isDiverged = ({ status }: Pick<UnilateralExitPlan, 'status'>): boolean =>
+  status.type === 'rebuilding' || (status.type === 'needsUpdate' && !status.cause);
+
+/** Neither finished nor diverged: each step goes out as its turn comes. */
+export const isActive = (plan: Pick<UnilateralExitPlan, 'status'>): boolean =>
+  plan.status.type !== 'done' && !isDiverged(plan);
+
+/** What a leftover waiting on more exit fee asks for. */
+export const topUpOf = ({ status }: Pick<UnilateralExitPlan, 'status'>): ExitTopUp | undefined =>
+  status.type === 'needsExitFee' ? status.topUp : undefined;
 
 /** Every leaf a plan names. One from before `namedLeaves` names its exit's leaves and failures. */
 export function namedLeavesOf(plan: UnilateralExitPlan): NamedLeaf[] {
@@ -248,7 +253,7 @@ export const asKeptRecovery = (recovery: UnilateralExitPlan): UnilateralExitPlan
  * their amount never also shows as Recoverable Funds.
  */
 export function heldRecoveryLeaves(recovery: UnilateralExitPlan): RecoverFundsLeaf[] {
-  if (recovery.phase === 'complete') return [];
+  if (recovery.status.type === 'done') return [];
   const held = new Set(recovery.exit.transactions.filter(isCooperative).map(tx => tx.nodeId));
   return recovery.exit.leaves.filter(leaf => held.has(leaf.leafId));
 }
@@ -263,4 +268,4 @@ export const keptLeafIds = (recoveries: UnilateralExitPlan[]): Set<string> =>
  * leaves still open.
  */
 export const canBumpRecovery = (recovery: UnilateralExitPlan): boolean =>
-  recovery.phase === 'active' && !recovery.exit.transactions.some(tx => tx.status.type === 'confirmed');
+  recovery.status.type === 'running' && !recovery.exit.transactions.some(tx => tx.status.type === 'confirmed');

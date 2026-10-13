@@ -5,7 +5,9 @@ import {
   awaitsUpdate,
   canBumpRecovery,
   heldRecoveryLeaves,
+  isDiverged,
   isUnilateralLanded,
+  topUpOf,
   type PendingExit,
   type UnilateralExitPlan,
 } from './model/plan';
@@ -46,7 +48,7 @@ const activeSubtitle = (state: UnilateralExitEngineState): string | null => {
   const { confirmed, total } = planProgress(plan);
   // A diverged exit's timelocks belong to the set its rebuild replaces.
   const blocks =
-    state.tipHeight === null || plan.phase === 'redo'
+    state.tipHeight === null || isDiverged(plan)
       ? null
       : (nextAction(plan.exit.transactions, state.tipHeight)?.blocks ?? null);
   // The row's title already says these are transactions.
@@ -84,7 +86,7 @@ const topUpText = (
 ): Pick<UnilateralExitEntry, 'title' | 'subtitle' | 'isAction'> => {
   const coins = state.pendingCoins;
   const received = leftoverTopUp(plan, coins.filter(coin => coin.confirmed)).stillToSendSat === 0;
-  if (plan.topUp?.needsSignIn) {
+  if (topUpOf(plan)?.needsSignIn) {
     const title = received ? 'Exit fee received' : 'Waiting for exit fee';
     // The tap builds nothing over a unilateral step in flight, so it is not asked for yet.
     if (!isUnilateralLanded(plan.exit)) return { title, subtitle: 'Waiting for a confirmation' };
@@ -122,7 +124,7 @@ const recoveryEntry = (recovery: UnilateralExitPlan): UnilateralExitEntry => ({
   kind: 'recovery',
 });
 
-const inFlight = (recoveries: UnilateralExitPlan[]) => recoveries.filter(r => r.phase !== 'complete');
+const inFlight = (recoveries: UnilateralExitPlan[]) => recoveries.filter(r => r.status.type !== 'done');
 
 /**
  * Whether a unilateral leaf of the exit has left the balance: getInfo counts
@@ -206,7 +208,7 @@ const liveEntry = (state: UnilateralExitEngineState): UnilateralExitEntry | null
   }
   if (!plan) return null;
   // Ahead of the update tap: an exit waiting on its fee says what to send.
-  if (plan.topUp) return { id: 'active', ...topUpText(state, plan), amountSat: willReceiveSat(plan), kind: 'active' };
+  if (plan.status.type === 'needsExitFee') return { id: 'active', ...topUpText(state, plan), amountSat: willReceiveSat(plan), kind: 'active' };
   // A finished exit waiting on a read of what landed keeps its row until the
   // archive's takes over, so the exit never drops out of the list meanwhile.
   return {

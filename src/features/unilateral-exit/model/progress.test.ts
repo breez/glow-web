@@ -129,7 +129,7 @@ describe('planProgress', () => {
   });
 
   it('is complete on the sdk done verdict', () => {
-    const p = plan([tx({ txid: 's', kind: 'sweep', status: confirmed(2) })], { phase: 'complete' });
+    const p = plan([tx({ txid: 's', kind: 'sweep', status: confirmed(2) })], { status: { type: 'done' } });
     expect(planProgress(p).isComplete).toBe(true);
   });
 
@@ -138,7 +138,7 @@ describe('planProgress', () => {
   });
 
   it('is not complete when the exit has to be rebuilt', () => {
-    expect(planProgress(plan([tx({ txid: 'a' })], { phase: 'redo' })).isComplete).toBe(false);
+    expect(planProgress(plan([tx({ txid: 'a' })], { status: { type: 'rebuilding' } })).isComplete).toBe(false);
   });
 
   it('counts each transaction a replaced build landed once, as done', () => {

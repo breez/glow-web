@@ -4,7 +4,7 @@ import { checkAndPace } from './check';
 import { readHeldSat, withHeldSat } from './exitFee';
 import { recordLanded, settleLanded } from './ledger';
 import { retryLeftovers } from './leftovers';
-import { isLanded, leftoverIdsOf, type UnilateralExitPlan } from './model/plan';
+import { isActive, isLanded, leftoverIdsOf, type UnilateralExitPlan } from './model/plan';
 import type { ExitSdk } from './quoting';
 import { rebuildIfNeeded } from './rebuild';
 
@@ -24,23 +24,23 @@ export async function advanceUnilateralExit(
   const tipHeight = await chain.tipHeight();
   // Finished, whatever a check would now say: it only waits for its ledger to
   // be read, and then to be archived.
-  if (plan.phase === 'complete') return { plan: await settleLanded(recordLanded(plan), chain, tipHeight), tipHeight };
+  if (plan.status.type === 'done') return { plan: await settleLanded(recordLanded(plan), chain, tipHeight), tipHeight };
 
   const check = await checkAndPace(plan, sdk, tipHeight, !!identityPubkey);
   let next = check.plan;
   if (sdk && identityPubkey) next = await rebuildIfNeeded(next, sdk, identityPubkey, tipHeight, check.checked);
   next = withHeldSat(next, feeCoins);
   // Skipped in a pass that rebuilt, which already prepared every leaf again.
-  if (check.checked && sdk && next.phase === 'active' && next.exit === check.plan.exit) {
+  if (check.checked && sdk && isActive(next) && next.exit === check.plan.exit) {
     next = await retryLeftovers(next, sdk, tipHeight, check.retryNow, identityPubkey, feeCoins);
   }
   next = await readHeldSat(next, chain, feeCoins);
   // What the Done verdict waited on is settled, so the exit is finished.
-  if (check.doneSet && next.phase === 'active' && isLanded(next.exit) && leftoverIdsOf(next).length === 0) {
-    next = { ...next, phase: 'complete' };
+  if (check.doneSet && isActive(next) && isLanded(next.exit) && leftoverIdsOf(next).length === 0) {
+    next = { ...next, status: { type: 'done' } };
   }
 
   // Sent before the reads, so a failing chain service never holds a step back.
-  const sent = next.phase === 'active' ? await broadcastReadyTransactions(next, chain) : next;
+  const sent = isActive(next) ? await broadcastReadyTransactions(next, chain) : next;
   return { plan: await settleLanded(sent, chain, tipHeight), tipHeight };
 }

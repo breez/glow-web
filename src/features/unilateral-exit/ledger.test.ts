@@ -45,7 +45,7 @@ describe('the ledger of what landed', () => {
   describe('as a check records it', () => {
     it('records a confirmed sweep from its own hex: what it paid, its block, and the leaves of the refunds it spends', () => {
       const swept = twoLeaves([refund(1, 'leaf-1'), refund(2, 'leaf-2'), sweep('sweep', [1, 2], 596_524)]);
-      const next = applyExitCheck(swept, confirmedAs(swept, 'sweep'), 'complete');
+      const next = applyExitCheck(swept, confirmedAs(swept, 'sweep'), 'done');
       expect(next.landed).toEqual([
         { leafIds: ['leaf-1', 'leaf-2'], valueSat: 600_000, txid: 'sweep', paidSat: 596_524, blockHeight: 120 },
       ]);
@@ -54,9 +54,9 @@ describe('the ledger of what landed', () => {
 
     it('records a confirmed co-signed recovery as waiting on the outpoint it spends, and nothing before it confirms', () => {
       const recovery = plan([cosigned('c1', 'c-1', `${txidOf(9)}:1`)], { exit: { leaves: [coLeaf('c-1')] } });
-      expect(applyExitCheck(recovery, recovery.exit, 'active').landed).toBeUndefined();
+      expect(applyExitCheck(recovery, recovery.exit, 'valid').landed).toBeUndefined();
 
-      const next = applyExitCheck(recovery, confirmedAs(recovery, 'c1'), 'complete');
+      const next = applyExitCheck(recovery, confirmedAs(recovery, 'c1'), 'done');
       expect(next.landed).toEqual([{ leafIds: ['c-1'], valueSat: 30_000, outpoint: `${txidOf(9)}:1` }]);
       expect(hasWaitingLanding(next)).toBe(true);
     });
@@ -164,7 +164,7 @@ describe('the ledger of what landed', () => {
 
     it('records every leaf the empty quote lists nowhere as waiting, and not its own sweep as landed', async () => {
       const finished = await rebuildExit(swept(), sdk({ prepareRecoverFunds: async () => prepared({ leaves: [] }) }), '02abc');
-      expect(finished.phase).toBe('complete');
+      expect(finished.status).toEqual({ type: 'done' });
       expect(finished.landed).toEqual([
         { leafIds: ['leaf-1'], valueSat: 180_000, outpoint: `${txidOf(1)}:0` },
         { leafIds: ['leaf-2'], valueSat: 420_000, outpoint: `${txidOf(2)}:0` },
@@ -181,7 +181,7 @@ describe('the ledger of what landed', () => {
         recoverFunds: async () => checked([]),
       });
       const finished = await rebuildExit(swept(), driver, '02abc');
-      expect(finished.phase).toBe('complete');
+      expect(finished.status).toEqual({ type: 'done' });
       expect(finished.landed).toEqual([{ leafIds: ['leaf-1'], valueSat: 180_000, outpoint: `${txidOf(1)}:0` }]);
     });
   });
@@ -251,7 +251,7 @@ describe('the ledger of what landed', () => {
       });
       const current = plan([refund(1, 'leaf-1'), sweep('new-sweep', [1], 99_500)]);
       const { plan: next } = await advanceUnilateralExit(current, chain({ broadcast, confirmedSpender }), driver, '02abc');
-      expect(next.phase).toBe('complete');
+      expect(next.status).toEqual({ type: 'done' });
       expect(next.landed).toEqual([
         { leafIds: ['leaf-1'], valueSat: 100_000, outpoint, txid: 'old-sweep', blockHeight: 110, paidSat: 99_000 },
       ]);
@@ -260,7 +260,7 @@ describe('the ledger of what landed', () => {
 
     it('reads again for a finished exit still waiting on its ledger', async () => {
       const confirmedSpender = paidBy('sweep');
-      const finished = plan([], { phase: 'complete', landed: [{ leafIds: ['leaf-1'], valueSat: 100_000, outpoint }] });
+      const finished = plan([], { status: { type: 'done' }, landed: [{ leafIds: ['leaf-1'], valueSat: 100_000, outpoint }] });
       const { plan: next } = await advanceUnilateralExit(finished, chain({ confirmedSpender }));
       expect(confirmedSpender).toHaveBeenCalledTimes(1);
       expect(hasWaitingLanding(next)).toBe(false);
@@ -290,7 +290,7 @@ describe('the ledger of what landed', () => {
         prepareRecoverFunds: async () => prepared(),
       });
       const { plan: next } = await advanceUnilateralExit(recovering, chain({ confirmedSpender }), driver, '02abc');
-      expect(next).toMatchObject({ phase: 'redo', needsSignIn: true });
+      expect(next.status).toEqual({ type: 'needsUpdate', why: 'signIn' });
       expect(next.landed).toEqual([expect.objectContaining({ leafIds: ['c-1'], txid: 'c1', paidSat: 99_000 })]);
       localStorage.removeItem('passkeyLabel');
     });

@@ -1,5 +1,6 @@
 import { logger, LogCategory } from '@/services/logger';
 import { asKeptRecovery, PLAN_VERSION, type UnilateralExitPlan, type WalletKey } from '../model/plan';
+import { planFromV5, type V5Plan } from './legacyPlan';
 
 /**
  * Co-signed recoveries Glow broadcast and follows until they confirm. The sdk
@@ -24,9 +25,13 @@ export function loadRecoveries(wallet: WalletKey): UnilateralExitPlan[] {
   const raw = localStorage.getItem(recoveriesKey(wallet));
   if (!raw) return [];
   try {
-    const parsed = JSON.parse(raw) as UnilateralExitPlan[];
+    const parsed = JSON.parse(raw) as (UnilateralExitPlan | V5Plan)[];
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(r => r?.version === PLAN_VERSION && Array.isArray(r.exit?.transactions)).map(asKeptRecovery);
+    return parsed
+      .filter(r => Array.isArray(r?.exit?.transactions))
+      .map(r => (r.version === 5 ? planFromV5(r) : r))
+      .filter(r => r.version === PLAN_VERSION)
+      .map(asKeptRecovery);
   } catch {
     return [];
   }

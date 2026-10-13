@@ -21,7 +21,14 @@ import { leftoverTopUp, requiredFundingOf } from './exitFee';
 import { loadExitState, restoreExitState } from './exitState';
 import { MnemonicNeedsPasskeyError, type FundingKey } from './funding';
 import { hasWaitingLanding, withLanded } from './ledger';
-import { isUnilateralLanded, leftoverIdsOf, type ExitTopUp, type NamedLeaf, type UnilateralExitPlan } from './model/plan';
+import {
+  isUnilateralLanded,
+  leftoverIdsOf,
+  topUpOf,
+  type ExitTopUp,
+  type NamedLeaf,
+  type UnilateralExitPlan,
+} from './model/plan';
 import {
   exitFeeRecordOf,
   exitFeeSat,
@@ -81,9 +88,8 @@ export function paceRetry(plan: UnilateralExitPlan, tipHeight: number, withLefto
  * exit fee. The engine polls less often then.
  */
 export const isStalled = (plan: UnilateralExitPlan): boolean =>
-  plan.phase === 'active' &&
+  plan.status.type === 'running' &&
   !hasWaitingLanding(plan) &&
-  !plan.topUp &&
   plan.exit.transactions.every(tx => tx.status.type === 'confirmed' || isUnverifiedCosigned(tx)) &&
   (plan.exit.transactions.some(isUnverifiedCosigned) || leftoverIdsOf(plan).length > 0);
 
@@ -171,7 +177,16 @@ function withCosigned(
 
 /** Finished once nothing is built and nothing the exit named is still to come. */
 const completeIfEmpty = (plan: UnilateralExitPlan): UnilateralExitPlan =>
-  plan.exit.transactions.length > 0 || leftoverIdsOf(plan).length > 0 ? plan : { ...plan, phase: 'complete' };
+  plan.exit.transactions.length > 0 || leftoverIdsOf(plan).length > 0 ? plan : { ...plan, status: { type: 'done' } };
+
+const askingFee = (plan: UnilateralExitPlan, topUp: ExitTopUp): UnilateralExitPlan => ({
+  ...plan,
+  status: { type: 'needsExitFee', topUp },
+});
+
+/** Asks for no more exit fee: an exit that waited on it runs on. */
+const withoutTopUp = (plan: UnilateralExitPlan): UnilateralExitPlan =>
+  plan.status.type === 'needsExitFee' ? { ...plan, status: { type: 'running' } } : plan;
 
 /** A co-signed build the operators refused entirely changes nothing: what was stuck stays. */
 const buildCosigned = (sdk: ExitSdk, quote: PrepareRecoverFundsResponse): Promise<RecoverFundsResponse | null> =>
@@ -240,9 +255,10 @@ async function applyRetryQuote(
   const cosigned = quote.leaves.filter(isCooperativeLeaf).map(leaf => leaf.leafId);
   const cosignedQuote = cosigned.length === 0 ? null : unilateral ? await quoteLeaves(sdk, cosigned, plan) : quote;
   const built = cosignedQuote && cosignedQuote.leaves.length > 0 ? await buildCosigned(sdk, cosignedQuote) : null;
-  const asksFee = inSlot && unilateral && needsFunding(quote) && (landed || !!plan.topUp);
-  const topUp = asksFee ? (plan.topUp ?? askTopUp(plan, quote)) : undefined;
-  return completeIfEmpty(withCosigned({ ...withQuotedFees(plan, quote), landed: withLanded(plan, quote, landedIds), topUp }, built, gone, dropped));
+  const asked = topUpOf(plan);
+  const asksFee = inSlot && unilateral && needsFunding(quote) && (landed || !!asked);
+  const next = asksFee ? askingFee(plan, asked ?? askTopUp(plan, quote)) : withoutTopUp(plan);
+  return completeIfEmpty(withCosigned({ ...withQuotedFees(next, quote), landed: withLanded(plan, quote, landedIds) }, built, gone, dropped));
 }
 
 /**
@@ -282,7 +298,8 @@ async function buildFromFeeCoins(
 ): Promise<UnilateralExitPlan> {
   const { quotedExitFeeSat, exitFeeAddress } = exitFeeRecordOf(plan);
   const address = exitFeeAddress ?? key.address;
-  const required = plan.topUp?.required ?? { sat: exitFeeSat(quote), inputs: 1 };
+  const asked = topUpOf(plan);
+  const required = asked?.required ?? { sat: exitFeeSat(quote), inputs: 1 };
   const funding = {
     inputs: mergeFunding(plan.exit.fundingInputs, fundingInputsOf(coins, key.publicKeyHex)),
     secretKey: key.secretKey,
@@ -290,13 +307,14 @@ async function buildFromFeeCoins(
   try {
     // The fee paid grows by what was sent for this part, not what the address already held.
     return await buildNextPart(plan, sdk, quote, funding, {
-      quotedExitFeeSat: (quotedExitFeeSat ?? 0) + Math.max(0, required.sat - (plan.topUp?.heldSat ?? 0)),
+      quotedExitFeeSat: (quotedExitFeeSat ?? 0) + Math.max(0, required.sat - (asked?.heldSat ?? 0)),
       exitFeeAddress: address,
     });
   } catch (e) {
     const sat = requiredFundingOf(e instanceof Error ? e.message : String(e));
     if (sat === null) throw e;
-    return { ...withQuotedFees(plan, quote), exitFeeAddress: address, topUp: { required: { sat, inputs: coins.length }, heldSat: plan.topUp?.heldSat } };
+    const short = askingFee(withQuotedFees(plan, quote), { required: { sat, inputs: coins.length }, heldSat: asked?.heldSat });
+    return { ...short, exitFeeAddress: address };
   }
 }
 
@@ -322,25 +340,29 @@ export async function buildLeftover(
   // SDK hands back the one it kept, so the next part carries it.
   const targets = [...cosignedInFlight(plan), ...leftoverIdsOf(plan)];
   const quote = await quoteLeaves(sdk, targets, plan);
-  if (!needsFunding(quote)) return applyRetryQuote({ ...plan, topUp: undefined }, sdk, quote, targets, true);
+  if (!needsFunding(quote)) return applyRetryQuote(withoutTopUp(plan), sdk, quote, targets, true);
 
   let key: FundingKey;
   try {
     key = tapKey ?? (await readFundingKey(plan, interactive));
   } catch (e) {
     if (interactive || !(e instanceof MnemonicNeedsPasskeyError)) throw e;
-    return { ...withQuotedFees(plan, quote), topUp: { ...(plan.topUp ?? askTopUp(plan, quote)), needsSignIn: true } };
+    return askingFee(withQuotedFees(plan, quote), { ...(topUpOf(plan) ?? askTopUp(plan, quote)), needsSignIn: true });
   }
   return buildFromFeeCoins(plan, sdk, quote, coins, key);
 }
 
 /** Whether a leftover's fee has confirmed, so its build can go ahead. Once a block: a confirmation comes with one. */
-const leftoverFunded = (plan: UnilateralExitPlan, confirmed: ChainUtxo[], tipHeight: number): boolean =>
-  !!plan.topUp &&
-  !plan.topUp.needsSignIn &&
-  plan.retriedAt !== tipHeight &&
-  isUnilateralLanded(plan.exit) &&
-  leftoverTopUp(plan, confirmed).stillToSendSat === 0;
+function leftoverFunded(plan: UnilateralExitPlan, confirmed: ChainUtxo[], tipHeight: number): boolean {
+  const asked = topUpOf(plan);
+  return (
+    !!asked &&
+    !asked.needsSignIn &&
+    plan.retriedAt !== tipHeight &&
+    isUnilateralLanded(plan.exit) &&
+    leftoverTopUp(plan, confirmed).stillToSendSat === 0
+  );
+}
 
 async function buildFundedLeftover(
   plan: UnilateralExitPlan,
@@ -363,10 +385,9 @@ async function buildFundedLeftover(
 /** Lets go of what is still stuck at the deadline, leftovers included. Not dropped, so it shows as Recoverable Funds again. */
 const releaseStuck = (plan: UnilateralExitPlan, withLeftovers: boolean): UnilateralExitPlan =>
   completeIfEmpty({
-    ...withCosigned(plan, null, new Set(retryTargetsOf(plan, withLeftovers)), []),
+    ...withCosigned(withoutTopUp(plan), null, new Set(retryTargetsOf(plan, withLeftovers)), []),
     retrySince: undefined,
     retriedAt: undefined,
-    topUp: undefined,
   });
 
 export async function retryLeftovers(
@@ -382,7 +403,7 @@ export async function retryLeftovers(
   if (identityPubkey && feeCoins && leftoverFunded(plan, confirmedFee, tipHeight)) {
     const next = await buildFundedLeftover(plan, sdk, identityPubkey, confirmedFee, tipHeight);
     // A build that keeps failing holds the leftover no longer than the week.
-    return next.topUp && releaseDue(next, tipHeight) ? releaseStuck(next, inSlot) : next;
+    return next.status.type === 'needsExitFee' && releaseDue(next, tipHeight) ? releaseStuck(next, inSlot) : next;
   }
   if (releaseDue(plan, tipHeight)) return releaseStuck(plan, inSlot);
   if (retryNow || retryDue(plan, tipHeight)) return retryCosigned(plan, sdk, tipHeight, identityPubkey);

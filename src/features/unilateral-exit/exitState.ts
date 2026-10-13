@@ -14,7 +14,7 @@ export function exitStateForExit(
   plan: UnilateralExitPlan | null,
   rolling: string | null,
 ): string | null {
-  if (plan?.phase === 'complete') return null;
+  if (plan?.status.type === 'done') return null;
   return plan?.exitStateSnapshot ?? rolling ?? null;
 }
 
@@ -28,7 +28,7 @@ export async function captureExitState(
   plan: UnilateralExitPlan | null,
   save: (exitState: string) => Promise<void>,
 ): Promise<void> {
-  if (plan && plan.phase !== 'complete') return;
+  if (plan && plan.status.type !== 'done') return;
   try {
     const { exitState } = await sdk.exportUnilateralExitState();
     await save(exitState);

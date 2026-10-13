@@ -4,7 +4,7 @@ import { AlertCard, SimpleAlert } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
 import { CollapsibleCodeField, CollapsibleSection, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { RefreshIcon } from '@/components/Icons';
-import { awaitsUpdate, isLanded, leftoverIdsOf, type UnilateralExitPlan } from './model/plan';
+import { awaitsUpdate, isActive, isDiverged, isLanded, leftoverIdsOf, type UnilateralExitPlan } from './model/plan';
 import { blocksToFinish, exitStages, nextAction, planProgress, type NextAction, type PlanProgress } from './model/progress';
 import { isCooperative } from './quote';
 import { formatDaysLeft } from '@/utils/blockTime';
@@ -74,11 +74,12 @@ const ExitSummary: React.FC<{
   // set's next step is not what it is doing. Nor is it once the set has
   // landed and only leaves it left out remain, which Glow tries again by
   // itself for up to a week.
-  const paused = plan.phase === 'redo' && awaitsUpdate(plan);
-  const retrying = plan.phase === 'active' && isLanded(plan.exit) && leftoverIdsOf(plan).length > 0;
-  const status = isChecking
+  const diverged = isDiverged(plan);
+  const paused = diverged && awaitsUpdate(plan);
+  const retrying = isActive(plan) && isLanded(plan.exit) && leftoverIdsOf(plan).length > 0;
+  const statusText = isChecking
     ? 'Checking the blockchain...'
-    : plan.phase === 'redo' || retrying
+    : diverged || retrying
       ? paused
         ? 'Update needed'
         : 'Updating automatically'
@@ -129,7 +130,7 @@ const ExitSummary: React.FC<{
         </Row>
         <div className="border-t border-spark-border/50" />
         <Row label="Current status">
-          <span data-testid="unilateral-exit-status">{status}</span>
+          <span data-testid="unilateral-exit-status">{statusText}</span>
         </Row>
       </div>
     </div>
@@ -202,8 +203,9 @@ export const TrackerView: React.FC<{
   // A co-signed recovery is Glow's own record, which the exit-data export does
   // not hold, so saving or restoring exit data would not bring it back.
   const isCosignedRecovery = transactions.length > 0 && transactions.every(isCooperative);
+  const unverified = plan.status.type === 'needsUpdate' && plan.status.cause === 'unverified';
   // With everything confirmed, nothing is left at the old rate to pay more for.
-  const rebuildRow = plan.phase === 'active' && !isLanded(plan.exit) && onRebuild && (
+  const rebuildRow = isActive(plan) && !isLanded(plan.exit) && onRebuild && (
     <ExitActionRow
       label="Rebuild at a higher fee"
       icon={<RefreshIcon size="md" />}
@@ -224,7 +226,7 @@ export const TrackerView: React.FC<{
 
       {/* The engine only runs while the app is open, so leaving the sheet is
           fine but leaving Glow for good is not. */}
-      {justStarted && plan.phase === 'active' && !awaitsUpdate(plan) && (
+      {justStarted && isActive(plan) && !awaitsUpdate(plan) && (
         <p className="text-spark-text-muted text-xs text-center text-balance">
           You can close this. Open Glow regularly until the {noun} finishes.
         </p>
@@ -256,20 +258,14 @@ export const TrackerView: React.FC<{
             <UpdateError noun={noun} error={continueError} />
           ) : (
             <SimpleAlert variant="warning" hideIcon>
-              {plan.redoCause === 'unverified' ? (
+              {unverified ? (
                 <p>
                   Glow couldn&apos;t check part of your {noun} on-chain. Please update your{' '}
                   {noun === 'exit' ? 'unilateral exit' : noun} to continue.
                 </p>
-              ) : plan.redoCause === 'watchtower' ? (
-                <p>
-                  Part of your {noun} didn&apos;t confirm in time, so the Spark operators moved some of your funds
-                  on-chain to keep them safe. Please update your {noun === 'exit' ? 'unilateral exit' : noun} to
-                  recover all your funds.
-                </p>
               ) : (
                 <p>
-                  Part of your {noun} changed on-chain. Please update your{' '}
+                  Some of your funds were moved on-chain to keep them safe. Please update your{' '}
                   {noun === 'exit' ? 'unilateral exit' : noun} to recover all your funds.
                 </p>
               )}

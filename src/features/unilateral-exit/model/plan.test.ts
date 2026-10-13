@@ -17,34 +17,31 @@ describe('planFromExitResponse', () => {
     });
     const built = planFromExitResponse(exit, meta);
     expect(built.exit).toBe(exit);
-    expect(built).toMatchObject({ ...meta, phase: 'active', refusals: {} });
+    expect(built).toMatchObject({ ...meta, status: { type: 'running' }, refusals: {} });
   });
 });
 
 describe('awaitsUpdate', () => {
   it('asks for the tap on a diverged exit only when its rebuild needs the passkey or failed', () => {
-    expect(awaitsUpdate(plan([], { phase: 'redo', needsSignIn: true }))).toBe(true);
-    expect(awaitsUpdate(plan([], { phase: 'redo', rebuildFailed: true }))).toBe(true);
+    expect(awaitsUpdate(plan([], { status: { type: 'needsUpdate', why: 'signIn' } }))).toBe(true);
+    expect(awaitsUpdate(plan([], { status: { type: 'needsUpdate', why: 'rebuildFailed' } }))).toBe(true);
   });
 
   it('leaves a diverged exit Glow rebuilds by itself alone', () => {
-    expect(awaitsUpdate(plan([], { phase: 'redo' }))).toBe(false);
+    expect(awaitsUpdate(plan([], { status: { type: 'rebuilding' } }))).toBe(false);
   });
 
   it('asks for the tap on a running exit that has to sign over a step it could not read', () => {
-    expect(awaitsUpdate(plan([], { needsSignIn: true, redoCause: 'unverified' }))).toBe(true);
+    expect(awaitsUpdate(plan([], { status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } }))).toBe(true);
   });
 
-  it('leaves a running exit alone, a converted one waiting to sign included', () => {
+  it('leaves a running exit alone, a converted one included', () => {
     expect(awaitsUpdate(plan([]))).toBe(false);
-    expect(awaitsUpdate(plan([], { needsRebuild: true, needsSignIn: true }))).toBe(false);
-    // A tap that found nothing to rebuild yet hands the step back to the engine.
-    expect(awaitsUpdate(plan([], { redoCause: 'unverified' }))).toBe(false);
-    // Left from a divergence the chain has since settled.
-    expect(awaitsUpdate(plan([], { rebuildFailed: true }))).toBe(false);
+    expect(awaitsUpdate(plan([], { status: { type: 'running', converted: true } }))).toBe(false);
   });
 
-  it('asks nothing of a tap whose rebuild finished the exit, while it waits to be archived', () => {
-    expect(awaitsUpdate(plan([], { phase: 'complete', needsSignIn: true, redoCause: 'unverified' }))).toBe(false);
+  it('asks nothing of a finished exit, or of one waiting on more exit fee', () => {
+    expect(awaitsUpdate(plan([], { status: { type: 'done' } }))).toBe(false);
+    expect(awaitsUpdate(plan([], { status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } } }))).toBe(false);
   });
 });

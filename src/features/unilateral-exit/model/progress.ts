@@ -83,7 +83,7 @@ export function planProgress(plan: UnilateralExitPlan): PlanProgress {
   const prior = paidOut(priorLandings(plan)).txids.length;
   const confirmed = transactions.filter(tx => tx.status.type === 'confirmed').length + prior;
   const total = transactions.length + prior + leftoverIdsOf(plan).length;
-  return { confirmed, total, isComplete: plan.phase === 'complete' };
+  return { confirmed, total, isComplete: plan.status.type === 'done' };
 }
 
 export interface NextAction {

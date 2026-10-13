@@ -80,7 +80,7 @@ export const plan = (
 ): UnilateralExitPlan => {
   const { exit, ...rest } = over;
   return {
-    version: 5,
+    version: 6,
     network: 'mainnet',
     destination: 'bc1qdest',
     feeRateSatPerVbyte: 2,
@@ -88,7 +88,7 @@ export const plan = (
     quotedSweepFeeSat: 200,
     exit: { ...checked([]), transactions, ...exit },
     refusals: {},
-    phase: 'active',
+    status: { type: 'running' },
     ...rest,
   };
 };

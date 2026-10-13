@@ -3,7 +3,7 @@ import type { BreezSdk } from '@breeztech/breez-sdk-spark';
 import type { ChainClient } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
-import { awaitsUpdate, type WalletKey } from '../model/plan';
+import { awaitsUpdate, type ExitStatus, type WalletKey } from '../model/plan';
 import { buildLeftover } from '../leftovers';
 import { RebuildLaterError } from '../building';
 import { rebuildExit } from '../rebuild';
@@ -32,13 +32,13 @@ export function useContinueExit({ wallet, walletKey, chain, engine }: ContinueIn
     setIsContinuing(true);
     setContinueError(null);
     try {
-      if (plan.topUp) {
+      if (plan.status.type === 'needsExitFee') {
         const confirmed = pendingCoins.filter(coin => coin.confirmed);
         const built = await buildLeftover(plan, wallet, walletKey.identityPubkey, confirmed, { interactive: true });
         setUnilateralExitPlan(walletKey, built);
         return;
       }
-      // A rebuild with nothing left comes back complete, and the engine archives it.
+      // A rebuild with nothing left comes back done, and the engine archives it.
       const rebuilt = await rebuildExit(plan, wallet, walletKey.identityPubkey, { interactive: true });
       // This build just read the chain, so a step it still could not read waits
       // for the next block instead of asking for the tap again at once. Read
@@ -51,14 +51,10 @@ export function useContinueExit({ wallet, walletKey, chain, engine }: ContinueIn
       // does. A failed rebuild is the engine's to clear on its next pass, and
       // the plan held here may already be stale.
       if (e instanceof RebuildLaterError) {
-        if (plan.needsSignIn) {
-          setUnilateralExitPlan(walletKey, {
-            ...plan,
-            needsSignIn: undefined,
-            redoCause: undefined,
-            rebuildFailed: undefined,
-            rebuildFailingSince: undefined,
-          });
+        const { status } = plan;
+        if (status.type === 'needsUpdate' && status.why === 'signIn') {
+          const lifted: ExitStatus = status.cause ? { type: 'running' } : { type: 'rebuilding' };
+          setUnilateralExitPlan(walletKey, { ...plan, status: lifted, rebuildFailingSince: undefined });
         } else void advanceNow();
         return;
       }
@@ -72,7 +68,7 @@ export function useContinueExit({ wallet, walletKey, chain, engine }: ContinueIn
   // A card that comes back explains itself again rather than showing an error
   // from before. Cleared on the way out, not in the body, which would set
   // state during the effect.
-  const asksForUpdate = !!plan && (awaitsUpdate(plan) || !!plan.topUp);
+  const asksForUpdate = !!plan && (awaitsUpdate(plan) || plan.status.type === 'needsExitFee');
   useEffect(() => {
     if (!asksForUpdate) return;
     return () => setContinueError(null);

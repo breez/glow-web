@@ -31,6 +31,9 @@ const twoLeaves = (transactions: Parameters<typeof plan>[0], over: Parameters<ty
     },
   });
 
+const signIn = { type: 'needsUpdate', why: 'signIn' } as const;
+const unverified = { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } as const;
+
 const renderTracker = (p: UnilateralExitPlan, tipHeight: number | null = 1000, onRebuild = vi.fn()) =>
   render(<TrackerView plan={p} tipHeight={tipHeight} isAdvancing={false} onRebuild={onRebuild} />);
 
@@ -131,19 +134,19 @@ describe('what the exit is worth right now', () => {
   });
 
   it.each([
-    ['its rebuild needs the passkey', { needsSignIn: true }],
-    ['its rebuild failed', { rebuildFailed: true }],
-  ] as const)('pauses a diverged exit when %s, and says it needs the update', (_, flags) => {
-    renderTracker(plan([tx({ txid: 'a' })], { phase: 'redo', ...flags }));
+    ['its rebuild needs the passkey', 'signIn'],
+    ['its rebuild failed', 'rebuildFailed'],
+  ] as const)('pauses a diverged exit when %s, and says it needs the update', (_, why) => {
+    renderTracker(plan([tx({ txid: 'a' })], { status: { type: 'needsUpdate', why } }));
     expect(screen.getByText('Paused')).toBeInTheDocument();
     expect(screen.getByTestId('unilateral-exit-status')).toHaveTextContent('Update needed');
-    expect(screen.getByText(/Part of your exit changed on-chain/)).toBeInTheDocument();
+    expect(screen.getByText(/Some of your funds were moved on-chain/)).toBeInTheDocument();
   });
 
   it('says a diverged exit Glow rebuilds by itself is updating, and asks nothing, even after a failed tap', () => {
     render(
       <TrackerView
-        plan={plan([tx({ txid: 'a', status: locked(1144) })], { phase: 'redo' })}
+        plan={plan([tx({ txid: 'a', status: locked(1144) })], { status: { type: 'rebuilding' } })}
         tipHeight={1000}
         isAdvancing={false}
         continueError="Nothing is left to rebuild. The exit updates on its next check."
@@ -175,8 +178,8 @@ describe('TrackerView', () => {
   it('explains a diverged exit and continues it in place, without the wizard', () => {
     const onRebuild = vi.fn();
     const onContinue = vi.fn();
-    render(<TrackerView plan={plan([tx({ txid: 'a' })], { phase: 'redo', needsSignIn: true })} tipHeight={1000} isAdvancing={false} onRebuild={onRebuild} />);
-    expect(screen.getByText(/Part of your exit changed on-chain/)).toBeInTheDocument();
+    render(<TrackerView plan={plan([tx({ txid: 'a' })], { status: signIn })} tipHeight={1000} isAdvancing={false} onRebuild={onRebuild} />);
+    expect(screen.getByText(/Some of your funds were moved on-chain/)).toBeInTheDocument();
     render(<RedoActions onContinue={onContinue} onRebuild={onRebuild} isContinuing={false} continueError={null} />);
     expect(screen.getByTestId('unilateral-exit-rebuild')).toHaveTextContent(/^Update & Continue Exit$/);
     fireEvent.click(screen.getByTestId('unilateral-exit-rebuild'));
@@ -186,30 +189,34 @@ describe('TrackerView', () => {
   });
 
   it('says Glow could not check the exit when that is why it needs the tap, while it keeps running', () => {
-    render(<TrackerView plan={plan([tx({ txid: 'a' })], { needsSignIn: true, redoCause: 'unverified' })} tipHeight={1000} isAdvancing={false} />);
+    render(<TrackerView plan={plan([tx({ txid: 'a' })], { status: unverified })} tipHeight={1000} isAdvancing={false} />);
     expect(screen.getByText(/Glow couldn't check part of your exit on-chain/)).toBeInTheDocument();
-    expect(screen.queryByText(/Spark operators moved/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Some of your funds were moved/)).not.toBeInTheDocument();
     expect(screen.getByText('Processing')).toBeInTheDocument();
   });
 
+  const moved = 'Some of your funds were moved on-chain to keep them safe. Please update your unilateral exit to recover all your funds.';
   it.each([
-    ['a step it could not read', { needsSignIn: true, redoCause: 'unverified' }, "Glow couldn't check part of your exit on-chain. Please update your unilateral exit to continue."],
-    [
-      'a leaf the operators moved',
-      { phase: 'redo', needsSignIn: true, redoCause: 'watchtower' },
-      "Part of your exit didn't confirm in time, so the Spark operators moved some of your funds on-chain to keep them safe. Please update your unilateral exit to recover all your funds.",
-    ],
-    ['no known cause', { phase: 'redo', rebuildFailed: true }, 'Part of your exit changed on-chain. Please update your unilateral exit to recover all your funds.'],
-  ] as const)('asks for the update over %s in words that name only that cause', (_, flags, text) => {
-    render(<TrackerView plan={plan([tx({ txid: 'a' })], flags)} tipHeight={1000} isAdvancing={false} />);
+    ['a step it could not read', unverified, "Glow couldn't check part of your exit on-chain. Please update your unilateral exit to continue."],
+    ['a diverged exit whose rebuild needs the passkey', signIn, moved],
+    ['a diverged exit whose rebuild failed', { type: 'needsUpdate', why: 'rebuildFailed' }, moved],
+  ] as const)('asks for the update on %s', (_, status, text) => {
+    render(<TrackerView plan={plan([tx({ txid: 'a' })], { status })} tipHeight={1000} isAdvancing={false} />);
     expect(screen.getByText(text)).toBeInTheDocument();
+  });
+
+  it('names a recovery in the update it asks for', () => {
+    render(<TrackerView plan={plan([tx({ txid: 'a' })], { status: signIn })} tipHeight={1000} isAdvancing={false} noun="recovery" />);
+    expect(
+      screen.getByText('Some of your funds were moved on-chain to keep them safe. Please update your recovery to recover all your funds.'),
+    ).toBeInTheDocument();
   });
 
   it('offers the wizard when continuing in place fails', () => {
     const onRebuild = vi.fn();
     const error = 'Insufficient CPFP funding: need at least 5000 sats';
     render(
-      <TrackerView plan={plan([tx({ txid: 'a' })], { phase: 'redo', needsSignIn: true })} tipHeight={1000} isAdvancing={false} onRebuild={onRebuild} continueError={error} />,
+      <TrackerView plan={plan([tx({ txid: 'a' })], { status: signIn })} tipHeight={1000} isAdvancing={false} onRebuild={onRebuild} continueError={error} />,
     );
     expect(screen.getByText('Could not update the exit')).toBeInTheDocument();
     expect(screen.queryByText(/Please update your/)).not.toBeInTheDocument();
@@ -232,7 +239,7 @@ describe('TrackerView', () => {
   });
 
   it('drops the fee bump once the chain has diverged, since a rebuild is already offered', () => {
-    renderTracker(plan([tx({ txid: 'a' })], { phase: 'redo' }));
+    renderTracker(plan([tx({ txid: 'a' })], { status: { type: 'rebuilding' } }));
     expect(screen.queryByTestId('unilateral-exit-bump-fee')).not.toBeInTheDocument();
   });
 
@@ -302,7 +309,7 @@ describe('the note once an exit starts', () => {
 
   it('leaves a paused exit to its own card', () => {
     render(
-      <TrackerView plan={{ ...running, phase: 'redo', needsSignIn: true }} tipHeight={1000} isAdvancing={false} onRebuild={vi.fn()} justStarted />,
+      <TrackerView plan={{ ...running, status: signIn }} tipHeight={1000} isAdvancing={false} onRebuild={vi.fn()} justStarted />,
     );
     expect(screen.queryByText(/You can close this/)).not.toBeInTheDocument();
   });

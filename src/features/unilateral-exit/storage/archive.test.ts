@@ -1,5 +1,5 @@
 import { archiveExit, droppedLeafIds, loadArchive } from './archive';
-import type { Landing, UnilateralExitPlan } from '../model/plan';
+import { topUpOf, type Landing, type UnilateralExitPlan } from '../model/plan';
 import { advanceUnilateralExit } from '../pass';
 import type { ExitSdk } from '../quoting';
 import { deriveFundingKey } from '../funding';
@@ -20,7 +20,7 @@ const paid = (txid: string, leafIds: string[], valueSat: number, paidSat: number
 
 const finished = (txid: string, deliveredSat: number) =>
   plan([tx({ txid, kind: 'sweep', txHex: '00', status: confirmed(10) })], {
-    phase: 'complete',
+    status: { type: 'done' },
     destination: `bcrt1-${txid}`,
     quotedSweepFeeSat: 0,
     exit: { recoverableValueSats: deliveredSat },
@@ -47,7 +47,7 @@ describe('archiveExit', () => {
     archiveExit(
       wallet,
       plan([tx({ txid: 'sweep-last', kind: 'sweep', txHex: '00', status: { type: 'ready' } })], {
-        phase: 'complete',
+        status: { type: 'done' },
         landed: [
           paid('sweep-old', ['leaf-1'], 180_000, 596_524, 120),
           paid('sweep-old', ['leaf-2'], 420_000, 596_524, 120),
@@ -65,7 +65,7 @@ describe('archiveExit', () => {
   });
 
   it('keys an exit that ended with no transactions of its own on the first that landed', () => {
-    archiveExit(wallet, plan([], { phase: 'complete', landed: [paid('late', ['leaf-1'], 9_000, 8_800, 30), paid('early', ['leaf-2'], 9_000, 8_800, 20)] }));
+    archiveExit(wallet, plan([], { status: { type: 'done' }, landed: [paid('late', ['leaf-1'], 9_000, 8_800, 30), paid('early', ['leaf-2'], 9_000, 8_800, 20)] }));
 
     expect(loadArchive(wallet)[0]).toMatchObject({ id: 'early', txids: ['early', 'late'] });
   });
@@ -75,7 +75,7 @@ describe('archiveExit', () => {
     archiveExit(
       wallet,
       plan([tx({ txid: 'sweep-a', kind: 'sweep', txHex: '00', status: confirmed(10) })], {
-        phase: 'complete',
+        status: { type: 'done' },
         recoverableFundsSat: 48_200,
         landed: [paid('sweep-a', ['leaf-1'], 40_000, 39_000), paid('elsewhere', ['c-1'], 48_200, 0)],
       }),
@@ -93,11 +93,11 @@ describe('archiveExit', () => {
     archiveExit(
       wallet,
       plan([tx({ txid: 'sweep-a', kind: 'sweep', txHex: '00', status: confirmed(10) })], {
-        phase: 'complete',
+        status: { type: 'done' },
         landed: [{ leafIds: ['leaf-1'], valueSat: 50_000, outpoint: 'refund:0' }],
       }),
     );
-    archiveExit(wallet, plan([tx({ txid: 'node-a' })], { phase: 'complete' }));
+    archiveExit(wallet, plan([tx({ txid: 'node-a' })], { status: { type: 'done' } }));
 
     expect(loadArchive(wallet)).toEqual([]);
   });
@@ -140,7 +140,7 @@ describe('archiveExit', () => {
     archiveExit(
       wallet,
       plan([tx({ txid: 'sweep-a', kind: 'sweep', txHex: '00', status: confirmed(10) })], {
-        phase: 'complete',
+        status: { type: 'done' },
         network: 'regtest',
         exit: {
           recoverableValueSats: 600_000,
@@ -177,7 +177,7 @@ describe('archiveExit', () => {
     archiveExit(
       wallet,
       plan([tx({ txid: 'sweep-c', kind: 'sweep', txHex: '00', status: confirmed(10) })], {
-        phase: 'complete',
+        status: { type: 'done' },
         network: 'regtest',
         quotedExitFeeSat: 58_534,
         exit: {
@@ -197,7 +197,7 @@ describe('archiveExit', () => {
     archiveExit(
       wallet,
       plan([tx({ txid: 'sweep-d', kind: 'sweep', txHex: '00', status: confirmed(10) })], {
-        phase: 'complete',
+        status: { type: 'done' },
         quotedExitFeeSat: 14_350,
         exitFeeAddress: 'bcrt1qfee',
         exit: { recoverableValueSats: 120_000, fundingInputs: [] },
@@ -224,7 +224,7 @@ describe('archiveExit', () => {
           tx({ txid: 'coop-b', kind: 'cooperative', nodeId: 'c-2', txHex: '00', status: confirmed(10) }),
         ],
         {
-          phase: 'complete',
+          status: { type: 'done' },
           mode: 'recover',
           recoverableFundsSat: 48_200,
           exit: { recoverableValueSats: 48_200 },
@@ -248,7 +248,7 @@ describe('archiveExit', () => {
     archiveExit(
       wallet,
       plan([tx({ txid: 'sweep-a', kind: 'sweep', txHex: '00', status: confirmed(10) })], {
-        phase: 'complete',
+        status: { type: 'done' },
         // c-1 was let go and never landed; c-2 landed on its own recovery.
         recoverableLeafIds: ['c-1', 'c-2'],
         landed: [paid('sweep-a', ['leaf-1'], 100_000, 99_000), paid('coop-2', ['c-2'], 18_200, 17_000)],
@@ -264,7 +264,7 @@ describe('archiveExit', () => {
         tx({ txid: 'sweep-g', kind: 'sweep', txHex: '00', status: confirmed(10) }),
       ],
       {
-        phase: 'complete',
+        status: { type: 'done' },
         // Both leaves were balance when the exit began.
         recoverableLeafIds: [],
         exit: {
@@ -331,7 +331,7 @@ describe('an exit that built what it left out', () => {
       },
     );
   const archived = async (finished: UnilateralExitPlan) => {
-    expect(finished.phase).toBe('complete');
+    expect(finished.status).toEqual({ type: 'done' });
     archiveExit(wallet, finished);
     return loadArchive(wallet)[0];
   };
@@ -374,7 +374,7 @@ describe('an exit that built what it left out', () => {
       );
     const driver = (height: number) => done(height, { prepareRecoverFunds: async () => asking, recoverFunds: async () => nextPart() });
     const asked = await advanceUnilateralExit(exit('leaf-2'), chain(), driver(91), '02abc');
-    expect(asked.plan.topUp?.required).toEqual({ sat: 3_000, inputs: 1 });
+    expect(topUpOf(asked.plan)?.required).toEqual({ sat: 3_000, inputs: 1 });
     const held = await advanceUnilateralExit(asked.plan, chain({ tipHeight: async () => 101 }), driver(91), '02abc', []);
     const built = await advanceUnilateralExit(held.plan, chain({ tipHeight: async () => 102 }), driver(91), '02abc', [coin(3_000)]);
     expect(built.plan.exit.transactions.map(t => t.txid)).toEqual([txidOf(2), 'sweep-2']);

@@ -6,14 +6,14 @@ import type { CheckRecoverFundsRequest } from '@breeztech/breez-sdk-spark';
 describe('applyExitCheck', () => {
   it('takes the sdk word on the whole exit', () => {
     const exit = checked([{ txid: 'a', status: confirmed(812_345) }], { sweepFeeSats: 250 });
-    expect(applyExitCheck(plan([tx({ txid: 'a' })]), exit, 'active').exit).toBe(exit);
+    expect(applyExitCheck(plan([tx({ txid: 'a' })]), exit, 'valid').exit).toBe(exit);
   });
 
   it('keeps the refusal on a step that is still out there', () => {
     const next = applyExitCheck(
       plan([tx({ txid: 'a' })], { refusals: { a: 'txn-mempool-conflict' } }),
       checked([{ txid: 'a', status: ready }]),
-      'active',
+      'valid',
     );
     expect(next.refusals).toEqual({ a: 'txn-mempool-conflict' });
   });
@@ -22,38 +22,42 @@ describe('applyExitCheck', () => {
     const next = applyExitCheck(
       plan([tx({ txid: 'a' }), tx({ txid: 'b' })], { refusals: { a: 'conflict', b: 'conflict' } }),
       checked([{ txid: 'a', status: confirmed(1) }]),
-      'active',
+      'valid',
     );
     expect(next.refusals).toEqual({});
   });
 
-  it('sets the phase', () => {
-    const next = applyExitCheck(plan([tx({ txid: 'a' })]), checked([{ txid: 'a' }]), 'complete');
-    expect(next.phase).toBe('complete');
+  it('finishes the exit on the done verdict, and starts rebuilding it on redo', () => {
+    expect(applyExitCheck(plan([tx({ txid: 'a' })]), checked([{ txid: 'a' }]), 'done').status).toEqual({ type: 'done' });
+    expect(applyExitCheck(plan([tx({ txid: 'a' })]), checked([{ txid: 'a' }]), 'redo').status).toEqual({ type: 'rebuilding' });
+  });
+
+  it('keeps a running exit as it is on the valid verdict, a converted one or one waiting on exit fee included', () => {
+    const topUp = { required: { sat: 3_000, inputs: 1 } };
+    for (const status of [{ type: 'running', converted: true }, { type: 'needsExitFee', topUp }] as const) {
+      expect(applyExitCheck(plan([tx({ txid: 'a' })], { status }), checked([{ txid: 'a' }]), 'valid').status).toEqual(status);
+    }
+  });
+
+  it('runs a diverged exit again once the chain matches it, keeping when its rebuilds started failing', () => {
+    const failing = plan([tx({ txid: 'a' })], { status: { type: 'needsUpdate', why: 'rebuildFailed' }, rebuildFailingSince: 90 });
+    expect(applyExitCheck(failing, checked([{ txid: 'a' }]), 'valid')).toMatchObject({ status: { type: 'running' }, rebuildFailingSince: 90 });
+    const rebuilding = plan([tx({ txid: 'a' })], { status: { type: 'rebuilding' } });
+    expect(applyExitCheck(rebuilding, checked([{ txid: 'a' }]), 'valid').status).toEqual({ type: 'running' });
   });
 
   describe('a tap asked for over a step the SDK could not read', () => {
     const unverified = { type: 'unverified' } as const;
-    const waiting = plan([tx({ txid: 'a', status: unverified })], { needsSignIn: true, redoCause: 'unverified' });
+    const asking = { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } as const;
+    const waiting = plan([tx({ txid: 'a', status: unverified })], { status: asking });
 
     it('stands while the step does', () => {
-      expect(applyExitCheck(waiting, checked([{ txid: 'a', status: unverified }]), 'active')).toMatchObject({
-        needsSignIn: true,
-        redoCause: 'unverified',
-      });
+      expect(applyExitCheck(waiting, checked([{ txid: 'a', status: unverified }]), 'valid').status).toEqual(asking);
     });
 
     it('ends once the step settles, or the chain diverges, so a later divergence reads as one', () => {
-      for (const [status, phase] of [[ready, 'active'], [unverified, 'redo']] as const) {
-        const next = applyExitCheck(waiting, checked([{ txid: 'a', status }]), phase);
-        expect(next.redoCause).toBeUndefined();
-        expect(next.needsSignIn).toBeUndefined();
-      }
-    });
-
-    it("leaves a converted exit's sign-in alone, which waits on no such step", () => {
-      const converted = plan([tx({ txid: 'a' })], { needsRebuild: true, needsSignIn: true });
-      expect(applyExitCheck(converted, checked([{ txid: 'a' }]), 'active').needsSignIn).toBe(true);
+      expect(applyExitCheck(waiting, checked([{ txid: 'a', status: ready }]), 'valid').status).toEqual({ type: 'running' });
+      expect(applyExitCheck(waiting, checked([{ txid: 'a', status: unverified }]), 'redo').status).toEqual({ type: 'rebuilding' });
     });
   });
 });
@@ -71,10 +75,10 @@ describe('checkExit', () => {
   });
 
   it.each([
-    [{ type: 'valid' } as const, 'active'],
-    [{ type: 'done' } as const, 'complete'],
-    [redo, 'redo'],
-  ])('turns the %o verdict into the %s phase', async (verdict, phase) => {
-    expect((await checkExit(plan([tx({ txid: 'a' })]), checking(checked([{ txid: 'a' }]), verdict))).phase).toBe(phase);
+    [{ type: 'valid' } as const, 'running'],
+    [{ type: 'done' } as const, 'done'],
+    [redo, 'rebuilding'],
+  ])('turns the %o verdict into the %s status', async (verdict, status) => {
+    expect((await checkExit(plan([tx({ txid: 'a' })]), checking(checked([{ txid: 'a' }]), verdict))).status).toEqual({ type: status });
   });
 });

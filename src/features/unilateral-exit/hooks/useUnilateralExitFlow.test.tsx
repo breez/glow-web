@@ -464,26 +464,27 @@ describe('the update tap', () => {
 
   it('stamps the block on the rebuild, so a step it still could not read does not ask again at once', async () => {
     saved.tipHeight = 811;
-    const stored = await tapOn(plan([tx({ txid: 'stuck', status: { type: 'unverified' } })], { needsSignIn: true, redoCause: 'unverified' }));
+    const stored = await tapOn(
+      plan([tx({ txid: 'stuck', status: { type: 'unverified' } })], { status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } }),
+    );
 
-    expect(stored).toMatchObject({ phase: 'active', unverifiedRebuiltAt: 812 });
-    expect(stored.needsSignIn).toBeUndefined();
-    expect(stored.redoCause).toBeUndefined();
+    expect(stored).toMatchObject({ unverifiedRebuiltAt: 812 });
+    expect(stored.status).toEqual({ type: 'running' });
   });
 
   it('reads the block itself on a diverged exit, whose paused engine holds no tip', async () => {
-    const stored = await tapOn(plan([tx({ txid: 'moved' })], { phase: 'redo', needsSignIn: true }));
+    const stored = await tapOn(plan([tx({ txid: 'moved' })], { status: { type: 'needsUpdate', why: 'signIn' } }));
 
     expect(chainTip).toHaveBeenCalled();
-    expect(stored).toMatchObject({ phase: 'active', unverifiedRebuiltAt: 812 });
+    expect(stored).toMatchObject({ status: { type: 'running' }, unverifiedRebuiltAt: 812 });
   });
 
   it("falls back to the engine's block when the chain cannot be read", async () => {
     saved.tipHeight = 811;
     chainTip.mockRejectedValueOnce(new Error('chain service unavailable'));
-    const stored = await tapOn(plan([tx({ txid: 'moved' })], { phase: 'redo', needsSignIn: true }));
+    const stored = await tapOn(plan([tx({ txid: 'moved' })], { status: { type: 'needsUpdate', why: 'signIn' } }));
 
-    expect(stored).toMatchObject({ phase: 'active', unverifiedRebuiltAt: 811 });
+    expect(stored).toMatchObject({ status: { type: 'running' }, unverifiedRebuiltAt: 811 });
   });
 
   describe('when the chain has yet to show where a leaf went', () => {
@@ -500,20 +501,25 @@ describe('the update tap', () => {
 
     it('lifts the sign-in request, without an error, so the engine waits it out', async () => {
       const after = await tapWaiting(
-        plan([tx({ txid: 'moved' })], { phase: 'redo', needsSignIn: true, rebuildFailed: true, redoCause: 'watchtower' }),
+        plan([tx({ txid: 'moved' })], { status: { type: 'needsUpdate', why: 'signIn' }, rebuildFailingSince: 90 }),
       );
 
       expect(after.continueError).toBeNull();
       const stored = vi.mocked(setUnilateralExitPlan).mock.calls[0][1];
-      expect(stored.phase).toBe('redo');
-      expect(stored.needsSignIn).toBeUndefined();
-      expect(stored.rebuildFailed).toBeUndefined();
-      expect(stored.redoCause).toBeUndefined();
+      expect(stored.status).toEqual({ type: 'rebuilding' });
+      expect(stored.rebuildFailingSince).toBeUndefined();
       expect(advanceNow).not.toHaveBeenCalled();
     });
 
+    it('lifts the request over a step it could not read back to a running exit', async () => {
+      await tapWaiting(
+        plan([tx({ txid: 'stuck', status: { type: 'unverified' } })], { status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } }),
+      );
+      expect(vi.mocked(setUnilateralExitPlan).mock.calls[0][1].status).toEqual({ type: 'running' });
+    });
+
     it("leaves a failed rebuild's plan to the engine, whose next pass clears it", async () => {
-      const after = await tapWaiting(plan([tx({ txid: 'moved' })], { phase: 'redo', rebuildFailed: true }));
+      const after = await tapWaiting(plan([tx({ txid: 'moved' })], { status: { type: 'needsUpdate', why: 'rebuildFailed' } }));
 
       expect(after.continueError).toBeNull();
       expect(setUnilateralExitPlan).not.toHaveBeenCalled();
@@ -523,7 +529,7 @@ describe('the update tap', () => {
 
   describe('when the update fails for another reason', () => {
     const tapFailing = async () => {
-      saved.plan = plan([tx({ txid: 'moved' })], { phase: 'redo', rebuildFailed: true });
+      saved.plan = plan([tx({ txid: 'moved' })], { status: { type: 'needsUpdate', why: 'rebuildFailed' } });
       wallet.current = sdk({
         prepareRecoverFunds: async () => {
           throw new Error('operators unreachable');
@@ -552,9 +558,9 @@ describe('the update tap', () => {
     it('drops it once the card goes, so a card that comes back explains itself again', async () => {
       const { result, rerender } = await tapFailing();
 
-      saved.plan = plan([tx({ txid: 'moved' })], { phase: 'redo' });
+      saved.plan = plan([tx({ txid: 'moved' })], { status: { type: 'rebuilding' } });
       rerender();
-      saved.plan = plan([tx({ txid: 'moved' })], { phase: 'redo', rebuildFailed: true });
+      saved.plan = plan([tx({ txid: 'moved' })], { status: { type: 'needsUpdate', why: 'rebuildFailed' } });
       rerender();
       expect(result.current.continueError).toBeNull();
     });
@@ -568,7 +574,7 @@ describe('a leaf the exit left out, waiting on more exit fee', () => {
       feeRateSatPerVbyte: 4,
       exitFeeAddress: 'bcrt1qfee',
       quotedExitFeeSat: 5_000,
-      topUp: { required: { sat: 3_000, inputs: 1 }, heldSat: 0 },
+      status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 }, heldSat: 0 } },
       namedLeaves: [
         { leafId: 'leaf-1', valueSats: 100_000 },
         { leafId: 'leaf-2', valueSats: 50_000 },
@@ -613,7 +619,7 @@ describe('a leaf the exit left out, waiting on more exit fee', () => {
     expect(result.current.phase).toBe('topUp');
     expect(result.current.canGoBack).toBe(false);
 
-    saved.plan = waiting({ topUp: undefined });
+    saved.plan = waiting({ status: { type: 'running' } });
     rerender();
     expect(result.current.phase).toBe('tracker');
   });
@@ -658,7 +664,7 @@ describe('a leaf the exit left out, waiting on more exit fee', () => {
       expect.anything(),
     );
     const stored = vi.mocked(setUnilateralExitPlan).mock.calls[0][1];
-    expect(stored.topUp).toBeUndefined();
+    expect(stored.status).toEqual({ type: 'running' });
     expect(stored).toMatchObject({ quotedExitFeeSat: 8_000, exitFeeAddress: 'bcrt1qfee' });
     expect(result.current.continueError).toBeNull();
   });
@@ -690,7 +696,7 @@ describe('a leaf the exit left out, waiting on more exit fee', () => {
     await act(() => result.current.build());
     expect(result.current.continueError).toBe('operators unreachable');
 
-    saved.plan = waiting({ topUp: undefined });
+    saved.plan = waiting({ status: { type: 'running' } });
     rerender();
     saved.plan = waiting();
     rerender();
@@ -765,7 +771,7 @@ describe('rebuilding an exit under way at a higher fee that needs more exit fee'
   });
 
   it('gives no network floor while the exit waits on its update tap, which fees dropping would not continue', async () => {
-    saved.plan = underWay({ phase: 'redo', needsSignIn: true });
+    saved.plan = underWay({ status: { type: 'needsUpdate', why: 'signIn' } });
     const { result } = await fallsShort();
     expect(result.current.phase).toBe('fund');
     expect(result.current.funding?.networkFloorFeeRate).toBeNull();
@@ -912,7 +918,7 @@ describe('raising the fee of a kept co-signed recovery', () => {
   it('keeps to its own recovery beside an exit waiting on more exit fee', async () => {
     saved.plan = plan([tx({ txid: 's', kind: 'sweep', status: confirmed(9) })], {
       exitFeeAddress: 'bcrt1qfee',
-      topUp: { required: { sat: 3_000, inputs: 1 } },
+      status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } },
       namedLeaves: [
         { leafId: 'leaf-1', valueSats: 100_000 },
         { leafId: 'leaf-2', valueSats: 50_000 },

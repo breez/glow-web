@@ -39,7 +39,7 @@ const swept = (status = confirmed(1)) => [
   tx({ txid: 's', kind: 'sweep', txHex: rawTx([`${txidOf(1)}:0`], [99_000]), dependsOn: [txidOf(1)], status }),
 ];
 
-const done = plan(swept(), { network: 'regtest', phase: 'complete' });
+const done = plan(swept(), { network: 'regtest', status: { type: 'done' } });
 
 /** Runs `body` while the accounting cannot be saved, as when storage is full. */
 async function withAccountingUnsaved(body: () => Promise<void>): Promise<void> {
@@ -65,15 +65,15 @@ describe('the plan the engine holds', () => {
   it('keeps a completed plan on disk so the outcome survives a reload', () => {
     startUnilateralExitEngine(wallet, chain);
     setUnilateralExitPlan(wallet, done);
-    expect(loadPlan(wallet)?.phase).toBe('complete');
-    expect(getUnilateralExitState().plan?.phase).toBe('complete');
+    expect(loadPlan(wallet)?.status).toEqual({ type: 'done' });
+    expect(getUnilateralExitState().plan?.status).toEqual({ type: 'done' });
   });
 
   it('stores a plan even when it is not running for that wallet, for when it does', () => {
     setUnilateralExitPlan(wallet, done);
     expect(getUnilateralExitState().plan).toBeNull();
     startUnilateralExitEngine(wallet, chain);
-    expect(getUnilateralExitState().plan?.phase).toBe('complete');
+    expect(getUnilateralExitState().plan?.status).toEqual({ type: 'done' });
   });
 
   it('drops the plan once the user acknowledges it, freeing the next exit', () => {
@@ -318,7 +318,7 @@ describe('kept co-signed recoveries', () => {
     };
     startUnilateralExitEngine(wallet, failing, confirming());
 
-    await vi.waitFor(() => expect(getUnilateralExitState().recoveries[0]?.phase).toBe('complete'));
+    await vi.waitFor(() => expect(getUnilateralExitState().recoveries[0]?.status).toEqual({ type: 'done' }));
     expect(loadArchive(wallet)).toEqual([]);
     expect(loadRecoveries(wallet)).toHaveLength(1);
   });
@@ -465,7 +465,7 @@ describe('kept co-signed recoveries', () => {
       saveRecoveries(wallet, [stuck()]);
       await withAccountingUnsaved(async () => {
         startUnilateralExitEngine(wallet, chain, sdk({ prepareRecoverFunds: quoting({ leaves: [], skipped }) }));
-        await vi.waitFor(() => expect(getUnilateralExitState().recoveries[0]?.phase).toBe('complete'));
+        await vi.waitFor(() => expect(getUnilateralExitState().recoveries[0]?.status).toEqual({ type: 'done' }));
         expect(loadRecoveries(wallet)).toHaveLength(1);
       });
 
@@ -633,7 +633,7 @@ describe('a pass over an exit', () => {
     await withAccountingUnsaved(async () => {
       setUnilateralExitPlan(wallet, plan([tx({ txid: 'a' })], { network: 'regtest' }));
       startUnilateralExitEngine(wallet, chain, driver);
-      await vi.waitFor(() => expect(getUnilateralExitState().plan?.phase).toBe('complete'));
+      await vi.waitFor(() => expect(getUnilateralExitState().plan?.status).toEqual({ type: 'done' }));
       expect(loadPlan(wallet)?.droppedLeaves).toEqual([{ leafId: 'leaf-1', valueSats: 100_000 }]);
     });
 
@@ -650,13 +650,13 @@ describe('a pass over an exit', () => {
       .mockResolvedValue({ txid: 'replacement', blockHeight: 90, outputs: [{ address: 'bc1qdest', value: 29_000 }] });
     const finished = plan([tx({ txid: 'c1', kind: 'cooperative', nodeId: 'c-1', status: confirmed(90) })], {
       network: 'regtest',
-      phase: 'complete',
+      status: { type: 'done' },
       landed: [{ leafIds: ['c-1'], valueSat: 30_000, outpoint: `${txidOf(7)}:0` }],
     });
     setUnilateralExitPlan(wallet, finished);
     startUnilateralExitEngine(wallet, { ...chain, confirmedSpender }, sdk());
     await vi.waitFor(() => expect(getUnilateralExitState().tipHeight).toBe(100));
-    expect(getUnilateralExitState().plan?.phase).toBe('complete');
+    expect(getUnilateralExitState().plan?.status).toEqual({ type: 'done' });
     expect(loadPlan(wallet)).not.toBeNull();
     expect(loadArchive(wallet)).toEqual([]);
 
@@ -678,7 +678,7 @@ describe('a pass over an exit', () => {
       recovery,
       verdict: { type: 'valid' as const },
     }));
-    setUnilateralExitPlan(wallet, plan([tx({ txid: 'a' })], { network: 'regtest', phase: 'redo', needsSignIn: true }));
+    setUnilateralExitPlan(wallet, plan([tx({ txid: 'a' })], { network: 'regtest', status: { type: 'needsUpdate', why: 'signIn' } }));
     startUnilateralExitEngine(wallet, chain, sdk({ checkRecoverFunds }));
     await advanceNow();
     expect(checkRecoverFunds).not.toHaveBeenCalled();
@@ -688,7 +688,7 @@ describe('a pass over an exit', () => {
     const broadcastPackage = vi.fn(async () => undefined);
     const waiting = plan(
       [tx({ txid: 'stuck', status: { type: 'unverified' } }), tx({ txid: 'due', cpfpTxHex: 'bb', status: ready })],
-      { network: 'regtest', needsSignIn: true, redoCause: 'unverified' },
+      { network: 'regtest', status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } },
     );
     setUnilateralExitPlan(wallet, waiting);
     startUnilateralExitEngine(wallet, { ...chain, broadcastPackage }, sdk());
@@ -703,13 +703,13 @@ describe('a pass over an exit', () => {
     const prepareRecoverFunds = vi.fn(async () => {
       throw new Error('chain service unavailable');
     });
-    setUnilateralExitPlan(wallet, plan([tx({ txid: 'a' })], { network: 'regtest', phase: 'redo' }));
+    setUnilateralExitPlan(wallet, plan([tx({ txid: 'a' })], { network: 'regtest', status: { type: 'rebuilding' } }));
     startUnilateralExitEngine(wallet, chain, sdk({ checkRecoverFunds, prepareRecoverFunds }));
     await vi.waitFor(() => expect(prepareRecoverFunds).toHaveBeenCalledTimes(1));
     await vi.waitFor(() => expect(getUnilateralExitState().isAdvancing).toBe(false));
     await advanceNow();
     expect(prepareRecoverFunds).toHaveBeenCalledTimes(2);
-    expect(getUnilateralExitState().plan?.phase).toBe('redo');
+    expect(getUnilateralExitState().plan?.status).toEqual({ type: 'rebuilding' });
   });
 });
 
@@ -746,14 +746,14 @@ describe('an exit holding a leaf it left out', () => {
 
     await vi.waitFor(() => expect(prepareRecoverFunds).toHaveBeenCalled());
     await vi.waitFor(() => expect(getUnilateralExitState().isAdvancing).toBe(false));
-    expect(getUnilateralExitState().plan?.phase).toBe('active');
-    expect(loadPlan(wallet)?.phase).toBe('active');
+    expect(getUnilateralExitState().plan?.status).toEqual({ type: 'running' });
+    expect(loadPlan(wallet)?.status).toEqual({ type: 'running' });
     expect(loadArchive(wallet)).toEqual([]);
     await vi.waitFor(() => expect(getUnilateralExitState().settledLeafIds).toContain('leaf-1'));
     expect(syncWallet).toHaveBeenCalledTimes(1);
 
     // Ending, it hands on no leaf that sync already recounted.
-    setUnilateralExitPlan(wallet, { ...getUnilateralExitState().plan!, phase: 'complete' });
+    setUnilateralExitPlan(wallet, { ...getUnilateralExitState().plan!, status: { type: 'done' } });
     await vi.waitFor(() => expect(getUnilateralExitState().plan).toBeNull());
     await advanceNow();
     expect(loadAccounting(wallet).unsettledLeaves).toEqual([]);
@@ -774,7 +774,7 @@ describe('an exit holding a leaf it left out', () => {
       exitFeeAddress: key.address,
       retrySince: 90,
       retriedAt: 90,
-      topUp: { required: { sat: 3_000, inputs: 1 }, heldSat: 0 },
+      status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 }, heldSat: 0 } },
       namedLeaves: [
         { leafId: 'leaf-1', valueSats: 100_000 },
         { leafId: 'leaf-2', valueSats: 50_000 },
@@ -789,7 +789,7 @@ describe('an exit holding a leaf it left out', () => {
       expect.objectContaining({ fundingInputs: [expect.objectContaining({ txid: 'coin-3000', pubkey: key.publicKeyHex })] }),
       expect.anything(),
     );
-    await vi.waitFor(() => expect(getUnilateralExitState().plan?.topUp).toBeUndefined());
+    await vi.waitFor(() => expect(getUnilateralExitState().plan?.status).toEqual({ type: 'running' }));
     expect(getUnilateralExitState().pendingCoins).toEqual([]);
   });
 
@@ -804,7 +804,7 @@ describe('an exit holding a leaf it left out', () => {
       // No retry due, so the request stands.
       retrySince: 98,
       retriedAt: 98,
-      topUp: { required: { sat: 3_000, inputs: 1 } },
+      status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } },
       namedLeaves: [
         { leafId: 'leaf-1', valueSats: 100_000 },
         { leafId: 'leaf-2', valueSats: 50_000 },
@@ -815,7 +815,7 @@ describe('an exit holding a leaf it left out', () => {
 
     await vi.waitFor(() => expect(addressUtxos).toHaveBeenCalledTimes(2));
     await vi.waitFor(() => expect(getUnilateralExitState().isAdvancing).toBe(false));
-    expect(getUnilateralExitState().plan?.topUp).toEqual({ required: { sat: 3_000, inputs: 1 } });
+    expect(getUnilateralExitState().plan?.status).toEqual({ type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } });
   });
 
   it('keeps a kept recovery to the leaves it built', () => {
@@ -925,7 +925,7 @@ describe('settling what landed', () => {
       wallet,
       plan([], {
         network: 'regtest',
-        phase: 'complete',
+        status: { type: 'done' },
         landed: [{ leafIds: ['leaf-2'], valueSat: 50_000, txid: 's2', paidSat: 49_000, blockHeight: 9 }],
       }),
     );

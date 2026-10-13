@@ -83,7 +83,7 @@ the original would list the same leaf twice.
 
 | | |
 |---|---|
-| `model/plan.ts` | what an exit is: the plan, the leaves it names, its ledger, a pending exit, and plain reads of them |
+| `model/plan.ts` | what an exit is: the plan and the one `status` that says where it stands, the leaves it names, its ledger, a pending exit, and plain reads of them |
 | `model/progress.ts` | what the tracker shows: where the money is, how many steps are done, and how many blocks are left |
 | `quote.ts` | everything read off a quote, for Recover Funds and the Unilateral Exit alike: what it moves, what it costs, what arrives and whether that is an estimate, whether it needs funding, and what the exit fee address was paid |
 | `quoting.ts` | asking `prepareRecoverFunds` for a quote, and which leaves a quote's skips take out of an exit |
@@ -97,7 +97,7 @@ the original would list the same leaf twice.
 | `broadcast.ts` | sending each step whose turn has come |
 | `ledger.ts` | the record of what landed, and reading what paid each entry out |
 | `storage/plan.ts`, `storage/recoveries.ts`, `storage/pending.ts` | the plan, the kept co-signed recoveries and the pending exit, saved per wallet |
-| `storage/legacyPlan.ts` | a plan stored under SDK 0.26, converted to this SDK's shape on load |
+| `storage/legacyPlan.ts` | older stored plans converted on load: SDK 0.26's to this SDK's shape, and version 5's phase and flags to the `status` |
 | `storage/archive.ts` | finished exits, kept once the plan slot is handed to the next one |
 | `storage/accounting.ts` | what the Recoverable Funds row subtracts that no live record holds |
 | `engine/api.ts` | starts and stops the engine, hands it a plan, a pending exit or a kept recovery, and starts a pending exit on the user's tap |

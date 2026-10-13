@@ -55,7 +55,7 @@ function shownPhase(step: UnilateralExitPhase, { plan, pending, holdsFeeKey }: W
   const followsEngine =
     step === 'intro' || step === 'pending' || step === 'tracker' || ((step === 'fund' || step === 'topUp') && !holdsFeeKey);
   if (!followsEngine) return step;
-  if (plan) return plan.topUp ? (step === 'topUp' ? 'topUp' : 'fund') : 'tracker';
+  if (plan) return plan.status.type === 'needsExitFee' ? (step === 'topUp' ? 'topUp' : 'fund') : 'tracker';
   return pending ? 'pending' : 'intro';
 }
 

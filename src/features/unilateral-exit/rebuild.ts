@@ -5,15 +5,17 @@ import { buildFromQuote, EmptyRecoveryError, planFromBuild, readFundingKey, Rebu
 import { loadExitState, restoreExitState } from './exitState';
 import { MnemonicNeedsPasskeyError, type FundingKey } from './funding';
 import { withLanded } from './ledger';
-import { hasUnverifiedStep, namedLeavesOf, type UnilateralExitPlan } from './model/plan';
-import { exitFeeRecordOf, isCooperative, isCooperativeLeaf, isProvisionalSkip, needsFunding } from './quote';
+import {
+  awaitsUpdate,
+  hasUnverifiedStep,
+  isActive,
+  isDiverged,
+  namedLeavesOf,
+  type ExitStatus,
+  type UnilateralExitPlan,
+} from './model/plan';
+import { exitFeeRecordOf, isCooperative, isProvisionalSkip, needsFunding } from './quote';
 import { leavingSkips, quoteNamed, withDropped, type ExitSdk } from './quoting';
-
-/** A leaf the exit built to go out unilaterally that `quote` co-signs: the operators' watchtower moved it. */
-const watchtowerMoved = (plan: UnilateralExitPlan, quote: PrepareRecoverFundsResponse): boolean => {
-  const unilateral = new Set(plan.exit.leaves.filter(leaf => leaf.method === 'unilateral').map(leaf => leaf.leafId));
-  return quote.leaves.some(leaf => isCooperativeLeaf(leaf) && unilateral.has(leaf.leafId));
-};
 
 function finishedPlan(plan: UnilateralExitPlan, quote: PrepareRecoverFundsResponse | null): UnilateralExitPlan {
   const { leaving, dropped } = quote ? leavingSkips(quote) : { leaving: new Set<string>(), dropped: [] };
@@ -22,8 +24,7 @@ function finishedPlan(plan: UnilateralExitPlan, quote: PrepareRecoverFundsRespon
     landed: withLanded(plan, quote),
     namedLeaves: leaving.size > 0 ? namedLeavesOf(plan).filter(leaf => !leaving.has(leaf.leafId)) : plan.namedLeaves,
     droppedLeaves: withDropped(plan.droppedLeaves, dropped),
-    phase: 'complete',
-    needsRebuild: undefined,
+    status: { type: 'done' },
   };
 }
 
@@ -54,7 +55,7 @@ async function rebuildFrom(
 /**
  * Builds the exit again over whatever the chain now holds, naming its leaves
  * and keeping its destination, fee rate and funding. When the quote has no
- * leaves left, the plan comes back `complete`, its ledger naming what landed
+ * leaves left, the plan comes back `done`, its ledger naming what landed
  * since the build; a leaf that may yet move (`isProvisionalSkip`) throws
  * `RebuildLaterError` instead.
  *
@@ -62,15 +63,13 @@ async function rebuildFrom(
  * for, and quotes first to find out. From the tracker's button (`interactive`)
  * Glow reads it first instead, while the tap is fresh enough for a passkey
  * prompt. In the background Glow cannot prompt, so on a passkey wallet the
- * read fails and the tracker offers the rebuild as that button. `onCause`
- * hears why the exit diverged, as far as the quote shows, before the key read
- * or the build can fail.
+ * read fails and the tracker offers the rebuild as that button.
  */
 export async function rebuildExit(
   plan: UnilateralExitPlan,
   sdk: ExitSdk,
   identityPubkey: string,
-  { interactive = false, onCause }: { interactive?: boolean; onCause?: (cause: UnilateralExitPlan['redoCause']) => void } = {},
+  { interactive = false }: { interactive?: boolean } = {},
 ): Promise<UnilateralExitPlan> {
   const named = new Set(namedLeavesOf(plan).map(leaf => leaf.leafId));
   if (named.size === 0) return finishedPlan(plan, null);
@@ -79,7 +78,6 @@ export async function rebuildExit(
   await restoreExitState(sdk, plan, await loadExitState(identityPubkey).catch(() => null));
 
   const prepared = await quoteNamed(sdk, plan);
-  onCause?.(watchtowerMoved(plan, prepared) ? 'watchtower' : undefined);
   if (prepared.leaves.length === 0) {
     // A leaf left out as too dear or unrecoverable leaves the exit, so it
     // finishes. Only an unrecoverable one stays hidden; Recover Funds offers a
@@ -103,18 +101,13 @@ async function rebuildDiverged(
   identityPubkey: string,
   tipHeight: number,
 ): Promise<UnilateralExitPlan> {
-  let cause: UnilateralExitPlan['redoCause'];
   try {
-    return await rebuildExit(plan, sdk, identityPubkey, {
-      onCause: found => {
-        cause = found;
-      },
-    });
+    return await rebuildExit(plan, sdk, identityPubkey);
   } catch (e) {
     if (e instanceof MnemonicNeedsPasskeyError) {
       // Waiting on the user to sign in is the designed path, not a fault: the
-      // exit stays in `redo` and the tracker offers the rebuild as a button.
-      return { ...plan, needsSignIn: true, redoCause: cause };
+      // tracker offers the rebuild as a button.
+      return { ...plan, status: { type: 'needsUpdate', why: 'signIn' } };
     }
     // Waiting on the chain is not a failure: the next pass tries again, so
     // only another error asks for the tap, and only once failures span a
@@ -125,8 +118,9 @@ async function rebuildDiverged(
       logger.warn(LogCategory.SDK, `Failed to rebuild the exit: ${error}`);
     }
     const since = failed ? (plan.rebuildFailingSince ?? tipHeight) : undefined;
-    const rebuildFailed = since !== undefined && tipHeight > since ? true : undefined;
-    return { ...plan, rebuildFailingSince: since, rebuildFailed, redoCause: rebuildFailed ? cause : undefined };
+    const status: ExitStatus =
+      since !== undefined && tipHeight > since ? { type: 'needsUpdate', why: 'rebuildFailed' } : { type: 'rebuilding' };
+    return { ...plan, rebuildFailingSince: since, status };
   }
 }
 
@@ -148,7 +142,7 @@ async function rebuildUnverified(
     // would leave the other leaves' steps unsent until the operators' copy
     // takes its fee from the funds.
     if (e instanceof MnemonicNeedsPasskeyError) {
-      return { ...plan, needsSignIn: true, redoCause: 'unverified', unverifiedRebuiltAt: tipHeight };
+      return { ...plan, status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' }, unverifiedRebuiltAt: tipHeight };
     }
     if (!(e instanceof RebuildLaterError)) {
       logger.warn(LogCategory.SDK, `Failed to rebuild over an unverified step: ${e instanceof Error ? e.message : String(e)}`);
@@ -165,12 +159,15 @@ async function rebuildUnverified(
 async function rebuildConverted(plan: UnilateralExitPlan, sdk: ExitSdk, identityPubkey: string): Promise<UnilateralExitPlan> {
   try {
     const rebuilt = await rebuildExit(plan, sdk, identityPubkey);
-    return rebuilt.phase === 'complete' ? { ...plan, needsRebuild: undefined, landed: rebuilt.landed } : rebuilt;
+    return rebuilt.status.type === 'done' ? { ...plan, status: { type: 'running' }, landed: rebuilt.landed } : rebuilt;
   } catch (e) {
     // The set runs as it is, except a step it could not read, which only the
     // tap's rebuild settles.
     if (e instanceof MnemonicNeedsPasskeyError) {
-      return { ...plan, needsSignIn: true, redoCause: hasUnverifiedStep(plan) ? 'unverified' : undefined };
+      const status: ExitStatus = hasUnverifiedStep(plan)
+        ? { type: 'needsUpdate', why: 'signIn', cause: 'unverified' }
+        : { type: 'running' };
+      return { ...plan, status };
     }
     if (!(e instanceof RebuildLaterError)) {
       logger.warn(LogCategory.SDK, `Failed to rebuild the converted exit: ${e instanceof Error ? e.message : String(e)}`);
@@ -186,17 +183,18 @@ export async function rebuildIfNeeded(
   tipHeight: number,
   checked: boolean,
 ): Promise<UnilateralExitPlan> {
-  if (plan.phase === 'redo') return rebuildDiverged(plan, sdk, identityPubkey, tipHeight);
+  if (isDiverged(plan)) return rebuildDiverged(plan, sdk, identityPubkey, tipHeight);
   const canRebuild =
     checked &&
-    !plan.needsSignIn &&
-    plan.phase === 'active' &&
+    isActive(plan) &&
+    // Once the passkey is asked for, only the tap rebuilds.
+    !awaitsUpdate(plan) &&
     // A rebuild now would conflict with what is in the mempool at the same fee.
     // A co-signed recovery does not: at that rate the SDK hands back the one it
     // kept.
     !plan.exit.transactions.some(tx => isSendable(tx) && !isCooperative(tx));
   if (!canRebuild) return plan;
-  if (plan.needsRebuild) return rebuildConverted(plan, sdk, identityPubkey);
+  if (plan.status.type === 'running' && plan.status.converted) return rebuildConverted(plan, sdk, identityPubkey);
   if (hasUnverifiedStep(plan) && plan.unverifiedRebuiltAt !== tipHeight) return rebuildUnverified(plan, sdk, identityPubkey, tipHeight);
   return plan;
 }

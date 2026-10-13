@@ -151,7 +151,7 @@ describe('a kept co-signed recovery in the wallet list', () => {
   });
 
   it('stops counting against the total once complete, since its leaves have left getInfo by then', () => {
-    expect(entries({ pending: null, recoveries: [{ ...recovery, phase: 'complete' }] }, 11_800)).toEqual([
+    expect(entries({ pending: null, recoveries: [{ ...recovery, status: { type: 'done' } }] }, 11_800)).toEqual([
       expect.objectContaining({ kind: 'recoverable', amountSat: 11_800 }),
     ]);
   });
@@ -327,12 +327,12 @@ describe('recoverable funds beside an exit under way', () => {
 
 describe('an exit under way in the wallet list', () => {
   it('asks for a tap on a diverged exit Glow cannot rebuild alone, and on one that has to sign over a step it could not read', () => {
-    for (const over of [
-      { phase: 'redo' as const, needsSignIn: true as const },
-      { phase: 'redo' as const, rebuildFailed: true as const },
-      { needsSignIn: true as const, redoCause: 'unverified' as const },
-    ]) {
-      expect(row({ pending: null, plan: plan([tx({ txid: 'a' })], over) })).toMatchObject({
+    for (const status of [
+      { type: 'needsUpdate', why: 'signIn' },
+      { type: 'needsUpdate', why: 'rebuildFailed' },
+      { type: 'needsUpdate', why: 'signIn', cause: 'unverified' },
+    ] as const) {
+      expect(row({ pending: null, plan: plan([tx({ txid: 'a' })], { status }) })).toMatchObject({
         title: 'Update needed',
         subtitle: 'Tap to update',
         isAction: true,
@@ -347,7 +347,7 @@ describe('an exit under way in the wallet list', () => {
   it('reads a diverged exit Glow rebuilds by itself as running, naming no wait from the set it replaces', () => {
     const timelocked = [tx({ txid: 'r', kind: 'refund', status: locked(1144) })];
     expect(row({ pending: null, tipHeight: 1000, plan: plan(timelocked) }).subtitle).toMatch(/, next /);
-    expect(row({ pending: null, tipHeight: 1000, plan: plan(timelocked, { phase: 'redo' }) })).toMatchObject({
+    expect(row({ pending: null, tipHeight: 1000, plan: plan(timelocked, { status: { type: 'rebuilding' } }) })).toMatchObject({
       title: 'Transactions in progress',
       subtitle: '0 of 1 processed',
       isAction: false,
@@ -364,7 +364,8 @@ describe('an exit holding a leaf it left out in the wallet list', () => {
       ],
       ...over,
     });
-  const asking = (over: Parameters<typeof plan>[1] = {}) => landed({ topUp: { required: { sat: 3_000, inputs: 1 } }, ...over });
+  const asking = (over: Parameters<typeof plan>[1] = {}) =>
+    landed({ status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } }, ...over });
 
   it('counts a leaf still to build as a transaction still to go', () => {
     expect(row({ pending: null, plan: landed() })).toMatchObject({ title: 'Transactions in progress', subtitle: '1 of 2 processed' });
@@ -381,14 +382,18 @@ describe('an exit holding a leaf it left out in the wallet list', () => {
 
   it('asks for the tap only when the build needs the passkey', () => {
     const at = (coins: ReturnType<typeof coin>[]) =>
-      row({ pending: null, plan: asking({ topUp: { required: { sat: 3_000, inputs: 1 }, needsSignIn: true } }), pendingCoins: coins });
+      row({
+        pending: null,
+        plan: asking({ status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 }, needsSignIn: true } } }),
+        pendingCoins: coins,
+      });
     expect(at([coin(3_000)])).toMatchObject({ title: 'Exit fee received', subtitle: 'Tap to update', isAction: true });
     expect(at([])).toMatchObject({ title: 'Waiting for exit fee', subtitle: 'Tap to update', isAction: true });
   });
 
   it('asks for no tap while a unilateral step is in flight, which the tap cannot build over', () => {
     const inFlight = asking({
-      topUp: { required: { sat: 3_000, inputs: 1 }, needsSignIn: true },
+      status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 }, needsSignIn: true } },
       exit: { transactions: [tx({ txid: 's', kind: 'sweep', status: ready })] },
     });
     expect(row({ pending: null, plan: inFlight, pendingCoins: [coin(3_000)] })).toMatchObject({
@@ -418,7 +423,7 @@ describe("a kept recovery's fee bump", () => {
 describe('a finished exit waiting on a read of what landed', () => {
   it('keeps its row until the archive takes it over', () => {
     const finished = plan([tx({ txid: 's', kind: 'sweep', status: confirmed(9) })], {
-      phase: 'complete',
+      status: { type: 'done' },
       landed: [{ leafIds: ['leaf-1'], valueSat: 100_000, outpoint: 'x:0' }],
     });
     expect(row({ pending: null, plan: finished })).toMatchObject({

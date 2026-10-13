@@ -195,11 +195,11 @@ describe('a paused exit or recovery whose quote at the new fee moves nothing', (
   }
 
   it.each([
-    ['a diverged exit whose rebuild needs the passkey', plan([tx({ txid: 'a' })], { phase: 'redo', needsSignIn: true })],
-    ['a diverged exit whose rebuild failed', plan([tx({ txid: 'a' })], { phase: 'redo', rebuildFailed: true })],
+    ['a diverged exit whose rebuild needs the passkey', plan([tx({ txid: 'a' })], { status: { type: 'needsUpdate', why: 'signIn' } })],
+    ['a diverged exit whose rebuild failed', plan([tx({ txid: 'a' })], { status: { type: 'needsUpdate', why: 'rebuildFailed' } })],
     [
       'a running exit whose update waits on the passkey',
-      plan([tx({ txid: 'a', status: { type: 'unverified' } })], { needsSignIn: true, redoCause: 'unverified' }),
+      plan([tx({ txid: 'a', status: { type: 'unverified' } })], { status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } }),
     ],
   ])('points %s at its update, and goes back straight to the tracker that holds it', async (_, current) => {
     await show(quoting(current));
@@ -210,7 +210,7 @@ describe('a paused exit or recovery whose quote at the new fee moves nothing', (
   });
 
   it('points a paused recovery at its update, and goes back straight to its tracker', async () => {
-    await show(quoting(plan([tx({ txid: 'a' })], { mode: 'recover', phase: 'redo', rebuildFailed: true }), { mode: 'recover' }));
+    await show(quoting(plan([tx({ txid: 'a' })], { mode: 'recover', status: { type: 'needsUpdate', why: 'rebuildFailed' } }), { mode: 'recover' }));
     expect(screen.getByText('Please update your recovery to continue.')).toBeInTheDocument();
     expect(flow.current.goTo).toHaveBeenCalledWith('tracker');
     expect(flow.current.back).not.toHaveBeenCalled();
@@ -224,13 +224,13 @@ describe('a paused exit or recovery whose quote at the new fee moves nothing', (
   });
 
   it('goes back to the fee from a paused exit whose quote moves something, since another rate may suit', async () => {
-    await show(quoting(plan([tx({ txid: 'a' })], { phase: 'redo', needsSignIn: true }), { quote: prepared({ funding: undefined }) }));
+    await show(quoting(plan([tx({ txid: 'a' })], { status: { type: 'needsUpdate', why: 'signIn' } }), { quote: prepared({ funding: undefined }) }));
     expect(flow.current.back).toHaveBeenCalled();
     expect(flow.current.goTo).not.toHaveBeenCalled();
   });
 
   it("says a fee raise beside a paused exit has nothing to rebuild, rather than pointing at the exit's update", async () => {
-    const paused = plan([tx({ txid: 'a' })], { phase: 'redo', needsSignIn: true });
+    const paused = plan([tx({ txid: 'a' })], { status: { type: 'needsUpdate', why: 'signIn' } });
     await show(quoting(paused, { mode: 'recover', bumping: true }));
     expect(screen.getByText('Glow keeps your recovery moving on its own.')).toBeInTheDocument();
     expect(screen.queryByText(/Please update/)).not.toBeInTheDocument();
@@ -308,7 +308,7 @@ describe('the sheet once a recovery lands', () => {
     };
 
     // The stuck recovery was let go, and an earlier one landed.
-    show(at(plan([], { mode: 'recover', phase: 'complete' })));
+    show(at(plan([], { mode: 'recover', status: { type: 'done' } })));
     expect(onFinished).not.toHaveBeenCalled();
     show(at(null, [{ id: 'earlier', destination: 'bc1qdest', deliveredSat: 1, completedAt: 0 }]));
     expect(onFinished).toHaveBeenCalled();
@@ -429,7 +429,7 @@ describe('raising the fee of a kept co-signed recovery', () => {
 });
 
 describe('the fee screen of a leaf the exit left out', () => {
-  const asking = plan([tx({ txid: 's', kind: 'sweep', status: confirmed(9) })], { topUp: { required: { sat: 3_000, inputs: 1 } } });
+  const asking = plan([tx({ txid: 's', kind: 'sweep', status: confirmed(9) })], { status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } } });
 
   async function renderFund(over: Partial<UnilateralExitFlow> = {}) {
     flow.current = {
@@ -505,15 +505,15 @@ describe('the fee screen of a leaf the exit left out', () => {
   });
 
   it("keeps a failed update's error off the wizard's own fee screen", async () => {
-    const exit = plan([tx({ txid: 'a' })], { phase: 'redo', rebuildFailed: true });
+    const exit = plan([tx({ txid: 'a' })], { status: { type: 'needsUpdate', why: 'rebuildFailed' } });
     await renderFund({ engine: { plan: exit, pending: null, archive: [] } as unknown as UnilateralExitFlow['engine'], continueError: 'passkey cancelled' });
     expect(screen.queryByText('Could not continue the exit')).not.toBeInTheDocument();
   });
 });
 
 describe('updating an exit from the tracker', () => {
-  const diverged = plan([tx({ txid: 'a' })], { phase: 'redo', needsSignIn: true });
-  const waitingOnTap = plan([tx({ txid: 'a', status: { type: 'unverified' } })], { needsSignIn: true, redoCause: 'unverified' });
+  const diverged = plan([tx({ txid: 'a' })], { status: { type: 'needsUpdate', why: 'signIn' } });
+  const waitingOnTap = plan([tx({ txid: 'a', status: { type: 'unverified' } })], { status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } });
 
   async function renderTracker(current: UnilateralExitPlan, continueError: string | null = null) {
     flow.current = {
@@ -532,7 +532,7 @@ describe('updating an exit from the tracker', () => {
 
   it.each([
     ['a diverged exit whose rebuild needs the passkey', diverged],
-    ['a diverged exit whose rebuild failed', plan([tx({ txid: 'a' })], { phase: 'redo', rebuildFailed: true })],
+    ['a diverged exit whose rebuild failed', plan([tx({ txid: 'a' })], { status: { type: 'needsUpdate', why: 'rebuildFailed' } })],
     ['a running exit whose update waits on the passkey', waitingOnTap],
   ])('offers the update on %s, which continues it at its own fee', async (_, current) => {
     await renderTracker(current);
@@ -549,8 +549,8 @@ describe('updating an exit from the tracker', () => {
 
   it.each([
     ['a running exit', plan([tx({ txid: 'a' })])],
-    ['a diverged exit Glow rebuilds by itself', plan([tx({ txid: 'a' })], { phase: 'redo' })],
-    ['a converted exit waiting on sign-in over no unread step', plan([tx({ txid: 'a' })], { needsRebuild: true, needsSignIn: true })],
+    ['a diverged exit Glow rebuilds by itself', plan([tx({ txid: 'a' })], { status: { type: 'rebuilding' } })],
+    ['a converted exit', plan([tx({ txid: 'a' })], { status: { type: 'running', converted: true } })],
   ])('offers neither on %s', async (_, current) => {
     await renderTracker(current, 'Please try again.');
     expect(screen.getByTestId('unilateral-exit-tracker')).toBeInTheDocument();

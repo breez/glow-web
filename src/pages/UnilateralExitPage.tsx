@@ -77,7 +77,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
   useEffect(() => {
     if (!bumping && plan) {
       shownTxid.current = recoveryTxid(plan) ?? shownTxid.current;
-      sawComplete.current = plan.phase === 'complete';
+      sawComplete.current = plan.status.type === 'done';
     }
     // A bump follows the kept recovery holding its leaves, whose txid a retry
     // can swap. With none to follow there is nothing to bump. Its receipt
@@ -331,7 +331,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                   noun={noun}
                 />
                 {/* FundStep shows no error beside a top-up, so a leftover's failed build says so here. */}
-                {flow.engine.plan?.topUp && flow.continueError && (
+                {flow.engine.plan?.status.type === 'needsExitFee' && flow.continueError && (
                   <ErrorMessageBox title={`Could not continue the ${noun}`} error={flow.continueError} />
                 )}
               </>

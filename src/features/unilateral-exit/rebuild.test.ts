@@ -105,7 +105,7 @@ describe('an exit holding a step the SDK could not read', () => {
     const recoverFunds = vi.fn(async () => rebuilt);
     const driver = sdk({ prepareRecoverFunds, recoverFunds });
     const { plan: next } = await advanceUnilateralExit(stuck(), chain(), driver, '02abc');
-    expect(next).toMatchObject({ phase: 'active', needsSignIn: true, redoCause: 'unverified', unverifiedRebuiltAt: 100 });
+    expect(next).toMatchObject({ status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' }, unverifiedRebuiltAt: 100 });
     expect(awaitsUpdate(next)).toBe(true);
     expect(recoverFunds).not.toHaveBeenCalled();
 
@@ -115,7 +115,7 @@ describe('an exit holding a step the SDK could not read', () => {
     const { plan: after } = await advanceUnilateralExit(due, chain({ tipHeight: async () => 101, broadcastPackage }), driver, '02abc');
     expect(broadcastPackage).toHaveBeenCalledWith('aa', 'bb');
     expect(prepareRecoverFunds).toHaveBeenCalledTimes(1);
-    expect(after).toMatchObject({ phase: 'active', needsSignIn: true, redoCause: 'unverified' });
+    expect(after.status).toEqual({ type: 'needsUpdate', why: 'signIn', cause: 'unverified' });
     localStorage.removeItem('passkeyLabel');
   });
 
@@ -126,7 +126,7 @@ describe('an exit holding a step the SDK could not read', () => {
       },
     });
     const { plan: next } = await advanceUnilateralExit(stuck(), chain(), failing, '02abc');
-    expect(next).toMatchObject({ phase: 'active', unverifiedRebuiltAt: 100 });
+    expect(next).toMatchObject({ status: { type: 'running' }, unverifiedRebuiltAt: 100 });
     expect(next.exit.transactions[0].txid).toBe('node');
   });
 });
@@ -152,7 +152,7 @@ describe('a converted plan on its next passes', () => {
     const { plan: next } = await advanceUnilateralExit(ready, chain({ broadcastPackage }), sdk({ prepareRecoverFunds }), '02abc');
     expect(prepareRecoverFunds).not.toHaveBeenCalled();
     expect(broadcastPackage).toHaveBeenCalledWith('aa', 'bb');
-    expect(next.needsRebuild).toBe(true);
+    expect(next.status).toEqual({ type: 'running', converted: true });
   });
 
   it('rebuilds by name once nothing is in flight, passing back the funding it was built from', async () => {
@@ -173,8 +173,8 @@ describe('a converted plan on its next passes', () => {
       expect.objectContaining({ fundingInputs: [expect.objectContaining({ txid: 'fund', valueSats: 14_350 })] }),
       expect.anything(),
     );
-    expect(next).toMatchObject({ phase: 'active', destination: 'bc1qold', feeRateSatPerVbyte: 3, exitStateSnapshot: 'frozen' });
-    expect(next.needsRebuild).toBeUndefined();
+    expect(next).toMatchObject({ destination: 'bc1qold', feeRateSatPerVbyte: 3, exitStateSnapshot: 'frozen' });
+    expect(next.status).toEqual({ type: 'running' });
     expect(next.exit).toBe(rebuilt);
     expect(exitFeeRecordOf(next)).toEqual({ quotedExitFeeSat: 14_350, exitFeeAddress: deriveFundingKey(MNEMONIC, 'mainnet', 1).address });
   });
@@ -186,7 +186,7 @@ describe('a converted plan on its next passes', () => {
     const driver = sdk({ prepareRecoverFunds: async () => prepared({ funding: undefined }), recoverFunds });
     const { plan: next } = await advanceUnilateralExit(converted(), chain(), driver, '02abc');
     expect(recoverFunds.mock.calls[0]).toEqual([{ prepared: expect.anything() }]);
-    expect(next.needsRebuild).toBeUndefined();
+    expect(next.status).toEqual({ type: 'running' });
     localStorage.removeItem('passkeyLabel');
   });
 
@@ -198,7 +198,7 @@ describe('a converted plan on its next passes', () => {
     const prepareRecoverFunds = vi.fn(async () => prepared());
     const driver = sdk({ prepareRecoverFunds, recoverFunds });
     const { plan: next } = await advanceUnilateralExit(converted(), chain({ broadcast }), driver, '02abc');
-    expect(next).toMatchObject({ phase: 'active', needsRebuild: true, needsSignIn: true });
+    expect(next.status).toEqual({ type: 'running' });
     expect(recoverFunds).not.toHaveBeenCalled();
     expect(broadcast).not.toHaveBeenCalled();
 
@@ -218,7 +218,7 @@ describe('a converted plan on its next passes', () => {
     stuck.exit.transactions[0].status = { type: 'unverified' };
     const driver = sdk({ prepareRecoverFunds: async () => prepared() });
     const { plan: next } = await advanceUnilateralExit(stuck, chain(), driver, '02abc');
-    expect(next).toMatchObject({ phase: 'active', needsRebuild: true, needsSignIn: true, redoCause: 'unverified' });
+    expect(next.status).toEqual({ type: 'needsUpdate', why: 'signIn', cause: 'unverified' });
     expect(awaitsUpdate(next)).toBe(true);
     localStorage.removeItem('passkeyLabel');
   });
@@ -230,15 +230,14 @@ describe('a converted plan on its next passes', () => {
       },
     });
     const { plan: next } = await advanceUnilateralExit(converted(), chain(), driver, '02abc');
-    expect(next).toMatchObject({ phase: 'active', needsRebuild: true });
+    expect(next.status).toEqual({ type: 'running', converted: true });
   });
 
   it('finishes as converted when the quote has nothing left to build', async () => {
     const recoverFunds = vi.fn(async () => rebuilt);
     const { plan: next } = await advanceUnilateralExit(converted(), chain(), sdk({ recoverFunds }), '02abc');
     expect(recoverFunds).not.toHaveBeenCalled();
-    expect(next.phase).toBe('active');
-    expect(next.needsRebuild).toBeUndefined();
+    expect(next.status).toEqual({ type: 'running' });
     expect(next.exit.transactions.map(t => t.txid)).toEqual(['node-1', 'refund-1']);
   });
 
@@ -249,15 +248,15 @@ describe('a converted plan on its next passes', () => {
       tx({ txid: 'sweep', kind: 'sweep', txHex: rawTx([`${txidOf(1)}:0`], [179_000]), dependsOn: [txidOf(1)], status: blocked }),
     ];
     const { plan: next } = await advanceUnilateralExit(swept, chain(), sdk(), '02abc');
-    expect(next).toMatchObject({ phase: 'active', landed: [{ leafIds: ['leaf-1'], valueSat: 180_000, outpoint: `${txidOf(1)}:0` }] });
-    expect(next.needsRebuild).toBeUndefined();
+    expect(next).toMatchObject({ landed: [{ leafIds: ['leaf-1'], valueSat: 180_000, outpoint: `${txidOf(1)}:0` }] });
+    expect(next.status).toEqual({ type: 'running' });
   });
 
   it('archives a converted exit the check reads as done', async () => {
     const done = sdk({
       checkRecoverFunds: async ({ recovery }) => ({ recovery, verdict: { type: 'done' } }),
     });
-    expect((await advanceUnilateralExit(converted(), chain(), done, '02abc')).plan.phase).toBe('complete');
+    expect((await advanceUnilateralExit(converted(), chain(), done, '02abc')).plan.status).toEqual({ type: 'done' });
   });
 
   it('hands a diverged one to the usual rebuild, which clears the mark', async () => {
@@ -267,13 +266,12 @@ describe('a converted plan on its next passes', () => {
       recoverFunds: async () => rebuilt,
     });
     const { plan: next } = await advanceUnilateralExit(converted(), chain(), driver, '02abc');
-    expect(next.phase).toBe('active');
-    expect(next.needsRebuild).toBeUndefined();
+    expect(next.status).toEqual({ type: 'running' });
   });
 
   it('is not rebuilt without an sdk, which cannot read it back', async () => {
     const { plan: next } = await advanceUnilateralExit(converted(), chain());
-    expect(next.needsRebuild).toBe(true);
+    expect(next.status).toEqual({ type: 'running', converted: true });
   });
 });
 
@@ -306,7 +304,7 @@ describe('rebuildExit', () => {
       { leafId: 'leaf-2', valueSats: 420_000 },
     ]);
     expect(first.droppedLeaves).toBeUndefined();
-    await rebuildExit({ ...first, phase: 'redo' }, sdk({ prepareRecoverFunds }), '02abc');
+    await rebuildExit({ ...first, status: { type: 'rebuilding' } }, sdk({ prepareRecoverFunds }), '02abc');
     expect(prepareRecoverFunds).toHaveBeenLastCalledWith(
       expect.objectContaining({ selection: { type: 'specific', leafIds: ['leaf-1', 'leaf-2'] } }),
     );
@@ -344,7 +342,7 @@ describe('rebuildExit', () => {
       skipped: [{ leafId: 'leaf-2', valueSats: 420_000, reason: { type: 'unverified' } }],
     });
     const recoverFunds = async () => checked([{ txid: 'b' }], { leaves: [solo], recoverableValueSats: 180_000 });
-    const next = await rebuildExit({ ...start, phase: 'redo' }, sdk({ prepareRecoverFunds: async () => quote, recoverFunds }), '02abc');
+    const next = await rebuildExit({ ...start, status: { type: 'rebuilding' } }, sdk({ prepareRecoverFunds: async () => quote, recoverFunds }), '02abc');
     expect(willReceiveSat(start)).toBe(599_600);
     expect(willReceiveSat(next)).toBe(599_600);
   });
@@ -380,13 +378,13 @@ describe('rebuildExit', () => {
 
   it('finishes when the build comes back empty because everything landed meanwhile', async () => {
     const driver = sdk({ prepareRecoverFunds: async () => prepared(), recoverFunds: async () => checked([]) });
-    expect((await rebuildExit(plan([tx({ txid: 'a' })]), driver, '02abc')).phase).toBe('complete');
+    expect((await rebuildExit(plan([tx({ txid: 'a' })]), driver, '02abc')).status).toEqual({ type: 'done' });
   });
 
   it('finishes without quoting when the plan names no leaf', async () => {
     const prepareRecoverFunds = vi.fn(async () => prepared());
     const empty = plan([tx({ txid: 'a' })], { exit: { leaves: [] } });
-    expect((await rebuildExit(empty, sdk({ prepareRecoverFunds }), '02abc')).phase).toBe('complete');
+    expect((await rebuildExit(empty, sdk({ prepareRecoverFunds }), '02abc')).status).toEqual({ type: 'done' });
     expect(prepareRecoverFunds).not.toHaveBeenCalled();
   });
 });

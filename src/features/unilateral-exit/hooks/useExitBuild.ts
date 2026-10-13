@@ -50,7 +50,7 @@ export function useExitBuild(inputs: BuildInputs) {
   // leftover's fee screen has no quote: its button continues the exit. A bump
   // keeps to its own recovery, whatever the exit beside it waits on.
   const build = useCallback(async () => {
-    if (!bumping && !fundingKey && plan?.topUp) return continueExit();
+    if (!bumping && !fundingKey && plan?.status.type === 'needsExitFee') return continueExit();
     if (!walletKey || !quote || !figures || (bumping && !bumpTarget)) return;
     const funded = figures.needsFunding;
     if (funded && (!plan || !fundingKey || !holdsPhrase())) return;

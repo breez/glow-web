@@ -60,8 +60,8 @@ describe('raising the fee of a kept co-signed recovery', () => {
       const partly = kept();
       partly.exit.transactions[0] = { ...partly.exit.transactions[0], status: confirmed(90) };
       expect(canBumpRecovery(partly)).toBe(false);
-      expect(canBumpRecovery(kept({ phase: 'complete' }))).toBe(false);
-      expect(canBumpRecovery(kept({ phase: 'redo' }))).toBe(false);
+      expect(canBumpRecovery(kept({ status: { type: 'done' } }))).toBe(false);
+      expect(canBumpRecovery(kept({ status: { type: 'rebuilding' } }))).toBe(false);
     });
   });
 
@@ -100,7 +100,7 @@ describe('raising the fee of a kept co-signed recovery', () => {
       expect(recoverFunds.mock.calls[0]).toEqual([{ prepared: bumpQuote() }]);
       expect(next).toMatchObject({
         mode: 'recover',
-        phase: 'active',
+        status: { type: 'running' },
         network: 'regtest',
         destination: 'bcrt1qmine',
         feeRateSatPerVbyte: 6,
