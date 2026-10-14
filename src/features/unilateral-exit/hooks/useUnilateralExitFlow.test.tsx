@@ -428,17 +428,36 @@ describe('Recover Funds', () => {
       );
     });
 
-    it('stays on the quote, keeping nothing, when the co-signed part fails', async () => {
+    const refused = (leafId: string) => ({
+      leafId,
+      outputTxid: 'o',
+      outputVout: 0,
+      error: { type: 'operatorsUnavailable' as const, message: 'unreachable' },
+    });
+
+    it.each([
+      ['nobody co-signs', async () => cosignedBuild({ leaves: [], transactions: [], failed: [refused('c-1'), refused('c-2')] })],
+      [
+        'the co-signing fails',
+        async (): Promise<RecoverFundsResponse> => {
+          throw new Error('operators unreachable');
+        },
+      ],
+    ])('goes on to the exit fee for the rest when %s, keeping nothing', async (_, build) => {
       const prepareRecoverFunds = vi.fn<ExitSdk['prepareRecoverFunds']>().mockResolvedValueOnce(mixed).mockResolvedValueOnce(cosignedQuote);
-      const recoverFunds = vi.fn(async () => {
-        throw new Error('operators unreachable');
-      });
-      const { result } = await quoted(mixed, recoverFunds, { mode: 'recover', prepareRecoverFunds });
+      const { result } = await quoted(mixed, vi.fn(build), { mode: 'recover', prepareRecoverFunds });
       await act(() => result.current.continueFromQuote());
 
-      expect(result.current.phase).toBe('quote');
-      expect(result.current.startError).toBe('operators unreachable');
+      expect(result.current.phase).toBe('unlock');
+      expect(result.current.startError).toBeNull();
       expect(keepRecovery).not.toHaveBeenCalled();
+      vi.mocked(readWalletMnemonic).mockResolvedValueOnce(MNEMONIC);
+      await act(() => result.current.unlock());
+      expect(setPendingExit).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ mode: 'recover', willReceiveSat: 118_900, required: { sat: 14_350, inputs: 1 } }),
+        expect.anything(),
+      );
     });
   });
 });

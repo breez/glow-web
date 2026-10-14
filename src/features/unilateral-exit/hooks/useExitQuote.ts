@@ -113,8 +113,8 @@ export function useExitQuote({ wallet, walletKey, chain, engine, mode, bumping, 
   // Only the build knows what an exit still needs, and it says so by refusing.
   // Held with the inputs it had, for this quote's rate.
   const [shortfall, setShortfall] = useState<Funding | null>(null);
-  // The co-signed part of a mixed recovery went out on its own, so the exit fee
-  // pays for the rest alone.
+  // The co-signed part of a mixed recovery went out on its own, or failed to,
+  // so the exit fee pays for the rest alone.
   const [splitOff, setSplitOff] = useState(false);
 
   const refreshQuote = useCallback(async () => {

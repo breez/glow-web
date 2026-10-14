@@ -162,9 +162,11 @@ export function useExitBuild(inputs: BuildInputs) {
       setSplitOff(true);
       goTo('unlock');
     } catch (e) {
-      logger.error(LogCategory.SDK, 'Failed to recover the co-signed funds', { error: formatError(e) });
-      setStartError(formatError(e));
-      goTo('quote');
+      // The rest needs no co-signer, so it goes ahead. The co-signed funds stay
+      // recoverable, and the pending recovery's start tries them again.
+      logger.warn(LogCategory.SDK, 'Failed to recover the co-signed funds, continuing with the rest', { error: formatError(e) });
+      setSplitOff(true);
+      goTo('unlock');
     } finally {
       release();
     }
