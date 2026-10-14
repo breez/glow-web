@@ -373,7 +373,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
             )}
 
             {flow.phase === 'sent' && (
-              <Receipt title="Funds sent">
+              <Receipt title={bumping ? 'Fee raised' : 'Funds sent'}>
                 <Status>
                   <SatAmount sats={flow.sentSat} /> on its way
                 </Status>

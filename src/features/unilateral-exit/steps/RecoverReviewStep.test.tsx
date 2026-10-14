@@ -112,7 +112,7 @@ describe('RecoverReviewStep', () => {
     it('says nothing is worth recovering when the fee is why, over any unrecoverable leaf', () => {
       renderReview(empty([unrecoverable, skip('feeExceedsValue')]));
       expect(screen.getByText('Nothing is worth recovering right now')).toBeInTheDocument();
-      expect(screen.getByText(/At today's fee rates these funds would cost more/)).toBeInTheDocument();
+      expect(screen.getByText(/At this fee rate these funds would cost more/)).toBeInTheDocument();
     });
 
     it('says the funds cannot be recovered when that is the reason for every leaf', () => {
@@ -145,7 +145,7 @@ describe('RecoverReviewStep', () => {
     expect(screen.getByText('Nothing is worth recovering right now')).toBeInTheDocument();
     expect(
       screen.getByText(
-        "At today's fee rates these funds would cost more to move on-chain than they are worth. Try again once the network is cheaper.",
+        'At this fee rate these funds would cost more to move on-chain than they are worth. Try a lower fee rate, or wait for the network to get cheaper.',
       ),
     ).toBeInTheDocument();
   });

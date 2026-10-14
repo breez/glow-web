@@ -31,9 +31,8 @@ export const RecoverReviewStep: React.FC<{
 }> = ({ figures, destination, error = null, underWay = false, paused = false }) => {
   const notWorthIt = (
     <Verdict variant="warning" title="Nothing is worth recovering right now">
-      {underWay
-        ? 'At this fee rate these funds would cost more to move on-chain than they are worth. Try a lower fee rate, or wait for the network to get cheaper.'
-        : "At today's fee rates these funds would cost more to move on-chain than they are worth. Try again once the network is cheaper."}
+      At this fee rate these funds would cost more to move on-chain than they are worth. Try a lower fee rate, or wait for
+      the network to get cheaper.
     </Verdict>
   );
 

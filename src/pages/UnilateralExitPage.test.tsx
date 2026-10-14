@@ -406,6 +406,13 @@ describe('raising the fee of a kept co-signed recovery', () => {
     expect(onFinished).toHaveBeenCalled();
   });
 
+  it('says the fee was raised, and what is on its way', async () => {
+    await renderBump(bumpFlow({ phase: 'sent' }));
+    expect(screen.getByText('Fee raised')).toBeInTheDocument();
+    expect(screen.queryByText('Funds sent')).not.toBeInTheDocument();
+    expect(screen.getByText(/on its way/)).toHaveTextContent('47 200');
+  });
+
   it('keeps its receipt until Done, though the new recovery lands', async () => {
     const { onFinished, show } = await renderBump(bumpFlow({ phase: 'sent' }));
     show(bumpFlow({ phase: 'sent', bumpedTxid: 'c1-bumped' }));
