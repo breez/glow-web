@@ -29,19 +29,19 @@
   <path d="M320 434 L410 470 L320 506 L230 470 z" fill="#F3F4F6" stroke="#6B7280" stroke-width="1.5"/>
 
   <g font-size="15" fill="#111827" text-anchor="middle">
-    <text x="320" y="42" font-weight="600">prepareUnilateralExit</text>
+    <text x="320" y="42" font-weight="600">prepareRecoverFunds</text>
     <text x="320" y="62" font-size="13" fill="#374151">which leaves, the fee, how much to fund</text>
 
     <text x="320" y="126" font-weight="600">Fund a UTXO you control</text>
     <text x="320" y="146" font-size="13" fill="#374151">native SegWit, at least the quoted amount</text>
 
-    <text x="320" y="210" font-weight="600">unilateralExit</text>
+    <text x="320" y="210" font-weight="600">recoverFunds</text>
     <text x="320" y="230" font-size="13" fill="#374151">returns the signed transactions</text>
 
     <text x="320" y="294" font-weight="600">Store the response</text>
     <text x="320" y="314" font-size="13" fill="#374151">it is the only record of the exit</text>
 
-    <text x="320" y="378" font-weight="600">checkUnilateralExit</text>
+    <text x="320" y="378" font-weight="600">checkRecoverFunds</text>
     <text x="320" y="398" font-size="13" fill="#374151">every few seconds, for days</text>
 
     <text x="320" y="475" font-weight="600" font-size="14">verdict</text>
