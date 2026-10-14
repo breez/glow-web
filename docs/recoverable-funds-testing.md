@@ -142,8 +142,9 @@ does, wait for the balance and run it again.
   through the proxy is racy, so it can take more than one try.
 - **Update while the operators are down.** With the card showing, tap
   Update & Continue Exit.
-  Expect "Updating...", then "Could not update the exit" and "Please try again
-  or choose a different fee.", with a Choose a Different Fee button. Run
+  Expect "Updating...", then "Could not update the exit" and "Please try
+  again.", with the error under Details and no fee button: the operators being
+  down is not a fee problem. Run
   `npm run regtest:operators -- up` and tap Update & Continue Exit again.
 - **Sheet closed or page reloaded.** Close the sheet or reload the page while
   the unilateral exit runs. Reopening it lands on the tracker.
@@ -208,11 +209,12 @@ npm run regtest:address
 
 - **Operators down before the quote.** Run `npm run regtest:operators -- down`,
   then tap Get Quote.
-  Expect "Could not quote the recovery" with the SDK's error text, and only a
-  Back button.
+  Expect "Could not quote the recovery" and "Please try again.", with the
+  error under Details, and only a Back button.
 - **Operators down after the quote.** Tap Get Quote, run
   `npm run regtest:operators -- down`, then tap Recover Funds.
-  Expect "Could not recover the funds" and "Please try again.".
+  Expect "Could not recover the funds" and "Please try again.", with the error
+  under Details.
 - **Sheet closed during the build.** Tap Recover Funds and close the sheet
   while "Building and signing the recovery..." shows.
   Glow keeps the recovery, and its "BTC Transfer" row appears.
@@ -259,9 +261,12 @@ npm run regtest:address
   Recover Funds, run `npm run regtest:indexer -- down`. Then tap Recover Funds.
   Expect "Nothing can be recovered right now" and "Try again later.", with the
   Recover Funds button still there. Run `npm run regtest:indexer -- up` and tap
-  it again. If Glow shows "Could not start the recovery" with the SDK's error
-  text instead, the SDK failed rather than skipped the funds. The button stays
+  it again. If Glow shows "Could not start the recovery" and "Please try
+  again." instead, the SDK failed rather than skipped the funds. The button stays
   in both cases. Note which one you saw.
+- **Passkey prompt cancelled (passkey wallet only).** Cancel the passkey
+  prompt at the unlock.
+  Expect "Sign-in failed" and "Please try again.", with a Try Again button.
 - **Nothing worth moving at the start.** Expect "Nothing is worth recovering
   right now" and "At N sat/vB these funds would cost more to move on-chain than
   they are worth. Cancel the recovery under Advanced and start again at a lower
@@ -302,7 +307,8 @@ under Advanced.
 
 1. Tap the Recoverable Funds row again. Enter the address, pick the same rate
    and tap Get Quote.
-   The review still shows the exit fee line. This is a known gap.
+   The review shows the exit fee, but no longer asks you to pay it from
+   another wallet: the address already covers it.
 2. Tap Continue.
    The pending screen opens on "Exit fee received", with the button
    "Recover Funds" and nothing to send. The row reads "Exit fee received" and
@@ -337,8 +343,9 @@ npm run regtest:address
 
 - **Operators refuse to co-sign.** Tap Get Quote, run
   `npm run regtest:operators -- down`, then tap Recover Funds.
-  Expect "Could not recover the funds" and "Please try again." on every try.
-  The exit-fee part cannot start either. This is a known gap.
+  Glow goes on with the exit-fee part: the unlock, then the pending screen for
+  that part only. The co-signed funds stay recoverable, and the pending
+  recovery's start tries them again.
 - **Sheet closed after the co-signed part.** Close the sheet once the
   "BTC Transfer" row appears.
   The Recoverable Funds row then shows only the exit-fee part, ₿150 000.
@@ -354,9 +361,9 @@ in Chrome DevTools (Network panel, right-click the request, Override content).
   Expect "Could not recover the funds" and "Please try again.".
 - **The fee eats the funds.** Run `npm run regtest:recoverable -- cosigned`.
   Fake a rate of about 50 000 sat/vB, then tap Get Quote.
-  Expect "Nothing is worth recovering right now" and "At today's fee rates
-  these funds would cost more to move on-chain than they are worth. Try again
-  once the network is cheaper."
+  Expect "Nothing is worth recovering right now" and "At this fee rate these
+  funds would cost more to move on-chain than they are worth. Try a lower fee
+  rate, or wait for the network to get cheaper."
 - **Indexer down at the quote.** Run `npm run regtest:recoverable -- cosigned`,
   then `npm run regtest:indexer -- down`, then tap Get Quote.
   Expect "Nothing can be recovered right now" and "Try again later.". If Glow
@@ -387,7 +394,7 @@ holds everything in the mempool.
    is offered only while nothing has confirmed.
    The rates start above the recovery's own rate.
 2. Pick a rate, tap Get Quote, then tap Continue Recovery.
-   Glow shows "Building and signing the recovery...", then "Funds sent" and
+   Glow shows "Building and signing the recovery...", then "Fee raised" and
    "₿X on its way".
 3. Run `npm run regtest:mine -- 1`. If you held anything, run
    `npm run regtest:release`.
@@ -396,8 +403,8 @@ holds everything in the mempool.
 
 - **Operators refuse.** Tap Get Quote, run `npm run regtest:operators -- down`,
   then tap Continue Recovery.
-  Expect "Could not continue the recovery" and "Please try again or choose a
-  different fee.".
+  Expect "Could not continue the recovery" and "Please try again.", with no
+  fee advice: the operators being down is not a fee problem.
 - **The rate eats a leaf.** Fake a rate of about 50 000 sat/vB, then tap
   Get Quote.
   Expect "Nothing to rebuild right now" and "Glow keeps your recovery moving on
@@ -415,7 +422,8 @@ of blocks.
 **Steps**
 
 1. On the tracker, under Advanced, tap Rebuild at a higher fee. Pick a higher
-   rate, tap Get Quote, then tap Continue.
+   rate, tap Get Quote, then tap Continue. The rates start above the
+   recovery's own rate.
    Glow tries once with the coins already at the exit fee address.
 2. When those fall short, Glow shows "More exit fee needed" and "At N sat/vB,
    the recovery needs more exit fee than its fee address holds." The breakdown
@@ -441,15 +449,16 @@ of blocks.
 
 These are open issues. Report them only if they behave differently.
 
-- In a recovery with both parts, a refused co-sign also blocks the exit-fee
-  part.
-- A passkey prompt cancelled at the unlock shows raw text and no button.
-- A failed update always suggests a different fee.
-- Error screens show the SDK's raw text as the body.
 - Glow cannot decline a leftover that asks for more exit fee. It lets the
   leftover go after about a week.
-- In Case 2d, the review asks for the exit fee although the address already
-  covers it.
+- The Recoverable Funds row beside a running unilateral exit can be tapped,
+  and it opens the exit's tracker.
+- The Unilateral Exit review asks for the exit fee even when the shared
+  address already covers it.
+- While an exit or recovery is under way, the highlighted Exit fee row shows
+  the whole fee as owed.
+- After a cold start with the indexer down, a paid exit fee address reads as
+  empty until a read succeeds.
 
 ## Covered by unit tests only
 
