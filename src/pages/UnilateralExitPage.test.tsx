@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import type { FeeRates } from '@/services/chain';
 import type { UnilateralExitFlow } from '@/features/unilateral-exit/hooks/useUnilateralExitFlow';
@@ -618,6 +618,24 @@ describe('the phrase unlock', () => {
     render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
     await waitForSheetOpen();
     expect(await screen.findByTestId('pin-gate-reason')).toHaveTextContent(reason);
+  });
+
+  it('says sign-in failed in the app\'s words, folds the raw text away, and tries again', async () => {
+    const raw = 'The operation either timed out or was not allowed.';
+    const unlock = vi.fn(async () => {});
+    flow.current = { ...quoteFlow(3_000), phase: 'unlock', unlock, unlockError: raw } as unknown as UnilateralExitFlow;
+    render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
+    await waitForSheetOpen();
+
+    expect(screen.getByText('Sign-in failed')).toBeInTheDocument();
+    expect(screen.getByText('Please try again.')).toBeInTheDocument();
+    expect(screen.queryByText(raw)).not.toBeInTheDocument();
+    fireEvent.click(within(screen.getByTestId('unilateral-exit-unlock-error')).getByText('Details'));
+    expect(screen.getByTestId('unilateral-exit-unlock-error')).toHaveTextContent(raw);
+
+    fireEvent.click(screen.getByTestId('unilateral-exit-unlock-retry'));
+    expect(screen.getByTestId('unilateral-exit-unlock-retry')).toHaveTextContent(/^Try Again$/);
+    expect(unlock).toHaveBeenCalledTimes(1);
   });
 });
 

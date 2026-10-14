@@ -17,6 +17,7 @@ import { DestinationField } from '@/components/DestinationField';
 import { FeeStep } from '@/features/unilateral-exit/steps/FeeStep';
 import { QuoteStep } from '@/features/unilateral-exit/steps/QuoteStep';
 import { RecoverReviewStep } from '@/features/unilateral-exit/steps/RecoverReviewStep';
+import { ErrorCard } from '@/features/unilateral-exit/steps/ReviewParts';
 import { FundStep, FundingStatus, PendingExitStep, Receipt, Status } from '@/features/unilateral-exit/steps/FundStep';
 import { RedoActions, TrackerView } from '@/features/unilateral-exit/TrackerView';
 import { SatAmount } from '@/components/SatAmount';
@@ -228,6 +229,14 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
             noun={noun}
           />
         );
+      case 'unlock':
+        // A cancelled passkey prompt, or any failed read, is tried again here.
+        if (!flow.unlockError) return null;
+        return (
+          <PrimaryButton onClick={() => void unlock()} className="w-full" data-testid="unilateral-exit-unlock-retry">
+            Try Again
+          </PrimaryButton>
+        );
       case 'sent':
         return (
           <PrimaryButton onClick={onFinished} className="w-full" data-testid="unilateral-exit-sent-done">
@@ -301,11 +310,18 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
 
             {flow.phase === 'unlock' && (
               <>
+                {/* Passed once, so a retry after a failed read asks for no PIN again. */}
                 {gate === 'pin' && (
-                  <PinGate reason={recovering ? 'Recover funds' : 'Unilateral exit'} onUnlocked={() => void flow.unlock()} />
+                  <PinGate
+                    reason={recovering ? 'Recover funds' : 'Unilateral exit'}
+                    onUnlocked={() => {
+                      setGate(null);
+                      void flow.unlock();
+                    }}
+                  />
                 )}
                 {flow.unlockError && (
-                  <ErrorMessageBox title="Cannot reach your recovery phrase" error={flow.unlockError} />
+                  <ErrorCard title="Sign-in failed" error={flow.unlockError} testId="unilateral-exit-unlock-error" />
                 )}
               </>
             )}

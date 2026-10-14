@@ -1,12 +1,12 @@
-import React from 'react';
-import { CopyableRow } from '@/components/ui';
+import React, { useState } from 'react';
+import { CollapsibleCodeField, CopyableRow } from '@/components/ui';
 import { AlertCard } from '@/components/AlertCard';
 import { FeeBreakdownCard, type FeeBreakdownItem } from '@/components/FeeBreakdownCard';
 import { SatAmount } from '@/components/SatAmount';
 import { truncateAddress } from '@/utils/crossChainFormat';
 import type { QuoteFigures } from '../quote';
 
-// The pieces the Unilateral Exit and Recover Funds reviews share. Each review
+// The pieces the Unilateral Exit and Recover Funds screens share. Each flow
 // keeps its own wording; the figures come from the quote module.
 
 export const ReceiveHero: React.FC<{ figures: QuoteFigures }> = ({ figures }) => (
@@ -41,5 +41,23 @@ export const ReviewBreakdown: React.FC<{ figures: QuoteFigures; amounts: FeeBrea
 export const LeftOutCard: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <AlertCard variant="warning" title={title}>
     <p className="text-sm">{children}</p>
+  </AlertCard>
+);
+
+/** The node's or the SDK's own words, folded away: support needs them, the user rarely does. */
+export const ErrorDetails: React.FC<{ text: string; testId: string }> = ({ text, testId }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-2" data-testid={testId}>
+      <CollapsibleCodeField label="Details" value={text} isVisible={open} onToggle={() => setOpen(v => !v)} />
+    </div>
+  );
+};
+
+/** A failure to try again: the title says what failed, and the raw text stays folded under Details. */
+export const ErrorCard: React.FC<{ title: string; error: string; testId: string }> = ({ title, error, testId }) => (
+  <AlertCard variant="error" title={title}>
+    <p className="text-sm">Please try again.</p>
+    <ErrorDetails text={error} testId={testId} />
   </AlertCard>
 );

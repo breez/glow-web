@@ -2,23 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BackupActions, ExitActionRow } from './BackupCard';
 import { AlertCard, SimpleAlert } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
-import { CollapsibleCodeField, CollapsibleSection, PrimaryButton, SecondaryButton } from '@/components/ui';
+import { CollapsibleSection, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { RefreshIcon } from '@/components/Icons';
 import { awaitsUpdate, isActive, isDiverged, isLanded, leftoverIdsOf, type UnilateralExitPlan } from './model/plan';
 import { blocksToFinish, exitStages, nextAction, planProgress, type NextAction, type PlanProgress } from './model/progress';
 import { isCooperative } from './quote';
+import { ErrorDetails } from './steps/ReviewParts';
 import { formatDaysLeft } from '@/utils/blockTime';
 import { formatWithSpaces } from '@/utils/formatNumber';
-
-/** The node's or the SDK's own words, folded away: support needs them, the user rarely does. */
-const ErrorDetails: React.FC<{ text: string; testId: string }> = ({ text, testId }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="mt-2" data-testid={testId}>
-      <CollapsibleCodeField label="Details" value={text} isVisible={open} onToggle={() => setOpen(v => !v)} />
-    </div>
-  );
-};
 
 /** One labelled figure. No icon and no marker: the label is the whole story. */
 const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
