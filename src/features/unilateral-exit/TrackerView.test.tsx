@@ -228,6 +228,17 @@ describe('TrackerView', () => {
     expect(onRebuild).toHaveBeenCalled();
   });
 
+  it('asks only to try again, with no fee to choose, when the failure is not about the fee', () => {
+    const error = 'operators unreachable';
+    render(
+      <TrackerView plan={plan([tx({ txid: 'a' })], { status: signIn })} tipHeight={1000} isAdvancing={false} onRebuild={vi.fn()} continueError={error} />,
+    );
+    expect(screen.getByText('Could not update the exit')).toBeInTheDocument();
+    expect(screen.getByText('Please try again.')).toBeInTheDocument();
+    render(<RedoActions onContinue={vi.fn()} onRebuild={vi.fn()} isContinuing={false} continueError={error} />);
+    expect(screen.queryByTestId('unilateral-exit-rebuild-wizard')).not.toBeInTheDocument();
+  });
+
   it('offers a fee bump while the exit is still running', () => {
     const onRebuild = vi.fn();
     renderTracker(plan([tx({ txid: 'a' })]), 1000, onRebuild);

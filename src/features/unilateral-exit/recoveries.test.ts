@@ -149,6 +149,14 @@ describe('raising the fee of a kept co-signed recovery', () => {
       await expect(bump).rejects.toMatchObject({ failed, message: 'Please try again or choose a different fee.' });
     });
 
+    it('asks only to try again when the operators refused for a reason a fee cannot fix', async () => {
+      const failed = [
+        { leafId: 'c-1', outputTxid: 'o', outputVout: 0, error: { type: 'operatorsUnavailable' as const, message: 'unreachable' } },
+      ];
+      const bump = buildRecoveryBump(sdk({ recoverFunds: async () => bumpBuild({ leaves: [], transactions: [], failed }) }), kept(), bumpQuote());
+      await expect(bump).rejects.toMatchObject({ failed, message: 'Please try again.' });
+    });
+
     it('passes on any other refusal as the SDK gave it', async () => {
       const refused = new Error('operators unavailable');
       const bump = buildRecoveryBump(sdk({ recoverFunds: async () => Promise.reject(refused) }), kept(), bumpQuote());

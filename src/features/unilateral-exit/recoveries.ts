@@ -1,4 +1,4 @@
-import type { PrepareRecoverFundsResponse, RecoveryTransaction } from '@breeztech/breez-sdk-spark';
+import type { CooperativeRecoveryFailure, PrepareRecoverFundsResponse, RecoveryTransaction } from '@breeztech/breez-sdk-spark';
 import { buildFromQuote, EmptyRecoveryError, planFromBuild } from './building';
 import type { UnilateralExitPlan } from './model/plan';
 import { isCooperative, isCooperativeLeaf, needsFunding } from './quote';
@@ -20,8 +20,9 @@ export async function quoteRecoveryBump(
   return whole ? quote : emptyQuote(quote);
 }
 
-/** A bump's retry: a replacement fee too low is the common cause, and Back reopens the fee picker. */
-const BUMP_RETRY = 'Please try again or choose a different fee.';
+/** A bump's retry. A replacement fee too low needs a higher one, which Back reopens the fee picker for. */
+const bumpRetry = (failed: CooperativeRecoveryFailure[]): string =>
+  failed.some(({ error }) => error.type === 'replacementFeeTooLow') ? 'Please try again or choose a different fee.' : 'Please try again.';
 
 /**
  * Builds the bump, which replaces `recovery` once kept. Nothing is broadcast
@@ -35,9 +36,11 @@ export async function buildRecoveryBump(
   quote: PrepareRecoverFundsResponse,
 ): Promise<UnilateralExitPlan> {
   const built = await buildFromQuote(sdk, quote, null).catch((e: unknown) => {
-    throw e instanceof EmptyRecoveryError ? new EmptyRecoveryError(e.failed, BUMP_RETRY) : e;
+    throw e instanceof EmptyRecoveryError ? new EmptyRecoveryError(e.failed, bumpRetry(e.failed)) : e;
   });
-  if (!coversLeaves(built.leaves, recovery.exit.leaves.map(leaf => leaf.leafId))) throw new EmptyRecoveryError(built.failed, BUMP_RETRY);
+  if (!coversLeaves(built.leaves, recovery.exit.leaves.map(leaf => leaf.leafId))) {
+    throw new EmptyRecoveryError(built.failed, bumpRetry(built.failed));
+  }
   const { network, fundingAddressIndex, mode, landed, droppedLeaves } = recovery;
   return { ...planFromBuild(quote, built, null, { network, fundingAddressIndex, mode }), landed, droppedLeaves };
 }

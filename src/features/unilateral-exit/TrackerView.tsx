@@ -6,6 +6,7 @@ import { CollapsibleSection, PrimaryButton, SecondaryButton } from '@/components
 import { RefreshIcon } from '@/components/Icons';
 import { awaitsUpdate, isActive, isDiverged, isLanded, leftoverIdsOf, type UnilateralExitPlan } from './model/plan';
 import { blocksToFinish, exitStages, nextAction, planProgress, type NextAction, type PlanProgress } from './model/progress';
+import { isFeeFailure } from './exitFee';
 import { isCooperative } from './quote';
 import { ErrorDetails } from './steps/ReviewParts';
 import { formatDaysLeft } from '@/utils/blockTime';
@@ -135,7 +136,7 @@ const UpdateError: React.FC<{ noun: string; error: string }> = ({ noun, error })
   return (
     <div ref={ref}>
       <AlertCard variant="error" title={`Could not update the ${noun}`}>
-        <p className="text-sm">Please try again or choose a different fee.</p>
+        <p className="text-sm">{isFeeFailure(error) ? 'Please try again or choose a different fee.' : 'Please try again.'}</p>
         <ErrorDetails text={error} testId="unilateral-exit-continue-error" />
       </AlertCard>
     </div>
@@ -160,7 +161,7 @@ export const RedoActions: React.FC<{
       {isContinuing ? 'Updating...' : `Update & Continue ${noun.charAt(0).toUpperCase()}${noun.slice(1)}`}
     </PrimaryButton>
     {/* When the exit's own fee rate no longer works, the wizard can pick another. */}
-    {continueError && onRebuild && (
+    {continueError && isFeeFailure(continueError) && onRebuild && (
       <SecondaryButton onClick={onRebuild} className="w-full" data-testid="unilateral-exit-rebuild-wizard">
         Choose a Different Fee
       </SecondaryButton>

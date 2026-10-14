@@ -11,6 +11,12 @@ export function requiredFundingOf(error: string): number | null {
   return sat > 0 ? sat : null;
 }
 
+/** A refusal over the fee as the SDK or a node words it: a replacement or relay fee too low. */
+const FEE_REFUSAL = /replacementFeeTooLow|replacement fee too low|insufficient fee|min (?:relay )?fee not met/i;
+
+/** Whether a failure is about the fee, which another rate can fix. Only the message reaches the page. */
+export const isFeeFailure = (error: string): boolean => requiredFundingOf(error) !== null || FEE_REFUSAL.test(error);
+
 /**
  * What a build counts as sent to the exit fee address: the exit's own funding
  * until one of its funded transactions confirms, since the sdk replaces an

@@ -541,8 +541,8 @@ describe('updating an exit from the tracker', () => {
     expect(screen.queryByTestId('unilateral-exit-rebuild-wizard')).not.toBeInTheDocument();
   });
 
-  it('offers a different fee once the update failed', async () => {
-    await renderTracker(diverged, 'Please try again.');
+  it('offers a different fee once the update failed over its fee', async () => {
+    await renderTracker(diverged, 'Insufficient CPFP funding: need at least 5000 sats');
     fireEvent.click(screen.getByTestId('unilateral-exit-rebuild-wizard'));
     expect(flow.current.rebuild).toHaveBeenCalled();
   });
