@@ -134,14 +134,14 @@ describe('what the exit is worth right now', () => {
     expect(screen.getByTestId('unilateral-exit-status')).toHaveTextContent('Waiting for timelock');
   });
 
-  it('estimates the whole wait, not just the next step, and marks it approximate', () => {
+  it('estimates the whole wait in days, not just the next step', () => {
     renderTracker(
       plan([
         tx({ txid: 'a', status: confirmed(1000) }),
         tx({ txid: 'r', kind: 'refund', dependsOn: ['a'], csvTimelockBlocks: 2000, status: locked(3000) }),
       ]),
     );
-    expect(screen.getByTestId('unilateral-exit-eta')).toHaveTextContent('~14');
+    expect(screen.getByTestId('unilateral-exit-eta')).toHaveTextContent(/^14$/);
   });
 
   it.each([
