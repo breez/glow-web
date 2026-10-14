@@ -1,9 +1,9 @@
-import { ErrorMessageBox, LoadingSpinner } from '@/components/ui';
+import { LoadingSpinner } from '@/components/ui';
 import React from 'react';
 import { AlertCard, SimpleAlert } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
 import type { QuoteFields } from '../hooks/useUnilateralExitFlow';
-import { DestinationRow, LeftOutCard, ReceiveHero, ReviewBreakdown } from './ReviewParts';
+import { DestinationRow, ErrorCard, LeftOutCard, ReceiveHero, ReviewBreakdown } from './ReviewParts';
 
 export const QuoteStep: React.FC<
   QuoteFields & {
@@ -25,7 +25,7 @@ export const QuoteStep: React.FC<
   if (error) {
     return (
       <div className="space-y-6">
-        <ErrorMessageBox title={`Could not quote the ${noun}`} error={error} />
+        <ErrorCard title={`Could not quote the ${noun}`} error={error} testId="unilateral-exit-quote-error" />
       </div>
     );
   }

@@ -14,8 +14,15 @@ export function requiredFundingOf(error: string): number | null {
 /** A refusal over the fee as the SDK or a node words it: a replacement or relay fee too low. */
 const FEE_REFUSAL = /replacementFeeTooLow|replacement fee too low|insufficient fee|min (?:relay )?fee not met/i;
 
+/** Glow's retry once the fee is what failed. */
+export const FEE_RETRY = 'Please try again or choose a different fee.';
+
 /** Whether a failure is about the fee, which another rate can fix. Only the message reaches the page. */
-export const isFeeFailure = (error: string): boolean => requiredFundingOf(error) !== null || FEE_REFUSAL.test(error);
+export const isFeeFailure = (error: string): boolean =>
+  error === FEE_RETRY || requiredFundingOf(error) !== null || FEE_REFUSAL.test(error);
+
+/** What to do after a failure: try again, and pick another rate when the fee is what failed. */
+export const retryAdvice = (error: string): string => (isFeeFailure(error) ? FEE_RETRY : 'Please try again.');
 
 /**
  * What a build counts as sent to the exit fee address: the exit's own funding

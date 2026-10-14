@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BackupActions, ExitActionRow } from './BackupCard';
-import { AlertCard, SimpleAlert } from '@/components/AlertCard';
+import { SimpleAlert } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
 import { CollapsibleSection, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { RefreshIcon } from '@/components/Icons';
@@ -8,7 +8,7 @@ import { awaitsUpdate, isActive, isDiverged, isLanded, leftoverIdsOf, type Unila
 import { blocksToFinish, exitStages, nextAction, planProgress, type NextAction, type PlanProgress } from './model/progress';
 import { isFeeFailure } from './exitFee';
 import { isCooperative } from './quote';
-import { ErrorDetails } from './steps/ReviewParts';
+import { ErrorCard } from './steps/ReviewParts';
 import { formatDaysLeft } from '@/utils/blockTime';
 import { formatWithSpaces } from '@/utils/formatNumber';
 
@@ -135,10 +135,7 @@ const UpdateError: React.FC<{ noun: string; error: string }> = ({ noun, error })
   useEffect(() => ref.current?.scrollIntoView?.({ block: 'nearest' }), [error]);
   return (
     <div ref={ref}>
-      <AlertCard variant="error" title={`Could not update the ${noun}`}>
-        <p className="text-sm">{isFeeFailure(error) ? 'Please try again or choose a different fee.' : 'Please try again.'}</p>
-        <ErrorDetails text={error} testId="unilateral-exit-continue-error" />
-      </AlertCard>
+      <ErrorCard title={`Could not update the ${noun}`} error={error} testId="unilateral-exit-continue-error" />
     </div>
   );
 };

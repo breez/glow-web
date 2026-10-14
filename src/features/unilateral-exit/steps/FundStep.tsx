@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCard } from '@/components/AlertCard';
 import { FeeBreakdownCard } from '@/components/FeeBreakdownCard';
-import { CollapsibleSection, CopyableText, ErrorMessageBox, LoadingSpinner, PrimaryButton, QRCodeContainer } from '@/components/ui';
+import { CollapsibleSection, CopyableText, LoadingSpinner, PrimaryButton, QRCodeContainer } from '@/components/ui';
 import { SatAmount } from '@/components/SatAmount';
 import { CheckIcon, ClockIcon, CloseIcon } from '@/components/Icons';
 import { useToast } from '@/contexts/ToastContext';
@@ -10,6 +10,7 @@ import { isPendingFunded, pendingTopUp, type TopUp } from '../exitFee';
 import type { PendingExit } from '../model/plan';
 import type { UnilateralExitEngineState } from '../engine/state';
 import { BackupActions, ExitActionRow } from '../BackupCard';
+import { ErrorCard } from './ReviewParts';
 import type { FundingFields } from '../hooks/useUnilateralExitFlow';
 
 const QUOTE_AGE_TICK_MS = 30_000;
@@ -124,7 +125,7 @@ export const FundStep: React.FC<
   // is nothing to pay here: only a failure to explain.
   if (!topUp) {
     return error ? (
-      <ErrorMessageBox title={`Could not continue the ${noun}`} error={error} />
+      <ErrorCard title={`Could not continue the ${noun}`} error={error} testId="unilateral-exit-build-error" />
     ) : (
       <p className="text-sm text-spark-text-secondary text-center">
         Continue the {noun} at {feeRate} sat/vB.
@@ -253,7 +254,7 @@ export const PendingExitStep: React.FC<{
             <p className="text-sm">Try again later.</p>
           </AlertCard>
         ) : (
-          startError && <ErrorMessageBox title={`Could not start the ${noun}`} error={startError} />
+          startError && <ErrorCard title={`Could not start the ${noun}`} error={startError} testId="unilateral-exit-start-error" />
         )}
       </>
     );

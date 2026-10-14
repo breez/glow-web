@@ -4,6 +4,7 @@ import { AlertCard } from '@/components/AlertCard';
 import { FeeBreakdownCard, type FeeBreakdownItem } from '@/components/FeeBreakdownCard';
 import { SatAmount } from '@/components/SatAmount';
 import { truncateAddress } from '@/utils/crossChainFormat';
+import { retryAdvice } from '../exitFee';
 import type { QuoteFigures } from '../quote';
 
 // The pieces the Unilateral Exit and Recover Funds screens share. Each flow
@@ -54,10 +55,17 @@ export const ErrorDetails: React.FC<{ text: string; testId: string }> = ({ text,
   );
 };
 
-/** A failure to try again: the title says what failed, and the raw text stays folded under Details. */
-export const ErrorCard: React.FC<{ title: string; error: string; testId: string }> = ({ title, error, testId }) => (
-  <AlertCard variant="error" title={title}>
-    <p className="text-sm">Please try again.</p>
-    <ErrorDetails text={error} testId={testId} />
-  </AlertCard>
-);
+/**
+ * A failure to try again: the title says what failed, and the body what to do.
+ * The SDK's or the browser's own words fold under Details; a message Glow
+ * wrote is already the body.
+ */
+export const ErrorCard: React.FC<{ title: string; error: string; testId: string }> = ({ title, error, testId }) => {
+  const advice = retryAdvice(error);
+  return (
+    <AlertCard variant="error" title={title}>
+      <p className="text-sm">{advice}</p>
+      {error !== advice && <ErrorDetails text={error} testId={testId} />}
+    </AlertCard>
+  );
+};

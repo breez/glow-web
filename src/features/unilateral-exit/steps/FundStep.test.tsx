@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { FundStep, FundingStatus, PendingExitStep } from './FundStep';
 import { coin, pendingExit } from '../testFixtures';
 
@@ -33,9 +33,13 @@ describe('FundStep', () => {
     expect(screen.getByText('Continue the exit at 42 sat/vB.')).toBeInTheDocument();
   });
 
-  it('reports a build that failed for a reason more money cannot fix', () => {
+  it('reports a build that failed for a reason more money cannot fix, its own words folded away', () => {
     render(<FundStep {...props} error="signing failed" />);
-    expect(screen.getByText(/signing failed/)).toBeInTheDocument();
+    expect(screen.getByText('Could not continue the exit')).toBeInTheDocument();
+    expect(screen.getByText('Please try again.')).toBeInTheDocument();
+    expect(screen.queryByText('signing failed')).not.toBeInTheDocument();
+    fireEvent.click(within(screen.getByTestId('unilateral-exit-build-error')).getByText('Details'));
+    expect(screen.getByTestId('unilateral-exit-build-error')).toHaveTextContent('signing failed');
   });
 
   it('shows what continuing now costs before anywhere to pay, since waiting is free', () => {

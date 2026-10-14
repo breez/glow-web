@@ -3,7 +3,6 @@ import {
   BottomSheetCard,
   BottomSheetContainer,
   DialogHeader,
-  ErrorMessageBox,
   LoadingSpinner,
   PrimaryButton,
 } from '@/components/ui';
@@ -300,9 +299,10 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                 <>
                   <QuoteStep {...flow.quote} underWay={!!plan} paused={paused} noun={noun} />
                   {flow.startError && (
-                    <ErrorMessageBox
+                    <ErrorCard
                       title={flow.engine.plan ? 'Could not continue the exit' : 'Could not start the exit'}
                       error={flow.startError}
+                      testId="unilateral-exit-start-error"
                     />
                   )}
                 </>
@@ -349,7 +349,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                 />
                 {/* FundStep shows no error beside a top-up, so a leftover's failed build says so here. */}
                 {flow.engine.plan?.status.type === 'needsExitFee' && flow.continueError && (
-                  <ErrorMessageBox title={`Could not continue the ${noun}`} error={flow.continueError} />
+                  <ErrorCard title={`Could not continue the ${noun}`} error={flow.continueError} testId="unilateral-exit-leftover-error" />
                 )}
               </>
             )}

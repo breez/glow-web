@@ -1,9 +1,8 @@
 import React from 'react';
-import { ErrorMessageBox } from '@/components/ui';
 import { AlertCard, SimpleAlert } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
 import type { QuoteFigures } from '../quote';
-import { DestinationRow, LeftOutCard, ReceiveHero, ReviewBreakdown } from './ReviewParts';
+import { DestinationRow, ErrorCard, LeftOutCard, ReceiveHero, ReviewBreakdown } from './ReviewParts';
 
 const Verdict: React.FC<{ variant: 'info' | 'warning'; title: string; children: React.ReactNode }> = ({
   variant,
@@ -110,7 +109,11 @@ export const RecoverReviewStep: React.FC<{
       )}
 
       {error && (
-        <ErrorMessageBox title={underWay ? 'Could not continue the recovery' : 'Could not recover the funds'} error={error} />
+        <ErrorCard
+          title={underWay ? 'Could not continue the recovery' : 'Could not recover the funds'}
+          error={error}
+          testId="unilateral-exit-recover-error"
+        />
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import type { CooperativeRecoveryFailure, PrepareRecoverFundsResponse, RecoveryTransaction } from '@breeztech/breez-sdk-spark';
 import { buildFromQuote, EmptyRecoveryError, planFromBuild } from './building';
+import { FEE_RETRY } from './exitFee';
 import type { UnilateralExitPlan } from './model/plan';
 import { isCooperative, isCooperativeLeaf, needsFunding } from './quote';
 import { coversLeaves, emptyQuote, quoteLeaves, type ExitSdk } from './quoting';
@@ -22,7 +23,7 @@ export async function quoteRecoveryBump(
 
 /** A bump's retry. A replacement fee too low needs a higher one, which Back reopens the fee picker for. */
 const bumpRetry = (failed: CooperativeRecoveryFailure[]): string =>
-  failed.some(({ error }) => error.type === 'replacementFeeTooLow') ? 'Please try again or choose a different fee.' : 'Please try again.';
+  failed.some(({ error }) => error.type === 'replacementFeeTooLow') ? FEE_RETRY : 'Please try again.';
 
 /**
  * Builds the bump, which replaces `recovery` once kept. Nothing is broadcast

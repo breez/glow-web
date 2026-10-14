@@ -170,6 +170,16 @@ describe('RecoverReviewStep', () => {
     renderReview(cosigned(), 'Please try again.');
     expect(screen.getByText('Could not recover the funds')).toBeInTheDocument();
     expect(screen.getByText(/45 300/)).toBeInTheDocument();
+    // Glow's own words already say what to do, so nothing is folded away.
+    expect(screen.queryByText('Details')).not.toBeInTheDocument();
+  });
+
+  it("folds the SDK's own words under Details, beneath a body that says to try again", () => {
+    renderReview(cosigned(), 'operators unreachable');
+    expect(screen.getByText('Could not recover the funds')).toBeInTheDocument();
+    expect(screen.getByText('Please try again.')).toBeInTheDocument();
+    expect(screen.queryByText('operators unreachable')).not.toBeInTheDocument();
+    expect(screen.getByText('Details')).toBeInTheDocument();
   });
 
   it('says a recovery under way or a fee raise could not continue, with the way out the body names', () => {
