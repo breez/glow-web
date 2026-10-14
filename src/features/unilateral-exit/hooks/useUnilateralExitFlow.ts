@@ -72,6 +72,7 @@ export interface UnilateralExitFlow {
   phase: UnilateralExitPhase;
   /** A saved exit's own, else the one the sheet was opened for. */
   mode: ExitMode | undefined;
+  /** Without the recovery a new exit is taking in, which none of its screens show. */
   engine: UnilateralExitEngineState;
   /** False where back leaves the flow: the first step, and an exit already saved. */
   canGoBack: boolean;
@@ -123,8 +124,8 @@ function useBumpTarget(bumpTxid: string | undefined, recoveries: UnilateralExitP
 
 /**
  * `openedMode` is what the sheet was opened for: `recover` from the Recoverable
- * Funds row. `bumpTxid` is a kept co-signed recovery to build again at a
- * higher fee, from its tracker.
+ * Funds row, `exit` from Start Unilateral Exit. `bumpTxid` is a kept co-signed
+ * recovery to build again at a higher fee, from its tracker.
  */
 export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bumpTxid?: string): UnilateralExitFlow {
   const wallet = useWallet();
@@ -137,12 +138,24 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
   const engine = useUnilateralExitEngineState();
   const { plan, pending } = engine;
   const { bumping, bumpTarget, bumpedTxid } = useBumpTarget(bumpTxid, engine.recoveries);
+  // A new exit beside a recovery that needs an exit fee takes it in, so there
+  // is one plan. The wizard runs as a fresh exit's: its build replaces a
+  // recovery under way as a rebuild at a higher fee would, and its pending
+  // replaces the recovery's.
+  const takesIn = openedMode === 'exit' && !bumping && (plan ?? pending)?.mode === 'recover';
+  const shown = useMemo(() => (takesIn ? { ...engine, plan: null, pending: null } : engine), [takesIn, engine]);
   // A saved record keeps what it is, whichever row opened the sheet.
-  const mode = bumping ? 'recover' : plan ? plan.mode : pending ? pending.mode : openedMode;
+  const mode = bumping ? 'recover' : takesIn ? 'exit' : plan ? plan.mode : pending ? pending.mode : openedMode;
 
   const feeKey = useFeeKey();
-  const { phase, canGoBack, goTo, back } = useExitWizard({ plan, pending, mode, bumping, holdsFeeKey: !!feeKey.key });
-  const quoting = useExitQuote({ wallet, walletKey, chain, engine, mode, bumping, bumpTarget, phase, goTo });
+  const { phase, canGoBack, goTo, back } = useExitWizard({
+    plan: shown.plan,
+    pending: shown.pending,
+    mode,
+    bumping,
+    holdsFeeKey: !!feeKey.key,
+  });
+  const quoting = useExitQuote({ wallet, walletKey, chain, engine, mode, takesIn, bumping, bumpTarget, phase, goTo });
   const feeAddress = useExitFeeAddress({ walletKey, network, chain, engine, mode, phase, goTo, feeKey, quoting });
   const continuing = useContinueExit({ wallet, walletKey, chain, engine });
   const building = useExitBuild({
@@ -151,6 +164,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
     network,
     plan,
     mode,
+    takesIn,
     bumping,
     bumpTarget,
     phase,
@@ -164,7 +178,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
   return {
     phase,
     mode,
-    engine,
+    engine: shown,
     canGoBack,
     destination: quoting.destination,
     fee: quoting.fee,

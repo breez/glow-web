@@ -145,14 +145,17 @@ function branchOnChain(plan: UnilateralExitPlan, leafId: string): boolean {
 }
 
 /**
- * The plan's leaves that getInfo counts as recoverable, by ID. A co-signed leaf
- * and a recovery's leaves were outside the balance from the start; a leaf no
- * build holds, skipped or not co-signed, has left it too.
+ * The plan's leaves that getInfo counts as recoverable, by ID. A co-signed leaf,
+ * a recovery's leaves, and those of one an exit took in were outside the
+ * balance from the start; a leaf no build holds, skipped or not co-signed, has
+ * left it too.
  */
 function planLeavesOutside(plan: UnilateralExitPlan): Map<string, number> {
   const outside = new Map(unbuiltLeaves(plan).map(leaf => [leaf.leafId, leaf.valueSats]));
+  const recoverable = new Set(plan.recoverableLeafIds);
   for (const leaf of plan.exit.leaves) {
-    const counted = isCooperativeLeaf(leaf) || plan.mode === 'recover' || branchOnChain(plan, leaf.leafId);
+    const counted =
+      isCooperativeLeaf(leaf) || plan.mode === 'recover' || recoverable.has(leaf.leafId) || branchOnChain(plan, leaf.leafId);
     if (counted) outside.set(leaf.leafId, leaf.valueSats);
   }
   return outside;

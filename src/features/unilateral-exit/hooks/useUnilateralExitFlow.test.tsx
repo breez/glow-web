@@ -4,9 +4,9 @@ import type { PrepareRecoverFundsResponse, RecoverFundsLeaf, RecoverFundsRespons
 import type { ChainUtxo } from '@/services/chain';
 import type { ExitAccounting } from '../storage/accounting';
 import type { ArchivedExit } from '../storage/archive';
-import type { ExitMode, UnilateralExitPlan } from '../model/plan';
+import type { ExitMode, PendingExit, UnilateralExitPlan } from '../model/plan';
 import type { ExitSdk } from '../quoting';
-import { checked, coin, confirmed, funding, MNEMONIC, plan, prepared, rawTx, sdk, tx, txidOf } from '../testFixtures';
+import { checked, coin, confirmed, funding, MNEMONIC, pendingExit, plan, prepared, rawTx, sdk, tx, txidOf } from '../testFixtures';
 
 const wallet = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('@/contexts/WalletContext', () => ({
@@ -36,6 +36,7 @@ vi.mock('../funding', async () => ({
 // The exit the flow resumes, if any; the engine itself is not running here.
 const saved = vi.hoisted(() => ({
   plan: null as UnilateralExitPlan | null,
+  pending: null as PendingExit | null,
   pendingCoins: [] as ChainUtxo[],
   tipHeight: null as number | null,
   archive: [] as ArchivedExit[],
@@ -45,7 +46,7 @@ const saved = vi.hoisted(() => ({
 vi.mock('./useUnilateralExitEngineLifecycle', () => ({
   useUnilateralExitEngineState: () => ({
     plan: saved.plan,
-    pending: null,
+    pending: saved.pending,
     pendingCoins: saved.pendingCoins,
     nothingToExit: null,
     isStarting: false,
@@ -886,6 +887,150 @@ describe('rebuilding an exit under way at a higher fee that needs more exit fee'
     expect(recoverFunds.mock.lastCall?.[1]).toBe(vi.mocked(singleKeyCpfpSigner).mock.results[1].value);
     expect(setUnilateralExitPlan).toHaveBeenCalledTimes(1);
     expect(result.current.phase).toBe('tracker');
+  });
+});
+
+describe('starting a unilateral exit beside a recovery that needs an exit fee', () => {
+  // Not the first index, so a key derived at the wrong one shows.
+  const key = deriveFundingKey(MNEMONIC, 'regtest', 2);
+  const stored = { type: 'p2wpkh' as const, txid: 'fund', vout: 0, valueSats: 6_000, pubkey: key.publicKeyHex };
+  const balance: RecoverFundsLeaf = { leafId: 'leaf-1', valueSats: 100_000, method: 'unilateral' };
+  const stranded: RecoverFundsLeaf = { leafId: 's-1', valueSats: 40_000, method: 'unilateral' };
+  const short = new Error('Insufficient CPFP funding: need at least 9500 sats');
+  const landedCosigned = { leafIds: ['c-1'], valueSat: 30_000, txid: 'coop', paidSat: 29_000, blockHeight: 90 };
+
+  // At 2 sat/vB: its co-signed leaf landed, and its stranded leaf is on its way.
+  const recovery = () =>
+    plan([tx({ txid: 'stuck' })], {
+      network: 'regtest',
+      mode: 'recover',
+      destination: 'bcrt1qrecovery',
+      fundingAddressIndex: 2,
+      quotedExitFeeSat: 3_000,
+      exitFeeAddress: key.address,
+      namedLeaves: [{ leafId: 's-1', valueSats: 40_000 }],
+      recoverableLeafIds: ['c-1'],
+      landed: [landedCosigned],
+      exit: { leaves: [stranded], fundingInputs: [stored] },
+    });
+
+  /** Quotes `fresh` for the whole wallet and `named` by name, at the rate and address asked. */
+  const quotes = (fresh: RecoverFundsLeaf[], named: Partial<PrepareRecoverFundsResponse> = {}) =>
+    vi.fn<ExitSdk['prepareRecoverFunds']>(async ({ selection, feeRateSatPerVbyte, destination }) => {
+      const at = { feeRateSatPerVbyte, destination, funding: funding(9_000) };
+      if (selection.type !== 'specific') return prepared({ ...at, leaves: fresh });
+      return prepared({ ...at, leaves: [balance, stranded], recoverableValueSats: 140_000, ...named });
+    });
+
+  /** Opens Start Unilateral Exit and takes it to a quote to `bcrt1qexit` at the medium rate. */
+  async function quotedExit(prepareRecoverFunds: Mock<ExitSdk['prepareRecoverFunds']>, recoverFunds = vi.fn<ExitSdk['recoverFunds']>()) {
+    wallet.current = sdk({ prepareRecoverFunds, recoverFunds });
+    const hook = renderHook(() => useUnilateralExitFlow('regtest', 'exit'));
+    expect(hook.result.current).toMatchObject({ phase: 'intro', mode: 'exit', engine: { plan: null, pending: null } });
+    act(() => hook.result.current.destination.onChange('bcrt1qexit'));
+    act(() => hook.result.current.goTo('fee'));
+    await waitFor(() => expect(hook.result.current.fee.feeRates).not.toBeNull());
+    await act(() => hook.result.current.submitFee());
+    return hook;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    saved.plan = null;
+    saved.pending = null;
+    saved.recoveries = [];
+  });
+
+  afterEach(() => addressUtxos.mockReset());
+
+  it('builds one plan over a running recovery that names both leaf sets, merges the funding, floors the rate and keeps the ledger', async () => {
+    saved.plan = recovery();
+    const prepareRecoverFunds = quotes([balance]);
+    const recoverFunds = vi
+      .fn<ExitSdk['recoverFunds']>()
+      .mockRejectedValueOnce(short)
+      .mockResolvedValue(checked([{ txid: 'rebuilt' }], { leaves: [balance, stranded], destination: 'bcrt1qexit' }));
+    const { result, rerender } = await quotedExit(prepareRecoverFunds, recoverFunds);
+
+    // Today's rates are 1, 2 and 3, against a recovery built at 2.
+    expect(result.current.fee.feeRates).toEqual({ slow: 3, medium: 4, fast: 5 });
+    // The fresh quote missed the stranded leaf part-way out, so both are named.
+    expect(prepareRecoverFunds.mock.calls.map(([request]) => request.selection)).toEqual([
+      { type: 'all' },
+      { type: 'specific', leafIds: ['leaf-1', 's-1'] },
+    ]);
+
+    await act(() => result.current.continueFromQuote());
+    vi.mocked(readWalletMnemonic).mockResolvedValueOnce(MNEMONIC);
+    await act(() => result.current.unlock());
+    await waitFor(() => expect(result.current.buildError).toBe(short.message));
+    addressUtxos.mockResolvedValue([coin(4_000)]);
+    act(() => result.current.goTo('topUp'));
+    await waitFor(() => expect(result.current.funding?.isFunded).toBe(true));
+    await act(() => result.current.build());
+
+    const sent = { type: 'p2wpkh', txid: 'coin-4000', vout: 0, valueSats: 4_000, pubkey: key.publicKeyHex };
+    expect(recoverFunds.mock.lastCall?.[0].fundingInputs).toEqual([stored, sent]);
+    expect(setUnilateralExitPlan).toHaveBeenCalledTimes(1);
+    const built = vi.mocked(setUnilateralExitPlan).mock.calls[0][1];
+    expect(built).toMatchObject({
+      mode: 'exit',
+      destination: 'bcrt1qexit',
+      feeRateSatPerVbyte: 4,
+      fundingAddressIndex: 2,
+      // What the recovery was paid, and what was sent for the exit.
+      quotedExitFeeSat: 7_000,
+      exitFeeAddress: key.address,
+      landed: [landedCosigned],
+    });
+    expect(built.namedLeaves?.map(leaf => leaf.leafId)).toEqual(['s-1', 'leaf-1']);
+    expect(built.recoverableLeafIds).toEqual(['c-1', 's-1']);
+    // The engine hands the sheet the exit in place of the recovery.
+    saved.plan = built;
+    rerender();
+    expect(result.current).toMatchObject({ phase: 'tracker', mode: 'exit', engine: { plan: built } });
+  });
+
+  it('replaces a pending recovery with the exit, paid at the same fee address', async () => {
+    saved.pending = pendingExit({ mode: 'recover', destination: 'bcrt1qrecovery' });
+    const prepareRecoverFunds = quotes([balance]);
+    const { result } = await quotedExit(prepareRecoverFunds);
+
+    // Nothing of the recovery is on the network to replace.
+    expect(result.current.fee.feeRates).toEqual({ slow: 1, medium: 2, fast: 3 });
+    expect(prepareRecoverFunds.mock.calls.map(([request]) => request.selection)).toEqual([{ type: 'all' }]);
+    await act(() => result.current.continueFromQuote());
+    vi.mocked(readWalletMnemonic).mockResolvedValueOnce(MNEMONIC);
+    await act(() => result.current.unlock());
+
+    expect(setPendingExit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        mode: 'exit',
+        destination: 'bcrt1qexit',
+        fundingAddressIndex: 0,
+        fundingAddress: deriveFundingKey(MNEMONIC, 'regtest', 0).address,
+        required: { sat: 9_000, inputs: 1 },
+      }),
+      expect.anything(),
+    );
+  });
+
+  it('leaves a kept co-signed recovery to itself', async () => {
+    saved.plan = recovery();
+    const kept: RecoverFundsLeaf = { leafId: 'c-2', valueSats: 18_200, method: 'cooperative' };
+    saved.recoveries = [plan([tx({ txid: 'k2', kind: 'cooperative', nodeId: 'c-2' })], { mode: 'recover', exit: { leaves: [kept] } })];
+    const prepareRecoverFunds = quotes([balance, stranded, kept], { funding: undefined });
+    const { result } = await quotedExit(prepareRecoverFunds, vi.fn(async () => checked([{ txid: 'rebuilt' }], { leaves: [balance, stranded] })));
+
+    expect(prepareRecoverFunds.mock.lastCall?.[0].selection).toEqual({ type: 'specific', leafIds: ['leaf-1', 's-1'] });
+    await act(() => result.current.continueFromQuote());
+
+    await waitFor(() => expect(setUnilateralExitPlan).toHaveBeenCalled());
+    const built = vi.mocked(setUnilateralExitPlan).mock.calls[0][1];
+    expect(built.namedLeaves?.map(leaf => leaf.leafId)).toEqual(['s-1', 'leaf-1']);
+    expect(built.recoverableLeafIds).not.toContain('c-2');
+    expect(keepRecovery).not.toHaveBeenCalled();
   });
 });
 

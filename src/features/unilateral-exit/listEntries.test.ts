@@ -238,6 +238,10 @@ describe('recoverable funds beside an exit under way', () => {
     expect(recoverable({ plan: running({ mode: 'recover' }) }, 600_000)).toBeUndefined();
   });
 
+  it('takes out the leaves of a recovery the exit took in, which were outside the balance too', () => {
+    expect(recoverable({ plan: running({ mode: 'exit', recoverableLeafIds: ['leaf-1'] }) }, 600_000)).toBeUndefined();
+  });
+
   it('takes out a co-signed leaf, a leaf the last rebuild skipped, and one whose co-signing failed, which the exit still holds', () => {
     const mixed = running({
       namedLeaves: [

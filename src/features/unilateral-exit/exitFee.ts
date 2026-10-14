@@ -54,6 +54,19 @@ export function withoutOwnChange(plan: UnilateralExitPlan | null, coins: ChainUt
   return coins.filter(coin => coin.confirmed || !spent.has(`${coin.txid}:${coin.vout}`));
 }
 
+/**
+ * What reached the fee address since `plan` was built: the coins its funding
+ * does not hold and none of its own transactions spend. Each change output
+ * an exit returns there is spent by its next step, so none counts.
+ */
+export function sentSince(plan: UnilateralExitPlan, coins: { txid: string; vout: number; value: number }[]): number {
+  const own = new Set([
+    ...plan.exit.fundingInputs.map(({ txid, vout }) => `${txid}:${vout}`),
+    ...plan.exit.transactions.flatMap(tx => [tx.txHex, tx.cpfpTxHex].flatMap(hex => (hex ? inputOutpoints(hex) : []))),
+  ]);
+  return coins.filter(coin => !own.has(`${coin.txid}:${coin.vout}`)).reduce((sum, coin) => sum + coin.value, 0);
+}
+
 /** A signed P2WPKH input: each coin at the exit fee address is one more for the build to pay for. */
 const P2WPKH_INPUT_VBYTES = 68;
 

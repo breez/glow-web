@@ -63,8 +63,9 @@ export interface UnilateralExitPlan {
    */
   landed?: Landing[];
   /**
-   * The first quote's co-signed leaves: outside the balance before the exit
-   * began, whether or not the operators co-signed them at once.
+   * Leaves outside the balance before the exit began: the first quote's
+   * co-signed ones, whether or not the operators co-signed them at once, and
+   * those of a recovery the exit took in.
    */
   recoverableLeafIds?: string[];
   /**
@@ -140,9 +141,9 @@ export interface ExitTopUp {
 
 /**
  * `recover` moves funds found outside the balance for a wallet that never
- * started an exit. Absent means a unilateral exit the user started.
+ * started an exit. `exit`, or absent, is a unilateral exit the user started.
  */
-export type ExitMode = 'recover';
+export type ExitMode = 'recover' | 'exit';
 
 export const PLAN_VERSION = 6;
 

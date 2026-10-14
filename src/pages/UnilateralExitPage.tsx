@@ -28,7 +28,11 @@ import { awaitsUpdate, type ExitMode } from '@/features/unilateral-exit/model/pl
 
 interface UnilateralExitPageProps {
   network: string;
-  /** `recover` when opened from the Recoverable Funds row. A saved exit's own mode wins. */
+  /**
+   * `recover` when opened from the Recoverable Funds row, `exit` from Start
+   * Unilateral Exit. A saved exit's own mode wins, but a new exit takes in a
+   * recovery that needs an exit fee.
+   */
   mode?: ExitMode;
   /** A kept co-signed recovery whose fee this raises, by its txid. */
   bumpTxid?: string;

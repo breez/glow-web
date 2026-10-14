@@ -371,7 +371,7 @@ const AppContent: React.FC = () => {
         onOpenSecurity={() => setUserScreen('security')}
         onOpenBackup={() => setUserScreen('backup')}
         onOpenUnilateralExit={() => {
-          setExitMode(undefined);
+          setExitMode('exit');
           setExitBumpTxid(undefined);
           setUserScreen('unilateralExit');
         }}

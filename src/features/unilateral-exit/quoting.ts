@@ -99,6 +99,26 @@ export async function quoteFresh(
   return { ...second, skipped: [...second.skipped, ...skipped.filter(leaf => !own.has(leaf.leafId))] };
 }
 
+/**
+ * A fresh exit's quote that takes in `recovery`, the recovery in the plan
+ * slot. Its leaves are outside the balance, so the selection takes them, but
+ * one part-way out can drop from it, so any it missed are named.
+ */
+export async function quoteTakingIn(
+  sdk: Pick<ExitSdk, 'prepareRecoverFunds'>,
+  recovery: UnilateralExitPlan,
+  at: { feeRateSatPerVbyte: number; destination: string },
+  kept: Set<string>,
+): Promise<PrepareRecoverFundsResponse> {
+  const fresh = await quoteFresh(sdk, at, 'exit', kept);
+  const named = namedLeavesOf(recovery).map(leaf => leaf.leafId);
+  if (coversLeaves(fresh.leaves, named)) return fresh;
+  const ids = [...new Set([...fresh.leaves.map(leaf => leaf.leafId), ...named])];
+  const quote = await quoteLeaves(sdk, ids, at);
+  const own = new Set([...quote.leaves, ...quote.skipped].map(leaf => leaf.leafId));
+  return { ...quote, skipped: [...quote.skipped, ...fresh.skipped.filter(leaf => !own.has(leaf.leafId))] };
+}
+
 /** Skips that take a leaf out of the exit. Only an unrecoverable one is hidden as well. */
 const LEAVES_EXIT_SKIPS = new Set(['notRecoverable', 'feeExceedsValue']);
 

@@ -172,6 +172,26 @@ export function planFromBuild(
   });
 }
 
+/**
+ * The plan an exit's build makes over `recovery`, the recovery it takes in:
+ * a rebuild of it, so its ledger carries over. Every leaf the recovery moved
+ * was outside the balance, as were the quote's co-signed ones.
+ */
+export function planTakingIn(
+  quote: PrepareRecoverFundsResponse,
+  built: RecoverFundsResponse,
+  recovery: UnilateralExitPlan,
+  meta: BuildMeta,
+): UnilateralExitPlan {
+  const outside = [
+    ...(recovery.recoverableLeafIds ?? []),
+    ...namedLeavesOf(recovery).map(leaf => leaf.leafId),
+    ...(recovery.landed ?? []).flatMap(entry => entry.leafIds),
+    ...quote.leaves.filter(isCooperativeLeaf).map(leaf => leaf.leafId),
+  ];
+  return { ...planFromBuild(quote, built, recovery, meta), recoverableLeafIds: [...new Set(outside)] };
+}
+
 /** `reason` is null when the quote skipped nothing either. */
 export type StartOutcome =
   | { type: 'started'; plan: UnilateralExitPlan }

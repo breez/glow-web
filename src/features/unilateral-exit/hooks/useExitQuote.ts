@@ -5,7 +5,7 @@ import { logger, LogCategory } from '@/services/logger';
 import { destinationErrorMessage } from '@/utils/destinationAddress';
 import { formatError } from '@/utils/formatError';
 import { destinationAddressOf } from '@/utils/destinationAddress';
-import { quoteFresh, quoteNamed } from '../quoting';
+import { quoteFresh, quoteNamed, quoteTakingIn } from '../quoting';
 import { quoteRecoveryBump } from '../recoveries';
 import type { ExitMode, Funding, UnilateralExitPlan, WalletKey } from '../model/plan';
 import { excludedLeafIds, type UnilateralExitEngineState } from '../engine/state';
@@ -92,15 +92,18 @@ interface QuoteInputs {
   chain: ChainClient;
   engine: Pick<UnilateralExitEngineState, 'plan' | 'pending' | 'recoveries' | 'archive' | 'accounting'>;
   mode: ExitMode | undefined;
+  /** A new exit takes in the recovery under way in `plan`, or its pending. */
+  takesIn: boolean;
   bumping: boolean;
   bumpTarget: UnilateralExitPlan | null;
   phase: UnilateralExitPhase;
   goTo: (phase: UnilateralExitPhase) => void;
 }
 
-export function useExitQuote({ wallet, walletKey, chain, engine, mode, bumping, bumpTarget, phase, goTo }: QuoteInputs) {
+export function useExitQuote({ wallet, walletKey, chain, engine, mode, takesIn, bumping, bumpTarget, phase, goTo }: QuoteInputs) {
   const { plan, pending, recoveries, archive, accounting } = engine;
-  const { fields: destinationFields, submitDestination } = useDestination(wallet, (plan ?? pending)?.destination ?? '', goTo);
+  const saved = takesIn ? '' : ((plan ?? pending)?.destination ?? '');
+  const { fields: destinationFields, submitDestination } = useDestination(wallet, saved, goTo);
   const { fields: feeFields, forgetRates, networkSlowRate } = useFeeRates(chain, phase, bumping ? bumpTarget : plan);
   const { destination } = destinationFields;
   const { effectiveFeeRate } = feeFields;
@@ -135,13 +138,14 @@ export function useExitQuote({ wallet, walletKey, chain, engine, mode, bumping, 
         await restoreExitState(wallet, plan, await loadExitState(walletKey.identityPubkey));
       }
       const at = { feeRateSatPerVbyte: effectiveFeeRate, destination: destination.trim() };
+      const kept = excludedLeafIds({ recoveries, archive, accounting });
       // A resumed exit names its leaves: a fresh selection can drop one part-way out.
       const prepared =
         bumping && bumpTarget
           ? await quoteRecoveryBump(wallet, bumpTarget, effectiveFeeRate)
           : plan
-            ? await quoteNamed(wallet, plan, at)
-            : await quoteFresh(wallet, at, mode, excludedLeafIds({ recoveries, archive, accounting }));
+            ? await (takesIn ? quoteTakingIn(wallet, plan, at, kept) : quoteNamed(wallet, plan, at))
+            : await quoteFresh(wallet, at, mode, kept);
       if (request !== quoteRequest.current) return;
       setQuote(prepared);
       setQuotedAt(Date.now());
@@ -162,7 +166,7 @@ export function useExitQuote({ wallet, walletKey, chain, engine, mode, bumping, 
     } finally {
       if (request === quoteRequest.current) setIsQuoting(false);
     }
-  }, [wallet, destination, effectiveFeeRate, walletKey, plan, mode, recoveries, archive, accounting, bumping, bumpTarget]);
+  }, [wallet, destination, effectiveFeeRate, walletKey, plan, mode, takesIn, recoveries, archive, accounting, bumping, bumpTarget]);
 
   const submitFee = useCallback(async () => {
     goTo('quote');

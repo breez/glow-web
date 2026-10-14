@@ -4,10 +4,10 @@ import { holdIdleLock } from '@/services/appLock';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { asKeptRecovery, type ExitMode, type UnilateralExitPlan, type WalletKey } from '../model/plan';
-import { buildFromQuote, fundingInputsOf, mergeFunding, planFromBuild } from '../building';
+import { buildFromQuote, fundingInputsOf, mergeFunding, planFromBuild, planTakingIn } from '../building';
 import { buildRecoveryBump } from '../recoveries';
 import { quoteLeaves } from '../quoting';
-import { requiredFundingOf } from '../exitFee';
+import { requiredFundingOf, sentSince } from '../exitFee';
 import { keepRecovery, setUnilateralExitPlan } from '../engine/api';
 import { loadExitState, restoreExitState } from '../exitState';
 import { builtExitFeeRecord, exitFeeRecordOf, isCooperative, isCooperativeLeaf, willReceiveSat } from '../quote';
@@ -22,6 +22,8 @@ interface BuildInputs {
   network: string;
   plan: UnilateralExitPlan | null;
   mode: ExitMode | undefined;
+  /** A new exit takes in the recovery under way in `plan`. */
+  takesIn: boolean;
   bumping: boolean;
   bumpTarget: UnilateralExitPlan | null;
   phase: UnilateralExitPhase;
@@ -33,7 +35,7 @@ interface BuildInputs {
 }
 
 export function useExitBuild(inputs: BuildInputs) {
-  const { wallet, walletKey, network, plan, mode, bumping, bumpTarget, phase, goTo } = inputs;
+  const { wallet, walletKey, network, plan, mode, takesIn, bumping, bumpTarget, phase, goTo } = inputs;
   const { quote, figures } = inputs.quoting.quote;
   const { setStartError, setShortfall, setSplitOff, forgetQuote } = inputs.quoting;
   const { key: fundingKey, holdsPhrase, forgetPhrase } = inputs.feeKey;
@@ -50,7 +52,7 @@ export function useExitBuild(inputs: BuildInputs) {
   // leftover's fee screen has no quote: its button continues the exit. A bump
   // keeps to its own recovery, whatever the exit beside it waits on.
   const build = useCallback(async () => {
-    if (!bumping && !fundingKey && plan?.status.type === 'needsExitFee') return continueExit();
+    if (!bumping && !takesIn && !fundingKey && plan?.status.type === 'needsExitFee') return continueExit();
     if (!walletKey || !quote || !figures || (bumping && !bumpTarget)) return;
     const funded = figures.needsFunding;
     if (funded && (!plan || !fundingKey || !holdsPhrase())) return;
@@ -79,12 +81,15 @@ export function useExitBuild(inputs: BuildInputs) {
           : null;
       await restoreExitState(wallet, plan, await loadExitState(walletKey.identityPubkey));
       const response = await buildFromQuote(wallet, quote, funding);
-      const built = planFromBuild(quote, response, plan, {
+      // Taking in a recovery adds what was sent for the exit to what the recovery was paid.
+      const sentSat = takesIn && plan ? sentSince(plan, confirmedUtxos) : undefined;
+      const meta = {
         network,
         fundingAddressIndex: plan?.fundingAddressIndex ?? 0,
         mode,
-        ...builtExitFeeRecord(quote, plan ? exitFeeRecordOf(plan) : {}, fundingKey?.address),
-      });
+        ...builtExitFeeRecord(quote, plan ? exitFeeRecordOf(plan) : {}, fundingKey?.address, sentSat),
+      };
+      const built = takesIn && plan ? planTakingIn(quote, response, plan, meta) : planFromBuild(quote, response, plan, meta);
       // Only co-signed funds: kept beside the plan slot, since they need no
       // tracker of the exit's and hold up no exit.
       if (!plan && mode === 'recover' && response.transactions.every(isCooperative)) {
@@ -95,13 +100,14 @@ export function useExitBuild(inputs: BuildInputs) {
       }
       // Frozen against the leaves this exit moves: from here the operators stop
       // reporting them, so a later export is worth less. An exit already
-      // holding a snapshot keeps it.
+      // holding a snapshot keeps it. One taking in a recovery moves the balance
+      // too, which the recovery's snapshot predates.
       const exitStateSnapshot =
-        plan?.exitStateSnapshot ??
+        (takesIn ? undefined : plan?.exitStateSnapshot) ??
         (await wallet
           .exportUnilateralExitState()
           .then(r => r.exitState)
-          .catch(() => undefined));
+          .catch(() => plan?.exitStateSnapshot));
       setUnilateralExitPlan(walletKey, { ...built, exitStateSnapshot });
       forgetPhrase();
       goTo('tracker');
@@ -130,6 +136,7 @@ export function useExitBuild(inputs: BuildInputs) {
     network,
     plan,
     mode,
+    takesIn,
     bumping,
     bumpTarget,
     continueExit,

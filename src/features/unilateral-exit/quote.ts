@@ -54,15 +54,21 @@ export function exitFeeRecordOf(plan: UnilateralExitPlan): ExitFeeRecord {
 
 /**
  * The record a build from `quote` keeps. A quote that needs funding is paid its
- * own exit fee at `address`. One that needs none spends no coins, so `paid`
- * carries over: the user paid it, and whatever the exit left unspent is still
- * at that address.
+ * own exit fee at `address`, or with `sentSat`, what reached that address since
+ * the build it replaces, on top of `paid`. One that needs none spends no coins,
+ * so `paid` carries over: the user paid it, and whatever the exit left unspent
+ * is still at that address.
  */
-export const builtExitFeeRecord = (
+export function builtExitFeeRecord(
   quote: Quote,
   paid: ExitFeeRecord,
   address = paid.exitFeeAddress,
-): ExitFeeRecord => (needsFunding(quote) ? { quotedExitFeeSat: exitFeeSat(quote), exitFeeAddress: address } : paid);
+  sentSat?: number,
+): ExitFeeRecord {
+  if (!needsFunding(quote)) return paid;
+  const quotedExitFeeSat = sentSat === undefined ? exitFeeSat(quote) : (paid.quotedExitFeeSat ?? 0) + sentSat;
+  return { quotedExitFeeSat, exitFeeAddress: address };
+}
 
 /**
  * What comes off the value moved: the sweep's fee and the co-signed recoveries'.
