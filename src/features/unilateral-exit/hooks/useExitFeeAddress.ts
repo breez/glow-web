@@ -7,7 +7,7 @@ import { lastReadCoins, leftoverTopUp, readFeeAddress, sentFunding, topUpFor, wi
 import { setPendingExit } from '../engine/api';
 import type { UnilateralExitEngineState } from '../engine/state';
 import { deriveFundingKey, readWalletMnemonic, type FundingKey } from '../funding';
-import { exitFeeRecordOf, quoteFigures } from '../quote';
+import { exitFeeRecordOf, exitFeeSat, needsFunding, quoteFigures } from '../quote';
 import type { useExitQuote } from './useExitQuote';
 import type { UnilateralExitPhase } from './useExitWizard';
 import type { FundingFields } from './useUnilateralExitFlow';
@@ -60,7 +60,7 @@ interface FeeAddressInputs {
   walletKey: WalletKey | null;
   network: string;
   chain: ChainClient;
-  engine: Pick<UnilateralExitEngineState, 'plan' | 'pendingCoins'>;
+  engine: Pick<UnilateralExitEngineState, 'plan' | 'pendingCoins' | 'archive'>;
   mode: ExitMode | undefined;
   phase: UnilateralExitPhase;
   goTo: (phase: UnilateralExitPhase) => void;
@@ -69,7 +69,7 @@ interface FeeAddressInputs {
 }
 
 export function useExitFeeAddress({ walletKey, network, chain, engine, mode, phase, goTo, feeKey, quoting }: FeeAddressInputs) {
-  const { plan, pendingCoins } = engine;
+  const { plan, pendingCoins, archive } = engine;
   const { key: fundingKey, hold } = feeKey;
   const { quote } = quoting.quote;
   const { networkSlowRate, quotedAt, shortfall, splitOff } = quoting;
@@ -167,5 +167,33 @@ export function useExitFeeAddress({ walletKey, network, chain, engine, mode, pha
   };
   const leftoverFunding = useMemo(() => leftoverFundingOf(plan, pendingCoins), [plan, pendingCoins]);
 
-  return { funding: wizardFunding ?? leftoverFunding, unlock, unlockError, confirmedUtxos, sent };
+  // Every exit pays from one address, so coins an earlier one left there count
+  // toward this quote's fee. The address comes from the last finished exit's
+  // record: deriving it would need the phrase, which a review does not ask for.
+  const asksFee = !!quote && needsFunding(quote);
+  const knownAddress = plan ? undefined : archive.find(exit => exit.exitFeeAddress)?.exitFeeAddress;
+  const [knownCoins, setKnownCoins] = useState<ChainUtxo[] | null>(null);
+  useEffect(() => {
+    if (phase !== 'quote' || !asksFee || !knownAddress) return;
+    let cancelled = false;
+    readFeeAddress(chain, knownAddress)
+      .catch(e => {
+        logger.warn(LogCategory.SDK, 'Failed to read the exit fee address', { error: formatError(e) });
+        return lastReadCoins(knownAddress) ?? null;
+      })
+      .then(coins => {
+        if (!cancelled) setKnownCoins(coins);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [phase, asksFee, knownAddress, chain]);
+  const feeAlreadyHeld =
+    asksFee &&
+    !!quote &&
+    !!knownAddress &&
+    !!knownCoins &&
+    topUpFor({ sat: exitFeeSat(quote), inputs: 1 }, sentFunding(null, knownCoins), quote.feeRateSatPerVbyte).stillToSendSat === 0;
+
+  return { funding: wizardFunding ?? leftoverFunding, unlock, unlockError, confirmedUtxos, sent, feeAlreadyHeld };
 }

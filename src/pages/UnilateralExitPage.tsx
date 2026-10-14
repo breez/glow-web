@@ -294,6 +294,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                   error={flow.startError}
                   underWay={!!plan || bumping}
                   paused={paused}
+                  feeHeld={flow.feeAlreadyHeld}
                 />
               ) : (
                 <>

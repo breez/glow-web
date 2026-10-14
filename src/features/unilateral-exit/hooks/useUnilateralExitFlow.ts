@@ -86,6 +86,8 @@ export interface UnilateralExitFlow {
   continueFromQuote: () => Promise<void>;
   /** Why building a quote that needs no funding failed, shown on that quote. */
   startError: string | null;
+  /** The fee address already holds the quote's exit fee, left there by an earlier exit. */
+  feeAlreadyHeld: boolean;
   unlock: () => Promise<void>;
   unlockError: string | null;
   build: () => Promise<void>;
@@ -172,6 +174,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
     submitFee: quoting.submitFee,
     continueFromQuote: building.continueFromQuote,
     startError: quoting.startError,
+    feeAlreadyHeld: feeAddress.feeAlreadyHeld,
     unlock: feeAddress.unlock,
     unlockError: feeAddress.unlockError,
     build: building.build,

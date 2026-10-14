@@ -69,6 +69,12 @@ describe('RecoverReviewStep', () => {
     expect(screen.getByText(/To start the recovery you need to pay the exit fee/)).toBeInTheDocument();
   });
 
+  it('asks for no exit fee the fee address already holds', () => {
+    render(<RecoverReviewStep figures={quoteFigures(stranded)} destination="bc1qdest" feeHeld />);
+    expect(within(amountIn('Exit fee')).getByText(/14 350/)).toBeInTheDocument();
+    expect(screen.queryByText(/pay the exit fee/)).not.toBeInTheDocument();
+  });
+
   it('splits a mixed quote into what goes now and what waits on the exit fee', () => {
     renderReview(
       prepared({

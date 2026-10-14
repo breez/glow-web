@@ -304,6 +304,32 @@ describe('Recover Funds', () => {
     expect(syncWallet).not.toHaveBeenCalled();
   });
 
+  describe('beside coins an earlier exit left at the shared fee address', () => {
+    const lastExit: ArchivedExit = { id: 'old', destination: 'bcrt1qdest', deliveredSat: 1, completedAt: 0, exitFeeAddress: 'bcrt1qshared' };
+
+    afterEach(() => {
+      saved.archive = [];
+      addressUtxos.mockReset();
+    });
+
+    it("reads that address from the last exit's record, without the phrase, and says when it holds the fee already", async () => {
+      saved.archive = [lastExit];
+      addressUtxos.mockResolvedValue([coin(3_000)]);
+      const { result } = await quoted(prepared(), undefined, { mode: 'recover' });
+      await waitFor(() => expect(result.current.feeAlreadyHeld).toBe(true));
+      expect(addressUtxos).toHaveBeenCalledWith('bcrt1qshared');
+      expect(readWalletMnemonic).not.toHaveBeenCalled();
+    });
+
+    it('still asks for the fee when the address holds too little', async () => {
+      saved.archive = [lastExit];
+      addressUtxos.mockResolvedValue([coin(2_000)]);
+      const { result } = await quoted(prepared(), undefined, { mode: 'recover' });
+      await waitFor(() => expect(addressUtxos).toHaveBeenCalledWith('bcrt1qshared'));
+      expect(result.current.feeAlreadyHeld).toBe(false);
+    });
+  });
+
   it('quotes only the funds outside the balance', async () => {
     const { prepareRecoverFunds } = await quoted(cosignedQuote, undefined, { mode: 'recover' });
     expect(prepareRecoverFunds).toHaveBeenCalledWith(expect.objectContaining({ selection: { type: 'recoverableOnly' } }));

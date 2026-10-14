@@ -28,7 +28,9 @@ export const RecoverReviewStep: React.FC<{
   underWay?: boolean;
   /** The recovery under way waits on the update tap rather than rebuilding by itself. */
   paused?: boolean;
-}> = ({ figures, destination, error = null, underWay = false, paused = false }) => {
+  /** The fee address already holds the exit fee, so nothing needs paying from another wallet. */
+  feeHeld?: boolean;
+}> = ({ figures, destination, error = null, underWay = false, paused = false, feeHeld = false }) => {
   const notWorthIt = (
     <Verdict variant="warning" title="Nothing is worth recovering right now">
       At this fee rate these funds would cost more to move on-chain than they are worth. Try a lower fee rate, or wait for
@@ -84,7 +86,7 @@ export const RecoverReviewStep: React.FC<{
       <ReviewBreakdown figures={figures} amounts={[{ label: 'Funds', value: figures.fundsSat }]} feeLabel="Network fee" />
 
       {/* Under way, the build spends what the fee address holds first, so this may cost nothing. */}
-      {figures.needsFunding && !underWay && (
+      {figures.needsFunding && !underWay && !feeHeld && (
         <SimpleAlert variant="warning" hideIcon>
           {figures.isCooperative ? (
             <>
