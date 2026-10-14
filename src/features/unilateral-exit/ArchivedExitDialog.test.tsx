@@ -42,7 +42,7 @@ describe('ArchivedExitDialog', () => {
 
   it('shows the exit fee the exit left at its address', async () => {
     const details = await show(record({ exitFeePaidSat: 3_122, networkFeeSat: 2_240, unspentExitFeeSat: 1_500 }));
-    expect(figures(details).slice(-2)).toEqual(['Unspent Exit Fee₿1 500', 'Received₿625 624']);
+    expect(figures(details).slice(-2)).toEqual(['Unspent Exit Fee-₿1 500', 'Received₿625 624']);
   });
 
   it('shows no unspent exit fee when the exit left none', async () => {

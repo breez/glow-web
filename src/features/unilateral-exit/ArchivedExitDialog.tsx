@@ -66,7 +66,14 @@ export const ArchivedExitDialog: React.FC<{
               />
             )}
             {!!exit.unspentExitFeeSat && (
-              <PaymentInfoRow label="Unspent Exit Fee" value={<SatAmount sats={exit.unspentExitFeeSat} />} />
+              <PaymentInfoRow
+                label="Unspent Exit Fee"
+                value={
+                  <span className="inline-flex items-center">
+                    -<SatAmount sats={exit.unspentExitFeeSat} />
+                  </span>
+                }
+              />
             )}
             <PaymentInfoRow label="Received" value={<SatAmount sats={exit.deliveredSat} />} />
             <PaymentInfoRow
