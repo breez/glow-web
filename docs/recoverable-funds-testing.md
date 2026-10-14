@@ -52,6 +52,14 @@ Every setup command below gives funds to this wallet.
   `npm run dev`, and clear the site's data in the browser. Glow keeps its
   recovery records in the browser, and a fresh chain does not match them.
 
+### Test builds on a phone
+
+- Don't install App Store Glow 1.3.0 over a test build. The test build's
+  wallet data is newer than 1.3.0 can open.
+- Finish a unilateral exit or recovery on the build that started it, or a
+  newer one. An older build may not see it. It isn't lost: the newer build
+  picks it up again.
+
 ### Helper commands
 
 | Command | What it does |
