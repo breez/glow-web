@@ -55,7 +55,7 @@ export const ArchivedExitDialog: React.FC<{
             {exit.exitFeePaidSat !== undefined && (
               <PaymentInfoRow label="Exit Fee Paid" value={<SatAmount sats={exit.exitFeePaidSat} />} />
             )}
-            {exit.networkFeeSat !== undefined && (
+            {!!exit.networkFeeSat && (
               <PaymentInfoRow
                 label="Network Fees"
                 value={

@@ -262,6 +262,43 @@ describe('archiveExit', () => {
     expect(record.recoverableFundsSat).toBeUndefined();
   });
 
+  it('keeps what came off a co-signed recovery on the way as its network fees, the operators\' cut included', () => {
+    archiveExit(
+      wallet,
+      plan(
+        [
+          tx({ txid: 'coop-a', kind: 'cooperative', nodeId: 'c-1', txHex: '00', status: confirmed(10) }),
+          tx({ txid: 'coop-b', kind: 'cooperative', nodeId: 'c-2', txHex: '00', status: confirmed(10) }),
+        ],
+        {
+          status: { type: 'done' },
+          mode: 'recover',
+          // Short of the operators' own fee, which no field reports.
+          exit: { recoverableValueSats: 200_000, totalFeeSats: 600, cooperativeFeeSats: 600, cpfpFeeSats: 0, sweepFeeSats: 0 },
+          landed: [paid('coop-a', ['c-1'], 120_000, 119_368), paid('coop-b', ['c-2'], 80_000, 79_578)],
+        },
+      ),
+    );
+
+    expect(loadArchive(wallet)[0]).toMatchObject({ exitedSat: 200_000, deliveredSat: 198_946, networkFeeSat: 1_054 });
+  });
+
+  it('keeps the last build\'s fees as the network fees of a recovery that paid an exit fee', () => {
+    archiveExit(
+      wallet,
+      plan([tx({ txid: 'sweep-s', kind: 'sweep', txHex: '00', status: confirmed(10) })], {
+        status: { type: 'done' },
+        mode: 'recover',
+        quotedExitFeeSat: 3_122,
+        exitFeeAddress: 'bcrt1qfee',
+        exit: { recoverableValueSats: 40_000, totalFeeSats: 2_240 },
+        landed: [paid('sweep-s', ['s-1'], 40_000, 40_882)],
+      }),
+    );
+
+    expect(loadArchive(wallet)[0].networkFeeSat).toBe(2_240);
+  });
+
   it('keeps the part a plan from before recoverableLeafIds recorded as outside the balance', () => {
     archiveExit(wallet, { ...finished('sweep-f', 150_000), recoverableFundsSat: 48_200 });
     expect(loadArchive(wallet)[0].recoverableFundsSat).toBe(48_200);

@@ -24,7 +24,11 @@ export interface ArchivedExit {
   recoverableFundsSat?: number;
   /** What was sent to the exit fee address, from another wallet. */
   exitFeePaidSat?: number;
-  /** What the last build's transactions paid in fees (`totalFeeSats`). Absent on records from before it was kept. */
+  /**
+   * What the last build's transactions paid in fees (`totalFeeSats`), or for a
+   * recovery that paid no exit fee, what came off its leaves on the way.
+   * Absent on records from before it was kept.
+   */
   networkFeeSat?: number;
   /**
    * What the exit left at its fee address as it finished. Kept rather than read
@@ -97,6 +101,10 @@ function archivedExitOf(
   // summing those counts the same sats twice.
   const { quotedExitFeeSat, exitFeeAddress } = exitFeeRecordOf(plan);
   const recoverableSat = recoverableLandedSat(plan, valueSat);
+  // With no exit fee, only the leaves paid for the recovery, so the difference
+  // is exact. It counts the fee the operators' co-signed transaction took from
+  // each leaf, which the SDK reports in no field yet.
+  const cosigned = plan.mode === 'recover' && quotedExitFeeSat === undefined;
   return {
     id,
     destination: plan.destination,
@@ -106,7 +114,7 @@ function archivedExitOf(
     exitedSat: valueSat,
     recoverableFundsSat: plan.mode === 'recover' ? undefined : recoverableSat || undefined,
     exitFeePaidSat: quotedExitFeeSat,
-    networkFeeSat: plan.exit.totalFeeSats,
+    networkFeeSat: cosigned ? Math.max(0, valueSat - paidSat) : plan.exit.totalFeeSats,
     unspentExitFeeSat,
     exitFeeAddress,
     mode: plan.mode,

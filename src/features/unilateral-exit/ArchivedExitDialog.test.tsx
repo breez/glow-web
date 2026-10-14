@@ -17,8 +17,8 @@ const record = (over: Partial<ArchivedExit> = {}): ArchivedExit => ({
   ...over,
 });
 
-const show = async (exit: ArchivedExit) => {
-  render(<ArchivedExitDialog exit={exit} onClose={vi.fn()} />);
+const show = async (exit: ArchivedExit, exitedLabel?: string) => {
+  render(<ArchivedExitDialog exit={exit} onClose={vi.fn()} exitedLabel={exitedLabel} />);
   await waitForSheetOpen();
   return within(screen.getByTestId('unilateral-exit-details'));
 };
@@ -26,7 +26,7 @@ const show = async (exit: ArchivedExit) => {
 /** Each figure row's label and amount, in the order shown. */
 const figures = (details: Awaited<ReturnType<typeof show>>) =>
   details
-    .getAllByText(/^(Balance Exited|Recoverable Funds|Exit Fee Paid|Network Fees|Unspent Exit Fee|Received)$/)
+    .getAllByText(/^(Balance Exited|Funds Recovered|Recoverable Funds|Exit Fee Paid|Network Fees|Unspent Exit Fee|Received)$/)
     .map(label => label.closest('.justify-between')?.textContent);
 
 describe('ArchivedExitDialog', () => {
@@ -52,6 +52,17 @@ describe('ArchivedExitDialog', () => {
 
   it('shows no network fees on a record from before they were kept', async () => {
     const details = await show(record({ exitFeePaidSat: 3_122 }));
+    expect(details.queryByText('Network Fees')).toBeNull();
+  });
+
+  it("reads a co-signed recovery's details as a sum too", async () => {
+    const recovery = record({ mode: 'recover', exitedSat: 200_000, networkFeeSat: 1_054, deliveredSat: 198_946 });
+    const details = await show(recovery, 'Funds Recovered');
+    expect(figures(details)).toEqual(['Funds Recovered₿200 000', 'Network Fees-₿1 054', 'Received₿198 946']);
+  });
+
+  it('shows no network fees when none came off', async () => {
+    const details = await show(record({ mode: 'recover', exitedSat: 30_000, networkFeeSat: 0, deliveredSat: 30_000 }));
     expect(details.queryByText('Network Fees')).toBeNull();
   });
 
