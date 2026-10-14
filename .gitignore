@@ -27,6 +27,7 @@ local-regtest/envoy.yaml
 local-regtest/.env
 local-regtest/cluster.log
 local-regtest/cluster.pid
+local-regtest/held.txt
 local-regtest/cluster/target/
 
 # Recorded walkthroughs, and the harness that records them
