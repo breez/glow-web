@@ -774,6 +774,20 @@ describe('rebuilding an exit under way at a higher fee that needs more exit fee'
     expect(result.current.funding).toMatchObject({ isFunded: false, waitsForConfirmation: true });
   });
 
+  it('keeps what the fee address last held when a read fails, so a paid top-up never reads as unpaid', async () => {
+    const before = await fallsShort();
+    addressUtxos.mockResolvedValue([coin(3_636, false)]);
+    act(() => before.result.current.goTo('topUp'));
+    await waitFor(() => expect(before.result.current.funding?.topUp?.stillToSendSat).toBe(0));
+    before.unmount();
+
+    // The sheet opens again while the indexer is down.
+    addressUtxos.mockRejectedValue(new Error('rate limited'));
+    const { result } = await fallsShort();
+    await waitFor(() => expect(result.current.funding?.topUp?.stillToSendSat).toBe(0));
+    expect(result.current.funding?.waitsForConfirmation).toBe(true);
+  });
+
   it("counts none of the exit's own change in the mempool as a payment", async () => {
     // The sweep spends the change a stuck step left at the fee address.
     saved.plan = plan(

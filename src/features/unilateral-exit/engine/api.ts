@@ -1,7 +1,7 @@
 import { createChainClient, type ChainClient } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { startExit } from '../building';
-import { isPendingFunded } from '../exitFee';
+import { isPendingFunded, lastReadCoins } from '../exitFee';
 import type { FundingKey } from '../funding';
 import { asKeptRecovery, type NamedLeaf, type PendingExit, type UnilateralExitPlan, type WalletKey } from '../model/plan';
 import type { ExitSdk } from '../quoting';
@@ -10,7 +10,7 @@ import { loadArchive } from '../storage/archive';
 import { clearPendingExit, loadPendingExit, savePendingExit } from '../storage/pending';
 import { clearPlan, loadPlan, savePlan } from '../storage/plan';
 import { loadRecoveries, saveRecoveries } from '../storage/recoveries';
-import { advanceRecoveries, withRecovery } from './passes';
+import { advanceRecoveries, watchedAddress, withRecovery } from './passes';
 import { advanceNow, stopPolling, syncPolling } from './polling';
 import {
   emit,
@@ -88,7 +88,9 @@ export function startUnilateralExitEngine(
   const pending = plan ? null : loadPendingExit(target);
   const recoveries = loadRecoveries(target);
   const accounting = loadAccounting(target);
-  emit({ ...idle, plan, pending, archive: loadArchive(target), recoveries, accounting });
+  // What the fee address last held, so a restart whose read fails does not show it as empty.
+  const pendingCoins = lastReadCoins(watchedAddress({ plan, pending })) ?? [];
+  emit({ ...idle, plan, pending, pendingCoins, archive: loadArchive(target), recoveries, accounting });
   syncPolling();
   if (plan || pending || recoveries.length > 0 || accounting.unsettledLeaves.length > 0) void advanceNow();
 }

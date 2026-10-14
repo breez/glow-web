@@ -221,6 +221,28 @@ describe('an exit waiting on its fee', () => {
     expect(getUnilateralExitState().plan).not.toBeNull();
   });
 
+  it('keeps what the fee address last held through a restart and a failed read, so a paid exit never reads as unpaid', async () => {
+    let reads = 0;
+    const flaky: ChainClient = {
+      ...chain,
+      addressUtxos: async () => {
+        reads += 1;
+        if (reads > 1) throw new Error('rate limited');
+        return [coin(5_898)];
+      },
+    };
+    startUnilateralExitEngine(wallet, flaky, sdk());
+    setPendingExit(wallet, pendingExit({ fundingAddress: 'bcrt1qflaky' }));
+    await vi.waitFor(() => expect(getUnilateralExitState().pendingCoins).toHaveLength(1));
+
+    stopUnilateralExitEngine();
+    startUnilateralExitEngine(wallet, flaky, sdk());
+    expect(getUnilateralExitState().pendingCoins).toEqual([coin(5_898)]);
+    await advanceNow();
+    expect(reads).toBeGreaterThan(1);
+    expect(getUnilateralExitState().pendingCoins).toEqual([coin(5_898)]);
+  });
+
   it('survives a reload, and forgets the exit once cancelled', () => {
     setPendingExit(wallet, pendingExit());
     startUnilateralExitEngine(wallet, chain);

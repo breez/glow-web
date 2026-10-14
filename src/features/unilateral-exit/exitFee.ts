@@ -77,11 +77,26 @@ export const isPendingFunded = (pending: PendingExit, coins: ChainUtxo[]): boole
 export const leftoverTopUp = (plan: UnilateralExitPlan, coins: ChainUtxo[]): TopUp =>
   topUpFor(topUpOf(plan)?.required ?? { sat: 0, inputs: 0 }, sentFunding(plan, coins), plan.feeRateSatPerVbyte);
 
+// What each fee address was last read to hold. A screen falls back to it when
+// a read fails: shown as empty, a paid address would ask for its fee again.
+const lastRead = new Map<string, ChainUtxo[]>();
+
+/** Reads what a fee address holds, kept for a later read of it that fails. */
+export async function readFeeAddress(chain: ChainClient, address: string): Promise<ChainUtxo[]> {
+  const coins = await chain.addressUtxos(address);
+  lastRead.set(address, coins);
+  return coins;
+}
+
+/** What `address` was last read to hold in this session, or undefined when it never was. */
+export const lastReadCoins = (address: string | undefined): ChainUtxo[] | undefined =>
+  address === undefined ? undefined : lastRead.get(address);
+
 /** What the exit fee address holds, or null while it is not known or cannot be read. */
 async function readFeeCoins(chain: ChainClient, address: string | undefined): Promise<ChainUtxo[] | null> {
   if (!address) return null;
   try {
-    return await chain.addressUtxos(address);
+    return await readFeeAddress(chain, address);
   } catch (e) {
     logger.warn(LogCategory.SDK, 'Failed to read the exit fee address', { error: e instanceof Error ? e.message : String(e) });
     return null;

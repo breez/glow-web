@@ -1,5 +1,6 @@
 import type { ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
+import { lastReadCoins, readFeeAddress } from '../exitFee';
 import { hasWaitingLanding } from '../ledger';
 import type { UnilateralExitPlan, WalletKey } from '../model/plan';
 import { advanceUnilateralExit } from '../pass';
@@ -23,21 +24,28 @@ export function withRecovery(list: UnilateralExitPlan[], recovery: UnilateralExi
   return [...list.filter(kept => !replaced(kept)), recovery];
 }
 
-/** Reads what the fee address holds, or null when it could not. Nothing starts without the user. */
+/** The fee address the engine watches: the pending exit's, or the plan's while a leaf it left out waits on more exit fee. */
+export const watchedAddress = ({ pending, plan }: Pick<UnilateralExitEngineState, 'pending' | 'plan'>): string | undefined =>
+  pending?.fundingAddress ?? (plan?.status.type === 'needsExitFee' ? exitFeeRecordOf(plan).exitFeeAddress : undefined);
+
+/**
+ * Reads what the fee address holds, or null when it could not. The screens
+ * then keep what it was last read to hold. Nothing starts without the user.
+ */
 async function watchPending(): Promise<ChainUtxo[] | null> {
-  const address =
-    state.pending?.fundingAddress ??
-    (state.plan?.status.type === 'needsExitFee' ? exitFeeRecordOf(state.plan).exitFeeAddress : undefined);
+  const address = watchedAddress(state);
   if (!chain || !address) return null;
   const passGeneration = generation;
   try {
-    const coins = await chain.addressUtxos(address);
+    const coins = await readFeeAddress(chain, address);
     if (generation === passGeneration) emit({ pendingCoins: coins });
     return coins;
   } catch (e) {
     logger.warn(LogCategory.SDK, 'Failed to read the exit fee address', {
       error: e instanceof Error ? e.message : String(e),
     });
+    const known = lastReadCoins(address);
+    if (known && generation === passGeneration) emit({ pendingCoins: known });
     return null;
   }
 }

@@ -3,7 +3,7 @@ import type { ChainClient, ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { awaitsUpdate, isUnilateralLanded, type ExitMode, type UnilateralExitPlan, type WalletKey } from '../model/plan';
-import { leftoverTopUp, sentFunding, topUpFor, withoutOwnChange } from '../exitFee';
+import { lastReadCoins, leftoverTopUp, readFeeAddress, sentFunding, topUpFor, withoutOwnChange } from '../exitFee';
 import { setPendingExit } from '../engine/api';
 import type { UnilateralExitEngineState } from '../engine/state';
 import { deriveFundingKey, readWalletMnemonic, type FundingKey } from '../funding';
@@ -82,10 +82,13 @@ export function useExitFeeAddress({ walletKey, network, chain, engine, mode, pha
     let cancelled = false;
     const check = async () => {
       try {
-        const utxos = await chain.addressUtxos(fundingKey.address);
+        const utxos = await readFeeAddress(chain, fundingKey.address);
         if (!cancelled) setFundingUtxos(utxos);
       } catch (e) {
         logger.warn(LogCategory.SDK, 'Failed to read funding utxos', { error: formatError(e) });
+        // What the address last held, so a payment already made still counts.
+        const known = lastReadCoins(fundingKey.address);
+        if (known && !cancelled) setFundingUtxos(known);
       }
     };
     void check();
