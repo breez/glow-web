@@ -174,6 +174,22 @@ leaf itself: the watchtower publishes the leaf's direct transaction and the
 operators mark the leaf `ON_CHAIN`. Pass `1` as the number of renewals to see
 that.
 
+## Test Recover Funds
+
+[docs/recoverable-funds-testing.md](../docs/recoverable-funds-testing.md) walks
+through every Recover Funds case, with the text each screen should show. Most
+cases start from one command:
+
+```
+npm run regtest:recoverable -- cosigned
+```
+
+`cosigned` gives the wallet a leaf renewed twice, whose recovery the operators
+co-sign. `exit-fee` gives it a leaf renewed once, whose recovery needs an exit
+fee. `both` gives one of each. Keep Glow open with the test wallet while the
+command runs. It waits for the claim, has the watchtower cut the leaf off, and
+prints what the Recoverable Funds row should show.
+
 ## Commands
 
 | | |
@@ -184,10 +200,15 @@ that.
 | `npm run regtest:renewed-leaf -- <sats> [renewals]` | give the wallet a leaf renewed twice, or `renewals` times |
 | `npm run regtest:parent-exit -- [leaf id]` | confirm the root above that leaf, or above the one made last |
 | `npm run regtest:watchtower-exit -- [leaf id]` | mine until the watchtower has cut that leaf off |
+| `npm run regtest:recoverable -- <cosigned\|exit-fee\|both> [sats]` | give the wallet funds to recover, in one go |
 | `npm run regtest:address` | a fresh address to receive at |
-| `npm run regtest:send -- <addr> <sats>` | send coins and confirm them |
+| `npm run regtest:send -- <addr> <sats> [--no-mine]` | send coins and confirm them, or leave them unconfirmed |
+| `npm run regtest:hold -- [txid...]` | keep those transactions, or the whole mempool, out of blocks |
+| `npm run regtest:release` | let every held transaction into blocks again |
 | `npm run regtest:mine -- <blocks>` | mine blocks |
 | `npm run regtest:balance -- <addr>` | what an address holds |
+| `npm run regtest:operators -- down\|up` | cut the app off from the operators, or reconnect it |
+| `npm run regtest:indexer -- down\|up` | stop or start the chain indexer |
 
 ## When something looks wrong
 
