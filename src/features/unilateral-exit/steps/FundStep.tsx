@@ -135,7 +135,13 @@ export const FundStep: React.FC<
 
   // Says why Continue Exit is not yet open, as the pending exit's receipt does.
   if (topUp.stillToSendSat === 0) {
-    return <Receipt>{waitsForConfirmation && <Status>Waiting for a confirmation</Status>}</Receipt>;
+    return waitsForConfirmation ? (
+      <Receipt title="Exit fee sent">
+        <Status>Waiting for a confirmation</Status>
+      </Receipt>
+    ) : (
+      <Receipt />
+    );
   }
 
   // Waiting costs nothing, so the step shows what continuing now costs before
@@ -237,7 +243,7 @@ export const PendingExitStep: React.FC<{
     }
     if (!isPendingFunded(pending, coins)) {
       return (
-        <Receipt>
+        <Receipt title="Exit fee sent">
           <Status>Waiting for a confirmation</Status>
           {/* Paid is where the wait is, so it is where closing needs saying. */}
           <p className="text-spark-text-muted text-xs text-center text-balance">

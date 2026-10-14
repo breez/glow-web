@@ -244,7 +244,7 @@ npm run regtest:address
    Glow shows "₿Y received". The row reads "Send ₿Z more", where Z is X minus Y.
 4. Pay the rest without mining:
    `npm run regtest:send -- <exit fee address> <Z> --no-mine`.
-   Glow shows "Exit fee received", "Waiting for a confirmation" and "You can
+   Glow shows "Exit fee sent", "Waiting for a confirmation" and "You can
    close this. Come back to start the recovery once the fee confirms." The row
    reads "Exit fee sent" and "Waiting for a confirmation".
 5. Run `npm run regtest:mine -- 1`.
@@ -433,8 +433,8 @@ of blocks.
    Glow shows "Send to Continue Recovery" with ₿X and a QR code.
 4. Pay without mining:
    `npm run regtest:send -- <exit fee address> <X> --no-mine`.
-   Glow shows "Waiting for a confirmation" instead of the amount, and
-   Continue Recovery stays disabled.
+   Glow shows "Exit fee sent" and "Waiting for a confirmation" instead of the
+   amount, and Continue Recovery stays disabled.
 5. Run `npm run regtest:mine -- 1` and tap Continue Recovery. It reads
    "Updating..." while Glow builds. Run `npm run regtest:release` to clear the
    hold.

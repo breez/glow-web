@@ -116,7 +116,7 @@ describe('FundStep', () => {
 
   it('says why Continue Exit waits once the payment is on its way but not confirmed', () => {
     render(<FundStep {...props} topUp={{ ...topUp, sentSat: 7_856, stillToSendSat: 0 }} waitsForConfirmation />);
-    expect(screen.getByText('Exit fee received')).toBeInTheDocument();
+    expect(screen.getByText('Exit fee sent')).toBeInTheDocument();
     expect(screen.getByTestId('unilateral-exit-pending-status')).toHaveTextContent('Waiting for a confirmation');
   });
 });
@@ -160,7 +160,7 @@ describe('PendingExitStep', () => {
 
   it('stops asking once a payment covers the fee, before it confirms, so nobody pays twice', () => {
     step({ coins: [coin(5_898, false)] });
-    expect(screen.getByText('Exit fee received')).toBeInTheDocument();
+    expect(screen.getByText('Exit fee sent')).toBeInTheDocument();
     expect(screen.queryByTestId('unilateral-exit-funding-address')).not.toBeInTheDocument();
     expect(screen.getByTestId('unilateral-exit-pending-status')).toHaveTextContent('Waiting for a confirmation');
     expect(screen.getByText(/Come back to start the exit/)).toBeInTheDocument();
