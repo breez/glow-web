@@ -41,7 +41,7 @@ export async function startPendingExit(): Promise<void> {
   const passGeneration = generation;
   const passWallet = wallet;
   const confirmed = state.pendingCoins.filter(coin => coin.confirmed);
-  emit({ isStarting: true, startError: null, nothingToExit: false });
+  emit({ isStarting: true, startError: null, nothingToExit: null });
   try {
     const key = heldKey?.address === pending.fundingAddress ? heldKey : undefined;
     const outcome = await startExit(pending, confirmed, sdk, passWallet.identityPubkey, key, excludedLeafIds(state));
@@ -61,7 +61,7 @@ export async function startPendingExit(): Promise<void> {
         return;
       }
       case 'nothingToExit':
-        emit({ nothingToExit: true, isStarting: false });
+        emit({ nothingToExit: { reason: outcome.reason }, isStarting: false });
     }
   } catch (e) {
     const error = e instanceof Error ? e.message : String(e);
@@ -120,7 +120,7 @@ export function setPendingExit(target: WalletKey, pending: PendingExit, key?: Fu
   heldKey = key ?? null;
   if (!isRunningFor(target)) return;
   nextGeneration();
-  emit({ pending, pendingCoins: [], nothingToExit: false, startError: null, isStarting: false });
+  emit({ pending, pendingCoins: [], nothingToExit: null, startError: null, isStarting: false });
   syncPolling();
   void advanceNow();
 }
@@ -155,7 +155,7 @@ export function cancelPendingExit(): void {
   nextGeneration();
   clearPendingExit(wallet);
   heldKey = null;
-  emit({ pending: null, pendingCoins: [], nothingToExit: false, startError: null, isStarting: false });
+  emit({ pending: null, pendingCoins: [], nothingToExit: null, startError: null, isStarting: false });
   syncPolling();
 }
 

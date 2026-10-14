@@ -47,7 +47,7 @@ vi.mock('./useUnilateralExitEngineLifecycle', () => ({
     plan: saved.plan,
     pending: null,
     pendingCoins: saved.pendingCoins,
-    nothingToExit: false,
+    nothingToExit: null,
     isStarting: false,
     startError: null,
     archive: saved.archive,

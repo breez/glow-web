@@ -1,5 +1,6 @@
 import type { ChainClient, ChainUtxo } from '@/services/chain';
 import { keptLeafIds, type PendingExit, type UnilateralExitPlan, type WalletKey } from '../model/plan';
+import type { LeftOutReason } from '../quote';
 import type { ExitSdk } from '../quoting';
 import { noAccounting, type ExitAccounting } from '../storage/accounting';
 import { droppedLeafIds, type ArchivedExit } from '../storage/archive';
@@ -13,8 +14,12 @@ export interface UnilateralExitEngineState {
    * plan's while a leaf it left out waits on more exit fee.
    */
   pendingCoins: ChainUtxo[];
-  /** A start found nothing in the wallet worth its exit fee at the exit's rate. */
-  nothingToExit: boolean;
+  /**
+   * A start found nothing worth its exit fee at the exit's rate, and why: null
+   * when its quote skipped nothing either. Funds that may yet move
+   * (`unavailable`) leave the start open, to try again later.
+   */
+  nothingToExit: { reason: LeftOutReason | null } | null;
   isStarting: boolean;
   /** Why the last start failed, for the user to try again. */
   startError: string | null;
@@ -39,7 +44,7 @@ export const idle: UnilateralExitEngineState = {
   plan: null,
   pending: null,
   pendingCoins: [],
-  nothingToExit: false,
+  nothingToExit: null,
   isStarting: false,
   startError: null,
   archive: [],
@@ -100,6 +105,10 @@ export function subscribeUnilateralExit(listener: Listener): () => void {
 
 export const isRunningFor = (target: WalletKey): boolean =>
   wallet?.identityPubkey === target.identityPubkey && wallet.network === target.network;
+
+/** A start found nothing it could move, now or later: only a cancel is left. */
+export const startDeadEnded = ({ nothingToExit }: Pick<UnilateralExitEngineState, 'nothingToExit'>): boolean =>
+  !!nothingToExit && nothingToExit.reason !== 'unavailable';
 
 /** What a fresh quote leaves out: the leaves kept recoveries hold, and those Glow dropped as unrecoverable. */
 export const excludedLeafIds = ({

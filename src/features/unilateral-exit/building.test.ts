@@ -1,3 +1,4 @@
+import type { SkippedLeafReason } from '@breeztech/breez-sdk-spark';
 import { buildFromQuote, EmptyRecoveryError, startExit } from './building';
 import { deriveFundingKey } from './funding';
 import { checked, coin as feeCoin, MNEMONIC, pendingExit, prepared, sdk } from './testFixtures';
@@ -110,11 +111,23 @@ describe('startExit', () => {
 
   it('builds nothing once the wallet holds nothing worth its fee', async () => {
     const recoverFunds = vi.fn(async () => checked([{ txid: 'a' }]));
-    const driver = sdk({ prepareRecoverFunds: async () => prepared({ leaves: [] }), recoverFunds });
-    expect(await startExit(pendingExit(), [feeCoin(5_898)], driver, '02abc')).toEqual({ type: 'nothingToExit' });
+    const driver = sdk({ prepareRecoverFunds: async () => prepared({ totalFeeSats: 100_000 }), recoverFunds });
+    expect(await startExit(pendingExit(), [feeCoin(5_898)], driver, '02abc')).toEqual({ type: 'nothingToExit', reason: 'fees' });
     expect(recoverFunds).not.toHaveBeenCalled();
   });
 
+  it('says why a start found nothing: funds that may yet move, or funds that cannot', async () => {
+    const skipping = (reason: SkippedLeafReason) =>
+      sdk({ prepareRecoverFunds: async () => prepared({ leaves: [], skipped: [{ leafId: 'leaf-1', valueSats: 100_000, reason }] }) });
+    expect(await startExit(pendingExit(), [feeCoin(5_898)], skipping({ type: 'fundsNotFound' }), '02abc')).toEqual({
+      type: 'nothingToExit',
+      reason: 'unavailable',
+    });
+    expect(await startExit(pendingExit(), [feeCoin(5_898)], skipping({ type: 'notRecoverable', message: 'spent' }), '02abc')).toEqual({
+      type: 'nothingToExit',
+      reason: 'notRecoverable',
+    });
+  });
 });
 
 describe('startExit for a recovery', () => {
@@ -152,7 +165,7 @@ describe('startExit for a recovery', () => {
     const prepareRecoverFunds = vi.fn(async () => prepared({ leaves: [{ leafId: 'c-1', valueSats: 30_000, method: 'cooperative' }] }));
     const recoverFunds = vi.fn(async () => checked([{ txid: 'a' }]));
     const outcome = await startExit(pendingExit(), [feeCoin(5_898)], sdk({ prepareRecoverFunds, recoverFunds }), '02abc', undefined, new Set(['c-1']));
-    expect(outcome).toEqual({ type: 'nothingToExit' });
+    expect(outcome).toEqual({ type: 'nothingToExit', reason: null });
     expect(prepareRecoverFunds).toHaveBeenCalledTimes(1);
     expect(recoverFunds).not.toHaveBeenCalled();
   });

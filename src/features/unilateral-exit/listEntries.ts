@@ -15,7 +15,7 @@ import { nextAction, planProgress } from './model/progress';
 import { isCooperativeLeaf, unbuiltLeaves, willReceiveSat } from './quote';
 import { recoveryTxid, type ArchivedExit } from './storage/archive';
 import { landedLeavesOf, unsettledLeaves } from './storage/accounting';
-import type { UnilateralExitEngineState } from './engine/state';
+import { startDeadEnded, type UnilateralExitEngineState } from './engine/state';
 
 /**
  * One row of the transaction list's exit group. An exit is not a payment the
@@ -62,7 +62,7 @@ const pendingText = (
   pending: PendingExit,
 ): Pick<UnilateralExitEntry, 'title' | 'subtitle' | 'isAction'> => {
   const coins = state.pendingCoins;
-  if (state.nothingToExit) {
+  if (startDeadEnded(state)) {
     const title = pending.mode === 'recover' ? 'Nothing to recover' : 'Nothing to exit';
     return { title, subtitle: 'Tap to cancel', isAction: true };
   }

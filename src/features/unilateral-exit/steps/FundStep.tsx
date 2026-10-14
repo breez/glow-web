@@ -8,6 +8,7 @@ import { useToast } from '@/contexts/ToastContext';
 import type { ChainUtxo } from '@/services/chain';
 import { isPendingFunded, pendingTopUp, type TopUp } from '../exitFee';
 import type { PendingExit } from '../model/plan';
+import type { UnilateralExitEngineState } from '../engine/state';
 import { BackupActions, ExitActionRow } from '../BackupCard';
 import type { FundingFields } from '../hooks/useUnilateralExitFlow';
 
@@ -174,7 +175,7 @@ export const FundStep: React.FC<
 export const PendingExitStep: React.FC<{
   pending: PendingExit;
   coins: ChainUtxo[];
-  nothingToExit: boolean;
+  nothingToExit: UnilateralExitEngineState['nothingToExit'];
   isStarting: boolean;
   startError: string | null;
   onCancel: () => void;
@@ -191,8 +192,9 @@ export const PendingExitStep: React.FC<{
     );
   }
 
+  const reason = nothingToExit?.reason;
   const body = (() => {
-    if (nothingToExit) {
+    if (reason === 'fees') {
       return (
         <AlertCard
           variant="warning"
@@ -203,6 +205,21 @@ export const PendingExitStep: React.FC<{
               ? `At ${pending.feeRateSatPerVbyte} sat/vB your balance would cost more to move on-chain than it is worth. Cancel it under Advanced and start again at a lower rate. The fee you sent counts toward it.`
               : `At ${pending.feeRateSatPerVbyte} sat/vB these funds would cost more to move on-chain than they are worth. Cancel the ${noun} under Advanced and start again at a lower rate. The fee you sent counts toward it.`}
           </p>
+        </AlertCard>
+      );
+    }
+    // The fresh quote's words for the same verdict.
+    if (nothingToExit && reason !== 'unavailable') {
+      return noun === 'exit' ? (
+        <AlertCard variant="warning" title="Nothing here to exit">
+          <p className="text-sm">
+            This wallet holds no funds on Spark that can be moved on-chain. If you were expecting
+            some, the leaf data this needs may be missing from this device.
+          </p>
+        </AlertCard>
+      ) : (
+        <AlertCard variant="info" title="Nothing left to recover">
+          <p className="text-sm">{reason === null ? 'These funds were already recovered.' : "These funds can't be recovered."}</p>
         </AlertCard>
       );
     }
@@ -231,7 +248,13 @@ export const PendingExitStep: React.FC<{
     return (
       <>
         <Receipt />
-        {startError && <ErrorMessageBox title={`Could not start the ${noun}`} error={startError} />}
+        {reason === 'unavailable' ? (
+          <AlertCard variant="warning" title={noun === 'exit' ? 'Could not start the exit' : 'Nothing can be recovered right now'}>
+            <p className="text-sm">Try again later.</p>
+          </AlertCard>
+        ) : (
+          startError && <ErrorMessageBox title={`Could not start the ${noun}`} error={startError} />
+        )}
       </>
     );
   })();

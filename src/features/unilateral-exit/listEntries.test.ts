@@ -8,7 +8,7 @@ const engine = (over: Partial<UnilateralExitEngineState> = {}): UnilateralExitEn
   plan: null,
   pending: pendingExit(),
   pendingCoins: [],
-  nothingToExit: false,
+  nothingToExit: null,
   isStarting: false,
   startError: null,
   archive: [],
@@ -67,9 +67,17 @@ describe('a pending exit in the wallet list', () => {
     ['an exit', undefined, 'Nothing to exit'],
     ['a recovery', 'recover' as const, 'Nothing to recover'],
   ])('offers to cancel %s whose start found nothing worth moving', (_, mode, title) => {
-    expect(row({ pending: pendingExit({ mode }), pendingCoins: [coin(5_898)], nothingToExit: true })).toMatchObject({
+    expect(row({ pending: pendingExit({ mode }), pendingCoins: [coin(5_898)], nothingToExit: { reason: 'fees' } })).toMatchObject({
       title,
       subtitle: 'Tap to cancel',
+      isAction: true,
+    });
+  });
+
+  it('still offers the start when what it found may yet move', () => {
+    expect(row({ pendingCoins: [coin(5_898)], nothingToExit: { reason: 'unavailable' } })).toMatchObject({
+      title: 'Exit fee received',
+      subtitle: 'Tap to start',
       isAction: true,
     });
   });

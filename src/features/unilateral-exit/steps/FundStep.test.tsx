@@ -130,7 +130,7 @@ describe('PendingExitStep', () => {
       <PendingExitStep
         pending={pendingExit()}
         coins={[]}
-        nothingToExit={false}
+        nothingToExit={null}
         isStarting={false}
         startError={null}
         onCancel={() => {}}
@@ -175,7 +175,7 @@ describe('PendingExitStep', () => {
       <PendingExitStep
         pending={pendingExit()}
         coins={[coin(5_898)]}
-        nothingToExit={false}
+        nothingToExit={null}
         isStarting={false}
         startError="chain service unreachable"
         onCancel={() => {}}
@@ -185,7 +185,7 @@ describe('PendingExitStep', () => {
   });
 
   it('sends the user back for a lower rate when nothing is worth exiting any more', () => {
-    step({ coins: [coin(5_898)], nothingToExit: true });
+    step({ coins: [coin(5_898)], nothingToExit: { reason: 'fees' } });
     expect(screen.getByText('Nothing is worth exiting right now')).toBeInTheDocument();
     expect(screen.queryByTestId('unilateral-exit-funding-address')).not.toBeInTheDocument();
   });
@@ -198,7 +198,7 @@ describe('PendingExitStep', () => {
         <PendingExitStep
           pending={pendingExit()}
           coins={[coin(5_898, false)]}
-          nothingToExit={false}
+          nothingToExit={null}
           isStarting={false}
           startError={null}
           onCancel={() => {}}
@@ -210,7 +210,7 @@ describe('PendingExitStep', () => {
         <PendingExitStep
           pending={pendingExit()}
           coins={[coin(5_898)]}
-          nothingToExit={false}
+          nothingToExit={null}
           isStarting={false}
           startError="chain service unreachable"
           onCancel={() => {}}
@@ -221,7 +221,7 @@ describe('PendingExitStep', () => {
     });
 
     it('says the funds, not the balance, are not worth recovering, and cancels the recovery', () => {
-      step({ coins: [coin(5_898)], nothingToExit: true, noun: 'recovery' });
+      step({ coins: [coin(5_898)], nothingToExit: { reason: 'fees' }, noun: 'recovery' });
       expect(screen.getByText('Nothing is worth recovering right now')).toBeInTheDocument();
       expect(
         screen.getByText(

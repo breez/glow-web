@@ -26,8 +26,10 @@ import {
   isCooperativeLeaf,
   isWorthExiting,
   leafFeesSat,
+  leftOutReason,
   needsFunding,
   type ExitFeeRecord,
+  type LeftOutReason,
 } from './quote';
 import { leavingSkips, quoteFresh, stillNamed, withDropped, type ExitSdk } from './quoting';
 
@@ -170,10 +172,11 @@ export function planFromBuild(
   });
 }
 
+/** `reason` is null when the quote skipped nothing either. */
 export type StartOutcome =
   | { type: 'started'; plan: UnilateralExitPlan }
   | { type: 'short'; required: Funding }
-  | { type: 'nothingToExit' };
+  | { type: 'nothingToExit'; reason: LeftOutReason | null };
 
 /**
  * Builds a pending exit from its confirmed fee coins, on the user's tap. It
@@ -198,7 +201,8 @@ export async function startExit(
   await restoreExitState(sdk, null, await loadExitState(identityPubkey).catch(() => null));
 
   const quote = await quoteFresh(sdk, { feeRateSatPerVbyte, destination }, mode, kept);
-  if (!isWorthExiting(quote)) return { type: 'nothingToExit' };
+  // A quote that moves anything is short only of what its fee eats.
+  if (!isWorthExiting(quote)) return { type: 'nothingToExit', reason: quote.leaves.length > 0 ? 'fees' : leftOutReason(quote) };
 
   let exit: RecoverFundsResponse;
   try {

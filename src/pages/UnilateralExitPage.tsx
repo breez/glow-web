@@ -22,6 +22,7 @@ import { RedoActions, TrackerView } from '@/features/unilateral-exit/TrackerView
 import { SatAmount } from '@/components/SatAmount';
 import { recoveryTxid } from '@/features/unilateral-exit/storage/archive';
 import { cancelPendingExit, startPendingExit } from '@/features/unilateral-exit/engine/api';
+import { startDeadEnded } from '@/features/unilateral-exit/engine/state';
 import { isPendingFunded } from '@/features/unilateral-exit/exitFee';
 import { awaitsUpdate, type ExitMode } from '@/features/unilateral-exit/model/plan';
 
@@ -180,8 +181,8 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
       case 'pending': {
         // Paying never starts the exit: coins an earlier attempt left at the
         // shared address can already cover the fee, so the user decides.
-        const { pending, pendingCoins, nothingToExit, isStarting } = flow.engine;
-        if (!pending || nothingToExit || isStarting || !isPendingFunded(pending, pendingCoins)) return null;
+        const { pending, pendingCoins, isStarting } = flow.engine;
+        if (!pending || startDeadEnded(flow.engine) || isStarting || !isPendingFunded(pending, pendingCoins)) return null;
         return (
           <PrimaryButton
             onClick={() => void startPendingExit()}

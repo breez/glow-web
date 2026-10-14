@@ -6,7 +6,7 @@ import type { UnilateralExitFlow } from '@/features/unilateral-exit/hooks/useUni
 import { quoteFigures } from '@/features/unilateral-exit/quote';
 import type { ArchivedExit } from '@/features/unilateral-exit/storage/archive';
 import type { UnilateralExitPlan } from '@/features/unilateral-exit/model/plan';
-import { confirmed, funding, pendingExit, plan, prepared, tx } from '@/features/unilateral-exit/testFixtures';
+import { coin, confirmed, funding, pendingExit, plan, prepared, tx } from '@/features/unilateral-exit/testFixtures';
 
 // The page is the switch under test; the flow behind it is stubbed per step.
 const flow = vi.hoisted(() => ({ current: null as unknown as UnilateralExitFlow }));
@@ -647,7 +647,7 @@ describe('cancelling an exit that waits on its fee', () => {
         plan: null,
         pending: pendingExit({ mode }),
         pendingCoins: [],
-        nothingToExit: false,
+        nothingToExit: null,
         isStarting: false,
         startError: null,
         archive: [],
@@ -669,5 +669,49 @@ describe('cancelling an exit that waits on its fee', () => {
 
   it('stays open on an exit, which starts again from its intro', async () => {
     expect(await cancel()).not.toHaveBeenCalled();
+  });
+});
+
+describe('a pending start that found nothing to move', () => {
+  async function renderFound(nothingToExit: UnilateralExitFlow['engine']['nothingToExit'], mode?: 'recover') {
+    flow.current = {
+      phase: 'pending',
+      mode,
+      engine: {
+        plan: null,
+        pending: pendingExit({ mode }),
+        pendingCoins: [coin(5_898)],
+        nothingToExit,
+        isStarting: false,
+        startError: null,
+        archive: [],
+      },
+      canGoBack: false,
+      back: vi.fn(),
+    } as unknown as UnilateralExitFlow;
+    render(<UnilateralExitPage network="regtest" onBack={vi.fn()} onFinished={vi.fn()} />);
+    await waitForSheetOpen();
+  }
+
+  it.each([
+    ['a recovery', 'recover' as const, 'Nothing can be recovered right now', 'Recover Funds'],
+    ['an exit', undefined, 'Could not start the exit', 'Exit Spark'],
+  ])('keeps the start of %s open when what it found may yet move', async (_, mode, title, action) => {
+    await renderFound({ reason: 'unavailable' }, mode);
+    expect(screen.getByText('Exit fee received')).toBeInTheDocument();
+    expect(screen.getByText(title)).toBeInTheDocument();
+    expect(screen.getByText('Try again later.')).toBeInTheDocument();
+    expect(screen.getByTestId('unilateral-exit-start-exit')).toHaveTextContent(new RegExp(`^${action}$`));
+  });
+
+  it.each([
+    ['funds a recovery cannot recover', 'recover' as const, 'notRecoverable' as const, 'Nothing left to recover', "These funds can't be recovered."],
+    ['funds already recovered', 'recover' as const, null, 'Nothing left to recover', 'These funds were already recovered.'],
+    ['an exit with nothing it can move', undefined, 'notRecoverable' as const, 'Nothing here to exit', /This wallet holds no funds on Spark/],
+  ])('leaves only a cancel for %s', async (_, mode, reason, title, body) => {
+    await renderFound({ reason }, mode);
+    expect(screen.getByText(title)).toBeInTheDocument();
+    expect(screen.getByText(body)).toBeInTheDocument();
+    expect(screen.queryByTestId('unilateral-exit-start-exit')).not.toBeInTheDocument();
   });
 });
