@@ -89,6 +89,7 @@ describe('recoverable funds in the wallet list', () => {
       title: 'Recoverable Funds',
       subtitle: 'Tap to recover',
       isAction: true,
+      inert: false,
       amountSat: 48_200,
       kind: 'recoverable',
     });
@@ -225,8 +226,8 @@ describe('recoverable funds beside an exit under way', () => {
     expect(recoverable({ plan: running() }, 450_000)).toMatchObject({ amountSat: 30_000 });
   });
 
-  it('asks for no tap, since the tracker it opens cannot recover them', () => {
-    expect(recoverable({ plan: running() }, 450_000)).toMatchObject({ subtitle: null, isAction: false });
+  it("takes no tap, since the exit's tracker cannot recover them", () => {
+    expect(recoverable({ plan: running() }, 450_000)).toMatchObject({ subtitle: null, isAction: false, inert: true });
   });
 
   it('is hidden once the exit accounts for everything getInfo counts', () => {

@@ -28,10 +28,12 @@ export interface UnilateralExitEntry {
   subtitle: string | null;
   /** The subtitle asks for a tap, so it takes the amount's color, as "Tap to claim" does. */
   isAction?: boolean;
+  /** Takes no tap, since nothing it could open acts on it. */
+  inert?: boolean;
   amountSat: number;
   /**
    * `active` is in flight, so it pulses and opens the flow. `recoverable` opens
-   * Recover Funds, or beside an exit under way that exit's tracker. `recovery`
+   * Recover Funds, and nothing beside an exit under way. `recovery`
    * is a kept co-signed recovery: in flight like `active`, with a tracker of
    * its own. `archived` opens its details.
    */
@@ -183,7 +185,8 @@ function accountedSat(state: UnilateralExitEngineState): number {
 /**
  * What getInfo's `recoverableSat` holds beyond what is accounted for. A
  * pending exit's start takes every leaf in, so the row waits for it. Beside a
- * running exit the row has nothing to offer yet, so it asks for no tap.
+ * running exit the row has nothing to offer yet: the exit's tracker cannot
+ * recover them, so it takes no tap.
  */
 const recoverableEntry = (state: UnilateralExitEngineState, recoverableSat: number): UnilateralExitEntry | null => {
   if (state.pending) return null;
@@ -195,6 +198,7 @@ const recoverableEntry = (state: UnilateralExitEngineState, recoverableSat: numb
     title: 'Recoverable Funds',
     subtitle: canRecover ? 'Tap to recover' : null,
     isAction: canRecover,
+    inert: !canRecover,
     amountSat: leftSat,
     kind: 'recoverable',
   };

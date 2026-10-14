@@ -143,9 +143,9 @@ const TransactionList: React.FC<TransactionListProps> = ({
   const renderExitEntry = (entry: UnilateralExitEntry, index: number) => (
     <li
       key={entry.id}
-      className="transaction-item flex items-center gap-3 px-3 py-3 rounded-xl animate-list-item cursor-pointer"
+      className={`transaction-item flex items-center gap-3 px-3 py-3 rounded-xl animate-list-item ${entry.inert ? '' : 'cursor-pointer'}`}
       style={{ animationDelay: `${Math.min(index * 30, 240)}ms` }}
-      onClick={() => onExitSelected?.(entry)}
+      onClick={entry.inert ? undefined : () => onExitSelected?.(entry)}
       data-testid={exitEntryTestId[entry.kind]}
     >
       <div
