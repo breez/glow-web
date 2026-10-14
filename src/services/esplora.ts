@@ -1,6 +1,7 @@
 import {
   DEFAULT_REQUEST_TIMEOUT_MS,
   type ChainClient,
+  type ChainSpend,
   type ChainUtxo,
 } from './chain';
 
@@ -13,8 +14,10 @@ export function esploraBaseUrl(network: string): string {
   switch (network) {
     case 'testnet':
       return 'https://mempool.space/testnet/api';
+    // Lightspark's hosted regtest, the one the SDK itself uses. A local
+    // cluster overrides it through .env.local.
     case 'regtest':
-      return 'http://localhost:3002';
+      return 'https://regtest-mempool.us-west-2.sparkinfra.net/api';
     default:
       return 'https://mempool.space/api';
   }
@@ -28,7 +31,7 @@ export function esploraBaseUrl(network: string): string {
 export function mempoolBaseUrl(network: string): string {
   const override = import.meta.env?.VITE_MEMPOOL_BASE_URL;
   if (override) return trim(override);
-  return network === 'regtest' ? 'http://localhost:8999/api' : esploraBaseUrl(network);
+  return esploraBaseUrl(network);
 }
 
 const atLeastOne = (rate: number | undefined): number => Math.max(1, Math.round(rate ?? 1));
@@ -102,6 +105,23 @@ export function createEsploraClient(
         confirmed: Boolean(utxo.status?.confirmed),
         blockHeight: utxo.status?.block_height,
       }));
+    },
+
+    async confirmedSpender(txid, vout): Promise<ChainSpend | null> {
+      const spend = await getJson<{ spent: boolean; txid?: string; status?: { confirmed: boolean } }>(
+        `/tx/${txid}/outspend/${vout}`,
+      );
+      if (!spend.spent || !spend.txid || !spend.status?.confirmed) return null;
+      const spender = await getJson<{
+        txid: string;
+        vout: { scriptpubkey_address?: string; value: number }[];
+        status?: { block_height?: number };
+      }>(`/tx/${spend.txid}`);
+      return {
+        txid: spender.txid,
+        blockHeight: spender.status?.block_height,
+        outputs: spender.vout.map(output => ({ address: output.scriptpubkey_address, value: output.value })),
+      };
     },
 
     async tipHeight() {

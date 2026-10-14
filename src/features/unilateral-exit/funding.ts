@@ -61,7 +61,7 @@ export function deriveFundingKey(mnemonic: string, network: string, index: numbe
 
 export class MnemonicUnavailableError extends Error {
   constructor() {
-    super('Recovery mode needs this wallet\'s recovery phrase on this device');
+    super("This wallet's recovery phrase is not on this device.");
     this.name = 'MnemonicUnavailableError';
   }
 }

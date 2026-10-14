@@ -64,8 +64,41 @@ describe('EsploraClient', () => {
     ]);
   });
 
+  it('reads what spent an output in a block, and what it paid where', async () => {
+    fetchMock
+      .mockResolvedValueOnce(okJson({ spent: true, txid: 'spender', vin: 0, status: { confirmed: true, block_height: 840_010 } }))
+      .mockResolvedValueOnce(
+        okJson({
+          txid: 'spender',
+          vout: [
+            { scriptpubkey_address: 'bc1qdest', value: 95_000 },
+            { scriptpubkey: '6a', value: 0 },
+          ],
+          status: { confirmed: true, block_height: 840_010 },
+        }),
+      );
+    await expect(client().confirmedSpender('refund', 1)).resolves.toEqual({
+      txid: 'spender',
+      blockHeight: 840_010,
+      outputs: [
+        { address: 'bc1qdest', value: 95_000 },
+        { address: undefined, value: 0 },
+      ],
+    });
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      'https://mempool.space/api/tx/refund/outspend/1',
+      'https://mempool.space/api/tx/spender',
+    ]);
+  });
 
-
+  it.each([
+    ['unspent', { spent: false }],
+    ['spent only in the mempool', { spent: true, txid: 'spender', vin: 0, status: { confirmed: false } }],
+  ])('reads no spender for an output %s, without asking for one', async (_case, outspend) => {
+    fetchMock.mockResolvedValue(okJson(outspend));
+    await expect(client().confirmedSpender('refund', 0)).resolves.toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 
   it('reads the current tip height', async () => {
     fetchMock.mockResolvedValue(okText('840500'));
@@ -177,6 +210,11 @@ describe('EsploraClient', () => {
     it('gives up on an address lookup rather than hanging', async () => {
       hangingFetch();
       await expect(impatient().addressUtxos('bc1qfund')).rejects.toThrow();
+    });
+
+    it('gives up on a spender lookup rather than hanging', async () => {
+      hangingFetch();
+      await expect(impatient().confirmedSpender('refund', 0)).rejects.toThrow();
     });
   });
 });
