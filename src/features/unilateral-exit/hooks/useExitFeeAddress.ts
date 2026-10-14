@@ -3,7 +3,7 @@ import type { ChainClient, ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { awaitsUpdate, isUnilateralLanded, type ExitMode, type UnilateralExitPlan, type WalletKey } from '../model/plan';
-import { leftoverTopUp, sentFunding, topUpFor } from '../exitFee';
+import { leftoverTopUp, sentFunding, topUpFor, withoutOwnChange } from '../exitFee';
 import { setPendingExit } from '../engine/api';
 import type { UnilateralExitEngineState } from '../engine/state';
 import { deriveFundingKey, readWalletMnemonic, type FundingKey } from '../funding';
@@ -139,11 +139,14 @@ export function useExitFeeAddress({ walletKey, network, chain, engine, mode, pha
 
   const confirmedUtxos = useMemo(() => fundingUtxos.filter(utxo => utxo.confirmed), [fundingUtxos]);
   const sent = useMemo(() => sentFunding(plan, confirmedUtxos), [plan, confirmedUtxos]);
-  const topUp = shortfall && quote ? topUpFor(shortfall, sent, quote.feeRateSatPerVbyte) : null;
+  // A payment on its way counts toward the ask, as on the pending exit's
+  // screen, so it is not asked for twice; only confirmed coins fund the build.
+  const sentSoFar = useMemo(() => sentFunding(plan, withoutOwnChange(plan, fundingUtxos)), [plan, fundingUtxos]);
+  const topUp = shortfall && quote ? topUpFor(shortfall, sentSoFar, quote.feeRateSatPerVbyte) : null;
   // An exit under way is not held to its quote: most of what the quote covers
   // is already on-chain, and only the build knows what is really needed. Once a
   // build has said what it needs, the address has to hold it.
-  const isFunded = quote !== null && (!topUp || topUp.stillToSendSat === 0);
+  const isFunded = quote !== null && (!shortfall || topUpFor(shortfall, sent, quote.feeRateSatPerVbyte).stillToSendSat === 0);
 
   // The wizard's fee screen holds its own key and quote. A leftover's has
   // neither: it shows what the plan asks for at its own address and rate,
@@ -152,7 +155,7 @@ export function useExitFeeAddress({ walletKey, network, chain, engine, mode, pha
     address: fundingKey.address,
     isFunded,
     topUp,
-    waitsForConfirmation: false,
+    waitsForConfirmation: !!topUp && topUp.stillToSendSat === 0 && !isFunded,
     feeRate: quote?.feeRateSatPerVbyte ?? 0,
     currentFeeRate: plan?.feeRateSatPerVbyte ?? null,
     // The slowest rate the network is taking: above the exit's own rate, the

@@ -6,7 +6,7 @@ import type { ExitAccounting } from '../storage/accounting';
 import type { ArchivedExit } from '../storage/archive';
 import type { ExitMode, UnilateralExitPlan } from '../model/plan';
 import type { ExitSdk } from '../quoting';
-import { checked, coin, confirmed, funding, MNEMONIC, plan, prepared, sdk, tx } from '../testFixtures';
+import { checked, coin, confirmed, funding, MNEMONIC, plan, prepared, rawTx, sdk, tx, txidOf } from '../testFixtures';
 
 const wallet = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('@/contexts/WalletContext', () => ({
@@ -763,6 +763,29 @@ describe('rebuilding an exit under way at a higher fee that needs more exit fee'
       topUp: { neededSat: 9_636, sentSat: 6_000, stillToSendSat: 3_636 },
     });
     expect(setUnilateralExitPlan).not.toHaveBeenCalled();
+  });
+
+  it('counts a payment on its way, so it is not asked for twice, and waits for it to confirm', async () => {
+    const { result } = await fallsShort();
+
+    addressUtxos.mockResolvedValue([coin(3_636, false)]);
+    act(() => result.current.goTo('topUp'));
+    await waitFor(() => expect(result.current.funding?.topUp?.stillToSendSat).toBe(0));
+    expect(result.current.funding).toMatchObject({ isFunded: false, waitsForConfirmation: true });
+  });
+
+  it("counts none of the exit's own change in the mempool as a payment", async () => {
+    // The sweep spends the change a stuck step left at the fee address.
+    saved.plan = plan(
+      [tx({ txid: 'stuck' }), tx({ txid: 'sweep', kind: 'sweep', txHex: rawTx([`${txidOf(9)}:0`], [4_000]) })],
+      { network: 'regtest', feeRateSatPerVbyte: 1, fundingAddressIndex: 2, exit: { fundingInputs: [stored] } },
+    );
+    const { result } = await fallsShort();
+
+    addressUtxos.mockResolvedValue([coin(5_000, false, txidOf(9)), coin(1_000)]);
+    act(() => result.current.goTo('topUp'));
+    await waitFor(() => expect(result.current.funding?.topUp?.sentSat).toBe(7_000));
+    expect(result.current.funding?.topUp?.stillToSendSat).toBe(2_772);
   });
 
   it("gives the network's slowest rate, so a stall by fees reads as the network's doing", async () => {

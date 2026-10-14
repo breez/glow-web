@@ -1,5 +1,6 @@
 import type { ChainClient, ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
+import { inputOutpoints } from '@/utils/rawTx';
 import { topUpOf, type Funding, type PendingExit, type UnilateralExitPlan } from './model/plan';
 import { exitFeeRecordOf, isCooperative } from './quote';
 
@@ -26,6 +27,18 @@ export function sentFunding(
   const own = plan && !spent ? plan.exit.fundingInputs.map(({ txid, vout, valueSats }) => ({ txid, vout, value: valueSats })) : [];
   const coins = new Map([...own, ...confirmed].map(coin => [`${coin.txid}:${coin.vout}`, coin.value]));
   return { sat: [...coins.values()].reduce((total, value) => total + value, 0), inputs: coins.size };
+}
+
+/**
+ * `coins` less any still in the mempool that the exit's own steps spend: that
+ * is the exit's change, not a payment, and beside the funding it came from it
+ * would count the same money twice.
+ */
+export function withoutOwnChange(plan: UnilateralExitPlan | null, coins: ChainUtxo[]): ChainUtxo[] {
+  const spent = new Set(
+    plan?.exit.transactions.flatMap(tx => [tx.txHex, tx.cpfpTxHex].flatMap(hex => (hex ? inputOutpoints(hex) : []))),
+  );
+  return coins.filter(coin => coin.confirmed || !spent.has(`${coin.txid}:${coin.vout}`));
 }
 
 /** A signed P2WPKH input: each coin at the exit fee address is one more for the build to pay for. */
