@@ -84,7 +84,7 @@ the original would list the same leaf twice.
 | | |
 |---|---|
 | `model/plan.ts` | what an exit is: the plan and the one `status` that says where it stands, the leaves it names, its ledger, a pending exit, and plain reads of them |
-| `model/progress.ts` | what the tracker shows: where the money is, how many steps are done, and how many blocks are left |
+| `model/progress.ts` | what the tracker shows: what the exit moves, where the money is, how many steps are done, and how many blocks are left |
 | `quote.ts` | everything read off a quote, for Recover Funds and the Unilateral Exit alike: what it moves, what it costs, what arrives and whether that is an estimate, whether it needs funding, and what the exit fee address was paid |
 | `quoting.ts` | asking `prepareRecoverFunds` for a quote, and which leaves a quote's skips take out of an exit |
 | `building.ts` | the one `recoverFunds` build, the plan it makes, and starting a pending exit from its fee coins |

@@ -119,7 +119,7 @@ export const lastReadCoins = (address: string | undefined): ChainUtxo[] | undefi
   address === undefined ? undefined : lastRead.get(address);
 
 /** What the exit fee address holds, or null while it is not known or cannot be read. */
-async function readFeeCoins(chain: ChainClient, address: string | undefined): Promise<ChainUtxo[] | null> {
+export async function readFeeCoins(chain: ChainClient, address: string | undefined): Promise<ChainUtxo[] | null> {
   if (!address) return null;
   try {
     return await readFeeAddress(chain, address);

@@ -129,6 +129,7 @@ export function useExitFeeAddress({ walletKey, network, chain, engine, mode, pha
           fundingAddress: key.address,
           required: { sat: figures.exitFeeSat, inputs: 1 },
           willReceiveSat: splitOff ? figures.balanceReceiveSat : figures.willReceiveSat,
+          movedSat: splitOff ? figures.balanceSat : figures.fundsSat,
           mode,
         },
         key,

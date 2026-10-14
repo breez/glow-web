@@ -1,7 +1,8 @@
-import { blocksToFinish, exitStages, nextAction, planProgress } from './progress';
+import { blocksToFinish, exitStages, movedSat, nextAction, planProgress } from './progress';
 import { blocked, confirmed, locked, plan, ready, sweepHex, twoLeaves, tx } from '../testFixtures';
 import { describe, expect, it } from 'vitest';
 import type { RecoveryTransaction } from '@breeztech/breez-sdk-spark';
+import type { Landing } from './plan';
 
 describe('exitStages', () => {
   it('holds everything in Spark before any refund lands', () => {
@@ -35,7 +36,7 @@ describe('exitStages', () => {
     expect(exitStages(twoLeaves([tx({ txid: 'r1', kind: 'refund', nodeId: 'leaf-1', status: ready })])).onChain).toBe(0);
   });
 
-  it('moves everything to the destination at its value once the sweep confirms, leaving the amount the one net figure', () => {
+  it('moves everything to the destination at its value once the sweep confirms, and moves what it set out to', () => {
     const stages = exitStages(
       twoLeaves([
         tx({ txid: 'r1', kind: 'refund', nodeId: 'leaf-1', status: confirmed(900) }),
@@ -43,7 +44,7 @@ describe('exitStages', () => {
         tx({ txid: 's', kind: 'sweep', txHex: sweepHex, status: confirmed(900) }),
       ]),
     );
-    expect(stages).toEqual({ inSpark: 0, onChain: 0, delivered: 600_000, willReceive: 596_524 });
+    expect(stages).toEqual({ inSpark: 0, onChain: 0, delivered: 600_000, moved: 600_000 });
   });
 
   it('delivers a co-signed leaf only once its own recovery confirms, though the sweep did, so the total holds', () => {
@@ -83,6 +84,23 @@ describe('exitStages', () => {
       }),
     );
     expect(stages).toMatchObject({ inSpark: 100_000, onChain: 0, delivered: 30_000 });
+  });
+});
+
+describe('movedSat', () => {
+  // An earlier build landed c-1's co-signed recovery; this one holds the two balance leaves.
+  const withLanding = (landing: Partial<Landing>) =>
+    twoLeaves([tx({ txid: 'r1', kind: 'refund', nodeId: 'leaf-1' })], {
+      landed: [{ leafIds: ['c-1'], valueSat: 30_000, outpoint: 'out:0', ...landing }],
+    });
+
+  it('holds still while an earlier landing waits on its read, and once it is read', () => {
+    expect(movedSat(withLanding({}))).toBe(630_000);
+    expect(movedSat(withLanding({ txid: 'coop', paidSat: 29_000, blockHeight: 90 }))).toBe(630_000);
+  });
+
+  it('drops a leaf whose landing paid the destination nothing, which left the exit', () => {
+    expect(movedSat(withLanding({ txid: 'elsewhere', paidSat: 0, blockHeight: 90 }))).toBe(600_000);
   });
 });
 

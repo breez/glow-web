@@ -11,7 +11,7 @@ vi.mock('@/contexts/WalletContext', () => ({
   }),
 }));
 import type { UnilateralExitPlan } from './model/plan';
-import { blocked, confirmed, locked, plan, ready, tx } from './testFixtures';
+import { blocked, confirmed, locked, plan, ready, sweepHex, tx } from './testFixtures';
 
 // one input, one 596 524 sat output
 const twoLeaves = (transactions: Parameters<typeof plan>[0], over: Parameters<typeof plan>[1] = {}) =>
@@ -92,15 +92,26 @@ describe('what the exit is worth right now', () => {
     expect(screen.getByTestId('unilateral-exit-stages')).toHaveTextContent('420 000/600 000');
   });
 
-  it('leads with what will arrive: the balance less the sweep fee', () => {
-    renderTracker(twoLeaves([tx({ txid: 'a' })]));
-    expect(screen.getByText('Processing')).toBeInTheDocument();
-    expect(screen.getByText(/599 785/)).toBeInTheDocument();
+  it('leads with what the exit moves, which the sweep landing leaves as it was', () => {
+    const refunds = [
+      tx({ txid: 'r1', kind: 'refund', nodeId: 'leaf-1', status: confirmed(900) }),
+      tx({ txid: 'r2', kind: 'refund', nodeId: 'leaf-2', status: confirmed(900) }),
+    ];
+    const hero = () => screen.getByText('Processing').parentElement;
+    const { rerender } = renderTracker(twoLeaves([...refunds, tx({ txid: 's', kind: 'sweep', txHex: sweepHex })]));
+    expect(hero()).toHaveTextContent(/^Processing₿600 000$/);
+
+    // The sweep paid 596 524 once its fee came off.
+    const swept = twoLeaves([...refunds, tx({ txid: 's', kind: 'sweep', txHex: sweepHex, status: confirmed(901) })], {
+      landed: [{ leafIds: ['leaf-1', 'leaf-2'], valueSat: 600_000, txid: 's', paidSat: 596_524, blockHeight: 901 }],
+    });
+    rerender(<TrackerView plan={swept} tipHeight={1000} isAdvancing={false} onRebuild={vi.fn()} />);
+    expect(hero()).toHaveTextContent(/^Processing₿600 000$/);
   });
 
-  it('shows what will arrive without a marker, even when an exit fee paid for it', () => {
+  it('shows what the exit moves without a marker, even when an exit fee paid for it', () => {
     renderTracker(twoLeaves([tx({ txid: 'a' })], { quotedExitFeeSat: 3_122 }));
-    expect(screen.getByText(/599 785/).closest('span')).not.toHaveTextContent('~');
+    expect(screen.getByText('Processing').parentElement).not.toHaveTextContent('~');
   });
 
   it('counts the transactions done against the total', () => {

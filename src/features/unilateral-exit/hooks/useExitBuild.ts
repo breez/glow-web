@@ -81,8 +81,9 @@ export function useExitBuild(inputs: BuildInputs) {
           : null;
       await restoreExitState(wallet, plan, await loadExitState(walletKey.identityPubkey));
       const response = await buildFromQuote(wallet, quote, funding);
-      // Taking in a recovery adds what was sent for the exit to what the recovery was paid.
-      const sentSat = takesIn && plan ? sentSince(plan, confirmedUtxos) : undefined;
+      // What was sent since the build this replaces adds to what that one was
+      // paid: a top-up for a higher fee, or the exit fee of an exit taking in a recovery.
+      const sentSat = plan ? sentSince(plan, confirmedUtxos) : undefined;
       const meta = {
         network,
         fundingAddressIndex: plan?.fundingAddressIndex ?? 0,

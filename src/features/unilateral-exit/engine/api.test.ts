@@ -687,6 +687,15 @@ describe('a pass over an exit', () => {
     expect(loadArchive(wallet)).toEqual([expect.objectContaining({ id: 'c1', txids: ['replacement'], deliveredSat: 29_000 })]);
   });
 
+  it('keeps on its record what a finished exit left at its fee address, counting only confirmed coins', async () => {
+    const addressUtxos = vi.fn(async () => [coin(1_500), coin(700, false)]);
+    startUnilateralExitEngine(wallet, { ...chain, addressUtxos });
+    setUnilateralExitPlan(wallet, { ...done, quotedExitFeeSat: 3_122, exitFeeAddress: 'bcrt1qfee' });
+    await vi.waitFor(() => expect(getUnilateralExitState().plan).toBeNull());
+    expect(addressUtxos).toHaveBeenCalledWith('bcrt1qfee');
+    expect(loadArchive(wallet)[0]).toMatchObject({ exitFeePaidSat: 3_122, unspentExitFeeSat: 1_500 });
+  });
+
   it('archives a finished plan it is handed', async () => {
     startUnilateralExitEngine(wallet, chain);
     setUnilateralExitPlan(wallet, done);

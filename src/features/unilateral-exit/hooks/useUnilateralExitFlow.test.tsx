@@ -888,6 +888,23 @@ describe('rebuilding an exit under way at a higher fee that needs more exit fee'
     expect(setUnilateralExitPlan).toHaveBeenCalledTimes(1);
     expect(result.current.phase).toBe('tracker');
   });
+
+  it('adds the top-up sent for the higher fee to what the exit fee address was paid', async () => {
+    saved.plan = underWay({ quotedExitFeeSat: 6_000, exitFeeAddress: key.address });
+    const recoverFunds = vi
+      .fn<ExitSdk['recoverFunds']>()
+      .mockRejectedValueOnce(short)
+      .mockResolvedValue(checked([{ txid: 'rebuilt' }]));
+    const { result } = await fallsShort(recoverFunds);
+
+    addressUtxos.mockResolvedValue([coin(4_000)]);
+    act(() => result.current.goTo('topUp'));
+    await waitFor(() => expect(result.current.funding?.isFunded).toBe(true));
+    await act(() => result.current.build());
+
+    // Not the 9 000 the higher fee was quoted at.
+    expect(vi.mocked(setUnilateralExitPlan).mock.calls[0][1]).toMatchObject({ quotedExitFeeSat: 10_000, exitFeeAddress: key.address });
+  });
 });
 
 describe('starting a unilateral exit beside a recovery that needs an exit fee', () => {

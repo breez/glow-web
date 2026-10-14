@@ -1,6 +1,6 @@
-import type { ChainUtxo } from '@/services/chain';
+import type { ChainClient, ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
-import { lastReadCoins, readFeeAddress } from '../exitFee';
+import { lastReadCoins, readFeeAddress, readFeeCoins } from '../exitFee';
 import { hasWaitingLanding } from '../ledger';
 import type { UnilateralExitPlan, WalletKey } from '../model/plan';
 import { advanceUnilateralExit } from '../pass';
@@ -50,15 +50,25 @@ async function watchPending(): Promise<ChainUtxo[] | null> {
   }
 }
 
-function archiveOrSavePlan(passWallet: WalletKey, plan: UnilateralExitPlan, tipHeight: number): void {
+/** Done, with nothing of its ledger left to read. */
+const isFinished = (plan: UnilateralExitPlan): boolean => plan.status.type === 'done' && !hasWaitingLanding(plan);
+
+/** What a finished exit left at its fee address, or undefined when it had none or it cannot be read. */
+async function unspentExitFeeSat(plan: UnilateralExitPlan, client: ChainClient): Promise<number | undefined> {
+  const address = exitFeeRecordOf(plan).exitFeeAddress;
+  if (!address) return undefined;
+  const coins = (await readFeeCoins(client, address)) ?? lastReadCoins(address);
+  return coins?.filter(coin => coin.confirmed).reduce((sum, coin) => sum + coin.value, 0);
+}
+
+function archiveOrSavePlan(passWallet: WalletKey, plan: UnilateralExitPlan, tipHeight: number, unspentSat?: number): void {
   // A finished exit hands its slot back: the record lives in the archive from
   // here, and the wizard has to be free to quote the next one. Archived while
   // a read waits, the record would miss what landed. Cleared only once what
   // it accounted for is stored, so a restart finds one or the other.
-  const accounting =
-    plan.status.type === 'done' && !hasWaitingLanding(plan) ? retireRecord(passWallet, plan, state.settledLeafIds) : null;
+  const accounting = isFinished(plan) ? retireRecord(passWallet, plan, state.settledLeafIds) : null;
   if (accounting) {
-    const archive = archiveExit(passWallet, plan);
+    const archive = archiveExit(passWallet, plan, unspentSat);
     clearPlan(passWallet);
     emit({ plan: null, archive, accounting, tipHeight, isAdvancing: false, pendingCoins: [] });
   } else {
@@ -84,6 +94,7 @@ export async function advancePlan(): Promise<void> {
   const passGeneration = generation;
   const passWallet = wallet;
   const passSdk = sdk;
+  const passChain = chain;
   emit({ isAdvancing: true });
   try {
     // Read before the pass, which builds the leftover once its fee confirms.
@@ -98,9 +109,10 @@ export async function advancePlan(): Promise<void> {
       passWallet.identityPubkey,
       coins ?? undefined,
     );
+    const unspentSat = isFinished(plan) ? await unspentExitFeeSat(plan, passChain) : undefined;
     // Whoever replaced the wallet or plan while this pass was out owns the state now.
     if (generation !== passGeneration) return;
-    archiveOrSavePlan(passWallet, plan, tipHeight);
+    archiveOrSavePlan(passWallet, plan, tipHeight, unspentSat);
   } catch (e) {
     logger.warn(LogCategory.SDK, 'Recovery engine pass failed', {
       error: e instanceof Error ? e.message : String(e),
@@ -123,8 +135,7 @@ function retireFinished(
     if (!state.recoveries.includes(before[i])) continue;
     // Archived while a read waits, the record would miss what landed. Kept
     // too while what it accounted for cannot be stored.
-    const retired =
-      plan.status.type === 'done' && !hasWaitingLanding(plan) ? retireRecord(passWallet, plan, state.settledLeafIds) : null;
+    const retired = isFinished(plan) ? retireRecord(passWallet, plan, state.settledLeafIds) : null;
     if (!retired) recoveries.push(plan);
     else {
       accounting = retired;

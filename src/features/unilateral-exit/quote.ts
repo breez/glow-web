@@ -35,7 +35,7 @@ export const exitFeeSat = (quote: Quote): number => quote.funding?.singleUtxoSat
 /** Whether the exit needs coins from another wallet, and so the phrase, the fee address and the wait for it. */
 export const needsFunding = (quote: Quote): boolean => quote.funding !== undefined;
 
-/** What an exit's fee address was asked for, and where it is. Both absent when the exit never needed funding. */
+/** What an exit's fee address was paid, and where it is. Both absent when the exit never needed funding. */
 export interface ExitFeeRecord {
   quotedExitFeeSat?: number;
   exitFeeAddress?: string;

@@ -11,8 +11,8 @@ import {
   type PendingExit,
   type UnilateralExitPlan,
 } from './model/plan';
-import { nextAction, planProgress } from './model/progress';
-import { isCooperativeLeaf, unbuiltLeaves, willReceiveSat } from './quote';
+import { movedSat, nextAction, planProgress } from './model/progress';
+import { isCooperativeLeaf, unbuiltLeaves } from './quote';
 import { recoveryTxid, type ArchivedExit } from './storage/archive';
 import { landedLeavesOf, unsettledLeaves } from './storage/accounting';
 import { startDeadEnded, type UnilateralExitEngineState } from './engine/state';
@@ -103,7 +103,8 @@ const archivedEntry = (exit: ArchivedExit): UnilateralExitEntry => ({
   // The same words a withdrawal gets, since that is what landed on-chain.
   title: 'BTC Transfer',
   subtitle: null,
-  amountSat: exit.deliveredSat,
+  // What left the wallet, as the row showed it while the exit ran.
+  amountSat: exit.exitedSat ?? exit.deliveredSat,
   kind: 'archived',
   timestamp: Math.floor(exit.completedAt / 1000),
 });
@@ -120,7 +121,7 @@ const recoveryEntry = (recovery: UnilateralExitPlan): UnilateralExitEntry => ({
   id: recoveryEntryId(recovery),
   title: 'BTC Transfer',
   subtitle: 'Waiting for a confirmation',
-  amountSat: willReceiveSat(recovery),
+  amountSat: movedSat(recovery),
   kind: 'recovery',
 });
 
@@ -205,13 +206,13 @@ const liveEntry = (state: UnilateralExitEngineState): UnilateralExitEntry | null
     return {
       id: 'pending',
       ...pendingText(state, pending),
-      amountSat: pending.willReceiveSat,
+      amountSat: pending.movedSat ?? pending.willReceiveSat,
       kind: 'active',
     };
   }
   if (!plan) return null;
   // Ahead of the update tap: an exit waiting on its fee says what to send.
-  if (plan.status.type === 'needsExitFee') return { id: 'active', ...topUpText(state, plan), amountSat: willReceiveSat(plan), kind: 'active' };
+  if (plan.status.type === 'needsExitFee') return { id: 'active', ...topUpText(state, plan), amountSat: movedSat(plan), kind: 'active' };
   // A finished exit waiting on a read of what landed keeps its row until the
   // archive's takes over, so the exit never drops out of the list meanwhile.
   return {
@@ -219,7 +220,7 @@ const liveEntry = (state: UnilateralExitEngineState): UnilateralExitEntry | null
     title: awaitsUpdate(plan) ? 'Update needed' : 'Transactions in progress',
     subtitle: activeSubtitle(state),
     isAction: awaitsUpdate(plan),
-    amountSat: willReceiveSat(plan),
+    amountSat: movedSat(plan),
     kind: 'active',
   };
 };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bumpTxidOf, exitGroupTitle, recoveryEntryId, unilateralExitEntries } from './listEntries';
-import { coin, confirmed, locked, pendingExit, plan, ready, tx } from './testFixtures';
+import { coin, confirmed, locked, pendingExit, plan, ready, sweepHex, twoLeaves, tx } from './testFixtures';
 import type { ArchivedExit } from './storage/archive';
 import type { UnilateralExitEngineState } from './engine/state';
 
@@ -119,7 +119,7 @@ describe('recoverable funds in the wallet list', () => {
 });
 
 describe('a kept co-signed recovery in the wallet list', () => {
-  // Two leaves, 48 200 in all, 2 900 of fees off what arrives.
+  // Two leaves, 48 200 in all, which the row shows before 2 900 of fees come off.
   const recovery = plan(
     [
       tx({ txid: 'c1', kind: 'cooperative', nodeId: 'leaf-1', status: ready }),
@@ -143,7 +143,7 @@ describe('a kept co-signed recovery in the wallet list', () => {
     expect(rows[0]).toMatchObject({
       title: 'BTC Transfer',
       subtitle: 'Waiting for a confirmation',
-      amountSat: 45_300,
+      amountSat: 48_200,
       kind: 'recovery',
     });
     expect(rows[1]).toMatchObject({ id: 'pending', title: 'Waiting for exit fee' });
@@ -337,6 +337,36 @@ describe('recoverable funds beside an exit under way', () => {
 });
 
 
+describe('what an exit row shows', () => {
+  const refunds = [
+    tx({ txid: 'r1', kind: 'refund', nodeId: 'leaf-1', status: confirmed(900) }),
+    tx({ txid: 'r2', kind: 'refund', nodeId: 'leaf-2', status: confirmed(900) }),
+  ];
+
+  it('shows what left the wallet, the same through the sweep and once archived', () => {
+    const sweeping = twoLeaves([...refunds, tx({ txid: 's', kind: 'sweep', txHex: sweepHex })]);
+    // The sweep paid 596 524 once its fee came off.
+    const swept = twoLeaves([...refunds, tx({ txid: 's', kind: 'sweep', txHex: sweepHex, status: confirmed(901) })], {
+      status: { type: 'done' },
+      landed: [{ leafIds: ['leaf-1', 'leaf-2'], valueSat: 600_000, txid: 's', paidSat: 596_524, blockHeight: 901 }],
+    });
+    const archived = landed({ id: 's', exitedSat: 600_000, deliveredSat: 596_524 });
+
+    expect(row({ pending: null, plan: sweeping }).amountSat).toBe(600_000);
+    expect(row({ pending: null, plan: swept }).amountSat).toBe(600_000);
+    expect(row({ pending: null, archive: [archived] }).amountSat).toBe(600_000);
+  });
+
+  it('shows what a pending exit moves, and what it said would arrive on one saved before that was kept', () => {
+    expect(row({ pending: pendingExit({ movedSat: 100_000 }) }).amountSat).toBe(100_000);
+    expect(row({ pending: pendingExit() }).amountSat).toBe(94_000);
+  });
+
+  it('shows what arrived on a record from before what left was kept', () => {
+    expect(row({ pending: null, archive: [landed()] }).amountSat).toBe(90_000);
+  });
+});
+
 describe('an exit under way in the wallet list', () => {
   it('asks for a tap on a diverged exit Glow cannot rebuild alone, and on one that has to sign over a step it could not read', () => {
     for (const status of [
@@ -385,8 +415,8 @@ describe('an exit holding a leaf it left out in the wallet list', () => {
 
   it('says what to send while one waits on more exit fee, then waits on its confirmation, then on Glow', () => {
     const at = (coins: ReturnType<typeof coin>[]) => row({ pending: null, plan: asking(), pendingCoins: coins });
-    // The leaf still to build counts at its value less its fee.
-    expect(at([])).toMatchObject({ id: 'active', kind: 'active', title: 'Waiting for exit fee', subtitle: 'Send ₿3 000 more', amountSat: 128_800 });
+    // The leaf still to build counts at its value.
+    expect(at([])).toMatchObject({ id: 'active', kind: 'active', title: 'Waiting for exit fee', subtitle: 'Send ₿3 000 more', amountSat: 130_000 });
     expect(at([coin(3_000, false)])).toMatchObject({ title: 'Exit fee sent', subtitle: 'Waiting for a confirmation' });
     expect(at([coin(3_000)])).toMatchObject({ title: 'Exit fee received', subtitle: null });
     expect(at([coin(3_000)]).isAction).toBeFalsy();

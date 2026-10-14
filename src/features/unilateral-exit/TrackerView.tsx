@@ -59,7 +59,6 @@ const ExitSummary: React.FC<{
   isAdvancing: boolean;
 }> = ({ plan, blocksLeft, next, isAdvancing, progress }) => {
   const stages = exitStages(plan);
-  const total = stages.inSpark + stages.onChain + stages.delivered;
 
   const isChecking = useHeldFor(isAdvancing, CHECKING_VISIBLE_AFTER_MS);
   // A diverged exit sends nothing until its rebuild replaces the set, so the
@@ -88,7 +87,7 @@ const ExitSummary: React.FC<{
           {paused ? 'Paused' : 'Processing'}
         </p>
         <SatAmount
-          sats={stages.willReceive}
+          sats={stages.moved}
           className="text-4xl font-bold text-spark-text-primary"
         />
       </div>
@@ -117,7 +116,7 @@ const ExitSummary: React.FC<{
               user's to spend yet. */}
           <Ratio
             done={formatWithSpaces(stages.delivered)}
-            total={formatWithSpaces(total)}
+            total={formatWithSpaces(stages.moved)}
           />
         </Row>
         <div className="border-t border-spark-border/50" />

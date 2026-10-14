@@ -23,7 +23,38 @@ const show = async (exit: ArchivedExit) => {
   return within(screen.getByTestId('unilateral-exit-details'));
 };
 
+/** Each figure row's label and amount, in the order shown. */
+const figures = (details: Awaited<ReturnType<typeof show>>) =>
+  details
+    .getAllByText(/^(Balance Exited|Recoverable Funds|Exit Fee Paid|Network Fees|Unspent Exit Fee|Received)$/)
+    .map(label => label.closest('.justify-between')?.textContent);
+
 describe('ArchivedExitDialog', () => {
+  it('reads as a sum, down to what was received', async () => {
+    const details = await show(record({ exitedSat: 600_000, exitFeePaidSat: 3_122, networkFeeSat: 2_240, deliveredSat: 600_882 }));
+    expect(figures(details)).toEqual([
+      'Balance Exited₿600 000',
+      'Exit Fee Paid₿3 122',
+      'Network Fees-₿2 240',
+      'Received₿600 882',
+    ]);
+  });
+
+  it('shows the exit fee the exit left at its address', async () => {
+    const details = await show(record({ exitFeePaidSat: 3_122, networkFeeSat: 2_240, unspentExitFeeSat: 1_500 }));
+    expect(figures(details).slice(-2)).toEqual(['Unspent Exit Fee₿1 500', 'Received₿625 624']);
+  });
+
+  it('shows no unspent exit fee when the exit left none', async () => {
+    const details = await show(record({ exitFeePaidSat: 3_122, unspentExitFeeSat: 0 }));
+    expect(details.queryByText('Unspent Exit Fee')).toBeNull();
+  });
+
+  it('shows no network fees on a record from before they were kept', async () => {
+    const details = await show(record({ exitFeePaidSat: 3_122 }));
+    expect(details.queryByText('Network Fees')).toBeNull();
+  });
+
   it('lists each transaction that paid the destination, each linking its own', async () => {
     const details = await show(record({ txids: ['coop', 'sweep-old'] }));
     const fields = details.getAllByRole('button', { name: 'Transaction ID' });

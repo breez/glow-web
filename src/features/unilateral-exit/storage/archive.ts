@@ -24,6 +24,13 @@ export interface ArchivedExit {
   recoverableFundsSat?: number;
   /** What was sent to the exit fee address, from another wallet. */
   exitFeePaidSat?: number;
+  /** What the last build's transactions paid in fees (`totalFeeSats`). Absent on records from before it was kept. */
+  networkFeeSat?: number;
+  /**
+   * What the exit left at its fee address as it finished. Kept rather than read
+   * again: the address is shared, so a later read would count another exit's.
+   */
+  unspentExitFeeSat?: number;
   /**
    * Where the exit fee was sent. The part the exit did not spend stays there
    * when a watchtower's refund lands first, rather than reaching the destination.
@@ -79,8 +86,13 @@ function recoverableLandedSat(plan: UnilateralExitPlan, valueSat: number): numbe
     : Math.min(plan.recoverableFundsSat ?? 0, valueSat);
 }
 
-function archivedExitOf(plan: UnilateralExitPlan, id: string, { txids, paidSat, valueSat }: PaidOut): ArchivedExit {
-  // What the exit was quoted to need, not what the address holds: a rebuild
+function archivedExitOf(
+  plan: UnilateralExitPlan,
+  id: string,
+  { txids, paidSat, valueSat }: PaidOut,
+  unspentExitFeeSat?: number,
+): ArchivedExit {
+  // What its builds recorded as paid, not what the address holds: a rebuild
   // takes in every confirmed coin there, the exit's own change included, so
   // summing those counts the same sats twice.
   const { quotedExitFeeSat, exitFeeAddress } = exitFeeRecordOf(plan);
@@ -94,6 +106,8 @@ function archivedExitOf(plan: UnilateralExitPlan, id: string, { txids, paidSat, 
     exitedSat: valueSat,
     recoverableFundsSat: plan.mode === 'recover' ? undefined : recoverableSat || undefined,
     exitFeePaidSat: quotedExitFeeSat,
+    networkFeeSat: plan.exit.totalFeeSats,
+    unspentExitFeeSat,
     exitFeeAddress,
     mode: plan.mode,
     txids,
@@ -102,11 +116,11 @@ function archivedExitOf(plan: UnilateralExitPlan, id: string, { txids, paidSat, 
 }
 
 /**
- * Records a finished exit, newest first, from its ledger of what landed. Keyed
- * on `recoveryTxid`, so an engine that reports the same completion on every
- * pass does not stack up duplicates.
+ * Records a finished exit, newest first, from its ledger of what landed and
+ * what it left at its fee address. Keyed on `recoveryTxid`, so an engine that
+ * reports the same completion on every pass does not stack up duplicates.
  */
-export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): ArchivedExit[] {
+export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan, unspentExitFeeSat?: number): ArchivedExit[] {
   const paid = paidOut(plan.landed ?? []);
   if (paid.txids.length === 0) {
     logger.warn(LogCategory.SDK, 'Finished exit delivered nothing to archive');
@@ -118,7 +132,7 @@ export function archiveExit(wallet: WalletKey, plan: UnilateralExitPlan): Archiv
   const existing = loadArchive(wallet);
   if (existing.some(entry => entry.id === id)) return existing;
 
-  const next = [archivedExitOf(plan, id, paid), ...existing];
+  const next = [archivedExitOf(plan, id, paid, unspentExitFeeSat), ...existing];
   try {
     localStorage.setItem(key(wallet), JSON.stringify(next));
   } catch (e) {

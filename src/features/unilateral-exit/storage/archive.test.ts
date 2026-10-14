@@ -208,6 +208,29 @@ describe('archiveExit', () => {
     expect(loadArchive(wallet)[0]).toMatchObject({ exitFeePaidSat: 14_350, exitFeeAddress: 'bcrt1qfee' });
   });
 
+  it('keeps the network fees of its last build beside what moved, the exit fee and what arrived', () => {
+    archiveExit(
+      wallet,
+      plan([tx({ txid: 'sweep-r', kind: 'sweep', txHex: '00', status: confirmed(10) })], {
+        status: { type: 'done' },
+        quotedExitFeeSat: 3_122,
+        exitFeeAddress: 'bcrt1qfee',
+        exit: { recoverableValueSats: 600_000, totalFeeSats: 2_240 },
+        // What the funding had left came back through the sweep.
+        landed: [paid('sweep-r', ['leaf-1', 'leaf-2'], 600_000, 600_882)],
+      }),
+      0,
+    );
+
+    expect(loadArchive(wallet)[0]).toMatchObject({
+      exitedSat: 600_000,
+      exitFeePaidSat: 3_122,
+      networkFeeSat: 2_240,
+      unspentExitFeeSat: 0,
+      deliveredSat: 600_882,
+    });
+  });
+
   it('records no exit fee for an exit that never needed one', () => {
     archiveExit(wallet, finished('sweep-e', 118_900));
 

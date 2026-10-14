@@ -40,10 +40,11 @@ export interface UnilateralExitPlan {
    */
   quotedSweepFeeSat: number;
   /**
-   * What the exit fee address was asked for, and where it is. Kept here as well
-   * as in the funding inputs, which a build that needs no funding leaves empty.
-   * Absent when the exit never needed any, or on a plan written before these
-   * existed, whose funding inputs stand in (`exitFeeRecordOf`).
+   * What the exit fee address was paid, and where it is: the quote's ask, plus
+   * what reached it for each rebuild since. Kept here as well as in the funding
+   * inputs, which a build that needs no funding leaves empty. Absent when the
+   * exit never needed any, or on a plan written before these existed, whose
+   * funding inputs stand in (`exitFeeRecordOf`).
    */
   quotedExitFeeSat?: number;
   exitFeeAddress?: string;
@@ -187,8 +188,13 @@ export interface PendingExit {
   fundingAddress: string;
   /** The quote's figure, until a start that fell short replaces it with the build's. */
   required: Funding;
-  /** What the quote said would arrive, shown until the exit is built. */
+  /** What the quote said would arrive. */
   willReceiveSat: number;
+  /**
+   * What the quote moves, at its leaves' values, shown until the exit is built.
+   * Absent on a pending saved before it was kept, whose `willReceiveSat` stands in.
+   */
+  movedSat?: number;
   mode?: ExitMode;
 }
 

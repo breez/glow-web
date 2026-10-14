@@ -1,5 +1,5 @@
 import type { RecoveryTransaction } from '@breeztech/breez-sdk-spark';
-import { isCooperative, paidOut, priorLandings, unbuiltLeaves, willReceiveSat } from '../quote';
+import { isCooperative, paidOut, priorLandings, unbuiltLeaves } from '../quote';
 import { leftoverIdsOf, type UnilateralExitPlan } from './plan';
 
 /**
@@ -11,7 +11,20 @@ export interface ExitStages {
   inSpark: number;
   onChain: number;
   delivered: number;
-  willReceive: number;
+  moved: number;
+}
+
+const leavesSat = (leaves: { valueSats: number }[]): number => leaves.reduce((sum, leaf) => sum + leaf.valueSats, 0);
+
+/**
+ * What the exit moves, at its leaves' values: what its build holds, what it
+ * names that no build holds yet, and what earlier builds landed, counting one
+ * still waiting on its read. It holds still for the whole exit, dropping only
+ * when a leaf leaves it.
+ */
+export function movedSat(plan: UnilateralExitPlan): number {
+  const landed = priorLandings(plan).filter(entry => !entry.txid || (entry.paidSat ?? 0) > 0);
+  return leavesSat(plan.exit.leaves) + leavesSat(unbuiltLeaves(plan)) + landed.reduce((sum, entry) => sum + entry.valueSat, 0);
 }
 
 export function exitStages(plan: UnilateralExitPlan): ExitStages {
@@ -22,16 +35,16 @@ export function exitStages(plan: UnilateralExitPlan): ExitStages {
   const recovered = confirmedFor(isCooperative);
   const valueOf = (ids: Set<string | undefined>) =>
     leaves.filter(leaf => ids.has(leaf.leafId)).reduce((sum, leaf) => sum + leaf.valueSats, 0);
-  const total = leaves.reduce((sum, leaf) => sum + leaf.valueSats, 0);
-  // Leaf values throughout, so the total holds still and willReceive is the one net figure.
+  const total = leavesSat(leaves);
+  // Leaf values throughout, so the total holds still.
   const swept = transactions.some(tx => tx.kind === 'sweep' && tx.status.type === 'confirmed');
   const onChain = swept ? 0 : valueOf(refunded);
   const paidSat = valueOf(recovered) + (swept ? valueOf(refunded) : 0);
   // A leaf no build holds yet has not started to move.
-  const waitingSat = unbuiltLeaves(plan).reduce((sum, leaf) => sum + leaf.valueSats, 0);
+  const waitingSat = leavesSat(unbuiltLeaves(plan));
   // Leaves earlier builds paid out are delivered, though this build never held them.
   const delivered = paidSat + paidOut(priorLandings(plan)).valueSat;
-  return { inSpark: total - onChain - paidSat + waitingSat, onChain, delivered, willReceive: willReceiveSat(plan) };
+  return { inSpark: total - onChain - paidSat + waitingSat, onChain, delivered, moved: movedSat(plan) };
 }
 
 /**
