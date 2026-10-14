@@ -98,6 +98,7 @@ export function planFromV4(old: V4Plan): V5Plan {
     recoverableValueSats: exit.recoverableValueSat,
     totalFeeSats: exit.totalFeeSat,
     cooperativeFeeSats: 0,
+    refundFeeSats: 0,
     cpfpFeeSats: exit.cpfpFeeSat,
     fanoutFeeSats: exit.fanoutFeeSat,
     sweepFeeSats: exit.sweepFeeSat,

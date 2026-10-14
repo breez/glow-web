@@ -66,6 +66,12 @@ describe('willReceiveSat', () => {
     expect(quotedSweepFeeSat(prepared({ sweepFeeSats: 900 }), twoLeaves([]))).toBe(900);
   });
 
+  it('takes off what the operators\' own refund took from its leaf', () => {
+    const quote = prepared({ recoverableValueSats: 600_000, sweepFeeSats: 215, refundFeeSats: 330 });
+    expect(quotedSweepFeeSat(quote, null)).toBe(545);
+    expect(willReceiveSat(quote)).toBe(599_455);
+  });
+
   it('takes the co-signed recoveries\' fee off too, since it comes out of the value moved', () => {
     const quote = prepared({ recoverableValueSats: 600_000, sweepFeeSats: 215, cooperativeFeeSats: 990 });
     expect(quotedSweepFeeSat(quote, null)).toBe(1_205);

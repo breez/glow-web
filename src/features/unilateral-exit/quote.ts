@@ -71,12 +71,13 @@ export function builtExitFeeRecord(
 }
 
 /**
- * What comes off the value moved: the sweep's fee and the co-signed recoveries'.
+ * What comes off the value moved: the sweep's fee, the co-signed recoveries', and
+ * what the operators' own refunds took from their leaves.
  * A rebuild is quoted on the refunds it has left to sweep, so an earlier quote
  * stays the floor; a quote at a higher rate replaces it.
  */
 export function quotedSweepFeeSat(quote: Quote, resuming: UnilateralExitPlan | null): number {
-  return Math.max(quote.sweepFeeSats + quote.cooperativeFeeSats, resuming?.quotedSweepFeeSat ?? 0);
+  return Math.max(quote.sweepFeeSats + quote.cooperativeFeeSats + quote.refundFeeSats, resuming?.quotedSweepFeeSat ?? 0);
 }
 
 /**
@@ -86,7 +87,7 @@ export function quotedSweepFeeSat(quote: Quote, resuming: UnilateralExitPlan | n
  * `floorSat` is what a rebuild carries over.
  */
 export function builtSweepFeeSat(quote: Quote, built: RecoverFundsResponse, floorSat = 0): number {
-  return Math.max(quote.sweepFeeSats + built.cooperativeFeeSats, floorSat);
+  return Math.max(quote.sweepFeeSats + built.cooperativeFeeSats + built.refundFeeSats, floorSat);
 }
 
 /**
@@ -100,7 +101,7 @@ export function leafFeesSat(quote: Quote): Map<string, number> {
   return new Map(
     quote.leaves.map(leaf => [
       leaf.leafId,
-      isCooperativeLeaf(leaf) ? Math.ceil(quote.cooperativeFeeSats / cosigned) : Math.ceil(quote.sweepFeeSats / others),
+      isCooperativeLeaf(leaf) ? Math.ceil(quote.cooperativeFeeSats / cosigned) : Math.ceil((quote.sweepFeeSats + quote.refundFeeSats) / others),
     ]),
   );
 }
