@@ -821,6 +821,15 @@ describe('rebuilding an exit under way at a higher fee that needs more exit fee'
     expect(result.current.funding?.topUp?.stillToSendSat).toBe(2_772);
   });
 
+  it("offers no rate at or below the exit's own, which the network would refuse as a replacement", async () => {
+    saved.plan = underWay({ feeRateSatPerVbyte: 2 });
+    wallet.current = sdk();
+    const { result } = renderHook(() => useUnilateralExitFlow('regtest'));
+    act(() => result.current.rebuild());
+    // Today's rates are 1, 2 and 3, against an exit built at 2.
+    await waitFor(() => expect(result.current.fee.feeRates).toEqual({ slow: 3, medium: 4, fast: 5 }));
+  });
+
   it("gives the network's slowest rate, so a stall by fees reads as the network's doing", async () => {
     const { result } = await fallsShort();
     expect(result.current.funding?.networkFloorFeeRate).toBe(1);

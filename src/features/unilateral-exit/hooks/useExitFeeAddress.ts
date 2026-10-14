@@ -65,15 +65,14 @@ interface FeeAddressInputs {
   phase: UnilateralExitPhase;
   goTo: (phase: UnilateralExitPhase) => void;
   feeKey: Pick<ReturnType<typeof useFeeKey>, 'key' | 'hold'>;
-  quoting: Pick<ReturnType<typeof useExitQuote>, 'quote' | 'fee' | 'quotedAt' | 'shortfall' | 'splitOff'>;
+  quoting: Pick<ReturnType<typeof useExitQuote>, 'quote' | 'networkSlowRate' | 'quotedAt' | 'shortfall' | 'splitOff'>;
 }
 
 export function useExitFeeAddress({ walletKey, network, chain, engine, mode, phase, goTo, feeKey, quoting }: FeeAddressInputs) {
   const { plan, pendingCoins } = engine;
   const { key: fundingKey, hold } = feeKey;
   const { quote } = quoting.quote;
-  const { feeRates } = quoting.fee;
-  const { quotedAt, shortfall, splitOff } = quoting;
+  const { networkSlowRate, quotedAt, shortfall, splitOff } = quoting;
   const [fundingUtxos, setFundingUtxos] = useState<ChainUtxo[]>([]);
   const [unlockError, setUnlockError] = useState<string | null>(null);
 
@@ -163,7 +162,7 @@ export function useExitFeeAddress({ walletKey, network, chain, engine, mode, pha
     currentFeeRate: plan?.feeRateSatPerVbyte ?? null,
     // The slowest rate the network is taking: above the exit's own rate, the
     // exit is stalled by fees rather than by the rate the user just picked.
-    networkFloorFeeRate: plan && awaitsUpdate(plan) ? null : (feeRates?.slow ?? null),
+    networkFloorFeeRate: plan && awaitsUpdate(plan) ? null : networkSlowRate,
     quotedAt,
   };
   const leftoverFunding = useMemo(() => leftoverFundingOf(plan, pendingCoins), [plan, pendingCoins]);

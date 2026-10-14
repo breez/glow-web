@@ -55,14 +55,14 @@ function useDestination(wallet: BreezSdk, saved: string, goTo: (phase: Unilatera
   return { fields, submitDestination };
 }
 
-function useFeeRates(chain: ChainClient, phase: UnilateralExitPhase, bumpTarget: UnilateralExitPlan | null) {
-  const [feeRates, setFeeRates] = useState<FeeRates | null>(null);
+/** `replaced` is what the build replaces on the network: a kept recovery for a bump, or the exit under way. */
+function useFeeRates(chain: ChainClient, phase: UnilateralExitPhase, replaced: UnilateralExitPlan | null) {
+  // As the network gives them, before any floor.
+  const [networkRates, setNetworkRates] = useState<FeeRates | null>(null);
   const [feeChoice, setFeeChoice] = useState<FeeChoice>('medium');
 
-  // A bump offers no rate at or below the recovery's own.
-  const bumpFloor = bumpTarget ? bumpTarget.feeRateSatPerVbyte + 1 : 0;
   useEffect(() => {
-    if (phase !== 'fee' || feeRates) return;
+    if (phase !== 'fee' || networkRates) return;
     let cancelled = false;
     chain
       .feeRates()
@@ -71,16 +71,19 @@ function useFeeRates(chain: ChainClient, phase: UnilateralExitPhase, bumpTarget:
         return FALLBACK_FEE_RATES;
       })
       .then(rates => {
-        if (!cancelled) setFeeRates(liftRates(rates, bumpFloor));
+        if (!cancelled) setNetworkRates(rates);
       });
     return () => {
       cancelled = true;
     };
-  }, [phase, feeRates, chain, bumpFloor]);
+  }, [phase, networkRates, chain]);
 
-  const forgetRates = useCallback(() => setFeeRates(null), []);
+  // No rate at or below what the build replaces: the network refuses it.
+  const floor = replaced ? replaced.feeRateSatPerVbyte + 1 : 0;
+  const feeRates = useMemo(() => networkRates && liftRates(networkRates, floor), [networkRates, floor]);
+  const forgetRates = useCallback(() => setNetworkRates(null), []);
   const fields: FeeFields = { feeRates, feeChoice, effectiveFeeRate: feeRates?.[feeChoice] ?? 0, onSelect: setFeeChoice };
-  return { fields, forgetRates };
+  return { fields, forgetRates, networkSlowRate: networkRates?.slow ?? null };
 }
 
 interface QuoteInputs {
@@ -98,7 +101,7 @@ interface QuoteInputs {
 export function useExitQuote({ wallet, walletKey, chain, engine, mode, bumping, bumpTarget, phase, goTo }: QuoteInputs) {
   const { plan, pending, recoveries, archive, accounting } = engine;
   const { fields: destinationFields, submitDestination } = useDestination(wallet, (plan ?? pending)?.destination ?? '', goTo);
-  const { fields: feeFields, forgetRates } = useFeeRates(chain, phase, bumpTarget);
+  const { fields: feeFields, forgetRates, networkSlowRate } = useFeeRates(chain, phase, bumping ? bumpTarget : plan);
   const { destination } = destinationFields;
   const { effectiveFeeRate } = feeFields;
 
@@ -181,6 +184,7 @@ export function useExitQuote({ wallet, walletKey, chain, engine, mode, bumping, 
   return {
     destination: destinationFields,
     fee: feeFields,
+    networkSlowRate,
     quote: quoteFields,
     quotedAt,
     startError,
