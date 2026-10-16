@@ -2,14 +2,17 @@
 /**
  * Talks to the cluster's bitcoind and to electrs, for the things a manual exit
  * test needs: an address to exit to, coins to pay the miners with, blocks to
- * mature timelocks, and a balance to check at the end.
+ * mature timelocks, a balance to check at the end, and transactions held out
+ * of blocks.
  *
  *   node local-regtest/btc.mjs address
- *   node local-regtest/btc.mjs send <address> <sats>
+ *   node local-regtest/btc.mjs send <address> <sats> [--no-mine]
  *   node local-regtest/btc.mjs mine [blocks]
  *   node local-regtest/btc.mjs balance <address>
+ *   node local-regtest/btc.mjs hold [txid...]
+ *   node local-regtest/btc.mjs release
  */
-import { readFileSync } from 'node:fs';
+import { appendFileSync, readFileSync, rmSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -60,6 +63,19 @@ const toBtc = sats => (Number(sats) / 1e8).toFixed(8);
 const MINING_ADDRESS = 'bcrt1qs758ursh4q9z627kt3pp5yysm78ddny6txaqgw';
 const mine = blocks => rpc('generatetoaddress', [blocks, MINING_ADDRESS]);
 
+// A fee delta this far below zero keeps a transaction out of every block. The
+// node adds deltas up rather than setting them, so `release` undoes exactly
+// what `hold` recorded, and `hold` never holds a transaction twice.
+const HOLD_SATS = 100_000_000;
+const HELD_PATH = resolve(here, 'held.txt');
+const held = () => {
+  try {
+    return readFileSync(HELD_PATH, 'utf8').split('\n').filter(Boolean);
+  } catch {
+    return [];
+  }
+};
+
 const [command, ...args] = process.argv.slice(2);
 
 switch (command) {
@@ -68,12 +84,18 @@ switch (command) {
     break;
   }
   case 'send': {
-    const [address, sats] = args;
-    if (!address || !sats) die('usage: send <address> <sats>');
+    const noMine = args.includes('--no-mine');
+    const [address, sats] = args.filter(arg => arg !== '--no-mine');
+    if (!address || !sats) die('usage: send <address> <sats> [--no-mine]');
     const txid = await rpc('sendtoaddress', [address, toBtc(sats)]);
+    console.log(`sent ${sats} sats to ${address}`);
+    if (noMine) {
+      console.log(`txid ${txid}, unconfirmed until the next block`);
+      console.log(`To keep it unconfirmed while you mine: npm run regtest:hold -- ${txid}`);
+      break;
+    }
     // Mined straight away: everything downstream waits on confirmation anyway.
     await mine(1);
-    console.log(`sent ${sats} sats to ${address}`);
     console.log(`txid ${txid}, confirmed in block ${await rpc('getblockcount')}`);
     break;
   }
@@ -97,6 +119,35 @@ switch (command) {
     console.log(`${confirmed} sats confirmed${pending ? `, ${pending} sats pending` : ''}`);
     break;
   }
+  case 'hold': {
+    const already = held();
+    const txids = new Set(args.length > 0 ? args : await rpc('getrawmempool'));
+    if (txids.size === 0) {
+      console.log('The mempool is empty: nothing to hold.');
+      break;
+    }
+    for (const txid of txids) {
+      if (already.includes(txid)) {
+        console.log(`already held ${txid}`);
+        continue;
+      }
+      await rpc('prioritisetransaction', [txid, 0, -HOLD_SATS]);
+      appendFileSync(HELD_PATH, `${txid}\n`);
+      console.log(`held ${txid}`);
+    }
+    console.log('Blocks leave these out until: npm run regtest:release');
+    break;
+  }
+  case 'release': {
+    const txids = held();
+    for (const txid of txids) {
+      await rpc('prioritisetransaction', [txid, 0, HOLD_SATS]);
+      console.log(`released ${txid}`);
+    }
+    rmSync(HELD_PATH, { force: true });
+    console.log(txids.length > 0 ? 'The next block mines them: npm run regtest:mine' : 'Nothing was held.');
+    break;
+  }
   default:
-    die(`usage: address | send <address> <sats> | mine [blocks] | balance <address>`);
+    die(`usage: address | send <address> <sats> [--no-mine] | mine [blocks] | balance <address> | hold [txid...] | release`);
 }
