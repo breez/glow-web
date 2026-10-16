@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatBlockWait } from './blockTime';
+import { formatBlockWait, formatDaysLeft } from './blockTime';
 
 describe('formatBlockWait', () => {
   it('reads as ready when nothing is left to wait', () => {
@@ -28,5 +28,19 @@ describe('formatBlockWait', () => {
 
   it('treats a negative wait as ready', () => {
     expect(formatBlockWait(-5)).toBe('ready now');
+  });
+});
+
+describe('formatDaysLeft', () => {
+  it('rounds to whole days, with no marker', () => {
+    expect(formatDaysLeft(2000)).toBe('14');
+  });
+
+  it('reads under a day as less than one', () => {
+    expect(formatDaysLeft(60)).toBe('<1');
+  });
+
+  it('reads nothing left as zero', () => {
+    expect(formatDaysLeft(0)).toBe('0');
   });
 });

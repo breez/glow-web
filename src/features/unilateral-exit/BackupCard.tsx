@@ -35,9 +35,15 @@ export const ExitActionRow: React.FC<{
  * both entry points keep it.
  *
  * `frozen` is an in-flight exit's own copy, saved in preference to a fresh
- * export.
+ * export. `started` is set once the exit has started, so a restore has
+ * nothing left to start.
  */
-export const BackupActions: React.FC<{ frozen?: string; children?: React.ReactNode }> = ({ frozen, children }) => {
+export const BackupActions: React.FC<{ frozen?: string; noun?: string; started?: boolean; children?: React.ReactNode }> = ({
+  frozen,
+  noun = 'exit',
+  started = false,
+  children,
+}) => {
   const wallet = useWallet();
   const [busy, setBusy] = useState<'saving' | 'restoring' | null>(null);
   const [result, setResult] = useState<string | null>(null);
@@ -66,7 +72,7 @@ export const BackupActions: React.FC<{ frozen?: string; children?: React.ReactNo
       const restored = await importUnilateralExitBackup(wallet, file);
       setResult(
         restored.importedLeaves > 0
-          ? `Restored ${restored.importedLeaves} ${restored.importedLeaves === 1 ? 'leaf' : 'leaves'}. You can start the exit.`
+          ? `Restored ${restored.importedLeaves} ${restored.importedLeaves === 1 ? 'leaf' : 'leaves'}.${started ? '' : ` You can start the ${noun}.`}`
           : restored.skippedForeignLeaves > 0
             ? 'That backup belongs to a different wallet.'
             : 'Nothing new in that backup: this wallet already holds it.',
