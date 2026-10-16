@@ -1,4 +1,4 @@
-import { hexToBytes } from './hex';
+import { bytesToHex, hexToBytes } from './hex';
 
 const readVarInt = (bytes: Uint8Array, at: number): [bigint, number] => {
   const first = bytes[at];
@@ -40,5 +40,33 @@ export function outputTotalSat(txHex: string): number | null {
     return at > bytes.length ? null : Number(total);
   } catch {
     return null;
+  }
+}
+
+/**
+ * Each input of a raw transaction as the `txid:vout` it spends, with the txid
+ * in display order: the serialized prevout hash is byte-reversed. Empty when
+ * the hex is not a transaction.
+ */
+export function inputOutpoints(txHex: string): string[] {
+  try {
+    const bytes = hexToBytes(txHex);
+    let at = 4;
+    if (bytes[at] === 0x00) at += 2;
+
+    const [inputs, afterInputCount] = readVarInt(bytes, at);
+    at = afterInputCount;
+    const outpoints: string[] = [];
+    for (let i = 0n; i < inputs; i += 1n) {
+      if (at + 36 > bytes.length) return [];
+      const txid = bytesToHex(bytes.slice(at, at + 32).reverse());
+      const vout = new DataView(bytes.buffer, bytes.byteOffset + at + 32, 4).getUint32(0, true);
+      outpoints.push(`${txid}:${vout}`);
+      const [scriptLen, afterLen] = readVarInt(bytes, at + 36);
+      at = afterLen + Number(scriptLen) + 4;
+    }
+    return at > bytes.length ? [] : outpoints;
+  } catch {
+    return [];
   }
 }

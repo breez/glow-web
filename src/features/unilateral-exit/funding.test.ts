@@ -87,7 +87,9 @@ describe('readWalletMnemonic', () => {
   });
 
   it('says the phrase is gone when nothing can produce it', async () => {
-    await expect(readWalletMnemonic({ interactive: true })).rejects.toThrow(MnemonicUnavailableError);
+    const read = readWalletMnemonic({ interactive: true });
+    await expect(read).rejects.toThrow(MnemonicUnavailableError);
+    await expect(read).rejects.toThrow("This wallet's recovery phrase is not on this device.");
   });
 
   it('derives it through the passkey when the user is there to sign in', async () => {
