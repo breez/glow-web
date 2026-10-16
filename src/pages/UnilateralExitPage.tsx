@@ -210,11 +210,11 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
             )}
             <PrimaryButton
               onClick={() => void flow.build()}
-              disabled={!flow.funding?.isFunded}
+              disabled={!flow.funding?.isFunded || flow.isContinuing}
               className="w-full"
               data-testid="unilateral-exit-build"
             >
-              {recovering ? 'Continue Recovery' : 'Continue Exit'}
+              {flow.isContinuing ? 'Updating...' : recovering ? 'Continue Recovery' : 'Continue Exit'}
             </PrimaryButton>
           </>
         );
@@ -350,13 +350,19 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
             )}
 
             {(flow.phase === 'fund' || flow.phase === 'topUp') && flow.funding && (
-              <FundStep
-                {...flow.funding}
-                error={flow.buildError}
-                isPaying={flow.phase === 'topUp'}
-                onTopUp={() => flow.goTo('topUp')}
-                noun={noun}
-              />
+              <>
+                <FundStep
+                  {...flow.funding}
+                  error={flow.buildError}
+                  isPaying={flow.phase === 'topUp'}
+                  onTopUp={() => flow.goTo('topUp')}
+                  noun={noun}
+                />
+                {/* FundStep shows no error beside a top-up, so a leftover's failed build says so here. */}
+                {flow.engine.plan?.status.type === 'needsExitFee' && flow.continueError && (
+                  <ErrorCard title={`Could not continue the ${noun}`} error={flow.continueError} testId="unilateral-exit-leftover-error" />
+                )}
+              </>
             )}
 
             {flow.phase === 'building' && (

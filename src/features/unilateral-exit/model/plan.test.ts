@@ -39,7 +39,8 @@ describe('awaitsUpdate', () => {
     expect(awaitsUpdate(plan([]))).toBe(false);
   });
 
-  it('asks nothing of a finished exit', () => {
+  it('asks nothing of a finished exit, or of one waiting on more exit fee', () => {
     expect(awaitsUpdate(plan([], { status: { type: 'done' } }))).toBe(false);
+    expect(awaitsUpdate(plan([], { status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } } }))).toBe(false);
   });
 });

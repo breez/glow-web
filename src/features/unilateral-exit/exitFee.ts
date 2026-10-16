@@ -1,8 +1,8 @@
 import type { ChainClient, ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { inputOutpoints } from '@/utils/rawTx';
-import type { Funding, PendingExit, UnilateralExitPlan } from './model/plan';
-import { isCooperative } from './quote';
+import { topUpOf, type Funding, type PendingExit, type UnilateralExitPlan } from './model/plan';
+import { exitFeeRecordOf, isCooperative } from './quote';
 
 /** What a build said it needs: the sdk's error reaches the page only as its message. */
 export function requiredFundingOf(error: string): number | null {
@@ -106,6 +106,10 @@ export const pendingTopUp = (pending: PendingExit, coins: ChainUtxo[]): TopUp =>
 export const isPendingFunded = (pending: PendingExit, coins: ChainUtxo[]): boolean =>
   pendingTopUp(pending, coins.filter(coin => coin.confirmed)).stillToSendSat === 0;
 
+/** What a leftover waiting on its fee still needs at the fee address, from `coins` there. */
+export const leftoverTopUp = (plan: UnilateralExitPlan, coins: ChainUtxo[]): TopUp =>
+  topUpFor(topUpOf(plan)?.required ?? { sat: 0, inputs: 0 }, sentFunding(plan, coins), plan.feeRateSatPerVbyte);
+
 // What each fee address was last read to hold. A screen falls back to it when
 // a read fails: shown as empty, a paid address would ask for its fee again.
 const lastRead = new Map<string, ChainUtxo[]>();
@@ -130,4 +134,34 @@ export async function readFeeCoins(chain: ChainClient, address: string | undefin
     logger.warn(LogCategory.SDK, 'Failed to read the exit fee address', { error: e instanceof Error ? e.message : String(e) });
     return null;
   }
+}
+
+/** What the confirmed coins hold. */
+const confirmedSat = (coins: ChainUtxo[]): number =>
+  coins.filter(coin => coin.confirmed).reduce((sum, coin) => sum + coin.value, 0);
+
+/** `plan` keeping what its fee address was last read to hold, while it asks for more exit fee. */
+export function withFeeCoins(plan: UnilateralExitPlan, coins: ChainUtxo[]): UnilateralExitPlan {
+  const asked = topUpOf(plan);
+  return asked ? { ...plan, status: { type: 'needsExitFee', topUp: { ...asked, feeCoins: coins } } } : plan;
+}
+
+export function withHeldSat(plan: UnilateralExitPlan, coins: ChainUtxo[] | null | undefined): UnilateralExitPlan {
+  const asked = topUpOf(plan);
+  if (!asked || !coins || asked.heldSat !== undefined) return plan;
+  return { ...plan, status: { type: 'needsExitFee', topUp: { ...asked, heldSat: confirmedSat(coins) } } };
+}
+
+/**
+ * A request made in this pass is read against what the address holds now,
+ * before the user can have paid it, so the fee paid counts only what they add.
+ */
+export async function readHeldSat(
+  plan: UnilateralExitPlan,
+  chain: ChainClient,
+  feeCoins?: ChainUtxo[],
+): Promise<UnilateralExitPlan> {
+  const asked = topUpOf(plan);
+  if (!asked || asked.heldSat !== undefined) return plan;
+  return withHeldSat(plan, feeCoins ?? (await readFeeCoins(chain, exitFeeRecordOf(plan).exitFeeAddress)));
 }
