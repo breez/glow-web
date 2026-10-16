@@ -23,7 +23,12 @@
     "regtest:fund": "node local-regtest/fund.mjs",
     "regtest:renewed-leaf": "node local-regtest/watchtower.mjs leaf",
     "regtest:parent-exit": "node local-regtest/watchtower.mjs parent",
-    "regtest:watchtower-exit": "node local-regtest/watchtower.mjs exit"
+    "regtest:watchtower-exit": "node local-regtest/watchtower.mjs exit",
+    "regtest:recoverable": "node local-regtest/recoverable.mjs",
+    "regtest:operators": "node local-regtest/outage.mjs operators",
+    "regtest:indexer": "node local-regtest/outage.mjs indexer",
+    "regtest:hold": "node local-regtest/btc.mjs hold",
+    "regtest:release": "node local-regtest/btc.mjs release"
   },
   "dependencies": {
     "@breeztech/breez-sdk-spark": "file:vendor/breeztech-breez-sdk-spark.tgz",

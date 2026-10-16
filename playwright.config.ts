@@ -9,6 +9,11 @@ dotenv.config({ path: '.env.test.local' });
 dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 
+// The config reuses whatever already answers on this port, which on 5173 can
+// be another checkout's dev server. A free port runs this checkout's own.
+const PORT = Number(process.env.TEST_PORT ?? 5173);
+const APP_URL = `http://localhost:${PORT}/?network=regtest`;
+
 export default defineConfig({
   testDir: './e2e/tests',
   fullyParallel: false, // Wallet tests should run serially to avoid conflicts
@@ -20,7 +25,7 @@ export default defineConfig({
 
   use: {
     // Use regtest for E2E tests
-    baseURL: process.env.TEST_BASE_URL || 'http://localhost:5173/?network=regtest',
+    baseURL: process.env.TEST_BASE_URL || APP_URL,
     trace: 'on-first-retry',
     video: 'on-first-retry',
     screenshot: 'only-on-failure',
@@ -49,8 +54,8 @@ export default defineConfig({
 
   // Run local dev server before tests
   webServer: {
-    command: 'VITE_STAGING_PASSWORD= npm run dev',
-    url: 'http://localhost:5173/?network=regtest',
+    command: `VITE_STAGING_PASSWORD= npm run dev -- --port ${PORT} --strictPort`,
+    url: APP_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000, // 2 minutes to start server (WASM takes time)
   },

@@ -333,15 +333,13 @@ test.describe('Unilateral exit', () => {
       expect(await addressBalanceSats(destination)).toBeGreaterThan(0);
     });
 
-    await test.step("the finished exit's details show what the exit fee address still holds", async () => {
-      // With the watchtower's refund landing first, part of the exit fee goes
-      // unspent and stays at its address rather than reaching the destination.
-      const unspent = await addressBalanceSats(deriveFundingKey(MNEMONIC, 'regtest', 0).address);
+    await test.step('the exit fee its own refunds never spent goes to the destination', async () => {
+      // With the watchtower's refund landing first, most of the exit fee is
+      // left at its address. Glow sends it on before archiving the exit.
+      expect(await addressBalanceSats(deriveFundingKey(MNEMONIC, 'regtest', 0).address)).toBe(0);
       await resumed.getByTestId('unilateral-exit-complete').click();
       await expect(resumed.getByTestId('unilateral-exit-details')).toBeVisible();
-      const row = resumed.getByText('Unspent Exit Fee');
-      if (unspent > 0) await expect(row).toBeVisible({ timeout: TIMEOUTS.UI_ACTION });
-      else await expect(row).toHaveCount(0);
+      await expect(resumed.getByText('Unspent Exit Fee')).toHaveCount(0);
     });
   });
 });
