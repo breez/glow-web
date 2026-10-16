@@ -12,7 +12,7 @@ import {
 } from '../utils/bitcoind';
 import { outspend, txConfirmed, waitFor } from '../utils/esplora';
 import { freshMnemonic, fundTestWallet, isFundingReachable } from '../utils/fund';
-import { willReceiveSat } from '../../src/features/unilateral-exit/driver';
+import { willReceiveSat } from '../../src/features/unilateral-exit/quote';
 import { deriveFundingKey } from '../../src/features/unilateral-exit/funding';
 
 import {
@@ -138,7 +138,7 @@ test.describe('Unilateral exit', () => {
     page.on('console', m => {
       const text = m.text();
       if (
-        /check_unilateral_exit|resolve_exit_check|resolve_funding|resolve_exit_chain_state|unilateral_exit:|prepare_unilateral_exit|read the exit back|broadcast recovery/.test(
+        /recover_funds:|resolve_exit_check|resolve_funding|resolve_exit_chain_state|unilateral_exit:|read the exit back|broadcast recovery/.test(
           text,
         )
       ) {
