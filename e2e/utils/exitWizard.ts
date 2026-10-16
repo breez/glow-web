@@ -6,12 +6,15 @@ import type { ArchivedExit } from '../../src/features/unilateral-exit/storage/ar
 import type { UnilateralExitPlan } from '../../src/features/unilateral-exit/model/plan';
 import { nextAction } from '../../src/features/unilateral-exit/model/progress';
 
-export const openWallet = async (page: Page, mnemonic: string): Promise<void> => {
-  await page.addInitScript(m => {
-    localStorage.setItem('walletMnemonic', m);
-    localStorage.setItem('spark-dev-mode', 'true');
-  }, mnemonic);
-  await page.goto('/?network=regtest&dev=true');
+export const openWallet = async (page: Page, mnemonic: string, { devMode = true } = {}): Promise<void> => {
+  await page.addInitScript(
+    ([m, dev]) => {
+      localStorage.setItem('walletMnemonic', m);
+      if (dev) localStorage.setItem('spark-dev-mode', 'true');
+    },
+    [mnemonic, devMode] as const,
+  );
+  await page.goto(devMode ? '/?network=regtest&dev=true' : '/?network=regtest');
   // The wallet screen, whether or not it has payments on it: a reopened wallet
   // has a payment list, so waiting for the empty state hangs.
   await expect(page.getByRole('button', { name: 'Open menu' })).toBeVisible({
