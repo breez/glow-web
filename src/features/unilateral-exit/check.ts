@@ -21,6 +21,7 @@ import type { ExitSdk } from './quoting';
 function statusAfterCheck(status: ExitStatus, verdict: RecoveryVerdict['type'], checked: UnilateralExitPlan): ExitStatus {
   if (verdict === 'done') return { type: 'done' };
   if (verdict === 'redo') return { type: 'rebuilding' };
+  if (status.type === 'running' || status.type === 'needsExitFee') return status;
   const stillAsks = status.type === 'needsUpdate' && status.cause === 'unverified' && hasUnverifiedStep(checked);
   return stillAsks ? status : { type: 'running' };
 }
@@ -77,7 +78,8 @@ export async function checkAndPace(
       next = { ...next, status: statusAfterCheck(plan.status, 'valid', next) };
     }
     // The week runs from the pass the last unilateral step lands, whatever
-    // the verdict, and the leftovers are tried at once then.
+    // the verdict: the leftovers are tried at once then, so a fee they need
+    // is asked with the whole week to pay it.
     landsNow =
       inSlot &&
       isActive(next) &&
