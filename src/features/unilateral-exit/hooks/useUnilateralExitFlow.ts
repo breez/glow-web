@@ -44,7 +44,7 @@ export interface FundingFields {
   isFunded: boolean;
   /** What to send after a build at this quote fell short, or null before one does. */
   topUp: TopUp | null;
-  /** Nothing is left to send, but the build waits for what was sent to confirm. */
+  /** Nothing is left to send, but the build waits for a confirmation: of what was sent, or of the exit's own steps. */
   waitsForConfirmation: boolean;
   /** The quote's rate, which the build pays. */
   feeRate: number;
@@ -52,8 +52,8 @@ export interface FundingFields {
   currentFeeRate: number | null;
   /**
    * The slowest rate the network is taking. Null before the rates load, and
-   * where fees dropping would not continue the exit: an exit that waits on the
-   * update tap.
+   * where fees dropping would not continue the exit: a leftover, or an exit
+   * that waits on the update tap.
    */
   networkFloorFeeRate: number | null;
   /** When the quote the figures come from was taken, in ms. */
@@ -79,7 +79,7 @@ export interface UnilateralExitFlow {
   destination: DestinationFields;
   fee: FeeFields;
   quote: QuoteFields;
-  /** Null until the recovery phrase is unlocked, which the funding key derives from. */
+  /** Null until the recovery phrase is unlocked, which the funding key derives from, or a leftover asks for more exit fee. */
   funding: FundingFields | null;
   submitDestination: () => Promise<void>;
   submitFee: () => Promise<void>;
@@ -105,7 +105,7 @@ export interface UnilateralExitFlow {
   /** The kept recovery that holds the bumped leaves now, by its txid. Null while none does. */
   bumpedTxid: string | null;
   rebuild: () => void;
-  /** Rebuilds a diverged exit in place, at its own fee rate, without the wizard. */
+  /** Rebuilds a diverged exit in place, at its own fee rate, without the wizard, or builds a leftover whose fee arrived. */
   continueExit: () => Promise<void>;
   isContinuing: boolean;
   continueError: string | null;
@@ -153,7 +153,13 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
   const mode = bumping ? 'recover' : takesIn ? 'exit' : plan ? plan.mode : pending ? pending.mode : openedMode;
 
   const feeKey = useFeeKey();
-  const { phase, canGoBack, goTo, back } = useExitWizard({ plan: shown.plan, pending: shown.pending, mode, bumping });
+  const { phase, canGoBack, goTo, back } = useExitWizard({
+    plan: shown.plan,
+    pending: shown.pending,
+    mode,
+    bumping,
+    holdsFeeKey: !!feeKey.key,
+  });
   const quoting = useExitQuote({ wallet, walletKey, chain, engine, mode, takesIn, bumping, bumpTarget, phase, goTo });
   const feeAddress = useExitFeeAddress({ walletKey, network, chain, engine, mode, phase, goTo, feeKey, quoting });
   const continuing = useContinueExit({ wallet, walletKey, chain, engine });

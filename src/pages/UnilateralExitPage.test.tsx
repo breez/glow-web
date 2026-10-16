@@ -423,6 +423,30 @@ describe('the fee screen of an exit under way', () => {
     await renderFund({ mode });
     expect(screen.getByTestId('unilateral-exit-build')).toHaveTextContent(new RegExp(`^${label}$`));
   });
+
+  // A leftover's screen builds through the update tap, so it shows that tap's progress and error.
+  const leftover = plan([tx({ txid: 's', kind: 'sweep', status: confirmed(9) })], {
+    status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } },
+  });
+  const renderOver = (current: UnilateralExitPlan, over: Partial<UnilateralExitFlow>) =>
+    renderFund({ engine: { plan: current, pending: null, archive: [] } as unknown as UnilateralExitFlow['engine'], ...over });
+
+  it('holds the button while a leftover builds, and says it is under way', async () => {
+    await renderOver(leftover, { isContinuing: true });
+    expect(screen.getByTestId('unilateral-exit-build')).toBeDisabled();
+    expect(screen.getByTestId('unilateral-exit-build')).toHaveTextContent(/^Updating\.\.\.$/);
+  });
+
+  it('says why building a leftover failed, which the receipt has no room for', async () => {
+    await renderOver(leftover, { continueError: 'operators unreachable' });
+    expect(screen.getByText('Exit fee received')).toBeInTheDocument();
+    expect(screen.getByText('Could not continue the exit')).toBeInTheDocument();
+  });
+
+  it("keeps a failed update's error off the wizard's own fee screen", async () => {
+    await renderOver(plan([tx({ txid: 'a' })], { status: { type: 'needsUpdate', why: 'rebuildFailed' } }), { continueError: 'passkey cancelled' });
+    expect(screen.queryByText('Could not continue the exit')).not.toBeInTheDocument();
+  });
 });
 
 describe('updating an exit from the tracker', () => {
