@@ -1,4 +1,4 @@
-import { isPendingFunded, MIN_SEND_SAT, pendingTopUp, requiredFundingOf, sentFunding, topUpFor } from './exitFee';
+import { isPendingFunded, leftoverTopUp, MIN_SEND_SAT, pendingTopUp, requiredFundingOf, sentFunding, topUpFor } from './exitFee';
 import { coin, confirmed, pendingExit, plan, tx } from './testFixtures';
 import { describe, expect, it } from 'vitest';
 
@@ -86,10 +86,18 @@ describe('topUpFor', () => {
   });
 });
 
-describe('what a pending exit asks for', () => {
+describe('what a pending exit or a leftover asks for', () => {
   it('asks no less than wallets send of a pending exit whose fee address already holds nearly enough', () => {
     const pending = pendingExit({ feeRateSatPerVbyte: 1, required: { sat: 1_286, inputs: 1 } });
     expect(pendingTopUp(pending, [coin(1_200)]).stillToSendSat).toBe(MIN_SEND_SAT);
     expect(isPendingFunded(pending, [coin(1_200), coin(MIN_SEND_SAT)])).toBe(true);
+  });
+
+  it('asks no less than wallets send for a leftover', () => {
+    const asking = plan([tx({ txid: 's', kind: 'sweep', status: confirmed(9) })], {
+      feeRateSatPerVbyte: 1,
+      status: { type: 'needsExitFee', topUp: { required: { sat: 300, inputs: 1 } } },
+    });
+    expect(leftoverTopUp(asking, []).stillToSendSat).toBe(MIN_SEND_SAT);
   });
 });

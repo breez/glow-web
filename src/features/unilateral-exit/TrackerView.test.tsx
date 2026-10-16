@@ -32,6 +32,7 @@ const twoLeaves = (transactions: Parameters<typeof plan>[0], over: Parameters<ty
   });
 
 const signIn = { type: 'needsUpdate', why: 'signIn' } as const;
+const unverified = { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } as const;
 
 const renderTracker = (p: UnilateralExitPlan, tipHeight: number | null = 1000, onRebuild = vi.fn()) =>
   render(<TrackerView plan={p} tipHeight={tipHeight} isAdvancing={false} onRebuild={onRebuild} />);
@@ -198,6 +199,13 @@ describe('TrackerView', () => {
     expect(screen.queryByTestId('unilateral-exit-rebuild-wizard')).not.toBeInTheDocument();
   });
 
+  it('says Glow could not check the exit when that is why it needs the tap, while it keeps running', () => {
+    render(<TrackerView plan={plan([tx({ txid: 'a' })], { status: unverified })} tipHeight={1000} isAdvancing={false} />);
+    expect(screen.getByText("Glow couldn't check part of your exit on-chain. Please update your unilateral exit to continue.")).toBeInTheDocument();
+    expect(screen.queryByText(/Some of your funds were moved/)).not.toBeInTheDocument();
+    expect(screen.getByText('Processing')).toBeInTheDocument();
+  });
+
   const moved = 'Some of your funds were moved on-chain to keep them safe. Please update your unilateral exit to recover all your funds.';
   it.each([
     ['a diverged exit whose rebuild needs the passkey', signIn],
@@ -207,11 +215,12 @@ describe('TrackerView', () => {
     expect(screen.getByText(moved)).toBeInTheDocument();
   });
 
-  it('names a recovery in the update it asks for', () => {
-    render(<TrackerView plan={plan([tx({ txid: 'a' })], { status: signIn })} tipHeight={1000} isAdvancing={false} noun="recovery" />);
-    expect(
-      screen.getByText('Some of your funds were moved on-chain to keep them safe. Please update your recovery to recover all your funds.'),
-    ).toBeInTheDocument();
+  it.each([
+    ['a diverged one', signIn, 'Some of your funds were moved on-chain to keep them safe. Please update your recovery to recover all your funds.'],
+    ['one over a step it could not read', unverified, "Glow couldn't check part of your recovery on-chain. Please update your recovery to continue."],
+  ] as const)('names a recovery in the update it asks for on %s', (_, status, text) => {
+    render(<TrackerView plan={plan([tx({ txid: 'a' })], { status })} tipHeight={1000} isAdvancing={false} noun="recovery" />);
+    expect(screen.getByText(text)).toBeInTheDocument();
   });
 
   it('offers the wizard when continuing in place fails', () => {

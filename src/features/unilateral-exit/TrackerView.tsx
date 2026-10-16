@@ -66,7 +66,7 @@ const ExitSummary: React.FC<{
   // landed and only leaves it left out remain, which Glow tries again by
   // itself for up to a week.
   const diverged = isDiverged(plan);
-  const paused = awaitsUpdate(plan);
+  const paused = diverged && awaitsUpdate(plan);
   const retrying = isActive(plan) && isLanded(plan.exit) && leftoverIdsOf(plan).length > 0;
   const statusText = isChecking
     ? 'Checking the blockchain...'
@@ -191,6 +191,7 @@ export const TrackerView: React.FC<{
   // A co-signed recovery is Glow's own record, which the exit-data export does
   // not hold, so saving or restoring exit data would not bring it back.
   const isCosignedRecovery = transactions.length > 0 && transactions.every(isCooperative);
+  const unverified = plan.status.type === 'needsUpdate' && plan.status.cause === 'unverified';
   // With everything confirmed, nothing is left at the old rate to pay more for.
   const rebuildRow = isActive(plan) && !isLanded(plan.exit) && onRebuild && (
     <ExitActionRow
@@ -213,7 +214,7 @@ export const TrackerView: React.FC<{
 
       {/* The engine only runs while the app is open, so leaving the sheet is
           fine but leaving Glow for good is not. */}
-      {justStarted && isActive(plan) && (
+      {justStarted && isActive(plan) && !awaitsUpdate(plan) && (
         <p className="text-spark-text-muted text-xs text-center text-balance">
           You can close this. Open Glow regularly until the {noun} finishes.
         </p>
@@ -245,10 +246,17 @@ export const TrackerView: React.FC<{
             <UpdateError noun={noun} error={continueError} />
           ) : (
             <SimpleAlert variant="warning" hideIcon>
-              <p>
-                Some of your funds were moved on-chain to keep them safe. Please update your{' '}
-                {noun === 'exit' ? 'unilateral exit' : noun} to recover all your funds.
-              </p>
+              {unverified ? (
+                <p>
+                  Glow couldn&apos;t check part of your {noun} on-chain. Please update your{' '}
+                  {noun === 'exit' ? 'unilateral exit' : noun} to continue.
+                </p>
+              ) : (
+                <p>
+                  Some of your funds were moved on-chain to keep them safe. Please update your{' '}
+                  {noun === 'exit' ? 'unilateral exit' : noun} to recover all your funds.
+                </p>
+              )}
             </SimpleAlert>
           )}
         </div>
