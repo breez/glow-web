@@ -19,6 +19,17 @@ describe('esploraBaseUrl', () => {
   it('uses the testnet path for testnet', () => {
     expect(esploraBaseUrl('testnet')).toBe('https://mempool.space/testnet/api');
   });
+
+  it("uses Lightspark's hosted mempool for regtest, packages included", () => {
+    vi.stubEnv('VITE_MEMPOOL_BASE_URL', '');
+    expect(esploraBaseUrl('regtest')).toBe('https://regtest-mempool.us-west-2.sparkinfra.net/api');
+    expect(mempoolBaseUrl('regtest')).toBe('https://regtest-mempool.us-west-2.sparkinfra.net/api');
+  });
+
+  it('lets a local cluster stand in for regtest', () => {
+    vi.stubEnv('VITE_ESPLORA_BASE_URL', 'http://localhost:3002/');
+    expect(esploraBaseUrl('regtest')).toBe('http://localhost:3002');
+  });
 });
 
 describe('EsploraClient', () => {
