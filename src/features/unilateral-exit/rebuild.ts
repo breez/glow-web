@@ -1,11 +1,20 @@
 import type { PrepareRecoverFundsResponse, RecoverFundsResponse } from '@breeztech/breez-sdk-spark';
 import { logger, LogCategory } from '@/services/logger';
+import { isSendable } from './broadcast';
 import { buildFromQuote, EmptyRecoveryError, planFromBuild, readFundingKey, RebuildLaterError } from './building';
 import { loadExitState, restoreExitState } from './exitState';
 import { MnemonicNeedsPasskeyError, type FundingKey } from './funding';
 import { withLanded } from './ledger';
-import { isDiverged, namedLeavesOf, type ExitStatus, type UnilateralExitPlan } from './model/plan';
-import { exitFeeRecordOf, isProvisionalSkip, needsFunding, stopClock, type StopClock } from './quote';
+import {
+  awaitsUpdate,
+  hasUnverifiedStep,
+  isActive,
+  isDiverged,
+  namedLeavesOf,
+  type ExitStatus,
+  type UnilateralExitPlan,
+} from './model/plan';
+import { exitFeeRecordOf, isCooperative, isProvisionalSkip, needsFunding, stopClock, type StopClock } from './quote';
 import { leavingSkips, quoteNamed, withDropped, type ExitSdk } from './quoting';
 
 function finishedPlan(plan: UnilateralExitPlan, quote: PrepareRecoverFundsResponse | null, clock?: StopClock): UnilateralExitPlan {
@@ -115,11 +124,51 @@ async function rebuildDiverged(
   }
 }
 
-export async function rebuildIfNeeded(
+/**
+ * Builds an exit again over a step the SDK could not read, which is how the
+ * guide settles one: a fresh build reads the chain again. Same rate and
+ * funding as a Redo rebuild.
+ */
+async function rebuildUnverified(
   plan: UnilateralExitPlan,
   sdk: ExitSdk,
   identityPubkey: string,
   tipHeight: number,
 ): Promise<UnilateralExitPlan> {
-  return isDiverged(plan) ? rebuildDiverged(plan, sdk, identityPubkey, tipHeight) : plan;
+  try {
+    return { ...(await rebuildExit(plan, sdk, identityPubkey, { tipHeight })), unverifiedRebuiltAt: tipHeight };
+  } catch (e) {
+    // Only the tap settles the step, but the exit stays active: pausing it
+    // would leave the other leaves' steps unsent until the operators' copy
+    // takes its fee from the funds.
+    if (e instanceof MnemonicNeedsPasskeyError) {
+      return { ...plan, status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' }, unverifiedRebuiltAt: tipHeight };
+    }
+    if (!(e instanceof RebuildLaterError)) {
+      logger.warn(LogCategory.SDK, `Failed to rebuild over an unverified step: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    return { ...withLaterDates(plan, e), unverifiedRebuiltAt: tipHeight };
+  }
+}
+
+export async function rebuildIfNeeded(
+  plan: UnilateralExitPlan,
+  sdk: ExitSdk,
+  identityPubkey: string,
+  tipHeight: number,
+  checked: boolean,
+): Promise<UnilateralExitPlan> {
+  if (isDiverged(plan)) return rebuildDiverged(plan, sdk, identityPubkey, tipHeight);
+  const canRebuild =
+    checked &&
+    isActive(plan) &&
+    // Once the passkey is asked for, only the tap rebuilds.
+    !awaitsUpdate(plan) &&
+    // A rebuild now would conflict with what is in the mempool at the same fee.
+    // A co-signed recovery does not: at that rate the SDK hands back the one it
+    // kept.
+    !plan.exit.transactions.some(tx => isSendable(tx) && !isCooperative(tx));
+  if (!canRebuild) return plan;
+  if (hasUnverifiedStep(plan) && plan.unverifiedRebuiltAt !== tipHeight) return rebuildUnverified(plan, sdk, identityPubkey, tipHeight);
+  return plan;
 }

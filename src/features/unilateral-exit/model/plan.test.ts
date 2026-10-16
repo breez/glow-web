@@ -31,6 +31,10 @@ describe('awaitsUpdate', () => {
     expect(awaitsUpdate(plan([], { status: { type: 'rebuilding' } }))).toBe(false);
   });
 
+  it('asks for the tap on a running exit that has to sign over a step it could not read', () => {
+    expect(awaitsUpdate(plan([], { status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } }))).toBe(true);
+  });
+
   it('leaves a running exit alone', () => {
     expect(awaitsUpdate(plan([]))).toBe(false);
   });

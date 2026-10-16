@@ -37,6 +37,7 @@ vi.mock('../funding', async () => ({
 const saved = vi.hoisted(() => ({
   plan: null as UnilateralExitPlan | null,
   pending: null as PendingExit | null,
+  tipHeight: null as number | null,
   archive: [] as ArchivedExit[],
   recoveries: [] as UnilateralExitPlan[],
   accounting: { droppedLeaves: [] } as ExitAccounting,
@@ -52,7 +53,7 @@ vi.mock('./useUnilateralExitEngineLifecycle', () => ({
     archive: saved.archive,
     recoveries: saved.recoveries,
     accounting: saved.accounting,
-    tipHeight: null,
+    tipHeight: saved.tipHeight,
     isAdvancing: false,
   }),
 }));
@@ -127,7 +128,14 @@ async function quoted(
 beforeEach(() => {
   vi.clearAllMocks();
   addressUtxos.mockReset();
-  Object.assign(saved, { plan: null, pending: null, archive: [], recoveries: [], accounting: { droppedLeaves: [] } });
+  Object.assign(saved, {
+    plan: null,
+    pending: null,
+    tipHeight: null,
+    archive: [],
+    recoveries: [],
+    accounting: { droppedLeaves: [] },
+  });
 });
 
 describe('continuing from the quote', () => {
@@ -454,18 +462,40 @@ describe('Recover Funds', () => {
 });
 
 describe('the update tap', () => {
-  it('stores the rebuild of a diverged exit, reading the phrase on the tap', async () => {
-    saved.plan = plan([tx({ txid: 'moved' })], { status: { type: 'needsUpdate', why: 'signIn' } });
+  /** Taps the update on `stalled`, whose rebuild needs no funding, and returns the plan it stores. */
+  const tapOn = async (stalled: UnilateralExitPlan) => {
+    saved.plan = stalled;
     wallet.current = sdk({ prepareRecoverFunds: async () => unfunded(), recoverFunds: async () => checked([{ txid: 'again' }]) });
     vi.mocked(readWalletMnemonic).mockResolvedValueOnce(MNEMONIC);
     const { result } = renderHook(() => useUnilateralExitFlow('regtest'));
     await act(() => result.current.continueExit());
-
     expect(result.current.continueError).toBeNull();
+    return vi.mocked(setUnilateralExitPlan).mock.calls[0][1];
+  };
+  const overUnverified = plan([tx({ txid: 'stuck', status: { type: 'unverified' } })], {
+    status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' },
+  });
+
+  it('stores the rebuild of a diverged exit, reading the phrase on the tap', async () => {
+    const stored = await tapOn(plan([tx({ txid: 'moved' })], { status: { type: 'needsUpdate', why: 'signIn' } }));
+
     expect(readWalletMnemonic).toHaveBeenCalledWith({ interactive: true });
-    const stored = vi.mocked(setUnilateralExitPlan).mock.calls[0][1];
     expect(stored.status).toEqual({ type: 'running' });
     expect(stored.exit.transactions.map(t => t.txid)).toEqual(['again']);
+  });
+
+  // The stamp keeps a step it still could not read from asking for the tap again within the block.
+  const chainDown = () => chainTip.mockRejectedValueOnce(new Error('chain service unavailable'));
+  it.each([
+    ['the block it reads after the prompt, past the stale one the engine holds', 811, () => {}, 812],
+    ["the engine's block when the chain cannot be read", 811, chainDown, 811],
+    ['no block when neither can say', null, chainDown, undefined],
+  ])('stamps the rebuild with %s', async (_, engineTip, readChain, block) => {
+    saved.tipHeight = engineTip;
+    readChain();
+    const stored = await tapOn(overUnverified);
+
+    expect(stored).toMatchObject({ status: { type: 'running' }, unverifiedRebuiltAt: block });
   });
 
   describe('when the chain has yet to show where a leaf went', () => {
@@ -480,14 +510,19 @@ describe('the update tap', () => {
       return result.current;
     };
 
-    it('lifts the sign-in request, without an error, so the engine waits it out', async () => {
-      const after = await tapWaiting(
+    it.each([
+      [
+        'a diverged exit, back to rebuilding',
         plan([tx({ txid: 'moved' })], { status: { type: 'needsUpdate', why: 'signIn' }, rebuildFailingSince: 90 }),
-      );
+        { type: 'rebuilding' },
+      ],
+      ['an exit over a step it could not read, back to running', overUnverified, { type: 'running' }],
+    ])('lifts the sign-in request of %s, without an error, so the engine waits it out', async (_, stalled, status) => {
+      const after = await tapWaiting(stalled);
 
       expect(after.continueError).toBeNull();
       const stored = vi.mocked(setUnilateralExitPlan).mock.calls[0][1];
-      expect(stored.status).toEqual({ type: 'rebuilding' });
+      expect(stored.status).toEqual(status);
       expect(stored.rebuildFailingSince).toBeUndefined();
       expect(advanceNow).not.toHaveBeenCalled();
     });

@@ -42,6 +42,17 @@ describe('applyExitCheck', () => {
     const rebuilding = plan([tx({ txid: 'a' })], { status: { type: 'rebuilding' } });
     expect(applyExitCheck(rebuilding, checked([{ txid: 'a' }]), 'valid').status).toEqual({ type: 'running' });
   });
+
+  const unverified = { type: 'unverified' } as const;
+  const asking = { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } as const;
+  it.each([
+    ['stands while the step does', unverified, 'valid', asking],
+    ['ends once the step settles', ready, 'valid', { type: 'running' }],
+    ['ends once the chain diverges, so a later divergence reads as one', unverified, 'redo', { type: 'rebuilding' }],
+  ] as const)('a tap asked for over a step the SDK could not read %s', (_, step, verdict, status) => {
+    const waiting = plan([tx({ txid: 'a', status: unverified })], { status: asking });
+    expect(applyExitCheck(waiting, checked([{ txid: 'a', status: step }]), verdict).status).toEqual(status);
+  });
 });
 
 describe('checkExit', () => {

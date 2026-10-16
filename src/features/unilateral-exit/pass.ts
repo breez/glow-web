@@ -24,7 +24,7 @@ export async function advanceUnilateralExit(
 
   const check = await checkAndPace(plan, sdk, tipHeight, !!identityPubkey);
   let next = check.plan;
-  if (sdk && identityPubkey) next = await rebuildIfNeeded(next, sdk, identityPubkey, tipHeight);
+  if (sdk && identityPubkey) next = await rebuildIfNeeded(next, sdk, identityPubkey, tipHeight, check.checked);
   // Skipped in a pass that rebuilt, which already prepared every leaf again.
   if (check.checked && sdk && isActive(next) && next.exit === check.plan.exit) {
     next = await retryLeftovers(next, sdk, tipHeight, check.retryNow, identityPubkey);

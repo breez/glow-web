@@ -93,7 +93,7 @@ the original would list the same leaf twice.
 | `building.ts` | the one `recoverFunds` build, the plan it makes, and starting a pending exit from its fee coins |
 | `pass.ts` | one pass over an exit, step by step: check, rebuild if needed, retry what was left out, send what is ready, then read what landed |
 | `check.ts` | reading the exit back with `checkRecoverFunds`, and what the verdict means for the plan |
-| `rebuild.ts` | building a diverged exit again |
+| `rebuild.ts` | building a diverged or unverified exit again |
 | `leftovers.ts` | leaves a build left out, and co-signed recoveries stuck unverified: prepared again, built as the exit's next part, or let go after about a week |
 | `recoveries.ts` | kept co-signed recoveries and their fee bumps |
 | `exitFee.ts` | what the exit fee address is asked for, what it holds, and what is still to send |

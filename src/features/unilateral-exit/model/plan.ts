@@ -103,6 +103,8 @@ export interface UnilateralExitPlan {
    * ask for the update tap; one passing outage within a block asks nothing.
    */
   rebuildFailingSince?: number;
+  /** The tip of Glow's last rebuild over an Unverified step: once a block, so a failing chain service is not asked every pass. */
+  unverifiedRebuiltAt?: number;
   /**
    * The tip at which a checked pass first found a co-signed recovery stuck
    * unverified, which Glow prepares again by itself (`retryDue`). Cleared once
@@ -128,9 +130,11 @@ export type ExitStatus =
   | { type: 'rebuilding' }
   /**
    * Waits on the update tap: a diverged exit whose rebuild needs the passkey
-   * (`signIn`) or failed across a block (`rebuildFailed`).
+   * (`signIn`) or failed across a block (`rebuildFailed`). With `cause` it has
+   * not diverged: a step the SDK could not read needs a rebuild only the
+   * passkey can sign, and the rest keeps running meanwhile.
    */
-  | { type: 'needsUpdate'; why: 'signIn' | 'rebuildFailed' }
+  | { type: 'needsUpdate'; why: 'signIn' | 'rebuildFailed'; cause?: 'unverified' }
   /** The SDK's Done verdict, or nothing left to move: it waits only for its ledger to be read, then the archive. */
   | { type: 'done' };
 
@@ -199,11 +203,15 @@ export function planFromExitResponse(exit: RecoverFundsResponse, meta: PlanMeta)
   return { version: PLAN_VERSION, ...meta, exit, refusals: {}, status: { type: 'running' } };
 }
 
+/** A unilateral step the SDK could not read while building: never sent, and a check never settles it. */
+export const hasUnverifiedStep = ({ exit }: Pick<UnilateralExitPlan, 'exit'>): boolean =>
+  exit.transactions.some(tx => tx.status.type === 'unverified' && !isCooperative(tx));
+
 export const awaitsUpdate = ({ status }: Pick<UnilateralExitPlan, 'status'>): boolean => status.type === 'needsUpdate';
 
 /** The chain no longer matches the build, so it is built again before anything more is sent. */
 export const isDiverged = ({ status }: Pick<UnilateralExitPlan, 'status'>): boolean =>
-  status.type === 'rebuilding' || status.type === 'needsUpdate';
+  status.type === 'rebuilding' || (status.type === 'needsUpdate' && !status.cause);
 
 /** Neither finished nor diverged: each step goes out as its turn comes. */
 export const isActive = (plan: Pick<UnilateralExitPlan, 'status'>): boolean =>

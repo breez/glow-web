@@ -619,6 +619,17 @@ describe('a pass over an exit', () => {
     await advanceNow();
     expect(checkRecoverFunds).not.toHaveBeenCalled();
   });
+
+  it('keeps sending the other steps of an exit whose tap waits on a step it could not read', async () => {
+    const broadcastPackage = vi.fn(async () => undefined);
+    const waiting = plan(
+      [tx({ txid: 'stuck', status: { type: 'unverified' } }), tx({ txid: 'due', cpfpTxHex: 'bb', status: ready })],
+      { network: 'regtest', status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } },
+    );
+    setUnilateralExitPlan(wallet, waiting);
+    startUnilateralExitEngine(wallet, { ...chain, broadcastPackage }, sdk());
+    await vi.waitFor(() => expect(broadcastPackage).toHaveBeenCalledWith('aa', 'bb'));
+  });
 });
 
 describe('an exit holding a leaf it left out', () => {
