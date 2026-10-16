@@ -22,7 +22,7 @@ describe('exitStateForExit', () => {
   });
 
   it('does not restore from a finished exit, whose leaves have since been spent', () => {
-    expect(exitStateForExit(plan([], { phase: 'complete', exitStateSnapshot: 'frozen' }), 'rolling')).toBeNull();
+    expect(exitStateForExit(plan([], { status: { type: 'done' }, exitStateSnapshot: 'frozen' }), 'rolling')).toBeNull();
   });
 });
 
@@ -41,14 +41,14 @@ describe('captureExitState', () => {
   it('exports again once an exit has finished', async () => {
     const client = sdk();
     const save = vi.fn(async () => undefined);
-    await captureExitState(client, plan([], { phase: 'complete' }), save);
+    await captureExitState(client, plan([], { status: { type: 'done' } }), save);
     expect(save).toHaveBeenCalledWith('exported');
   });
 
   it('does not export at all while an exit is under way', async () => {
     const client = sdk();
     const save = vi.fn(async () => undefined);
-    await captureExitState(client, plan([], { phase: 'active' }), save);
+    await captureExitState(client, plan([], { status: { type: 'running' } }), save);
     expect(client.exportUnilateralExitState).not.toHaveBeenCalled();
     expect(save).not.toHaveBeenCalled();
   });

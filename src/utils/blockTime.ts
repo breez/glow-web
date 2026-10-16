@@ -12,5 +12,5 @@ export function formatBlockWait(blocks: number): string {
 export function formatDaysLeft(blocks: number): string {
   if (blocks <= 0) return '0';
   const days = Math.round(blocks / BLOCKS_PER_DAY);
-  return days < 1 ? '<1' : `~${days}`;
+  return days < 1 ? '<1' : `${days}`;
 }
