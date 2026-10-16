@@ -156,7 +156,7 @@ export function useUnilateralExitFlow(network: string, openedMode?: ExitMode, bu
   const { phase, canGoBack, goTo, back } = useExitWizard({ plan: shown.plan, pending: shown.pending, mode, bumping });
   const quoting = useExitQuote({ wallet, walletKey, chain, engine, mode, takesIn, bumping, bumpTarget, phase, goTo });
   const feeAddress = useExitFeeAddress({ walletKey, network, chain, engine, mode, phase, goTo, feeKey, quoting });
-  const continuing = useContinueExit({ wallet, walletKey, engine });
+  const continuing = useContinueExit({ wallet, walletKey, chain, engine });
   const building = useExitBuild({
     wallet,
     walletKey,

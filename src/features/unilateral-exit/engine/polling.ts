@@ -31,7 +31,7 @@ const startPolling = (ms: number): void => {
 
 /** A diverged exit that needs the user's sign-in waits for the tracker's button, so it has no passes to run. */
 export const planRuns = ({ status }: UnilateralExitPlan): boolean =>
-  !(status.type === 'needsUpdate' && status.why === 'signIn');
+  !(status.type === 'needsUpdate' && status.why === 'signIn' && !status.cause);
 
 /**
  * While all that is left is co-signed recoveries stuck unverified, nothing

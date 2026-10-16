@@ -1,13 +1,117 @@
 import { rebuildExit } from './rebuild';
 import { EmptyRecoveryError } from './building';
+import { awaitsUpdate } from './model/plan';
+import { advanceUnilateralExit } from './pass';
 import { willReceiveSat } from './quote';
-import { checked, MNEMONIC, plan, prepared, sdk, twoLeaves, tx } from './testFixtures';
+import { checked, chain, MNEMONIC, plan, prepared, ready, sdk, twoLeaves, tx } from './testFixtures';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SkippedLeafReason } from '@breeztech/breez-sdk-spark';
+import { logger } from '@/services/logger';
+
+beforeEach(() => localStorage.setItem('walletMnemonic', MNEMONIC));
+
+describe('an exit holding a step the SDK could not read', () => {
+  // Glow never sends an Unverified unilateral step, and a check never settles one.
+  const stuck = (over: Parameters<typeof plan>[1] = {}) =>
+    plan([tx({ txid: 'node', status: { type: 'unverified' } })], { feeRateSatPerVbyte: 4, destination: 'bc1qmine', ...over });
+  const rebuilt = checked([{ txid: 'fresh', status: { type: 'ready' } }]);
+  const quote = prepared({ feeRateSatPerVbyte: 4, destination: 'bc1qmine' });
+
+  it('rebuilds by name at its own rate once nothing is in flight, and marks the block', async () => {
+    const prepareRecoverFunds = vi.fn(async () => quote);
+    const recoverFunds = vi.fn(async () => rebuilt);
+    const { plan: next } = await advanceUnilateralExit(stuck(), chain(), sdk({ prepareRecoverFunds, recoverFunds }), '02abc');
+    expect(prepareRecoverFunds).toHaveBeenCalledWith(
+      expect.objectContaining({ feeRateSatPerVbyte: 4, destination: 'bc1qmine', selection: { type: 'specific', leafIds: ['leaf-1'] } }),
+    );
+    expect(next.exit).toBe(rebuilt);
+    expect(next.unverifiedRebuiltAt).toBe(100);
+  });
+
+  it('tries once a block, so a failing chain service is not asked on every pass', async () => {
+    const prepareRecoverFunds = vi.fn(async () => quote);
+    await advanceUnilateralExit(stuck({ unverifiedRebuiltAt: 100 }), chain(), sdk({ prepareRecoverFunds }), '02abc');
+    expect(prepareRecoverFunds).not.toHaveBeenCalled();
+    await advanceUnilateralExit(stuck({ unverifiedRebuiltAt: 99 }), chain(), sdk({ prepareRecoverFunds }), '02abc');
+    expect(prepareRecoverFunds).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends what is in flight rather than rebuilding over it', async () => {
+    const prepareRecoverFunds = vi.fn(async () => quote);
+    const broadcastPackage = vi.fn(async () => undefined);
+    const mixed = plan([
+      tx({ txid: 'node', status: { type: 'unverified' } }),
+      tx({ txid: 'other', cpfpTxHex: 'bb', status: { type: 'ready' } }),
+    ]);
+    await advanceUnilateralExit(mixed, chain({ broadcastPackage }), sdk({ prepareRecoverFunds }), '02abc');
+    expect(prepareRecoverFunds).not.toHaveBeenCalled();
+    expect(broadcastPackage).toHaveBeenCalledWith('aa', 'bb');
+  });
+
+  it('rebuilds over a step it could not read beside a co-signed recovery in the mempool, which a rebuild hands back', async () => {
+    const prepareRecoverFunds = vi.fn(async () => quote);
+    const beside = plan(
+      [tx({ txid: 'node', status: { type: 'unverified' } }), tx({ txid: 'rec', kind: 'cooperative', nodeId: 'c-1', status: ready })],
+      {
+        feeRateSatPerVbyte: 4,
+        destination: 'bc1qmine',
+        exit: {
+          leaves: [
+            { leafId: 'leaf-1', valueSats: 100_000, method: 'unilateral' },
+            { leafId: 'c-1', valueSats: 30_000, method: 'cooperative' },
+          ],
+        },
+      },
+    );
+    await advanceUnilateralExit(beside, chain(), sdk({ prepareRecoverFunds, recoverFunds: async () => rebuilt }), '02abc');
+    expect(prepareRecoverFunds).toHaveBeenCalledWith(
+      expect.objectContaining({ selection: { type: 'specific', leafIds: ['leaf-1', 'c-1'] } }),
+    );
+  });
+
+  it('asks a passkey wallet for the tap, and keeps sending the other steps meanwhile', async () => {
+    localStorage.removeItem('walletMnemonic');
+    localStorage.setItem('passkeyLabel', 'Default');
+    const prepareRecoverFunds = vi.fn(async () => quote);
+    const recoverFunds = vi.fn(async () => rebuilt);
+    const driver = sdk({ prepareRecoverFunds, recoverFunds });
+    const { plan: next } = await advanceUnilateralExit(stuck(), chain(), driver, '02abc');
+    expect(next).toMatchObject({ status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' }, unverifiedRebuiltAt: 100 });
+    expect(awaitsUpdate(next)).toBe(true);
+    expect(recoverFunds).not.toHaveBeenCalled();
+
+    // Another leaf's step comes due while the tap waits.
+    const due = { ...next, exit: { ...next.exit, transactions: [...next.exit.transactions, tx({ txid: 'other', cpfpTxHex: 'bb' })] } };
+    const broadcastPackage = vi.fn(async () => undefined);
+    const { plan: after } = await advanceUnilateralExit(due, chain({ tipHeight: async () => 101, broadcastPackage }), driver, '02abc');
+    expect(broadcastPackage).toHaveBeenCalledWith('aa', 'bb');
+    expect(prepareRecoverFunds).toHaveBeenCalledTimes(1);
+    expect(after.status).toEqual({ type: 'needsUpdate', why: 'signIn', cause: 'unverified' });
+  });
+
+  // The SDK's wasm can throw a value that is not an Error.
+  const throwing = (thrown: unknown) => async (): Promise<ReturnType<typeof prepared>> => {
+    throw thrown;
+  };
+  const warned = ['Failed to rebuild over an unverified step: chain service unavailable'];
+  it.each([
+    ['fails', throwing(new Error('chain service unavailable')), warned],
+    ['fails with something other than an Error', throwing('chain service unavailable'), warned],
+    [
+      'finds a leaf that may yet move, which is no failure',
+      async () => prepared({ leaves: [], skipped: [{ leafId: 'leaf-1', valueSats: 100_000, reason: { type: 'unverified' } }] }),
+      [],
+    ],
+  ])('keeps the exit and marks the block when the rebuild %s', async (_, prepareRecoverFunds, warnings) => {
+    const warn = vi.spyOn(logger, 'warn');
+    const { plan: next } = await advanceUnilateralExit(stuck(), chain(), sdk({ prepareRecoverFunds }), '02abc');
+    expect(next).toMatchObject({ status: { type: 'running' }, unverifiedRebuiltAt: 100 });
+    expect(next.exit.transactions[0].txid).toBe('node');
+    expect(warn.mock.calls.map(([, message]) => message)).toEqual(warnings);
+  });
+});
 
 describe('rebuildExit', () => {
-  beforeEach(() => localStorage.setItem('walletMnemonic', MNEMONIC));
-
   const failedLeaf = { leafId: 'c-1', outputTxid: 'out', outputVout: 0, error: { type: 'generic' as const, message: 'refused' } };
 
   it('names the leaves whose co-signing failed too, so a rebuild tries them again', async () => {
