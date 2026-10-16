@@ -522,3 +522,9 @@ These have no local setup:
   block, and updating from it while the operators are down. Cutting the
   operators off doesn't force it: the SDK then quotes from saved data, so the
   rebuild goes through.
+- A transaction the SDK could not read on-chain while building a unilateral
+  exit or recovery. Glow builds it again each block until the read goes
+  through. A passkey wallet needs a tap for that, and the tracker asks with
+  "Glow couldn't check part of your exit on-chain. Please update your
+  unilateral exit to continue." No helper fails a single chain read:
+  `regtest:indexer -- down` fails them all.
