@@ -34,7 +34,9 @@ export const isClusterUp = () => reachable(FUND_URL);
 /**
  * Builds the two images the operators run, from the docker files of the sdk
  * revision the crate pins, unless they are already there. The fixtures run each
- * under a tag derived from those files, which the cluster runner prints.
+ * under a tag derived from those files, which the cluster runner prints. They
+ * are built for Intel: the private operator image ships Intel binaries, which
+ * an ARM Mac runs through Rosetta.
  */
 function buildOperatorImages() {
   const metadata = JSON.parse(
@@ -58,7 +60,7 @@ function buildOperatorImages() {
       // Not built yet.
     }
     try {
-      execFileSync('docker', ['build', '-t', reference, '-f', resolve(docker, file), docker], {
+      execFileSync('docker', ['build', '--platform', 'linux/amd64', '-t', reference, '-f', resolve(docker, file), docker], {
         stdio: 'inherit',
       });
     } catch {
