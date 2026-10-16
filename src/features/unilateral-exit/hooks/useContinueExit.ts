@@ -4,6 +4,7 @@ import type { ChainClient } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { awaitsUpdate, type ExitStatus, type WalletKey } from '../model/plan';
+import { buildLeftover } from '../leftovers';
 import { RebuildLaterError } from '../building';
 import { rebuildExit } from '../rebuild';
 import { advanceNow } from '../engine/polling';
@@ -14,14 +15,15 @@ interface ContinueInputs {
   wallet: BreezSdk;
   walletKey: WalletKey | null;
   chain: ChainClient;
-  engine: Pick<UnilateralExitEngineState, 'plan' | 'tipHeight'>;
+  engine: Pick<UnilateralExitEngineState, 'plan' | 'pendingCoins' | 'tipHeight'>;
 }
 
 // The redo card's button: the rebuild the engine runs on its own, from a tap.
 // A diverged exit needs no new fee rate or funding, so the wizard would only
-// add steps, and the tap is what lets a passkey wallet sign.
+// add steps, and the tap is what lets a passkey wallet sign. A leftover whose
+// fee arrived is built the same way, from the coins the engine read.
 export function useContinueExit({ wallet, walletKey, chain, engine }: ContinueInputs) {
-  const { plan, tipHeight } = engine;
+  const { plan, pendingCoins, tipHeight } = engine;
   const [isContinuing, setIsContinuing] = useState(false);
   const [continueError, setContinueError] = useState<string | null>(null);
 
@@ -30,6 +32,12 @@ export function useContinueExit({ wallet, walletKey, chain, engine }: ContinueIn
     setIsContinuing(true);
     setContinueError(null);
     try {
+      if (plan.status.type === 'needsExitFee') {
+        const confirmed = pendingCoins.filter(coin => coin.confirmed);
+        const built = await buildLeftover(plan, wallet, walletKey.identityPubkey, confirmed, { interactive: true });
+        setUnilateralExitPlan(walletKey, built);
+        return;
+      }
       // A rebuild with nothing left comes back done, and the engine archives it.
       const rebuilt = await rebuildExit(plan, wallet, walletKey.identityPubkey, { interactive: true });
       // This build just read the chain, so a step it still could not read waits
@@ -55,12 +63,12 @@ export function useContinueExit({ wallet, walletKey, chain, engine }: ContinueIn
     } finally {
       setIsContinuing(false);
     }
-  }, [plan, wallet, walletKey, chain, tipHeight]);
+  }, [plan, wallet, walletKey, chain, tipHeight, pendingCoins]);
 
   // A card that comes back explains itself again rather than showing an error
   // from before. Cleared on the way out, not in the body, which would set
   // state during the effect.
-  const asksForUpdate = !!plan && awaitsUpdate(plan);
+  const asksForUpdate = !!plan && (awaitsUpdate(plan) || plan.status.type === 'needsExitFee');
   useEffect(() => {
     if (!asksForUpdate) return;
     return () => setContinueError(null);

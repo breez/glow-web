@@ -396,6 +396,8 @@ describe('an exit holding a leaf it left out in the wallet list', () => {
       ],
       ...over,
     });
+  const asking = (over: Parameters<typeof plan>[1] = {}) =>
+    landed({ status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } }, ...over });
 
   it('counts a leaf still to build as a transaction still to go, at its value', () => {
     expect(row({ pending: null, plan: landed() })).toMatchObject({
@@ -403,6 +405,38 @@ describe('an exit holding a leaf it left out in the wallet list', () => {
       subtitle: '1 of 2 processed',
       amountSat: 130_000,
     });
+  });
+
+  it('says what to send while one waits on more exit fee, then waits on its confirmation, then on Glow', () => {
+    const at = (coins: ReturnType<typeof coin>[]) => row({ pending: null, plan: asking(), pendingCoins: coins });
+    // The leaf still to build counts at its value.
+    expect(at([])).toMatchObject({ id: 'active', kind: 'active', title: 'Waiting for exit fee', subtitle: 'Send ₿3 000 more', amountSat: 130_000 });
+    expect(at([coin(3_000, false)])).toMatchObject({ title: 'Exit fee sent', subtitle: 'Waiting for a confirmation' });
+    expect(at([coin(3_000)])).toMatchObject({ title: 'Exit fee received', subtitle: null });
+    expect(at([coin(3_000)]).isAction).toBeFalsy();
+  });
+
+  it('asks for the tap only when the build needs the passkey', () => {
+    const at = (coins: ReturnType<typeof coin>[]) =>
+      row({
+        pending: null,
+        plan: asking({ status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 }, needsSignIn: true } } }),
+        pendingCoins: coins,
+      });
+    expect(at([coin(3_000)])).toMatchObject({ title: 'Exit fee received', subtitle: 'Tap to update', isAction: true });
+    expect(at([])).toMatchObject({ title: 'Waiting for exit fee', subtitle: 'Tap to update', isAction: true });
+  });
+
+  it('asks for no tap while a unilateral step is in flight, which the tap cannot build over', () => {
+    const inFlight = asking({
+      status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 }, needsSignIn: true } },
+      exit: { transactions: [tx({ txid: 's', kind: 'sweep', status: ready })] },
+    });
+    expect(row({ pending: null, plan: inFlight, pendingCoins: [coin(3_000)] })).toMatchObject({
+      title: 'Exit fee received',
+      subtitle: 'Waiting for a confirmation',
+    });
+    expect(row({ pending: null, plan: inFlight, pendingCoins: [coin(3_000)] }).isAction).toBeFalsy();
   });
 });
 

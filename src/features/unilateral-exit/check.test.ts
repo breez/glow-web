@@ -32,8 +32,11 @@ describe('applyExitCheck', () => {
     expect(applyExitCheck(plan([tx({ txid: 'a' })]), checked([{ txid: 'a' }]), 'redo').status).toEqual({ type: 'rebuilding' });
   });
 
-  it('keeps a running exit running on the valid verdict', () => {
-    expect(applyExitCheck(plan([tx({ txid: 'a' })]), checked([{ txid: 'a' }]), 'valid').status).toEqual({ type: 'running' });
+  it.each([
+    ['a running exit', { type: 'running' }],
+    ['an exit waiting on exit fee', { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } }],
+  ] as const)('keeps %s as it is on the valid verdict', (_, status) => {
+    expect(applyExitCheck(plan([tx({ txid: 'a' })], { status }), checked([{ txid: 'a' }]), 'valid').status).toEqual(status);
   });
 
   it('runs a diverged exit again once the chain matches it, keeping when its rebuilds started failing', () => {

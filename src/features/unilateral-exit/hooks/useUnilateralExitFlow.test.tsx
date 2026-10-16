@@ -6,7 +6,7 @@ import type { ExitAccounting } from '../storage/accounting';
 import type { ArchivedExit } from '../storage/archive';
 import type { ExitMode, PendingExit, UnilateralExitPlan } from '../model/plan';
 import type { ExitSdk } from '../quoting';
-import { checked, coin, funding, MNEMONIC, pendingExit, plan, prepared, rawTx, sdk, tx, txidOf } from '../testFixtures';
+import { checked, coin, confirmed, funding, MNEMONIC, pendingExit, plan, prepared, rawTx, ready, sdk, tx, txidOf } from '../testFixtures';
 
 const wallet = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('@/contexts/WalletContext', () => ({
@@ -37,6 +37,7 @@ vi.mock('../funding', async () => ({
 const saved = vi.hoisted(() => ({
   plan: null as UnilateralExitPlan | null,
   pending: null as PendingExit | null,
+  pendingCoins: [] as ChainUtxo[],
   tipHeight: null as number | null,
   archive: [] as ArchivedExit[],
   recoveries: [] as UnilateralExitPlan[],
@@ -46,7 +47,7 @@ vi.mock('./useUnilateralExitEngineLifecycle', () => ({
   useUnilateralExitEngineState: () => ({
     plan: saved.plan,
     pending: saved.pending,
-    pendingCoins: [],
+    pendingCoins: saved.pendingCoins,
     nothingToExit: null,
     isStarting: false,
     startError: null,
@@ -107,6 +108,20 @@ const cosignedBuild = (over: Partial<RecoverFundsResponse> = {}) =>
     { leaves: cosignedLeaves, recoverableValueSats: 48_200, cooperativeFeeSats: 2_900, sweepFeeSats: 0, ...over },
   );
 
+/** Swept leaf-1, and waits on exit fee at its own address and rate to build leaf-2, which it left out. */
+const waitingOnFee = (over: Parameters<typeof plan>[1] = {}) =>
+  plan([tx({ txid: 's', kind: 'sweep', status: confirmed(9) })], {
+    feeRateSatPerVbyte: 4,
+    exitFeeAddress: 'bcrt1qfee',
+    quotedExitFeeSat: 5_000,
+    status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 }, heldSat: 0 } },
+    namedLeaves: [
+      { leafId: 'leaf-1', valueSats: 100_000 },
+      { leafId: 'leaf-2', valueSats: 50_000 },
+    ],
+    ...over,
+  });
+
 /** Opens the flow on a quote at the medium rate. */
 async function quoted(
   quote: PrepareRecoverFundsResponse,
@@ -131,6 +146,7 @@ beforeEach(() => {
   Object.assign(saved, {
     plan: null,
     pending: null,
+    pendingCoins: [],
     tipHeight: null,
     archive: [],
     recoveries: [],
@@ -537,8 +553,9 @@ describe('the update tap', () => {
   });
 
   describe('when the update fails for another reason', () => {
-    const tapFailing = async () => {
-      saved.plan = plan([tx({ txid: 'moved' })], { status: { type: 'needsUpdate', why: 'rebuildFailed' } });
+    const failedRebuild = plan([tx({ txid: 'moved' })], { status: { type: 'needsUpdate', why: 'rebuildFailed' } });
+    const tapFailing = async (stalled = failedRebuild) => {
+      saved.plan = stalled;
       wallet.current = sdk({
         prepareRecoverFunds: async () => {
           throw new Error('operators unreachable');
@@ -564,15 +581,111 @@ describe('the update tap', () => {
       expect(result.current.continueError).toBeNull();
     });
 
-    it('drops it once the card goes, so a card that comes back explains itself again', async () => {
-      const { result, rerender } = await tapFailing();
+    it.each([
+      ['a failed rebuild', failedRebuild, { type: 'rebuilding' }],
+      ['a leftover waiting on more exit fee', waitingOnFee(), { type: 'running' }],
+    ] as const)('drops it once the card of %s goes, so a card that comes back explains itself again', async (_, stalled, gone) => {
+      const { result, rerender } = await tapFailing(stalled);
+      expect(result.current.continueError).toBe('operators unreachable');
 
-      saved.plan = plan([tx({ txid: 'moved' })], { status: { type: 'rebuilding' } });
+      saved.plan = { ...stalled, status: gone };
       rerender();
-      saved.plan = plan([tx({ txid: 'moved' })], { status: { type: 'needsUpdate', why: 'rebuildFailed' } });
+      saved.plan = stalled;
       rerender();
       expect(result.current.continueError).toBeNull();
     });
+  });
+});
+
+describe('a leaf the exit left out, waiting on more exit fee', () => {
+  const soloLeaf = { leafId: 'leaf-2', valueSats: 50_000, method: 'unilateral' as const };
+  const askQuote = prepared({ leaves: [soloLeaf], funding: funding(3_000), feeRateSatPerVbyte: 4 });
+  const nextPart = () =>
+    checked([{ txid: 'refund-2', kind: 'refund', nodeId: 'leaf-2', status: { type: 'waitingForTimelock', spendableAtHeight: 900 } }], {
+      leaves: [soloLeaf],
+    });
+
+  beforeEach(() => {
+    saved.plan = waitingOnFee();
+  });
+
+  it("opens on its fee screen with the plan's address and rate and the coins the engine read, and moves to the tracker once it is built", () => {
+    saved.pendingCoins = [coin(1_000), coin(500, false)];
+    wallet.current = sdk();
+    const { result, rerender } = renderHook(() => useUnilateralExitFlow('regtest'));
+
+    expect(result.current.phase).toBe('fund');
+    expect(result.current.canGoBack).toBe(false);
+    // The coin on its way counts toward what is still to send, as on the list row.
+    expect(result.current.funding).toEqual({
+      address: 'bcrt1qfee',
+      isFunded: false,
+      topUp: { neededSat: 3_544, sentSat: 1_500, stillToSendSat: 2_044 },
+      waitsForConfirmation: false,
+      feeRate: 4,
+      currentFeeRate: 4,
+      networkFloorFeeRate: null,
+      quotedAt: null,
+    });
+    act(() => result.current.goTo('topUp'));
+    expect(result.current.phase).toBe('topUp');
+    expect(result.current.canGoBack).toBe(false);
+
+    saved.plan = waitingOnFee({ status: { type: 'running' } });
+    rerender();
+    expect(result.current.phase).toBe('tracker');
+  });
+
+  const sweep = tx({ txid: 's', kind: 'sweep', status: confirmed(9) });
+  it.each([
+    ['asks for nothing more once the payment is on its way, and waits for it to confirm', [coin(3_000, false)], {}, { topUp: { stillToSendSat: 0 }, waitsForConfirmation: true, isFunded: false }],
+    ['waits for a unilateral step in flight', [coin(3_000)], { exit: { transactions: [{ ...sweep, status: ready }] } }, { waitsForConfirmation: true, isFunded: false }],
+    [
+      'does not wait for a co-signed recovery in flight, which the build carries',
+      [coin(3_000)],
+      { exit: { transactions: [sweep, tx({ txid: 'c9', kind: 'cooperative', nodeId: 'c-9', status: { type: 'unverified' } })] } },
+      { waitsForConfirmation: false, isFunded: true },
+    ],
+    ['leaves the address to the tap while the exit has none, which only the key can say', [], { exitFeeAddress: undefined }, { address: '', topUp: null, isFunded: true }],
+  ])('%s', (_, coins, over, funding) => {
+    saved.pendingCoins = coins;
+    saved.plan = waitingOnFee(over);
+    wallet.current = sdk();
+    const { result } = renderHook(() => useUnilateralExitFlow('regtest'));
+    expect(result.current.funding).toMatchObject(funding);
+  });
+
+  it('builds it from the tap once the fee confirms, reading the phrase first, and stores what it built', async () => {
+    // Only the confirmed coin funds it: a build spends nothing from the mempool.
+    saved.pendingCoins = [coin(3_000), coin(1_000, false)];
+    const recoverFunds = vi.fn<ExitSdk['recoverFunds']>(async () => nextPart());
+    wallet.current = sdk({ prepareRecoverFunds: async () => askQuote, recoverFunds });
+    vi.mocked(readWalletMnemonic).mockResolvedValueOnce(MNEMONIC);
+    const { result } = renderHook(() => useUnilateralExitFlow('regtest'));
+    expect(result.current.funding?.isFunded).toBe(true);
+    await act(() => result.current.build());
+
+    expect(readWalletMnemonic).toHaveBeenCalledWith({ interactive: true });
+    expect(recoverFunds).toHaveBeenCalledWith(
+      expect.objectContaining({ fundingInputs: [expect.objectContaining({ txid: 'coin-3000', valueSats: 3_000 })] }),
+      expect.anything(),
+    );
+    const stored = vi.mocked(setUnilateralExitPlan).mock.calls[0][1];
+    expect(stored.status).toEqual({ type: 'running' });
+    expect(stored).toMatchObject({ quotedExitFeeSat: 8_000, exitFeeAddress: 'bcrt1qfee' });
+    expect(result.current.continueError).toBeNull();
+  });
+
+  it('builds nothing by itself on its fee screen, which waits for the tap', async () => {
+    saved.pendingCoins = [coin(3_000)];
+    const recoverFunds = vi.fn(async () => nextPart());
+    const { result } = await quoted(askQuote, recoverFunds);
+    act(() => result.current.goTo('fund'));
+    expect(result.current.phase).toBe('fund');
+    await act(async () => {});
+
+    expect(readWalletMnemonic).not.toHaveBeenCalled();
+    expect(recoverFunds).not.toHaveBeenCalled();
   });
 });
 
@@ -941,8 +1054,11 @@ describe('raising the fee of a kept co-signed recovery', () => {
     expect(result.current.quote.figures?.networkFeeSat).toBe(1_000);
   });
 
-  it('keeps the rebuilt recovery in place of the old one, and touches nothing of the exit', async () => {
-    saved.plan = plan([], { quotedSweepFeeSat: 9_999 });
+  it.each([
+    ['an exit under way', plan([], { quotedSweepFeeSat: 9_999 })],
+    ['an exit waiting on more exit fee for a leaf it left out', waitingOnFee()],
+  ])('keeps the rebuilt recovery in place of the old one, and touches nothing of %s', async (_, beside) => {
+    saved.plan = beside;
     const { result, recoverFunds } = await bumping();
     await act(() => result.current.submitFee());
     await act(() => result.current.continueFromQuote());
