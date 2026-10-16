@@ -57,6 +57,7 @@ const PASSKEY_PENDING_SWITCH_FROM_KEY = 'passkeyPendingSwitchFromCredentialId';
 const PASSKEY_FIRST_SEEN_KEY = 'passkeyFirstSeenAt';
 const PASSKEY_LAST_SEEN_KEY = 'passkeyLastSeenAt';
 const PASSKEY_LABEL_LAST_USED_PREFIX = 'passkeyLabelLastUsed:';
+const PASSKEY_CHECK_SNOOZED_UNTIL_KEY = 'passkeyCheckSnoozedUntil';
 const PASSKEY_RP_ID_KEY = 'passkeyRpId';
 const PASSKEY_ACTIVE_CRED_RP_KEY = 'passkeyActiveCredentialRpId';
 
@@ -745,6 +746,44 @@ export function getPasskeyMeta(): { firstSeenAt?: number; lastSeenAt?: number } 
   };
 }
 
+const PASSKEY_CHECK_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000;
+const PASSKEY_CHECK_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Whether a launch should go through the passkey again. A passkey the
+ * user never exercises can be wiped, revoked or broken by a provider
+ * change without anything saying so, and the moment they find out is
+ * the moment they need it.
+ *
+ * Only the native device-vault tier reaches this: every other tier
+ * already derives through PRF at launch, so `lastSeenAt` is minutes old
+ * there. An unknown `lastSeenAt` counts as due: nothing proves the
+ * passkey works.
+ */
+export function isPasskeyCheckDue(
+  lastSeenAt: number | undefined,
+  snoozedUntil: number,
+  now: number,
+): boolean {
+  return now >= snoozedUntil && now - (lastSeenAt ?? 0) >= PASSKEY_CHECK_INTERVAL_MS;
+}
+
+/**
+ * Hold the periodic re-auth off for a week. Written when one does not
+ * go through: the user has been shown where their recovery phrase is,
+ * and a passkey prompt on every launch after that is nagging rather
+ * than helping.
+ */
+export function snoozePasskeyCheck(): void {
+  localStorage.setItem(PASSKEY_CHECK_SNOOZED_UNTIL_KEY, String(Date.now() + PASSKEY_CHECK_SNOOZE_MS));
+}
+
+/** 0 when never snoozed, so a plain `now >= this` reads as "not held off". */
+export function getPasskeyCheckSnoozedUntil(): number {
+  const parsed = Number(localStorage.getItem(PASSKEY_CHECK_SNOOZED_UNTIL_KEY));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function markLabelUsed(label: string): void {
   localStorage.setItem(`${PASSKEY_LABEL_LAST_USED_PREFIX}${label}`, String(Date.now()));
 }
@@ -849,6 +888,7 @@ export async function clearPasskeyHistory(): Promise<void> {
   localStorage.removeItem(PASSKEY_ACTIVE_CRED_RP_KEY);
   localStorage.removeItem(PASSKEY_FIRST_SEEN_KEY);
   localStorage.removeItem(PASSKEY_LAST_SEEN_KEY);
+  localStorage.removeItem(PASSKEY_CHECK_SNOOZED_UNTIL_KEY);
   clearAllLabelLastUsed();
   clearAllCredentialMeta();
   clearAllHiddenCredentials();
