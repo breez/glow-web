@@ -125,3 +125,19 @@ describe('processInput destinations', () => {
     );
   });
 });
+
+describe('an invoice the wallet already paid', () => {
+  it('shows a plain message instead of the send error', async () => {
+    const { client, result } = renderSendPayment(async (input) => bolt11Details(input));
+    client.sendPayment = vi.fn().mockRejectedValue(new Error(
+      'status: AlreadyExists, message: "preimage request already exists for paymentHash hash1"',
+    ));
+
+    await act(() => result.current.processInput(BOLT11));
+    await waitFor(() => expect(result.current.prepareResponse).not.toBeNull());
+    await act(() => result.current.handleSend());
+
+    expect(result.current.paymentResult).toBe('failure');
+    expect(result.current.error).toBe('This invoice has already been paid.');
+  });
+});

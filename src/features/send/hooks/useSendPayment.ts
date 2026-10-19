@@ -26,6 +26,13 @@ function bareDestination(parsed: InputType): string | null {
  *  that is not a destination at all. */
 const BAD_LOGIN_CODE = /lnurl (missing|contains invalid) k1|lnurl contains unsupported action/;
 
+const ALREADY_PAID = 'This invoice has already been paid.';
+
+/** The Spark operators' refusal of a second send to a payment hash: the
+ *  invoice was already paid. The SDK accepts it at prepare, so only the send
+ *  reports it. */
+const ALREADY_EXISTS = /preimage request already exists/;
+
 export type SendStep ='input' | 'amount' | 'workflow' | 'processing' | 'result';
 export type ProcessingPhase = 'sending' | 'converting';
 
@@ -315,7 +322,9 @@ export function useSendPayment(): UseSendPaymentReturn {
       setPaymentResult('success');
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Payment failed', { error: formatError(err) });
-      setError(`Payment failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(ALREADY_EXISTS.test(formatError(err))
+        ? ALREADY_PAID
+        : `Payment failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setPaymentResult('failure');
     } finally {
       if (listenerId) {
