@@ -1,32 +1,34 @@
 /**
  * Last-resort boundary around the whole tree. Without one, any throw in
- * a render or lifecycle unmounts the root and leaves a blank screen: on
- * a native build there is no address bar and no reload, so the only way
- * out is force-quitting, and a throw sourced from persisted state
- * reproduces on every launch.
+ * a render or lifecycle unmounts the root and leaves a blank screen.
  *
- * Reload is the recovery action because the failures this catches are
- * transient render throws (a malformed third-party payload reaching a
- * parser mid-render). "Erase and start over" deliberately is NOT offered
- * here: a render bug must never be a route to deleting an account.
+ * Offers no action: restarting the app is the recovery. "Erase and start
+ * over" deliberately is NOT offered here: a render bug must never be a
+ * route to deleting an account.
  */
 
 import React from 'react';
 import { logger, LogCategory } from '../services/logger';
+import { AlertCard } from './AlertCard';
+import { CollapsibleCodeField } from './ui';
 
 interface Props {
   children: React.ReactNode;
 }
 
 interface State {
-  hasError: boolean;
+  /** The caught error as `Name: message`; absent until something throws. */
+  error?: string;
+  /** The splash was still up, so the throw happened while Glow was starting. */
+  atLaunch?: boolean;
+  showDetails: boolean;
 }
 
 class AppErrorBoundary extends React.Component<Props, State> {
-  state: State = { hasError: false };
+  state: State = { showDetails: false };
 
-  static getDerivedStateFromError(): State {
-    return { hasError: true };
+  static getDerivedStateFromError(error: unknown): Partial<State> {
+    return { error: String(error), atLaunch: document.getElementById('splash') !== null };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
@@ -34,30 +36,31 @@ class AppErrorBoundary extends React.Component<Props, State> {
       error: error.message,
       componentStack: info.componentStack ?? undefined,
     });
+    // A throw during startup lands before anything calls hideSplash(), so
+    // the splash would cover this screen. Removed directly: hideSplash()
+    // waits on the passkey check, which can depend on what just failed.
+    document.getElementById('splash')?.remove();
   }
 
   render() {
-    if (!this.state.hasError) return this.props.children;
+    if (this.state.error === undefined) return this.props.children;
 
     return (
       <div className="min-h-dvh w-full flex flex-col items-center justify-center gap-6 bg-spark-surface px-6 text-center">
         <img src="/assets/Glow_Logo.svg" alt="Glow" className="w-24 h-24 object-contain" />
-        <div className="space-y-2">
-          <h1 className="font-display text-xl font-bold text-spark-text-primary">
-            Something went wrong
-          </h1>
-          <p className="text-sm text-spark-text-secondary">
-            Glow hit an unexpected error. Your funds are safe: reloading does not
-            change anything stored on this device.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="px-6 py-3 rounded-xl bg-spark-primary font-display font-semibold text-white"
-        >
-          Reload Glow
-        </button>
+        <h1 className="font-display text-xl font-bold text-spark-text-primary">
+          Something went wrong
+        </h1>
+        <AlertCard variant="error" title={this.state.atLaunch ? 'Could not open Glow' : 'Glow stopped working'} className="w-full max-w-sm text-left">
+          <p className="text-sm">Glow hit an unexpected error.</p>
+          <CollapsibleCodeField
+            label="Error"
+            value={this.state.error}
+            isVisible={this.state.showDetails}
+            onToggle={() => this.setState(s => ({ showDetails: !s.showDetails }))}
+            copyable
+          />
+        </AlertCard>
       </div>
     );
   }
