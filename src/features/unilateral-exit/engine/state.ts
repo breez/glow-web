@@ -9,7 +9,10 @@ export interface UnilateralExitEngineState {
   plan: UnilateralExitPlan | null;
   /** An exit waiting on its fee. Never held alongside `plan`. */
   pending: PendingExit | null;
-  /** What the pending exit's fee address holds, confirmed or not. */
+  /**
+   * What the fee address holds, confirmed or not: the pending exit's, or the
+   * plan's while a leaf it left out waits on more exit fee.
+   */
   pendingCoins: ChainUtxo[];
   /**
    * A start found nothing worth its exit fee at the exit's rate, and why: null

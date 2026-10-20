@@ -1,11 +1,13 @@
 import { formatBlockWait } from '@/utils/blockTime';
 import { formatWithSpaces } from '@/utils/formatNumber';
-import { isPendingFunded, pendingTopUp } from './exitFee';
+import { isPendingFunded, leftoverTopUp, pendingTopUp } from './exitFee';
 import {
   awaitsUpdate,
   canBumpRecovery,
   heldRecoveryLeaves,
   isDiverged,
+  isUnilateralLanded,
+  topUpOf,
   type PendingExit,
   type UnilateralExitPlan,
 } from './model/plan';
@@ -74,6 +76,28 @@ const pendingText = (
   }
   if (!isPendingFunded(pending, coins)) return { title: 'Exit fee sent', subtitle: 'Waiting for a confirmation' };
   return { title: 'Exit fee received', subtitle: 'Tap to start', isAction: true };
+};
+
+/**
+ * What the row says while a leaf the exit left out waits on more exit fee.
+ * Unconfirmed coins count toward what is still to send, as for a pending exit.
+ */
+const topUpText = (
+  state: UnilateralExitEngineState,
+  plan: UnilateralExitPlan,
+): Pick<UnilateralExitEntry, 'title' | 'subtitle' | 'isAction'> => {
+  const coins = state.pendingCoins;
+  const received = leftoverTopUp(plan, coins.filter(coin => coin.confirmed)).stillToSendSat === 0;
+  if (topUpOf(plan)?.needsSignIn) {
+    const title = received ? 'Exit fee received' : 'Waiting for exit fee';
+    // The tap builds nothing over a unilateral step in flight, so it is not asked for yet.
+    if (!isUnilateralLanded(plan.exit)) return { title, subtitle: 'Waiting for a confirmation' };
+    return { title, subtitle: 'Tap to update', isAction: true };
+  }
+  const stillToSend = leftoverTopUp(plan, coins).stillToSendSat;
+  if (stillToSend > 0) return { title: 'Waiting for exit fee', subtitle: `Send ₿${formatWithSpaces(stillToSend)} more` };
+  if (!received) return { title: 'Exit fee sent', subtitle: 'Waiting for a confirmation' };
+  return { title: 'Exit fee received', subtitle: null };
 };
 
 const archivedEntry = (exit: ArchivedExit): UnilateralExitEntry => ({
@@ -203,6 +227,8 @@ const liveEntry = (state: UnilateralExitEngineState): UnilateralExitEntry | null
     };
   }
   if (!plan) return null;
+  // Ahead of the update tap: an exit waiting on its fee says what to send.
+  if (plan.status.type === 'needsExitFee') return { id: 'active', ...topUpText(state, plan), amountSat: movedSat(plan), kind: 'active' };
   // A finished exit waiting on a read of what landed keeps its row until the
   // archive's takes over, so the exit never drops out of the list meanwhile.
   return {
