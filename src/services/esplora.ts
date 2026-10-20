@@ -1,6 +1,7 @@
 import {
   DEFAULT_REQUEST_TIMEOUT_MS,
   type ChainClient,
+  type ChainSpend,
   type ChainUtxo,
 } from './chain';
 
@@ -69,8 +70,8 @@ export function createEsploraClient(
   const sendToMempool = (path: string, init: RequestInit = {}): Promise<Response> =>
     fetch(`${mempool}${path}`, { ...init, signal: AbortSignal.timeout(timeoutMs) });
 
-  const getJson = async <T>(path: string): Promise<T> => {
-    const response = await send(path);
+  const getJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
+    const response = await send(path, init);
     if (!response.ok) throw await failure(response, `GET ${path}`);
     return (await response.json()) as T;
   };
@@ -92,9 +93,11 @@ export function createEsploraClient(
     },
 
     async addressUtxos(address): Promise<ChainUtxo[]> {
+      // Uncached: the indexer lets browsers keep this for seconds, so a read
+      // just after a spend lands could still list the coin it spent.
       const utxos = await getJson<
         { txid: string; vout: number; value: number; status: { confirmed: boolean; block_height?: number } }[]
-      >(`/address/${address}/utxo`);
+      >(`/address/${address}/utxo`, { cache: 'no-store' });
       return utxos.map(utxo => ({
         txid: utxo.txid,
         vout: utxo.vout,
@@ -102,6 +105,23 @@ export function createEsploraClient(
         confirmed: Boolean(utxo.status?.confirmed),
         blockHeight: utxo.status?.block_height,
       }));
+    },
+
+    async confirmedSpender(txid, vout): Promise<ChainSpend | null> {
+      const spend = await getJson<{ spent: boolean; txid?: string; status?: { confirmed: boolean } }>(
+        `/tx/${txid}/outspend/${vout}`,
+      );
+      if (!spend.spent || !spend.txid || !spend.status?.confirmed) return null;
+      const spender = await getJson<{
+        txid: string;
+        vout: { scriptpubkey_address?: string; value: number }[];
+        status?: { block_height?: number };
+      }>(`/tx/${spend.txid}`);
+      return {
+        txid: spender.txid,
+        blockHeight: spender.status?.block_height,
+        outputs: spender.vout.map(output => ({ address: output.scriptpubkey_address, value: output.value })),
+      };
     },
 
     async tipHeight() {

@@ -1,5 +1,7 @@
 # Unilateral Exit (Recovery Mode) Spec
 
+> The v1 design, on the SDK 0.22 API. The flow now runs on the recover funds API: see `src/features/unilateral-exit/README.md` for how it works today.
+
 ## Overview
 
 Recovery mode lets a user move their Spark balance on-chain without the Spark operators cooperating. It is the wallet's self-custody escape hatch: a last resort for when the network is unreachable or refuses to sign withdrawals.

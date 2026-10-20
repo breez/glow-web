@@ -2,8 +2,9 @@ import { expect, type Page } from '@playwright/test';
 import { TIMEOUTS } from '../constants/timeouts';
 import { mineBlocks, sendToAddress } from './bitcoind';
 import { deriveFundingKey } from '../../src/features/unilateral-exit/funding';
-import type { ArchivedExit } from '../../src/features/unilateral-exit/archive';
-import { nextAction, type UnilateralExitPlan } from '../../src/features/unilateral-exit/driver';
+import type { ArchivedExit } from '../../src/features/unilateral-exit/storage/archive';
+import type { UnilateralExitPlan } from '../../src/features/unilateral-exit/model/plan';
+import { nextAction } from '../../src/features/unilateral-exit/model/progress';
 
 export const openWallet = async (page: Page, mnemonic: string): Promise<void> => {
   await page.addInitScript(m => {
