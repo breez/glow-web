@@ -18,6 +18,13 @@ export const addressTxs = async (address: string): Promise<AddressTx[]> => {
 export const confirmedTxids = async (address: string): Promise<string[]> =>
   (await addressTxs(address)).filter(t => t.status.confirmed).map(t => t.txid);
 
+/** The tip the app reads, which trails bitcoind's for a moment after a block. */
+export const indexerTip = async (): Promise<number> => {
+  const res = await fetch(`${BASE}/blocks/tip/height`);
+  if (!res.ok) throw new Error(`esplora ${res.status} for the tip`);
+  return Number((await res.text()).trim());
+};
+
 export const txConfirmed = async (txid: string): Promise<boolean> => {
   const res = await fetch(`${BASE}/tx/${txid}`);
   if (!res.ok) return false;

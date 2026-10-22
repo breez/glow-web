@@ -49,6 +49,22 @@ export const newAddress = (label: string): Promise<string> =>
 export const sendToAddress = (address: string, btc: number): Promise<string> =>
   rpc<string>('sendtoaddress', [address, btc]);
 
+/** Sends an exact amount, left unconfirmed until a block is mined. */
+export const sendSats = (address: string, sats: number): Promise<string> =>
+  rpc<string>('sendtoaddress', [address, (sats / 100_000_000).toFixed(8)]);
+
+export const mempoolTxids = (): Promise<string[]> => rpc<string[]>('getrawmempool');
+
+// A fee delta this far below zero keeps a transaction out of every block. The
+// node adds deltas up, so a release adds back exactly what a hold took away.
+const HOLD_SATS = 100_000_000;
+
+export const holdTransaction = (txid: string): Promise<boolean> =>
+  rpc<boolean>('prioritisetransaction', [txid, 0, -HOLD_SATS]);
+
+export const releaseTransaction = (txid: string): Promise<boolean> =>
+  rpc<boolean>('prioritisetransaction', [txid, 0, HOLD_SATS]);
+
 export const addressBalanceSats = async (address: string): Promise<number> => {
   const scan = await rpc<{ total_amount: number }>('scantxoutset', [
     'start',
