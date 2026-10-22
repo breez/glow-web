@@ -43,6 +43,7 @@ const UnilateralExitPage = lazy(() => import('./pages/UnilateralExitPage'));
 const PasskeyMigrationModal = lazy(() => import('./features/passkey-migration/PasskeyMigrationModal'));
 import { ContactsProvider } from './contexts/ContactsContext';
 import { useUnilateralExitEngineLifecycle } from './features/unilateral-exit/hooks/useUnilateralExitEngineLifecycle';
+import type { ExitMode } from './features/unilateral-exit/model/plan';
 
 import { useIOSViewportFix } from './hooks/useIOSViewportFix';
 import { useStatusBarColor } from './hooks/useStatusBarColor';
@@ -84,6 +85,10 @@ const AppContent: React.FC = () => {
   // `currentScreen` below.
   const [userScreen, setUserScreen] = useState<Screen>('home');
   const [refundAnimationDirection, setRefundAnimationDirection] = useState<'left' | 'up'>('left');
+  // What the exit sheet was opened for: `recover` from the Recoverable Funds row.
+  const [exitMode, setExitMode] = useState<ExitMode | undefined>(undefined);
+  // A kept co-signed recovery the exit sheet raises the fee of, by its txid.
+  const [exitBumpTxid, setExitBumpTxid] = useState<string | undefined>(undefined);
   const [passkeySdkConnected, setPasskeySdkConnected] = useState(false);
   // True when the user entered the passkey screen via the explicit
   // "Create Passkey" CTA in the web two-CTA flow. Skips PasskeyPage's
@@ -115,7 +120,9 @@ const AppContent: React.FC = () => {
   // An in-flight recovery has to keep moving even when its page is
   // closed: each step only becomes broadcastable once the one before it
   // confirms, and those waits run for days.
-  useUnilateralExitEngineLifecycle(sdk.walletInfo?.identityPubkey, sdk.config?.network, sdk.sdk);
+  useUnilateralExitEngineLifecycle(sdk.walletInfo?.identityPubkey, sdk.config?.network, sdk.sdk, () =>
+    sdk.refreshWalletData(false),
+  );
 
   // SDK startup state takes precedence; otherwise the user's screen
   // wins, with one exception: an SDK auto-reconnect (saved mnemonic /
@@ -337,7 +344,11 @@ const AppContent: React.FC = () => {
             setUserScreen('getRefund');
           }}
           onOpenSettings={() => setUserScreen('settings')}
-          onOpenUnilateralExit={() => setUserScreen('unilateralExit')}
+          onOpenUnilateralExit={(mode?: ExitMode, bumpTxid?: string) => {
+            setExitMode(mode);
+            setExitBumpTxid(bumpTxid);
+            setUserScreen('unilateralExit');
+          }}
           onBuyBitcoin={sdk.handleBuyBitcoin}
           network={sdk.config?.network}
           onDepositChanged={sdk.fetchUnclaimedDeposits}
@@ -359,7 +370,11 @@ const AppContent: React.FC = () => {
         onOpenPasskeySettings={() => setUserScreen('passkeySettings')}
         onOpenSecurity={() => setUserScreen('security')}
         onOpenBackup={() => setUserScreen('backup')}
-        onOpenUnilateralExit={() => setUserScreen('unilateralExit')}
+        onOpenUnilateralExit={() => {
+          setExitMode('exit');
+          setExitBumpTxid(undefined);
+          setUserScreen('unilateralExit');
+        }}
       />
     );
 
@@ -477,6 +492,8 @@ const AppContent: React.FC = () => {
             <Suspense fallback={null}>
               <UnilateralExitPage
                 network={sdk.config?.network ?? 'mainnet'}
+                mode={exitMode}
+                bumpTxid={exitBumpTxid}
                 onBack={() => setUserScreen('wallet')}
                 onFinished={() => setUserScreen('wallet')}
               />

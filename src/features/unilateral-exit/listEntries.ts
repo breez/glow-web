@@ -1,21 +1,41 @@
 import { formatBlockWait } from '@/utils/blockTime';
 import { formatWithSpaces } from '@/utils/formatNumber';
-import { isPendingFunded, nextAction, pendingTopUp, planProgress, willReceiveSat, type PendingExit } from './driver';
-import type { ArchivedExit } from './archive';
-import type { UnilateralExitEngineState } from './engine';
+import { isPendingFunded, pendingTopUp } from './exitFee';
+import {
+  awaitsUpdate,
+  canBumpRecovery,
+  heldRecoveryLeaves,
+  isDiverged,
+  type PendingExit,
+  type UnilateralExitPlan,
+} from './model/plan';
+import { movedSat, nextAction, planProgress } from './model/progress';
+import { isCooperativeLeaf, unbuiltLeaves } from './quote';
+import { recoveryTxid, type ArchivedExit } from './storage/archive';
+import { landedLeavesOf } from './storage/accounting';
+import { startDeadEnded, type UnilateralExitEngineState } from './engine/state';
 
 /**
- * One row of the transaction list's Unilateral Exit group. An exit is not a
- * payment the sdk knows about, so the list is handed these rather than reading
- * them off `Payment`.
+ * One row of the transaction list's exit group. An exit is not a payment the
+ * sdk knows about, so the list is handed these rather than reading them off
+ * `Payment`.
  */
 export interface UnilateralExitEntry {
   id: string;
   title: string;
   subtitle: string | null;
+  /** The subtitle asks for a tap, so it takes the amount's color, as "Tap to claim" does. */
+  isAction?: boolean;
+  /** Takes no tap, since nothing it could open acts on it. */
+  inert?: boolean;
   amountSat: number;
-  /** In flight, so the row pulses and opens the flow. A finished one opens its details. */
-  isActive: boolean;
+  /**
+   * `active` is in flight, so it pulses and opens the flow. `recoverable` opens
+   * Recover Funds, and nothing beside an exit under way. `recovery`
+   * is a kept co-signed recovery: in flight like `active`, with a tracker of
+   * its own. `archived` opens its details.
+   */
+  kind: 'recoverable' | 'active' | 'recovery' | 'archived';
   /** Unix seconds a finished exit landed, so its row dates itself like a payment. */
   timestamp?: number;
 }
@@ -23,11 +43,12 @@ export interface UnilateralExitEntry {
 const activeSubtitle = (state: UnilateralExitEngineState): string | null => {
   const plan = state.plan;
   if (!plan) return null;
-  if (plan.phase === 'redo') return 'Open to continue it.';
+  if (awaitsUpdate(plan)) return 'Tap to update';
 
   const { confirmed, total } = planProgress(plan);
+  // A diverged exit's timelocks belong to the set its rebuild replaces.
   const blocks =
-    state.tipHeight === null
+    state.tipHeight === null || isDiverged(plan)
       ? null
       : (nextAction(plan.exit.transactions, state.tipHeight)?.blocks ?? null);
   // The row's title already says these are transactions.
@@ -39,9 +60,12 @@ const activeSubtitle = (state: UnilateralExitEngineState): string | null => {
 const pendingText = (
   state: UnilateralExitEngineState,
   pending: PendingExit,
-): Pick<UnilateralExitEntry, 'title' | 'subtitle'> => {
+): Pick<UnilateralExitEntry, 'title' | 'subtitle' | 'isAction'> => {
   const coins = state.pendingCoins;
-  if (state.nothingToExit) return { title: 'Nothing to exit', subtitle: 'Open to cancel it.' };
+  if (startDeadEnded(state)) {
+    const title = pending.mode === 'recover' ? 'Nothing to recover' : 'Nothing to exit';
+    return { title, subtitle: 'Tap to cancel', isAction: true };
+  }
 
   const stillToSend = pendingTopUp(pending, coins).stillToSendSat;
   if (stillToSend > 0) {
@@ -49,7 +73,7 @@ const pendingText = (
     return { title: 'Waiting for exit fee', subtitle: coins.length > 0 ? `Send ${amount} more` : `Send ${amount} to start` };
   }
   if (!isPendingFunded(pending, coins)) return { title: 'Exit fee sent', subtitle: 'Waiting for a confirmation' };
-  return { title: 'Exit fee received', subtitle: 'Open to start it.' };
+  return { title: 'Exit fee received', subtitle: 'Tap to start', isAction: true };
 };
 
 const archivedEntry = (exit: ArchivedExit): UnilateralExitEntry => ({
@@ -57,34 +81,166 @@ const archivedEntry = (exit: ArchivedExit): UnilateralExitEntry => ({
   // The same words a withdrawal gets, since that is what landed on-chain.
   title: 'BTC Transfer',
   subtitle: null,
-  amountSat: exit.deliveredSat,
-  isActive: false,
+  // What left the wallet, as the row showed it while the exit ran.
+  amountSat: exit.exitedSat ?? exit.deliveredSat,
+  kind: 'archived',
   timestamp: Math.floor(exit.completedAt / 1000),
 });
 
+/** The list row of a kept co-signed recovery, which the wallet page also finds it by. */
+export const recoveryEntryId = (recovery: UnilateralExitPlan): string => `recovery:${recoveryTxid(recovery) ?? ''}`;
+
+/** What a kept recovery's tracker opens Rebuild at a higher fee for, or null where it offers none. */
+export const bumpTxidOf = (recovery: UnilateralExitPlan): string | null =>
+  canBumpRecovery(recovery) ? recoveryTxid(recovery) : null;
+
+// The same words as a finished one: it is already on its way on-chain.
+const recoveryEntry = (recovery: UnilateralExitPlan): UnilateralExitEntry => ({
+  id: recoveryEntryId(recovery),
+  title: 'BTC Transfer',
+  subtitle: 'Waiting for a confirmation',
+  amountSat: movedSat(recovery),
+  kind: 'recovery',
+});
+
+const inFlight = (recoveries: UnilateralExitPlan[]) => recoveries.filter(r => r.status.type !== 'done');
+
 /**
- * The group's rows, the exit in flight first. A completed exit stays as its own
- * row, so the group outlives the plan that produced it.
+ * Whether a unilateral leaf of the exit has left the balance: getInfo counts
+ * it as recoverable only once the operators see its branch on-chain. Walks up
+ * from the leaf's refund through what it depends on.
  */
-export function unilateralExitEntries(state: UnilateralExitEngineState): UnilateralExitEntry[] {
-  const archived = state.archive.map(archivedEntry);
+function branchOnChain(plan: UnilateralExitPlan, leafId: string): boolean {
+  const byTxid = new Map(plan.exit.transactions.map(tx => [tx.txid, tx]));
+  const queue = plan.exit.transactions.filter(tx => tx.kind === 'refund' && tx.nodeId === leafId);
+  const seen = new Set<string>();
+  for (let tx = queue.shift(); tx; tx = queue.shift()) {
+    if (seen.has(tx.txid)) continue;
+    seen.add(tx.txid);
+    if ((tx.kind === 'node' || tx.kind === 'refund') && tx.status.type === 'confirmed') return true;
+    queue.push(...tx.dependsOn.flatMap(txid => byTxid.get(txid) ?? []));
+  }
+  return false;
+}
+
+/**
+ * The plan's leaves that getInfo counts as recoverable, by ID. A co-signed leaf,
+ * a recovery's leaves, and those of one an exit took in were outside the
+ * balance from the start; a leaf no build holds, skipped or not co-signed, has
+ * left it too.
+ */
+function planLeavesOutside(plan: UnilateralExitPlan): Map<string, number> {
+  const outside = new Map(unbuiltLeaves(plan).map(leaf => [leaf.leafId, leaf.valueSats]));
+  const recoverable = new Set(plan.recoverableLeafIds);
+  for (const leaf of plan.exit.leaves) {
+    const counted =
+      isCooperativeLeaf(leaf) || plan.mode === 'recover' || recoverable.has(leaf.leafId) || branchOnChain(plan, leaf.leafId);
+    if (counted) outside.set(leaf.leafId, leaf.valueSats);
+  }
+  return outside;
+}
+
+type RecordsState = Pick<UnilateralExitEngineState, 'plan' | 'recoveries' | 'archive' | 'accounting'>;
+
+/**
+ * What getInfo's recoverable total holds that is accounted for already, by
+ * leaf: what the plan and the kept recoveries are moving, and the leaves any
+ * record dropped as unrecoverable, which getInfo goes on counting.
+ */
+function accountedLeaves({ plan, recoveries, archive, accounting }: RecordsState): Map<string, number> {
+  const accounted = plan ? planLeavesOutside(plan) : new Map<string, number>();
+  for (const leaf of inFlight(recoveries).flatMap(heldRecoveryLeaves)) accounted.set(leaf.leafId, leaf.valueSats);
+  for (const record of [plan, ...recoveries]) {
+    for (const leaf of record ? landedLeavesOf(record) : []) accounted.delete(leaf.leafId);
+  }
+  const dropped = [plan, ...recoveries, ...archive, accounting].flatMap(record => record?.droppedLeaves ?? []);
+  for (const leaf of dropped) accounted.set(leaf.leafId, leaf.valueSats);
+  return accounted;
+}
+
+const accountedSat = (state: RecordsState): number => [...accountedLeaves(state).values()].reduce((sum, sat) => sum + sat, 0);
+
+/**
+ * Whether the row stops subtracting a leaf from `before` to `after`, as it
+ * does once the leaf lands. The SDK takes a landed leaf out of getInfo's total
+ * as it records the landing, so getInfo has to be read again first.
+ */
+export function releasesLeaves(before: RecordsState, after: RecordsState): boolean {
+  const still = accountedLeaves(after);
+  return [...accountedLeaves(before).keys()].some(id => !still.has(id));
+}
+
+/**
+ * What getInfo's `recoverableSat` holds beyond what is accounted for. A
+ * pending exit's start takes every leaf in, so the row waits for it. Beside a
+ * running exit the row has nothing to offer yet: the exit's tracker cannot
+ * recover them, so it takes no tap.
+ */
+const recoverableEntry = (state: UnilateralExitEngineState, recoverableSat: number): UnilateralExitEntry | null => {
+  if (state.pending) return null;
+  const leftSat = recoverableSat - accountedSat(state);
+  if (leftSat <= 0) return null;
+  const canRecover = !state.plan;
+  return {
+    id: 'recoverable',
+    title: 'Recoverable Funds',
+    subtitle: canRecover ? 'Tap to recover' : null,
+    isAction: canRecover,
+    inert: !canRecover,
+    amountSat: leftSat,
+    kind: 'recoverable',
+  };
+};
+
+const liveEntry = (state: UnilateralExitEngineState): UnilateralExitEntry | null => {
   const { plan, pending } = state;
   if (!plan && pending) {
-    return [
-      { id: 'pending', ...pendingText(state, pending), amountSat: pending.willReceiveSat, isActive: true },
-      ...archived,
-    ];
+    return {
+      id: 'pending',
+      ...pendingText(state, pending),
+      amountSat: pending.movedSat ?? pending.willReceiveSat,
+      kind: 'active',
+    };
   }
-  if (!plan || plan.phase === 'complete') return archived;
+  if (!plan) return null;
+  // A finished exit waiting on a read of what landed keeps its row until the
+  // archive's takes over, so the exit never drops out of the list meanwhile.
+  return {
+    id: 'active',
+    title: awaitsUpdate(plan) ? 'Update needed' : 'Transactions in progress',
+    subtitle: activeSubtitle(state),
+    isAction: awaitsUpdate(plan),
+    amountSat: movedSat(plan),
+    kind: 'active',
+  };
+};
 
+/**
+ * The group's rows: kept co-signed recoveries, the exit's live row, what is
+ * left to recover, then finished exits. getInfo's `recoverableSat` counts
+ * in-flight leaves, so the Recoverable Funds row shows only what the records
+ * and their accounting leave of it.
+ */
+export function unilateralExitEntries(
+  state: UnilateralExitEngineState,
+  recoverableSat = 0,
+): UnilateralExitEntry[] {
+  const live = liveEntry(state);
+  const recoverable = recoverableEntry(state, recoverableSat);
   return [
-    {
-      id: 'active',
-      title: plan.phase === 'redo' ? 'Update needed' : 'Transactions in progress',
-      subtitle: activeSubtitle(state),
-      amountSat: willReceiveSat(plan),
-      isActive: true,
-    },
-    ...archived,
+    ...inFlight(state.recoveries).map(recoveryEntry),
+    ...(live ? [live] : []),
+    ...(recoverable ? [recoverable] : []),
+    ...state.archive.map(archivedEntry),
   ];
+}
+
+/**
+ * The group's heading. Once the user has started a unilateral exit, running or
+ * finished, what turns up later is recovered as part of it, so only a wallet
+ * that never started one heads the group Recovery.
+ */
+export function exitGroupTitle({ plan, pending, archive }: UnilateralExitEngineState): string {
+  const exited = [plan, pending, ...archive].some(record => record && record.mode !== 'recover');
+  return exited ? 'Unilateral Exit' : 'Recovery';
 }
