@@ -68,6 +68,13 @@ export function crossChainFriendlyError(err: unknown, fallback: string): string 
   return fallback;
 }
 
+/** Whether the SDK refused because cross-chain is not configured, which is the
+ *  case off mainnet. The SDK message tells a developer to set the config, so the
+ *  flows show their own wording instead. */
+export function isCrossChainDisabled(err: unknown): boolean {
+  return err instanceof Error && err.message.includes('Cross-chain payments are disabled');
+}
+
 /** Whether a receive on this route lands where this wallet can show and spend
  *  it: bitcoin, or the USD token while the USD balance is on. The SDK lists
  *  every route the provider serves, including ones that land only a token,

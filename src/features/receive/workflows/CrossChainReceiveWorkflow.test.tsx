@@ -94,3 +94,32 @@ describe('USD receive amount', () => {
     expect(screen.getByTestId('cross-chain-receive-continue')).toBeEnabled();
   });
 });
+
+describe('USD receive routes', () => {
+  it('says USD payments are disabled, without the SDK config hint', async () => {
+    const client = createMockClient() as unknown as BreezSdk;
+    client.getCrossChainRoutes = vi.fn().mockRejectedValue(
+      new Error('Cross-chain payments are disabled: set the cross-chain config to enable them'),
+    );
+
+    render(
+      <ToastProvider>
+        <WalletProvider client={client} isConnected>
+          <FiatDataProvider>
+            <StableBalanceProvider>
+              <ReceivePaymentDialog isOpen onClose={vi.fn()} />
+            </StableBalanceProvider>
+          </FiatDataProvider>
+        </WalletProvider>
+      </ToastProvider>,
+    );
+    await waitForSheetOpen();
+
+    fireEvent.click(screen.getByTestId('usd-tab'));
+    fireEvent.change(await screen.findByTestId('cross-chain-receive-amount-input'), { target: { value: '10' } });
+    fireEvent.click(screen.getByTestId('cross-chain-receive-continue'));
+
+    expect(await screen.findByText('USD payments are disabled')).toBeInTheDocument();
+    expect(screen.queryByText(/cross-chain config/)).toBeNull();
+  });
+});

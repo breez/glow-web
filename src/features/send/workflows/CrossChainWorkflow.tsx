@@ -3,6 +3,7 @@ import type {
   CrossChainAddressDetails,
   CrossChainRoutePair,
   PrepareSendPaymentResponse,
+  SdkError,
 } from '@breeztech/breez-sdk-spark';
 import { PrimaryButton, SecondaryButton } from '../../../components/ui';
 import { useSheetBack, useSheetOwnsScroll } from '../../../components/ui/sheets/BottomSheetCardContext';
@@ -25,6 +26,7 @@ import {
   chainGroupKey as chainGroupKeyWith,
   crossChainCardClass,
   crossChainFriendlyError,
+  isCrossChainDisabled,
 } from '../../../utils/crossChainRoutes';
 import { formatError } from '@/utils/formatError';
 
@@ -204,8 +206,13 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
         }
       } catch (err) {
         if (cancelled) return;
-        logger.error(LogCategory.PAYMENT, 'Failed to fetch cross-chain routes', { error: formatError(err) });
-        setError(`Failed to fetch routes: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        logger.error(LogCategory.PAYMENT, 'Failed to fetch cross-chain routes', {
+          error: formatError(err),
+          docsUrl: (err as SdkError).docsUrl,
+        });
+        setError(isCrossChainDisabled(err)
+          ? 'USD payments are disabled'
+          : `Failed to fetch routes: ${err instanceof Error ? err.message : 'Unknown error'}`);
         setStep('asset');
       }
     })();
