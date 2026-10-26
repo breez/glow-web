@@ -1,6 +1,6 @@
 # Glow Web App
 
-A PWA app showing how to implement [Breez SDK](https://sdk-doc-spark.breez.technology/) with WebAssembly.
+A PWA app showing how to implement [Breez SDK](https://docs.breez.technology/) with WebAssembly.
 
 See it in action [here](https://glow-app.co).
 
@@ -13,7 +13,7 @@ Built with React, this demo app showcases best practices for integrating Lightni
 
 ## Technologies Used
 
-- [Breez SDK](https://sdk-doc-spark.breez.technology/) for all the bitcoin functionality
+- [Breez SDK](https://docs.breez.technology/) for all the bitcoin functionality
 - React with TypeScript
 - Tailwind CSS for styling
 
