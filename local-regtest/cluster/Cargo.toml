@@ -10,8 +10,8 @@ publish = false
 # image of Lightspark's current operator: Lightspark stopped publishing its
 # source, so an operator built from the public code is an old one.
 [dependencies]
-spark-itest = { git = "https://github.com/breez/spark-sdk", rev = "d5eb73816983ec4ad61b2dd92f08647072fe4acb" }
-spark-wallet = { git = "https://github.com/breez/spark-sdk", rev = "d5eb73816983ec4ad61b2dd92f08647072fe4acb" }
+spark-itest = { git = "https://github.com/breez/spark-sdk", rev = "e462974ab6a4f3f3ace0f66bde5ecce0cb6fe879" }
+spark-wallet = { git = "https://github.com/breez/spark-sdk", rev = "e462974ab6a4f3f3ace0f66bde5ecce0cb6fe879" }
 
 anyhow = "1.0.98"
 bip39 = "2.2.0"
@@ -21,3 +21,8 @@ serde_json = "1.0.140"
 tokio = { version = "1.45.1", features = ["full"] }
 tokio-postgres = "0.7.10"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+
+# macOS 27's loader rejects the proc-macro libraries a stripped release build
+# produces ("mis-aligned LINKEDIT string pool"), so the runner fails to build.
+[profile.release]
+strip = false
