@@ -3,7 +3,6 @@ import {
   BottomSheetCard,
   BottomSheetContainer,
   DialogHeader,
-  ErrorMessageBox,
   LoadingSpinner,
   PrimaryButton,
 } from '@/components/ui';
@@ -16,21 +15,36 @@ import { IntroStep } from '@/features/unilateral-exit/steps/IntroStep';
 import { DestinationField } from '@/components/DestinationField';
 import { FeeStep } from '@/features/unilateral-exit/steps/FeeStep';
 import { QuoteStep } from '@/features/unilateral-exit/steps/QuoteStep';
-import { FundStep, FundingStatus, PendingExitStep } from '@/features/unilateral-exit/steps/FundStep';
-import { TrackerView } from '@/features/unilateral-exit/TrackerView';
-import { exitTxid } from '@/features/unilateral-exit/archive';
-import { cancelPendingExit, startPendingExit } from '@/features/unilateral-exit/engine';
-import { isPendingFunded } from '@/features/unilateral-exit/driver';
+import { RecoverReviewStep } from '@/features/unilateral-exit/steps/RecoverReviewStep';
+import { ErrorCard } from '@/features/unilateral-exit/steps/ReviewParts';
+import { FundStep, FundingStatus, PendingExitStep, Receipt, Status } from '@/features/unilateral-exit/steps/FundStep';
+import { RedoActions, TrackerView } from '@/features/unilateral-exit/TrackerView';
+import { SatAmount } from '@/components/SatAmount';
+import { recoveryTxid } from '@/features/unilateral-exit/storage/archive';
+import { cancelPendingExit, startPendingExit } from '@/features/unilateral-exit/engine/api';
+import { startDeadEnded } from '@/features/unilateral-exit/engine/state';
+import { isPendingFunded } from '@/features/unilateral-exit/exitFee';
+import { awaitsUpdate, type ExitMode } from '@/features/unilateral-exit/model/plan';
 
 interface UnilateralExitPageProps {
   network: string;
+  /**
+   * `recover` when opened from the Recoverable Funds row, `exit` from Start
+   * Unilateral Exit. A saved exit's own mode wins, but a new exit takes in a
+   * recovery that needs an exit fee.
+   */
+  mode?: ExitMode;
+  /** A kept co-signed recovery whose fee this raises, by its txid. */
+  bumpTxid?: string;
   onBack: () => void;
   /** Where to go once the exit lands, since the tracker has nothing left to show. */
   onFinished: () => void;
 }
 
-const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack, onFinished }) => {
-  const flow = useUnilateralExitFlow(network);
+const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, bumpTxid, onBack, onFinished }) => {
+  const flow = useUnilateralExitFlow(network, mode, bumpTxid);
+  const recovering = flow.mode === 'recover';
+  const noun = recovering ? 'recovery' : 'exit';
 
   // Reading the recovery phrase is gated on a PIN where one is set. Where none
   // is, the step passes straight through.
@@ -53,21 +67,41 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
     };
   }, [flow.phase, unlock]);
 
-  // Once the exit lands the wallet list carries it, so the sheet closes,
-  // whatever the step. The signal is the exit's txid reaching the archive.
-  // The phase cannot serve: a tracker opened from the list is derived from the
-  // plan, and without one it reads as the intro. Nor can a missing plan, which
-  // is also what a stopped engine reports while the SDK reconnects.
-  const { plan, archive } = flow.engine;
-  const shownExit = useRef<string | null>(null);
+  // Once the plan the sheet showed ends, the sheet closes, whatever the step:
+  // the wallet list carries what it paid out. The engine counts each plan it
+  // ends, archived or not, since one can end with nothing paid out in the pass
+  // that finishes it. The phase cannot serve: a tracker opened from the list
+  // is derived from the plan, and without one it reads as the intro.
+  const { plan, archive, endedPlans } = flow.engine;
+  const { bumping, bumpedTxid, phase } = flow;
+  const shownTxid = useRef<string | null>(null);
+  // How many plans had ended when this sheet last showed one.
+  const endedBefore = useRef<number | null>(null);
   useEffect(() => {
-    if (plan) shownExit.current = exitTxid(plan);
-    if (archive.some(exit => exit.id === shownExit.current)) onFinished();
-  }, [plan, archive, onFinished]);
+    if (!bumping && plan) {
+      shownTxid.current = recoveryTxid(plan) ?? shownTxid.current;
+      endedBefore.current = endedPlans;
+    }
+    // A bump follows the kept recovery holding its leaves, whose txid a retry
+    // can swap. With none to follow there is nothing to bump. Its receipt
+    // waits for Done.
+    if (bumping && bumpedTxid) shownTxid.current = bumpedTxid;
+    if (bumping && phase === 'sent') return;
+    const planEnded = endedBefore.current !== null && endedPlans > endedBefore.current;
+    if (planEnded || (bumping && !shownTxid.current) || archive.some(exit => exit.id === shownTxid.current)) onFinished();
+  }, [plan, archive, endedPlans, onFinished, bumping, bumpedTxid, phase]);
+
+  // A bump sheet can sit beside a paused exit or recovery, which is not its own.
+  const paused = !bumping && !!plan && awaitsUpdate(plan);
+  // An empty quote of a paused exit stays empty at any rate, since a named
+  // quote takes each leaf whatever it costs. So Back skips the fee picker for
+  // the tracker, whose update button is what continues the exit.
+  const { canGoBack, back: stepBack, goTo, quote } = flow;
+  const backToTracker = paused && phase === 'quote' && !quote.isQuoting && !quote.error && !!quote.figures?.isEmpty;
+  const back = useCallback(() => (backToTracker ? goTo('tracker') : stepBack()), [backToTracker, goTo, stepBack]);
 
   // One call to action per step, in the bar the rest of the app puts it in.
   // A step with nothing to press, such as the pin gate or the build, has none.
-  const { canGoBack, back } = flow;
   useBackButton(
     useCallback(() => {
       if (!canGoBack) return false;
@@ -76,6 +110,14 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
     }, [canGoBack, back]),
     true,
   );
+
+  // A cancelled exit falls back to its intro to start again. A recovery has
+  // no intro, and one opened from its row would land on the exit's, which
+  // quotes the whole balance. So the sheet closes instead.
+  const cancelPending = useCallback(() => {
+    cancelPendingExit();
+    if (recovering) onBack();
+  }, [recovering, onBack]);
 
   const stepAction = (() => {
     switch (flow.phase) {
@@ -111,25 +153,45 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
             Get Quote
           </PrimaryButton>
         );
-      case 'quote':
+      case 'quote': {
         if (!canContinueFromQuote(flow.quote)) return null;
+        // A quote that needs no funding builds on this tap, so it names what the
+        // tap does. So does a recovery that sends its co-signed part on it.
+        const figures = flow.quote.figures;
+        const underWay = !!flow.engine.plan || flow.bumping;
+        const sendsNow = recovering && !underWay && !!figures?.recoverableSat;
+        const label =
+          figures?.needsFunding && !sendsNow
+            ? 'Continue'
+            : recovering
+              ? underWay
+                ? 'Continue Recovery'
+                : 'Recover Funds'
+              : underWay
+                ? 'Continue Exit'
+                : 'Exit Spark';
         return (
-          <PrimaryButton onClick={() => flow.goTo('unlock')} className="w-full" data-testid="unilateral-exit-quote-continue">
-            Continue
+          <PrimaryButton
+            onClick={() => void flow.continueFromQuote()}
+            className="w-full"
+            data-testid="unilateral-exit-quote-continue"
+          >
+            {label}
           </PrimaryButton>
         );
+      }
       case 'pending': {
         // Paying never starts the exit: coins an earlier attempt left at the
         // shared address can already cover the fee, so the user decides.
-        const { pending, pendingCoins, nothingToExit, isStarting } = flow.engine;
-        if (!pending || nothingToExit || isStarting || !isPendingFunded(pending, pendingCoins)) return null;
+        const { pending, pendingCoins, isStarting } = flow.engine;
+        if (!pending || startDeadEnded(flow.engine) || isStarting || !isPendingFunded(pending, pendingCoins)) return null;
         return (
           <PrimaryButton
             onClick={() => void startPendingExit()}
             className="w-full"
             data-testid="unilateral-exit-start-exit"
           >
-            Exit Spark
+            {recovering ? 'Recover Funds' : 'Exit Spark'}
           </PrimaryButton>
         );
       }
@@ -152,11 +214,36 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
               className="w-full"
               data-testid="unilateral-exit-build"
             >
-              Continue Exit
+              {recovering ? 'Continue Recovery' : 'Continue Exit'}
             </PrimaryButton>
           </>
         );
       }
+      case 'tracker':
+        if (!flow.engine.plan || !awaitsUpdate(flow.engine.plan)) return null;
+        return (
+          <RedoActions
+            onContinue={() => void flow.continueExit()}
+            onRebuild={flow.rebuild}
+            isContinuing={flow.isContinuing}
+            continueError={flow.continueError}
+            noun={noun}
+          />
+        );
+      case 'unlock':
+        // A cancelled passkey prompt, or any failed read, is tried again here.
+        if (!flow.unlockError) return null;
+        return (
+          <PrimaryButton onClick={() => void unlock()} className="w-full" data-testid="unilateral-exit-unlock-retry">
+            Try Again
+          </PrimaryButton>
+        );
+      case 'sent':
+        return (
+          <PrimaryButton onClick={onFinished} className="w-full" data-testid="unilateral-exit-sent-done">
+            Done
+          </PrimaryButton>
+        );
       default:
         return null;
     }
@@ -171,9 +258,9 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
           <DialogHeader
             // Names the flow, not the step: each step already labels its own
             // field, and the send sheet titles itself the same way.
-            title="Unilateral Exit"
+            title={recovering ? 'Recover Funds' : 'Unilateral Exit'}
             onClose={onBack}
-            onBack={flow.canGoBack ? flow.back : undefined}
+            onBack={canGoBack ? back : undefined}
           />
 
           {/* Bounded so the sheet stays content-sized: past 90% of the
@@ -200,15 +287,52 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
 
             {flow.phase === 'fee' && <FeeStep {...flow.fee} />}
 
-            {flow.phase === 'quote' && <QuoteStep {...flow.quote} />}
+            {flow.phase === 'quote' &&
+              (recovering && flow.quote.figures && !flow.quote.isQuoting && !flow.quote.error ? (
+                // The same quote in this flow's words, which shows why a start failed itself.
+                <RecoverReviewStep
+                  figures={flow.quote.figures}
+                  destination={flow.quote.quote?.destination ?? flow.destination.destination}
+                  error={flow.startError}
+                  underWay={!!plan || bumping}
+                  paused={paused}
+                  feeHeld={flow.feeAlreadyHeld}
+                  exitFeeDueSat={flow.exitFeeDueSat}
+                />
+              ) : (
+                <>
+                  <QuoteStep
+                    {...flow.quote}
+                    underWay={!!plan}
+                    paused={paused}
+                    noun={noun}
+                    feeHeld={flow.feeAlreadyHeld}
+                    exitFeeDueSat={flow.exitFeeDueSat}
+                  />
+                  {flow.startError && (
+                    <ErrorCard
+                      title={flow.engine.plan ? 'Could not continue the exit' : 'Could not start the exit'}
+                      error={flow.startError}
+                      testId="unilateral-exit-start-error"
+                    />
+                  )}
+                </>
+              ))}
 
             {flow.phase === 'unlock' && (
               <>
+                {/* Passed once, so a retry after a failed read asks for no PIN again. */}
                 {gate === 'pin' && (
-                  <PinGate reason="Unilateral exit" onUnlocked={() => void flow.unlock()} />
+                  <PinGate
+                    reason={recovering ? 'Recover funds' : 'Unilateral exit'}
+                    onUnlocked={() => {
+                      setGate(null);
+                      void flow.unlock();
+                    }}
+                  />
                 )}
                 {flow.unlockError && (
-                  <ErrorMessageBox title="Cannot reach your recovery phrase" error={flow.unlockError} />
+                  <ErrorCard title="Sign-in failed" error={flow.unlockError} testId="unilateral-exit-unlock-error" />
                 )}
               </>
             )}
@@ -220,7 +344,8 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
                 nothingToExit={flow.engine.nothingToExit}
                 isStarting={flow.engine.isStarting}
                 startError={flow.engine.startError}
-                onCancel={cancelPendingExit}
+                onCancel={cancelPending}
+                noun={noun}
               />
             )}
 
@@ -230,12 +355,13 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
                 error={flow.buildError}
                 isPaying={flow.phase === 'topUp'}
                 onTopUp={() => flow.goTo('topUp')}
+                noun={noun}
               />
             )}
 
             {flow.phase === 'building' && (
               <div className="py-16 flex justify-center">
-                <LoadingSpinner text="Building and signing the exit..." />
+                <LoadingSpinner text={`Building and signing the ${noun}...`} />
               </div>
             )}
 
@@ -245,11 +371,18 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, onBack
                 tipHeight={flow.engine.tipHeight}
                 isAdvancing={flow.engine.isAdvancing}
                 onRebuild={flow.rebuild}
-                onContinue={() => void flow.continueExit()}
-                isContinuing={flow.isContinuing}
                 continueError={flow.continueError}
                 justStarted={!openedOnTracker}
+                noun={noun}
               />
+            )}
+
+            {flow.phase === 'sent' && (
+              <Receipt title={bumping ? 'Fee raised' : 'Funds sent'}>
+                <Status>
+                  <SatAmount sats={flow.sentSat} /> on its way
+                </Status>
+              </Receipt>
             )}
 
           </div>

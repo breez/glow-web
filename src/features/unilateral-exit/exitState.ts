@@ -1,6 +1,6 @@
 import type { BreezSdk } from '@breeztech/breez-sdk-spark';
 import { LogCategory, logger } from '@/services/logger';
-import type { UnilateralExitPlan } from './driver';
+import type { UnilateralExitPlan } from './model/plan';
 
 export type ExitStateExporter = Pick<BreezSdk, 'exportUnilateralExitState'>;
 export type ExitStateImporter = Pick<BreezSdk, 'importUnilateralExitState'>;
@@ -14,7 +14,7 @@ export function exitStateForExit(
   plan: UnilateralExitPlan | null,
   rolling: string | null,
 ): string | null {
-  if (plan?.phase === 'complete') return null;
+  if (plan?.status.type === 'done') return null;
   return plan?.exitStateSnapshot ?? rolling ?? null;
 }
 
@@ -28,7 +28,7 @@ export async function captureExitState(
   plan: UnilateralExitPlan | null,
   save: (exitState: string) => Promise<void>,
 ): Promise<void> {
-  if (plan && plan.phase !== 'complete') return;
+  if (plan && plan.status.type !== 'done') return;
   try {
     const { exitState } = await sdk.exportUnilateralExitState();
     await save(exitState);

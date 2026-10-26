@@ -1,46 +1,31 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
-import type { PrepareRecoverFundsResponse } from '@breeztech/breez-sdk-spark';
+import type { PrepareRecoverFundsResponse, SkippedLeaf } from '@breeztech/breez-sdk-spark';
 import { QuoteStep } from './QuoteStep';
-import { canContinueFromQuote } from '../hooks/useUnilateralExitFlow';
+import { canContinueFromQuote, type QuoteFields } from '../hooks/useUnilateralExitFlow';
+import { quoteFigures } from '../quote';
+import { funding, prepared } from '../testFixtures';
 
-const quote = (over: Partial<PrepareRecoverFundsResponse> = {}): PrepareRecoverFundsResponse => ({
-  leaves: [{ leafId: 'leaf-1', valueSats: 100_000, method: 'unilateral' }],
-  recoverableValueSats: 100_000,
-  totalFeeSats: 4_000,
-  cpfpFeeSats: 3_800,
-  cooperativeFeeSats: 0,
-  fanoutFeeSats: 0,
-  refundFeeSats: 0,
-  sweepFeeSats: 200,
-  skipped: [],
-  funding: { singleUtxoSats: 6_000, perBranch: [] },
-  feeRateSatPerVbyte: 2,
-  destination: 'bc1qdest',
-  exitChainState: {
-    confirmedNodes: [],
-    refunds: [],
-    stoppedLeafIds: [],
-    unverifiedNodeIds: [],
-    unverifiableConfirmedNodeIds: [],
-  },
-  ...over,
-});
+const quote = (over: Partial<PrepareRecoverFundsResponse> = {}): PrepareRecoverFundsResponse =>
+  prepared({ totalFeeSats: 4_000, cpfpFeeSats: 3_800, funding: funding(6_000), ...over });
+
+/** A balance leaf and a co-signed one. */
+const withRecoverable = (cooperativeFeeSats = 0): PrepareRecoverFundsResponse =>
+  quote({
+    leaves: [
+      { leafId: 'leaf-1', valueSats: 100_000, method: 'unilateral' },
+      { leafId: 'cosigned-1', valueSats: 48_200, method: 'cooperative' },
+    ],
+    recoverableValueSats: 148_200,
+    cooperativeFeeSats,
+  });
 
 const fields = (
-  over: Partial<React.ComponentProps<typeof QuoteStep>> = {},
-): React.ComponentProps<typeof QuoteStep> => ({
-  quote: quote(),
-  sweepFeeSat: 200,
-  willReceiveSat: 99_800,
-  isQuoting: false,
-  error: null,
-  leftBehindSat: 0,
-  ...over,
-});
+  q: PrepareRecoverFundsResponse = quote(),
+  { error = null }: { error?: string | null } = {},
+): QuoteFields => ({ quote: q, figures: quoteFigures(q), isQuoting: false, error });
 
-const renderStep = (props: Partial<React.ComponentProps<typeof QuoteStep>> = {}) =>
-  render(<QuoteStep {...fields(props)} />);
+const renderStep = (...args: Parameters<typeof fields>) => render(<QuoteStep {...fields(...args)} />);
 
 describe('QuoteStep', () => {
   it('shows the one fee that comes off the balance, so the shortfall is not a surprise', () => {
@@ -50,15 +35,6 @@ describe('QuoteStep', () => {
     // The label already says it is a cost, so the figure is a plain amount.
     const row = screen.getByText('Sweep fee').parentElement as HTMLElement;
     expect(within(row).getByText(/200/)).toBeInTheDocument();
-  });
-
-  it('shows the cooperative and refund fees the leaves pay, only when there are any', () => {
-    renderStep();
-    expect(screen.queryByText('Recovery fee')).not.toBeInTheDocument();
-
-    renderStep({ quote: quote({ cooperativeFeeSats: 1_000, refundFeeSats: 300 }) });
-    const row = screen.getByText('Recovery fee').parentElement as HTMLElement;
-    expect(within(row).getByText(/1 300/)).toBeInTheDocument();
   });
 
   it('says what the exit fee pays for, and that it does not come back', () => {
@@ -79,39 +55,136 @@ describe('QuoteStep', () => {
     expect(within(row).getByText(/6 000/)).toBeInTheDocument();
   });
 
+  it('shows an exit under way only the exit fee still to pay, and none as owed once it is covered', () => {
+    const value = () => (screen.getByText('Exit fee').parentElement as HTMLElement).lastElementChild as HTMLElement;
+    const { rerender } = render(<QuoteStep {...fields()} underWay exitFeeDueSat={2_272} />);
+    expect(value()).toHaveTextContent(/2 272/);
+    expect(value().className).toContain('text-spark-primary');
+
+    rerender(<QuoteStep {...fields()} underWay exitFeeDueSat={0} />);
+    expect(value()).toHaveTextContent(/^0$/);
+    expect(value().className).not.toContain('text-spark-primary');
+  });
+
+  it('asks for no exit fee when the quote needs no funding', () => {
+    renderStep(quote({ funding: undefined, cpfpFeeSats: 0, totalFeeSats: 200 }));
+    expect(screen.queryByText('Exit fee')).not.toBeInTheDocument();
+    expect(screen.queryByText(/mining fees required to move the Spark tree/)).not.toBeInTheDocument();
+    expect(screen.getByText(/99 800/)).toBeInTheDocument();
+  });
+
   it('lets a worthwhile exit continue', () => {
     expect(canContinueFromQuote(fields())).toBe(true);
   });
 
   it('will not let an exit start when the fees would eat it', () => {
-    renderStep({
-      quote: quote({ recoverableValueSats: 1_000, totalFeeSats: 4_000 }),
-      sweepFeeSat: 200,
-      willReceiveSat: 800,
-    });
+    const tooDear = quote({ recoverableValueSats: 1_000, totalFeeSats: 4_000 });
+    renderStep(tooDear);
     expect(screen.getByText('Nothing is worth exiting right now')).toBeInTheDocument();
-    expect(canContinueFromQuote(fields({
-      quote: quote({ recoverableValueSats: 1_000, totalFeeSats: 4_000 }),
-      sweepFeeSat: 200,
-      willReceiveSat: 800,
-    }))).toBe(false);
+    expect(screen.getByText(/every part of your balance would cost more/)).toBeInTheDocument();
+    expect(canContinueFromQuote(fields(tooDear))).toBe(false);
+  });
+
+  it('says what is left of an exit under way costs more than it holds, rather than the balance', () => {
+    render(<QuoteStep {...fields(quote({ recoverableValueSats: 1_000, totalFeeSats: 4_000 }))} underWay />);
+    expect(screen.getByText('Nothing is worth exiting right now')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'At this fee rate what is left of your exit would cost more to move on-chain than it is worth. Try a lower fee rate, or wait for the network to get cheaper.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/your balance/)).not.toBeInTheDocument();
   });
 
   it('distinguishes having no leaves at all from the fees being too high', () => {
-    renderStep({ quote: quote({ leaves: [], recoverableValueSats: 0 }) });
+    renderStep(quote({ leaves: [], recoverableValueSats: 0 }));
     expect(screen.getByText('Nothing here to exit')).toBeInTheDocument();
     expect(screen.queryByText('Nothing is worth exiting right now')).not.toBeInTheDocument();
     expect(screen.queryByText('Change fee rate')).not.toBeInTheDocument();
   });
 
-  it('names the balance being left behind as dust', () => {
-    renderStep({ leftBehindSat: 2_500 });
+  it('says an exit under way has nothing to rebuild yet, rather than that the wallet holds nothing', () => {
+    render(<QuoteStep {...fields(quote({ leaves: [], recoverableValueSats: 0 }))} underWay />);
+    expect(screen.getByText('Nothing to rebuild right now')).toBeInTheDocument();
+    expect(screen.getByText('Glow keeps your exit moving on its own.')).toBeInTheDocument();
+    expect(screen.queryByText('Nothing here to exit')).not.toBeInTheDocument();
+  });
+
+  it('points a paused exit with nothing to rebuild at its update, since it will not move by itself', () => {
+    render(<QuoteStep {...fields(quote({ leaves: [], recoverableValueSats: 0 }))} underWay paused />);
+    expect(screen.getByText('Nothing to rebuild right now')).toBeInTheDocument();
+    expect(screen.getByText('Please update your unilateral exit to continue.')).toBeInTheDocument();
+    expect(screen.queryByText(/on its own/)).not.toBeInTheDocument();
+  });
+
+  it('asks for no start under way, where the build first spends what the fee address holds', () => {
+    render(<QuoteStep {...fields()} underWay />);
+    expect(screen.getByText('Exit fee')).toBeInTheDocument();
+    expect(screen.queryByText(/To start the process/)).not.toBeInTheDocument();
+  });
+
+  const dust: SkippedLeaf = { leafId: 'dust', valueSats: 2_500, reason: { type: 'feeExceedsValue' } };
+  const gone: SkippedLeaf = { leafId: 'gone', valueSats: 1_000, reason: { type: 'fundsNotFound' } };
+  const spent: SkippedLeaf = { leafId: 'spent', valueSats: 700, reason: { type: 'notRecoverable', message: 'spent' } };
+  const empty = (skipped: SkippedLeaf[]) => quote({ leaves: [], recoverableValueSats: 0, skipped });
+
+  it('says nothing is worth exiting when the fee is why a fresh quote moves nothing', () => {
+    renderStep(empty([dust, spent]));
+    expect(screen.getByText('Nothing is worth exiting right now')).toBeInTheDocument();
+    expect(screen.getByText(/every part of your balance would cost more/)).toBeInTheDocument();
+    expect(screen.queryByText('Nothing here to exit')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['a leaf Glow could not find is among the skips', [dust, gone]],
+    ['every skip is unrecoverable', [spent]],
+  ])('says there is nothing here to exit when %s', (_, skipped) => {
+    renderStep(empty(skipped));
+    expect(screen.getByText('Nothing here to exit')).toBeInTheDocument();
+    expect(screen.queryByText('Nothing is worth exiting right now')).not.toBeInTheDocument();
+  });
+
+  it('names the balance being left behind as dust when the fee is why every piece stays', () => {
+    renderStep(quote({ skipped: [dust] }));
     expect(screen.getByText('Some of your balance stays behind')).toBeInTheDocument();
-    expect(screen.getByText(/2 500/)).toBeInTheDocument();
+    expect(screen.getByText(/sits in pieces too small/)).toHaveTextContent('2 500');
+  });
+
+  it('says how much stays behind, and not why, when any of it stays for another reason', () => {
+    renderStep(quote({ skipped: [dust, gone] }));
+    expect(screen.getByText('Some funds stay behind')).toBeInTheDocument();
+    expect(screen.getByText(/is left out of this exit/)).toHaveTextContent('3 500');
+    expect(screen.queryByText('Some of your balance stays behind')).not.toBeInTheDocument();
+    expect(screen.queryByText(/too small/)).not.toBeInTheDocument();
+  });
+
+  it('says nothing stays behind when the quote skips nothing', () => {
+    renderStep(quote({ skipped: [] }));
+    expect(screen.queryByText('Some funds stay behind')).not.toBeInTheDocument();
+    expect(screen.queryByText('Some of your balance stays behind')).not.toBeInTheDocument();
+  });
+
+  it('gives recoverable funds their own row, so Balance stays the balance', () => {
+    renderStep(withRecoverable());
+    expect(within(screen.getByText('Balance').parentElement as HTMLElement).getByText(/100 000/)).toBeInTheDocument();
+    expect(within(screen.getByText('Recoverable Funds').parentElement as HTMLElement).getByText(/48 200/)).toBeInTheDocument();
+  });
+
+  it('calls the fee a network fee once co-signed recoveries add theirs to the sweep', () => {
+    renderStep(withRecoverable(2_900));
+    expect(screen.queryByText('Sweep fee')).not.toBeInTheDocument();
+    expect(within(screen.getByText('Network fee').parentElement as HTMLElement).getByText(/3 100/)).toBeInTheDocument();
   });
 
   it('reports a quote that failed outright', () => {
-    renderStep({ error: 'operators unreachable' });
+    renderStep(quote(), { error: 'operators unreachable' });
     expect(screen.getByText('Could not quote the exit')).toBeInTheDocument();
+  });
+
+  it('speaks of a recovery while it quotes one, and when that quote fails', () => {
+    const { rerender } = render(<QuoteStep {...fields()} isQuoting noun="recovery" />);
+    expect(screen.getByText('Working out what can be recovered...')).toBeInTheDocument();
+    rerender(<QuoteStep {...fields(quote(), { error: 'operators unreachable' })} noun="recovery" />);
+    expect(screen.getByText('Could not quote the recovery')).toBeInTheDocument();
   });
 });
