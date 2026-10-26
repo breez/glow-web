@@ -213,32 +213,64 @@ export const CollapsibleSection: React.FC<{
   </div>
 );
 
-/** A selectable value, with a button that opens `href` when given. */
-export const CodeValue: React.FC<{ label: string; value: string; href?: string }> = ({ label, value, href }) => (
-  <div className="flex items-start gap-2">
-    {/* Selectable rather than copy/share buttons: the value is the point of
-        the row, and the OS selection menu already copies and shares it.
-        The WebKit properties are not redundant with `select-text`: Tailwind
-        emits `user-select` unprefixed only, which the WKWebView ignores, and
-        a WebView withholds long-press selection until the page asks. */}
-    <code className="flex-1 min-w-0 text-spark-text-secondary font-mono text-xs break-all select-text [-webkit-touch-callout:default] [-webkit-user-select:text]">
-      {value}
-    </code>
-    {href && (
-      <button
-        onClick={() => openExternalUrl(href).catch(err => {
-          logger.error(LogCategory.UI, 'Failed to open link', {
-            error: err instanceof Error ? err.message : String(err),
-          });
-        })}
-        className="shrink-0 p-1 rounded-md hover:bg-white/5 transition-colors group"
-        aria-label={`Open ${label}`}
-      >
-        <ExternalLinkIcon className="w-3.5 h-3.5 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" />
-      </button>
-    )}
-  </div>
-);
+/** A selectable value, with a button that opens `href` when given, and one that copies it when `copyable`. */
+export const CodeValue: React.FC<{ label: string; value: string; href?: string; copyable?: boolean }> = ({
+  label,
+  value,
+  href,
+  copyable = false,
+}) => {
+  const [copied, setCopied] = React.useState(false);
+  const handleCopy = () => {
+    copyToClipboard(value)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(err => {
+        logger.error(LogCategory.UI, 'Failed to copy to clipboard', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+  };
+
+  return (
+    <div className="flex items-start gap-2">
+      {/* Selectable rather than copy/share buttons: the value is the point of
+          the row, and the OS selection menu already copies and shares it.
+          The WebKit properties are not redundant with `select-text`: Tailwind
+          emits `user-select` unprefixed only, which the WKWebView ignores, and
+          a WebView withholds long-press selection until the page asks. */}
+      <code className="flex-1 min-w-0 text-spark-text-secondary font-mono text-xs break-all select-text [-webkit-touch-callout:default] [-webkit-user-select:text]">
+        {value}
+      </code>
+      {href && (
+        <button
+          onClick={() => openExternalUrl(href).catch(err => {
+            logger.error(LogCategory.UI, 'Failed to open link', {
+              error: err instanceof Error ? err.message : String(err),
+            });
+          })}
+          className="shrink-0 p-1 rounded-md hover:bg-white/5 transition-colors group"
+          aria-label={`Open ${label}`}
+        >
+          <ExternalLinkIcon className="w-3.5 h-3.5 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" />
+        </button>
+      )}
+      {copyable && (
+        <button
+          onClick={handleCopy}
+          className="shrink-0 p-1 rounded-md hover:bg-white/5 transition-colors"
+          aria-label={`Copy ${label}`}
+        >
+          {copied
+            ? <CheckIcon size="sm" className="text-spark-success" />
+            : <CopyIcon size="sm" className="text-spark-text-secondary" />}
+        </button>
+      )}
+    </div>
+  );
+};
 
 export const CollapsibleCodeField: React.FC<{
   label: string;
@@ -247,9 +279,11 @@ export const CollapsibleCodeField: React.FC<{
   onToggle: () => void;
   /** Adds a button that opens this URL. */
   href?: string;
-}> = ({ label, value, isVisible, onToggle, href }) => (
+  /** Adds a copy button, for a value the user is asked to pass on. */
+  copyable?: boolean;
+}> = ({ label, value, isVisible, onToggle, href, copyable }) => (
   <CollapsibleSection label={label} isVisible={isVisible} onToggle={onToggle}>
-    <CodeValue label={label} value={value} href={href} />
+    <CodeValue label={label} value={value} href={href} copyable={copyable} />
   </CollapsibleSection>
 );
 
