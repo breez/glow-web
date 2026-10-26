@@ -19,8 +19,8 @@ const bolt11Details = (input: string) =>
     amountMsat: 10000,
   }) as unknown as InputType;
 
-function renderSendPayment(parse: (input: string) => Promise<InputType>) {
-  const client = createMockClient({ parse: vi.fn().mockImplementation(parse) } as never);
+function renderSendPayment(parse: (input: string) => Promise<InputType>, overrides: Record<string, unknown> = {}) {
+  const client = createMockClient({ parse: vi.fn().mockImplementation(parse), ...overrides } as never);
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <WalletProvider client={client} isConnected>
       <FiatDataProvider>
@@ -139,5 +139,23 @@ describe('an invoice the wallet already paid', () => {
 
     expect(result.current.paymentResult).toBe('failure');
     expect(result.current.error).toBe('This invoice has already been paid.');
+  });
+});
+
+describe('prepare errors', () => {
+  it('asks to try again in a few minutes while reserved leaves keep the balance from settling (#535)', async () => {
+    const { result } = renderSendPayment(
+      async (address) => ({ type: 'bitcoinAddress', address, network: 'bitcoin' }) as unknown as InputType,
+      {
+        prepareSendPayment: vi
+          .fn()
+          .mockRejectedValue(new Error('Tree service error: generic error: Failed to select leaves after all retries')),
+      },
+    );
+
+    await act(() => result.current.processInput('bc1qtest'));
+    await act(() => result.current.onAmountNext(1000n, true));
+
+    expect(result.current.error).toBe('Could not prepare the payment while your balance settles. Please try again in a few minutes.');
   });
 });
