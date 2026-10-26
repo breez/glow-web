@@ -33,6 +33,11 @@ const ALREADY_PAID = 'This invoice has already been paid.';
  *  reports it. Matches the gRPC status, which is stable, not its message. */
 const ALREADY_EXISTS = /status: AlreadyExists/;
 
+/** Leaf selection gives up while leaves are reserved but still counted in the
+ *  balance: after a reload cuts a leaf swap short, the SDK holds them for up to
+ *  five minutes before releasing them. */
+const BALANCE_SETTLING = /Failed to select leaves/;
+
 export type SendStep ='input' | 'amount' | 'workflow' | 'processing' | 'result';
 export type ProcessingPhase = 'sending' | 'converting';
 
@@ -130,7 +135,12 @@ export function useSendPayment(): UseSendPaymentReturn {
       setCurrentStep('workflow');
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to prepare payment', { error: formatError(err) });
-      setError(`Failed to prepare payment: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      setError(
+        BALANCE_SETTLING.test(message)
+          ? 'Could not prepare the payment while your balance settles. Please try again in a few minutes.'
+          : `Failed to prepare payment: ${message}`,
+      );
       // Clear any stale response so the confirm step renders its prepare-failed
       // fallback (error + disabled send) instead of an old success render.
       setPrepareResponse(null);

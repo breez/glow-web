@@ -1,5 +1,6 @@
 import React from 'react';
 import { CopyableRow, PrimaryButton, FormError } from '../../../components/ui';
+import { SimpleAlert } from '../../../components/AlertCard';
 import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardContext';
 import { FeeBreakdownCard, SimpleFeeBreakdown } from '../../../components/FeeBreakdownCard';
 import { SpinnerIcon } from '../../../components/Icons';
@@ -101,7 +102,7 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
         />
       )}
 
-      <FormError error={balanceError || error} />
+      {balanceError ? <FormError error={balanceError} /> : error && <SimpleAlert variant="error" hideIcon>{error}</SimpleAlert>}
 
       <PrimaryButton
         onClick={onConfirm}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import type { ConversionOptions } from '@breeztech/breez-sdk-spark';
 import { FormError, PrimaryButton, AMOUNT_FIELD_CLASS } from '../../../components/ui';
+import { SimpleAlert } from '../../../components/AlertCard';
 import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardContext';
 import { SpinnerIcon } from '../../../components/Icons';
 import { formatQuickAmount, pickQuickAmounts } from '../../../utils/tokenFormatting';
@@ -283,7 +284,11 @@ const AmountStep: React.FC<AmountStepProps> = ({
     <div className="space-y-5">
       {amountFirst ? <>{amountSection}{destinationSection}</> : <>{destinationSection}{amountSection}</>}
 
-      <FormError error={inlineBalanceError || localError || error} />
+      {inlineBalanceError || localError ? (
+        <FormError error={inlineBalanceError || localError} />
+      ) : (
+        error && <SimpleAlert variant="error" hideIcon>{error}</SimpleAlert>
+      )}
 
       <PrimaryButton
         onClick={handleNext}
