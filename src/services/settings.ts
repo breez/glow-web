@@ -66,6 +66,8 @@ export interface UserSettings {
   syncIntervalSecs?: number;
   lnurlDomain?: string;
   preferSparkOverLightning?: boolean;
+  /** Memo for Cash App buy invoices in place of the SDK's. Unset keeps the SDK's flow. */
+  cashAppMemo?: string;
 }
 
 export interface FiatSettings {
@@ -196,6 +198,7 @@ export function getSettings(): UserSettings {
       syncIntervalSecs: typeof parsed.syncIntervalSecs === 'number' ? parsed.syncIntervalSecs : undefined,
       lnurlDomain: typeof parsed.lnurlDomain === 'string' ? parsed.lnurlDomain : undefined,
       preferSparkOverLightning: typeof parsed.preferSparkOverLightning === 'boolean' ? parsed.preferSparkOverLightning : undefined,
+      cashAppMemo: typeof parsed.cashAppMemo === 'string' ? parsed.cashAppMemo : undefined,
     };
     return out;
   } catch {

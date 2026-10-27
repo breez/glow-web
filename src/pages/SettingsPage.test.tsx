@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { BreezSdk } from '@breeztech/breez-sdk-spark';
 import { WalletProvider } from '@/contexts/WalletContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
-import { setDevMode } from '@/services/settings';
+import { getSettings, setDevMode } from '@/services/settings';
 import SettingsPage from './SettingsPage';
 
 const renderSettings = () => render(
@@ -46,5 +47,25 @@ describe('unilateral exit on the settings page', () => {
     renderSettings();
 
     expect(screen.getByTestId('settings-unilateral-exit')).toBeInTheDocument();
+  });
+});
+
+describe('the Cash App memo dev setting', () => {
+  it('is saved when set and cleared when emptied', async () => {
+    const reload = vi.spyOn(window.location, 'reload').mockImplementation(() => {});
+    setDevMode(true);
+    const { unmount } = renderSettings();
+
+    await userEvent.type(screen.getByLabelText('Buy invoice memo'), 'Glow');
+    await userEvent.click(screen.getByText('Save Changes'));
+    expect(getSettings().cashAppMemo).toBe('Glow');
+    unmount();
+
+    renderSettings();
+    await userEvent.clear(screen.getByLabelText('Buy invoice memo'));
+    await userEvent.click(screen.getByText('Save Changes'));
+    expect(getSettings().cashAppMemo).toBeUndefined();
+    expect(reload).toHaveBeenCalledTimes(2);
+    reload.mockRestore();
   });
 });

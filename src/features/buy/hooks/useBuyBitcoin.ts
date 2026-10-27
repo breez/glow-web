@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { AppLauncher } from '@capacitor/app-launcher';
-import type { Network } from '@breeztech/breez-sdk-spark';
+import type { BreezSdk, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../../../contexts/WalletContext';
 import { useInvoicePaid } from '../../../hooks/useInvoicePaid';
 import { useAmountInput } from '../../../hooks/useAmountInput';
@@ -10,6 +10,7 @@ import { formatError } from '../../../utils/formatError';
 import { fixedQuickAmounts, type TokenDisplayConfig } from '../../../utils/tokenFormatting';
 import { toSdkAmountNumber, type Sats } from '../../../types/sats';
 import {
+  getSettings,
   getBuyProviderSettings,
   filterProvidersByNetwork,
   filterProvidersByPlatform,
@@ -25,6 +26,19 @@ export type BuyStep = 'select' | 'amount' | 'link';
  *  Any amount can still be typed, down to `MIN_CASH_APP_SATS`. */
 const CASH_APP_POINTS_USD = [20, 50, 100];
 const MIN_CASH_APP_SATS: Sats = 1n as Sats;
+
+/** The Cash App buy URL for an invoice of `amountSats`. A memo set in the dev
+ *  settings replaces the SDK's own, so the invoice is created here instead. */
+async function createCashAppUrl(sdk: BreezSdk, amountSats: number): Promise<string> {
+  const memo = getSettings().cashAppMemo;
+  if (!memo) {
+    return (await sdk.buyBitcoin({ type: 'cashApp', amountSats })).url;
+  }
+  const { paymentRequest } = await sdk.receivePayment({
+    paymentMethod: { type: 'bolt11Invoice', description: memo, amountSats },
+  });
+  return `https://cash.app/launch/lightning/${paymentRequest}`;
+}
 
 export interface UseBuyBitcoinOptions {
   /** Whether the dialog is open — used to reset state when closed. */
@@ -185,7 +199,7 @@ export function useBuyBitcoin({
     setIsGenerating(true);
 
     try {
-      const response = await sdk.buyBitcoin({ type: 'cashApp', amountSats: amountSatsForSdk });
+      const url = await createCashAppUrl(sdk, amountSatsForSdk);
       setGeneratedAmountSats(amountSats);
       if (Capacitor.isNativePlatform()) {
         // AppLauncher bridges to UIApplication.open, the only iOS API that
@@ -193,7 +207,7 @@ export function useBuyBitcoin({
         // Cash App app. Browser.open (SFSafariViewController) only loads the
         // web page: iOS suppresses universal-link handoff on a programmatic
         // in-app-browser load. Falls back to Safari if Cash App is absent.
-        await AppLauncher.openUrl({ url: response.url });
+        await AppLauncher.openUrl({ url });
         onMobileRedirectComplete();
         return;
       }
@@ -202,7 +216,7 @@ export function useBuyBitcoin({
       // resolves a universal link from a genuine tap, and Chrome refuses to
       // hand an App Link to an app without user activation, which the await
       // above has already spent.
-      setCashAppUrl(response.url);
+      setCashAppUrl(url);
       setStep('link');
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to create Cash App buy URL', { error: formatError(e) });
