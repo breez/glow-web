@@ -9,7 +9,7 @@ import { useStableBalance } from '../contexts/StableBalanceContext';
 import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig, withAssetDecimals } from '../utils/tokenFormatting';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
-import { getPaymentDescription, getProviderDisplayName, isCrossChainPayment } from '../utils/paymentDescription';
+import { getPaymentDescription, getProviderDisplayName, isCrossChainPayment, isRefundedConversion } from '../utils/paymentDescription';
 import { formatChainName, getCrossChainDestination, getCrossChainSendOutcome, formatReceiveAmount } from '../utils/crossChainFormat';
 import { explorerTxUrl, chainExplorerTxUrl } from '../utils/explorer';
 
@@ -110,7 +110,9 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
     : baseDisplayConfig;
   const hasTokenDisplay = !isAmountAdjusted && !!tokenInfo && !!tokenDisplayConfig;
   const isReceive = payment.paymentType === 'receive';
-  const sign = isReceive ? '+' : '-';
+  // Listed as the send it began as, so the sign matches its row.
+  const isRefunded = isRefundedConversion(payment);
+  const sign = isReceive && !isRefunded ? '+' : '-';
   const amountDisplay = hasTokenDisplay
     ? `${sign} ${formatTokenAmount(tokenInfo.amount, tokenDisplayConfig)}`
     : <>{sign} <SatAmount sats={payment.amount} /></>;
@@ -168,6 +170,14 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               <PaymentInfoRow
                 label="Fee"
                 value={feeDisplay}
+              />
+            )}
+
+            {isRefunded && (
+              <PaymentInfoRow
+                label="Status"
+                value="Refunded"
+                valueColor="text-spark-primary"
               />
             )}
 
@@ -402,10 +412,14 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                           label="Initial Amount"
                           value={formatSideValue(conv.from)}
                         />
-                        <PaymentInfoRow
-                          label="Converted Amount"
-                          value={formatSideValue(conv.to)}
-                        />
+                        {/* A conversion that did not go through converted nothing:
+                            its `to` side is the refund, or nothing at all. */}
+                        {conv.status !== 'refunded' && conv.status !== 'failed' && (
+                          <PaymentInfoRow
+                            label="Converted Amount"
+                            value={formatSideValue(conv.to)}
+                          />
+                        )}
                         {feeValue && (
                           <PaymentInfoRow label="Fee" value={feeValue} />
                         )}

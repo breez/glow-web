@@ -6,6 +6,7 @@ const toggleStableBalance = vi.fn();
 
 vi.mock('../contexts/WalletContext', () => ({
   useWallet: () => ({ getInfo: async () => ({ balanceSats: 0, tokenBalances: [] }) }),
+  useSdkEvents: () => () => () => {},
 }));
 vi.mock('../contexts/StableBalanceContext', () => ({
   useStableBalance: () => ({ toggleStableBalance, displayConfig: null }),

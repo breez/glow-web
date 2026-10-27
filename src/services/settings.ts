@@ -2,6 +2,7 @@ import type { MaxOnchainFee } from "@breeztech/breez-sdk-spark/web";
 import type { Network } from "@breeztech/breez-sdk-spark";
 import { Capacitor } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
+import { STABLE_BALANCE_CONVERSION_KINDS, type StableBalanceFailure } from "../utils/stableBalanceFailure";
 /** Provider identifiers matching the SDK's BuyBitcoinRequest tagged union */
 export type BuyBitcoinProvider = 'moonpay' | 'cashApp';
 
@@ -343,6 +344,33 @@ export function setStableRestoreAcknowledged(balance: bigint): void {
 export function clearStableRestorePrompted(): void {
   removeCachedItem(STABLE_RESTORE_ACKNOWLEDGED_KEY);
   removeCachedItem(LEGACY_STABLE_RESTORE_PROMPTED_KEY);
+}
+
+// The SDK's retry delay survives a restart but its failure event does not
+// replay, so the last reported failure is kept here until it settles.
+const STABLE_CONVERSION_FAILURE_KEY = 'stable_balance_conversion_failure';
+
+export function getStableConversionFailure(): StableBalanceFailure | null {
+  const value = getCachedItem(STABLE_CONVERSION_FAILURE_KEY);
+  if (value === null) return null;
+  try {
+    const parsed = JSON.parse(value) as Partial<StableBalanceFailure>;
+    if (!parsed.kind || !STABLE_BALANCE_CONVERSION_KINDS.includes(parsed.kind)) return null;
+    return {
+      kind: parsed.kind,
+      retryAt: typeof parsed.retryAt === 'number' ? parsed.retryAt : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function setStableConversionFailure(failure: StableBalanceFailure | null): void {
+  if (failure) {
+    setCachedItem(STABLE_CONVERSION_FAILURE_KEY, JSON.stringify(failure));
+  } else {
+    removeCachedItem(STABLE_CONVERSION_FAILURE_KEY);
+  }
 }
 
 /** Ordered list of enabled providers. Providers not in the list are disabled. */

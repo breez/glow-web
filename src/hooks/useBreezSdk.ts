@@ -14,7 +14,7 @@ import { formatError } from '../utils/formatError';
 import { isStandalonePwa, openExternalUrl } from '../utils/externalLink';
 import { splitClaimedDeposits } from '../utils/depositClaimQuote';
 import { isDepositRejected, clearRejectedDeposits, clearClaimFees } from '../services/depositState';
-import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, ensureSparkPrivateMode, type BuyBitcoinProvider } from '../services/settings';
+import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, setStableConversionFailure, ensureSparkPrivateMode, type BuyBitcoinProvider } from '../services/settings';
 import { wipeAllLocalData } from '../services/accountDeletion';
 import { hideSplash } from '../main';
 import {
@@ -636,6 +636,7 @@ export function useBreezSdk(
     setSdk(null);
     setCachedStableTicker(null);
     clearStableRestorePrompted();
+    setStableConversionFailure(null);
     clearRejectedDeposits();
     clearClaimFees();
     shownPaymentIdsRef.current.clear();
@@ -756,6 +757,7 @@ export function useBreezSdk(
     setCelebrationPayment(null);
     setCachedStableTicker(null);
     clearStableRestorePrompted();
+    setStableConversionFailure(null);
     shownPaymentIdsRef.current.clear();
 
     if (secureStorage.isSupported()) {
@@ -907,6 +909,7 @@ export function useBreezSdk(
     setCelebrationPayment(null);
     setCachedStableTicker(null);
     clearStableRestorePrompted();
+    setStableConversionFailure(null);
     shownPaymentIdsRef.current.clear();
     setIsLoading(false);
   }, [sdk]);

@@ -6,6 +6,8 @@ const updateUserSettings = vi.fn();
 
 vi.mock('./WalletContext', () => ({
   useWalletConnection: () => ({ sdk: { updateUserSettings }, isConnected: true }),
+  useSdkEvents: () => () => () => {},
+  useWalletInfo: () => null,
 }));
 vi.mock('./FiatDataContext', () => ({
   useFiatData: () => ({ fiatRates: [], fiatCurrencies: [] }),
