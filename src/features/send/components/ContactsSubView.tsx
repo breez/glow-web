@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import type { Contact } from '@breeztech/breez-sdk-spark';
 import { useContactsContext } from '../../../contexts/ContactsContext';
-import { isValidLightningAddress, searchContacts } from '../../../hooks/useContacts';
+import { CASHTAGS_ENABLED, paymentIdentifierLabel, resolvePaymentIdentifier, searchContacts } from '../../../hooks/useContacts';
 import { FormInput, FormError, PrimaryButton, ConfirmDialog, AMOUNT_FIELD_CLASS, FIELD_BASE_CLASS } from '../../../components/ui';
 import { BackIcon, PlusIcon, EditPencilIcon, TrashIcon, ContactsIcon, SearchIcon, CloseIcon } from '../../../components/Icons';
 import { useWallet } from '../../../contexts/WalletContext';
@@ -23,7 +23,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
   const [formAddress, setFormAddress] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  // Ref to the Lightning Address input so the Name field's Enter
+  // Ref to the Address input so the Name field's Enter
   // handler can programmatically focus it (enterKeyHint="next").
   const addressInputRef = useRef<HTMLInputElement>(null);
 
@@ -45,7 +45,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
   const handleStartEdit = (contact: Contact) => {
     setEditingContact(contact);
     setFormName(contact.name);
-    setFormAddress(contact.paymentIdentifier);
+    setFormAddress(paymentIdentifierLabel(contact.paymentIdentifier));
     setFormError(null);
     setShowAddForm(false);
   };
@@ -63,32 +63,27 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
     await dismissKeyboard();
 
     const name = formName.trim();
-    const address = formAddress.trim();
+    const input = formAddress.trim();
     if (!name) { setFormError('Name is required'); return; }
-    if (!address) { setFormError('Address is required'); return; }
-    if (!isValidLightningAddress(address)) { setFormError('Invalid Lightning address format'); return; }
+    if (!input) { setFormError('Address is required'); return; }
 
     setIsSaving(true);
     setFormError(null);
 
-    // Verify the address actually resolves (skip if editing and address unchanged)
-    const addressChanged = !editingContact || editingContact.paymentIdentifier !== address;
-    if (addressChanged) {
-      try {
-        await wallet.parse(address);
-      } catch {
-        setIsSaving(false);
-        setFormError('Lightning address not found');
-        return;
-      }
+    const resolved = await resolvePaymentIdentifier(wallet, input, editingContact?.paymentIdentifier);
+    if ('error' in resolved) {
+      setIsSaving(false);
+      setFormError(resolved.error);
+      return;
     }
+    const { paymentIdentifier } = resolved;
 
     if (editingContact) {
-      const result = await updateContact(editingContact.id, name, address);
+      const result = await updateContact(editingContact.id, name, paymentIdentifier);
       if (result) resetForm();
       else setFormError('Failed to update contact');
     } else {
-      const result = await addContact(name, address);
+      const result = await addContact(name, paymentIdentifier);
       if (result) resetForm();
       else setFormError('Failed to add contact');
     }
@@ -212,7 +207,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
                     {contact.name}
                   </p>
                   <p className="text-xs text-spark-text-muted truncate">
-                    {contact.paymentIdentifier}
+                    {paymentIdentifierLabel(contact.paymentIdentifier)}
                   </p>
                 </button>
 
@@ -272,7 +267,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
               onChange={(e) => setFormName(e.target.value)}
               onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                 // Enter on the Name field moves focus to the
-                // Lightning Address field. On Android the soft
+                // Address field. On Android the soft
                 // keyboard's action button is labelled "Next" (via
                 // enterKeyHint) so the behaviour matches the label.
                 if (e.key === 'Enter') {
@@ -290,7 +285,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
             />
           </div>
           <div>
-            <label htmlFor="subview-contact-address" className="block text-sm font-medium text-spark-text-primary mb-2">Lightning Address</label>
+            <label htmlFor="subview-contact-address" className="block text-sm font-medium text-spark-text-primary mb-2">Address</label>
             <FormInput
               id="subview-contact-address"
               inputRef={addressInputRef}
@@ -313,7 +308,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
               autoCorrect="off"
               autoComplete="off"
               spellCheck={false}
-              placeholder="user@domain.com"
+              placeholder={CASHTAGS_ENABLED ? 'user@domain.com / $cashtag' : 'user@domain.com'}
               disabled={isSaving}
             />
           </div>

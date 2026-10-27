@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BottomSheetContainer, BottomSheetCard, DialogHeader, PrimaryButton, FormError, AMOUNT_FIELD_CLASS } from '../../../components/ui';
 import { ContactsIcon, CheckIcon } from '../../../components/Icons';
 import { useContactsContext } from '../../../contexts/ContactsContext';
+import { paymentIdentifierLabel } from '../../../hooks/useContacts';
 
 interface SaveContactDialogProps {
   isOpen: boolean;
@@ -69,7 +70,7 @@ const SaveContactDialog: React.FC<SaveContactDialogProps> = ({ isOpen, lightning
             <DialogHeader title="Save Contact" onClose={onClose} icon={<ContactsIcon />} />
 
             <div className="space-y-4">
-              <p className="text-sm text-spark-text-muted text-center font-mono truncate">{lightningAddress}</p>
+              <p className="text-sm text-spark-text-muted text-center font-mono truncate">{paymentIdentifierLabel(lightningAddress)}</p>
 
               <input
                 ref={nameInputRef}

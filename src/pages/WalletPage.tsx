@@ -33,6 +33,7 @@ import type { ExitMode } from '../features/unilateral-exit/model/plan';
 import { BottomSheetCard, BottomSheetContainer, DialogHeader } from '../components/ui';
 import { useUnilateralExitEngineState } from '../features/unilateral-exit/hooks/useUnilateralExitEngineLifecycle';
 import { useStatusBarColor } from '../hooks/useStatusBarColor';
+import { paymentIdentifierLabel } from '../hooks/useContacts';
 import { STATUS_BAR_WALLET_GLASS } from '../utils/statusBarManager';
 import { onDeepLink } from '../utils/deepLink';
 
@@ -223,7 +224,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const handleSuccessfulSend = useCallback((lightningAddress?: string) => {
     if (lightningAddress) {
       setTimeout(() => {
-        showToast('info', 'Save as contact?', lightningAddress, {
+        showToast('info', 'Save as contact?', paymentIdentifierLabel(lightningAddress), {
           label: 'Save',
           onClick: () => {
             setSaveContactSession(s => s + 1);
