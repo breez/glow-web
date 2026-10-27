@@ -494,9 +494,10 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
       onCancel={closeToggleFlow}
     />
 
-    {isFailureSheetOpen && conversionFailure && unconvertedAmount && (
+    {/* Mounted while there is a failure, not only while open, so closing slides it down. */}
+    {conversionFailure && unconvertedAmount && (
       <ConversionFailureSheet
-        isOpen
+        isOpen={isFailureSheetOpen}
         onClose={() => setIsFailureSheetOpen(false)}
         failure={conversionFailure}
         amount={unconvertedAmount}

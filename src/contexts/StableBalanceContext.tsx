@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import type { Payment } from '@breeztech/breez-sdk-spark';
+import type { Payment, StableBalanceActiveLabel } from '@breeztech/breez-sdk-spark';
 import { useSdkEvents, useWalletConnection, useWalletInfo } from './WalletContext';
 import { useFiatData } from './FiatDataContext';
 import { USDB_TOKEN_IDENTIFIER, USDB_TICKER } from '../constants/stableBalance';
@@ -284,23 +284,28 @@ export const StableBalanceProvider: React.FC<StableBalanceProviderProps> = ({ ch
   // only do that if the failure reaches it.
   const toggleStableBalance = useCallback(async (label: string | null) => {
     if (!sdk) throw new Error('the wallet is not connected');
+    // A switch resets the SDK's retry delay and queues a fresh conversion,
+    // which can fail before updateUserSettings returns. So the old failure is
+    // cleared first, and put back only if the switch never happened.
+    const switchLabel = async (update: StableBalanceActiveLabel) => {
+      const previousFailure = getStableConversionFailure();
+      updateConversionFailure(null);
+      try {
+        await sdk.updateUserSettings({ stableBalanceActiveLabel: update });
+      } catch (e) {
+        if (!getStableConversionFailure()) updateConversionFailure(previousFailure);
+        throw e;
+      }
+    };
     setIsToggling(true);
     try {
       if (label) {
-        await sdk.updateUserSettings({
-          stableBalanceActiveLabel: { type: 'set', label },
-        });
-        // A switch resets the SDK's retry delay and starts a fresh conversion,
-        // which reports its own failure.
-        updateConversionFailure(null);
+        await switchLabel({ type: 'set', label });
         setActiveLabel(label);
         setCachedStableTicker(label);
         await setNativeStableTicker(label);
       } else {
-        await sdk.updateUserSettings({
-          stableBalanceActiveLabel: { type: 'unset' },
-        });
-        updateConversionFailure(null);
+        await switchLabel({ type: 'unset' });
         setActiveLabel(null);
         setCachedStableTicker(null);
         await setNativeStableTicker(null);
