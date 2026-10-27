@@ -10,11 +10,12 @@ import { createMockClient } from '@/test/mocks/mockWalletApi';
 import { useBuyBitcoin } from './useBuyBitcoin';
 import BuyBitcoinDialog from '../BuyBitcoinDialog';
 
-const CASH_APP_URL = 'https://cash.app/launch/lightning/lnbc100n1test';
+const INVOICE = 'lnbc100n1test';
+const CASH_APP_URL = `https://cash.app/launch/lightning/${INVOICE}`;
 
 function renderBuy() {
   const client = createMockClient({
-    buyBitcoin: vi.fn().mockResolvedValue({ url: CASH_APP_URL }),
+    receivePayment: vi.fn().mockResolvedValue({ paymentRequest: INVOICE, fee: 0n }),
   } as never);
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <WalletProvider client={client} isConnected>
@@ -49,9 +50,20 @@ describe('Cash App on mobile web', () => {
     expect(open).not.toHaveBeenCalled();
   });
 
+  it('asks for an invoice for the amount, carrying the Glow memo', async () => {
+    const { client, result } = renderBuy();
+
+    act(() => result.current.setAmount('50000'));
+    await act(() => result.current.generate());
+
+    expect(client.receivePayment).toHaveBeenCalledWith({
+      paymentMethod: { type: 'bolt11Invoice', description: 'Glow', amountSats: 50000 },
+    });
+  });
+
   it('stays on the amount step when the invoice fails', async () => {
     const { client, result } = renderBuy();
-    vi.mocked(client.buyBitcoin).mockRejectedValueOnce(new Error('nope'));
+    vi.mocked(client.receivePayment).mockRejectedValueOnce(new Error('nope'));
 
     act(() => result.current.setAmount('50000'));
     await act(() => result.current.generate());
@@ -64,7 +76,7 @@ describe('Cash App on mobile web', () => {
 describe('the Cash App link', () => {
   it('reaches the person as an anchor they tap, not a scripted navigation', async () => {
     const client = createMockClient({
-      buyBitcoin: vi.fn().mockResolvedValue({ url: CASH_APP_URL }),
+      receivePayment: vi.fn().mockResolvedValue({ paymentRequest: INVOICE, fee: 0n }),
     } as never);
     render(
       <ToastProvider>
