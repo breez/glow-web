@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Payment } from '@breeztech/breez-sdk-spark';
-import { isConversionPayment } from './paymentDescription';
+import { getPaymentDescription, isConversionPayment } from './paymentDescription';
 
 const payment = (over: Partial<Payment>): Payment => ({
   id: 'p1',
@@ -32,5 +32,14 @@ describe('isConversionPayment', () => {
       details: { type: 'spark' },
       conversionDetails: { status: 'completed' },
     } as Partial<Payment>))).toBe(true);
+  });
+});
+
+describe('getPaymentDescription', () => {
+  it('names a Cash App recipient by cashtag', () => {
+    expect(getPaymentDescription(payment({
+      paymentType: 'send',
+      details: { type: 'lightning', invoice: 'lnbc1', destinationPubkey: 'pk', htlcDetails: {}, lnurlPayInfo: { lnAddress: 'cashapp@cash.app' } },
+    } as Partial<Payment>))).toBe('Pay to $cashapp');
   });
 });

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { DialogHeader, BottomSheetContainer, BottomSheetCard } from '../../components/ui';
 import { useWallet } from '../../contexts/WalletContext';
 import { useContactsContext } from '../../contexts/ContactsContext';
+import { paymentIdentifierLabel } from '../../hooks/useContacts';
 
 import InputStep from './steps/InputStep';
 import Bolt11Workflow from './workflows/Bolt11Workflow';
@@ -119,7 +120,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     const address = getSendLightningAddress(send.paymentInput);
     if (!address) return undefined;
     const contact = findContactByAddress(address);
-    return contact ? `Pay to ${contact.name}` : `Pay to ${address}`;
+    return contact ? `Pay to ${contact.name}` : `Pay to ${paymentIdentifierLabel(address)}`;
   }, [send.paymentInput, findContactByAddress]);
 
   // The input step is always the send entry point, so it keeps the send icon

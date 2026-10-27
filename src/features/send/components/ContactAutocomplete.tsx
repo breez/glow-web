@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Contact } from '@breeztech/breez-sdk-spark';
+import { paymentIdentifierLabel } from '../../../hooks/useContacts';
 
 interface ContactAutocompleteProps {
   contacts: Contact[];
@@ -32,7 +33,7 @@ const ContactAutocomplete: React.FC<ContactAutocompleteProps> = ({ contacts, isV
               {contact.name}
             </p>
             <p className="text-xs text-spark-text-muted truncate">
-              {contact.paymentIdentifier}
+              {paymentIdentifierLabel(contact.paymentIdentifier)}
             </p>
           </div>
         </button>

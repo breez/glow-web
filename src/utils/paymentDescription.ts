@@ -1,4 +1,5 @@
 import type { Payment, PaymentDetails } from '@breeztech/breez-sdk-spark';
+import { paymentIdentifierLabel } from '../hooks/useContacts';
 
 type ContactLookup = (address: string) => { name: string } | undefined;
 
@@ -55,7 +56,7 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
         const contact = findContactByAddress?.(payment.details.lnurlPayInfo.lnAddress);
         const isSend = payment.paymentType === 'send';
         if (contact) return isSend ? `Pay to ${contact.name}` : contact.name;
-        return isSend ? `Pay to ${payment.details.lnurlPayInfo.lnAddress}` : payment.details.lnurlPayInfo.lnAddress;
+        return isSend ? `Pay to ${paymentIdentifierLabel(payment.details.lnurlPayInfo.lnAddress)}` : payment.details.lnurlPayInfo.lnAddress;
       }
       return payment.details?.description || 'Lightning Payment';
     }

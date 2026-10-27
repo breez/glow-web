@@ -1,13 +1,41 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import type { Contact, SdkEvent } from '@breeztech/breez-sdk-spark';
+import type { BreezSdk, Contact, SdkEvent } from '@breeztech/breez-sdk-spark';
 import { useWalletConnection } from '../contexts/WalletContext';
 import { logger, LogCategory } from '../services/logger';
 import { formatError } from '../utils/formatError';
+import { selectedNetwork } from '../services/sdkConnect';
 
 const LN_ADDRESS_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export function isValidLightningAddress(address: string): boolean {
   return LN_ADDRESS_REGEX.test(address);
+}
+
+// Cash App is mainnet only.
+export const CASHTAGS_ENABLED = selectedNetwork() === 'mainnet';
+
+/** Shows a saved `alice@cash.app` as `$alice`: the SDK only stores `user@domain`. */
+export function paymentIdentifierLabel(paymentIdentifier: string): string {
+  const cashtag = paymentIdentifier.match(/^([a-z0-9]+)@cash\.app$/i);
+  return cashtag ? `$${cashtag[1].toLowerCase()}` : paymentIdentifier;
+}
+
+/** Turns what the user typed into the address to save, or an error; editing only the name keeps the saved address. */
+export async function resolvePaymentIdentifier(
+  wallet: BreezSdk,
+  input: string,
+  saved?: string,
+): Promise<{ paymentIdentifier: string } | { error: string }> {
+  if (saved && paymentIdentifierLabel(saved) === input) return { paymentIdentifier: saved };
+
+  const isCashtag = CASHTAGS_ENABLED && input.startsWith('$');
+  if (!isCashtag && !isValidLightningAddress(input)) return { error: 'Invalid Lightning address format' };
+
+  const parsed = await wallet.parse(input).catch(() => null);
+  // A $cashtag is saved as the Lightning address it resolves to.
+  if (parsed?.type === 'lightningAddress') return { paymentIdentifier: parsed.address };
+  if (parsed && !isCashtag) return { paymentIdentifier: input };
+  return { error: isCashtag ? 'Cashtag not found' : 'Lightning address not found' };
 }
 
 export function searchContacts(contacts: Contact[], query: string): Contact[] {
@@ -25,7 +53,7 @@ export function searchContacts(contacts: Contact[], query: string): Contact[] {
     const domain = atIdx >= 0 ? addr.slice(atIdx + 1) : '';
 
     if (name.startsWith(q)) byName.push(c);
-    else if (addr.startsWith(q)) byLocal.push(c);
+    else if (addr.startsWith(q) || paymentIdentifierLabel(addr).startsWith(q)) byLocal.push(c);
     else if (domain.startsWith(q)) byDomain.push(c);
   }
 

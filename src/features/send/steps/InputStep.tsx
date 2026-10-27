@@ -3,7 +3,7 @@ import { SimpleAlert } from '../../../components/AlertCard';
 import { PrimaryButton, FIELD_BASE_CLASS } from '../../../components/ui';
 import ContactAutocomplete from '../components/ContactAutocomplete';
 import { useContactsContext } from '../../../contexts/ContactsContext';
-import { searchContacts } from '../../../hooks/useContacts';
+import { CASHTAGS_ENABLED, paymentIdentifierLabel, searchContacts } from '../../../hooks/useContacts';
 import { logger, LogCategory } from '@/services/logger';
 import { ClipboardIcon, QrCodeIcon, SpinnerIcon, ContactsIcon, CloseIcon } from '@/components/Icons';
 import type { Contact } from '@breeztech/breez-sdk-spark';
@@ -21,6 +21,12 @@ export interface InputStepProps {
   onScanQr?: () => void;
   onOpenContacts?: () => void;
 }
+
+const PLACEHOLDER = [
+  'lnbc...', 'bc1...', 'spark1...', 'user@domain.com',
+  ...(CASHTAGS_ENABLED ? ['$cashtag'] : []),
+  'contact', 'USDC or USDT address',
+].join(' / ');
 
 // Parent (SendPaymentDialog) keys this on `selectedContactAddress` so
 // a fresh contact pick remounts and lazy-init re-reads the props.
@@ -100,7 +106,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-spark-text-primary truncate">{selectedContact.name}</p>
-              <p className="text-xs text-spark-text-muted truncate font-mono">{selectedContact.paymentIdentifier}</p>
+              <p className="text-xs text-spark-text-muted truncate font-mono">{paymentIdentifierLabel(selectedContact.paymentIdentifier)}</p>
             </div>
             <button
               onClick={handleClearContact}
@@ -159,7 +165,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
-              placeholder='lnbc... / bc1... / spark1... / user@domain.com / contact / USDC or USDT address'
+              placeholder={PLACEHOLDER}
               className={`${FIELD_BASE_CLASS} h-full p-4 resize-none font-mono text-sm outline-hidden`}
               disabled={isLoading}
               data-testid="payment-input"
