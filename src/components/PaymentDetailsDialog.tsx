@@ -177,8 +177,8 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
 
             {isRefunded && (
               <PaymentInfoRow
-                label="Status"
-                value="Refunded"
+                label={t('paymentDetails.status')}
+                value={t('paymentDetails.refunded')}
                 valueColor="text-spark-primary"
               />
             )}
@@ -224,7 +224,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                 {externalTxRow}
                 {showConversionId && (
                   <CollapsibleCodeField
-                    label="Conversion ID"
+                    label={t('paymentDetails.conversionId')}
                     value={orchestraInfo.quoteId}
                     isVisible={visibleFields.conversionId}
                     onToggle={() => toggleField('conversionId')}
@@ -418,7 +418,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                             its `to` side is the refund, or nothing at all. */}
                         {conv.status !== 'refunded' && conv.status !== 'failed' && (
                           <PaymentInfoRow
-                            label="Converted Amount"
+                            label={t('paymentDetails.convertedAmount')}
                             value={formatSideValue(conv.to)}
                           />
                         )}

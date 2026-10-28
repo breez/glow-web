@@ -213,8 +213,8 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
           docsUrl: (err as SdkError).docsUrl,
         });
         setError(isCrossChainDisabled(err)
-          ? 'USD payments are disabled'
-          : `Failed to fetch routes: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          ? t('common:receive.crossChain.usdDisabled')
+          : t('common:send.crossChain.routesFetchFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
         setStep('asset');
       }
     })();

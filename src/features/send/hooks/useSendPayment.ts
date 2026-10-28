@@ -8,6 +8,7 @@ import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { destinationErrorMessage } from '@/utils/destinationAddress';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 
 /** The destination string inside a parsed input, or null for the types that
  *  are paid through their own workflow rather than a prepared destination. */
@@ -27,7 +28,8 @@ function bareDestination(parsed: InputType): string | null {
  *  that is not a destination at all. */
 const BAD_LOGIN_CODE = /lnurl (missing|contains invalid) k1|lnurl contains unsupported action/;
 
-const ALREADY_PAID = 'This invoice has already been paid.';
+/** Resolved per call: the module loads before i18next has a language. */
+const alreadyPaid = (): string => i18n.t('critical:send.alreadyPaid');
 
 /** The Spark operators' refusal of a second send to a payment hash: the
  *  invoice was already paid. The SDK accepts it at prepare, so only the send
@@ -332,7 +334,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Payment failed', { error: formatError(err) });
       setError(ALREADY_EXISTS.test(formatError(err))
-        ? ALREADY_PAID
+        ? alreadyPaid()
         : `Payment failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setPaymentResult('failure');
     } finally {
@@ -343,7 +345,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setIsLoading(false);
       setCurrentStep('result');
     }
-  }, [wallet, prepareResponse, t]);
+  }, [wallet, prepareResponse]);
 
   const handleRun = useCallback(async (runner: () => Promise<void>, hasConversion?: boolean) => {
     setProcessingPhase(hasConversion ? 'converting' : 'sending');

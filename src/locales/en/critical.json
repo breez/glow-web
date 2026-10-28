@@ -37,7 +37,8 @@
     "switchToUsdFailed": "Could not switch to USD. Please try again.",
     "switchToBtcFailed": "Could not switch to BTC. Please try again.",
     "restoreTitle": "USD Balance Detected",
-    "restoreBody": "We've detected USD funds. Would you like to switch to USD mode?\n\nYour balance will be held in USD. Incoming BTC is automatically converted to USD, and outgoing payments are converted back to BTC."
+    "restoreBody": "We've detected USD funds. Would you like to switch to USD mode?\n\nYour balance will be held in USD. Incoming BTC is automatically converted to USD, and outgoing payments are converted back to BTC.",
+    "switchedNotConverted": "Switched to {{currency}}, but your balance hasn't converted yet. Glow will retry automatically."
   },
   "send": {
     "sendAll": "Send All",
@@ -72,7 +73,8 @@
     "amountRange": "Between {{min}} and {{max}} sats",
     "result": {
       "notSentBody": "The payment did not go through. Your funds were not sent."
-    }
+    },
+    "alreadyPaid": "This invoice has already been paid."
   },
   "generate": {
     "title": "Keep it Secret",
@@ -113,7 +115,8 @@
     "claim": "Claim",
     "approve": "Approve",
     "reject": "Reject",
-    "claimFeeChanged": "Your claim did not go through: the fee changed from <amount/>."
+    "claimFeeChanged": "Your claim did not go through: the fee changed from <amount/>.",
+    "tooSmall": "This transfer is too small to cover the fee to claim it."
   },
   "passkey": {
     "confirmDeleted": "I confirm that this passkey was deleted.",
@@ -139,5 +142,10 @@
     "preferPasskey": "For your safety, we recommend using a passkey instead.",
     "preferApp": "For your safety, we recommend the Glow app.",
     "risk": "A recovery phrase on the web is less secure, and there is a chance your money will be lost. Use a recovery phrase on the web only if you are willing to take this risk."
+  },
+  "conversion": {
+    "nextAttempt": "Next Attempt",
+    "balanceToConvert": "Balance to Convert",
+    "notConvertedYet": "This amount hasn't converted to {{currency}} yet. Glow will retry automatically."
   }
 }

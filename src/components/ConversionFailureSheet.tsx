@@ -3,6 +3,8 @@ import { BottomSheetContainer, BottomSheetCard, DialogHeader, PaymentInfoCard, P
 import { SimpleAlert } from './AlertCard';
 import type { VisibleConversionFailure } from '../contexts/StableBalanceContext';
 import { formatRetryIn } from '../utils/stableBalanceFailure';
+import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 
 interface ConversionFailureSheetProps {
   isOpen: boolean;
@@ -21,24 +23,27 @@ const NextAttemptRow: React.FC<{ retryAt: number }> = ({ retryAt }) => {
     return () => clearInterval(timer);
   }, []);
 
-  return <PaymentInfoRow label="Next Attempt" value={formatRetryIn(retryAt, now)} />;
+  return <PaymentInfoRow label={i18n.t('conversion.nextAttempt')} value={formatRetryIn(retryAt, now)} />;
 };
 
-const ConversionFailureSheet: React.FC<ConversionFailureSheetProps> = ({ isOpen, onClose, failure, amount }) => (
+const ConversionFailureSheet: React.FC<ConversionFailureSheetProps> = ({ isOpen, onClose, failure, amount }) => {
+  const { t } = useTranslation('critical');
+  return (
   <BottomSheetContainer isOpen={isOpen} onClose={onClose}>
     <BottomSheetCard>
-      <DialogHeader title="Balance to Convert" onClose={onClose} />
+      <DialogHeader title={t('conversion.balanceToConvert')} onClose={onClose} />
       <div className="space-y-4">
         <PaymentInfoCard>
-          <PaymentInfoRow label="Amount" value={amount} />
+          <PaymentInfoRow label={t('common:send.amount')} value={amount} />
           {failure.retryAt !== undefined && <NextAttemptRow retryAt={failure.retryAt} />}
         </PaymentInfoCard>
         <SimpleAlert variant="warning" hideIcon>
-          This amount hasn't converted to {failure.kind === 'deactivation' ? 'BTC' : 'USD'} yet. Glow will retry automatically.
+          {t('conversion.notConvertedYet', { currency: failure.kind === 'deactivation' ? 'BTC' : 'USD' })}
         </SimpleAlert>
       </div>
     </BottomSheetCard>
   </BottomSheetContainer>
-);
+  );
+};
 
 export default ConversionFailureSheet;

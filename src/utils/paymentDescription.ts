@@ -62,8 +62,8 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
   const refundedFrom = isRefundedConversion(payment) ? payment.conversionDetails?.conversions?.[0]?.from : undefined;
   if (refundedFrom) {
     return refundedFrom.asset.ticker === 'BTC'
-      ? `Conversion to ${tickerToDisplayName(USDB_TICKER)}`
-      : 'Conversion to Bitcoin';
+      ? i18n.t('methods.conversionTo', { asset: tickerToDisplayName(USDB_TICKER) })
+      : i18n.t('methods.conversionTo', { asset: 'Bitcoin' });
   }
 
   if (payment.method === 'lightning') {

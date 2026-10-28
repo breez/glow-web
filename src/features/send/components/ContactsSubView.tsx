@@ -66,8 +66,8 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
 
     const name = formName.trim();
     const input = formAddress.trim();
-    if (!name) { setFormError('Name is required'); return; }
-    if (!input) { setFormError('Address is required'); return; }
+    if (!name) { setFormError(t('contacts.nameRequired')); return; }
+    if (!input) { setFormError(t('contacts.addressRequired')); return; }
 
     setIsSaving(true);
     setFormError(null);
@@ -287,7 +287,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
             />
           </div>
           <div>
-            <label htmlFor="subview-contact-address" className="block text-sm font-medium text-spark-text-primary mb-2">Address</label>
+            <label htmlFor="subview-contact-address" className="block text-sm font-medium text-spark-text-primary mb-2">{t('contacts.address')}</label>
             <FormInput
               id="subview-contact-address"
               inputRef={addressInputRef}
