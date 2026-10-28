@@ -73,7 +73,7 @@ function deriveClaimState(deposit: DepositInfo | null): ClaimState {
     return { claimError: claimErrorData.message || i18n.t('common:deposit.autoClaimFailed'), requiredFeeSats: null };
   }
   if (claimErrorData.type === 'depositTooSmall') {
-    return { claimError: 'This transfer is too small to cover the fee to claim it.', requiredFeeSats: null };
+    return { claimError: i18n.t('critical:deposit.tooSmall'), requiredFeeSats: null };
   }
   // missingUtxo or other error - can only reject
   return { claimError: i18n.t('common:deposit.autoClaimFailed'), requiredFeeSats: null };

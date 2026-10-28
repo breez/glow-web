@@ -379,15 +379,15 @@ const WalletPage: React.FC<WalletPageProps> = ({
         <ArchivedExitDialog
           exit={selectedExit}
           onClose={() => setSelectedExitId(null)}
-          subtitle={selectedExit.mode === 'recover' ? 'Recovery' : undefined}
-          exitedLabel={selectedExit.mode === 'recover' ? 'Funds Recovered' : undefined}
+          subtitle={selectedExit.mode === 'recover' ? t('exit.recovery') : undefined}
+          exitedLabel={selectedExit.mode === 'recover' ? t('exit.fundsRecovered') : undefined}
         />
       )}
 
       {selectedRecovery && (
         <BottomSheetContainer isOpen onClose={() => setSelectedRecoveryId(null)}>
           <BottomSheetCard>
-            <DialogHeader title="Recover Funds" onClose={() => setSelectedRecoveryId(null)} />
+            <DialogHeader title={t('exit.recoverFunds')} onClose={() => setSelectedRecoveryId(null)} />
             <TrackerView
               plan={selectedRecovery}
               tipHeight={exitState.tipHeight}

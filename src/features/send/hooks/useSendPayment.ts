@@ -8,6 +8,7 @@ import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { destinationErrorMessage } from '@/utils/destinationAddress';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 
 /** The destination string inside a parsed input, or null for the types that
  *  are paid through their own workflow rather than a prepared destination. */
@@ -32,14 +33,16 @@ function isExpired(invoice: Bolt11InvoiceDetails): boolean {
  *  that is not a destination at all. */
 const BAD_LOGIN_CODE = /lnurl (missing|contains invalid) k1|lnurl contains unsupported action/;
 
-const ALREADY_PAID = 'This invoice has already been paid.';
+/** Resolved per call: the module loads before i18next has a language. */
+const alreadyPaid = (): string => i18n.t('critical:send.alreadyPaid');
 
 /** The Spark operators' refusal of a second send to a payment hash: the
  *  invoice was already paid. The SDK accepts it at prepare, so only the send
  *  reports it. Matches the gRPC status, which is stable, not its message. */
 const ALREADY_EXISTS = /status: AlreadyExists/;
 
-const INVOICE_EXPIRED = 'This invoice has expired. Ask the recipient for a new one.';
+/** Resolved per call, for the same reason as alreadyPaid. */
+const invoiceExpired = (): string => i18n.t('critical:send.invoiceExpired');
 
 /** The SDK's refusal of an invoice past its expiry. It checks at prepare and
  *  again at send, and an invoice can expire after the parse-time check. */
@@ -152,7 +155,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       const expired = EXPIRED.test(message);
       setError(
         expired
-          ? INVOICE_EXPIRED
+          ? invoiceExpired()
           : BALANCE_SETTLING.test(message)
             ? 'Could not prepare the payment while your balance settles. Please try again in a few minutes.'
             : `Failed to prepare payment: ${message}`,
@@ -210,7 +213,7 @@ export function useSendPayment(): UseSendPaymentReturn {
 
       // A BIP21 with an expired invoice stops here too, rather than paying its address.
       if (effective.type === 'bolt11Invoice' && isExpired(effective)) {
-        setError(INVOICE_EXPIRED);
+        setError(invoiceExpired());
         setCurrentStep('input');
         return;
       }
@@ -355,9 +358,9 @@ export function useSendPayment(): UseSendPaymentReturn {
       logger.error(LogCategory.PAYMENT, 'Payment failed', { error: formatError(err) });
       const message = formatError(err);
       setError(ALREADY_EXISTS.test(message)
-        ? ALREADY_PAID
+        ? alreadyPaid()
         : EXPIRED.test(message)
-          ? INVOICE_EXPIRED
+          ? invoiceExpired()
           : `Payment failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setPaymentResult('failure');
     } finally {
@@ -368,7 +371,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setIsLoading(false);
       setCurrentStep('result');
     }
-  }, [wallet, prepareResponse, t]);
+  }, [wallet, prepareResponse]);
 
   const handleRun = useCallback(async (runner: () => Promise<void>, hasConversion?: boolean) => {
     setProcessingPhase(hasConversion ? 'converting' : 'sending');

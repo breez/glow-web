@@ -11,6 +11,7 @@ import { dismissKeyboard } from '../../../utils/keyboard';
 import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 
 export interface InputStepProps {
   paymentInput: string;
@@ -26,7 +27,7 @@ export interface InputStepProps {
 const PLACEHOLDER = [
   'lnbc...', 'bc1...', 'spark1...', 'user@domain.com',
   ...(CASHTAGS_ENABLED ? ['$cashtag'] : []),
-  'contact', 'USDC or USDT address',
+  i18n.t('common:send.inputHint.contact'), i18n.t('common:send.inputHint.stablecoin'),
 ].join(' / ');
 
 // Parent (SendPaymentDialog) keys this on `selectedContactAddress` so

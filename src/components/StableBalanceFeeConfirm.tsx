@@ -62,10 +62,10 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
           {notConverted ? (
             <>
               <p className="text-sm text-spark-primary mb-4">
-                {direction === 'toToken' ? 'Switched to USD' : 'Switched to BTC'}, but your balance hasn't converted yet. Glow will retry automatically.
+                {t('stableBalance.switchedNotConverted', { currency: direction === 'toToken' ? 'USD' : 'BTC' })}
               </p>
               <button onClick={onDone} className="button w-full py-2.5">
-                OK
+                {t('common:actions.ok')}
               </button>
             </>
           ) : (

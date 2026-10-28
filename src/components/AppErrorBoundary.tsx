@@ -11,6 +11,7 @@ import React from 'react';
 import { logger, LogCategory } from '../services/logger';
 import { AlertCard } from './AlertCard';
 import { CollapsibleCodeField } from './ui';
+import i18n from 'i18next';
 
 interface Props {
   children: React.ReactNode;
@@ -49,12 +50,12 @@ class AppErrorBoundary extends React.Component<Props, State> {
       <div className="min-h-dvh w-full flex flex-col items-center justify-center gap-6 bg-spark-surface px-6 text-center">
         <img src="/assets/Glow_Logo.svg" alt="Glow" className="w-24 h-24 object-contain" />
         <h1 className="font-display text-xl font-bold text-spark-text-primary">
-          Something went wrong
+          {i18n.t('common:app.somethingWrong')}
         </h1>
-        <AlertCard variant="error" title={this.state.atLaunch ? 'Could not open Glow' : 'Glow stopped working'} className="w-full max-w-sm text-left">
-          <p className="text-sm">Glow hit an unexpected error.</p>
+        <AlertCard variant="error" title={this.state.atLaunch ? i18n.t('common:app.couldNotOpen') : i18n.t('common:app.stoppedWorking')} className="w-full max-w-sm text-left">
+          <p className="text-sm">{i18n.t('common:app.unexpectedError')}</p>
           <CollapsibleCodeField
-            label="Error"
+            label={i18n.t('common:labels.error')}
             value={this.state.error}
             isVisible={this.state.showDetails}
             onToggle={() => this.setState(s => ({ showDetails: !s.showDetails }))}

@@ -5,6 +5,7 @@ import { logger, LogCategory } from '../services/logger';
 import { formatError } from '../utils/formatError';
 import { selectedNetwork } from '../services/sdkConnect';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 
 const LN_ADDRESS_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -30,13 +31,13 @@ export async function resolvePaymentIdentifier(
   if (saved && paymentIdentifierLabel(saved) === input) return { paymentIdentifier: saved };
 
   const isCashtag = CASHTAGS_ENABLED && input.startsWith('$');
-  if (!isCashtag && !isValidLightningAddress(input)) return { error: 'Invalid Lightning address format' };
+  if (!isCashtag && !isValidLightningAddress(input)) return { error: i18n.t('common:contacts.invalidAddress') };
 
   const parsed = await wallet.parse(input).catch(() => null);
   // A $cashtag is saved as the Lightning address it resolves to.
   if (parsed?.type === 'lightningAddress') return { paymentIdentifier: parsed.address };
   if (parsed && !isCashtag) return { paymentIdentifier: input };
-  return { error: isCashtag ? 'Cashtag not found' : 'Lightning address not found' };
+  return { error: i18n.t(isCashtag ? 'common:contacts.cashtagNotFound' : 'common:contacts.addressNotFound') };
 }
 
 export function searchContacts(contacts: Contact[], query: string): Contact[] {

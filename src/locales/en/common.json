@@ -1,7 +1,11 @@
 {
   "app": {
     "name": "Glow",
-    "poweredBy": "Powered by Breez SDK"
+    "poweredBy": "Powered by Breez SDK",
+    "somethingWrong": "Something went wrong",
+    "couldNotOpen": "Could not open Glow",
+    "stoppedWorking": "Glow stopped working",
+    "unexpectedError": "Glow hit an unexpected error."
   },
   "actions": {
     "back": "Back",
@@ -36,7 +40,8 @@
     "goBack": "Go Back",
     "edit": "Edit",
     "skip": "Skip",
-    "tapToCopy": "Tap to copy"
+    "tapToCopy": "Tap to copy",
+    "ok": "OK"
   },
   "labels": {
     "address": "Address",
@@ -164,7 +169,10 @@
     "initialAmount": "Initial Amount",
     "convertedAmount": "Converted Amount",
     "url": "URL",
-    "sentAmount": "Sent Amount"
+    "sentAmount": "Sent Amount",
+    "status": "Status",
+    "refunded": "Refunded",
+    "conversionId": "Conversion ID"
   },
   "qrScanner": {
     "initializing": "Initializing camera...",
@@ -211,7 +219,9 @@
     "deleteAria": "Delete {{name}}",
     "deleteConfirm": "Are you sure you want to delete “{{name}}”?",
     "loadFailed": "Failed to load contacts",
-    "deleteFailed": "Failed to delete contact"
+    "deleteFailed": "Failed to delete contact",
+    "address": "Address",
+    "cashtagNotFound": "Cashtag not found"
   },
   "methods": {
     "lightningInvoice": "Lightning Invoice",
@@ -228,7 +238,8 @@
     "tokenTransfer": "Token Transfer",
     "namedTransfer": "{{name}} Transfer",
     "usdTransfer": "USD Transfer",
-    "btcTransfer": "BTC Transfer"
+    "btcTransfer": "BTC Transfer",
+    "conversionTo": "Conversion to {{asset}}"
   },
   "security": {
     "gateReason": "Unlock Lock Screen settings",
@@ -558,6 +569,10 @@
       "unclear_link": "Could not read the reply from {{domain}}. Check the site to see if you've linked your account.",
       "unclear_auth": "Could not read the reply from {{domain}}. Check the site to see if you've authenticated.",
       "unreachable": "Could not reach {{domain}}. Check your connection and try again."
+    },
+    "inputHint": {
+      "contact": "contact",
+      "stablecoin": "USDC or USDT address"
     }
   },
   "restore": {
@@ -673,5 +688,10 @@
     "pull": "Pull to refresh",
     "release": "Release to refresh",
     "refreshing": "Refreshing"
+  },
+  "exit": {
+    "fundsRecovered": "Funds Recovered",
+    "recoverFunds": "Recover Funds",
+    "recovery": "Recovery"
   }
 }
