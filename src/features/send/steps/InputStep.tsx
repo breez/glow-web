@@ -182,7 +182,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
 
       {/* Error */}
       {error && (
-        <SimpleAlert variant="error" dataTestId="send-error-banner">
+        <SimpleAlert variant="error" hideIcon dataTestId="send-error-banner">
           {error}
         </SimpleAlert>
       )}

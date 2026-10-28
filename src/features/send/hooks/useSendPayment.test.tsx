@@ -17,6 +17,8 @@ const bolt11Details = (input: string) =>
     type: 'bolt11Invoice',
     invoice: { bolt11: input.replace(/^lightning:/i, '') },
     amountMsat: 10000,
+    expiry: 3600,
+    timestamp: Math.floor(Date.now() / 1000),
   }) as unknown as InputType;
 
 function renderSendPayment(parse: (input: string) => Promise<InputType>, overrides: Record<string, unknown> = {}) {
@@ -139,6 +141,95 @@ describe('an invoice the wallet already paid', () => {
 
     expect(result.current.paymentResult).toBe('failure');
     expect(result.current.error).toBe('This invoice has already been paid.');
+  });
+});
+
+describe('an expired invoice (#543)', () => {
+  const EXPIRED_MESSAGE = 'This invoice has expired. Ask the recipient for a new one.';
+  const SDK_EXPIRED = 'Invalid input: Invoice has expired';
+
+  /** Created at the epoch with an hour to live. */
+  const expiredDetails = (input: string, amountMsat?: number) =>
+    ({ ...(bolt11Details(input) as object), amountMsat, timestamp: 0, expiry: 3600 }) as InputType;
+
+  it.each([
+    ['with an amount', 10_000],
+    ['without an amount', undefined],
+  ])('says so on the input step without preparing, for an invoice %s', async (_, amountMsat) => {
+    const { client, result } = renderSendPayment(async (input) => expiredDetails(input, amountMsat));
+
+    await act(() => result.current.processInput(BOLT11));
+
+    expect(result.current.error).toBe(EXPIRED_MESSAGE);
+    expect(result.current.currentStep).toBe('input');
+    expect(client.prepareSendPayment).not.toHaveBeenCalled();
+  });
+
+  it('says so as soon as one is pasted, before Continue', async () => {
+    const { result } = renderSendPayment(async (input) => expiredDetails(input, 10_000));
+
+    await act(() => result.current.processInput(BOLT11, { requireReview: true }));
+
+    expect(result.current.error).toBe(EXPIRED_MESSAGE);
+  });
+
+  it('does not fall back to the address in a unified BIP21', async () => {
+    const { client, result } = renderSendPayment(
+      async (uri) =>
+        ({
+          type: 'bip21',
+          uri,
+          amountSat: 10,
+          paymentMethods: [{ type: 'bitcoinAddress', address: 'bc1qtest', network: 'bitcoin' }, expiredDetails(BOLT11, 10_000)],
+        }) as unknown as InputType,
+    );
+
+    await act(() => result.current.processInput(`bitcoin:bc1qtest?amount=0.0000001&lightning=${BOLT11}`));
+
+    expect(result.current.error).toBe(EXPIRED_MESSAGE);
+    expect(client.prepareSendPayment).not.toHaveBeenCalled();
+  });
+
+  it('still prepares an invoice in its last second, as the SDK does', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(3600_999);
+    try {
+      const { client, result } = renderSendPayment(async (input) => expiredDetails(input, 10_000));
+
+      await act(() => result.current.processInput(BOLT11));
+
+      expect(result.current.error).toBeNull();
+      expect(client.prepareSendPayment).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('goes back to the input step when it expires during amount entry', async () => {
+    const { result } = renderSendPayment(
+      async (input) => ({ ...(bolt11Details(input) as object), amountMsat: undefined }) as InputType,
+      { prepareSendPayment: vi.fn().mockRejectedValue(new Error(SDK_EXPIRED)) },
+    );
+
+    await act(() => result.current.processInput(BOLT11));
+    expect(result.current.currentStep).toBe('amount');
+    await act(() => result.current.onAmountNext(1000n));
+
+    expect(result.current.error).toBe(EXPIRED_MESSAGE);
+    expect(result.current.currentStep).toBe('input');
+    expect(result.current.prepareResponse).toBeNull();
+  });
+
+  it('fails the send with the same message when it expires on the confirm screen', async () => {
+    const { client, result } = renderSendPayment(async (input) => bolt11Details(input));
+    client.sendPayment = vi.fn().mockRejectedValue(new Error(SDK_EXPIRED));
+
+    await act(() => result.current.processInput(BOLT11));
+    await waitFor(() => expect(result.current.prepareResponse).not.toBeNull());
+    await act(() => result.current.handleSend());
+
+    expect(result.current.paymentResult).toBe('failure');
+    expect(result.current.error).toBe(EXPIRED_MESSAGE);
   });
 });
 
