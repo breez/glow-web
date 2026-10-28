@@ -88,6 +88,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     if (typeof cfg.preferSparkOverLightning === 'boolean') return cfg.preferSparkOverLightning;
     return false;
   });
+  const [cashAppMemo, setCashAppMemo] = useState<string>(() => getSettings().cashAppMemo ?? '');
   const [isDownloadingLogs, setIsDownloadingLogs] = useState<boolean>(false);
   const [isExportingDb, setIsExportingDb] = useState<boolean>(false);
 
@@ -137,6 +138,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             syncIntervalSecs: syncIntervalSecs !== '' ? Math.max(0, Math.floor(Number(syncIntervalSecs))) : undefined,
             lnurlDomain: lnurlDomain !== '' ? lnurlDomain : undefined,
             preferSparkOverLightning,
+            cashAppMemo: cashAppMemo.trim() !== '' ? cashAppMemo : undefined,
           }
         : {}),
     };
@@ -445,6 +447,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                   value={lnurlDomain}
                   onChange={(e) => setLnurlDomain(e.target.value)}
                   placeholder="example.com"
+                />
+              </FormGroup>
+            </div>
+          )}
+
+          {/* Cash App */}
+          {isDevMode && (
+            <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
+              <h3 className="font-display font-semibold text-spark-text-primary mb-3">Cash App</h3>
+              <FormGroup>
+                <label htmlFor="cashapp-memo" className="block text-sm text-spark-text-secondary mb-1">
+                  Buy invoice memo
+                </label>
+                <FormInput
+                  id="cashapp-memo"
+                  type="text"
+                  value={cashAppMemo}
+                  onChange={(e) => setCashAppMemo(e.target.value)}
+                  placeholder="SDK default"
                 />
               </FormGroup>
             </div>
