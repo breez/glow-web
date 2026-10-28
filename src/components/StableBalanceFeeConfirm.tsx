@@ -11,10 +11,14 @@ interface StableBalanceFeeConfirmProps {
   displayConfig: TokenDisplayConfig | null;
   isEstimating: boolean;
   isExecuting: boolean;
+  /** The mode switched but the conversion failed. The SDK retries it, so the
+   *  dialog reports the outcome rather than offering to try again. */
+  notConverted: boolean;
   error: string | null;
   info: string | null;
   onConfirm: () => void;
   onCancel: () => void;
+  onDone: () => void;
 }
 
 const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
@@ -24,10 +28,12 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
   displayConfig,
   isEstimating,
   isExecuting,
+  notConverted,
   error,
   info,
   onConfirm,
   onCancel,
+  onDone,
 }) => {
   if (!isOpen) return null;
 
@@ -51,56 +57,69 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
             {description}
           </p>
 
-          {isEstimating && (
-            <div className="flex items-center justify-center py-6">
-              <SpinnerIcon size="lg" />
-            </div>
-          )}
-
-          {!isEstimating && feeText && (
-            <p className="text-sm text-spark-text-secondary mb-4">
-              Conversion fee: <span className="font-mono text-spark-text-primary">{feeText}</span>
-            </p>
-          )}
-
-          {!isEstimating && !feeText && !error && info && (
-            <p className="text-sm text-spark-text-muted mb-4">
-              {info}
-            </p>
-          )}
-
-          {!isEstimating && !feeText && !error && !info && (
-            <p className="text-sm text-spark-text-muted mb-4">
-              Couldn't estimate fee
-            </p>
-          )}
-
-          {error && (
-            <p className="text-sm text-spark-primary mb-4">{error}</p>
-          )}
-
-          <div className="flex gap-3">
-            <button
-              onClick={onCancel}
-              disabled={isExecuting}
-              className="flex-1 py-2.5 rounded-xl font-display font-semibold text-sm border border-spark-border text-spark-text-secondary hover:bg-white/5 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              disabled={isEstimating || isExecuting || !!error}
-              className="button flex-1 py-2.5 disabled:opacity-50"
-            >
-              {isExecuting ? (
-                <span className="flex items-center justify-center gap-2">
-                  <SpinnerIcon size="md" />
-                </span>
-              ) : (
-                'Confirm'
+          {notConverted ? (
+            <>
+              <p className="text-sm text-spark-primary mb-4">
+                {direction === 'toToken' ? 'Switched to USD' : 'Switched to BTC'}, but your balance hasn't converted yet. Glow will retry automatically.
+              </p>
+              <button onClick={onDone} className="button w-full py-2.5">
+                OK
+              </button>
+            </>
+          ) : (
+            <>
+              {isEstimating && (
+                <div className="flex items-center justify-center py-6">
+                  <SpinnerIcon size="lg" />
+                </div>
               )}
-            </button>
-          </div>
+
+              {!isEstimating && feeText && (
+                <p className="text-sm text-spark-text-secondary mb-4">
+                  Conversion fee: <span className="font-mono text-spark-text-primary">{feeText}</span>
+                </p>
+              )}
+
+              {!isEstimating && !feeText && !error && info && (
+                <p className="text-sm text-spark-text-muted mb-4">
+                  {info}
+                </p>
+              )}
+
+              {!isEstimating && !feeText && !error && !info && (
+                <p className="text-sm text-spark-text-muted mb-4">
+                  Couldn't estimate fee
+                </p>
+              )}
+
+              {error && (
+                <p className="text-sm text-spark-primary mb-4">{error}</p>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={onCancel}
+                  disabled={isExecuting}
+                  className="flex-1 py-2.5 rounded-xl font-display font-semibold text-sm border border-spark-border text-spark-text-secondary hover:bg-white/5 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={onConfirm}
+                  disabled={isEstimating || isExecuting || !!error}
+                  className="button flex-1 py-2.5 disabled:opacity-50"
+                >
+                  {isExecuting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <SpinnerIcon size="md" />
+                    </span>
+                  ) : (
+                    'Confirm'
+                  )}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </DialogCard>
     </DialogContainer>

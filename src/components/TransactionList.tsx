@@ -8,7 +8,7 @@ import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
 import { formatTokenAmount, buildTokenDisplayConfig, tokenAmountDisplaysAsZero, withAssetDecimals } from '../utils/tokenFormatting';
-import { getPaymentDescription } from '../utils/paymentDescription';
+import { getPaymentDescription, isRefundedConversion } from '../utils/paymentDescription';
 import { getCrossChainSendOutcome } from '../utils/crossChainFormat';
 import type { UnilateralExitEntry } from '../features/unilateral-exit/listEntries';
 
@@ -31,12 +31,6 @@ const formatTimeAgo = (timestamp: number): string => {
   if (diffSeconds < 31536000) return `${Math.floor(diffSeconds / 2592000)}mo ago`;
   return `${Math.floor(diffSeconds / 31536000)}y ago`;
 };
-
-const getTransactionIcon = (payment: Payment): React.ReactNode => {
-  return payment.paymentType === 'receive' ? ReceiveIcon : SendIcon;
-};
-
-
 
 const getMethodIcon = (payment: Payment): React.ReactNode => {
   return payment.method === 'lightning' ? LightningIcon : null;
@@ -182,7 +176,11 @@ const TransactionList: React.FC<TransactionListProps> = ({
   );
 
   const renderTransactionItem = (tx: Payment, index: number) => {
-    const isReceive = tx.paymentType === 'receive';
+    // A refunded conversion lists as its refund, a receive. It shows as the
+    // send it began as, like a refunded cross-chain send, with the chip
+    // saying the money came back.
+    const isRefunded = isRefundedConversion(tx);
+    const isReceive = tx.paymentType === 'receive' && !isRefunded;
     const isFailed = tx.status === 'failed';
     const crossChainOutcome = isFailed ? null : getCrossChainSendOutcome(tx);
     const isPending = !isFailed && (tx.status === 'pending' || tx.conversionDetails?.status === 'pending');
@@ -195,6 +193,9 @@ const TransactionList: React.FC<TransactionListProps> = ({
     // Payments once that lands, so the chip names the work, not the milestone.
     const isProcessing = !needsAction && deposit?.isMature === true;
     const isConfirming = deposit?.isMature === false;
+    const outcomeLabel = crossChainOutcome === 'refunded' || isRefunded
+      ? 'Refunded'
+      : isFailed || crossChainOutcome ? 'Failed' : null;
     const subtitle = needsAction
       ? 'Tap to claim'
       : deposit
@@ -220,7 +221,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
           ${isReceive ? 'bg-spark-success/15 text-spark-success' : 'bg-spark-electric/15 text-spark-electric'}
           ${isPending ? 'animate-pulse' : ''}
         `}>
-          {getTransactionIcon(tx)}
+          {isReceive ? ReceiveIcon : SendIcon}
         </div>
 
         {/* Transaction details */}
@@ -233,22 +234,22 @@ const TransactionList: React.FC<TransactionListProps> = ({
             {isPending && (
               <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-spark-warning animate-pulse" />
             )}
-            {(isFailed || crossChainOutcome) && (
-              <span className="shrink-0 px-1.5 py-0.5 rounded-sm bg-spark-primary/15 text-spark-primary text-[10px] font-medium uppercase">
-                {crossChainOutcome === 'refunded' ? 'Refunded' : 'Failed'}
-              </span>
-            )}
           </div>
           {/* min-h holds the line when there is no subtitle, so a row without
               one keeps its title on the same baseline as every other row. A
               chip's box reaches the bottom of its line where a date's text
               leaves space, so a chip row adds that space back under it. */}
-          <div className={`flex items-center gap-1 text-xs text-spark-text-muted mt-0.5 min-h-4 ${isProcessing || isConfirming ? 'pb-1' : ''}`}>
+          <div className={`flex items-center gap-1 text-xs text-spark-text-muted mt-0.5 min-h-4 ${isProcessing || isConfirming || outcomeLabel ? 'pb-1' : ''}`}>
             {/* The call to action borrows the amount's color so the row gains
                 no color of its own. */}
             {(isProcessing || isConfirming) && (
               <span className="px-1.5 py-0.5 rounded-sm bg-spark-text-muted/15 text-[10px] leading-3 font-medium uppercase">
                 {isProcessing ? 'Processing' : 'Confirming'}
+              </span>
+            )}
+            {outcomeLabel && (
+              <span className="px-1.5 py-0.5 rounded-sm bg-spark-primary/15 text-spark-primary text-[10px] leading-3 font-medium uppercase">
+                {outcomeLabel}
               </span>
             )}
             {subtitle && <span className={needsAction ? amountClass : ''}>{subtitle}</span>}

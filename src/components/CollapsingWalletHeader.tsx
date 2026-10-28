@@ -5,11 +5,13 @@ import { getFiatSettings, getDisplayFiatCurrency, setDisplayFiatCurrency, buyCop
 import { formatWithSpaces } from '../utils/formatNumber';
 import { SatAmount } from './SatAmount';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
-import { MenuIcon, AlertTriangleIcon, CurrencyIcon, CashAppIcon, SpinnerIcon, SwapVerticalIcon } from './Icons';
+import { MenuIcon, AlertTriangleIcon, CurrencyIcon, CashAppIcon, SpinnerIcon, SwapVerticalIcon, ChevronRightIcon } from './Icons';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
-import { getTokenBalance, formatTokenAmount } from '../utils/tokenFormatting';
+import { getTokenBalance, formatTokenAmount, buildTokenDisplayConfig } from '../utils/tokenFormatting';
+import { USDB_TOKEN_IDENTIFIER } from '../constants/stableBalance';
 import StableBalanceToggleFlow from './StableBalanceToggleFlow';
+import ConversionFailureSheet from './ConversionFailureSheet';
 import { useRestoreStableBalancePrompt } from '../hooks/useRestoreStableBalancePrompt';
 
 // Module-level flag: once the balance count-up has played, skip it on remount.
@@ -63,12 +65,22 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
     isStableBalanceActive: stableBalance.isActive,
   });
 
+  const conversionFailure = stableBalance.conversionFailure;
+  const [isFailureSheetOpen, setIsFailureSheetOpen] = useState(false);
+  if (isFailureSheetOpen && !conversionFailure) {
+    setIsFailureSheetOpen(false);
+  }
+
+  // A failed switch back to BTC leaves the USD in place on purpose, and the
+  // line under the balance already accounts for it.
+  const shouldAutoPrompt = restorePrompt.shouldPrompt && conversionFailure?.kind !== 'deactivation';
+
   // Adjust state on prop change (React docs pattern): latch the auto-open
   // when shouldPrompt rises, without using an effect.
-  const [prevShouldPrompt, setPrevShouldPrompt] = useState(restorePrompt.shouldPrompt);
-  if (prevShouldPrompt !== restorePrompt.shouldPrompt) {
-    setPrevShouldPrompt(restorePrompt.shouldPrompt);
-    if (restorePrompt.shouldPrompt && !userToggle && !autoOpened) {
+  const [prevShouldPrompt, setPrevShouldPrompt] = useState(shouldAutoPrompt);
+  if (prevShouldPrompt !== shouldAutoPrompt) {
+    setPrevShouldPrompt(shouldAutoPrompt);
+    if (shouldAutoPrompt && !userToggle && !autoOpened) {
       setAutoOpened(true);
     }
   }
@@ -251,6 +263,16 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   const currencySymbol = stableBalance.isActive && stableBalance.displayConfig?.symbol
     ? stableBalance.displayConfig.symbol
     : '₿';
+
+  // BTC mode has no stable display config, so USD a failed switch back left
+  // behind is formatted from the token's own metadata.
+  const unconvertedAmount = useMemo<React.ReactNode>(() => {
+    if (!conversionFailure) return null;
+    if (conversionFailure.kind !== 'deactivation') return <SatAmount sats={Number(conversionFailure.amount)} />;
+    const usd = walletInfo && getTokenBalance(walletInfo.tokenBalances, USDB_TOKEN_IDENTIFIER);
+    if (!usd) return null;
+    return formatTokenAmount(conversionFailure.amount, buildTokenDisplayConfig(usd.metadata, fiatCurrencies));
+  }, [conversionFailure, walletInfo, fiatCurrencies]);
 
   if (!walletInfo) return null;
 
@@ -435,6 +457,23 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
               WebkitMaskImage: 'linear-gradient(to left, transparent, black)'
             }} />
           </div>
+
+          {conversionFailure && unconvertedAmount && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => setIsFailureSheetOpen(true)}
+                className="min-h-11 inline-flex flex-col items-center justify-center gap-1 px-2 font-mono text-sm text-spark-text-secondary"
+              >
+                {/* In USD mode the line above already shows these sats. */}
+                {conversionFailure.kind === 'deactivation' && <span>{unconvertedAmount}</span>}
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-spark-primary/15 text-spark-primary font-sans text-[10px] font-medium uppercase">
+                  Not converted
+                  <ChevronRightIcon size="xs" className="w-2.5 h-2.5" />
+                </span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Bottom spacing */}
@@ -454,6 +493,16 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
       }}
       onCancel={closeToggleFlow}
     />
+
+    {/* Mounted while there is a failure, not only while open, so closing slides it down. */}
+    {conversionFailure && unconvertedAmount && (
+      <ConversionFailureSheet
+        isOpen={isFailureSheetOpen}
+        onClose={() => setIsFailureSheetOpen(false)}
+        failure={conversionFailure}
+        amount={unconvertedAmount}
+      />
+    )}
   </>
   );
 };

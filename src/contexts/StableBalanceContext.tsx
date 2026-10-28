@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import type { Payment } from '@breeztech/breez-sdk-spark';
-import { useWalletConnection } from './WalletContext';
+import type { Payment, StableBalanceActiveLabel } from '@breeztech/breez-sdk-spark';
+import { useSdkEvents, useWalletConnection, useWalletInfo } from './WalletContext';
 import { useFiatData } from './FiatDataContext';
 import { USDB_TOKEN_IDENTIFIER, USDB_TICKER } from '../constants/stableBalance';
 import {
@@ -10,9 +10,28 @@ import {
   getTokenAmountFromPayment,
   withAssetDecimals,
 } from '../utils/tokenFormatting';
+import {
+  type StableBalanceFailure,
+  failureMatchesMode,
+  isConvertibleAmount,
+  msUntilFailureSettles,
+  unconvertedBalance,
+} from '../utils/stableBalanceFailure';
 import { logger, LogCategory } from '../services/logger';
-import { getCachedStableTicker, setCachedStableTicker, getNativeStableTicker, setNativeStableTicker } from '../services/settings';
+import {
+  getCachedStableTicker,
+  setCachedStableTicker,
+  getNativeStableTicker,
+  setNativeStableTicker,
+  getStableConversionFailure,
+  setStableConversionFailure,
+} from '../services/settings';
 import { formatWithSpaces } from '@/utils/formatNumber';
+
+export interface VisibleConversionFailure extends StableBalanceFailure {
+  /** Still to convert: sats in USD mode, USD token base units in BTC mode. */
+  amount: bigint;
+}
 
 interface StableBalanceContextValue {
   isActive: boolean;
@@ -23,7 +42,11 @@ interface StableBalanceContextValue {
   formatPaymentAmount: (payment: Payment) => string;
   toggleStableBalance: (label: string | null) => Promise<void>;
   isToggling: boolean;
+  /** A failed conversion with an amount worth reporting, in the current mode. */
+  conversionFailure: VisibleConversionFailure | null;
 }
+
+type ConversionDirection = 'fromBitcoin' | 'toBitcoin';
 
 const StableBalanceContext = createContext<StableBalanceContextValue | null>(null);
 
@@ -57,12 +80,90 @@ export function resolveStableLabel(
 
 export const StableBalanceProvider: React.FC<StableBalanceProviderProps> = ({ children }) => {
   const { sdk, isConnected } = useWalletConnection();
+  const subscribeToSdkEvents = useSdkEvents();
+  const walletInfo = useWalletInfo();
   const { fiatRates, fiatCurrencies } = useFiatData();
   const [activeLabel, setActiveLabel] = useState<string | null>(() => getCachedStableTicker());
   // Underlying value; the consumer-facing `displayConfig` below gates on
   // connection status, so external callers see null when disconnected.
   const [rawDisplayConfig, setDisplayConfig] = useState<TokenDisplayConfig | null>(null);
   const [isToggling, setIsToggling] = useState(false);
+  const [conversionFailure, setConversionFailure] = useState<StableBalanceFailure | null>(
+    () => (isConnected ? getStableConversionFailure() : null),
+  );
+  const [conversionMinimum, setConversionMinimum] = useState<{
+    direction: ConversionDirection;
+    value: bigint | null;
+  } | null>(null);
+
+  // Read per connection, so a wallet switch never shows the last wallet's failure.
+  const [failureLoadedFor, setFailureLoadedFor] = useState(isConnected);
+  if (failureLoadedFor !== isConnected) {
+    setFailureLoadedFor(isConnected);
+    setConversionFailure(isConnected ? getStableConversionFailure() : null);
+  }
+
+  const updateConversionFailure = useCallback((failure: StableBalanceFailure | null) => {
+    setConversionFailure(failure);
+    setStableConversionFailure(failure);
+  }, []);
+
+  useEffect(() => subscribeToSdkEvents((event) => {
+    if (event.type !== 'stableBalanceConversionFailed') return;
+    // The provider's wording is for the log, never the screen.
+    logger.warn(LogCategory.SDK, 'Stable balance conversion failed', {
+      conversion: event.conversion,
+      retryInSecs: event.retryInSecs,
+      error: event.error,
+    });
+    updateConversionFailure({
+      kind: event.conversion,
+      retryAt: event.retryInSecs == null ? undefined : Date.now() + event.retryInSecs * 1000,
+    });
+  }), [subscribeToSdkEvents, updateConversionFailure]);
+
+  // The app sets no threshold, so the SDK converts from the provider's minimum.
+  // Fetched once per direction rather than per event: retries repeat the event.
+  const failureDirection: ConversionDirection | null = conversionFailure
+    ? (conversionFailure.kind === 'deactivation' ? 'toBitcoin' : 'fromBitcoin')
+    : null;
+  useEffect(() => {
+    if (!failureDirection || !sdk || !isConnected) return;
+    let cancelled = false;
+    sdk.fetchConversionLimits(failureDirection === 'fromBitcoin'
+      ? { conversionType: { type: 'fromBitcoin' }, tokenIdentifier: USDB_TOKEN_IDENTIFIER }
+      : { conversionType: { type: 'toBitcoin', fromTokenIdentifier: USDB_TOKEN_IDENTIFIER } })
+      .then((limits) => {
+        if (!cancelled) setConversionMinimum({ direction: failureDirection, value: limits.minFromAmount ?? null });
+      })
+      .catch((e) => {
+        logger.warn(LogCategory.SDK, 'Failed to fetch conversion limits', {
+          error: e instanceof Error ? e.message : String(e),
+        });
+        if (!cancelled) setConversionMinimum({ direction: failureDirection, value: null });
+      });
+    return () => { cancelled = true; };
+  }, [failureDirection, sdk, isConnected]);
+  const failureMinimum = conversionMinimum?.direction === failureDirection ? conversionMinimum.value : undefined;
+
+  // Ends the failure once nothing convertible is left and the SDK's retry time
+  // has passed. A balance change before then re-arms the timer.
+  useEffect(() => {
+    if (!conversionFailure || !walletInfo || failureMinimum === undefined) return;
+    const amount = unconvertedBalance(conversionFailure, walletInfo, USDB_TOKEN_IDENTIFIER);
+    const delay = msUntilFailureSettles(conversionFailure, amount, failureMinimum, Date.now());
+    if (delay === null) return;
+    const timer = setTimeout(() => updateConversionFailure(null), delay);
+    return () => clearTimeout(timer);
+  }, [conversionFailure, walletInfo, failureMinimum, updateConversionFailure]);
+
+  const isUsdMode = !!activeLabel;
+  const visibleConversionFailure = useMemo<VisibleConversionFailure | null>(() => {
+    if (!conversionFailure || !walletInfo || failureMinimum === undefined) return null;
+    if (!failureMatchesMode(conversionFailure, isUsdMode)) return null;
+    const amount = unconvertedBalance(conversionFailure, walletInfo, USDB_TOKEN_IDENTIFIER);
+    return isConvertibleAmount(amount, failureMinimum) ? { ...conversionFailure, amount } : null;
+  }, [conversionFailure, walletInfo, failureMinimum, isUsdMode]);
 
   // Derive tokenIdentifier from activeLabel
   const tokenIdentifier = useMemo(() => {
@@ -183,19 +284,28 @@ export const StableBalanceProvider: React.FC<StableBalanceProviderProps> = ({ ch
   // only do that if the failure reaches it.
   const toggleStableBalance = useCallback(async (label: string | null) => {
     if (!sdk) throw new Error('the wallet is not connected');
+    // A switch resets the SDK's retry delay and queues a fresh conversion,
+    // which can fail before updateUserSettings returns. So the old failure is
+    // cleared first, and put back only if the switch never happened.
+    const switchLabel = async (update: StableBalanceActiveLabel) => {
+      const previousFailure = getStableConversionFailure();
+      updateConversionFailure(null);
+      try {
+        await sdk.updateUserSettings({ stableBalanceActiveLabel: update });
+      } catch (e) {
+        if (!getStableConversionFailure()) updateConversionFailure(previousFailure);
+        throw e;
+      }
+    };
     setIsToggling(true);
     try {
       if (label) {
-        await sdk.updateUserSettings({
-          stableBalanceActiveLabel: { type: 'set', label },
-        });
+        await switchLabel({ type: 'set', label });
         setActiveLabel(label);
         setCachedStableTicker(label);
         await setNativeStableTicker(label);
       } else {
-        await sdk.updateUserSettings({
-          stableBalanceActiveLabel: { type: 'unset' },
-        });
+        await switchLabel({ type: 'unset' });
         setActiveLabel(null);
         setCachedStableTicker(null);
         await setNativeStableTicker(null);
@@ -203,7 +313,7 @@ export const StableBalanceProvider: React.FC<StableBalanceProviderProps> = ({ ch
     } finally {
       setIsToggling(false);
     }
-  }, [sdk]);
+  }, [sdk, updateConversionFailure]);
 
   const formatPaymentAmount = useCallback(
     (payment: Payment): string => {
@@ -235,8 +345,9 @@ export const StableBalanceProvider: React.FC<StableBalanceProviderProps> = ({ ch
       formatPaymentAmount,
       toggleStableBalance,
       isToggling,
+      conversionFailure: visibleConversionFailure,
     }),
-    [isActive, activeLabel, tokenIdentifier, displayConfig, btcFiatRate, formatPaymentAmount, toggleStableBalance, isToggling]
+    [isActive, activeLabel, tokenIdentifier, displayConfig, btcFiatRate, formatPaymentAmount, toggleStableBalance, isToggling, visibleConversionFailure]
   );
 
   return (

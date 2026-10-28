@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { ConversionEstimate } from '@breeztech/breez-sdk-spark';
-import { useWallet } from '../contexts/WalletContext';
+import { useSdkEvents, useWallet } from '../contexts/WalletContext';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { USDB_TICKER, USDB_TOKEN_IDENTIFIER } from '../constants/stableBalance';
@@ -11,7 +11,7 @@ import StableBalanceDisclaimer from './StableBalanceDisclaimer';
 import { useLatest } from '../hooks/useLatest';
 import StableBalanceFeeConfirm from './StableBalanceFeeConfirm';
 
-type FlowStep = 'disclaimer' | 'estimating' | 'confirm' | 'executing';
+type FlowStep = 'disclaimer' | 'estimating' | 'confirm' | 'executing' | 'notConverted';
 
 interface StableBalanceToggleFlowProps {
   isOpen: boolean;
@@ -29,6 +29,7 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
   restorePrompt,
 }) => {
   const wallet = useWallet();
+  const subscribeToSdkEvents = useSdkEvents();
   const stableBalance = useStableBalance();
   const { refreshFiatData } = useFiatData();
 
@@ -162,6 +163,7 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
   const executeToggle = useCallback(async () => {
     logger.debug(LogCategory.SDK, 'executeToggle: starting', { direction, hasEstimate: !!conversionEstimate });
     setStep('executing');
+    let unsubscribe: (() => void) | undefined;
     try {
       // Snapshot current balance before toggling so we can detect an increase
       let balanceBefore = 0n;
@@ -176,6 +178,17 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
         logger.debug(LogCategory.SDK, 'executeToggle: balance before toggle', { balanceBefore: balanceBefore.toString() });
       }
 
+      // The switch itself succeeds before the conversion runs, so a failure
+      // here only arrives as an event. Switching resets the SDK's retry delay,
+      // so the first attempt lands inside the poll below.
+      let conversionFailed = false;
+      const failedKind = direction === 'toToken' ? 'autoConvert' : 'deactivation';
+      unsubscribe = subscribeToSdkEvents((event) => {
+        if (event.type === 'stableBalanceConversionFailed' && event.conversion === failedKind) {
+          conversionFailed = true;
+        }
+      });
+
       const ticker = direction === 'toToken' ? USDB_TICKER : null;
       logger.debug(LogCategory.SDK, 'executeToggle: calling toggleStableBalance', { ticker });
       await stableBalance.toggleStableBalance(ticker);
@@ -187,6 +200,10 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
         const maxAttempts = 30;
         for (let i = 0; i < maxAttempts; i++) {
           await new Promise(r => setTimeout(r, 1000));
+          if (conversionFailed) {
+            setStep('notConverted');
+            return;
+          }
           const info = await wallet.getInfo({});
           let currentBalance = 0n;
           if (direction === 'toToken') {
@@ -207,8 +224,10 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
       onComplete();
     } catch (e) {
       showToggleFailure(e);
+    } finally {
+      unsubscribe?.();
     }
-  }, [direction, stableBalance, conversionEstimate, wallet, onComplete, showToggleFailure]);
+  }, [direction, stableBalance, conversionEstimate, wallet, onComplete, showToggleFailure, subscribeToSdkEvents]);
 
   const handleDisclaimerAccept = useCallback(() => {
     setStableDisclaimerAccepted();
@@ -255,10 +274,12 @@ const StableBalanceToggleFlow: React.FC<StableBalanceToggleFlowProps> = ({
       displayConfig={resolvedDisplayConfig ?? stableBalance.displayConfig}
       isEstimating={step === 'estimating'}
       isExecuting={step === 'executing'}
+      notConverted={step === 'notConverted'}
       error={error}
       info={info}
       onConfirm={handleConfirm}
       onCancel={onCancel}
+      onDone={onComplete}
     />
   );
 };

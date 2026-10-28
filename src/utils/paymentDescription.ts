@@ -1,5 +1,6 @@
 import type { Payment, PaymentDetails } from '@breeztech/breez-sdk-spark';
 import { paymentIdentifierLabel } from '../hooks/useContacts';
+import { USDB_TICKER } from '../constants/stableBalance';
 
 type ContactLookup = (address: string) => { name: string } | undefined;
 
@@ -39,12 +40,30 @@ export const isCrossChainPayment = (payment: Payment): boolean =>
 export const isConversionPayment = (payment: Payment): boolean =>
   getConversionInfo(payment.details) != null || payment.conversionDetails != null;
 
+/**
+ * A Stable Balance conversion that failed and came back. The SDK lists the
+ * round trip as one row, the refund, with the original send nested under it.
+ * A cross-chain refund lists as its own payment instead.
+ */
+export const isRefundedConversion = (payment: Payment): boolean =>
+  payment.conversionDetails?.status === 'refunded' && !isCrossChainPayment(payment);
+
 /** Truncate text to maxLen characters, appending "..." if shortened */
 const truncate = (text: string, maxLen: number): string =>
   text.length > maxLen ? `${text.slice(0, maxLen)}…` : text;
 
 export function getPaymentDescription(payment: Payment, findContactByAddress?: ContactLookup, fiatCurrencyName?: string | null): string {
   const convInfo = getConversionInfo(payment.details);
+
+  // The row is the refund, a receive, so the direction comes from what was
+  // sent. Its `to` side is the refund, never the stable token it was meant
+  // to become.
+  const refundedFrom = isRefundedConversion(payment) ? payment.conversionDetails?.conversions?.[0]?.from : undefined;
+  if (refundedFrom) {
+    return refundedFrom.asset.ticker === 'BTC'
+      ? `Conversion to ${tickerToDisplayName(USDB_TICKER)}`
+      : 'Conversion to Bitcoin';
+  }
 
   if (payment.method === 'lightning') {
     if (isCrossChain(convInfo)) return 'USD Transfer';
