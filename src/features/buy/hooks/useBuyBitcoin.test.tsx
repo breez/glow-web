@@ -25,7 +25,6 @@ function renderBuy() {
   );
   return { client, ...renderHook(() => useBuyBitcoin({
     isOpen: true,
-    onSelectRedirectProvider: vi.fn(),
     onMobileRedirectComplete: vi.fn(),
     onInvoicePaid: vi.fn(),
   }), { wrapper }) };
@@ -74,7 +73,7 @@ describe('the Cash App link', () => {
               <BuyBitcoinDialog
                 isOpen
                 onClose={vi.fn()}
-                onBuyBitcoin={vi.fn()}
+                onBuyMoonpay={vi.fn()}
                 network="mainnet"
               />
             </StableBalanceProvider>
@@ -96,5 +95,54 @@ describe('the Cash App link', () => {
       // standalone mode leaves no way back to Glow.
       expect(link).toHaveAttribute('target', '_blank');
     }
+  });
+});
+
+function renderMoonpay(onBuyMoonpay: (amount: bigint) => Promise<void>, onClose = vi.fn()) {
+  render(
+    <ToastProvider>
+      <WalletProvider client={createMockClient()} isConnected>
+        <FiatDataProvider>
+          <StableBalanceProvider>
+            <BuyBitcoinDialog isOpen onClose={onClose} onBuyMoonpay={onBuyMoonpay} />
+          </StableBalanceProvider>
+        </FiatDataProvider>
+      </WalletProvider>
+    </ToastProvider>,
+  );
+  return onClose;
+}
+
+describe('MoonPay', () => {
+  it('opens on the amount when it is the only provider and buys the typed dollars', async () => {
+    const onBuyMoonpay = vi.fn().mockResolvedValue(undefined);
+    renderMoonpay(onBuyMoonpay);
+
+    await userEvent.type(await screen.findByTestId('moonpay-amount-input'), '100');
+    await userEvent.click(screen.getByTestId('moonpay-continue-button'));
+
+    expect(onBuyMoonpay).toHaveBeenCalledWith(100_000_000n);
+  });
+
+  it('asks for at least $20 before opening MoonPay', async () => {
+    const onBuyMoonpay = vi.fn().mockResolvedValue(undefined);
+    renderMoonpay(onBuyMoonpay);
+
+    await userEvent.type(await screen.findByTestId('moonpay-amount-input'), '5');
+    await userEvent.click(screen.getByTestId('moonpay-continue-button'));
+
+    expect(await screen.findByText('Amount must be at least $20')).toBeInTheDocument();
+    expect(onBuyMoonpay).not.toHaveBeenCalled();
+  });
+
+  it('stays on the amount with an error when MoonPay fails to open', async () => {
+    const onClose = renderMoonpay(vi.fn().mockRejectedValue(new Error('nope')));
+
+    await userEvent.type(await screen.findByTestId('moonpay-amount-input'), '100');
+    await userEvent.click(screen.getByTestId('moonpay-continue-button'));
+
+    expect(await screen.findByText('Could not open MoonPay. Please try again.')).toBeInTheDocument();
+    expect(screen.getByTestId('moonpay-amount-input')).toHaveValue('100');
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

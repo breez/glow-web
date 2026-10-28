@@ -5,7 +5,7 @@ import { getFiatSettings, getDisplayFiatCurrency, setDisplayFiatCurrency, buyCop
 import { formatWithSpaces } from '../utils/formatNumber';
 import { SatAmount } from './SatAmount';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
-import { MenuIcon, AlertTriangleIcon, CurrencyIcon, CashAppIcon, SpinnerIcon, SwapVerticalIcon, ChevronRightIcon } from './Icons';
+import { MenuIcon, AlertTriangleIcon, CurrencyIcon, CashAppIcon, SwapVerticalIcon, ChevronRightIcon } from './Icons';
 import { useStableBalance } from '../contexts/StableBalanceContext';
 import { useFiatData } from '../contexts/FiatDataContext';
 import { getTokenBalance, formatTokenAmount, buildTokenDisplayConfig } from '../utils/tokenFormatting';
@@ -23,7 +23,6 @@ interface CollapsingWalletHeaderProps {
   scrollProgress: number;
   onOpenMenu: () => void;
   onOpenBuyBitcoin?: () => void;
-  isBuyLoading?: boolean;
   isSyncing?: boolean;
   refreshWalletData?: () => Promise<boolean>;
   hasRejectedDeposits?: boolean;
@@ -35,7 +34,6 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   scrollProgress,
   onOpenMenu,
   onOpenBuyBitcoin,
-  isBuyLoading,
   isSyncing,
   refreshWalletData,
   hasRejectedDeposits,
@@ -343,18 +341,15 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             {onOpenBuyBitcoin && (
               <button
                 type="button"
-                disabled={isBuyLoading}
                 aria-label={buyCopy('Buy')}
-                className={`flex items-center justify-center gap-1.5 h-9 rounded-xl transition-colors text-sm font-medium disabled:opacity-50 ${
+                className={`flex items-center justify-center gap-1.5 h-9 rounded-xl transition-colors text-sm font-medium ${
                   isBuyIconOnly()
                     ? 'w-9 bg-[#00D632] hover:bg-[#00bf2d] border border-black/15 hover:border-black/25'
                     : 'px-3 text-spark-text-secondary hover:text-spark-text-primary border border-white/10 hover:border-white/20 hover:bg-white/5'
                 }`}
                 onClick={onOpenBuyBitcoin}
               >
-                {isBuyLoading ? (
-                  <SpinnerIcon size="sm" className="animate-spin" />
-                ) : isBuyIconOnly() ? (
+                {isBuyIconOnly() ? (
                   // Cash App's mark with its tile knocked out: the button is
                   // already Cash App's green, so drawing the tile again would
                   // stack a second square on top of it.

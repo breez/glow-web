@@ -349,7 +349,7 @@ const AppContent: React.FC = () => {
             setExitBumpTxid(bumpTxid);
             setUserScreen('unilateralExit');
           }}
-          onBuyBitcoin={sdk.handleBuyBitcoin}
+          onBuyMoonpay={sdk.handleBuyMoonpay}
           network={sdk.config?.network}
           onDepositChanged={sdk.fetchUnclaimedDeposits}
         />
