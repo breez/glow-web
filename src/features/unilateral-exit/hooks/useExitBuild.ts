@@ -31,7 +31,7 @@ interface BuildInputs {
   quoting: Pick<ReturnType<typeof useExitQuote>, 'quote' | 'setStartError' | 'setShortfall' | 'setSplitOff' | 'forgetQuote'>;
   feeKey: Pick<ReturnType<typeof useFeeKey>, 'key' | 'holdsPhrase' | 'forgetPhrase'>;
   feeAddress: Pick<ReturnType<typeof useExitFeeAddress>, 'confirmedUtxos' | 'sent'>;
-  continuing: Pick<ReturnType<typeof useContinueExit>, 'clearContinueError'>;
+  continuing: Pick<ReturnType<typeof useContinueExit>, 'continueExit' | 'clearContinueError'>;
 }
 
 export function useExitBuild(inputs: BuildInputs) {
@@ -40,7 +40,7 @@ export function useExitBuild(inputs: BuildInputs) {
   const { setStartError, setShortfall, setSplitOff, forgetQuote } = inputs.quoting;
   const { key: fundingKey, holdsPhrase, forgetPhrase } = inputs.feeKey;
   const { confirmedUtxos, sent } = inputs.feeAddress;
-  const { clearContinueError } = inputs.continuing;
+  const { continueExit, clearContinueError } = inputs.continuing;
   const [buildError, setBuildError] = useState<string | null>(null);
   const [sentSat, setSentSat] = useState(0);
   // A resumed exit tries its build once per quote before asking for anything.
@@ -49,8 +49,10 @@ export function useExitBuild(inputs: BuildInputs) {
 
   // Builds the reviewed quote: an exit under way from the coins at its fee
   // address, or, when the quote needs no funding, any exit straight away. A
-  // bump keeps to its own recovery, whatever the exit beside it waits on.
+  // leftover's fee screen has no quote: its button continues the exit. A bump
+  // keeps to its own recovery, whatever the exit beside it waits on.
   const build = useCallback(async () => {
+    if (!bumping && !takesIn && !fundingKey && plan?.status.type === 'needsExitFee') return continueExit();
     if (!walletKey || !quote || !figures || (bumping && !bumpTarget)) return;
     const funded = figures.needsFunding;
     if (funded && (!plan || !fundingKey || !holdsPhrase())) return;
@@ -138,6 +140,7 @@ export function useExitBuild(inputs: BuildInputs) {
     takesIn,
     bumping,
     bumpTarget,
+    continueExit,
     holdsPhrase,
     forgetPhrase,
     goTo,
@@ -181,6 +184,7 @@ export function useExitBuild(inputs: BuildInputs) {
   // so it tries once per quote and per amount at the address: a confirmation or
   // any payment is worth another build. Amounts, not objects, since every pass
   // emits a fresh plan. It cannot feed itself: a build leaves this phase at once.
+  // A leftover's fee screen holds no unlocked key: it waits for the tap.
   useEffect(() => {
     if (phase !== 'fund' || !quote || !fundingKey) return;
     const attempt = { quote, sat: sent.sat, inputs: sent.inputs };
