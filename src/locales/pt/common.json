@@ -396,13 +396,11 @@
     "cashAppLink": "Link do Cash App",
     "cashAppNote": "O Cash App vai mostrar o valor equivalente na sua moeda local e debitar seu saldo em Cash ou BTC.",
     "scanWithCashApp": "Escaneie este código com o Cash App",
-    "redirecting": "Redirecionando…",
     "amount": "Valor",
     "invalidAmount": "Valor inválido",
     "invoiceFailed": "Não foi possível criar a fatura. Tente de novo.",
     "addFundsFromCashApp": "Adicionar fundos do Cash App",
-    "openCashApp": "Abrir Cash App",
-    "openFailed": "Não foi possível abrir a página de compra. Tenta novamente."
+    "openCashApp": "Abrir Cash App"
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Tente de novo com outro gerenciador de senhas, ou continue com uma frase de recuperação.",

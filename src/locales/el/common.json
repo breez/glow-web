@@ -396,13 +396,11 @@
     "cashAppLink": "Σύνδεσμος Cash App",
     "cashAppNote": "Το Cash App θα εμφανίσει το αντίστοιχο ποσό στο τοπικό σας νόμισμα και θα χρεώσει το υπόλοιπό σας σε Cash ή BTC.",
     "scanWithCashApp": "Σαρώστε αυτόν τον κωδικό με το Cash App",
-    "redirecting": "Ανακατεύθυνση…",
     "amount": "Ποσό",
     "invalidAmount": "Μη έγκυρο ποσό",
     "invoiceFailed": "Δεν ήταν δυνατή η δημιουργία τιμολογίου. Δοκιμάστε ξανά.",
     "addFundsFromCashApp": "Προσθήκη χρημάτων από Cash App",
-    "openCashApp": "Άνοιγμα Cash App",
-    "openFailed": "Αποτυχία ανοίγματος της σελίδας αγοράς. Δοκίμασε ξανά."
+    "openCashApp": "Άνοιγμα Cash App"
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Δοκιμάστε ξανά με άλλον διαχειριστή κωδικών, ή συνεχίστε με φράση ανάκτησης.",

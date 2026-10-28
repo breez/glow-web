@@ -396,13 +396,11 @@
     "cashAppLink": "Cash App-link",
     "cashAppNote": "A Cash App a helyi pénznemedben mutatja meg a megfelelő összeget, és a Cash- vagy BTC-egyenlegedet terheli meg.",
     "scanWithCashApp": "Olvasd be ezt a kódot a Cash App-pal",
-    "redirecting": "Átirányítás…",
     "amount": "Összeg",
     "invalidAmount": "Érvénytelen összeg",
     "invoiceFailed": "Nem sikerült létrehozni a számlát. Próbáld újra.",
     "addFundsFromCashApp": "Pénz hozzáadása a Cash Appből",
-    "openCashApp": "Cash App megnyitása",
-    "openFailed": "A vásárlási oldal megnyitása nem sikerült. Próbáld újra."
+    "openCashApp": "Cash App megnyitása"
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Próbáld újra másik jelszókezelővel, vagy folytasd helyreállítási kifejezéssel.",
