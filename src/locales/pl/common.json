@@ -400,13 +400,11 @@
     "cashAppLink": "Link Cash App",
     "cashAppNote": "Cash App pokaże równowartość w twojej lokalnej walucie i obciąży twoje saldo w Cash lub BTC.",
     "scanWithCashApp": "Zeskanuj ten kod w Cash App",
-    "redirecting": "Przekierowywanie…",
     "amount": "Kwota",
     "invalidAmount": "Nieprawidłowa kwota",
     "invoiceFailed": "Nie udało się utworzyć faktury. Spróbuj ponownie.",
     "addFundsFromCashApp": "Dodaj środki z Cash App",
-    "openCashApp": "Otwórz Cash App",
-    "openFailed": "Nie udało się otworzyć strony zakupu. Spróbuj ponownie."
+    "openCashApp": "Otwórz Cash App"
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Spróbuj ponownie z innym menedżerem haseł albo kontynuuj z frazą odzyskiwania.",

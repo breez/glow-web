@@ -43,6 +43,7 @@ const ALLOWED = new Set([
   'SDK default',     // placeholder on the Cash App memo field
   // Product, company and network names.
   'Cash App',
+  'MoonPay',
   'BNB Smart Chain',
   'Download on the App Store',  // alt text of an English store badge
   'Get it on Google Play',

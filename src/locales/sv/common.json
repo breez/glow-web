@@ -396,13 +396,11 @@
     "cashAppLink": "Cash App-länk",
     "cashAppNote": "Cash App visar motsvarande belopp i din lokala valuta och drar från ditt Cash- eller BTC-saldo.",
     "scanWithCashApp": "Skanna den här koden med Cash App",
-    "redirecting": "Omdirigerar…",
     "amount": "Belopp",
     "invalidAmount": "Ogiltigt belopp",
     "invoiceFailed": "Fakturan kunde inte skapas. Försök igen.",
     "addFundsFromCashApp": "Lägg till pengar från Cash App",
-    "openCashApp": "Öppna Cash App",
-    "openFailed": "Det gick inte att öppna köpsidan. Försök igen."
+    "openCashApp": "Öppna Cash App"
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Försök igen med en annan lösenordshanterare, eller fortsätt med en återställningsfras.",

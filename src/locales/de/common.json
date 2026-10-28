@@ -396,13 +396,11 @@
     "cashAppLink": "Cash-App-Link",
     "cashAppNote": "Cash App zeigt den entsprechenden Betrag in deiner Landeswährung an und belastet dein Cash- oder BTC-Guthaben.",
     "scanWithCashApp": "Scanne diesen Code mit Cash App",
-    "redirecting": "Weiterleitung…",
     "amount": "Betrag",
     "invalidAmount": "Ungültiger Betrag",
     "invoiceFailed": "Rechnung konnte nicht erstellt werden. Bitte versuche es erneut.",
     "addFundsFromCashApp": "Guthaben von Cash App hinzufügen",
-    "openCashApp": "Cash App öffnen",
-    "openFailed": "Die Kaufseite konnte nicht geöffnet werden. Versuche es erneut."
+    "openCashApp": "Cash App öffnen"
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Versuche es mit einem anderen Passwortanbieter, oder fahre mit einer Wiederherstellungsphrase fort.",

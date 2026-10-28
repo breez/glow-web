@@ -396,13 +396,11 @@
     "cashAppLink": "Cash App -linkki",
     "cashAppNote": "Cash App näyttää vastaavan summan paikallisessa valuutassasi ja veloittaa Cash- tai BTC-saldoasi.",
     "scanWithCashApp": "Skannaa tämä koodi Cash Appilla",
-    "redirecting": "Ohjataan…",
     "amount": "Summa",
     "invalidAmount": "Virheellinen summa",
     "invoiceFailed": "Laskun luonti epäonnistui. Yritä uudelleen.",
     "addFundsFromCashApp": "Lisää varoja Cash Appista",
-    "openCashApp": "Avaa Cash App",
-    "openFailed": "Ostosivun avaaminen epäonnistui. Yritä uudelleen."
+    "openCashApp": "Avaa Cash App"
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Yritä uudelleen toisella salasanapalvelulla tai jatka palautuslauseella.",

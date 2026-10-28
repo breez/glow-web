@@ -4,6 +4,7 @@ import { MoonPayIcon } from '../../components/Icons';
 import { SimpleAlert } from '../../components/AlertCard';
 import { normalizeDecimalInput } from '../../utils/decimalInput';
 import { MOONPAY_QUICK_AMOUNTS_USD, moonpayAmountError, parseMoonpayAmount } from './moonpay';
+import { useTranslation } from 'react-i18next';
 
 interface MoonpayAmountStepProps {
   isStableBalanceActive: boolean;
@@ -20,6 +21,7 @@ const moonpayHeaderIcon = (
 
 const MoonpayAmountStep: React.FC<MoonpayAmountStepProps> = ({ isStableBalanceActive, onBuyMoonpay, onBack, onClose }) => {
   const [usdInput, setUsdInput] = useState('');
+  const { t } = useTranslation('common');
   const [isOpening, setIsOpening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const amount = parseMoonpayAmount(usdInput);
@@ -43,7 +45,7 @@ const MoonpayAmountStep: React.FC<MoonpayAmountStepProps> = ({ isStableBalanceAc
       await onBuyMoonpay(amount);
       onClose();
     } catch {
-      setError('Could not open MoonPay. Please try again.');
+      setError(t('buy.moonpayOpenFailed'));
     } finally {
       setIsOpening(false);
     }
@@ -54,7 +56,7 @@ const MoonpayAmountStep: React.FC<MoonpayAmountStepProps> = ({ isStableBalanceAc
       <DialogHeader title="MoonPay" onClose={onClose} onBack={onBack} icon={moonpayHeaderIcon} />
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-spark-text-primary mb-2">Amount</label>
+          <label className="block text-sm font-medium text-spark-text-primary mb-2">{t('send.amount')}</label>
           <input
             type="text"
             inputMode="decimal"
@@ -67,7 +69,7 @@ const MoonpayAmountStep: React.FC<MoonpayAmountStepProps> = ({ isStableBalanceAc
                 handleContinue();
               }
             }}
-            placeholder="Enter amount in USD"
+            placeholder={t('receive.crossChain.enterUsd')}
             disabled={isOpening}
             className={AMOUNT_FIELD_CLASS}
             data-testid="moonpay-amount-input"
@@ -96,7 +98,7 @@ const MoonpayAmountStep: React.FC<MoonpayAmountStepProps> = ({ isStableBalanceAc
         </div>
 
         <SimpleAlert variant="info" hideIcon>
-          {isStableBalanceActive ? 'Arrives in your USD balance' : 'Arrives as bitcoin'} within minutes. MoonPay shows its fees at checkout.
+          {isStableBalanceActive ? t('buy.arrivesUsdNote') : t('buy.arrivesBtcNote')}
         </SimpleAlert>
 
         <FormError error={error} />

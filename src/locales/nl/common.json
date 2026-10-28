@@ -396,13 +396,11 @@
     "cashAppLink": "Cash App-link",
     "cashAppNote": "Cash App toont het overeenkomstige bedrag in je lokale valuta en belast je Cash- of BTC-saldo.",
     "scanWithCashApp": "Scan deze code met Cash App",
-    "redirecting": "Doorverwijzen…",
     "amount": "Bedrag",
     "invalidAmount": "Ongeldig bedrag",
     "invoiceFailed": "Factuur kon niet worden aangemaakt. Probeer het opnieuw.",
     "addFundsFromCashApp": "Geld toevoegen via Cash App",
-    "openCashApp": "Cash App openen",
-    "openFailed": "Kan de aankooppagina niet openen. Probeer het opnieuw."
+    "openCashApp": "Cash App openen"
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Probeer het opnieuw met een andere wachtwoordbeheerder, of ga verder met een herstelzin.",

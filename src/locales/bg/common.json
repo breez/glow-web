@@ -396,13 +396,11 @@
     "cashAppLink": "Връзка към Cash App",
     "cashAppNote": "Cash App ще покаже съответната сума във вашата местна валута и ще удържи от баланса ви в Cash или BTC.",
     "scanWithCashApp": "Сканирайте този код с Cash App",
-    "redirecting": "Пренасочва се…",
     "amount": "Сума",
     "invalidAmount": "Невалидна сума",
     "invoiceFailed": "Фактурата не можа да бъде създадена. Опитайте отново.",
     "addFundsFromCashApp": "Добави средства от Cash App",
-    "openCashApp": "Отвори Cash App",
-    "openFailed": "Страницата за покупка не се отвори. Опитай отново."
+    "openCashApp": "Отвори Cash App"
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Опитайте отново с друг мениджър на пароли или продължете с възстановяваща фраза.",

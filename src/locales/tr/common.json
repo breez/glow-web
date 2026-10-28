@@ -396,13 +396,11 @@
     "cashAppLink": "Cash App bağlantısı",
     "cashAppNote": "Cash App tutarın yerel para birimindeki karşılığını gösterir ve Cash ya da BTC bakiyenden düşer.",
     "scanWithCashApp": "Bu kodu Cash App ile tara",
-    "redirecting": "Yönlendiriliyor…",
     "amount": "Tutar",
     "invalidAmount": "Geçersiz tutar",
     "invoiceFailed": "Fatura oluşturulamadı. Tekrar dene.",
     "addFundsFromCashApp": "Cash App ile bakiye ekle",
-    "openCashApp": "Cash App’i aç",
-    "openFailed": "Satın alma sayfası açılamadı. Tekrar dene."
+    "openCashApp": "Cash App’i aç"
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Başka bir parola sağlayıcısıyla tekrar dene ya da kurtarma ifadesiyle devam et.",

@@ -408,13 +408,14 @@
     "cashAppLink": "Cash App link",
     "cashAppNote": "Cash App will show the equivalent amount in your local currency and charge your Cash or BTC balance.",
     "scanWithCashApp": "Scan this code with Cash App",
-    "redirecting": "Redirecting…",
     "amount": "Amount",
     "invalidAmount": "Invalid amount",
     "invoiceFailed": "Failed to create invoice. Please try again.",
     "openCashApp": "Open Cash App",
-    "openFailed": "Failed to open purchase page. Please try again.",
-    "addFundsFromCashApp": "Add funds from Cash App"
+    "addFundsFromCashApp": "Add funds from Cash App",
+    "moonpayOpenFailed": "Could not open MoonPay. Please try again.",
+    "arrivesUsdNote": "Arrives in your USD balance within minutes. MoonPay shows its fees at checkout.",
+    "arrivesBtcNote": "Arrives as bitcoin within minutes. MoonPay shows its fees at checkout."
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Please try again with another password provider, or continue with a recovery phrase.",

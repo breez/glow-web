@@ -400,13 +400,11 @@
     "cashAppLink": "Odkaz Cash App",
     "cashAppNote": "Cash App zobrazí odpovídající částku v tvé místní měně a strhne ji z tvého zůstatku v Cash nebo BTC.",
     "scanWithCashApp": "Naskenuj tento kód v Cash App",
-    "redirecting": "Přesměrovává se…",
     "amount": "Částka",
     "invalidAmount": "Neplatná částka",
     "invoiceFailed": "Fakturu se nepodařilo vytvořit. Zkus to znovu.",
     "addFundsFromCashApp": "Přidat prostředky z Cash App",
-    "openCashApp": "Otevřít Cash App",
-    "openFailed": "Nepodařilo se otevřít stránku nákupu. Zkus to znovu."
+    "openCashApp": "Otevřít Cash App"
   },
   "passkeyErrors": {
     "tryAnotherProvider": "Zkus to znovu s jiným správcem hesel, nebo pokračuj s obnovovací frází.",
