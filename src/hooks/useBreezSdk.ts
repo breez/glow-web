@@ -14,7 +14,7 @@ import { formatError } from '../utils/formatError';
 import { isStandalonePwa, openExternalUrl } from '../utils/externalLink';
 import { splitClaimedDeposits } from '../utils/depositClaimQuote';
 import { isDepositRejected, clearRejectedDeposits, clearClaimFees } from '../services/depositState';
-import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, setStableConversionFailure, ensureSparkPrivateMode, type BuyBitcoinProvider } from '../services/settings';
+import { setCachedStableTicker, clearNetworkOverride, clearStableRestorePrompted, setStableConversionFailure, ensureSparkPrivateMode } from '../services/settings';
 import { wipeAllLocalData } from '../services/accountDeletion';
 import { hideSplash } from '../main';
 import {
@@ -48,6 +48,7 @@ import { clearPin, isAppLockSupported } from '../services/appLock';
 import { hasConversionInFlight } from '../contexts/WalletContext';
 import { isConversionPayment } from '../utils/paymentDescription';
 import { unsettledDeposits } from '../utils/depositHelpers';
+import { getMoonpayUrl } from '../features/buy/moonpay';
 
 // ============================================
 // Payment filtering
@@ -176,7 +177,7 @@ export interface BreezSdkActions {
    * state since it is the same wallet from the user's view.
    */
   adoptMigratedSdk: (newSdk: BreezSdk, label: string) => Promise<void>;
-  handleBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
+  handleBuyMoonpay: (amount: bigint) => Promise<void>;
   clearError: () => void;
   dismissCelebration: () => void;
   subscribeToSdkEvents: (handler: SdkEventHandler) => SdkEventUnsubscribe;
@@ -1045,12 +1046,8 @@ export function useBreezSdk(
     }
   }, [connectWallet]);
 
-  const handleBuyBitcoin = useCallback(async (provider: BuyBitcoinProvider) => {
+  const handleBuyMoonpay = useCallback(async (amount: bigint) => {
     if (!sdk) return;
-    // CashApp requires an amount and is driven by the BuyBitcoinDialog amount step
-    // (see useBuyBitcoin.generate), so this top-level handler only covers
-    // redirect-only providers like MoonPay.
-    if (provider === 'cashApp') return;
 
     // On web, pre-open a blank tab synchronously during the user gesture
     // so the popup blocker doesn't swallow it after the await. On native
@@ -1065,26 +1062,26 @@ export function useBreezSdk(
     const newTab = isNative ? null : window.open('', '_blank');
 
     try {
-      const response = await sdk.buyBitcoin({ type: 'moonpay' });
+      const url = await getMoonpayUrl(sdk, amount);
       if (isNative) {
-        await Browser.open({ url: response.url });
+        await Browser.open({ url: url });
       } else if (newTab) {
-        newTab.location.href = response.url;
+        newTab.location.href = url;
       } else if (isStandalonePwa()) {
         // window.open returns null in an installed PWA, so this is the normal
         // path there, not a blocked-popup edge: navigating the standalone
         // window itself would leave no way back.
-        await openExternalUrl(response.url);
+        await openExternalUrl(url);
       } else {
-        window.location.href = response.url;
+        window.location.href = url;
       }
     } catch (e) {
       // Close the blank tab if the SDK call failed
       newTab?.close();
-      logger.error(LogCategory.SDK, 'Failed to open Buy Bitcoin', { error: formatError(e) });
-      showToast('error', 'Buy Bitcoin', 'Failed to open purchase page. Please try again.');
+      logger.error(LogCategory.SDK, 'Failed to open MoonPay', { error: formatError(e) });
+      throw e;
     }
-  }, [sdk, showToast]);
+  }, [sdk]);
 
   // ----------------------------------------
   // Effects
@@ -1460,7 +1457,7 @@ export function useBreezSdk(
     fetchUnclaimedDeposits,
     handleLogout,
     adoptMigratedSdk,
-    handleBuyBitcoin,
+    handleBuyMoonpay,
     clearError: () => setError(null),
     dismissCelebration: () => setCelebrationPayment(null),
     subscribeToSdkEvents,

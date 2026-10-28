@@ -18,18 +18,14 @@ import { buyCopy, type BuyBitcoinProvider } from '../../services/settings';
 import { useToast } from '../../contexts/ToastContext';
 import { formatQuickAmount } from '../../utils/tokenFormatting';
 import { useBuyBitcoin } from './hooks/useBuyBitcoin';
+import MoonpayAmountStep from './MoonpayAmountStep';
 import { holdIdleLock } from '@/services/appLock';
 
-const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.ReactNode; loadingIcon: React.ReactNode }> = {
+const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.ReactNode }> = {
   moonpay: {
     name: 'MoonPay',
     icon: (
       <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shrink-0 p-2">
-        <MoonPayIcon className="w-full h-full text-[#7B36D9]" />
-      </div>
-    ),
-    loadingIcon: (
-      <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shrink-0 p-2 animate-pulse">
         <MoonPayIcon className="w-full h-full text-[#7B36D9]" />
       </div>
     ),
@@ -38,11 +34,6 @@ const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.React
     name: 'Cash App',
     icon: (
       <div className="w-11 h-11 rounded-xl bg-[#00D632] flex items-center justify-center shrink-0 p-1">
-        <CashAppIcon className="w-full h-full text-[#00D632]" />
-      </div>
-    ),
-    loadingIcon: (
-      <div className="w-11 h-11 rounded-xl bg-[#00D632] flex items-center justify-center shrink-0 p-1 animate-pulse">
         <CashAppIcon className="w-full h-full text-[#00D632]" />
       </div>
     ),
@@ -58,14 +49,14 @@ const cashAppHeaderIcon = (
 interface BuyBitcoinDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
+  onBuyMoonpay: (amount: bigint) => Promise<void>;
   network?: Network;
 }
 
 const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
   isOpen,
   onClose,
-  onBuyBitcoin,
+  onBuyMoonpay,
   network,
 }) => {
   const { showToast } = useToast();
@@ -73,7 +64,6 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
   const buy = useBuyBitcoin({
     isOpen,
     network,
-    onSelectRedirectProvider: onBuyBitcoin,
     onMobileRedirectComplete: onClose,
     onInvoicePaid: onClose,
   });
@@ -85,11 +75,6 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
     if (!isOpen || buy.step !== 'link') return;
     return holdIdleLock();
   }, [isOpen, buy.step]);
-
-  const handleSelect = async (provider: BuyBitcoinProvider) => {
-    await buy.selectProvider(provider);
-    if (provider === 'moonpay') onClose();
-  };
 
   return (
     <BottomSheetContainer isOpen={isOpen} onClose={onClose} showBackdrop>
@@ -104,17 +89,15 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
             <div className="space-y-3">
               {buy.enabledProviders.map((provider) => {
                 const meta = providerMeta[provider];
-                const isLoading = buy.redirectingProvider === provider;
                 return (
                   <button
                     key={provider}
-                    onClick={() => handleSelect(provider)}
-                    disabled={buy.redirectingProvider !== null}
-                    className="w-full flex items-center gap-4 p-4 rounded-2xl border border-spark-border hover:border-spark-primary/40 hover:bg-spark-primary/5 transition-all text-left disabled:opacity-50"
+                    onClick={() => buy.selectProvider(provider)}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl border border-spark-border hover:border-spark-primary/40 hover:bg-spark-primary/5 transition-all text-left"
                   >
-                    {isLoading ? meta.loadingIcon : meta.icon}
+                    {meta.icon}
                     <span className="font-display font-semibold text-spark-text-primary text-sm">
-                      {isLoading ? 'Redirecting…' : meta.name}
+                      {meta.name}
                     </span>
                   </button>
                 );
@@ -123,7 +106,16 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
           </>
         )}
 
-        {buy.step === 'amount' && (
+        {buy.step === 'moonpayAmount' && (
+          <MoonpayAmountStep
+            isStableBalanceActive={buy.isStableBalanceActive}
+            onBuyMoonpay={onBuyMoonpay}
+            onBack={buy.goBackToSelect ?? undefined}
+            onClose={onClose}
+          />
+        )}
+
+        {buy.step === 'cashAppAmount' && (
           <>
             <DialogHeader
               title={buyCopy('Cash App')}

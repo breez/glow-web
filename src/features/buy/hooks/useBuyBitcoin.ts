@@ -13,12 +13,16 @@ import {
   getBuyProviderSettings,
   filterProvidersByNetwork,
   filterProvidersByPlatform,
-  hasBuyProviderSettings,
   type BuyBitcoinProvider,
 } from '../../../services/settings';
 import { useCashAppInstalled } from '../../../hooks/useCashAppInstalled';
 
-export type BuyStep = 'select' | 'amount' | 'link';
+export type BuyStep = 'select' | 'cashAppAmount' | 'moonpayAmount' | 'link';
+
+const AMOUNT_STEP: Record<BuyBitcoinProvider, BuyStep> = {
+  cashApp: 'cashAppAmount',
+  moonpay: 'moonpayAmount',
+};
 
 /** What a Cash App quick amount is worth, in dollars. They start where a
  *  purchase is worth making: below this the provider's fee takes much of it.
@@ -31,8 +35,6 @@ export interface UseBuyBitcoinOptions {
   isOpen: boolean;
   /** Current network; filters the provider list (e.g. Cash App is mainnet-only). */
   network?: Network;
-  /** Called for providers that redirect externally (MoonPay). */
-  onSelectRedirectProvider: (provider: BuyBitcoinProvider) => Promise<void>;
   /** Called after the native Cash App handoff; the caller closes the dialog. */
   onMobileRedirectComplete: () => void;
   /** Called when the displayed invoice is paid; the caller typically closes the dialog. */
@@ -43,7 +45,6 @@ export interface UseBuyBitcoinReturn {
   // State
   step: BuyStep;
   enabledProviders: BuyBitcoinProvider[];
-  redirectingProvider: BuyBitcoinProvider | null;
   /** Display string bound to the input. Holds fiat in token mode, sats otherwise. */
   amountInput: string;
   cashAppUrl: string | null;
@@ -58,7 +59,7 @@ export interface UseBuyBitcoinReturn {
   isStableBalanceActive: boolean;
   tokenConfig: TokenDisplayConfig | null;
   // Actions
-  selectProvider: (provider: BuyBitcoinProvider) => Promise<void>;
+  selectProvider: (provider: BuyBitcoinProvider) => void;
   setAmount: (value: string) => void;
   setQuickAmount: (value: number) => void;
   toggleDenomination: () => void;
@@ -70,7 +71,6 @@ export interface UseBuyBitcoinReturn {
 export function useBuyBitcoin({
   isOpen,
   network,
-  onSelectRedirectProvider,
   onMobileRedirectComplete,
   onInvoicePaid,
 }: UseBuyBitcoinOptions): UseBuyBitcoinReturn {
@@ -104,7 +104,6 @@ export function useBuyBitcoin({
     return projectedSats > Number.MAX_SAFE_INTEGER;
   }, [amountInput, amountSats, isTokenMode, btcFiatRate]);
 
-  const [redirectingProvider, setRedirectingProvider] = useState<BuyBitcoinProvider | null>(null);
   const [cashAppUrl, setCashAppUrl] = useState<string | null>(null);
   const [generatedAmountSats, setGeneratedAmountSats] = useState<Sats | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -121,34 +120,15 @@ export function useBuyBitcoin({
     [isOpen, network, cashAppInstalled]
   );
 
-  // A lone Cash App entry (iOS) has nothing to pick, so the picker is skipped
-  // and the sheet opens on the amount. Safe as a mount-time decision: the
-  // parent remounts this hook on every open.
-  const skipsProviderSelect = !hasBuyProviderSettings()
-    && enabledProviders.length === 1 && enabledProviders[0] === 'cashApp';
-  const [step, setStep] = useState<BuyStep>(skipsProviderSelect ? 'amount' : 'select');
+  // A lone provider opens straight on its amount; each open remounts this hook.
+  const skipsProviderSelect = enabledProviders.length === 1;
+  const [step, setStep] = useState<BuyStep>(skipsProviderSelect ? AMOUNT_STEP[enabledProviders[0]] : 'select');
 
   // No reset-on-close needed — parent (WalletPage) bumps `buyBitcoinSession`
   // on each open and passes it as `key`, so each open is a fresh mount of
   // the dialog and this hook, with all useState initialised to defaults.
 
-  const selectProvider = useCallback(
-    async (provider: BuyBitcoinProvider) => {
-      if (provider === 'cashApp') {
-        setStep('amount');
-        return;
-      }
-      setRedirectingProvider(provider);
-      try {
-        await onSelectRedirectProvider(provider);
-      } catch {
-        // Errors from redirect providers are handled upstream (toast + logging).
-      } finally {
-        setRedirectingProvider(null);
-      }
-    },
-    [onSelectRedirectProvider]
-  );
+  const selectProvider = useCallback((provider: BuyBitcoinProvider) => setStep(AMOUNT_STEP[provider]), []);
 
   const setAmountWithErrorClear = useCallback(
     (value: string) => {
@@ -231,7 +211,7 @@ export function useBuyBitcoin({
   const goBackToSelect = skipsProviderSelect ? null : goBackToSelectFn;
 
   const goBackToAmount = useCallback(() => {
-    setStep('amount');
+    setStep('cashAppAmount');
     setCashAppUrl(null);
   }, []);
 
@@ -250,7 +230,6 @@ export function useBuyBitcoin({
   return {
     step,
     enabledProviders,
-    redirectingProvider,
     amountInput,
     cashAppUrl,
     generatedAmountSats,

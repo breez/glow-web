@@ -7,7 +7,6 @@ import SideMenu from '../components/SideMenu';
 import TransactionList from '../components/TransactionList';
 import PullToRefresh from '../components/PullToRefresh';
 import { GetInfoResponse, Payment, DepositInfo, Network } from '@breeztech/breez-sdk-spark';
-import type { BuyBitcoinProvider } from '../services/settings';
 import { ArrowUpIcon, QrCodeIcon, ArrowDownIcon } from '../components/Icons';
 import { mergeDepositsWithTransactions, ExtendedPayment, isUnclaimedDepositPayment } from '@/utils/depositHelpers';
 import SendPaymentDialog from '../features/send/SendPaymentDialog';
@@ -54,7 +53,7 @@ interface WalletPageProps {
    * on a new fee for that kept co-signed recovery.
    */
   onOpenUnilateralExit: (mode?: ExitMode, bumpTxid?: string) => void;
-  onBuyBitcoin: (provider: BuyBitcoinProvider) => Promise<void>;
+  onBuyMoonpay: (amount: bigint) => Promise<void>;
   network?: Network;
   onDepositChanged?: () => void;
 }
@@ -70,7 +69,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   onOpenGetRefund,
   onOpenSettings,
   onOpenUnilateralExit,
-  onBuyBitcoin,
+  onBuyMoonpay,
   network,
   onDepositChanged,
 }) => {
@@ -108,7 +107,6 @@ const WalletPage: React.FC<WalletPageProps> = ({
   const [paymentInput, setPaymentInput] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isBuyBitcoinOpen, setIsBuyBitcoinOpen] = useState(false);
-  const [isBuyLoading, setIsBuyLoading] = useState(false);
   const cashAppInstalled = useCashAppInstalled();
   // Computed per render (cheap in-memory read) so the Buy button's
   // visibility is fresh after any return from Settings; a memo keyed
@@ -307,16 +305,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
           onOpenMenu={() => setIsMenuOpen(true)}
           // Hidden when nothing is left to offer: no provider enabled in
           // Settings, or (on iOS) Cash App not installed.
-          onOpenBuyBitcoin={enabledBuyProviders.length === 0 ? undefined : () => {
-            if (enabledBuyProviders.length === 1 && enabledBuyProviders[0] === 'moonpay') {
-              // MoonPay can redirect directly; Cash App needs amount entry via the dialog.
-              setIsBuyLoading(true);
-              onBuyBitcoin(enabledBuyProviders[0]).finally(() => setIsBuyLoading(false));
-            } else {
-              openBuyBitcoinDialog();
-            }
-          }}
-          isBuyLoading={isBuyLoading}
+          onOpenBuyBitcoin={enabledBuyProviders.length === 0 ? undefined : openBuyBitcoinDialog}
           isSyncing={isSyncing}
           refreshWalletData={() => refreshWalletData(false)}
           hasRejectedDeposits={hasRejectedDeposits}
@@ -363,7 +352,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
         key={`buy-${buyBitcoinSession}`}
         isOpen={isBuyBitcoinOpen}
         onClose={() => setIsBuyBitcoinOpen(false)}
-        onBuyBitcoin={onBuyBitcoin}
+        onBuyMoonpay={onBuyMoonpay}
         network={network}
       />
 
