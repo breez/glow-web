@@ -30,21 +30,45 @@ kind reviewable means not burying it under the first.
 
 ## How a language ships
 
-A language is translatable as soon as it has a directory here. It is **served to
-readers** only once its base subtag appears in [`shipping.json`](shipping.json).
-That file is deliberately plain JSON rather than TypeScript, because the native
-app reads it too: a CI check makes the iOS and Android language declarations
-match it exactly.
+Every language in [`shipping.json`](shipping.json) is served to readers whose
+device asks for it. All thirty ship, machine-translated and unreviewed, and
+corrections arrive as feedback rather than gating the release. That is a
+deliberate reversal of the earlier plan, which held a language back until a
+speaker had read its money-path strings.
 
-Add it there when both hold:
+What that buys: thirty languages at once, and real reports from people using
+the app in their own language. What it costs: a mistranslated warning can
+reach a reader before anyone catches it, and the money path is where that
+matters. The `critical` namespace still exists, so the hundred strings worth
+reading first are still separable, and the drafts are regenerable in minutes
+once the prompt improves.
 
-1. `critical.json` is complete **and** has been read by a person who speaks the
-   language. Not reviewed by whoever generated it.
-2. Overall completion is high enough that the screen does not read as broken.
+Dutch, Portuguese, German and Bulgarian are the four being read internally
+first, to tune the prompt before the rest are regenerated.
 
-Until then, a reader whose device asks for that language gets English. This is
-deliberate: volunteer translation does not arrive finished, and a half-translated
-send screen is worse than an English one.
+Arabic and Hebrew are translated but their layout is not mirrored. Right to
+left needs logical CSS properties, flipped icons and reversed progress
+indicators, which is engineering rather than translation. Until that lands
+they read as broken rather than as untranslated.
+
+## Regenerating a translation
+
+The drafts come from a harness, not from hand-editing:
+
+```
+npm run translate                      every language, keys it is missing
+npm run translate -- --lang nl --all   re-translate Dutch from scratch
+npm run translate -- --keys send.      only the send flow
+npm run translate -- --dry-run         print the plan and the cost
+```
+
+It needs `ANTHROPIC_API_KEY`. The prompt is
+[`scripts/translate/prompt.md`](../../scripts/translate/prompt.md) and the
+roster is [`languages.json`](../../scripts/translate/languages.json), so
+improving a translation is a prompt edit and a re-run. The harness refuses any
+string that drops a placeholder, loses rendered markup, translates a product
+name or drops a trailing ellipsis, and leaves that chunk untouched rather than
+writing it.
 
 ## Contributing a translation, without a checkout
 
@@ -80,71 +104,31 @@ for open-source projects, so the cost of waiting is nothing.
 
 ## Glossary
 
-Terms that must be translated the same way everywhere, and the ones that must
-not be translated at all. Consistency here is what makes the critical strings
-reviewable in one sitting.
+The terms that must be translated consistently, the ones that must never be
+translated, and the register to address the reader in all live in
+[`scripts/translate/prompt.md`](../../scripts/translate/prompt.md). That file
+is what the harness sends, so it is the only copy: a second list here would
+drift from the one doing the work.
 
-| English | it | de | hu | es | fr |
-|---|---|---|---|---|---|
-| recovery phrase | frase di recupero | Wiederherstellungsphrase | helyreállítási kifejezés | frase de recuperación | phrase de récupération |
-| passkey | passkey | Passkey | azonosítókulcs | passkey | passkey |
-| label | etichetta | Label | címke | etiqueta | étiquette |
-| balance | saldo | Guthaben | egyenleg | saldo | solde |
-| funds | fondi | Guthaben | pénz | fondos | fonds |
-| fee | commissione | Gebühr | díj | comisión | frais |
-
-The same six terms in the other languages: Dutch *herstelzin / passkey /
-label / saldo / geld / kosten*, Portuguese *frase de recuperação / passkey /
-etiqueta / saldo / fundos / taxa*, Swedish *återställningsfras / passkey /
-etikett / saldo / pengar / avgift*, Finnish *palautuslause / avainkoodi /
-tunniste / saldo / varat / maksu*, Turkish *kurtarma ifadesi / geçiş anahtarı /
-etiket / bakiye / para / ücret*, Greek *φράση ανάκτησης / passkey / ετικέτα /
-υπόλοιπο / χρήματα / χρέωση*, Bulgarian *възстановяваща фраза / passkey /
-етикет / баланс / средства / такса*, Czech *obnovovací fráze / passkey /
-štítek / zůstatek / prostředky / poplatek*, Slovak *obnovovacia fráza /
-passkey / štítok / zostatok / prostriedky / poplatok*, Polish *fraza
-odzyskiwania / passkey / etykieta / saldo / środki / opłata*.
-
-Hungarian, Finnish and Turkish translate *passkey* rather than borrowing it,
-following what Apple and Google use in those languages. The rest keep the
-English word, as those platforms do.
-
-
-Never translated: Glow, Breez, Spark, Lightning, Bitcoin, LNURL, Flashnet,
-MoonPay, Cash App, Face ID, Touch ID, sats, BTC, USD.
-
-Never used, in any language: the local word for *wallet* or *account*. The one
-exception is `settings.account` and `settings.deleteAccountGuide`, which App
-Store guideline 5.1.1(v) requires to be named that way.
-
-Address the reader informally where the language distinguishes it. Hungarian
-uses *tegezés*, German uses *du*. This is a whole-file decision, so it is the
-first thing to confirm or reject in review.
+Two decisions in it are worth knowing without opening it. Glow is never called
+a wallet or an account in any language, because the local word for "wallet" is
+almost always wrong for what Glow is. And the reader is addressed informally
+wherever the language distinguishes it, the way a phone's own interface does.
 
 ## Review status
 
-Every language below is a complete first draft, machine-generated, and none of
-them ships. A language joins `shipping.json` only after a speaker has read its
-`critical.json`: a hundred strings, an evening's work.
+Nothing is gated on this table: every language ships. It records which have
+been read by a speaker, so a report can be weighed against whether anyone has
+looked.
 
-| Language | `critical` reviewed |
+| Language | read by a speaker |
 |---|---|
 | `en` English | source |
-| `bg` Български | **no** |
-| `cs` Čeština | **no** |
-| `de` Deutsch | **no** |
-| `el` Ελληνικά | **no** |
-| `es` Español | **no** |
-| `fi` Suomi | **no** |
-| `fr` Français | **no** |
-| `hu` Magyar | **no** |
-| `it` Italiano | **no** |
-| `nl` Nederlands | **no** |
-| `pl` Polski | **no** |
-| `pt` Português | **no** |
-| `sk` Slovenčina | **no** |
-| `sv` Svenska | **no** |
-| `tr` Türkçe | **no** |
+| `nl` Nederlands | queued, sniff test |
+| `pt` Português | queued, sniff test |
+| `de` Deutsch | queued, sniff test |
+| `bg` Български | queued, sniff test |
+| the other twenty-six | no |
 
 ## Plural forms
 

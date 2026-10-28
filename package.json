@@ -28,7 +28,9 @@
     "regtest:operators": "node local-regtest/outage.mjs operators",
     "regtest:indexer": "node local-regtest/outage.mjs indexer",
     "regtest:hold": "node local-regtest/btc.mjs hold",
-    "regtest:release": "node local-regtest/btc.mjs release"
+    "regtest:release": "node local-regtest/btc.mjs release",
+    "translate": "node scripts/translate/translate.mjs",
+    "translate:test": "node --test scripts/translate/translate.test.mjs"
   },
   "dependencies": {
     "@breeztech/breez-sdk-spark": "file:vendor/breeztech-breez-sdk-spark.tgz",
@@ -67,6 +69,7 @@
     "zxing-wasm": "^3.1.4"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.74.0",
     "@eslint/js": "^10.0.0",
     "@playwright/test": "^1.52.0",
     "@tailwindcss/postcss": "^4.2.4",
@@ -92,7 +95,8 @@
     "vite": "^8.0.0",
     "vite-plugin-node-polyfills": "^0.26.0",
     "vite-plugin-wasm": "^3.6.0",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.0",
+    "zod": "^3.25.76"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "4.57.0"
