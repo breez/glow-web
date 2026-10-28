@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import type { PrepareSendPaymentResponse, FeePolicy, SendPaymentOptions, SdkEvent, ConversionOptions, InputType } from '@breeztech/breez-sdk-spark';
+import type { PrepareSendPaymentResponse, FeePolicy, SendPaymentOptions, SdkEvent, ConversionOptions, InputType, Bolt11InvoiceDetails } from '@breeztech/breez-sdk-spark';
 import type { SendInput } from '@/types/domain';
 import { useWallet, useWalletInfo } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
@@ -22,6 +22,11 @@ function bareDestination(parsed: InputType): string | null {
   }
 }
 
+/** A pre-check that stops an expired invoice before the user enters an amount. */
+function isExpired(invoice: Bolt11InvoiceDetails): boolean {
+  return Math.floor(Date.now() / 1000) > invoice.timestamp + invoice.expiry;
+}
+
 /** The parser's refusals of an LNURL-auth code (LUD-04), as opposed to input
  *  that is not a destination at all. */
 const BAD_LOGIN_CODE = /lnurl (missing|contains invalid) k1|lnurl contains unsupported action/;
@@ -32,6 +37,12 @@ const ALREADY_PAID = 'This invoice has already been paid.';
  *  invoice was already paid. The SDK accepts it at prepare, so only the send
  *  reports it. Matches the gRPC status, which is stable, not its message. */
 const ALREADY_EXISTS = /status: AlreadyExists/;
+
+const INVOICE_EXPIRED = 'This invoice has expired. Ask the recipient for a new one.';
+
+/** The SDK's refusal of an invoice past its expiry. It checks at prepare and
+ *  again at send, and an invoice can expire after the parse-time check. */
+const EXPIRED = /Invoice has expired/;
 
 /** Leaf selection gives up while leaves are reserved but still counted in the
  *  balance: after a reload cuts a leaf swap short, the SDK holds them for up to
@@ -136,15 +147,19 @@ export function useSendPayment(): UseSendPaymentReturn {
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to prepare payment', { error: formatError(err) });
       const message = err instanceof Error ? err.message : 'Unknown error';
+      const expired = EXPIRED.test(message);
       setError(
-        BALANCE_SETTLING.test(message)
-          ? 'Could not prepare the payment while your balance settles. Please try again in a few minutes.'
-          : `Failed to prepare payment: ${message}`,
+        expired
+          ? INVOICE_EXPIRED
+          : BALANCE_SETTLING.test(message)
+            ? 'Could not prepare the payment while your balance settles. Please try again in a few minutes.'
+            : `Failed to prepare payment: ${message}`,
       );
       // Clear any stale response so the confirm step renders its prepare-failed
       // fallback (error + disabled send) instead of an old success render.
       setPrepareResponse(null);
-      setCurrentStep(errorStep);
+      // Nothing on the amount or confirm step can fix an expired invoice.
+      setCurrentStep(expired ? 'input' : errorStep);
     } finally {
       setIsLoading(false);
     }
@@ -189,6 +204,13 @@ export function useSendPayment(): UseSendPaymentReturn {
         }
         effective = method;
         prefillAmountSat = parseResult.amountSat;
+      }
+
+      // A BIP21 with an expired invoice stops here too, rather than paying its address.
+      if (effective.type === 'bolt11Invoice' && isExpired(effective)) {
+        setError(INVOICE_EXPIRED);
+        setCurrentStep('input');
+        return;
       }
 
       // prepareSendPayment gets the bare destination the parser resolved, never
@@ -329,9 +351,12 @@ export function useSendPayment(): UseSendPaymentReturn {
       setPaymentResult('success');
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Payment failed', { error: formatError(err) });
-      setError(ALREADY_EXISTS.test(formatError(err))
+      const message = formatError(err);
+      setError(ALREADY_EXISTS.test(message)
         ? ALREADY_PAID
-        : `Payment failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        : EXPIRED.test(message)
+          ? INVOICE_EXPIRED
+          : `Payment failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setPaymentResult('failure');
     } finally {
       if (listenerId) {
