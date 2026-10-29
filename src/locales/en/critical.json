@@ -75,7 +75,8 @@
       "notSentBody": "The payment did not go through. Your funds were not sent."
     },
     "alreadyPaid": "This invoice has already been paid.",
-    "invoiceExpired": "This invoice has expired. Ask the recipient for a new one."
+    "invoiceExpired": "This invoice has expired. Ask the recipient for a new one.",
+    "balanceSettling": "Could not prepare the payment while your balance settles. Please try again in a few minutes."
   },
   "generate": {
     "title": "Keep it Secret",

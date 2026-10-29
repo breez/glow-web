@@ -157,7 +157,7 @@ export function useSendPayment(): UseSendPaymentReturn {
         expired
           ? invoiceExpired()
           : BALANCE_SETTLING.test(message)
-            ? 'Could not prepare the payment while your balance settles. Please try again in a few minutes.'
+            ? t('critical:send.balanceSettling')
             : `Failed to prepare payment: ${message}`,
       );
       // Clear any stale response so the confirm step renders its prepare-failed
