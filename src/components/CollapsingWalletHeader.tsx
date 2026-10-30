@@ -353,7 +353,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                   // Cash App's mark with its tile knocked out: the button is
                   // already Cash App's green, so drawing the tile again would
                   // stack a second square on top of it.
-                  <CashAppIcon size="xl" className="text-transparent" />
+                  <CashAppIcon size="lg" className="text-transparent" />
                 ) : (
                   <CurrencyIcon size="sm" />
                 )}
