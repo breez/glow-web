@@ -35,15 +35,8 @@ afterEach(() => {
 });
 
 describe('unilateral exit on the settings page', () => {
-  it('is not offered without dev mode', () => {
+  it('is offered without dev mode', () => {
     setDevMode(false);
-    renderSettings();
-
-    expect(screen.queryByTestId('settings-unilateral-exit')).toBeNull();
-  });
-
-  it('is offered with dev mode on', () => {
-    setDevMode(true);
     renderSettings();
 
     expect(screen.getByTestId('settings-unilateral-exit')).toBeInTheDocument();
