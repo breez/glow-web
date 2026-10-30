@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import {
   FormError,
@@ -13,7 +13,8 @@ import { fixedQuickAmounts, formatQuickAmount, formatTokenInput } from '../../ut
 import CurrencySwitcher from '../../components/ui/CurrencySwitcher';
 import { SatAmount } from '../../components/SatAmount';
 import { useAmountInput, useFiatOverride } from '../../hooks/useAmountInput';
-import { getDisplayFiatCurrency } from '../../services/settings';
+import { getDisplayFiatCurrency, getFiatSettings } from '../../services/settings';
+import { useFiatData } from '../../contexts/FiatDataContext';
 import type { Sats } from '../../types/sats';
 import { dismissKeyboard } from '../../utils/keyboard';
 import { LIGHTNING_INVOICE_MIN_SATS } from '../../constants/receive';
@@ -54,9 +55,15 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   resetCount,
 }) => {
   // Fiat entry without a stable-balance token: the typed amount is converted to
-  // sats client-side (#356). Denominated in whatever currency the balance
-  // header is showing, including one the user cycled to by tapping it.
-  const input = useAmountInput({ fiatOverride: useFiatOverride(getDisplayFiatCurrency()) });
+  // sats client-side (#356). Starts in the currency the balance header shows;
+  // null follows the header, set once the user steps to another currency.
+  const { fiatRates } = useFiatData();
+  const headerFiatId = getDisplayFiatCurrency();
+  const [pickedFiatId, setPickedFiatId] = useState<string | null>(null);
+  const activeFiatId = pickedFiatId ?? headerFiatId;
+  const fiatIds = getFiatSettings().selectedCurrencies
+    .filter(id => fiatRates.some(r => r.coin === id && r.value > 0));
+  const input = useAmountInput({ fiatOverride: useFiatOverride(activeFiatId) });
   const {
     amountInput: displayAmount,
     setAmount,
@@ -64,6 +71,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     resetAmount,
     isTokenMode,
     toggleDenomination,
+    isStableBalanceActive,
     tokenSymbol,
     config,
     btcFiatRate,
@@ -105,7 +113,15 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     if (!isOpen) resetAmount();
   }, [isOpen, resetAmount]);
 
+  // ₿, then each enabled currency from the header's onward (wrapping), then ₿.
   const handleToggleDenomination = () => {
+    const nextFiatId = fiatIds[(fiatIds.indexOf(activeFiatId) + 1) % fiatIds.length];
+    if (isTokenMode && !isStableBalanceActive && nextFiatId && nextFiatId !== headerFiatId) {
+      setPickedFiatId(nextFiatId);
+      resetAmount();
+      return;
+    }
+    setPickedFiatId(null);
     toggleDenomination();
   };
 
