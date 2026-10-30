@@ -77,6 +77,7 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack, o
     localStorage.removeItem('passkeyRegistered');
     localStorage.removeItem('passkeyFirstSeenAt');
     localStorage.removeItem('passkeyLastSeenAt');
+    localStorage.removeItem('passkeyCheckSnoozedUntil');
     clearAllLabelLastUsed();
     logger.warn(LogCategory.AUTH, 'User cleared passkey history (kept credential IDs and AAGUIDs)');
     showToast('success', 'Passkey history cleared');
@@ -100,6 +101,7 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack, o
     localStorage.removeItem('passkeyActiveCredentialId');
     localStorage.removeItem('passkeyFirstSeenAt');
     localStorage.removeItem('passkeyLastSeenAt');
+    localStorage.removeItem('passkeyCheckSnoozedUntil');
     clearAllLabelLastUsed();
     clearAllCredentialMeta();
     clearAllHiddenCredentials();
