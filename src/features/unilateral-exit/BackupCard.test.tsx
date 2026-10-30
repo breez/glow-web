@@ -80,5 +80,7 @@ describe('BackupActions', () => {
     render(<BackupActions />);
     fireEvent.click(screen.getByTestId('unilateral-exit-backup-save'));
     await waitFor(() => expect(exportUnilateralExitState).toHaveBeenCalled());
+    // The save keeps running after the export call; let it settle before teardown.
+    await waitFor(() => expect(screen.getByTestId('unilateral-exit-backup-save')).toBeEnabled());
   });
 });
