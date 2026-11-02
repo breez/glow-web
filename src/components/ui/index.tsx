@@ -118,7 +118,7 @@ export const DialogHeader: React.FC<{
         <button
           onClick={back}
           aria-label={t('actions.back')}
-          className="absolute left-0 top-1/2 -translate-y-1/2 py-2 pl-6 pr-2 -ml-6 text-spark-text-muted hover:text-spark-text-primary transition-colors rounded-lg hover:bg-white/5"
+          className="absolute start-0 top-1/2 -translate-y-1/2 py-2 ps-6 pe-2 -ms-6 text-spark-text-muted hover:text-spark-text-primary transition-colors rounded-lg hover:bg-white/5"
         >
           <BackIcon />
         </button>
@@ -131,7 +131,7 @@ export const DialogHeader: React.FC<{
       <button
         onClick={onClose}
         aria-label={t('actions.close')}
-        className="absolute right-0 top-1/2 -translate-y-1/2 py-2 pl-2 pr-6 -mr-6 text-spark-text-muted hover:text-spark-primary-light transition-colors rounded-lg hover:bg-white/5"
+        className="absolute end-0 top-1/2 -translate-y-1/2 py-2 ps-2 pe-6 -me-6 text-spark-text-muted hover:text-spark-primary-light transition-colors rounded-lg hover:bg-white/5"
       >
         <CloseIcon />
       </button>
@@ -196,7 +196,7 @@ export const CollapsibleSection: React.FC<{
       onClick={onToggle}
       // py-2 for a 44px target, pulled back by -my-2 so the row occupies the
       // height it always did. Same trick as DialogHeader's close control.
-      className="flex justify-between items-center w-full text-left py-2 -my-2"
+      className="flex justify-between items-center w-full text-start py-2 -my-2"
     >
       <span className="text-spark-text-secondary text-sm">{label}</span>
       <span className="text-spark-primary hover:text-spark-primary-light flex items-center transition-colors p-1">

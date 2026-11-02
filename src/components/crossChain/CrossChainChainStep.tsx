@@ -56,7 +56,7 @@ export const CrossChainChainStep: React.FC<CrossChainChainStepProps> = ({
       <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">
         {t('send.crossChain.selectNetwork', { asset: selectedAsset })}
       </label>
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-none touch-pan-y space-y-2 pr-1">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-none touch-pan-y space-y-2 pe-1">
         {chains.map(r => {
           const key = chainGroupKey(r);
           const isExpanded = expandedChain === key;

@@ -538,7 +538,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               className="text-spark-text-muted text-xs hover:text-spark-text-secondary transition-colors select-none"
             >
               Glow{appVersion && ` v${appVersion}`}
-              {isDevMode && <span className="ml-1 text-spark-primary">(dev)</span>}
+              {isDevMode && <span className="ms-1 text-spark-primary">(dev)</span>}
             </button>
             {devTapCount > 0 && devTapCount < devTapThreshold && (
               <p className="text-xs text-spark-text-muted mt-1">

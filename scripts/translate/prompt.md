@@ -53,12 +53,16 @@ language would meet in Apple's or Google's own interface.
    are plural forms. {{PLURAL_NOTE}}
 5. **Register.** Address the reader informally where your language
    distinguishes it, the way a phone's own interface does.
-6. **Length.** These strings sit in buttons and single-line rows. Where a
+6. **Variety.** Where the language above names a region or a script, write that
+   variety and not its sibling: Brazilian Portuguese is not European, and
+   Simplified is not Traditional. Both of each pair ship, so a reader who picked
+   one would notice the other's vocabulary at once.
+7. **Length.** These strings sit in buttons and single-line rows. Where a
    shorter correct form exists, take it. If the only correct form is much
    longer than the English, use it anyway and do not invent an abbreviation.
-7. **Case.** A short label naming a thing takes your language's conventions for
+8. **Case.** A short label naming a thing takes your language's conventions for
    a button or title. A sentence stays a sentence.
-8. **Ellipses and punctuation.** Keep a trailing `...` if the English has one:
+9. **Ellipses and punctuation.** Keep a trailing `...` if the English has one:
    it marks work in progress. Use your language's own quotation marks.
 
 ## Output

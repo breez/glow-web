@@ -319,7 +319,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           {/* Menu button */}
           <button
             onClick={onOpenMenu}
-            className="p-2 -ml-2 text-spark-text-secondary hover:text-spark-text-primary transition-colors rounded-xl hover:bg-white/5"
+            className="p-2 -ms-2 text-spark-text-secondary hover:text-spark-text-primary transition-colors rounded-xl hover:bg-white/5"
             aria-label={t('a11y.openMenu')}
             data-testid="menu-button"
           >
@@ -415,7 +415,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             <span className="balance-display">
               {formattedPrimaryBalance}
             </span>
-            {displayBalance > 0 && <span className="absolute right-full top-1/2 -translate-y-1/2 mr-0.5 text-3xl text-spark-text-secondary opacity-70 font-mono">{currencySymbol}</span>}
+            {displayBalance > 0 && <span className="absolute end-full top-1/2 -translate-y-1/2 me-0.5 text-3xl text-spark-text-secondary opacity-70 font-mono">{currencySymbol}</span>}
           </div>
 
           {/* Secondary line - fiat value or BTC as fiat equivalent */}
@@ -434,7 +434,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 stableSecondarySats ? (
                   <span className="inline-flex items-center">
                     <SatAmount sats={stableSecondarySats} />
-                    <span className="ml-1">change</span>
+                    <span className="ms-1">change</span>
                   </span>
                 ) : (
                   <span className="invisible">$0.00</span>

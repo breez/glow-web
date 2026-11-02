@@ -183,7 +183,7 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
           <FormError error={failure.message} />
           {/* Indented to the error's text, so it reads as that error's detail line. */}
           {failure.missingCors && (
-            <p className="ml-6 text-xs text-spark-text-muted [overflow-wrap:anywhere]">
+            <p className="ms-6 text-xs text-spark-text-muted [overflow-wrap:anywhere]">
               {domain} is missing a CORS header (
               <a
                 href={LUD_01_URL}

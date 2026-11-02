@@ -193,7 +193,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                 placeholder={isTokenMode ? '0.00' : '0'}
                 disabled={isLoading}
                 rows={1}
-                className={`${AMOUNT_FIELD_CLASS} resize-none pr-16 font-mono`}
+                className={`${AMOUNT_FIELD_CLASS} resize-none pe-16 font-mono`}
                 data-testid="invoice-amount-input"
               />
               {tokenSymbol && (

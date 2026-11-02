@@ -46,10 +46,22 @@ once the prompt improves.
 Dutch, Portuguese, German and Bulgarian are the four being read internally
 first, to tune the prompt before the rest are regenerated.
 
-Arabic and Hebrew are translated but their layout is not mirrored. Right to
-left needs logical CSS properties, flipped icons and reversed progress
-indicators, which is engineering rather than translation. Until that lands
-they read as broken rather than as untranslated.
+Arabic and Hebrew are written right to left, which is layout rather than
+translation. `languages.json` marks them `rtl`, `i18n.ts` turns that into the
+document's `dir`, and from there every logical CSS property and every `rtl:`
+utility follows. The layout is built on logical properties for that reason:
+`ms-`/`me-` rather than `ml-`/`mr-`, `text-start` rather than `text-left`,
+`start-`/`end-` rather than `left-`/`right-`. `rtl.test.ts` fails the build on a
+physical one, bar a short list where a physical edge is the point: the QR
+frame's four corners, a centring idiom, a decorative blur. The three icons that
+point along the reading direction (back, row chevron, backspace) mirror
+themselves; up, down and the swap arrows do not.
+
+Portuguese ships twice, as `pt` and `pt-BR`. A device asking for `pt-BR` gets
+the Brazilian bundle where it ships and the European one otherwise, because
+language matching tries the whole tag before the base subtag. The same rule is
+what makes `zh-Hans` and `zh-Hant` work at all: neither has a `zh` to fall back
+to, so matching on the base alone would hand a Chinese reader English.
 
 ## Regenerating a translation
 
@@ -64,8 +76,11 @@ npm run translate -- --dry-run         print the plan and the cost
 
 It needs `ANTHROPIC_API_KEY`. The prompt is
 [`scripts/translate/prompt.md`](../../scripts/translate/prompt.md) and the
-roster is [`languages.json`](../../scripts/translate/languages.json), so
-improving a translation is a prompt edit and a re-run. The harness refuses any
+roster is [`languages.json`](languages.json), so
+improving a translation is a prompt edit and a re-run. The roster sits beside
+the bundles rather than with the harness because the app reads it too, for the
+picker, the writing direction and the font warmup: one list, so a language
+cannot be offered before it can be translated or mirrored before it is marked. The harness refuses any
 string that drops a placeholder, loses rendered markup, translates a product
 name or drops a trailing ellipsis, and leaves that chunk untouched rather than
 writing it.

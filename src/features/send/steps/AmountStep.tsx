@@ -200,7 +200,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
               }
             }}
             placeholder={isTokenMode && config ? t('send.enterAmountIn', { currency: config.currencyCode }) : t('send.enterAmount')}
-            className={`${AMOUNT_FIELD_CLASS} pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
+            className={`${AMOUNT_FIELD_CLASS} pe-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
             disabled={isLoading}
             readOnly={isSendAll}
             min={isTokenMode ? undefined : 1}

@@ -197,7 +197,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
               </div>
               <button
                 onClick={onClose}
-                className="p-2 -mr-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
+                className="p-2 -me-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
                 aria-label={t('actions.close')}
               >
                 <CloseIcon />
@@ -317,7 +317,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                   {/* Logout wipes the plan and the backup an exit needs, and the
                       phrase alone cannot finish it: only saved exit data can. */}
                   {isExitInProgress && (
-                    <SimpleAlert variant="warning" hideIcon className="mb-6 text-left">
+                    <SimpleAlert variant="warning" hideIcon className="mb-6 text-start">
                       A unilateral exit is in progress, and logging out deletes what it needs to
                       finish. Save its exit data first, from the exit&apos;s Advanced section.
                     </SimpleAlert>

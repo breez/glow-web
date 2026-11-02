@@ -95,7 +95,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                   <button
                     key={provider}
                     onClick={() => buy.selectProvider(provider)}
-                    className="w-full flex items-center gap-4 p-4 rounded-2xl border border-spark-border hover:border-spark-primary/40 hover:bg-spark-primary/5 transition-all text-left"
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl border border-spark-border hover:border-spark-primary/40 hover:bg-spark-primary/5 transition-all text-start"
                   >
                     {meta.icon}
                     <span className="font-display font-semibold text-spark-text-primary text-sm">
@@ -143,7 +143,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                     }
                     disabled={buy.isGenerating}
                     min={buy.isTokenMode ? undefined : 1}
-                    className={`${AMOUNT_FIELD_CLASS} pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                    className={`${AMOUNT_FIELD_CLASS} pe-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                     data-testid="cashapp-amount-input"
                   />
                   {/* Always named, never absent: without a stable balance there

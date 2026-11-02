@@ -379,7 +379,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
             <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">
               Select Provider for {selectedAsset} ({formatChainName(routesForSelection[0]?.chain ?? '')})
             </label>
-            <div className="space-y-2 overflow-y-auto overscroll-y-none touch-pan-y min-h-0 pr-1">
+            <div className="space-y-2 overflow-y-auto overscroll-y-none touch-pan-y min-h-0 pe-1">
               {routesForSelection.map(r => (
                 <button
                   key={r.provider}

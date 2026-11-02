@@ -52,7 +52,7 @@ class AppErrorBoundary extends React.Component<Props, State> {
         <h1 className="font-display text-xl font-bold text-spark-text-primary">
           {i18n.t('common:app.somethingWrong')}
         </h1>
-        <AlertCard variant="error" title={this.state.atLaunch ? i18n.t('common:app.couldNotOpen') : i18n.t('common:app.stoppedWorking')} className="w-full max-w-sm text-left">
+        <AlertCard variant="error" title={this.state.atLaunch ? i18n.t('common:app.couldNotOpen') : i18n.t('common:app.stoppedWorking')} className="w-full max-w-sm text-start">
           <p className="text-sm">{i18n.t('common:app.unexpectedError')}</p>
           <CollapsibleCodeField
             label={i18n.t('common:labels.error')}

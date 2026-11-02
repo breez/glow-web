@@ -1031,7 +1031,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
                 setShowManualInput(false);
               }}
               className={`
-                w-full p-4 rounded-2xl border text-left transition-all
+                w-full p-4 rounded-2xl border text-start transition-all
                 ${selectedLabel === label && !showManualInput
                   ? 'bg-spark-primary/10 border-spark-primary'
                   : 'bg-spark-dark border-spark-border hover:border-spark-border-light'
@@ -1056,7 +1056,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
             <button
               type="button"
               onClick={() => setShowManualInput(true)}
-              className="w-full p-4 rounded-2xl border bg-spark-dark border-spark-border hover:border-spark-border-light text-left transition-all"
+              className="w-full p-4 rounded-2xl border bg-spark-dark border-spark-border hover:border-spark-border-light text-start transition-all"
             >
               <span className="text-sm font-medium text-spark-text-secondary">
                 {t('passkey.createLabelOption')}

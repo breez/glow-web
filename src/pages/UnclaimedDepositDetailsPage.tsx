@@ -174,7 +174,7 @@ const SpeedOption: React.FC<{
     role="radio"
     aria-checked={selected}
     onClick={onSelect}
-    className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border text-left transition-colors ${
+    className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border text-start transition-colors ${
       selected
         ? 'bg-spark-primary/10 border-spark-primary'
         : 'bg-spark-dark border-spark-border hover:border-spark-border-light'

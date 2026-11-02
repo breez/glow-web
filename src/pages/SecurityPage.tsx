@@ -259,7 +259,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
                 type="button"
                 onClick={() => { void handleRecoverBiometry(); }}
               >
-                <div className="flex items-center gap-3 text-left">
+                <div className="flex items-center gap-3 text-start">
                   <FingerprintIcon size="md" />
                   <div>
                     <span className="block text-spark-text-primary">{t('security.biometricLockedTitle')}</span>

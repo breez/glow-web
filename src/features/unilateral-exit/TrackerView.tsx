@@ -17,7 +17,7 @@ import { formatWithSpaces } from '@/utils/formatNumber';
 const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="flex items-center justify-between gap-3">
     <span className="text-spark-text-secondary text-sm shrink-0">{label}</span>
-    <span className="text-sm text-spark-text-primary text-right">{children}</span>
+    <span className="text-sm text-spark-text-primary text-end">{children}</span>
   </div>
 );
 

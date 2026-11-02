@@ -203,7 +203,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
           {hasMultipleCameras && (
             <FloatingIconButton
               onClick={toggleCamera}
-              className="absolute top-4 left-4 z-20"
+              className="absolute top-4 start-4 z-20"
               aria-label={t('a11y.switchCamera')}
               icon={
                 <CameraFlipIcon />
@@ -214,7 +214,7 @@ const QrScannerDialog: React.FC<QrScannerDialogProps> = ({ isOpen, onClose, onSc
           {/* Gallery picker button (top right of the viewport). */}
           <FloatingIconButton
             onClick={() => fileInputRef.current?.click()}
-            className="absolute top-4 right-4 z-20"
+            className="absolute top-4 end-4 z-20"
             aria-label={t('a11y.pickImage')}
             icon={
               <ImageIcon />

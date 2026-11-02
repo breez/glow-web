@@ -2,7 +2,7 @@
 /**
  * Regenerates src/locales/<lang>/*.json from the English bundle.
  *
- * The prompt lives in prompt.md and the roster in languages.json, so tuning a
+ * The prompt lives in prompt.md and the roster in src/locales/languages.json, so tuning a
  * translation is a file edit and a re-run rather than a code change.
  *
  * Usage:
@@ -174,7 +174,7 @@ async function translateChunk(client, system, lang, chunk) {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const roster = JSON.parse(readFileSync(join(HERE, 'languages.json'), 'utf8')).languages;
+  const roster = JSON.parse(readFileSync(join(HERE, '../../src/locales/languages.json'), 'utf8')).languages;
   const promptTemplate = readFileSync(join(HERE, 'prompt.md'), 'utf8');
 
   const targets = opts.langs

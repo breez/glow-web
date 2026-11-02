@@ -98,7 +98,7 @@ const GeneratePage: React.FC<GeneratePageProps> = ({
                 key={index} 
                 className="flex items-center gap-2 bg-spark-surface rounded-lg px-3 py-2"
               >
-                <span className="text-spark-text-muted text-xs font-mono w-5 text-right">
+                <span className="text-spark-text-muted text-xs font-mono w-5 text-end">
                   {index + 1}.
                 </span>
                 <span className="text-spark-text-primary font-mono text-sm font-medium">

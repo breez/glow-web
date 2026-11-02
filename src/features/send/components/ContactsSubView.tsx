@@ -129,7 +129,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
 
         {/* Search */}
         <div className="relative mb-3">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-spark-text-muted pointer-events-none" />
+          <SearchIcon className="absolute start-3 top-1/2 -translate-y-1/2 text-spark-text-muted pointer-events-none" />
           <input
             id="contacts-search"
             name="contacts-search"
@@ -155,14 +155,14 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
             autoComplete="off"
             spellCheck={false}
             placeholder={t('contacts.searchPlaceholder')}
-            className={`${FIELD_BASE_CLASS} pl-9 pr-9 py-2.5 text-sm`}
+            className={`${FIELD_BASE_CLASS} ps-9 pe-9 py-2.5 text-sm`}
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
               aria-label={t('a11y.clearSearch')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-spark-text-muted hover:text-spark-text-primary transition-colors"
+              className="absolute end-2 top-1/2 -translate-y-1/2 p-1 text-spark-text-muted hover:text-spark-text-primary transition-colors"
             >
               <CloseIcon size="sm" />
             </button>
@@ -202,7 +202,7 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
 
                 {/* Info - tap to select */}
                 <button
-                  className="flex-1 min-w-0 text-left"
+                  className="flex-1 min-w-0 text-start"
                   onClick={() => onSelect(contact.paymentIdentifier)}
                 >
                   <p className="text-[15px] font-medium text-spark-text-primary truncate">

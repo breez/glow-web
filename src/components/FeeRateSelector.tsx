@@ -32,7 +32,7 @@ export const FeeRateSelector: React.FC<{
               : 'bg-spark-dark text-spark-text-secondary border-spark-border-light hover:border-spark-primary'
           }`}
         >
-          {selected === key && <RadioCheckIcon className="absolute top-2 right-2" />}
+          {selected === key && <RadioCheckIcon className="absolute top-2 end-2" />}
           <div>{t(`send.feeRate.${key}`)}</div>
           <div className="text-xs opacity-70">{detail(key)}</div>
         </button>

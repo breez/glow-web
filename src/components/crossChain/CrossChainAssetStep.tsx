@@ -42,7 +42,7 @@ export const CrossChainAssetStep: React.FC<CrossChainAssetStepProps> = ({
     {assets.length > 0 && (
       <div className="mb-4 min-h-0 flex flex-col">
         <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">{t('send.crossChain.selectCoin')}</label>
-        <div className="space-y-2 overflow-y-auto overscroll-y-none touch-pan-y min-h-0 pr-1">
+        <div className="space-y-2 overflow-y-auto overscroll-y-none touch-pan-y min-h-0 pe-1">
           {assets.map(asset => (
             <button
               key={asset}

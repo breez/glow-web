@@ -49,7 +49,7 @@ export function chainGroupKey(route: CrossChainRoutePair, lookup?: ChainGroupLoo
 
 /** Shared card style for asset/chain/provider selection cards. */
 export function crossChainCardClass(active = false): string {
-  return `w-full p-4 rounded-2xl border text-left transition-all ${
+  return `w-full p-4 rounded-2xl border text-start transition-all ${
     active
       ? 'bg-spark-primary/10 border-spark-primary'
       : 'bg-spark-dark border-spark-border hover:border-spark-border-light'

@@ -115,7 +115,7 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
               {closeStyle === 'back' ? (
                 <button
                   onClick={handleClose}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
+                  className="absolute start-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
                   aria-label={t('a11y.goBack')}
                 >
                   <BackIcon size="md" />
@@ -123,7 +123,7 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
               ) : (
                 <button
                   onClick={handleClose}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
+                  className="absolute end-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
                   aria-label={t('actions.close')}
                 >
                   <CloseIcon size="md" />

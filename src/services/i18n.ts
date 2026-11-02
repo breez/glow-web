@@ -5,6 +5,7 @@ import { Preferences } from '@capacitor/preferences';
 import { isDevMode } from './settings';
 
 import shipping from '../locales/shipping.json';
+import roster from '../locales/languages.json';
 import enCommon from '../locales/en/common.json';
 import enCritical from '../locales/en/critical.json';
 
@@ -22,6 +23,8 @@ export const NAMESPACES = ['common', 'critical'] as const;
 interface LocaleMeta {
   /** Endonym, for the picker. */
   name: string;
+  /** Written right to left. Drives `dir`, and with it every logical property. */
+  rtl?: boolean;
   /**
    * One character outside Latin-1, used to warm the right font subset. Absent
    * when the language is written entirely within Latin-1. See `warmupSample`.
@@ -29,24 +32,21 @@ interface LocaleMeta {
   warmup?: string;
 }
 
-/** Every language with a home for its files, whether or not it is served. */
+/**
+ * Every language with a home for its files, whether or not it is served.
+ * Derived from locales/languages.json rather than written out again here: the
+ * endonym, the writing direction and the font warmup all come off the same
+ * row the harness translates from, so the picker cannot offer a language the
+ * harness does not know or mirror one it does not mark.
+ */
 export const LOCALES: Record<string, LocaleMeta> = {
   en: { name: 'English' },
-  bg: { name: 'Български', warmup: 'б' },
-  cs: { name: 'Čeština', warmup: 'ě' },
-  de: { name: 'Deutsch' },
-  el: { name: 'Ελληνικά', warmup: 'α' },
-  es: { name: 'Español' },
-  fi: { name: 'Suomi' },
-  fr: { name: 'Français' },
-  hu: { name: 'Magyar', warmup: 'ő' },
-  it: { name: 'Italiano' },
-  nl: { name: 'Nederlands' },
-  pl: { name: 'Polski', warmup: 'ł' },
-  pt: { name: 'Português' },
-  sk: { name: 'Slovenčina', warmup: 'ľ' },
-  sv: { name: 'Svenska' },
-  tr: { name: 'Türkçe', warmup: 'ğ' },
+  ...Object.fromEntries(
+    roster.languages.map((l) => [
+      l.tag,
+      { name: l.endonym, ...('rtl' in l ? { rtl: l.rtl } : {}), ...('warmup' in l ? { warmup: l.warmup } : {}) },
+    ]),
+  ),
 };
 
 /**
@@ -114,10 +114,18 @@ export function pickLanguage(
   systemTag: string | null,
   shipping: readonly string[] = SHIPPING_LANGUAGES,
 ): string {
-  const normalise = (tag: string) => tag.split(/[-_]/)[0]!.toLowerCase();
-  if (stored && shipping.includes(normalise(stored))) return normalise(stored);
-  if (systemTag && shipping.includes(normalise(systemTag))) return normalise(systemTag);
-  return FALLBACK_LANGUAGE;
+  // The exact tag first, the base subtag second. A device reporting pt-BR
+  // should get Brazilian Portuguese where it ships and European otherwise,
+  // and zh-Hans has no base to fall back to: 'zh' is in no roster, so
+  // matching on the base alone would hand a Chinese reader English.
+  // Matched case-insensitively, since a platform may report zh-hans.
+  const byLower = new Map(shipping.map((tag) => [tag.toLowerCase(), tag]));
+  const match = (tag: string): string | undefined => {
+    const parts = tag.split(/[-_]/).filter(Boolean);
+    if (parts.length === 0) return undefined;
+    return byLower.get(parts.join('-').toLowerCase()) ?? byLower.get(parts[0]!.toLowerCase());
+  };
+  return (stored && match(stored)) || (systemTag && match(systemTag)) || FALLBACK_LANGUAGE;
 }
 
 async function readStoredLanguage(): Promise<string | null> {
@@ -166,13 +174,23 @@ async function loadBundles(language: string): Promise<void> {
   );
 }
 
+/** Whether a language is written right to left. Unknown languages are not. */
+export const isRtl = (language: string): boolean => LOCALES[language]?.rtl === true;
+
 /**
  * Load-bearing, not cosmetic: `lang` is what makes `text-transform: uppercase`
  * produce İ rather than I in Turkish, drives hyphenation, and tells a screen
  * reader which voice to use.
+ *
+ * `dir` is what every logical property and every `rtl:` utility reads, so it
+ * is set here beside `lang` rather than anywhere else: the two must never
+ * disagree, or a switch into Arabic leaves the layout still running
+ * left to right.
  */
 function applyDocumentLanguage(language: string): void {
-  if (typeof document !== 'undefined') document.documentElement.lang = language;
+  if (typeof document === 'undefined') return;
+  document.documentElement.lang = language;
+  document.documentElement.dir = isRtl(language) ? 'rtl' : 'ltr';
 }
 
 /**

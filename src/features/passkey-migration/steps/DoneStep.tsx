@@ -24,7 +24,7 @@ const DoneStep: React.FC<DoneStepProps> = ({ onDone, lnAddressFailures = [] }) =
         </p>
         <ul className="space-y-1.5">
           {lnAddressFailures.map(({ label, address }) => (
-            <li key={label} className="rounded-xl border border-spark-border bg-spark-dark px-3 py-2 text-left">
+            <li key={label} className="rounded-xl border border-spark-border bg-spark-dark px-3 py-2 text-start">
               <div className="selectable text-sm font-medium text-spark-text-primary break-all">{address}</div>
               <div className="text-xs text-spark-text-muted">{label}</div>
             </li>

@@ -59,7 +59,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
 
   if (!isSupported) {
     return section === 'qr' ? slot(
-      <AlertCard variant="info" title={t('receive.lightningUnavailable')} className="w-full text-left">
+      <AlertCard variant="info" title={t('receive.lightningUnavailable')} className="w-full text-start">
         <p className="text-spark-text-secondary text-sm" data-testid="lightning-address-unsupported">
           They&apos;re not supported in this environment.
         </p>
