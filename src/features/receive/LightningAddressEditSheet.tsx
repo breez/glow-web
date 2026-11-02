@@ -3,6 +3,7 @@ import type { LightningAddressInfo } from '@breeztech/breez-sdk-spark';
 import { BottomSheetContainer, BottomSheetCard, DialogHeader, FormError, LoadingSpinner, PrimaryButton } from '../../components/ui';
 import { LightningBoltIcon } from '../../components/Icons';
 import { dismissKeyboard } from '../../utils/keyboard';
+import { LNURL_DOMAIN } from '../../constants/receive';
 
 interface LightningAddressEditSheetProps {
   isOpen: boolean;
@@ -71,7 +72,7 @@ const LightningAddressEditSheet: React.FC<LightningAddressEditSheetProps> = ({
             className="flex-1 min-w-0 bg-transparent px-4 py-3 text-spark-text-primary text-lg font-mono placeholder-spark-text-muted focus:outline-hidden resize-none"
           />
           <span className="shrink-0 px-4 py-3 text-spark-text-muted font-medium text-sm">
-            @breez.tips
+            @{LNURL_DOMAIN}
           </span>
         </div>
 

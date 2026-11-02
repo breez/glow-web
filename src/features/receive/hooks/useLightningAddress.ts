@@ -98,7 +98,7 @@ export const useLightningAddress = (): UseLightningAddress => {
           const username = baseName + suffix;
           const isAvailable = await wallet.checkLightningAddressAvailable({ username });
           if (isAvailable) {
-            await wallet.registerLightningAddress({ username, description: `Pay to ${username}@breez.tips` });
+            await wallet.registerLightningAddress({ username });
             addr = await wallet.getLightningAddress();
             break;
           }
@@ -182,7 +182,7 @@ export const useLightningAddress = (): UseLightningAddress => {
         return;
       }
 
-      await wallet.registerLightningAddress({ username, description: `Pay to ${username}@breez.tips` });
+      await wallet.registerLightningAddress({ username });
       const actualInfo = await wallet.getLightningAddress();
       setAddress(actualInfo ?? null);
       setIsEditing(false);

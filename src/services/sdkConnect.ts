@@ -12,6 +12,7 @@ import { getSettings } from './settings';
 import { logger, LogCategory } from './logger';
 import { formatError } from '../utils/formatError';
 import { USDB_TOKEN_IDENTIFIER, USDB_TICKER } from '../constants/stableBalance';
+import { LNURL_DOMAIN } from '../constants/receive';
 
 function localCluster(): SparkConfig | null {
   const raw = import.meta.env.VITE_SPARK_LOCAL_CONFIG;
@@ -58,6 +59,9 @@ export function buildConnectConfig(overrideNetwork?: Network): Config {
   const network = overrideNetwork ?? selectedNetwork();
   const config: Config = defaultConfig(network);
   config.apiKey = import.meta.env.VITE_BREEZ_API_KEY;
+  // Only where the SDK configured one: it leaves this unset off mainnet, and
+  // breez.cash serves no other network.
+  if (config.lnurlDomain) config.lnurlDomain = LNURL_DOMAIN;
 
   if (!applyLocalCluster(config, network) && !config.apiKey) {
     throw new Error('Breez API key not found. Create a .env file with VITE_BREEZ_API_KEY=your_key');

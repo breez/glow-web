@@ -16,7 +16,7 @@ Glow is a non-custodial Bitcoin app made by Breez, available at [glow-app.co](ht
 To move funds, some data necessarily travels over the network:
 
 - **Payment data.** Payments are executed through the Breez SDK, which may communicate with Spark or other providers (e.g. swap services like Boltz or Flashnet) to create invoices, execute transfers, and fetch fiat exchange rates. This traffic may include payment details (amounts, invoices, addresses) and, like any internet traffic, your IP address. On-chain Bitcoin transactions are, by design, recorded permanently on the public blockchain.
-- **Lightning address.** To receive payments at an address like `you@breez.tips`, the app registers your chosen (or randomly generated) username with the Lightning address server (configurable in settings). This username is public: anyone who knows it can look it up to pay you. Don't use a username you consider private.
+- **Lightning address.** To receive payments at an address like `you@breez.cash`, the app registers your chosen (or randomly generated) username with the Lightning address server (configurable in settings). This username is public: anyone who knows it can look it up to pay you. Don't use a username you consider private.
 
 ## 3. Buying Bitcoin through partners
 

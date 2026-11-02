@@ -29,6 +29,7 @@ import AmountPanel from './AmountPanel';
 import { SideCaption, SideDock, type BtcMode } from './SideDock';
 import { ArrowDownIcon } from '../../components/Icons';
 import { holdIdleLock } from '@/services/appLock';
+import { LNURL_DOMAIN } from '../../constants/receive';
 
 /**
  * How long the card takes to turn out while it waits for a code, matching
@@ -202,7 +203,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     if (!lightningAddress) return '';
     const parts = lightningAddress.lightningAddress.split('@');
     const username = parts[0];
-    const domain = parts[1] || 'breez.tips';
+    const domain = parts[1] || LNURL_DOMAIN;
     return `'${username}@${domain}' will stop receiving payments.\n\nDo you want to proceed?`;
   };
 
