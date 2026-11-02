@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { BottomSheetContainer, BottomSheetCard } from './BottomSheet';
 import { useBackButton } from '../../../hooks/useBackButton';
+import { waitForSheetOpen } from '../../../test/utils/waitForSheetOpen';
 
 // The real stack only listens on native; this one records push order.
 const stack = vi.hoisted(() => [] as Array<() => unknown>);
@@ -16,7 +17,7 @@ vi.mock('../../../utils/backButton', () => ({
 }));
 
 describe('BottomSheetContainer back button', () => {
-  it('stays under a handler registered after it when the sheet re-renders', () => {
+  it('stays under a handler registered after it when the sheet re-renders', async () => {
     const stepBack = vi.fn();
     const onClose = vi.fn();
     const Page = ({ text }: { text: string }) => {
@@ -32,6 +33,7 @@ describe('BottomSheetContainer back button', () => {
 
     const { rerender } = render(<Page text="first" />);
     rerender(<Page text="second" />);
+    await waitForSheetOpen();
     void stack[stack.length - 1]();
 
     expect(stepBack).toHaveBeenCalled();
