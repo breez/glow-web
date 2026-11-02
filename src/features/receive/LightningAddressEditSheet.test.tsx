@@ -10,9 +10,9 @@ import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import ReceivePaymentDialog from './ReceivePaymentDialog';
 
 const address = (username: string): LightningAddressInfo => ({
-  description: `Pay to ${username}@breez.tips`,
-  lightningAddress: `${username}@breez.tips`,
-  lnurl: { url: `https://breez.tips/lnurlp/${username}`, bech32: 'lnurl1dp68gurn8ghj7' },
+  description: `Pay to ${username}@breez.cash`,
+  lightningAddress: `${username}@breez.cash`,
+  lnurl: { url: `https://breez.cash/lnurlp/${username}`, bech32: 'lnurl1dp68gurn8ghj7' },
   username,
 });
 
