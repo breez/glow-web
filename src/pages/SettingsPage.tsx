@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ConfirmDialog, FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
+import { ConfirmDialog, FIELD_BASE_CLASS, FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
 import { PinGate } from '../components/PinEntry';
 import { getSettings, saveSettings, UserSettings, hasBuyProviderSettings, isDevMode as isDevModeEnabled, setDevMode, buildDepositMaxFee, depositMaxFeeDrafts, depositMaxFeeValue, DepositMaxFeeType } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
@@ -25,6 +25,8 @@ interface SettingsPageProps {
   onOpenBackup: () => void;
   onOpenUnilateralExit: () => void;
 }
+
+const FEE_FIELD_SIZE = 'px-4 py-3 text-sm';
 
 const SettingsPage: React.FC<SettingsPageProps> = ({
   onBack,
@@ -284,25 +286,30 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             </p>
             <FormGroup>
               <div className="flex gap-2 items-center">
-                <select
-                  value={feeType}
-                  onChange={(e) => setFeeType(e.currentTarget.value as DepositMaxFeeType)}
-                  className="min-w-[160px] bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-sm text-spark-text-primary focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20 transition-all"
-                  aria-label="Max fee type"
-                >
-                  <option className="bg-spark-dark" value="fixed">Fixed</option>
-                  <option className="bg-spark-dark" value="rate">Rate</option>
-                  {(isDevMode || feeType === 'networkRecommended') && (
-                    <option className="bg-spark-dark" value="networkRecommended">Network + leeway</option>
-                  )}
-                </select>
+                {/* Both fields carry their own padding rather than
+                    `FormInput`: its p-4 box is a keypad-sized amount
+                    field, and a settings row is 44px. */}
+                <div className="w-40 shrink-0">
+                  <select
+                    value={feeType}
+                    onChange={(e) => setFeeType(e.currentTarget.value as DepositMaxFeeType)}
+                    className={`${FIELD_BASE_CLASS} ${FEE_FIELD_SIZE}`}
+                    aria-label="Max fee type"
+                  >
+                    <option className="bg-spark-dark" value="fixed">Fixed</option>
+                    <option className="bg-spark-dark" value="rate">Rate</option>
+                    {(isDevMode || feeType === 'networkRecommended') && (
+                      <option className="bg-spark-dark" value="networkRecommended">Network + leeway</option>
+                    )}
+                  </select>
+                </div>
                 <div className="flex-1">
-                  <FormInput
+                  <input
                     id="deposit-fee-default"
                     type="number"
                     inputMode="decimal"
                     min={0}
-                    className="px-4 py-3 text-sm"
+                    className={`${FIELD_BASE_CLASS} ${FEE_FIELD_SIZE}`}
                     value={feeValue}
                     onChange={(e) => setFeeDrafts({ ...feeDrafts, [feeType]: e.target.value })}
                   />
