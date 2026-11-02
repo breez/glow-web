@@ -68,6 +68,22 @@ describe('AmountPanel fiat entry (no stable balance)', () => {
     expect(screen.getByRole('button', { name: '€' })).toBeInTheDocument();
   });
 
+  it('steps through every enabled currency with a rate, then back to sats', async () => {
+    // The mock has no GBP rate, so GBP is skipped.
+    saveFiatSettings({ selectedCurrencies: ['USD', 'GBP', 'EUR'] });
+    setDisplayFiatCurrency('EUR');
+    const { setAmountSats } = await renderAmountPanel();
+
+    fireEvent.click(await screen.findByRole('button', { name: '₿' }));
+    fireEvent.click(screen.getByRole('button', { name: '€' }));
+    fireEvent.change(screen.getByTestId('invoice-amount-input'), { target: { value: '5' } });
+    await waitFor(() => expect(setAmountSats).toHaveBeenCalledWith(5000n));
+
+    fireEvent.click(screen.getByRole('button', { name: '$' }));
+    expect(screen.getByRole('button', { name: '₿' })).toBeInTheDocument();
+    expect(screen.getByTestId('invoice-amount-input')).toHaveValue('');
+  });
+
   it('falls back to the top of the list when that currency is deselected', async () => {
     setDisplayFiatCurrency('EUR');
     saveFiatSettings({ selectedCurrencies: ['USD'] });
