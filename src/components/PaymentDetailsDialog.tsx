@@ -125,10 +125,10 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   // source the sender deposited. Null for all non-cross-chain payments.
   const dest = isCrossChainPayment(payment) ? getCrossChainDestination(payment) : null;
   const crossChainOutcome = getCrossChainSendOutcome(payment);
-  // An order that has not completed may need support, which traces it by its quote.
+  // Support traces an order by its quote, and a delivered one can still be rejected by the recipient's exchange.
   const orchestraInfo = payment.details && 'conversionInfo' in payment.details
     && payment.details.conversionInfo?.type === 'orchestra' ? payment.details.conversionInfo : undefined;
-  const showConversionId = !isReceive && !!orchestraInfo?.quoteId && orchestraInfo.status !== 'completed';
+  const showConversionId = !isReceive && !!orchestraInfo?.quoteId;
   const conversions = payment.conversionDetails?.conversions;
 
   // Receive: the amount the sender deposited on the external chain (the `from`
