@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BackupActions, ExitActionRow } from './BackupCard';
 import { SimpleAlert } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
 import { CollapsibleSection, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { RefreshIcon } from '@/components/Icons';
-import { awaitsUpdate, isActive, isDiverged, isLanded, leftoverIdsOf, type UnilateralExitPlan } from './model/plan';
+import { awaitsUpdate, isActive, isDiverged, isLanded, leftoverIdsOf, type ExitMode, type UnilateralExitPlan } from './model/plan';
 import { blocksToFinish, exitStages, nextAction, planProgress, type NextAction, type PlanProgress } from './model/progress';
 import { isFeeFailure } from './exitFee';
 import { isCooperative } from './quote';
@@ -58,6 +59,7 @@ const ExitSummary: React.FC<{
   next: NextAction | null;
   isAdvancing: boolean;
 }> = ({ plan, blocksLeft, next, isAdvancing, progress }) => {
+  const { t } = useTranslation('common');
   const stages = exitStages(plan);
 
   const isChecking = useHeldFor(isAdvancing, CHECKING_VISIBLE_AFTER_MS);
@@ -69,22 +71,22 @@ const ExitSummary: React.FC<{
   const paused = diverged && awaitsUpdate(plan);
   const retrying = isActive(plan) && isLanded(plan.exit) && leftoverIdsOf(plan).length > 0;
   const statusText = isChecking
-    ? 'Checking the blockchain...'
+    ? t('exit.checkingChain')
     : diverged || retrying
       ? paused
-        ? 'Update needed'
-        : 'Updating automatically'
+        ? t('exit.updateNeeded')
+        : t('exit.updatingAutomatically')
       : next === null
-        ? 'Waiting for confirmations'
+        ? t('exit.waitingConfirmations')
         : next.blocks > 0
-          ? 'Waiting for timelock'
-          : `Sending ${next.transactions === 1 ? 'a transaction' : `${next.transactions} transactions`}`;
+          ? t('exit.waitingTimelock')
+          : t('exit.sendingTransactions', { count: next.transactions });
 
   return (
     <div className="space-y-6">
       <div className="text-center py-4">
         <p className="text-spark-text-muted text-sm mb-2">
-          {paused ? 'Paused' : 'Processing'}
+          {paused ? t('exit.paused') : t('exit.processing')}
         </p>
         <SatAmount
           sats={stages.moved}
@@ -99,19 +101,19 @@ const ExitSummary: React.FC<{
         {/* Nothing in flight to count down, and no telling when a leftover lands. */}
         {!retrying && (
           <>
-            <Row label="Days left">
+            <Row label={t('exit.daysLeft')}>
               <span data-testid="unilateral-exit-eta">
-                {blocksLeft === null ? 'almost there' : formatDaysLeft(blocksLeft)}
+                {blocksLeft === null ? t('exit.almostThere') : formatDaysLeft(blocksLeft)}
               </span>
             </Row>
             <div className="border-t border-spark-border/50" />
           </>
         )}
-        <Row label="Processed transactions">
+        <Row label={t('exit.processedTransactions')}>
           <Ratio done={progress.confirmed} total={progress.total} />
         </Row>
         <div className="border-t border-spark-border/50" />
-        <Row label="Processed sats">
+        <Row label={t('exit.processedSats')}>
           {/* Only what reached the destination: anything mid-flight is not the
               user's to spend yet. */}
           <Ratio
@@ -120,7 +122,7 @@ const ExitSummary: React.FC<{
           />
         </Row>
         <div className="border-t border-spark-border/50" />
-        <Row label="Current status">
+        <Row label={t('exit.currentStatus')}>
           <span data-testid="unilateral-exit-status">{statusText}</span>
         </Row>
       </div>
@@ -129,12 +131,13 @@ const ExitSummary: React.FC<{
 };
 
 /** Scrolled into view as it appears: the tap that failed sits in the action bar, below the fold. */
-const UpdateError: React.FC<{ noun: string; error: string }> = ({ noun, error }) => {
+const UpdateError: React.FC<{ mode: ExitMode; error: string }> = ({ mode, error }) => {
+  const { t } = useTranslation('common');
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => ref.current?.scrollIntoView?.({ block: 'nearest' }), [error]);
   return (
     <div ref={ref}>
-      <ErrorCard title={`Could not update the ${noun}`} error={error} testId="unilateral-exit-continue-error" />
+      <ErrorCard title={t(`exit.couldNotUpdate_${mode}`)} error={error} testId="unilateral-exit-continue-error" />
     </div>
   );
 };
@@ -150,20 +153,23 @@ export const RedoActions: React.FC<{
   onRebuild?: () => void;
   isContinuing: boolean;
   continueError: string | null;
-  noun?: string;
-}> = ({ onContinue, onRebuild, isContinuing, continueError, noun = 'exit' }) => (
+  mode?: ExitMode;
+}> = ({ onContinue, onRebuild, isContinuing, continueError, mode = 'exit' }) => {
+  const { t } = useTranslation('common');
+  return (
   <div className="space-y-3">
     <PrimaryButton onClick={onContinue} disabled={isContinuing} className="w-full" data-testid="unilateral-exit-rebuild">
-      {isContinuing ? 'Updating...' : `Update & Continue ${noun.charAt(0).toUpperCase()}${noun.slice(1)}`}
+      {isContinuing ? t('exit.updating') : t(`exit.updateAndContinue_${mode}`)}
     </PrimaryButton>
     {/* When the exit's own fee rate no longer works, the wizard can pick another. */}
     {continueError && isFeeFailure(continueError) && onRebuild && (
       <SecondaryButton onClick={onRebuild} className="w-full" data-testid="unilateral-exit-rebuild-wizard">
-        Choose a Different Fee
+        {t('exit.chooseDifferentFee')}
       </SecondaryButton>
     )}
   </div>
-);
+  );
+};
 
 export const TrackerView: React.FC<{
   plan: UnilateralExitPlan;
@@ -174,9 +180,10 @@ export const TrackerView: React.FC<{
   continueError?: string | null;
   /** The exit started while this sheet was open, so nothing has said yet that it can close. */
   justStarted?: boolean;
-  /** What the closing line calls this, such as "recovery". */
-  noun?: string;
-}> = ({ plan, tipHeight, isAdvancing, onRebuild, continueError = null, justStarted = false, noun = 'exit' }) => {
+  /** Which flow this is, so each line can be worded for it. */
+  mode?: ExitMode;
+}> = ({ plan, tipHeight, isAdvancing, onRebuild, continueError = null, justStarted = false, mode = 'exit' }) => {
+  const { t } = useTranslation('common');
   const { transactions } = plan.exit;
   const [advanced, setAdvanced] = useState(false);
   const progress = useMemo(() => planProgress(plan), [plan]);
@@ -196,7 +203,7 @@ export const TrackerView: React.FC<{
   // With everything confirmed, nothing is left at the old rate to pay more for.
   const rebuildRow = isActive(plan) && !isLanded(plan.exit) && onRebuild && (
     <ExitActionRow
-      label="Rebuild at a higher fee"
+      label={t('exit.rebuildHigherFee')}
       icon={<RefreshIcon size="md" />}
       onClick={onRebuild}
       testId="unilateral-exit-bump-fee"
@@ -217,14 +224,14 @@ export const TrackerView: React.FC<{
           fine but leaving Glow for good is not. */}
       {justStarted && isActive(plan) && !awaitsUpdate(plan) && (
         <p className="text-spark-text-muted text-xs text-center text-balance">
-          You can close this. Open Glow regularly until the {noun} finishes.
+          {t(`exit.closeAndReturn_${mode}`)}
         </p>
       )}
 
       {/* A co-signed recovery has nothing here but the fee bump. */}
       {(!isCosignedRecovery || rebuildRow) && (
         <CollapsibleSection
-          label="Advanced"
+          label={t('exit.advanced')}
           isVisible={advanced}
           onToggle={() => setAdvanced(v => !v)}
           bare
@@ -244,19 +251,13 @@ export const TrackerView: React.FC<{
       {awaitsUpdate(plan) && (
         <div className="pb-1">
           {continueError ? (
-            <UpdateError noun={noun} error={continueError} />
+            <UpdateError mode={mode} error={continueError} />
           ) : (
             <SimpleAlert variant="warning" hideIcon>
-              {unverified ? (
-                <p>
-                  Glow couldn&apos;t check part of your {noun} on-chain. Please update your{' '}
-                  {noun === 'exit' ? 'unilateral exit' : noun} to continue.
-                </p>
+{unverified ? (
+                <p>{t(`exit.unverifiedStep_${mode}`)}</p>
               ) : (
-                <p>
-                  Some of your funds were moved on-chain to keep them safe. Please update your{' '}
-                  {noun === 'exit' ? 'unilateral exit' : noun} to recover all your funds.
-                </p>
+                <p>{t(`exit.movedToSafety_${mode}`)}</p>
               )}
             </SimpleAlert>
           )}

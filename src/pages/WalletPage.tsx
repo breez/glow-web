@@ -392,7 +392,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
               plan={selectedRecovery}
               tipHeight={exitState.tipHeight}
               isAdvancing={false}
-              noun="recovery"
+              mode="recover"
               // Closed first, so only the fee sheet is up.
               onRebuild={
                 bumpTxid

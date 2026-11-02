@@ -394,10 +394,10 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
             {allProvidersFailed ? (
               <>
                 <PrimaryButton onClick={() => prepareAllProviders(routesForSelection)} className="w-full">
-                  Try Again
+                  {t('common:actions.tryAgain')}
                 </PrimaryButton>
                 <SecondaryButton onClick={onBack} className="w-full">
-                  Change Amount
+                  {t('common:send.changeAmount')}
                 </SecondaryButton>
               </>
             ) : anyProviderReady ? (

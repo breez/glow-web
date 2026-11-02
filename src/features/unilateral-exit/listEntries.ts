@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import { formatBlockWait } from '@/utils/blockTime';
 import { formatWithSpaces } from '@/utils/formatNumber';
 import { isPendingFunded, leftoverTopUp, pendingTopUp } from './exitFee';
@@ -45,7 +46,7 @@ export interface UnilateralExitEntry {
 const activeSubtitle = (state: UnilateralExitEngineState): string | null => {
   const plan = state.plan;
   if (!plan) return null;
-  if (awaitsUpdate(plan)) return 'Tap to update';
+  if (awaitsUpdate(plan)) return i18n.t('common:exit.tapToUpdate');
 
   const { confirmed, total } = planProgress(plan);
   // A diverged exit's timelocks belong to the set its rebuild replaces.
@@ -54,8 +55,9 @@ const activeSubtitle = (state: UnilateralExitEngineState): string | null => {
       ? null
       : (nextAction(plan.exit.transactions, state.tipHeight)?.blocks ?? null);
   // The row's title already says these are transactions.
-  const processed = `${confirmed} of ${total} processed`;
-  return blocks === null ? processed : `${processed}, next ${formatBlockWait(blocks)}`;
+  return blocks === null
+    ? i18n.t('common:exit.processedCount', { confirmed, total })
+    : i18n.t('common:exit.processedCountNext', { confirmed, total, wait: formatBlockWait(blocks) });
 };
 
 /** What the row says while the exit waits on its fee, so the list answers what to do next. */
@@ -65,17 +67,21 @@ const pendingText = (
 ): Pick<UnilateralExitEntry, 'title' | 'subtitle' | 'isAction'> => {
   const coins = state.pendingCoins;
   if (startDeadEnded(state)) {
-    const title = pending.mode === 'recover' ? 'Nothing to recover' : 'Nothing to exit';
-    return { title, subtitle: 'Tap to cancel', isAction: true };
+    const title = i18n.t(`common:exit.nothingShort_${pending.mode === 'recover' ? 'recover' : 'exit'}`);
+    return { title, subtitle: i18n.t('common:exit.tapToCancel'), isAction: true };
   }
 
   const stillToSend = pendingTopUp(pending, coins).stillToSendSat;
   if (stillToSend > 0) {
     const amount = `₿${formatWithSpaces(stillToSend)}`;
-    return { title: 'Waiting for exit fee', subtitle: coins.length > 0 ? `Send ${amount} more` : `Send ${amount} to start` };
+    return {
+      title: i18n.t('common:exit.waitingForExitFee'),
+      subtitle: i18n.t(coins.length > 0 ? 'common:exit.sendMore' : 'common:exit.sendToStart', { amount }),
+    };
   }
-  if (!isPendingFunded(pending, coins)) return { title: 'Exit fee sent', subtitle: 'Waiting for a confirmation' };
-  return { title: 'Exit fee received', subtitle: 'Tap to start', isAction: true };
+  if (!isPendingFunded(pending, coins))
+    return { title: i18n.t('common:exit.exitFeeSent'), subtitle: i18n.t('common:exit.waitingConfirmation') };
+  return { title: i18n.t('common:exit.exitFeeReceived'), subtitle: i18n.t('common:exit.tapToStart'), isAction: true };
 };
 
 /**
@@ -103,7 +109,7 @@ const topUpText = (
 const archivedEntry = (exit: ArchivedExit): UnilateralExitEntry => ({
   id: exit.id,
   // The same words a withdrawal gets, since that is what landed on-chain.
-  title: 'BTC Transfer',
+  title: i18n.t('common:exit.btcTransfer'),
   subtitle: null,
   // What left the wallet, as the row showed it while the exit ran.
   amountSat: exit.exitedSat ?? exit.deliveredSat,
@@ -121,8 +127,8 @@ export const bumpTxidOf = (recovery: UnilateralExitPlan): string | null =>
 // The same words as a finished one: it is already on its way on-chain.
 const recoveryEntry = (recovery: UnilateralExitPlan): UnilateralExitEntry => ({
   id: recoveryEntryId(recovery),
-  title: 'BTC Transfer',
-  subtitle: 'Waiting for a confirmation',
+  title: i18n.t('common:exit.btcTransfer'),
+  subtitle: i18n.t('common:exit.waitingConfirmation'),
   amountSat: movedSat(recovery),
   kind: 'recovery',
 });
@@ -207,8 +213,8 @@ const recoverableEntry = (state: UnilateralExitEngineState, recoverableSat: numb
   const canRecover = !state.plan;
   return {
     id: 'recoverable',
-    title: 'Recoverable Funds',
-    subtitle: canRecover ? 'Tap to recover' : null,
+    title: i18n.t('common:exit.recoverableFunds'),
+    subtitle: canRecover ? i18n.t('common:exit.tapToRecover') : null,
     isAction: canRecover,
     inert: !canRecover,
     amountSat: leftSat,
@@ -233,7 +239,7 @@ const liveEntry = (state: UnilateralExitEngineState): UnilateralExitEntry | null
   // archive's takes over, so the exit never drops out of the list meanwhile.
   return {
     id: 'active',
-    title: awaitsUpdate(plan) ? 'Update needed' : 'Transactions in progress',
+    title: awaitsUpdate(plan) ? i18n.t('common:exit.updateNeeded') : i18n.t('common:exit.transactionsInProgress'),
     subtitle: activeSubtitle(state),
     isAction: awaitsUpdate(plan),
     amountSat: movedSat(plan),
@@ -268,5 +274,5 @@ export function unilateralExitEntries(
  */
 export function exitGroupTitle({ plan, pending, archive }: UnilateralExitEngineState): string {
   const exited = [plan, pending, ...archive].some(record => record && record.mode !== 'recover');
-  return exited ? 'Unilateral Exit' : 'Recovery';
+  return i18n.t(exited ? 'common:exit.unilateralExit' : 'common:exit.recovery');
 }

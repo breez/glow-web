@@ -980,16 +980,16 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
 
       <div className="text-center mb-4">
         <h2 className="text-xl font-display font-bold text-spark-text-primary mb-2">
-          Create your passkey
+          {t('passkey.createYourPasskey')}
         </h2>
         <p className="text-spark-text-secondary">
-          A passkey will be created on your device to secure your funds.
+          {t('passkey.createYourPasskeyBody')}
         </p>
       </div>
 
       <AlertCard variant="warning" title={t('critical:passkey.isHowYouAccess')}>
         <p className="text-spark-text-secondary text-sm">
-          Deleting your passkey from your device, browser, or password manager may make your funds permanently inaccessible.
+          {t('critical:passkey.deletionWarning')}
         </p>
       </AlertCard>
 
@@ -1196,7 +1196,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
               });
             }}
           >
-            Share Diagnostic Logs
+            {t('passkey.shareDiagnosticLogs')}
           </SecondaryButton>
           <SecondaryButton className="w-full" onClick={onBack}>
             {t('actions.goBack')}

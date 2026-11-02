@@ -188,7 +188,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
   const footer = (
     <PrimaryButton className="w-full" onClick={handleSave} disabled={!enteredFee}>
-      Save Changes
+      {t('settings.saveChanges')}
     </PrimaryButton>
   );
 
@@ -487,9 +487,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
           )}
 
           <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-            <h3 className="font-display font-semibold text-spark-text-primary mb-1">Unilateral Exit</h3>
+            <h3 className="font-display font-semibold text-spark-text-primary mb-1">{t('exit.unilateralExit')}</h3>
             <p className="text-sm text-spark-text-muted mb-3">
-              Move your balance on-chain without Spark operators.
+              {t('exit.summary')}
             </p>
             <button
               className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
@@ -499,7 +499,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             >
               <div className="flex items-center gap-3">
                 <LogoutIcon size="md" />
-                <span>Start Unilateral Exit</span>
+                <span>{t('exit.startUnilateralExit')}</span>
               </div>
               <ChevronRightIcon size="md" />
             </button>
@@ -508,7 +508,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 Under the button, where it reads as the caveat on pressing it
                 rather than part of the description above. */}
             <p className="text-xs text-spark-text-muted mt-2">
-              Use this only if Spark stops operating. This is a last-resort action.
+              {t('exit.lastResort')}
             </p>
           </div>
 

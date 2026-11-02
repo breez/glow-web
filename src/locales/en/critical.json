@@ -123,7 +123,8 @@
   "passkey": {
     "confirmDeleted": "I confirm that this passkey was deleted.",
     "confirmDeletedHint": "Optional. Continue without ticking if unsure.",
-    "isHowYouAccess": "Your passkey is how you access your funds"
+    "isHowYouAccess": "Your passkey is how you access your funds",
+    "deletionWarning": "Deleting your passkey from your device, browser, or password manager may make your funds permanently inaccessible."
   },
   "migration": {
     "switchFailed": "We could not finish switching to your new passkey. Your funds are safe. Please retry.",

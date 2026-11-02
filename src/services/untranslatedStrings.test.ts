@@ -12,8 +12,6 @@ const SRC = join(__dirname, '..');
 
 /** Documented in locales/README.md as deliberately untranslated. */
 const SKIPPED_PATHS = [
-  'features/unilateral-exit/',
-  'pages/UnilateralExitPage.tsx',
   'pages/PasskeySettingsPage.tsx',
   'pages/PasskeyManagementPage.tsx',
   'pages/PasskeyLocalStatePage.tsx',
@@ -37,10 +35,10 @@ const ALLOWED = new Set([
   'bc1q...',         // address format hint
   'example.com',     // developer-only network field placeholder
   'Unknown screen',  // router fallback that only a developer can reach
-  // Settings' entries behind the five-tap developer gesture.
-  'Unilateral Exit',
-  'Start Unilateral Exit',
-  'SDK default',     // placeholder on the Cash App memo field
+  // Behind the five-tap developer gesture.
+  'SDK default',
+  'Buy invoice memo',
+  'Sync interval (seconds)',
   // Product, company and network names.
   'Cash App',
   'MoonPay',
@@ -63,6 +61,27 @@ const ALLOWED = new Set([
   'Database does not exist',             // written into an exported log file
   'Failed to silently reconnect from device-only storage',
   'Unknown error',                       // fallback before an error is matched
+  // Unilateral exit. The two retry sentinels are compared by identity and
+  // ErrorCard translates by which one it is; the rest are caught by type or
+  // are invariants, and none reaches a reader as written.
+  'Please try again.',
+  'Please try again or choose a different fee.',
+  'Nothing is left to rebuild. The exit updates on its next check.',
+  'No leaves to recover',
+  'The signer returned no PSBT',
+  'Recovery phrase is not valid',
+  'Failed to derive the funding key',
+  "This wallet's recovery phrase is not on this device.",
+  'Signing in with your passkey is needed to continue this exit',
+  'That file is not a Glow unilateral exit backup',
+  // The backup README, read outside the app and often by whoever is helping.
+  'Glow unilateral exit backup',
+  'Glow Unilateral Exit Backup',
+  'This file holds the data needed to move your Spark balance on-chain without',
+  'To use it: restore your wallet from your recovery phrase, open Settings,',
+  'Unilateral Exit, and choose to restore from a backup.',
+  'It is not a substitute for your recovery phrase, and it is useless without',
+  'Keep it private. It reveals your balance, how it is split, and its history.',
   // Font families and biometric product names.
   'Plus Jakarta Sans',
   'JetBrains Mono',
@@ -95,8 +114,20 @@ function walk(dir: string): string[] {
   });
 }
 
-function findLiterals(source: string): { line: number; text: string }[] {
+/** JSX text broken over several lines, which the per-line node pattern misses. */
+function wrappedJsxText(source: string): { line: number; text: string }[] {
   const found: { line: number; text: string }[] = [];
+  for (const m of source.matchAll(/>\s*\n\s*([A-Z][A-Za-z0-9 ,.'’!?()\n-]{4,400}?)\s*\n\s*<\//g)) {
+    const text = m[1].replace(/\s+/g, ' ').trim();
+    if (READS_AS_PROSE.test(text)) {
+      found.push({ line: source.slice(0, m.index).split('\n').length, text });
+    }
+  }
+  return found;
+}
+
+function findLiterals(source: string): { line: number; text: string }[] {
+  const found: { line: number; text: string }[] = [...wrappedJsxText(source)];
   let inBlockComment = false;
   source.split('\n').forEach((raw, index) => {
     const trimmed = raw.trim();

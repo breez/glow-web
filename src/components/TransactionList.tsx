@@ -79,7 +79,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
   isSyncing,
   exitEntries = [],
   onExitSelected,
-  exitGroupTitle = 'Unilateral Exit',
+  exitGroupTitle,
 }) => {
   const { t } = useTranslation('common');
   const stableBalance = useStableBalance();
@@ -312,7 +312,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
         <>
           <div className="flex items-center gap-2 mb-3">
             <h2 className="text-sm font-semibold text-spark-text-muted tracking-wide uppercase">
-              {exitGroupTitle}
+              {exitGroupTitle ?? t('exit.unilateralExit')}
             </h2>
             <div className="flex-1 h-px bg-linear-to-r from-spark-border to-transparent" />
           </div>

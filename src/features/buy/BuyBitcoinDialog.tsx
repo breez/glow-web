@@ -20,7 +20,7 @@ import { formatQuickAmount } from '../../utils/tokenFormatting';
 import { useBuyBitcoin } from './hooks/useBuyBitcoin';
 import MoonpayAmountStep from './MoonpayAmountStep';
 import { holdIdleLock } from '@/services/appLock';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.ReactNode }> = {
   moonpay: {
@@ -210,16 +210,20 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                   behind it, which an installed PWA has no other way back
                   from. */}
               <p className="text-center text-sm text-spark-text-secondary">
-                <a
-                  href={buy.cashAppUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-spark-primary underline underline-offset-4 hover:text-spark-primary/80 transition-colors"
-                  data-testid="cashapp-open-link"
-                >
-                  Open Cash App
-                </a>
-                , or scan from another device.
+                <Trans
+                  i18nKey="common:buy.cashAppOpenNotice"
+                  components={{
+                    open: (
+                      <a
+                        href={buy.cashAppUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-spark-primary underline underline-offset-4 hover:text-spark-primary/80 transition-colors"
+                        data-testid="cashapp-open-link"
+                      />
+                    ),
+                  }}
+                />
               </p>
 
               <a

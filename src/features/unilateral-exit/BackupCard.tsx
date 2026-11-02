@@ -2,7 +2,9 @@ import React, { useRef, useState } from 'react';
 import { DownloadIcon, UploadIcon } from '@/components/Icons';
 import { useWallet } from '@/contexts/WalletContext';
 import { logger, LogCategory } from '@/services/logger';
-import { exportUnilateralExitBackup, importUnilateralExitBackup } from './backup';
+import { useTranslation } from 'react-i18next';
+import type { ExitMode } from './model/plan';
+import { exportUnilateralExitBackup, importUnilateralExitBackup, UnreadableBackupError } from './backup';
 
 const message = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
@@ -38,12 +40,13 @@ export const ExitActionRow: React.FC<{
  * export. `started` is set once the exit has started, so a restore has
  * nothing left to start.
  */
-export const BackupActions: React.FC<{ frozen?: string; noun?: string; started?: boolean; children?: React.ReactNode }> = ({
+export const BackupActions: React.FC<{ frozen?: string; mode?: ExitMode; started?: boolean; children?: React.ReactNode }> = ({
   frozen,
-  noun = 'exit',
+  mode = 'exit',
   started = false,
   children,
 }) => {
+  const { t } = useTranslation('common');
   const wallet = useWallet();
   const [busy, setBusy] = useState<'saving' | 'restoring' | null>(null);
   const [result, setResult] = useState<string | null>(null);
@@ -70,16 +73,17 @@ export const BackupActions: React.FC<{ frozen?: string; noun?: string; started?:
     setResult(null);
     try {
       const restored = await importUnilateralExitBackup(wallet, file);
+      const counted = t('exit.restoredLeaves', { count: restored.importedLeaves });
       setResult(
         restored.importedLeaves > 0
-          ? `Restored ${restored.importedLeaves} ${restored.importedLeaves === 1 ? 'leaf' : 'leaves'}.${started ? '' : ` You can start the ${noun}.`}`
+          ? started ? counted : `${counted} ${t(`exit.canStart_${mode}`)}`
           : restored.skippedForeignLeaves > 0
-            ? 'That backup belongs to a different wallet.'
-            : 'Nothing new in that backup: this wallet already holds it.',
+            ? t('exit.backupOtherWallet')
+            : t('exit.backupNothingNew'),
       );
     } catch (e) {
       logger.warn(LogCategory.SDK, 'Failed to restore the unilateral exit backup', { error: message(e) });
-      setError(message(e));
+      setError(e instanceof UnreadableBackupError ? t('exit.backupUnreadable') : message(e));
     } finally {
       setBusy(null);
     }
@@ -89,14 +93,14 @@ export const BackupActions: React.FC<{ frozen?: string; noun?: string; started?:
     <div>
       <div className="flex flex-col gap-2">
         <ExitActionRow
-          label="Save exit data"
+          label={t('exit.saveData')}
           icon={<DownloadIcon size="md" />}
           onClick={() => void save()}
           disabled={busy !== null}
           testId="unilateral-exit-backup-save"
         />
         <ExitActionRow
-          label="Restore exit data"
+          label={t('exit.restoreData')}
           icon={<UploadIcon size="md" />}
           onClick={() => picker.current?.click()}
           disabled={busy !== null}
@@ -105,7 +109,7 @@ export const BackupActions: React.FC<{ frozen?: string; noun?: string; started?:
         {children}
       </div>
 
-      {busy && <p className="text-sm text-spark-text-muted mt-2">{busy === 'saving' ? 'Preparing...' : 'Restoring...'}</p>}
+      {busy && <p className="text-sm text-spark-text-muted mt-2">{busy === 'saving' ? t('exit.preparing') : t('exit.restoring')}</p>}
       {result && <p className="text-sm text-spark-text-primary mt-2" data-testid="unilateral-exit-backup-result">{result}</p>}
       {error && <p className="text-sm text-spark-error mt-2" data-testid="unilateral-exit-backup-error">{error}</p>}
 
