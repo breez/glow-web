@@ -37,7 +37,8 @@
     "switchToUsdFailed": "Vaihto USD:hen epäonnistui. Yritä uudelleen.",
     "switchToBtcFailed": "Vaihto BTC:hen epäonnistui. Yritä uudelleen.",
     "restoreTitle": "USD-saldo havaittu",
-    "restoreBody": "Löysimme varoja USD:na. Haluatko vaihtaa USD-tilaan?\n\nSaldosi pidetään USD:na. Saapuvat BTC:t muunnetaan automaattisesti USD:ksi ja lähtevät maksut takaisin BTC:ksi."
+    "restoreBody": "Löysimme varoja USD:na. Haluatko vaihtaa USD-tilaan?\n\nSaldosi pidetään USD:na. Saapuvat BTC:t muunnetaan automaattisesti USD:ksi ja lähtevät maksut takaisin BTC:ksi.",
+    "switchedNotConverted": "Vaihdoit valuuttaan {{currency}}, mutta saldoasi ei ole vielä muunnettu. Glow yrittää uudelleen automaattisesti."
   },
   "send": {
     "sendAll": "Lähetä kaikki",
@@ -72,7 +73,10 @@
     "amountRange": "{{min}} ja {{max}} satin väliltä",
     "result": {
       "notSentBody": "Maksu ei mennyt läpi. Varojasi ei lähetetty."
-    }
+    },
+    "alreadyPaid": "Tämä lasku on jo maksettu.",
+    "invoiceExpired": "Tämä lasku on vanhentunut. Pyydä saajalta uusi.",
+    "balanceSettling": "Maksua ei voitu valmistella saldon selvityksen aikana. Yritä uudelleen muutaman minuutin kuluttua."
   },
   "generate": {
     "title": "Pidä se salassa",
@@ -113,12 +117,14 @@
     "claim": "Lunasta",
     "approve": "Hyväksy",
     "reject": "Hylkää",
-    "claimFeeChanged": "Lunastuksesi ei mennyt läpi: maksu muuttui arvosta <amount/>."
+    "claimFeeChanged": "Lunastuksesi ei mennyt läpi: maksu muuttui arvosta <amount/>.",
+    "tooSmall": "Tämä siirto on liian pieni kattamaan sen lunastusmaksun."
   },
   "passkey": {
     "confirmDeleted": "Vahvistan, että tämä avainkoodi on poistettu.",
     "confirmDeletedHint": "Vapaaehtoinen. Jatka valitsematta, jos et ole varma.",
-    "isHowYouAccess": "Avainkoodisi on tapasi päästä varoihisi"
+    "isHowYouAccess": "Avainkoodisi on tapasi päästä varoihisi",
+    "deletionWarning": "Avainkoodin poistaminen laitteeltasi, selaimestasi tai salasanojen hallinnasta voi tehdä varoistasi pysyvästi saavuttamattomat."
   },
   "migration": {
     "switchFailed": "Emme saaneet vaihtoa uuteen avainkoodiisi valmiiksi. Varasi ovat turvassa. Yritä uudelleen.",
@@ -139,5 +145,10 @@
     "preferPasskey": "Turvallisuutesi vuoksi suosittelemme käyttämään avainkoodia.",
     "preferApp": "Turvallisuutesi vuoksi suosittelemme Glow-sovellusta.",
     "risk": "Palautuslause verkossa on vähemmän turvallinen, ja on mahdollista, että menetät varasi. Käytä palautuslausetta verkossa vain, jos olet valmis ottamaan tämän riskin."
+  },
+  "conversion": {
+    "nextAttempt": "Seuraava yritys",
+    "balanceToConvert": "Muunnettava saldo",
+    "notConvertedYet": "Tätä summaa ei ole vielä muunnettu valuuttaan {{currency}}. Glow yrittää uudelleen automaattisesti."
   }
 }

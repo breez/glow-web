@@ -37,7 +37,8 @@
     "switchToUsdFailed": "Não foi possível mudar para USD. Tenta novamente.",
     "switchToBtcFailed": "Não foi possível mudar para BTC. Tenta novamente.",
     "restoreTitle": "Saldo em USD detetado",
-    "restoreBody": "Detetámos fundos em USD. Queres mudar para o modo USD?\n\nO teu saldo será mantido em USD. Os BTC recebidos são convertidos automaticamente para USD e os pagamentos enviados voltam a BTC."
+    "restoreBody": "Detetámos fundos em USD. Queres mudar para o modo USD?\n\nO teu saldo será mantido em USD. Os BTC recebidos são convertidos automaticamente para USD e os pagamentos enviados voltam a BTC.",
+    "switchedNotConverted": "Você mudou para {{currency}}, mas seu saldo ainda não foi convertido. O Glow vai tentar de novo automaticamente."
   },
   "send": {
     "sendAll": "Enviar tudo",
@@ -72,7 +73,10 @@
     "amountRange": "Entre {{min}} e {{max}} sats",
     "result": {
       "notSentBody": "O pagamento não foi concluído. Os teus fundos não foram enviados."
-    }
+    },
+    "alreadyPaid": "Esta fatura já foi paga.",
+    "invoiceExpired": "Esta fatura expirou. Peça uma nova ao destinatário.",
+    "balanceSettling": "Não foi possível preparar o pagamento enquanto seu saldo se liquida. Tente de novo em alguns minutos."
   },
   "generate": {
     "title": "Mantenha em segredo",
@@ -113,12 +117,14 @@
     "claim": "Resgatar",
     "approve": "Aprovar",
     "reject": "Rejeitar",
-    "claimFeeChanged": "O teu resgate não foi concluído: a taxa mudou de <amount/>."
+    "claimFeeChanged": "O teu resgate não foi concluído: a taxa mudou de <amount/>.",
+    "tooSmall": "Esta transferência é pequena demais para cobrir a taxa de resgatá-la."
   },
   "passkey": {
     "confirmDeleted": "Confirmo que esta passkey foi excluída.",
     "confirmDeletedHint": "Opcional. Continue sem marcar se não tiver certeza.",
-    "isHowYouAccess": "A tua passkey é a forma de acederes aos teus fundos"
+    "isHowYouAccess": "A tua passkey é a forma de acederes aos teus fundos",
+    "deletionWarning": "Apagar sua passkey do dispositivo, do navegador ou do gerenciador de senhas pode deixar seus fundos inacessíveis para sempre."
   },
   "migration": {
     "switchFailed": "Não conseguimos concluir a troca para sua nova passkey. Seus fundos estão seguros. Tente de novo.",
@@ -139,5 +145,10 @@
     "preferPasskey": "Para tua segurança, recomendamos usares antes uma passkey.",
     "preferApp": "Para tua segurança, recomendamos a aplicação Glow.",
     "risk": "Uma frase de recuperação na web é menos segura e há a possibilidade de perderes o teu dinheiro. Usa uma frase de recuperação na web apenas se estiveres disposto a correr esse risco."
+  },
+  "conversion": {
+    "nextAttempt": "Próxima tentativa",
+    "balanceToConvert": "Saldo a converter",
+    "notConvertedYet": "Este valor ainda não foi convertido para {{currency}}. O Glow vai tentar de novo automaticamente."
   }
 }

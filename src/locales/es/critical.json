@@ -37,7 +37,8 @@
     "switchToUsdFailed": "No se pudo cambiar a USD. Inténtalo de nuevo.",
     "switchToBtcFailed": "No se pudo cambiar a BTC. Inténtalo de nuevo.",
     "restoreTitle": "Saldo en USD detectado",
-    "restoreBody": "Hemos detectado fondos en USD. ¿Quieres cambiar al modo USD?\n\nTu saldo se mantendrá en USD. Los BTC entrantes se convierten automáticamente a USD y los pagos salientes vuelven a BTC."
+    "restoreBody": "Hemos detectado fondos en USD. ¿Quieres cambiar al modo USD?\n\nTu saldo se mantendrá en USD. Los BTC entrantes se convierten automáticamente a USD y los pagos salientes vuelven a BTC.",
+    "switchedNotConverted": "Has cambiado a {{currency}}, pero tu saldo todavía no se ha convertido. Glow lo reintentará automáticamente."
   },
   "send": {
     "sendAll": "Enviar todo",
@@ -72,7 +73,10 @@
     "amountRange": "Entre {{min}} y {{max}} sats",
     "result": {
       "notSentBody": "El pago no se completó. Tus fondos no se enviaron."
-    }
+    },
+    "alreadyPaid": "Esta factura ya se ha pagado.",
+    "invoiceExpired": "Esta factura ha caducado. Pide una nueva al destinatario.",
+    "balanceSettling": "No se pudo preparar el pago mientras tu saldo se liquida. Inténtalo de nuevo en unos minutos."
   },
   "generate": {
     "title": "Mantenla en secreto",
@@ -113,12 +117,14 @@
     "claim": "Reclamar",
     "approve": "Aprobar",
     "reject": "Rechazar",
-    "claimFeeChanged": "Tu solicitud no se completó: la comisión cambió desde <amount/>."
+    "claimFeeChanged": "Tu solicitud no se completó: la comisión cambió desde <amount/>.",
+    "tooSmall": "Esta transferencia es demasiado pequeña para cubrir la comisión de reclamarla."
   },
   "passkey": {
     "confirmDeleted": "Confirmo que este passkey fue eliminado.",
     "confirmDeletedHint": "Opcional. Continúa sin marcarlo si no estás seguro.",
-    "isHowYouAccess": "Tu passkey es como accedes a tus fondos"
+    "isHowYouAccess": "Tu passkey es como accedes a tus fondos",
+    "deletionWarning": "Si borras tu passkey del dispositivo, del navegador o del gestor de contraseñas, tus fondos pueden quedar inaccesibles para siempre."
   },
   "migration": {
     "switchFailed": "No pudimos terminar el cambio a tu nuevo passkey. Tus fondos están a salvo. Inténtalo de nuevo.",
@@ -139,5 +145,10 @@
     "preferPasskey": "Por tu seguridad, te recomendamos usar un passkey en su lugar.",
     "preferApp": "Por tu seguridad, te recomendamos la app de Glow.",
     "risk": "Una frase de recuperación en la web es menos segura y existe la posibilidad de que pierdas tu dinero. Usa una frase de recuperación en la web solo si estás dispuesto a asumir ese riesgo."
+  },
+  "conversion": {
+    "nextAttempt": "Siguiente intento",
+    "balanceToConvert": "Saldo por convertir",
+    "notConvertedYet": "Este importe todavía no se ha convertido a {{currency}}. Glow lo reintentará automáticamente."
   }
 }

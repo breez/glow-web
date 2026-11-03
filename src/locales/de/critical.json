@@ -37,7 +37,8 @@
     "switchToUsdFailed": "Der Wechsel zu USD ist fehlgeschlagen. Versuche es erneut.",
     "switchToBtcFailed": "Der Wechsel zu BTC ist fehlgeschlagen. Versuche es erneut.",
     "restoreTitle": "USD-Guthaben erkannt",
-    "restoreBody": "Wir haben USD-Guthaben gefunden. Möchtest du in den USD-Modus wechseln?\n\nDein Guthaben wird in USD gehalten. Eingehende BTC werden automatisch in USD umgewandelt, ausgehende Zahlungen zurück in BTC."
+    "restoreBody": "Wir haben USD-Guthaben gefunden. Möchtest du in den USD-Modus wechseln?\n\nDein Guthaben wird in USD gehalten. Eingehende BTC werden automatisch in USD umgewandelt, ausgehende Zahlungen zurück in BTC.",
+    "switchedNotConverted": "Zu {{currency}} gewechselt, aber dein Guthaben ist noch nicht umgewandelt. Glow versucht es automatisch erneut."
   },
   "send": {
     "sendAll": "Alles senden",
@@ -72,7 +73,10 @@
     "amountRange": "Zwischen {{min}} und {{max}} Sats",
     "result": {
       "notSentBody": "Die Zahlung ist nicht durchgegangen. Dein Guthaben wurde nicht gesendet."
-    }
+    },
+    "alreadyPaid": "Diese Rechnung wurde schon bezahlt.",
+    "invoiceExpired": "Diese Rechnung ist abgelaufen. Bitte den Empfänger um eine neue.",
+    "balanceSettling": "Die Zahlung konnte nicht vorbereitet werden, während sich dein Guthaben setzt. Versuche es in ein paar Minuten erneut."
   },
   "generate": {
     "title": "Halte sie geheim",
@@ -113,12 +117,14 @@
     "claim": "Einlösen",
     "approve": "Bestätigen",
     "reject": "Ablehnen",
-    "claimFeeChanged": "Dein Einlösen ist fehlgeschlagen: die Gebühr hat sich von <amount/> geändert."
+    "claimFeeChanged": "Dein Einlösen ist fehlgeschlagen: die Gebühr hat sich von <amount/> geändert.",
+    "tooSmall": "Dieser Transfer ist zu klein, um die Gebühr für das Einlösen zu decken."
   },
   "passkey": {
     "confirmDeleted": "Ich bestätige, dass dieser Passkey gelöscht wurde.",
     "confirmDeletedHint": "Optional. Fahre ohne Häkchen fort, wenn du unsicher bist.",
-    "isHowYouAccess": "Dein Passkey ist dein Zugang zu deinem Guthaben"
+    "isHowYouAccess": "Dein Passkey ist dein Zugang zu deinem Guthaben",
+    "deletionWarning": "Wenn du deinen Passkey von deinem Gerät, Browser oder Passwortmanager löschst, kann dein Guthaben dauerhaft unerreichbar werden."
   },
   "migration": {
     "switchFailed": "Der Wechsel zu deinem neuen Passkey konnte nicht abgeschlossen werden. Dein Guthaben ist sicher. Bitte versuche es erneut.",
@@ -139,5 +145,10 @@
     "preferPasskey": "Zu deiner Sicherheit empfehlen wir stattdessen einen Passkey.",
     "preferApp": "Zu deiner Sicherheit empfehlen wir die Glow-App.",
     "risk": "Eine Wiederherstellungsphrase im Web ist weniger sicher, und es besteht die Möglichkeit, dass dein Guthaben verloren geht. Nutze eine Wiederherstellungsphrase im Web nur, wenn du dieses Risiko eingehen willst."
+  },
+  "conversion": {
+    "nextAttempt": "Nächster Versuch",
+    "balanceToConvert": "Umzuwandelndes Guthaben",
+    "notConvertedYet": "Dieser Betrag ist noch nicht zu {{currency}} umgewandelt. Glow versucht es automatisch erneut."
   }
 }

@@ -37,7 +37,8 @@
     "switchToUsdFailed": "USD moduna geçilemedi. Tekrar dene.",
     "switchToBtcFailed": "BTC moduna geçilemedi. Tekrar dene.",
     "restoreTitle": "USD bakiyesi algılandı",
-    "restoreBody": "USD cinsinden para tespit ettik. USD moduna geçmek ister misin?\n\nBakiyen USD olarak tutulacak. Gelen BTC otomatik olarak USD’ye, giden ödemeler ise tekrar BTC’ye çevrilir."
+    "restoreBody": "USD cinsinden para tespit ettik. USD moduna geçmek ister misin?\n\nBakiyen USD olarak tutulacak. Gelen BTC otomatik olarak USD’ye, giden ödemeler ise tekrar BTC’ye çevrilir.",
+    "switchedNotConverted": "{{currency}} para birimine geçtin ama bakiyen henüz dönüştürülmedi. Glow otomatik olarak tekrar deneyecek."
   },
   "send": {
     "sendAll": "Tümünü gönder",
@@ -72,7 +73,10 @@
     "amountRange": "{{min}} ile {{max}} sats arasında",
     "result": {
       "notSentBody": "Ödeme gerçekleşmedi. Paran gönderilmedi."
-    }
+    },
+    "alreadyPaid": "Bu fatura zaten ödendi.",
+    "invoiceExpired": "Bu faturanın süresi doldu. Alıcıdan yenisini iste.",
+    "balanceSettling": "Bakiyen kesinleşirken ödeme hazırlanamadı. Birkaç dakika sonra tekrar dene."
   },
   "generate": {
     "title": "Gizli tut",
@@ -113,12 +117,14 @@
     "claim": "Al",
     "approve": "Onayla",
     "reject": "Reddet",
-    "claimFeeChanged": "Talebin geçmedi: ücret <amount/> değerinden değişti."
+    "claimFeeChanged": "Talebin geçmedi: ücret <amount/> değerinden değişti.",
+    "tooSmall": "Bu transfer, talep etme ücretini karşılayamayacak kadar küçük."
   },
   "passkey": {
     "confirmDeleted": "Bu geçiş anahtarının silindiğini onaylıyorum.",
     "confirmDeletedHint": "İsteğe bağlı. Emin değilsen işaretlemeden devam et.",
-    "isHowYouAccess": "Geçiş anahtarın, paranıza erişme yolunuzdur"
+    "isHowYouAccess": "Geçiş anahtarın, paranıza erişme yolunuzdur",
+    "deletionWarning": "Geçiş anahtarını cihazından, tarayıcından ya da parola yöneticinden silmek paranı kalıcı olarak erişilemez hale getirebilir."
   },
   "migration": {
     "switchFailed": "Yeni geçiş anahtarına geçişi tamamlayamadık. Paran güvende. Lütfen tekrar dene.",
@@ -139,5 +145,10 @@
     "preferPasskey": "Güvenliğin için bunun yerine geçiş anahtarı kullanmanı öneririz.",
     "preferApp": "Güvenliğin için Glow uygulamasını öneririz.",
     "risk": "Web üzerindeki kurtarma ifadesi daha az güvenlidir ve paranın kaybolma ihtimali vardır. Web’de kurtarma ifadesini yalnızca bu riski göze alıyorsan kullan."
+  },
+  "conversion": {
+    "nextAttempt": "Sıradaki deneme",
+    "balanceToConvert": "Dönüştürülecek bakiye",
+    "notConvertedYet": "Bu tutar henüz {{currency}} para birimine dönüştürülmedi. Glow otomatik olarak tekrar deneyecek."
   }
 }

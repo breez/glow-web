@@ -37,7 +37,8 @@
     "switchToUsdFailed": "Det gick inte att byta till USD. Försök igen.",
     "switchToBtcFailed": "Det gick inte att byta till BTC. Försök igen.",
     "restoreTitle": "USD-saldo upptäckt",
-    "restoreBody": "Vi har hittat pengar i USD. Vill du byta till USD-läge?\n\nDitt saldo hålls i USD. Inkommande BTC växlas automatiskt till USD och utgående betalningar tillbaka till BTC."
+    "restoreBody": "Vi har hittat pengar i USD. Vill du byta till USD-läge?\n\nDitt saldo hålls i USD. Inkommande BTC växlas automatiskt till USD och utgående betalningar tillbaka till BTC.",
+    "switchedNotConverted": "Du bytte till {{currency}}, men ditt saldo är inte växlat än. Glow försöker igen automatiskt."
   },
   "send": {
     "sendAll": "Skicka allt",
@@ -72,7 +73,10 @@
     "amountRange": "Mellan {{min}} och {{max}} sats",
     "result": {
       "notSentBody": "Betalningen gick inte igenom. Dina pengar skickades inte."
-    }
+    },
+    "alreadyPaid": "Den här fakturan är redan betald.",
+    "invoiceExpired": "Den här fakturan har gått ut. Be mottagaren om en ny.",
+    "balanceSettling": "Betalningen kunde inte förberedas medan ditt saldo slutförs. Försök igen om några minuter."
   },
   "generate": {
     "title": "Håll den hemlig",
@@ -113,12 +117,14 @@
     "claim": "Hämta",
     "approve": "Godkänn",
     "reject": "Avvisa",
-    "claimFeeChanged": "Din hämtning gick inte igenom: avgiften ändrades från <amount/>."
+    "claimFeeChanged": "Din hämtning gick inte igenom: avgiften ändrades från <amount/>.",
+    "tooSmall": "Den här överföringen är för liten för att täcka avgiften för att lösa in den."
   },
   "passkey": {
     "confirmDeleted": "Jag bekräftar att den här passkeyn har tagits bort.",
     "confirmDeletedHint": "Valfritt. Fortsätt utan att kryssa i om du är osäker.",
-    "isHowYouAccess": "Din passkey är hur du kommer åt dina pengar"
+    "isHowYouAccess": "Din passkey är hur du kommer åt dina pengar",
+    "deletionWarning": "Om du tar bort din passkey från enheten, webbläsaren eller lösenordshanteraren kan dina pengar bli permanent oåtkomliga."
   },
   "migration": {
     "switchFailed": "Vi kunde inte slutföra bytet till din nya passkey. Dina pengar är säkra. Försök igen.",
@@ -139,5 +145,10 @@
     "preferPasskey": "För din säkerhet rekommenderar vi att du använder en passkey i stället.",
     "preferApp": "För din säkerhet rekommenderar vi Glow-appen.",
     "risk": "En återställningsfras på webben är mindre säker, och det finns en risk att dina pengar går förlorade. Använd en återställningsfras på webben bara om du är beredd att ta den risken."
+  },
+  "conversion": {
+    "nextAttempt": "Nästa försök",
+    "balanceToConvert": "Saldo att växla",
+    "notConvertedYet": "Det här beloppet är inte växlat till {{currency}} än. Glow försöker igen automatiskt."
   }
 }

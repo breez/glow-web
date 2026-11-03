@@ -37,7 +37,8 @@
     "switchToUsdFailed": "Overschakelen naar USD is mislukt. Probeer het opnieuw.",
     "switchToBtcFailed": "Overschakelen naar BTC is mislukt. Probeer het opnieuw.",
     "restoreTitle": "USD-saldo gedetecteerd",
-    "restoreBody": "We hebben geld in USD gevonden. Wil je overschakelen naar de USD-modus?\n\nJe saldo wordt in USD aangehouden. Binnenkomende BTC wordt automatisch omgezet naar USD en uitgaande betalingen weer naar BTC."
+    "restoreBody": "We hebben geld in USD gevonden. Wil je overschakelen naar de USD-modus?\n\nJe saldo wordt in USD aangehouden. Binnenkomende BTC wordt automatisch omgezet naar USD en uitgaande betalingen weer naar BTC.",
+    "switchedNotConverted": "Overgeschakeld naar {{currency}}, maar je saldo is nog niet omgezet. Glow probeert het automatisch opnieuw."
   },
   "send": {
     "sendAll": "Alles versturen",
@@ -72,7 +73,10 @@
     "amountRange": "Tussen {{min}} en {{max}} sats",
     "result": {
       "notSentBody": "De betaling is niet gelukt. Je geld is niet verzonden."
-    }
+    },
+    "alreadyPaid": "Deze factuur is al betaald.",
+    "invoiceExpired": "Deze factuur is verlopen. Vraag de ontvanger om een nieuwe.",
+    "balanceSettling": "De betaling kon niet worden voorbereid terwijl je saldo wordt afgewikkeld. Probeer het over een paar minuten opnieuw."
   },
   "generate": {
     "title": "Houd hem geheim",
@@ -113,12 +117,14 @@
     "claim": "Claimen",
     "approve": "Goedkeuren",
     "reject": "Weigeren",
-    "claimFeeChanged": "Je claim is niet gelukt: de kosten zijn gewijzigd van <amount/>."
+    "claimFeeChanged": "Je claim is niet gelukt: de kosten zijn gewijzigd van <amount/>.",
+    "tooSmall": "Deze overboeking is te klein om de kosten van het claimen te dekken."
   },
   "passkey": {
     "confirmDeleted": "Ik bevestig dat deze passkey is verwijderd.",
     "confirmDeletedHint": "Optioneel. Ga verder zonder aanvinken als je het niet zeker weet.",
-    "isHowYouAccess": "Je passkey is hoe je bij je geld komt"
+    "isHowYouAccess": "Je passkey is hoe je bij je geld komt",
+    "deletionWarning": "Als je je passkey van je apparaat, browser of wachtwoordbeheerder verwijdert, kan je geld voorgoed onbereikbaar worden."
   },
   "migration": {
     "switchFailed": "We konden het overschakelen naar je nieuwe passkey niet afronden. Je geld is veilig. Probeer het opnieuw.",
@@ -139,5 +145,10 @@
     "preferPasskey": "Voor je veiligheid raden we aan om in plaats daarvan een passkey te gebruiken.",
     "preferApp": "Voor je veiligheid raden we de Glow-app aan.",
     "risk": "Een herstelzin op het web is minder veilig en de kans bestaat dat je geld verloren gaat. Gebruik een herstelzin op het web alleen als je dat risico wilt nemen."
+  },
+  "conversion": {
+    "nextAttempt": "Volgende poging",
+    "balanceToConvert": "Om te zetten saldo",
+    "notConvertedYet": "Dit bedrag is nog niet omgezet naar {{currency}}. Glow probeert het automatisch opnieuw."
   }
 }

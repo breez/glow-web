@@ -37,7 +37,8 @@
     "switchToUsdFailed": "Nie udało się przełączyć na USD. Spróbuj ponownie.",
     "switchToBtcFailed": "Nie udało się przełączyć na BTC. Spróbuj ponownie.",
     "restoreTitle": "Wykryto saldo USD",
-    "restoreBody": "Wykryliśmy środki w USD. Czy chcesz przełączyć się na tryb USD?\n\nTwoje saldo będzie utrzymywane w USD. Przychodzące BTC są automatycznie przeliczane na USD, a płatności wychodzące z powrotem na BTC."
+    "restoreBody": "Wykryliśmy środki w USD. Czy chcesz przełączyć się na tryb USD?\n\nTwoje saldo będzie utrzymywane w USD. Przychodzące BTC są automatycznie przeliczane na USD, a płatności wychodzące z powrotem na BTC.",
+    "switchedNotConverted": "Przełączono na {{currency}}, ale twoje saldo jeszcze się nie przewalutowało. Glow spróbuje ponownie automatycznie."
   },
   "send": {
     "sendAll": "Wyślij wszystko",
@@ -72,7 +73,10 @@
     "amountRange": "Od {{min}} do {{max}} sats",
     "result": {
       "notSentBody": "Płatność nie przeszła. Twoje środki nie zostały wysłane."
-    }
+    },
+    "alreadyPaid": "Ta faktura została już zapłacona.",
+    "invoiceExpired": "Ta faktura wygasła. Poproś odbiorcę o nową.",
+    "balanceSettling": "Nie udało się przygotować płatności, gdy twoje saldo się rozlicza. Spróbuj ponownie za kilka minut."
   },
   "generate": {
     "title": "Zachowaj ją w tajemnicy",
@@ -113,12 +117,14 @@
     "claim": "Odbierz",
     "approve": "Zatwierdź",
     "reject": "Odrzuć",
-    "claimFeeChanged": "Twoje zgłoszenie nie przeszło: opłata zmieniła się z <amount/>."
+    "claimFeeChanged": "Twoje zgłoszenie nie przeszło: opłata zmieniła się z <amount/>.",
+    "tooSmall": "Ten przelew jest zbyt mały, by pokryć opłatę za jego odebranie."
   },
   "passkey": {
     "confirmDeleted": "Potwierdzam, że ten passkey został usunięty.",
     "confirmDeletedHint": "Opcjonalne. Jeśli nie masz pewności, kontynuuj bez zaznaczania.",
-    "isHowYouAccess": "Twój passkey to sposób dostępu do Twoich środków"
+    "isHowYouAccess": "Twój passkey to sposób dostępu do Twoich środków",
+    "deletionWarning": "Usunięcie passkeya z urządzenia, przeglądarki lub menedżera haseł może sprawić, że twoje środki będą trwale niedostępne."
   },
   "migration": {
     "switchFailed": "Nie udało się dokończyć przejścia na nowy passkey. Twoje środki są bezpieczne. Spróbuj ponownie.",
@@ -128,22 +134,27 @@
     "singleTransaction": "Twoje środki zostaną przeniesione w jednej transakcji. Historia płatności nie zostanie przeniesiona.",
     "doneBody": "Twoje środki zostały przeniesione na nowy passkey.",
     "addressPending_one": "Tego adresu Lightning nie udało się przenieść:",
-    "addressPending_few": "Tych adresów Lightning nie udało się przenieść:",
-    "addressPending_many": "Tych adresów Lightning nie udało się przenieść:",
     "addressPending_other": "Tych adresów Lightning nie udało się przenieść:",
     "addressPendingBody_one": "Płatności na ten adres będą nadal trafiać na twój stary passkey, dopóki przeniesienie się nie zakończy.",
-    "addressPendingBody_few": "Płatności na te adresy będą nadal trafiać na twój stary passkey, dopóki przeniesienia się nie zakończą.",
-    "addressPendingBody_many": "Płatności na te adresy będą nadal trafiać na twój stary passkey, dopóki przeniesienia się nie zakończą.",
     "addressPendingBody_other": "Płatności na te adresy będą nadal trafiać na twój stary passkey, dopóki przeniesienia się nie zakończą.",
     "explainFirstTime": "Jeśli utworzyłeś swój passkey we wcześniejszej wersji Glow, utworzymy nowy i automatycznie przeniesiemy twoje środki. Jeśli używasz Glow po raz pierwszy, wybierz <skip/>, aby kontynuować.",
     "migrateLabels_one": "Przeniesiemy twoją etykietę na nowy passkey.",
+    "migrateLabels_other": "Przeniesiemy wszystkie {{count}} etykiet na nowy passkey.",
+    "addressPending_few": "Tych adresów Lightning nie udało się przenieść:",
+    "addressPending_many": "Tych adresów Lightning nie udało się przenieść:",
+    "addressPendingBody_few": "Płatności na te adresy będą nadal trafiać na twój stary passkey, dopóki przeniesienia się nie zakończą.",
+    "addressPendingBody_many": "Płatności na te adresy będą nadal trafiać na twój stary passkey, dopóki przeniesienia się nie zakończą.",
     "migrateLabels_few": "Przeniesiemy wszystkie {{count}} etykiety na nowy passkey.",
-    "migrateLabels_many": "Przeniesiemy wszystkie {{count}} etykiet na nowy passkey.",
-    "migrateLabels_other": "Przeniesiemy wszystkie {{count}} etykiet na nowy passkey."
+    "migrateLabels_many": "Przeniesiemy wszystkie {{count}} etykiet na nowy passkey."
   },
   "webNotice": {
     "preferPasskey": "Dla Twojego bezpieczeństwa zalecamy zamiast tego passkey.",
     "preferApp": "Dla Twojego bezpieczeństwa zalecamy aplikację Glow.",
     "risk": "Fraza odzyskiwania w przeglądarce jest mniej bezpieczna i istnieje ryzyko utraty środków. Używaj frazy odzyskiwania w przeglądarce tylko wtedy, gdy godzisz się na to ryzyko."
+  },
+  "conversion": {
+    "nextAttempt": "Następna próba",
+    "balanceToConvert": "Saldo do przewalutowania",
+    "notConvertedYet": "Ta kwota jeszcze nie przewalutowała się na {{currency}}. Glow spróbuje ponownie automatycznie."
   }
 }
