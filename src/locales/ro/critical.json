@@ -1,0 +1,157 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "Fraza ta de recuperare este derivată din cheia ta de acces. Pentru a restaura pe alt dispozitiv, folosește cheia de acces sau fraza de recuperare de mai jos."
+    },
+    "passkeyUnavailable": {
+      "body": "Fraza ta de recuperare este derivată din cheia ta de acces. Fără ea, fraza nu poate fi obținută pe acest dispozitiv. Conectează-te pe un dispozitiv unde cheia de acces mai există ca să o vezi."
+    },
+    "notFound": {
+      "body": "Nu s-a găsit nicio frază de recuperare pe acest dispozitiv."
+    },
+    "reveal": {
+      "hintRevealed": "Asigură-te că nu se uită nimeni",
+      "hintDeviceStored": "Stocată în siguranță pe acest dispozitiv"
+    },
+    "phraseLabel": "Frază de recuperare"
+  },
+  "logout": {
+    "confirmPasskey": "Deconectarea șterge toate datele Glow stocate pe acest dispozitiv. Vei avea nevoie de cheia ta de acces pentru a-ți accesa fondurile din nou.",
+    "confirmMnemonic": "Deconectarea șterge toate datele Glow stocate pe acest dispozitiv. Asigură-te că ți-ai salvat fraza de recuperare: vei avea nevoie de ea pentru a-ți accesa fondurile din nou."
+  },
+  "pinReset": {
+    "bodyPasskey": "PIN-ul nu poate fi recuperat. Singura cale de întoarcere este să ștergi toate datele Glow de pe acest dispozitiv și să te conectezi din nou cu cheia ta de acces.",
+    "bodyMnemonic": "PIN-ul nu poate fi recuperat. Singura cale de întoarcere este să ștergi toate datele Glow de pe acest dispozitiv și să restaurezi din fraza ta de recuperare. Asigură-te că o ai salvată.",
+    "confirm": "Șterge",
+    "deviceOwnerReason": "Șterge toate datele Glow"
+  },
+  "stableBalance": {
+    "toUsd": "Soldul tău în BTC va fi convertit în USD.",
+    "toBtc": "Soldul tău în USD va fi convertit înapoi în BTC.",
+    "convertToUsd": "Convertește în USD",
+    "convertToBtc": "Convertește în BTC",
+    "conversionFee": "Comision de conversie:",
+    "feeUnavailable": "Comisionul nu a putut fi estimat",
+    "disclaimerBody": "Soldul tău este păstrat în USD. BTC-ul primit este convertit automat în USD, iar plățile trimise sunt convertite înapoi în BTC. Sumele sub limita de conversie rămân ca rest până se acumulează.",
+    "balanceTooLow": "Sold prea mic pentru conversie: va rămâne ca rest",
+    "switchToUsdFailed": "Trecerea la USD nu a reușit. Încearcă din nou.",
+    "switchToBtcFailed": "Trecerea la BTC nu a reușit. Încearcă din nou.",
+    "restoreTitle": "S-a detectat sold în USD",
+    "restoreBody": "Am detectat fonduri în USD. Vrei să treci la modul USD?\n\nSoldul tău va fi păstrat în USD. BTC-ul primit este convertit automat în USD, iar plățile trimise sunt convertite înapoi în BTC.",
+    "switchedNotConverted": "S-a trecut la {{currency}}, dar soldul tău nu a fost încă convertit. Glow va reîncerca automat."
+  },
+  "send": {
+    "sendAll": "Trimite tot",
+    "enterAmount": "Introdu suma în sats",
+    "exceedsBalance": "Suma depășește soldul disponibil",
+    "balanceUpdating": "Soldul se actualizează. Încearcă din nou într-un moment.",
+    "invalidAmount": "Introdu o sumă validă",
+    "invalidDestination": "Destinație de plată nevalidă",
+    "youAreSending": "Trimiți",
+    "recipientGets": "Destinatarul primește",
+    "insufficientFunds": "Fonduri insuficiente",
+    "conversionAmount": "Sumă de conversie",
+    "conversionFee": "Comision de conversie",
+    "toAddress": "Către adresa",
+    "toSparkAddress": "Către adresa Spark",
+    "toSparkInvoice": "Către factura Spark",
+    "toInvoice": "Către factură",
+    "crossChain": {
+      "amountTooSmall": "Sumă prea mică pentru această rută.",
+      "amountTooLarge": "Sumă prea mare pentru această rută.",
+      "amountTooSmallHint": "Această sumă este prea mică pentru rutele disponibile. Încearcă să trimiți o sumă mai mare.",
+      "amountTooLargeHint": "Această sumă este prea mare pentru rutele disponibile. Încearcă să trimiți o sumă mai mică.",
+      "networkUnavailable": "Această rețea este temporar indisponibilă. Încearcă din nou într-un moment.",
+      "networkNotSupported": "Această rețea nu este disponibilă. Încearcă altă rețea.",
+      "rateDrift": "Sumă prea mică pentru această rețea. Încearcă o sumă mai mare sau altă rețea."
+    },
+    "withdraw": {
+      "noValidAmount": "Acest link de retragere nu are nicio sumă validă pe care Glow o poate primi.",
+      "wholeSats": "Introdu un număr întreg de sats"
+    },
+    "enterAmountIn": "Introdu suma în {{currency}}",
+    "amountRange": "Între {{min}} și {{max}} sats",
+    "result": {
+      "notSentBody": "Plata nu a trecut. Fondurile tale nu au fost trimise."
+    },
+    "alreadyPaid": "Această factură a fost deja plătită.",
+    "invoiceExpired": "Această factură a expirat. Cere destinatarului una nouă.",
+    "balanceSettling": "Plata nu a putut fi pregătită în timp ce soldul tău se decontează. Încearcă din nou în câteva minute."
+  },
+  "generate": {
+    "title": "Păstrează secretul",
+    "body": "Scrie aceste cuvinte în ordine. Este singura ta copie de siguranță pentru a-ți recupera fondurile.",
+    "warning": "Nu îți împărtăși niciodată fraza de recuperare. Oricine are aceste cuvinte îți poate accesa fondurile.",
+    "copyToClipboard": "Copiază în clipboard",
+    "saved": "Mi-am salvat fraza"
+  },
+  "restore": {
+    "body": "Introdu fraza ta de recuperare de 12 sau 24 de cuvinte pentru a restaura Glow. Cuvintele se separă cu spații.",
+    "placeholder": "cuvânt1 cuvânt2 cuvânt3 ...",
+    "invalidLength": "Introdu o frază de recuperare validă de 12 sau 24 de cuvinte",
+    "invalidPhrase": "Frază de recuperare nevalidă. Verifică cuvintele și încearcă din nou."
+  },
+  "unlock": {
+    "eraseTitle": "Șterge și începe de la zero",
+    "eraseAction": "Șterge și începe de la zero",
+    "erase": "Șterge",
+    "eraseReason": "Șterge toate datele Glow",
+    "eraseBodyPasskey": "Asta șterge toate datele Glow stocate pe acest dispozitiv. Vei avea nevoie de cheia ta de acces pentru a-ți accesa fondurile din nou.",
+    "eraseBodyMnemonic": "Asta șterge toate datele Glow stocate pe acest dispozitiv. Asigură-te că ți-ai salvat fraza de recuperare: vei avea nevoie de ea pentru a-ți accesa fondurile din nou."
+  },
+  "refund": {
+    "destinationBody": "Introdu adresa Bitcoin la care vrei să primești rambursarea.",
+    "refund": "Rambursare",
+    "amount": "Sumă",
+    "networkFee": "Comision de rețea"
+  },
+  "deposit": {
+    "amount": "Sumă",
+    "networkFee": "Comision de rețea",
+    "feeChanged": "Comisionul de rețea s-a schimbat",
+    "approveOrReject": "Aprobă pentru a revendica acest transfer sau respinge pentru a procesa o rambursare.",
+    "canReject": "Poți respinge pentru a procesa o rambursare în schimb.",
+    "feeRose": "Comisionul a crescut la <amount/> în timp ce confirmai. Aprobă pentru a revendica la noul comision.",
+    "deliveryFee": "Comision de livrare",
+    "youReceive": "Primești",
+    "claim": "Revendică",
+    "approve": "Aprobă",
+    "reject": "Respinge",
+    "claimFeeChanged": "Revendicarea ta nu a trecut: comisionul s-a schimbat de la <amount/>.",
+    "tooSmall": "Acest transfer este prea mic pentru a acoperi comisionul de revendicare."
+  },
+  "passkey": {
+    "confirmDeleted": "Confirm că această cheie de acces a fost ștearsă.",
+    "confirmDeletedHint": "Opțional. Continuă fără să bifezi dacă nu ești sigur.",
+    "isHowYouAccess": "Cheia ta de acces este modul în care îți accesezi fondurile",
+    "deletionWarning": "Ștergerea cheii de acces de pe dispozitiv, din browser sau din managerul de parole îți poate face fondurile inaccesibile definitiv."
+  },
+  "migration": {
+    "switchFailed": "Nu am putut finaliza trecerea la noua ta cheie de acces. Fondurile tale sunt în siguranță. Te rugăm să reîncerci.",
+    "keepWindowOpen": "Ține această fereastră deschisă",
+    "verifyMultipleTimes": "Ți se va cere să îți verifici identitatea de mai multe ori în timpul migrării: o dată pentru fiecare etichetă migrată, apoi de câteva ori ca să creăm noua cheie de acces. Te rugăm să ții această fereastră deschisă până se încheie migrarea.",
+    "explainBody": "Vom crea o cheie de acces nouă și îți vom transfera fondurile automat. Ți se va cere să îți verifici identitatea de câteva ori în timpul procesului.",
+    "singleTransaction": "Fondurile tale vor fi transferate într-o singură tranzacție. Istoricul plăților nu va fi transferat.",
+    "doneBody": "Fondurile tale au fost mutate la noua ta cheie de acces.",
+    "addressPending_one": "Această adresă Lightning nu a putut fi transferată:",
+    "addressPending_other": "Aceste adrese Lightning nu au putut fi transferate:",
+    "addressPendingBody_one": "Plățile trimise către ea vor continua să ajungă la cheia ta de acces veche până se încheie transferul.",
+    "addressPendingBody_other": "Plățile trimise către ele vor continua să ajungă la cheia ta de acces veche până se încheie transferurile.",
+    "explainFirstTime": "Dacă ți-ai creat cheia de acces cu o versiune mai veche de Glow, vom crea una nouă și îți vom transfera fondurile automat. Dacă folosești Glow pentru prima dată, alege <skip/> pentru a continua.",
+    "migrateLabels_one": "Îți vom migra eticheta la noua ta cheie de acces.",
+    "migrateLabels_other": "Vom migra toate cele {{count}} de etichete la noua ta cheie de acces.",
+    "addressPending_few": "Aceste adrese Lightning nu au putut fi transferate:",
+    "addressPendingBody_few": "Plățile trimise către ele vor continua să ajungă la cheia ta de acces veche până se încheie transferurile.",
+    "migrateLabels_few": "Vom migra toate cele {{count}} etichete la noua ta cheie de acces."
+  },
+  "webNotice": {
+    "preferPasskey": "Pentru siguranța ta, recomandăm să folosești o cheie de acces.",
+    "preferApp": "Pentru siguranța ta, recomandăm aplicația Glow.",
+    "risk": "O frază de recuperare pe web este mai puțin sigură și există riscul să îți pierzi banii. Folosește o frază de recuperare pe web doar dacă ești dispus să îți asumi acest risc."
+  },
+  "conversion": {
+    "nextAttempt": "Următoarea încercare",
+    "balanceToConvert": "Sold de convertit",
+    "notConvertedYet": "Această sumă nu a fost încă convertită în {{currency}}. Glow va reîncerca automat."
+  }
+}
