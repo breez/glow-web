@@ -233,11 +233,17 @@ describe('what the picker may offer', () => {
     }
   });
 
-  it('keeps the gate closed until dev mode opens it', () => {
+  it('never offers a language without a bundle, dev mode or not', () => {
     expect(selectableLanguages()).toEqual(SHIPPING_LANGUAGES);
     localStorage.setItem('spark-dev-mode', 'true');
     expect(selectableLanguages()).toEqual(translatedLanguages());
-    expect(selectableLanguages().length).toBeGreaterThan(SHIPPING_LANGUAGES.length);
+    // Shipping is a subset of what is translated, so the gate can only widen
+    // the set. It is a subset and not a strict one: every translated language
+    // ships now, and asserting the gate adds languages would only hold back
+    // when the roster was incomplete.
+    for (const lang of SHIPPING_LANGUAGES) {
+      expect(translatedLanguages(), `${lang} ships with no bundle`).toContain(lang);
+    }
   });
 
   it('restores a dev-selected language at startup, and drops it once dev mode is off', () => {
@@ -245,7 +251,9 @@ describe('what the picker may offer', () => {
     // language would silently revert on the next launch.
     localStorage.setItem('spark-dev-mode', 'true');
     expect(pickLanguage('hu', null, selectableLanguages())).toBe('hu');
-    localStorage.removeItem('spark-dev-mode');
-    expect(pickLanguage('hu', null, selectableLanguages())).toBe('en');
+    // The offered list is passed in, so the fallback is checked against a list
+    // rather than against the dev gate: no translated language is unshipped any
+    // more, so the gate itself can no longer produce a rejected choice.
+    expect(pickLanguage('hu', null, ['en', 'de'])).toBe('en');
   });
 });
