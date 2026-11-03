@@ -1,0 +1,154 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "A sua frase de recuperação é derivada da sua passkey. Para restaurar em outro dispositivo, use a sua passkey ou a frase de recuperação abaixo."
+    },
+    "passkeyUnavailable": {
+      "body": "A sua frase de recuperação é derivada da sua passkey. Sem ela, a frase não pode ser obtida neste dispositivo. Entre em um dispositivo onde a passkey ainda exista para vê-la."
+    },
+    "notFound": {
+      "body": "Não foi possível encontrar uma frase de recuperação neste dispositivo."
+    },
+    "reveal": {
+      "hintRevealed": "Confirme que ninguém está olhando",
+      "hintDeviceStored": "Guardada com segurança neste dispositivo"
+    },
+    "phraseLabel": "Frase de recuperação"
+  },
+  "logout": {
+    "confirmPasskey": "Sair apaga todos os dados do Glow guardados neste dispositivo. Você vai precisar da sua passkey para acessar os seus fundos de novo.",
+    "confirmMnemonic": "Sair apaga todos os dados do Glow guardados neste dispositivo. Confirme que você salvou a sua frase de recuperação: você vai precisar dela para acessar os seus fundos de novo."
+  },
+  "pinReset": {
+    "bodyPasskey": "O PIN não pode ser recuperado. O único jeito de voltar é apagar todos os dados do Glow neste dispositivo e entrar de novo com a sua passkey.",
+    "bodyMnemonic": "O PIN não pode ser recuperado. O único jeito de voltar é apagar todos os dados do Glow neste dispositivo e restaurar a partir da sua frase de recuperação. Confirme que você a tem salva.",
+    "confirm": "Apagar",
+    "deviceOwnerReason": "Apagar todos os dados do Glow"
+  },
+  "stableBalance": {
+    "toUsd": "O seu saldo em BTC será convertido para USD.",
+    "toBtc": "O seu saldo em USD será convertido de volta para BTC.",
+    "convertToUsd": "Converter para USD",
+    "convertToBtc": "Converter para BTC",
+    "conversionFee": "Taxa de conversão:",
+    "feeUnavailable": "Não foi possível estimar a taxa",
+    "disclaimerBody": "O seu saldo é mantido em USD. Os BTC recebidos são convertidos automaticamente para USD, e os pagamentos enviados voltam a BTC. Valores abaixo do limite de conversão ficam como troco até acumularem.",
+    "balanceTooLow": "Saldo baixo demais para converter: ficará como troco",
+    "switchToUsdFailed": "Não foi possível mudar para USD. Tente novamente.",
+    "switchToBtcFailed": "Não foi possível mudar para BTC. Tente novamente.",
+    "restoreTitle": "Saldo em USD detectado",
+    "restoreBody": "Detectamos fundos em USD. Você quer mudar para o modo USD?\n\nO seu saldo será mantido em USD. Os BTC recebidos são convertidos automaticamente para USD, e os pagamentos enviados voltam a BTC.",
+    "switchedNotConverted": "Você mudou para {{currency}}, mas o seu saldo ainda não foi convertido. O Glow vai tentar de novo automaticamente."
+  },
+  "send": {
+    "sendAll": "Enviar tudo",
+    "enterAmount": "Digite o valor em sats",
+    "exceedsBalance": "O valor passa do saldo disponível",
+    "balanceUpdating": "O saldo está sendo atualizado. Tente novamente em um instante.",
+    "invalidAmount": "Digite um valor válido",
+    "invalidDestination": "Destino de pagamento inválido",
+    "youAreSending": "Você está enviando",
+    "recipientGets": "O destinatário recebe",
+    "insufficientFunds": "Fundos insuficientes",
+    "conversionAmount": "Valor da conversão",
+    "conversionFee": "Taxa de conversão",
+    "toAddress": "Para o endereço",
+    "toSparkAddress": "Para o endereço Spark",
+    "toSparkInvoice": "Para a fatura Spark",
+    "toInvoice": "Para a fatura",
+    "crossChain": {
+      "amountTooSmall": "Valor pequeno demais para esta rota.",
+      "amountTooLarge": "Valor grande demais para esta rota.",
+      "amountTooSmallHint": "Este valor é pequeno demais para as rotas disponíveis. Tente enviar um valor maior.",
+      "amountTooLargeHint": "Este valor é grande demais para as rotas disponíveis. Tente enviar um valor menor.",
+      "networkUnavailable": "Esta rede está temporariamente indisponível. Tente novamente em um instante.",
+      "networkNotSupported": "Esta rede não está disponível. Tente outra rede.",
+      "rateDrift": "Valor pequeno demais para esta rede. Tente um valor maior ou outra rede."
+    },
+    "withdraw": {
+      "noValidAmount": "Este link de retirada não tem um valor válido que o Glow possa receber.",
+      "wholeSats": "Digite um número inteiro de sats"
+    },
+    "enterAmountIn": "Digite o valor em {{currency}}",
+    "amountRange": "Entre {{min}} e {{max}} sats",
+    "result": {
+      "notSentBody": "O pagamento não foi concluído. Os seus fundos não foram enviados."
+    },
+    "alreadyPaid": "Esta fatura já foi paga.",
+    "invoiceExpired": "Esta fatura expirou. Peça uma nova ao destinatário.",
+    "balanceSettling": "Não foi possível preparar o pagamento enquanto o seu saldo se liquida. Tente novamente em alguns minutos."
+  },
+  "generate": {
+    "title": "Guarde em segredo",
+    "body": "Escreva estas palavras na ordem. É o seu único backup para recuperar os seus fundos.",
+    "warning": "Nunca compartilhe a sua frase de recuperação. Qualquer pessoa com estas palavras pode acessar os seus fundos.",
+    "copyToClipboard": "Copiar para a área de transferência",
+    "saved": "Já salvei a minha frase"
+  },
+  "restore": {
+    "body": "Digite a sua frase de recuperação de 12 ou 24 palavras para restaurar o Glow. As palavras ficam separadas por espaços.",
+    "placeholder": "palavra1 palavra2 palavra3 ...",
+    "invalidLength": "Digite uma frase de recuperação válida de 12 ou 24 palavras",
+    "invalidPhrase": "Frase de recuperação inválida. Verifique as suas palavras e tente novamente."
+  },
+  "unlock": {
+    "eraseTitle": "Apagar e começar de novo",
+    "eraseAction": "Apagar e começar de novo",
+    "erase": "Apagar",
+    "eraseReason": "Apagar todos os dados do Glow",
+    "eraseBodyPasskey": "Isso apaga todos os dados do Glow guardados neste dispositivo. Você vai precisar da sua passkey para acessar os seus fundos de novo.",
+    "eraseBodyMnemonic": "Isso apaga todos os dados do Glow guardados neste dispositivo. Confirme que você salvou a sua frase de recuperação: você vai precisar dela para acessar os seus fundos de novo."
+  },
+  "refund": {
+    "destinationBody": "Digite o endereço Bitcoin onde você quer receber o reembolso.",
+    "refund": "Reembolso",
+    "amount": "Valor",
+    "networkFee": "Taxa de rede"
+  },
+  "deposit": {
+    "amount": "Valor",
+    "networkFee": "Taxa de rede",
+    "feeChanged": "A taxa de rede mudou",
+    "approveOrReject": "Aprove para resgatar esta transferência, ou rejeite para processar um reembolso.",
+    "canReject": "Você pode rejeitar para processar um reembolso.",
+    "feeRose": "A taxa subiu para <amount/> enquanto você confirmava. Aprove para resgatar com a nova taxa.",
+    "deliveryFee": "Taxa de entrega",
+    "youReceive": "Você recebe",
+    "claim": "Resgatar",
+    "approve": "Aprovar",
+    "reject": "Rejeitar",
+    "claimFeeChanged": "O seu resgate não foi concluído: a taxa mudou de <amount/>.",
+    "tooSmall": "Esta transferência é pequena demais para cobrir a taxa de resgate."
+  },
+  "passkey": {
+    "confirmDeleted": "Confirmo que esta passkey foi apagada.",
+    "confirmDeletedHint": "Opcional. Continue sem marcar se não tiver certeza.",
+    "isHowYouAccess": "A sua passkey é como você acessa os seus fundos",
+    "deletionWarning": "Apagar a sua passkey do dispositivo, do navegador ou do gerenciador de senhas pode deixar os seus fundos inacessíveis para sempre."
+  },
+  "migration": {
+    "switchFailed": "Não conseguimos concluir a mudança para a sua nova passkey. Os seus fundos estão seguros. Tente novamente.",
+    "keepWindowOpen": "Mantenha esta janela aberta",
+    "verifyMultipleTimes": "Você vai ter que verificar a sua identidade várias vezes durante a migração: uma para cada etiqueta migrada, e algumas vezes mais para criar a sua nova passkey. Mantenha esta janela aberta até a migração terminar.",
+    "explainBody": "Vamos criar uma nova passkey e transferir os seus fundos automaticamente. Você vai ter que verificar a sua identidade algumas vezes durante o processo.",
+    "singleTransaction": "Os seus fundos serão transferidos em uma única transação. O seu histórico de pagamentos não vai junto.",
+    "doneBody": "Os seus fundos foram movidos para a sua nova passkey.",
+    "addressPending_one": "Não foi possível transferir este endereço Lightning:",
+    "addressPending_other": "Não foi possível transferir estes endereços Lightning:",
+    "addressPendingBody_one": "Os pagamentos enviados para ele vão continuar chegando na sua passkey antiga até a transferência terminar.",
+    "addressPendingBody_other": "Os pagamentos enviados para eles vão continuar chegando na sua passkey antiga até as transferências terminarem.",
+    "explainFirstTime": "Se você criou a sua passkey com uma versão mais antiga do Glow, vamos criar uma nova e transferir os seus fundos automaticamente. Se esta é a sua primeira vez no Glow, escolha <skip/> para continuar.",
+    "migrateLabels_one": "Vamos migrar a sua etiqueta para a sua nova passkey.",
+    "migrateLabels_other": "Vamos migrar todas as {{count}} etiquetas para a sua nova passkey."
+  },
+  "webNotice": {
+    "preferPasskey": "Para a sua segurança, recomendamos usar uma passkey.",
+    "preferApp": "Para a sua segurança, recomendamos o aplicativo Glow.",
+    "risk": "Uma frase de recuperação na web é menos segura, e existe a chance de você perder o seu dinheiro. Use uma frase de recuperação na web só se estiver disposto a correr esse risco."
+  },
+  "conversion": {
+    "nextAttempt": "Próxima tentativa",
+    "balanceToConvert": "Saldo a converter",
+    "notConvertedYet": "Este valor ainda não foi convertido para {{currency}}. O Glow vai tentar de novo automaticamente."
+  }
+}
