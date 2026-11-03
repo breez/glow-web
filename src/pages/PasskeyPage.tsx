@@ -1131,7 +1131,7 @@ const PasskeyPage: React.FC<PasskeyPageProps> = ({
           {/* break-all is required here: wrap-break-word only splits at
               word boundaries and can't break tokens like
               `delegate_permission/common.get_login_creds`. */}
-          <div className="space-y-2 text-sm break-all min-w-0">
+          <div className="selectable space-y-2 text-sm break-all min-w-0">
             <p>
               <span className="font-semibold">Source:</span>{' '}
               {aasaFailure.source}

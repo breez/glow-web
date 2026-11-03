@@ -395,6 +395,20 @@ body {
   color: var(--spark-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Long-press selection is opt-in, as in native apps. The WKWebView reads
+   only the -webkit- properties, and fields must stay selectable to type. */
+input,
+textarea,
+[contenteditable],
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 #root {
