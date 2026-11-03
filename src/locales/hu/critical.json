@@ -37,7 +37,8 @@
     "switchToUsdFailed": "Az USD-re váltás nem sikerült. Próbáld újra.",
     "switchToBtcFailed": "A BTC-re váltás nem sikerült. Próbáld újra.",
     "restoreTitle": "USD-egyenleg észlelve",
-    "restoreBody": "USD-ben lévő pénzt találtunk. Szeretnél USD módra váltani?\n\nAz egyenleged USD-ben lesz tartva. A beérkező BTC automatikusan USD-re váltódik, a kimenő fizetések pedig vissza BTC-re."
+    "restoreBody": "USD-ben lévő pénzt találtunk. Szeretnél USD módra váltani?\n\nAz egyenleged USD-ben lesz tartva. A beérkező BTC automatikusan USD-re váltódik, a kimenő fizetések pedig vissza BTC-re.",
+    "switchedNotConverted": "Átváltottál erre: {{currency}}, de az egyenleged még nem váltódott át. A Glow automatikusan újrapróbálja."
   },
   "send": {
     "sendAll": "Összes küldése",
@@ -72,7 +73,10 @@
     "amountRange": "{{min}} és {{max}} sats között",
     "result": {
       "notSentBody": "A fizetés nem ment át. A pénzed nem lett elküldve."
-    }
+    },
+    "alreadyPaid": "Ezt a számlát már kifizették.",
+    "invoiceExpired": "Ez a számla lejárt. Kérj a címzettől újat.",
+    "balanceSettling": "A fizetés nem készíthető elő, amíg az egyenleged rendeződik. Próbáld újra néhány perc múlva."
   },
   "generate": {
     "title": "Tartsd titokban",
@@ -113,12 +117,14 @@
     "claim": "Igénylés",
     "approve": "Jóváhagyás",
     "reject": "Elutasítás",
-    "claimFeeChanged": "Az igénylésed nem ment át: a díj megváltozott erről: <amount/>."
+    "claimFeeChanged": "Az igénylésed nem ment át: a díj megváltozott erről: <amount/>.",
+    "tooSmall": "Ez az átutalás túl kicsi ahhoz, hogy fedezze az igénylés díját."
   },
   "passkey": {
     "confirmDeleted": "Megerősítem, hogy ezt az azonosítókulcsot törölték.",
     "confirmDeletedHint": "Nem kötelező. Ha bizonytalan vagy, jelölés nélkül folytasd.",
-    "isHowYouAccess": "Az azonosítókulcsod az, amivel hozzáférsz a pénzedhez"
+    "isHowYouAccess": "Az azonosítókulcsod az, amivel hozzáférsz a pénzedhez",
+    "deletionWarning": "Ha törlöd az azonosítókulcsodat az eszközödről, a böngészőből vagy a jelszókezelőből, a pénzed véglegesen elérhetetlenné válhat."
   },
   "migration": {
     "switchFailed": "Nem sikerült befejezni az átállást az új azonosítókulcsodra. A pénzed biztonságban van. Próbáld újra.",
@@ -139,5 +145,10 @@
     "preferPasskey": "A biztonságod érdekében inkább azonosítókulcsot ajánlunk.",
     "preferApp": "A biztonságod érdekében a Glow alkalmazást ajánljuk.",
     "risk": "A webes helyreállítási kifejezés kevésbé biztonságos, és fennáll az esélye, hogy elveszíted a pénzedet. Csak akkor használj webes helyreállítási kifejezést, ha vállalod ezt a kockázatot."
+  },
+  "conversion": {
+    "nextAttempt": "Következő próbálkozás",
+    "balanceToConvert": "Átváltandó egyenleg",
+    "notConvertedYet": "Ez az összeg még nem váltódott át erre: {{currency}}. A Glow automatikusan újrapróbálja."
   }
 }
