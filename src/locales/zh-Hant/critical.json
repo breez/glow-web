@@ -1,0 +1,154 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "您的復原片語由密碼金鑰衍生而來。要在別的裝置上回復，請使用您的密碼金鑰或下面的復原片語。"
+    },
+    "passkeyUnavailable": {
+      "body": "您的復原片語由密碼金鑰衍生而來。沒有它，這部裝置上取不到這組片語。請在密碼金鑰仍然可用的裝置上登入來查看。"
+    },
+    "notFound": {
+      "body": "這部裝置上找不到復原片語。"
+    },
+    "reveal": {
+      "hintRevealed": "請確認沒有人在看",
+      "hintDeviceStored": "已安全儲存在這部裝置上"
+    },
+    "phraseLabel": "復原片語"
+  },
+  "logout": {
+    "confirmPasskey": "登出會刪除這部裝置上儲存的所有 Glow 資料。要再次取用您的資金，您需要您的密碼金鑰。",
+    "confirmMnemonic": "登出會刪除這部裝置上儲存的所有 Glow 資料。請確認您已儲存復原片語：再次取用資金時會用到它。"
+  },
+  "pinReset": {
+    "bodyPasskey": "PIN 無法取回。唯一的辦法是刪除這部裝置上所有 Glow 資料，再用您的密碼金鑰重新登入。",
+    "bodyMnemonic": "PIN 無法取回。唯一的辦法是刪除這部裝置上所有 Glow 資料，再用您的復原片語回復。請確認您已經存好了。",
+    "confirm": "刪除",
+    "deviceOwnerReason": "刪除所有 Glow 資料"
+  },
+  "stableBalance": {
+    "toUsd": "您的 BTC 餘額會兌換為 USD。",
+    "toBtc": "您的 USD 餘額會兌換回 BTC。",
+    "convertToUsd": "兌換為 USD",
+    "convertToBtc": "兌換為 BTC",
+    "conversionFee": "兌換手續費：",
+    "feeUnavailable": "無法估算手續費",
+    "disclaimerBody": "您的餘額以 USD 保存。收到的 BTC 會自動兌換為 USD，送出的款項則兌換回 BTC。低於兌換門檻的金額會先當成零頭留著，累積夠了再兌換。",
+    "balanceTooLow": "餘額太少，無法兌換：會當成零頭留著",
+    "switchToUsdFailed": "無法切換到 USD。請重試。",
+    "switchToBtcFailed": "無法切換到 BTC。請重試。",
+    "restoreTitle": "偵測到 USD 餘額",
+    "restoreBody": "我們偵測到 USD 資金。要切換到 USD 模式嗎？\n\n您的餘額會以 USD 保存。收到的 BTC 會自動兌換為 USD，送出的款項則兌換回 BTC。",
+    "switchedNotConverted": "已切換到 {{currency}}，但您的餘額還沒有兌換。Glow 會自動重試。"
+  },
+  "send": {
+    "sendAll": "全部送出",
+    "enterAmount": "以 sats 輸入金額",
+    "exceedsBalance": "金額超過可用餘額",
+    "balanceUpdating": "餘額正在更新。請稍後再試。",
+    "invalidAmount": "請輸入有效的金額",
+    "invalidDestination": "付款目標無效",
+    "youAreSending": "您送出",
+    "recipientGets": "收款人收到",
+    "insufficientFunds": "資金不足",
+    "conversionAmount": "兌換金額",
+    "conversionFee": "兌換手續費",
+    "toAddress": "傳送到位址",
+    "toSparkAddress": "傳送到 Spark 位址",
+    "toSparkInvoice": "傳送到 Spark 帳單",
+    "toInvoice": "傳送到帳單",
+    "crossChain": {
+      "amountTooSmall": "金額對這條路徑來說太小了。",
+      "amountTooLarge": "金額對這條路徑來說太大了。",
+      "amountTooSmallHint": "對可用的路徑來說這個金額太小了。試試送出更大的金額。",
+      "amountTooLargeHint": "對可用的路徑來說這個金額太大了。試試送出更小的金額。",
+      "networkUnavailable": "這個網路暫時無法使用。請稍後再試。",
+      "networkNotSupported": "這個網路無法使用。請換一個網路。",
+      "rateDrift": "金額對這個網路來說太小了。試試更大的金額或換一個網路。"
+    },
+    "withdraw": {
+      "noValidAmount": "這個提領連結裡沒有 Glow 能接收的有效金額。",
+      "wholeSats": "請輸入整數的 sats"
+    },
+    "enterAmountIn": "以 {{currency}} 輸入金額",
+    "amountRange": "{{min}} 到 {{max}} sats 之間",
+    "result": {
+      "notSentBody": "付款沒有成功。您的資金沒有送出。"
+    },
+    "alreadyPaid": "這張帳單已經付過了。",
+    "invoiceExpired": "這張帳單已過期。請向收款人要一張新的。",
+    "balanceSettling": "您的餘額正在結算，無法準備付款。請幾分鐘後重試。"
+  },
+  "generate": {
+    "title": "請妥善保密",
+    "body": "按順序把這些字抄下來。這是您取回資金的唯一備份。",
+    "warning": "絕對不要把復原片語告訴別人。任何拿到這些字的人都能取用您的資金。",
+    "copyToClipboard": "複製到剪貼板",
+    "saved": "我已儲存我的片語"
+  },
+  "restore": {
+    "body": "請輸入您的 12 個或 24 個字的復原片語來回復 Glow。字與字之間用空格分開。",
+    "placeholder": "字1 字2 字3 ...",
+    "invalidLength": "請輸入有效的 12 個或 24 個字的復原片語",
+    "invalidPhrase": "復原片語無效。請檢查您的字後重試。"
+  },
+  "unlock": {
+    "eraseTitle": "清除並重新開始",
+    "eraseAction": "清除並重新開始",
+    "erase": "清除",
+    "eraseReason": "刪除所有 Glow 資料",
+    "eraseBodyPasskey": "這會刪除這部裝置上儲存的所有 Glow 資料。要再次取用您的資金，您需要您的密碼金鑰。",
+    "eraseBodyMnemonic": "這會刪除這部裝置上儲存的所有 Glow 資料。請確認您已儲存復原片語：再次取用資金時會用到它。"
+  },
+  "refund": {
+    "destinationBody": "請輸入您想收到退款的 Bitcoin 位址。",
+    "refund": "退款",
+    "amount": "金額",
+    "networkFee": "網路手續費"
+  },
+  "deposit": {
+    "amount": "金額",
+    "networkFee": "網路手續費",
+    "feeChanged": "網路手續費有變動",
+    "approveOrReject": "核准即領取這筆轉帳，拒絕則辦理退款。",
+    "canReject": "您也可以拒絕來辦理退款。",
+    "feeRose": "您在確認的時候手續費漲到了 <amount/>。核准即以新的手續費領取。",
+    "deliveryFee": "入帳手續費",
+    "youReceive": "您會收到",
+    "claim": "領取",
+    "approve": "核准",
+    "reject": "拒絕",
+    "claimFeeChanged": "您的領取沒有成功：手續費從 <amount/> 變了。",
+    "tooSmall": "這筆轉帳太小，抵不上領取它的手續費。"
+  },
+  "passkey": {
+    "confirmDeleted": "我確認這個密碼金鑰已被刪除。",
+    "confirmDeletedHint": "選填。不確定的話可以不勾選直接繼續。",
+    "isHowYouAccess": "密碼金鑰是您取用資金的方式",
+    "deletionWarning": "從裝置、瀏覽器或密碼管理工具中刪除密碼金鑰，可能會讓您的資金永久無法取用。"
+  },
+  "migration": {
+    "switchFailed": "我們沒能完成切換到您的新密碼金鑰。您的資金是安全的。請重試。",
+    "keepWindowOpen": "請保持這個視窗開啟",
+    "verifyMultipleTimes": "轉移過程中會多次請您驗證身分：每個要轉移的標籤一次，之後為建立新密碼金鑰再幾次。請在轉移完成前保持這個視窗開啟。",
+    "explainBody": "我們會建立一個新的密碼金鑰，並自動搬移您的資金。過程中會請您驗證幾次身分。",
+    "singleTransaction": "您的資金會在一筆交易裡搬移。付款紀錄不會一起轉過去。",
+    "doneBody": "您的資金已搬移到新的密碼金鑰。",
+    "addressPending_one": "這個 Lightning 位址無法轉移：",
+    "addressPending_other": "這些 Lightning 位址無法轉移：",
+    "addressPendingBody_one": "傳到它的款項在轉移完成前仍會進到您的舊密碼金鑰。",
+    "addressPendingBody_other": "傳到它們的款項在轉移完成前仍會進到您的舊密碼金鑰。",
+    "explainFirstTime": "如果您的密碼金鑰是用較早版本的 Glow 建立的，我們會建立一個新的並自動搬移您的資金。如果您是第一次使用 Glow，請選擇 <skip/> 繼續。",
+    "migrateLabels_one": "我們會把您的標籤轉移到新的密碼金鑰。",
+    "migrateLabels_other": "我們會把全部 {{count}} 個標籤轉移到新的密碼金鑰。"
+  },
+  "webNotice": {
+    "preferPasskey": "為了您的安全，我們建議改用密碼金鑰。",
+    "preferApp": "為了您的安全，我們建議使用 Glow 應用程式。",
+    "risk": "在網頁上使用復原片語安全性較低，有可能讓您損失金錢。只有在您願意承擔這個風險時，才在網頁上使用復原片語。"
+  },
+  "conversion": {
+    "nextAttempt": "下次嘗試",
+    "balanceToConvert": "待兌換的餘額",
+    "notConvertedYet": "這筆金額還沒有兌換為 {{currency}}。Glow 會自動重試。"
+  }
+}
