@@ -168,7 +168,7 @@ const AmountStep: React.FC<AmountStepProps> = ({
       <label className="block text-sm font-medium text-spark-text-primary mb-2">
         Destination
       </label>
-      <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-secondary font-mono text-sm break-all">
+      <div className="w-full p-4 bg-spark-dark border border-spark-border rounded-xl text-spark-text-secondary font-mono text-sm break-all selectable">
         {paymentInput}
       </div>
     </div>

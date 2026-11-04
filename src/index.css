@@ -395,6 +395,20 @@ body {
   color: var(--spark-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Long-press selection is opt-in, as in native apps. The WKWebView reads
+   only the -webkit- properties, and fields must stay selectable to type. */
+input,
+textarea,
+[contenteditable],
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 #root {
@@ -549,9 +563,11 @@ h6 {
   cursor: pointer;
 }
 
-.button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px var(--glow-primary);
+@media (hover: hover) {
+  .button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px var(--glow-primary);
+  }
 }
 
 .button:active {
@@ -572,10 +588,12 @@ h6 {
   box-shadow: none;
 }
 
-.button-secondary:hover {
-  border-color: var(--spark-primary);
-  color: var(--spark-primary);
-  box-shadow: 0 4px 10px var(--glow-primary);
+@media (hover: hover) {
+  .button-secondary:hover {
+    border-color: var(--spark-primary);
+    color: var(--spark-primary);
+    box-shadow: 0 4px 10px var(--glow-primary);
+  }
 }
 
 .button-ghost {
@@ -586,9 +604,11 @@ h6 {
   padding: 10px 1em;
 }
 
-.button-ghost:hover {
-  color: var(--spark-text-primary);
-  background: rgba(255, 255, 255, 0.05);
+@media (hover: hover) {
+  .button-ghost:hover {
+    color: var(--spark-text-primary);
+    background: rgba(255, 255, 255, 0.05);
+  }
 }
 
 /* Action buttons (Send/Receive) */
@@ -616,9 +636,11 @@ h6 {
   box-shadow: 0 2px 8px var(--glow-electric);
 }
 
-.action-button-send:hover {
-  box-shadow: 0 4px 16px var(--glow-electric);
-  filter: brightness(1.05);
+@media (hover: hover) {
+  .action-button-send:hover {
+    box-shadow: 0 4px 16px var(--glow-electric);
+    filter: brightness(1.05);
+  }
 }
 
 .action-button-send:active {
@@ -633,9 +655,11 @@ h6 {
   box-shadow: 0 2px 8px var(--glow-success);
 }
 
-.action-button-receive:hover {
-  box-shadow: 0 4px 16px var(--glow-success);
-  filter: brightness(1.05);
+@media (hover: hover) {
+  .action-button-receive:hover {
+    box-shadow: 0 4px 16px var(--glow-success);
+    filter: brightness(1.05);
+  }
 }
 
 .action-button-receive:active {
@@ -708,17 +732,21 @@ h6 {
   filter: drop-shadow(0 0 0px var(--spark-primary));
 }
 
-/* Hover effects */
-.qr-scanner-button:hover .qr-corner {
-  width: 12px;
-  height: 12px;
-  border-color: var(--spark-electric);
-  filter: drop-shadow(0 0 4px var(--spark-electric));
+/* Touch screens keep :hover after a tap, so hover styles are pointer-only. */
+@media (hover: hover) {
+  .qr-scanner-button:hover .qr-corner {
+    width: 12px;
+    height: 12px;
+    border-color: var(--spark-electric);
+    filter: drop-shadow(0 0 4px var(--spark-electric));
+  }
 }
 
-.qr-scanner-button:hover svg {
-  opacity: 1;
-  filter: drop-shadow(0 0 6px var(--spark-primary));
+@media (hover: hover) {
+  .qr-scanner-button:hover svg {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px var(--spark-primary));
+  }
 }
 
 /* Active state */
@@ -810,10 +838,12 @@ select {
   transition: all 0.2s ease;
 }
 
-.list-item:hover {
-  background: rgba(37, 37, 53, 0.8);
-  border-color: var(--spark-border-light);
-  transform: translateX(4px);
+@media (hover: hover) {
+  .list-item:hover {
+    background: rgba(37, 37, 53, 0.8);
+    border-color: var(--spark-border-light);
+    transform: translateX(4px);
+  }
 }
 
 /* ============================================
