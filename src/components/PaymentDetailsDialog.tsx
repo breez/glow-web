@@ -304,14 +304,14 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
             {payment.details?.type === 'lightning' && payment.details.lnurlReceiveMetadata?.lightningAddress && (
               payment.details.lnurlReceiveMetadata.lightningAddress.length > LONG_TEXT_THRESHOLD ? (
                 <CollapsibleCodeField
-                  label="Address"
+                  label={t('labels.address')}
                   value={payment.details.lnurlReceiveMetadata.lightningAddress}
                   isVisible={visibleFields.lnAddress}
                   onToggle={() => toggleField('lnAddress')}
                 />
               ) : (
                 <PaymentInfoRow
-                  label="Address"
+                  label={t('labels.address')}
                   value={payment.details.lnurlReceiveMetadata.lightningAddress}
                 />
               )

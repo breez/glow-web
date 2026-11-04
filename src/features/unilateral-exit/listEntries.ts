@@ -94,16 +94,23 @@ const topUpText = (
 ): Pick<UnilateralExitEntry, 'title' | 'subtitle' | 'isAction'> => {
   const coins = state.pendingCoins;
   const received = leftoverTopUp(plan, coins.filter(coin => coin.confirmed)).stillToSendSat === 0;
+  const feeReceived = i18n.t('common:exit.exitFeeReceived');
+  const awaitingFee = i18n.t('common:exit.waitingForExitFee');
   if (topUpOf(plan)?.needsSignIn) {
-    const title = received ? 'Exit fee received' : 'Waiting for exit fee';
+    const title = received ? feeReceived : awaitingFee;
     // The tap builds nothing over a unilateral step in flight, so it is not asked for yet.
-    if (!isUnilateralLanded(plan.exit)) return { title, subtitle: 'Waiting for a confirmation' };
-    return { title, subtitle: 'Tap to update', isAction: true };
+    if (!isUnilateralLanded(plan.exit)) return { title, subtitle: i18n.t('common:exit.waitingConfirmation') };
+    return { title, subtitle: i18n.t('common:exit.tapToUpdate'), isAction: true };
   }
   const stillToSend = leftoverTopUp(plan, coins).stillToSendSat;
-  if (stillToSend > 0) return { title: 'Waiting for exit fee', subtitle: `Send ₿${formatWithSpaces(stillToSend)} more` };
-  if (!received) return { title: 'Exit fee sent', subtitle: 'Waiting for a confirmation' };
-  return { title: 'Exit fee received', subtitle: null };
+  if (stillToSend > 0) {
+    const amount = `₿${formatWithSpaces(stillToSend)}`;
+    return { title: awaitingFee, subtitle: i18n.t('common:exit.sendMore', { amount }) };
+  }
+  if (!received) {
+    return { title: i18n.t('common:exit.exitFeeSent'), subtitle: i18n.t('common:exit.waitingConfirmation') };
+  }
+  return { title: feeReceived, subtitle: null };
 };
 
 const archivedEntry = (exit: ArchivedExit): UnilateralExitEntry => ({
