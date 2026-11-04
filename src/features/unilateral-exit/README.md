@@ -25,10 +25,10 @@ again by name at the same rate, holding its leaf meanwhile, and lets the leaf
 go back to the recoverable funds after about a week. One the operators did not
 co-sign is listed in `failed`, outside the transactions. `done` covers only the
 transactions, so this app keeps such a leaf, and one a rebuild skipped for
-now, part of the exit: it prepares it again on the same schedule and builds a
-co-signed one into the exit. A unilateral one that needs exit fee of its own
-goes back to the recoverable funds once the exit's unilateral steps have
-landed.
+now, part of the exit: it prepares it again on the same schedule, builds a
+co-signed one into the exit, and asks for more exit fee for a unilateral one
+once the exit's unilateral steps have landed. The week then starts over, so
+the user has all of it to pay.
 
 ## The flow
 
@@ -91,10 +91,10 @@ the original would list the same leaf twice.
 | `quote.ts` | everything read off a quote, for Recover Funds and the Unilateral Exit alike: what it moves, what it costs, what arrives and whether that is an estimate, whether it needs funding, and what the exit fee address was paid |
 | `quoting.ts` | asking `prepareRecoverFunds` for a quote, and which leaves a quote's skips take out of an exit |
 | `building.ts` | the one `recoverFunds` build, the plan it makes, and starting a pending exit from its fee coins |
-| `pass.ts` | one pass over an exit, step by step: check, rebuild if needed, retry what was left out, send what is ready, then read what landed |
+| `pass.ts` | one pass over an exit, step by step: check, rebuild if needed, retry what was left out, note what the exit fee address holds, send what is ready, then read what landed |
 | `check.ts` | reading the exit back with `checkRecoverFunds`, and what the verdict means for the plan |
-| `rebuild.ts` | building a diverged exit again |
-| `leftovers.ts` | leaves a build left out, and co-signed recoveries stuck unverified: prepared again, built as the exit's next part, or let go after about a week |
+| `rebuild.ts` | building a diverged or unverified exit again |
+| `leftovers.ts` | leaves a build left out, and co-signed recoveries stuck unverified: prepared again, built as the exit's next part, asked more exit fee for, or let go after about a week |
 | `recoveries.ts` | kept co-signed recoveries and their fee bumps |
 | `exitFee.ts` | what the exit fee address is asked for, what it holds, and what is still to send |
 | `feeSweep.ts` | sending what a finished exit left at its fee address to its destination, before the exit is archived |
@@ -105,7 +105,7 @@ the original would list the same leaf twice.
 | `storage/archive.ts` | finished exits, kept once the plan slot is handed to the next one |
 | `storage/accounting.ts` | what the Recoverable Funds row subtracts that no live record holds |
 | `engine/api.ts` | starts and stops the engine, hands it a plan, a pending exit or a kept recovery, and starts a pending exit on the user's tap |
-| `engine/passes.ts` | a pass over the plan and each kept recovery, what a pass stores or archives, and reading getInfo again once leaves land |
+| `engine/passes.ts` | a pass over the plan and each kept recovery, the fee address read beside it, what a pass stores or archives, and reading getInfo again once leaves land |
 | `engine/polling.ts` | when the passes run: at once on request, then on a timer that slows while nothing can move |
 | `engine/state.ts` | the engine state the screens read, and who listens to it |
 | `funding.ts` | the key and address the fees are paid from |

@@ -31,11 +31,16 @@ describe('awaitsUpdate', () => {
     expect(awaitsUpdate(plan([], { status: { type: 'rebuilding' } }))).toBe(false);
   });
 
+  it('asks for the tap on a running exit that has to sign over a step it could not read', () => {
+    expect(awaitsUpdate(plan([], { status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } }))).toBe(true);
+  });
+
   it('leaves a running exit alone', () => {
     expect(awaitsUpdate(plan([]))).toBe(false);
   });
 
-  it('asks nothing of a finished exit', () => {
+  it('asks nothing of a finished exit, or of one waiting on more exit fee', () => {
     expect(awaitsUpdate(plan([], { status: { type: 'done' } }))).toBe(false);
+    expect(awaitsUpdate(plan([], { status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } } }))).toBe(false);
   });
 });

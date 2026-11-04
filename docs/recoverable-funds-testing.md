@@ -336,8 +336,12 @@ steps do, until the tracker opens in step 5.
   commands printed. Then recover the funds as in steps 1 to 5. Once the
   tracker opens, wait about 5 seconds, close Glow, run
   `npm run regtest:watchtower-exit -- <first leaf id>`, and reopen it.
-  Expect the same as Case 1, step 4. The second leaf can end up back in
-  Recoverable Funds when the recovery finishes.
+  Expect the same as Case 1, step 4. If the second leaf needs exit fee of its
+  own, Glow asks for it once the rest has landed: the row reads "Waiting for
+  exit fee" and "Send ₿X more", and the sheet shows "The recovery needs more".
+  After the fee confirms, Glow adds the leaf to the recovery on its own.
+  Without the fee, the leaf goes to Recoverable Funds after about a week
+  (1008 blocks).
 
 ## Case 2d: no exit fee to send
 
@@ -500,14 +504,6 @@ block at a time, as the steps do.
   step 1. The card reads "Network fees went up" instead of
   "The recovery needs more".
 
-## Known gaps
-
-These are open issues. Report them only if they behave differently.
-
-- A part that a recovery or unilateral exit left out, and that needs its own
-  exit fee, leaves it once the rest has landed. It shows up as Recoverable
-  Funds, to recover on its own.
-
 ## Covered by unit tests only
 
 These have no local setup:
@@ -522,3 +518,9 @@ These have no local setup:
   block, and updating from it while the operators are down. Cutting the
   operators off doesn't force it: the SDK then quotes from saved data, so the
   rebuild goes through.
+- A transaction the SDK could not read on-chain while building a unilateral
+  exit or recovery. Glow builds it again each block until the read goes
+  through. A passkey wallet needs a tap for that, and the tracker asks with
+  "Glow couldn't check part of your exit on-chain. Please update your
+  unilateral exit to continue." No helper fails a single chain read:
+  `regtest:indexer -- down` fails them all.

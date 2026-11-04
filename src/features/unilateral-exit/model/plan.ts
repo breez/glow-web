@@ -52,8 +52,8 @@ export interface UnilateralExitPlan {
   quotedSweepFeeSat: number;
   /**
    * What was sent to the exit fee address, and where it is: the coins the exit
-   * started from, plus what reached it for each rebuild since. Kept on its
-   * own, since a build that needs no funding has no funding inputs.
+   * started from, plus what reached it for each rebuild or top-up since. Kept
+   * on its own, since a build that needs no funding has no funding inputs.
    * Absent when the exit never needed any, or on a plan written before these
    * existed, whose funding inputs stand in (`exitFeeRecordOf`).
    */
@@ -103,6 +103,8 @@ export interface UnilateralExitPlan {
    * ask for the update tap; one passing outage within a block asks nothing.
    */
   rebuildFailingSince?: number;
+  /** The tip of Glow's last rebuild over an Unverified step: once a block, so a failing chain service is not asked every pass. */
+  unverifiedRebuiltAt?: number;
   /**
    * The tip at which a checked pass first found a co-signed recovery stuck
    * unverified, which Glow prepares again by itself (`retryDue`). Cleared once
@@ -128,11 +130,29 @@ export type ExitStatus =
   | { type: 'rebuilding' }
   /**
    * Waits on the update tap: a diverged exit whose rebuild needs the passkey
-   * (`signIn`) or failed across a block (`rebuildFailed`).
+   * (`signIn`) or failed across a block (`rebuildFailed`). With `cause` it has
+   * not diverged: a step the SDK could not read needs a rebuild only the
+   * passkey can sign, and the rest keeps running meanwhile.
    */
-  | { type: 'needsUpdate'; why: 'signIn' | 'rebuildFailed' }
+  | { type: 'needsUpdate'; why: 'signIn' | 'rebuildFailed'; cause?: 'unverified' }
+  /** A unilateral leaf the exit left out waits on more exit fee. Plan slot only. */
+  | { type: 'needsExitFee'; topUp: ExitTopUp }
   /** The SDK's Done verdict, or nothing left to move: it waits only for its ledger to be read, then the archive. */
   | { type: 'done' };
+
+/**
+ * What a leftover's build needs at the exit fee address, at the plan's rate.
+ * Asked only once nothing of the exit is in flight, and a build clears it.
+ */
+export interface ExitTopUp {
+  required: Funding;
+  /** What the address held when first read after the ask, so the fee paid counts only what was added. */
+  heldSat?: number;
+  /** What the address was last read to hold, shown when a read after a restart fails. */
+  feeCoins?: ChainUtxo[];
+  /** The build needs the passkey, or the key to say where to pay, which only a tap can read. */
+  needsSignIn?: true;
+}
 
 /**
  * `recover` moves funds found outside the balance for a wallet that never
@@ -199,15 +219,23 @@ export function planFromExitResponse(exit: RecoverFundsResponse, meta: PlanMeta)
   return { version: PLAN_VERSION, ...meta, exit, refusals: {}, status: { type: 'running' } };
 }
 
+/** A unilateral step the SDK could not read while building: never sent, and a check never settles it. */
+export const hasUnverifiedStep = ({ exit }: Pick<UnilateralExitPlan, 'exit'>): boolean =>
+  exit.transactions.some(tx => tx.status.type === 'unverified' && !isCooperative(tx));
+
 export const awaitsUpdate = ({ status }: Pick<UnilateralExitPlan, 'status'>): boolean => status.type === 'needsUpdate';
 
 /** The chain no longer matches the build, so it is built again before anything more is sent. */
 export const isDiverged = ({ status }: Pick<UnilateralExitPlan, 'status'>): boolean =>
-  status.type === 'rebuilding' || status.type === 'needsUpdate';
+  status.type === 'rebuilding' || (status.type === 'needsUpdate' && !status.cause);
 
 /** Neither finished nor diverged: each step goes out as its turn comes. */
 export const isActive = (plan: Pick<UnilateralExitPlan, 'status'>): boolean =>
   plan.status.type !== 'done' && !isDiverged(plan);
+
+/** What a leftover waiting on more exit fee asks for. */
+export const topUpOf = ({ status }: Pick<UnilateralExitPlan, 'status'>): ExitTopUp | undefined =>
+  status.type === 'needsExitFee' ? status.topUp : undefined;
 
 /** Every leaf a plan names. One from before `namedLeaves` names its exit's leaves and failures. */
 export function namedLeavesOf(plan: UnilateralExitPlan): NamedLeaf[] {
@@ -222,8 +250,7 @@ export function namedLeavesOf(plan: UnilateralExitPlan): NamedLeaf[] {
  * Leaves the exit named that no build of it holds and its ledger does not
  * record as landed: one whose co-signing failed, or one a rebuild skipped for
  * now. Each stays part of the exit until it lands, is found unrecoverable, or
- * is let go: at the deadline, or once the exit's unilateral steps land if its
- * own build needs exit fee.
+ * is let go at the deadline.
  */
 export const leftoverIdsOf = (plan: UnilateralExitPlan): string[] =>
   unbuiltLeaves(plan, namedLeavesOf(plan)).map(leaf => leaf.leafId);

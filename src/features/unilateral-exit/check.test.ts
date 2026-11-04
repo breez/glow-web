@@ -32,8 +32,11 @@ describe('applyExitCheck', () => {
     expect(applyExitCheck(plan([tx({ txid: 'a' })]), checked([{ txid: 'a' }]), 'redo').status).toEqual({ type: 'rebuilding' });
   });
 
-  it('keeps a running exit running on the valid verdict', () => {
-    expect(applyExitCheck(plan([tx({ txid: 'a' })]), checked([{ txid: 'a' }]), 'valid').status).toEqual({ type: 'running' });
+  it.each([
+    ['a running exit', { type: 'running' }],
+    ['an exit waiting on exit fee', { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } }],
+  ] as const)('keeps %s as it is on the valid verdict', (_, status) => {
+    expect(applyExitCheck(plan([tx({ txid: 'a' })], { status }), checked([{ txid: 'a' }]), 'valid').status).toEqual(status);
   });
 
   it('runs a diverged exit again once the chain matches it, keeping when its rebuilds started failing', () => {
@@ -41,6 +44,17 @@ describe('applyExitCheck', () => {
     expect(applyExitCheck(failing, checked([{ txid: 'a' }]), 'valid')).toMatchObject({ status: { type: 'running' }, rebuildFailingSince: 90 });
     const rebuilding = plan([tx({ txid: 'a' })], { status: { type: 'rebuilding' } });
     expect(applyExitCheck(rebuilding, checked([{ txid: 'a' }]), 'valid').status).toEqual({ type: 'running' });
+  });
+
+  const unverified = { type: 'unverified' } as const;
+  const asking = { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } as const;
+  it.each([
+    ['stands while the step does', unverified, 'valid', asking],
+    ['ends once the step settles', ready, 'valid', { type: 'running' }],
+    ['ends once the chain diverges, so a later divergence reads as one', unverified, 'redo', { type: 'rebuilding' }],
+  ] as const)('a tap asked for over a step the SDK could not read %s', (_, step, verdict, status) => {
+    const waiting = plan([tx({ txid: 'a', status: unverified })], { status: asking });
+    expect(applyExitCheck(waiting, checked([{ txid: 'a', status: step }]), verdict).status).toEqual(status);
   });
 });
 

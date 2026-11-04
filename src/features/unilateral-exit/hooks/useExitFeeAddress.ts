@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChainClient, ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
-import { awaitsUpdate, type ExitMode, type WalletKey } from '../model/plan';
-import { lastReadCoins, readFeeAddress, sentFunding, topUpFor, withoutOwnChange } from '../exitFee';
+import { awaitsUpdate, isUnilateralLanded, type ExitMode, type UnilateralExitPlan, type WalletKey } from '../model/plan';
+import { lastReadCoins, leftoverTopUp, readFeeAddress, sentFunding, topUpFor, withoutOwnChange } from '../exitFee';
 import { setPendingExit } from '../engine/api';
 import type { UnilateralExitEngineState } from '../engine/state';
 import { deriveFundingKey, readWalletMnemonic, type FundingKey } from '../funding';
@@ -14,8 +14,8 @@ import type { FundingFields } from './useUnilateralExitFlow';
 
 const FUNDING_POLL_MS = 15_000;
 
-// Held apart from useExitFeeAddress: the build signs with the key and forgets
-// the phrase.
+// Held apart from useExitFeeAddress: the wizard reads it to pick a fee screen,
+// and that hook needs the phase the wizard picks.
 export function useFeeKey() {
   const [key, setKey] = useState<FundingKey | null>(null);
   const mnemonicRef = useRef<string | null>(null);
@@ -35,11 +35,32 @@ export function useFeeKey() {
   return { key, hold, holdsPhrase, forgetPhrase };
 }
 
+function leftoverFundingOf(plan: UnilateralExitPlan | null, coins: ChainUtxo[]): FundingFields | null {
+  if (plan?.status.type !== 'needsExitFee') return null;
+  const address = exitFeeRecordOf(plan).exitFeeAddress;
+  // With no address yet, the tap derives it and asks again. A payment on its
+  // way counts toward the ask, as on the list row, so it is not asked for
+  // twice; only confirmed coins fund the build.
+  const asked = address ? leftoverTopUp(plan, coins) : null;
+  const paid = !address || leftoverTopUp(plan, coins.filter(coin => coin.confirmed)).stillToSendSat === 0;
+  const isFunded = isUnilateralLanded(plan.exit) && paid;
+  return {
+    address: address ?? '',
+    isFunded,
+    topUp: asked,
+    waitsForConfirmation: !!asked && asked.stillToSendSat === 0 && !isFunded,
+    feeRate: plan.feeRateSatPerVbyte,
+    currentFeeRate: plan.feeRateSatPerVbyte,
+    networkFloorFeeRate: null,
+    quotedAt: null,
+  };
+}
+
 interface FeeAddressInputs {
   walletKey: WalletKey | null;
   network: string;
   chain: ChainClient;
-  engine: Pick<UnilateralExitEngineState, 'plan' | 'archive'>;
+  engine: Pick<UnilateralExitEngineState, 'plan' | 'pendingCoins' | 'archive'>;
   mode: ExitMode | undefined;
   phase: UnilateralExitPhase;
   goTo: (phase: UnilateralExitPhase) => void;
@@ -48,7 +69,7 @@ interface FeeAddressInputs {
 }
 
 export function useExitFeeAddress({ walletKey, network, chain, engine, mode, phase, goTo, feeKey, quoting }: FeeAddressInputs) {
-  const { plan, archive } = engine;
+  const { plan, pendingCoins, archive } = engine;
   const { key: fundingKey, hold } = feeKey;
   const { quote } = quoting.quote;
   const { networkSlowRate, quotedAt, shortfall, splitOff } = quoting;
@@ -130,7 +151,10 @@ export function useExitFeeAddress({ walletKey, network, chain, engine, mode, pha
   // build has said what it needs, the address has to hold it.
   const isFunded = quote !== null && (!shortfall || topUpFor(shortfall, sent, quote.feeRateSatPerVbyte).stillToSendSat === 0);
 
-  const funding: FundingFields | null = fundingKey && {
+  // The wizard's fee screen holds its own key and quote. A leftover's has
+  // neither: it shows what the plan asks for at its own address and rate,
+  // against the confirmed coins the engine read there.
+  const wizardFunding: FundingFields | null = fundingKey && {
     address: fundingKey.address,
     isFunded,
     topUp,
@@ -142,6 +166,7 @@ export function useExitFeeAddress({ walletKey, network, chain, engine, mode, pha
     networkFloorFeeRate: plan && awaitsUpdate(plan) ? null : networkSlowRate,
     quotedAt,
   };
+  const leftoverFunding = useMemo(() => leftoverFundingOf(plan, pendingCoins), [plan, pendingCoins]);
 
   // Every exit pays from one address, so coins an earlier one left there count
   // toward this quote's fee. The address comes from the exit's own record, or
@@ -177,5 +202,5 @@ export function useExitFeeAddress({ walletKey, network, chain, engine, mode, pha
   const feeAlreadyHeld = asksFee && !plan && !!knownAddress && !!knownCoins && stillToSendSat === 0;
   const exitFeeDueSat = plan && asksFee ? stillToSendSat : null;
 
-  return { funding, unlock, unlockError, confirmedUtxos, sent, feeAlreadyHeld, exitFeeDueSat };
+  return { funding: wizardFunding ?? leftoverFunding, unlock, unlockError, confirmedUtxos, sent, feeAlreadyHeld, exitFeeDueSat };
 }

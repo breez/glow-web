@@ -107,7 +107,7 @@ export function startUnilateralExitEngine(
   const recoveries = loadRecoveries(target);
   const accounting = loadAccounting(target);
   // What the fee address last held, so a restart whose read fails does not show it as empty.
-  const pendingCoins = lastHeldCoins({ pending }) ?? [];
+  const pendingCoins = lastHeldCoins({ plan, pending }) ?? [];
   emit({ ...idle, plan, pending, pendingCoins, archive: loadArchive(target), recoveries, accounting });
   syncPolling();
   if (plan || pending || recoveries.length > 0) void advanceNow();

@@ -267,9 +267,26 @@ describe('an exit waiting on its fee', () => {
     expect(getUnilateralExitState().pendingCoins).toEqual([coin(5_898)]);
   });
 
-  it('shows a payment for an exit after a reload whose read of the fee address fails', async () => {
+  // No retry is due, so the request stands.
+  const waitingOnTopUp = (exitFeeAddress: string) =>
+    plan(swept(), {
+      network: 'regtest',
+      exitFeeAddress,
+      retrySince: 98,
+      retriedAt: 98,
+      status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } },
+      namedLeaves: [
+        { leafId: 'leaf-1', valueSats: 100_000 },
+        { leafId: 'leaf-2', valueSats: 50_000 },
+      ],
+    });
+
+  it.each([
+    ['an exit', (address: string) => setPendingExit(wallet, pendingExit({ fundingAddress: address }))],
+    ['a leaf the exit left out', (address: string) => setUnilateralExitPlan(wallet, waitingOnTopUp(address))],
+  ])('shows a payment for %s after a reload whose read of the fee address fails', async (_, waitOnFee) => {
     startUnilateralExitEngine(wallet, holding([coin(5_898, false)]), sdk());
-    setPendingExit(wallet, pendingExit({ fundingAddress: 'bcrt1qreload' }));
+    waitOnFee('bcrt1qreload');
     await vi.waitFor(() => expect(getUnilateralExitState().pendingCoins).toHaveLength(1));
     await vi.waitFor(() => expect(getUnilateralExitState().isAdvancing).toBe(false));
     stopUnilateralExitEngine();
@@ -619,6 +636,17 @@ describe('a pass over an exit', () => {
     await advanceNow();
     expect(checkRecoverFunds).not.toHaveBeenCalled();
   });
+
+  it('keeps sending the other steps of an exit whose tap waits on a step it could not read', async () => {
+    const broadcastPackage = vi.fn(async () => undefined);
+    const waiting = plan(
+      [tx({ txid: 'stuck', status: { type: 'unverified' } }), tx({ txid: 'due', cpfpTxHex: 'bb', status: ready })],
+      { network: 'regtest', status: { type: 'needsUpdate', why: 'signIn', cause: 'unverified' } },
+    );
+    setUnilateralExitPlan(wallet, waiting);
+    startUnilateralExitEngine(wallet, { ...chain, broadcastPackage }, sdk());
+    await vi.waitFor(() => expect(broadcastPackage).toHaveBeenCalledWith('aa', 'bb'));
+  });
 });
 
 describe('an exit holding a leaf it left out', () => {
@@ -656,6 +684,64 @@ describe('an exit holding a leaf it left out', () => {
     await vi.waitFor(() => expect(getUnilateralExitState().plan).toBeNull());
     await advanceNow();
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads the fee address of one waiting on more exit fee before each pass, and passes the coins in', async () => {
+    const key = deriveFundingKey(MNEMONIC, 'regtest', 0);
+    const addressUtxos = vi.fn(async () => [coin(3_000)]);
+    const recoverFunds = vi.fn(async () =>
+      checked([{ txid: 'refund-2', kind: 'refund', nodeId: 'leaf-2', status: { type: 'waitingForTimelock', spendableAtHeight: 900 } }], {
+        leaves: [{ leafId: 'leaf-2', valueSats: 50_000, method: 'unilateral' }],
+      }),
+    );
+    const prepareRecoverFunds = async () => prepared({ leaves: [{ leafId: 'leaf-2', valueSats: 50_000, method: 'unilateral' }] });
+    const waiting = plan(swept(), {
+      network: 'regtest',
+      exitFeeAddress: key.address,
+      retrySince: 90,
+      retriedAt: 90,
+      status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 }, heldSat: 0 } },
+      namedLeaves: [
+        { leafId: 'leaf-1', valueSats: 100_000 },
+        { leafId: 'leaf-2', valueSats: 50_000 },
+      ],
+    });
+    setUnilateralExitPlan(wallet, waiting);
+    startUnilateralExitEngine(wallet, { ...chain, addressUtxos }, done({ prepareRecoverFunds, recoverFunds }));
+
+    await vi.waitFor(() => expect(recoverFunds).toHaveBeenCalled());
+    expect(addressUtxos).toHaveBeenCalledWith(key.address);
+    expect(recoverFunds).toHaveBeenCalledWith(
+      expect.objectContaining({ fundingInputs: [expect.objectContaining({ txid: 'coin-3000', pubkey: key.publicKeyHex })] }),
+      expect.anything(),
+    );
+    await vi.waitFor(() => expect(getUnilateralExitState().plan?.status).toEqual({ type: 'running' }));
+    expect(getUnilateralExitState().pendingCoins).toEqual([]);
+  });
+
+  it('hands the pass no coins when the read of the fee address fails, so what it held before the ask is not set too low', async () => {
+    const key = deriveFundingKey(MNEMONIC, 'regtest', 0);
+    const addressUtxos = vi.fn(async (): Promise<ChainUtxo[]> => {
+      throw new Error('rate limited');
+    });
+    const waiting = plan(swept(), {
+      network: 'regtest',
+      exitFeeAddress: key.address,
+      // No retry due, so the request stands.
+      retrySince: 98,
+      retriedAt: 98,
+      status: { type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } },
+      namedLeaves: [
+        { leafId: 'leaf-1', valueSats: 100_000 },
+        { leafId: 'leaf-2', valueSats: 50_000 },
+      ],
+    });
+    setUnilateralExitPlan(wallet, waiting);
+    startUnilateralExitEngine(wallet, { ...chain, addressUtxos }, sdk());
+
+    await vi.waitFor(() => expect(addressUtxos).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(getUnilateralExitState().isAdvancing).toBe(false));
+    expect(getUnilateralExitState().plan?.status).toEqual({ type: 'needsExitFee', topUp: { required: { sat: 3_000, inputs: 1 } } });
   });
 
   it('keeps a kept recovery to the leaves it built', () => {

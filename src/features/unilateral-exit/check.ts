@@ -2,13 +2,28 @@ import type { RecoverFundsResponse, RecoveryVerdict } from '@breeztech/breez-sdk
 import { logger, LogCategory } from '@/services/logger';
 import { recordLanded } from './ledger';
 import { paceRetry } from './leftovers';
-import { isActive, isLanded, isUnilateralLanded, leftoverIdsOf, type ExitStatus, type UnilateralExitPlan } from './model/plan';
+import {
+  hasUnverifiedStep,
+  isActive,
+  isLanded,
+  isUnilateralLanded,
+  leftoverIdsOf,
+  type ExitStatus,
+  type UnilateralExitPlan,
+} from './model/plan';
 import type { ExitSdk } from './quoting';
 
-/** A diverged exit the chain caught up with runs again. */
-function statusAfterCheck(verdict: RecoveryVerdict['type']): ExitStatus {
+/**
+ * A diverged exit the chain caught up with runs again. The tap asked for over
+ * an Unverified step ends with that step, or with a divergence, whose own
+ * rebuild asks again if it has to sign.
+ */
+function statusAfterCheck(status: ExitStatus, verdict: RecoveryVerdict['type'], checked: UnilateralExitPlan): ExitStatus {
   if (verdict === 'done') return { type: 'done' };
-  return verdict === 'redo' ? { type: 'rebuilding' } : { type: 'running' };
+  if (verdict === 'redo') return { type: 'rebuilding' };
+  if (status.type === 'running' || status.type === 'needsExitFee') return status;
+  const stillAsks = status.type === 'needsUpdate' && status.cause === 'unverified' && hasUnverifiedStep(checked);
+  return stillAsks ? status : { type: 'running' };
 }
 
 /** Folds a check onto the plan. The sdk owns the exit and the verdict; glow keeps only what the network told it about its own sends. */
@@ -26,7 +41,7 @@ export function applyExitCheck(
   // Recorded before a rebuild can replace the exit, which is the last place
   // its transactions exist.
   const next = recordLanded({ ...plan, exit: checked, refusals });
-  return { ...next, status: statusAfterCheck(verdict) };
+  return { ...next, status: statusAfterCheck(plan.status, verdict, next) };
 }
 
 /** Reads the exit back against the chain. Needs nothing but the stored response, so it works with the leaves gone from the operators' view. */
@@ -60,10 +75,11 @@ export async function checkAndPace(
       // The Done verdict covers only the set, so a leaf it left out is still
       // part of the exit.
       doneSet = true;
-      next = { ...next, status: { type: 'running' } };
+      next = { ...next, status: statusAfterCheck(plan.status, 'valid', next) };
     }
     // The week runs from the pass the last unilateral step lands, whatever
-    // the verdict, and the leftovers are tried at once then.
+    // the verdict: the leftovers are tried at once then, so a fee they need
+    // is asked with the whole week to pay it.
     landsNow =
       inSlot &&
       isActive(next) &&

@@ -1,10 +1,10 @@
 import type { ChainClient, ChainUtxo } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
-import { lastReadCoins, readFeeAddress, readFeeCoins } from '../exitFee';
+import { lastReadCoins, readFeeAddress, readFeeCoins, withFeeCoins } from '../exitFee';
 import { sweepLeftoverFee } from '../feeSweep';
 import { hasWaitingLanding } from '../ledger';
 import { releasesLeaves } from '../listEntries';
-import type { UnilateralExitPlan, WalletKey } from '../model/plan';
+import { topUpOf, type UnilateralExitPlan, type WalletKey } from '../model/plan';
 import { advanceUnilateralExit } from '../pass';
 import { exitFeeRecordOf } from '../quote';
 import { retireRecord } from '../storage/accounting';
@@ -27,32 +27,40 @@ export function withRecovery(list: UnilateralExitPlan[], recovery: UnilateralExi
   return [...list.filter(kept => !replaced(kept)), recovery];
 }
 
-/** What the pending exit's fee address was last read to hold: in this session, or as the pending exit stored it. */
-export function lastHeldCoins({ pending }: Pick<UnilateralExitEngineState, 'pending'>): ChainUtxo[] | undefined {
-  return lastReadCoins(pending?.fundingAddress) ?? pending?.feeCoins;
+/** The fee address the engine watches: the pending exit's, or the plan's while a leaf it left out waits on more exit fee. */
+export const watchedAddress = ({ pending, plan }: Pick<UnilateralExitEngineState, 'pending' | 'plan'>): string | undefined =>
+  pending?.fundingAddress ?? (plan?.status.type === 'needsExitFee' ? exitFeeRecordOf(plan).exitFeeAddress : undefined);
+
+/** What the watched address was last read to hold: in this session, or as its owner stored it. */
+export function lastHeldCoins({ pending, plan }: Pick<UnilateralExitEngineState, 'pending' | 'plan'>): ChainUtxo[] | undefined {
+  const stored = pending ? pending.feeCoins : plan ? topUpOf(plan)?.feeCoins : undefined;
+  return lastReadCoins(watchedAddress({ pending, plan })) ?? stored;
 }
 
 /**
- * Reads what the pending exit's fee address holds. When the read fails, the
- * screens keep what it was last read to hold. Nothing starts without the user.
+ * Reads what the fee address holds, or null when it could not. The screens
+ * then keep what it was last read to hold. Nothing starts without the user.
  */
-async function watchPending(): Promise<void> {
-  const address = state.pending?.fundingAddress;
-  if (!chain || !wallet || !address) return;
+async function watchPending(): Promise<ChainUtxo[] | null> {
+  const address = watchedAddress(state);
+  if (!chain || !wallet || !address) return null;
   const passGeneration = generation;
   const passWallet = wallet;
   try {
     const coins = await readFeeAddress(chain, address);
-    if (generation !== passGeneration) return;
+    if (generation !== passGeneration) return coins;
+    // A plan's coins are stored with the plan its pass saves.
     const pending = state.pending && { ...state.pending, feeCoins: coins };
     if (pending) savePendingExit(passWallet, pending);
     emit({ pendingCoins: coins, ...(pending ? { pending } : {}) });
+    return coins;
   } catch (e) {
     logger.warn(LogCategory.SDK, 'Failed to read the exit fee address', {
       error: e instanceof Error ? e.message : String(e),
     });
     const known = lastHeldCoins(state);
     if (known && generation === passGeneration) emit({ pendingCoins: known });
+    return null;
   }
 }
 
@@ -90,7 +98,7 @@ function archiveOrSavePlan(passWallet: WalletKey, plan: UnilateralExitPlan, tipH
     emit({ plan: null, archive, accounting, tipHeight, isAdvancing: false, pendingCoins: [], endedPlans: state.endedPlans + 1 });
   } else {
     savePlan(passWallet, plan);
-    const coinsDone = state.pendingCoins.length > 0;
+    const coinsDone = plan.status.type !== 'needsExitFee' && state.pendingCoins.length > 0;
     emit({ plan, tipHeight, isAdvancing: false, ...(coinsDone ? { pendingCoins: [] } : {}) });
   }
   syncPolling();
@@ -114,7 +122,12 @@ export async function advancePlan(): Promise<void> {
   const passChain = chain;
   emit({ isAdvancing: true });
   try {
-    const passed = await advanceUnilateralExit(current, chain, passSdk ?? undefined, passWallet.identityPubkey);
+    // Read before the pass, which builds the leftover once its fee confirms.
+    // With no address yet there is nothing to read, and no coins to hand on.
+    // Nor after a failed read: what was last read, or nothing, would set what
+    // the address held before the ask too low.
+    const coins = current.status.type === 'needsExitFee' ? await watchPending() : null;
+    const passed = await advanceUnilateralExit(current, chain, passSdk ?? undefined, passWallet.identityPubkey, coins ?? undefined);
     const { tipHeight } = passed;
     // The fee address is shared, so nothing leaves it while a saved exit waits on it.
     const plan =
@@ -124,7 +137,7 @@ export async function advancePlan(): Promise<void> {
     if (generation !== passGeneration) return;
     await rereadFor({ plan });
     if (generation !== passGeneration) return;
-    archiveOrSavePlan(passWallet, plan, tipHeight, unspentSat);
+    archiveOrSavePlan(passWallet, coins && !state.pending ? withFeeCoins(plan, coins) : plan, tipHeight, unspentSat);
   } catch (e) {
     logger.warn(LogCategory.SDK, 'Recovery engine pass failed', {
       error: e instanceof Error ? e.message : String(e),
