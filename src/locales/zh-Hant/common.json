@@ -49,6 +49,8 @@
     "total": "合計",
     "genericError": "發生錯誤",
     "amount": "金額",
+    "amountAtLeast": "金額至少為 ₿{{amount}}",
+    "amountAtMost": "金額最多為 ₿{{amount}}",
     "networkFee": "網路手續費",
     "unknownError": "未知的錯誤",
     "mainnetOnly": "僅限 mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "搜尋聯絡人",
     "clearContact": "清除聯絡人",
     "copyThing": "複製{{label}}",
+    "openThing": "開啟{{label}}",
     "moveUp": "上移",
     "moveDown": "下移",
     "lockAutomatically": "自動鎖定",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "指紋",
+    "face": "人臉",
+    "iris": "虹膜掃描",
     "generic": "生物辨識",
     "lockout": "生物辨識解鎖已被鎖住。請用密碼解鎖裝置後重試。"
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "用這個位址來收款",
     "sendBitcoinHere": "把 Bitcoin 傳到這個位址，會自動兌換為 Lightning",
     "generatingBitcoin": "正在產生 Bitcoin 位址...",
+    "generatingThing": "正在產生 {{thing}}...",
+    "sparkAddressFailed": "無法產生 Spark 位址：{{error}}",
+    "bitcoinAddressFailed": "無法產生 Bitcoin 位址：{{error}}",
+    "invoiceFailed": "無法產生帳單：{{error}}",
     "generatingSpark": "正在產生 Spark 位址...",
     "loadingLightningAddress": "正在載入 Lightning 位址...",
     "confirmUsernameChange": "確認更改使用者名稱",
@@ -370,7 +380,7 @@
     "generateInvoice": "產生帳單",
     "descriptionPlaceholder": "這筆款項是做什麼的？",
     "amount": "金額",
-    "specificAmount": "建立指定金額的帳單 >",
+    "specificAmount": "建立指定金額的帳單",
     "lightningAddress": "Lightning 位址",
     "createAddressPrompt": "建立一個 Lightning 位址，收款更方便",
     "createLightningAddress": "建立 Lightning 位址",
@@ -477,7 +487,8 @@
     "authFailed": "驗證失敗"
   },
   "stableBalance": {
-    "disclaimerTitle": "穩定餘額"
+    "disclaimerTitle": "穩定餘額",
+    "notConverted": "未兌換"
   },
   "send": {
     "destination": "目標",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "您可以關掉這裡。在取回完成前，請常常開啟 Glow。",
     "movedToSafety_exit": "您的部分資金已轉到 on-chain 以保安全。請更新您的單方退出，把全部資金取回。",
     "movedToSafety_recover": "您的部分資金已轉到 on-chain 以保安全。請更新您的取回，把全部資金取回。",
+    "unverifiedStep_exit": "Glow 無法在 on-chain 核對您退出的一部分。請更新您的單方退出以繼續。",
+    "unverifiedStep_recover": "Glow 無法在 on-chain 核對您取回的一部分。請更新您的取回以繼續。",
     "quotedJustNow": "剛剛算出",
     "quotedMinutesAgo_one": "{{count}} 分鐘前算出",
     "quotedMinutesAgo_other": "{{count}} 分鐘前算出",

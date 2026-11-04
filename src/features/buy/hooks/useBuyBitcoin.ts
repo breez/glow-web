@@ -7,6 +7,7 @@ import { useQuoteReceived } from '../../../hooks/useQuoteReceived';
 import { useAmountInput } from '../../../hooks/useAmountInput';
 import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
+import { formatWithSpaces } from '../../../utils/formatNumber';
 import { fixedQuickAmounts, type TokenDisplayConfig } from '../../../utils/tokenFormatting';
 import { toSdkAmountNumber, type Sats } from '../../../types/sats';
 import {
@@ -156,7 +157,7 @@ export function useBuyBitcoin({
 
   const generate = useCallback(async () => {
     if (amountSats === null || amountSats < MIN_CASH_APP_SATS) {
-      setError(`Amount must be at least ₿${MIN_CASH_APP_SATS.toString()}`);
+      setError(t('labels.amountAtLeast', { amount: formatWithSpaces(MIN_CASH_APP_SATS) }));
       return;
     }
     const amountSatsForSdk = toSdkAmountNumber(amountSats);

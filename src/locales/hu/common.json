@@ -49,6 +49,8 @@
     "total": "Összesen",
     "genericError": "Hiba történt",
     "amount": "Összeg",
+    "amountAtLeast": "Az összegnek legalább ₿{{amount}} kell lennie",
+    "amountAtMost": "Az összeg legfeljebb ₿{{amount}} lehet",
     "networkFee": "Hálózati díj",
     "unknownError": "Ismeretlen hiba",
     "mainnetOnly": "Csak mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Névjegyek keresése",
     "clearContact": "Névjegy eltávolítása",
     "copyThing": "{{label}} másolása",
+    "openThing": "{{label}} megnyitása",
     "moveUp": "Mozgatás felfelé",
     "moveDown": "Mozgatás lefelé",
     "lockAutomatically": "Automatikus zárolás",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "ujjlenyomat",
+    "face": "arc",
+    "iris": "íriszolvasás",
     "generic": "biometrikus",
     "lockout": "A biometrikus feloldás zárolva van. Oldd fel az eszközt a kódoddal, és próbáld újra."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Használd ezt a címet fizetések fogadásához",
     "sendBitcoinHere": "Küldj Bitcoint erre a címre az automatikus Lightning-átváltáshoz",
     "generatingBitcoin": "Bitcoin-cím létrehozása...",
+    "generatingThing": "{{thing}} létrehozása...",
+    "sparkAddressFailed": "A Spark-cím létrehozása nem sikerült: {{error}}",
+    "bitcoinAddressFailed": "A Bitcoin-cím létrehozása nem sikerült: {{error}}",
+    "invoiceFailed": "A számla létrehozása nem sikerült: {{error}}",
     "generatingSpark": "Spark-cím létrehozása...",
     "loadingLightningAddress": "Lightning-cím betöltése...",
     "confirmUsernameChange": "Erősítsd meg a felhasználónév módosítását",
@@ -370,7 +380,7 @@
     "generateInvoice": "Számla generálása",
     "descriptionPlaceholder": "Mire szól?",
     "amount": "Összeg",
-    "specificAmount": "Számla létrehozása megadott összeggel →",
+    "specificAmount": "Számla létrehozása megadott összeggel",
     "lightningAddress": "Lightning-cím",
     "createAddressPrompt": "Hozz létre Lightning-címet, hogy könnyebben fogadhass fizetéseket",
     "createLightningAddress": "Lightning-cím létrehozása",
@@ -477,7 +487,8 @@
     "authFailed": "A hitelesítés sikertelen"
   },
   "stableBalance": {
-    "disclaimerTitle": "Stabil egyenleg"
+    "disclaimerTitle": "Stabil egyenleg",
+    "notConverted": "Nincs átváltva"
   },
   "send": {
     "destination": "Célpont",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "Ezt bezárhatod. Nyisd meg rendszeresen a Glow-t, amíg a visszanyerés be nem fejeződik.",
     "movedToSafety_exit": "A pénzed egy részét on-chain helyeztük biztonságba. Frissítsd az egyoldalú kilépést, hogy minden pénzedet visszanyerd.",
     "movedToSafety_recover": "A pénzed egy részét on-chain helyeztük biztonságba. Frissítsd a visszanyerést, hogy minden pénzedet visszanyerd.",
+    "unverifiedStep_exit": "A Glow nem tudta ellenőrizni a kilépésed egy részét on-chain. A folytatáshoz frissítsd az egyoldalú kilépést.",
+    "unverifiedStep_recover": "A Glow nem tudta ellenőrizni a visszanyerésed egy részét on-chain. A folytatáshoz frissítsd a visszanyerést.",
     "quotedJustNow": "ajánlat épp most",
     "quotedMinutesAgo_one": "ajánlat {{count}} perce",
     "quotedMinutesAgo_other": "ajánlat {{count}} perce",

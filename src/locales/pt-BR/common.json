@@ -49,6 +49,8 @@
     "total": "Total",
     "genericError": "Ocorreu um erro",
     "amount": "Valor",
+    "amountAtLeast": "O valor precisa ser de pelo menos ₿{{amount}}",
+    "amountAtMost": "O valor não pode passar de ₿{{amount}}",
     "networkFee": "Taxa de rede",
     "unknownError": "Erro desconhecido",
     "mainnetOnly": "Somente mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Buscar contatos",
     "clearContact": "Limpar o contato",
     "copyThing": "Copiar {{label}}",
+    "openThing": "Abrir {{label}}",
     "moveUp": "Mover para cima",
     "moveDown": "Mover para baixo",
     "lockAutomatically": "Bloquear automaticamente",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "impressão digital",
+    "face": "rosto",
+    "iris": "leitura da íris",
     "generic": "biometria",
     "lockout": "O desbloqueio por biometria está bloqueado. Desbloqueie o dispositivo com a sua senha e tente novamente."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Use este endereço para receber pagamentos",
     "sendBitcoinHere": "Envie Bitcoin para este endereço para conversão automática em Lightning",
     "generatingBitcoin": "Gerando o endereço Bitcoin...",
+    "generatingThing": "Gerando {{thing}}...",
+    "sparkAddressFailed": "Não foi possível gerar o endereço Spark: {{error}}",
+    "bitcoinAddressFailed": "Não foi possível gerar o endereço Bitcoin: {{error}}",
+    "invoiceFailed": "Não foi possível gerar a fatura: {{error}}",
     "generatingSpark": "Gerando o endereço Spark...",
     "loadingLightningAddress": "Carregando o endereço Lightning...",
     "confirmUsernameChange": "Confirmar a mudança de nome de usuário",
@@ -370,7 +380,7 @@
     "generateInvoice": "Gerar fatura",
     "descriptionPlaceholder": "Para que é isso?",
     "amount": "Valor",
-    "specificAmount": "Criar fatura com um valor específico >",
+    "specificAmount": "Criar fatura com um valor específico",
     "lightningAddress": "Endereço Lightning",
     "createAddressPrompt": "Crie um endereço Lightning para receber pagamentos com facilidade",
     "createLightningAddress": "Criar endereço Lightning",
@@ -477,7 +487,8 @@
     "authFailed": "Falha na autenticação"
   },
   "stableBalance": {
-    "disclaimerTitle": "Saldo estável"
+    "disclaimerTitle": "Saldo estável",
+    "notConverted": "Não convertido"
   },
   "send": {
     "destination": "Destino",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "Você pode fechar isso. Abra o Glow com regularidade até o salvamento terminar.",
     "movedToSafety_exit": "Parte dos seus fundos foi movida on-chain para ficar segura. Atualize a sua saída unilateral para salvar todos eles.",
     "movedToSafety_recover": "Parte dos seus fundos foi movida on-chain para ficar segura. Atualize o salvamento para salvar todos eles.",
+    "unverifiedStep_exit": "O Glow não conseguiu verificar parte da sua saída on-chain. Atualize a sua saída unilateral para continuar.",
+    "unverifiedStep_recover": "O Glow não conseguiu verificar parte do salvamento on-chain. Atualize o salvamento para continuar.",
     "quotedJustNow": "calculado agora mesmo",
     "quotedMinutesAgo_one": "calculado há {{count}} min",
     "quotedMinutesAgo_other": "calculado há {{count}} min",

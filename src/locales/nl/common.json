@@ -49,6 +49,8 @@
     "total": "Totaal",
     "genericError": "Er is een fout opgetreden",
     "amount": "Bedrag",
+    "amountAtLeast": "Het bedrag moet minstens ₿{{amount}} zijn",
+    "amountAtMost": "Het bedrag mag maximaal ₿{{amount}} zijn",
     "networkFee": "Netwerkkosten",
     "unknownError": "Onbekende fout",
     "mainnetOnly": "Alleen mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Contacten zoeken",
     "clearContact": "Contact wissen",
     "copyThing": "{{label}} kopiëren",
+    "openThing": "{{label}} openen",
     "moveUp": "Omhoog",
     "moveDown": "Omlaag",
     "lockAutomatically": "Automatisch vergrendelen",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "vingerafdruk",
+    "face": "gezicht",
+    "iris": "irisscan",
     "generic": "biometrisch",
     "lockout": "Biometrisch ontgrendelen is geblokkeerd. Ontgrendel je apparaat met je toegangscode en probeer opnieuw."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Gebruik dit adres om betalingen te ontvangen",
     "sendBitcoinHere": "Stuur Bitcoin naar dit adres voor automatische omzetting naar Lightning",
     "generatingBitcoin": "Bitcoin-adres wordt aangemaakt...",
+    "generatingThing": "{{thing}} wordt aangemaakt...",
+    "sparkAddressFailed": "Spark-adres kon niet worden aangemaakt: {{error}}",
+    "bitcoinAddressFailed": "Bitcoin-adres kon niet worden aangemaakt: {{error}}",
+    "invoiceFailed": "Factuur kon niet worden aangemaakt: {{error}}",
     "generatingSpark": "Spark-adres wordt aangemaakt...",
     "loadingLightningAddress": "Lightning-adres wordt geladen...",
     "confirmUsernameChange": "Wijziging van gebruikersnaam bevestigen",
@@ -370,7 +380,7 @@
     "generateInvoice": "Factuur genereren",
     "descriptionPlaceholder": "Waarvoor is dit?",
     "amount": "Bedrag",
-    "specificAmount": "Factuur met een specifiek bedrag aanmaken →",
+    "specificAmount": "Factuur met een specifiek bedrag aanmaken",
     "lightningAddress": "Lightning-adres",
     "createAddressPrompt": "Maak een Lightning-adres aan om makkelijker betalingen te ontvangen",
     "createLightningAddress": "Lightning-adres aanmaken",
@@ -477,7 +487,8 @@
     "authFailed": "Verificatie mislukt"
   },
   "stableBalance": {
-    "disclaimerTitle": "Stabiel saldo"
+    "disclaimerTitle": "Stabiel saldo",
+    "notConverted": "Niet omgezet"
   },
   "send": {
     "destination": "Bestemming",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "Je kunt dit sluiten. Open Glow regelmatig tot het terughalen klaar is.",
     "movedToSafety_exit": "Een deel van je geld is on-chain verplaatst om het veilig te houden. Werk je eenzijdige exit bij om alles terug te halen.",
     "movedToSafety_recover": "Een deel van je geld is on-chain verplaatst om het veilig te houden. Werk het terughalen bij om alles terug te halen.",
+    "unverifiedStep_exit": "Glow kon een deel van je exit niet on-chain controleren. Werk je eenzijdige exit bij om verder te gaan.",
+    "unverifiedStep_recover": "Glow kon een deel van het terughalen niet on-chain controleren. Werk het terughalen bij om verder te gaan.",
     "quotedJustNow": "net berekend",
     "quotedMinutesAgo_one": "{{count}} min geleden berekend",
     "quotedMinutesAgo_other": "{{count}} min geleden berekend",

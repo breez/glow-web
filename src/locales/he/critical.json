@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "בקישור המשיכה הזה אין סכום תקין ש-Glow יכול לקבל.",
-      "wholeSats": "הזן מספר שלם של sats"
+      "wholeSats": "הזן מספר שלם של sats",
+      "failed": "המשיכה נכשלה: {{error}}"
     },
     "enterAmountIn": "הזן סכום ב-{{currency}}",
     "amountRange": "בין {{min}} ל-{{max}} sats",

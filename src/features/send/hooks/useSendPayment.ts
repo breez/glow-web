@@ -361,7 +361,7 @@ export function useSendPayment(): UseSendPaymentReturn {
         ? alreadyPaid()
         : EXPIRED.test(message)
           ? invoiceExpired()
-          : `Payment failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          : t('common:send.paymentFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
       setPaymentResult('failure');
     } finally {
       if (listenerId) {
@@ -371,7 +371,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setIsLoading(false);
       setCurrentStep('result');
     }
-  }, [wallet, prepareResponse]);
+  }, [wallet, prepareResponse, t]);
 
   const handleRun = useCallback(async (runner: () => Promise<void>, hasConversion?: boolean) => {
     setProcessingPhase(hasConversion ? 'converting' : 'sending');

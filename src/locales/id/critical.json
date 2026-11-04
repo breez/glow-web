@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Tautan penarikan ini tidak punya jumlah valid yang bisa diterima Glow.",
-      "wholeSats": "Masukkan sats dalam bilangan bulat"
+      "wholeSats": "Masukkan sats dalam bilangan bulat",
+      "failed": "Penarikan gagal: {{error}}"
     },
     "enterAmountIn": "Masukkan jumlah dalam {{currency}}",
     "amountRange": "Antara {{min}} dan {{max}} sats",

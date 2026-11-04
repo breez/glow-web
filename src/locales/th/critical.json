@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "ลิงก์ถอนนี้ไม่มีจำนวนที่ถูกต้องที่ Glow รับได้",
-      "wholeSats": "ใส่ sats เป็นจำนวนเต็ม"
+      "wholeSats": "ใส่ sats เป็นจำนวนเต็ม",
+      "failed": "ถอนไม่สำเร็จ: {{error}}"
     },
     "enterAmountIn": "ใส่จำนวนเป็น {{currency}}",
     "amountRange": "ระหว่าง {{min}} ถึง {{max}} sats",

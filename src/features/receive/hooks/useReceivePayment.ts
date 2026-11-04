@@ -146,7 +146,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       setSparkAddress(receiveResponse.paymentRequest);
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to generate Spark address', { error: formatError(err) });
-      setError(`Failed to generate Spark address: ${err instanceof Error ? err.message : t('labels.unknownError')}`);
+      setError(t('receive.sparkAddressFailed', { error: err instanceof Error ? err.message : t('labels.unknownError') }));
     } finally {
       setSparkLoading(false);
     }
@@ -162,7 +162,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       setBitcoinAddress(receiveResponse.paymentRequest);
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to generate Bitcoin address', { error: formatError(err) });
-      setError(`Failed to generate Bitcoin address: ${err instanceof Error ? err.message : t('labels.unknownError')}`);
+      setError(t('receive.bitcoinAddressFailed', { error: err instanceof Error ? err.message : t('labels.unknownError') }));
     } finally {
       setBitcoinLoading(false);
     }
@@ -186,7 +186,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       return;
     }
     if (amountSats < BigInt(LIGHTNING_INVOICE_MIN_SATS)) {
-      setError(`Amount must be at least ₿${formatWithSpaces(LIGHTNING_INVOICE_MIN_SATS)}`);
+      setError(t('labels.amountAtLeast', { amount: formatWithSpaces(LIGHTNING_INVOICE_MIN_SATS) }));
       return;
     }
 
@@ -227,7 +227,7 @@ export function useReceivePayment(): UseReceivePaymentReturn {
       setCurrentStep('qr');
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Failed to generate invoice', { error: formatError(err) });
-      setError(`Failed to generate invoice: ${err instanceof Error ? err.message : t('labels.unknownError')}`);
+      setError(t('receive.invoiceFailed', { error: err instanceof Error ? err.message : t('labels.unknownError') }));
       setCurrentStep('input');
       setShowAmountPanel(true);
     } finally {

@@ -49,6 +49,8 @@
     "total": "Gesamt",
     "genericError": "Ein Fehler ist aufgetreten",
     "amount": "Betrag",
+    "amountAtLeast": "Der Betrag muss mindestens ₿{{amount}} sein",
+    "amountAtMost": "Der Betrag darf höchstens ₿{{amount}} sein",
     "networkFee": "Netzwerkgebühr",
     "unknownError": "Unbekannter Fehler",
     "mainnetOnly": "Nur Mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Kontakte durchsuchen",
     "clearContact": "Kontakt entfernen",
     "copyThing": "{{label}} kopieren",
+    "openThing": "{{label}} öffnen",
     "moveUp": "Nach oben",
     "moveDown": "Nach unten",
     "lockAutomatically": "Automatisch sperren",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "Fingerabdruck",
+    "face": "Gesicht",
+    "iris": "Iris-Scan",
     "generic": "biometrisch",
     "lockout": "Die biometrische Entsperrung ist gesperrt. Entsperre dein Gerät mit deinem Code und versuche es erneut."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Verwende diese Adresse, um Zahlungen zu empfangen",
     "sendBitcoinHere": "Sende Bitcoin an diese Adresse für die automatische Umwandlung in Lightning",
     "generatingBitcoin": "Bitcoin-Adresse wird erstellt...",
+    "generatingThing": "{{thing}} wird erstellt...",
+    "sparkAddressFailed": "Spark-Adresse konnte nicht erstellt werden: {{error}}",
+    "bitcoinAddressFailed": "Bitcoin-Adresse konnte nicht erstellt werden: {{error}}",
+    "invoiceFailed": "Rechnung konnte nicht erstellt werden: {{error}}",
     "generatingSpark": "Spark-Adresse wird erstellt...",
     "loadingLightningAddress": "Lightning-Adresse wird geladen...",
     "confirmUsernameChange": "Änderung des Benutzernamens bestätigen",
@@ -370,7 +380,7 @@
     "generateInvoice": "Rechnung erzeugen",
     "descriptionPlaceholder": "Wofür ist das?",
     "amount": "Betrag",
-    "specificAmount": "Rechnung mit bestimmtem Betrag erstellen →",
+    "specificAmount": "Rechnung mit bestimmtem Betrag erstellen",
     "lightningAddress": "Lightning-Adresse",
     "createAddressPrompt": "Erstelle eine Lightning-Adresse, um Zahlungen einfacher zu empfangen",
     "createLightningAddress": "Lightning-Adresse erstellen",
@@ -477,7 +487,8 @@
     "authFailed": "Authentifizierung fehlgeschlagen"
   },
   "stableBalance": {
-    "disclaimerTitle": "Stabiles Guthaben"
+    "disclaimerTitle": "Stabiles Guthaben",
+    "notConverted": "Nicht umgewandelt"
   },
   "send": {
     "destination": "Ziel",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "Du kannst das schließen. Öffne Glow regelmäßig, bis die Wiederherstellung fertig ist.",
     "movedToSafety_exit": "Ein Teil deines Guthabens wurde zur Sicherheit on-chain bewegt. Aktualisiere deinen einseitigen Ausstieg, um dein gesamtes Guthaben wiederherzustellen.",
     "movedToSafety_recover": "Ein Teil deines Guthabens wurde zur Sicherheit on-chain bewegt. Aktualisiere deine Wiederherstellung, um dein gesamtes Guthaben wiederherzustellen.",
+    "unverifiedStep_exit": "Glow konnte einen Teil deines Ausstiegs on-chain nicht prüfen. Aktualisiere deinen einseitigen Ausstieg, um fortzufahren.",
+    "unverifiedStep_recover": "Glow konnte einen Teil deiner Wiederherstellung on-chain nicht prüfen. Aktualisiere deine Wiederherstellung, um fortzufahren.",
     "quotedJustNow": "gerade berechnet",
     "quotedMinutesAgo_one": "vor {{count}} Min. berechnet",
     "quotedMinutesAgo_other": "vor {{count}} Min. berechnet",

@@ -33,7 +33,7 @@
     "conversionFee": "Omzettingskosten:",
     "feeUnavailable": "Kosten konden niet worden geschat",
     "disclaimerBody": "Je saldo wordt in USD aangehouden. Binnenkomende BTC wordt automatisch omgezet naar USD, en uitgaande betalingen worden terug omgezet naar BTC. Bedragen onder de omzettingsdrempel blijven als wisselgeld staan tot ze zich opstapelen.",
-    "balanceTooLow": "Het saldo is te laag om om te zetten — het blijft als wisselgeld staan",
+    "balanceTooLow": "Het saldo is te laag om om te zetten: het blijft als wisselgeld staan",
     "switchToUsdFailed": "Overschakelen naar USD is mislukt. Probeer het opnieuw.",
     "switchToBtcFailed": "Overschakelen naar BTC is mislukt. Probeer het opnieuw.",
     "restoreTitle": "USD-saldo gedetecteerd",
@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Deze opnamelink bevat geen geldig bedrag dat Glow kan ontvangen.",
-      "wholeSats": "Voer een heel getal aan sats in"
+      "wholeSats": "Voer een heel getal aan sats in",
+      "failed": "Opname mislukt: {{error}}"
     },
     "enterAmountIn": "Voer het bedrag in {{currency}} in",
     "amountRange": "Tussen {{min}} en {{max}} sats",

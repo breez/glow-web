@@ -49,6 +49,8 @@
     "total": "Total",
     "genericError": "A apărut o eroare",
     "amount": "Sumă",
+    "amountAtLeast": "Suma trebuie să fie de cel puțin ₿{{amount}}",
+    "amountAtMost": "Suma trebuie să fie de cel mult ₿{{amount}}",
     "networkFee": "Comision de rețea",
     "unknownError": "Eroare necunoscută",
     "mainnetOnly": "Doar mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Caută contacte",
     "clearContact": "Șterge contactul",
     "copyThing": "Copiază {{label}}",
+    "openThing": "Deschide {{label}}",
     "moveUp": "Mută mai sus",
     "moveDown": "Mută mai jos",
     "lockAutomatically": "Blochează automat",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "amprentă",
+    "face": "față",
+    "iris": "scanare a irisului",
     "generic": "biometrie",
     "lockout": "Deblocarea biometrică este blocată. Deblochează dispozitivul cu codul tău și încearcă din nou."
   },
@@ -364,6 +370,10 @@
     "useThisAddress": "Folosește această adresă pentru a primi plăți",
     "sendBitcoinHere": "Trimite Bitcoin la această adresă pentru conversie automată în Lightning",
     "generatingBitcoin": "Se generează adresa Bitcoin...",
+    "generatingThing": "Se generează {{thing}}...",
+    "sparkAddressFailed": "Adresa Spark nu a putut fi generată: {{error}}",
+    "bitcoinAddressFailed": "Adresa Bitcoin nu a putut fi generată: {{error}}",
+    "invoiceFailed": "Factura nu a putut fi generată: {{error}}",
     "generatingSpark": "Se generează adresa Spark...",
     "loadingLightningAddress": "Se încarcă adresa Lightning...",
     "confirmUsernameChange": "Confirmă schimbarea numelui de utilizator",
@@ -372,7 +382,7 @@
     "generateInvoice": "Generează factură",
     "descriptionPlaceholder": "Pentru ce este?",
     "amount": "Sumă",
-    "specificAmount": "Creează o factură cu o sumă anume >",
+    "specificAmount": "Creează o factură cu o sumă anume",
     "lightningAddress": "Adresă Lightning",
     "createAddressPrompt": "Creează o adresă Lightning pentru a primi plăți ușor",
     "createLightningAddress": "Creează adresă Lightning",
@@ -479,7 +489,8 @@
     "authFailed": "Autentificarea a eșuat"
   },
   "stableBalance": {
-    "disclaimerTitle": "Sold stabil"
+    "disclaimerTitle": "Sold stabil",
+    "notConverted": "Neconvertit"
   },
   "send": {
     "destination": "Destinație",
@@ -755,6 +766,8 @@
     "closeAndReturn_recover": "Poți închide asta. Deschide Glow regulat până se încheie salvarea.",
     "movedToSafety_exit": "O parte din fondurile tale a fost mutată on-chain pentru siguranță. Actualizează ieșirea unilaterală ca să îți salvezi toate fondurile.",
     "movedToSafety_recover": "O parte din fondurile tale a fost mutată on-chain pentru siguranță. Actualizează salvarea ca să îți salvezi toate fondurile.",
+    "unverifiedStep_exit": "Glow nu a putut verifica o parte din ieșirea ta on-chain. Actualizează ieșirea unilaterală pentru a continua.",
+    "unverifiedStep_recover": "Glow nu a putut verifica o parte din salvarea ta on-chain. Actualizează salvarea pentru a continua.",
     "quotedJustNow": "calculat chiar acum",
     "quotedMinutesAgo_one": "calculat acum {{count}} min",
     "quotedMinutesAgo_other": "calculat acum {{count}} min",

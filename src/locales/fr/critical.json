@@ -33,7 +33,7 @@
     "conversionFee": "Frais de conversion :",
     "feeUnavailable": "Impossible d'estimer les frais",
     "disclaimerBody": "Votre solde est conservé en USD. Les BTC entrants sont automatiquement convertis en USD, et les paiements sortants sont reconvertis en BTC. Les montants sous le seuil de conversion restent en appoint jusqu'à ce qu'ils s'accumulent.",
-    "balanceTooLow": "Le solde est trop faible pour être converti — il restera en monnaie",
+    "balanceTooLow": "Le solde est trop faible pour être converti : il restera en monnaie",
     "switchToUsdFailed": "Le passage à USD a échoué. Réessaie.",
     "switchToBtcFailed": "Le passage à BTC a échoué. Réessaie.",
     "restoreTitle": "Solde USD détecté",
@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Ce lien de retrait ne comporte aucun montant valide que Glow puisse recevoir.",
-      "wholeSats": "Saisissez un nombre entier de sats"
+      "wholeSats": "Saisissez un nombre entier de sats",
+      "failed": "Le retrait a échoué : {{error}}"
     },
     "enterAmountIn": "Saisissez le montant en {{currency}}",
     "amountRange": "Entre {{min}} et {{max}} sats",

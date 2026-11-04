@@ -49,6 +49,8 @@
     "total": "Разом",
     "genericError": "Сталася помилка",
     "amount": "Сума",
+    "amountAtLeast": "Сума має бути не менше ₿{{amount}}",
+    "amountAtMost": "Сума має бути не більше ₿{{amount}}",
     "networkFee": "Комісія мережі",
     "unknownError": "Невідома помилка",
     "mainnetOnly": "Лише mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Пошук контактів",
     "clearContact": "Очистити контакт",
     "copyThing": "Копіювати {{label}}",
+    "openThing": "Відкрити {{label}}",
     "moveUp": "Перемістити вгору",
     "moveDown": "Перемістити вниз",
     "lockAutomatically": "Блокувати автоматично",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "відпечаток пальця",
+    "face": "обличчя",
+    "iris": "сканування райдужки",
     "generic": "біометрія",
     "lockout": "Розблокування за біометрією заблоковано. Розблокуйте пристрій паролем і спробуйте ще раз."
   },
@@ -366,6 +372,10 @@
     "useThisAddress": "Використовуйте цю адресу, щоб отримувати платежі",
     "sendBitcoinHere": "Надішліть Bitcoin на цю адресу для автоматичної конвертації в Lightning",
     "generatingBitcoin": "Створення адреси Bitcoin...",
+    "generatingThing": "Створення {{thing}}...",
+    "sparkAddressFailed": "Не вдалося створити адресу Spark: {{error}}",
+    "bitcoinAddressFailed": "Не вдалося створити адресу Bitcoin: {{error}}",
+    "invoiceFailed": "Не вдалося створити інвойс: {{error}}",
     "generatingSpark": "Створення адреси Spark...",
     "loadingLightningAddress": "Завантаження адреси Lightning...",
     "confirmUsernameChange": "Підтвердьте зміну імені користувача",
@@ -374,7 +384,7 @@
     "generateInvoice": "Сформувати інвойс",
     "descriptionPlaceholder": "За що це?",
     "amount": "Сума",
-    "specificAmount": "Створити інвойс на точну суму >",
+    "specificAmount": "Створити інвойс на точну суму",
     "lightningAddress": "Адреса Lightning",
     "createAddressPrompt": "Створіть адресу Lightning, щоб отримувати платежі простіше",
     "createLightningAddress": "Створити адресу Lightning",
@@ -481,7 +491,8 @@
     "authFailed": "Не вдалося пройти автентифікацію"
   },
   "stableBalance": {
-    "disclaimerTitle": "Стабільний баланс"
+    "disclaimerTitle": "Стабільний баланс",
+    "notConverted": "Не конвертовано"
   },
   "send": {
     "destination": "Призначення",
@@ -758,6 +769,8 @@
     "closeAndReturn_recover": "Це можна закрити. Відкривайте Glow регулярно, поки порятунок не завершиться.",
     "movedToSafety_exit": "Частину ваших коштів переведено on-chain для безпеки. Оновіть односторонній вихід, щоб врятувати всі кошти.",
     "movedToSafety_recover": "Частину ваших коштів переведено on-chain для безпеки. Оновіть порятунок, щоб врятувати всі кошти.",
+    "unverifiedStep_exit": "Glow не зміг перевірити частину вашого виходу on-chain. Оновіть односторонній вихід, щоб продовжити.",
+    "unverifiedStep_recover": "Glow не зміг перевірити частину вашого порятунку on-chain. Оновіть порятунок, щоб продовжити.",
     "quotedJustNow": "розраховано щойно",
     "quotedMinutesAgo_one": "розраховано {{count}} хв тому",
     "quotedMinutesAgo_other": "розраховано {{count}} хв тому",

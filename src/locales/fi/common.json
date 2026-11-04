@@ -49,6 +49,8 @@
     "total": "Yhteensä",
     "genericError": "Tapahtui virhe",
     "amount": "Summa",
+    "amountAtLeast": "Summan on oltava vähintään ₿{{amount}}",
+    "amountAtMost": "Summan on oltava enintään ₿{{amount}}",
     "networkFee": "Verkkomaksu",
     "unknownError": "Tuntematon virhe",
     "mainnetOnly": "Vain mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Hae yhteystietoja",
     "clearContact": "Poista yhteystieto",
     "copyThing": "Kopioi {{label}}",
+    "openThing": "Avaa {{label}}",
     "moveUp": "Siirrä ylös",
     "moveDown": "Siirrä alas",
     "lockAutomatically": "Lukitse automaattisesti",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "sormenjälki",
+    "face": "kasvot",
+    "iris": "iiriksen skannaus",
     "generic": "biometrinen",
     "lockout": "Biometrinen avaus on lukittu. Avaa laite pääsykoodilla ja yritä uudelleen."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Käytä tätä osoitetta maksujen vastaanottamiseen",
     "sendBitcoinHere": "Lähetä bitcoinia tähän osoitteeseen automaattista Lightning-muunnosta varten",
     "generatingBitcoin": "Luodaan Bitcoin-osoitetta...",
+    "generatingThing": "Luodaan {{thing}}...",
+    "sparkAddressFailed": "Spark-osoitteen luonti ei onnistunut: {{error}}",
+    "bitcoinAddressFailed": "Bitcoin-osoitteen luonti ei onnistunut: {{error}}",
+    "invoiceFailed": "Laskun luonti ei onnistunut: {{error}}",
     "generatingSpark": "Luodaan Spark-osoitetta...",
     "loadingLightningAddress": "Ladataan Lightning-osoitetta...",
     "confirmUsernameChange": "Vahvista käyttäjänimen muutos",
@@ -370,7 +380,7 @@
     "generateInvoice": "Luo lasku",
     "descriptionPlaceholder": "Mitä varten?",
     "amount": "Summa",
-    "specificAmount": "Luo lasku tietyllä summalla →",
+    "specificAmount": "Luo lasku tietyllä summalla",
     "lightningAddress": "Lightning-osoite",
     "createAddressPrompt": "Luo Lightning-osoite ottaaksesi maksuja vastaan helpommin",
     "createLightningAddress": "Luo Lightning-osoite",
@@ -477,7 +487,8 @@
     "authFailed": "Tunnistautuminen epäonnistui"
   },
   "stableBalance": {
-    "disclaimerTitle": "Vakaa saldo"
+    "disclaimerTitle": "Vakaa saldo",
+    "notConverted": "Ei muunnettu"
   },
   "send": {
     "destination": "Kohde",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "Voit sulkea tämän. Avaa Glow säännöllisesti, kunnes talteenotto on valmis.",
     "movedToSafety_exit": "Osa varoistasi siirrettiin on-chain turvaan. Päivitä yksipuolinen poistumisesi, jotta saat kaikki varasi talteen.",
     "movedToSafety_recover": "Osa varoistasi siirrettiin on-chain turvaan. Päivitä talteenottosi, jotta saat kaikki varasi talteen.",
+    "unverifiedStep_exit": "Glow ei voinut tarkistaa osaa poistumisestasi on-chain. Päivitä yksipuolinen poistumisesi jatkaaksesi.",
+    "unverifiedStep_recover": "Glow ei voinut tarkistaa osaa talteenotostasi on-chain. Päivitä talteenottosi jatkaaksesi.",
     "quotedJustNow": "laskettu juuri nyt",
     "quotedMinutesAgo_one": "laskettu {{count}} min sitten",
     "quotedMinutesAgo_other": "laskettu {{count}} min sitten",

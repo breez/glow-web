@@ -396,7 +396,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
 
                     {receive.currentStep === 'loading' && (
                       <div className="flex flex-col items-center justify-center h-40" data-testid="invoice-generation-loading">
-                        <LoadingSpinner text={`Generating ${getQRTitle().toLowerCase()}...`} />
+                        <LoadingSpinner text={t('receive.generatingThing', { thing: getQRTitle() })} />
                       </div>
                     )}
 

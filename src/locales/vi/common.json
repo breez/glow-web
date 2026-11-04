@@ -49,6 +49,8 @@
     "total": "Tổng",
     "genericError": "Đã xảy ra lỗi",
     "amount": "Số tiền",
+    "amountAtLeast": "Số tiền phải ít nhất là ₿{{amount}}",
+    "amountAtMost": "Số tiền không được vượt quá ₿{{amount}}",
     "networkFee": "Phí mạng",
     "unknownError": "Lỗi không xác định",
     "mainnetOnly": "Chỉ mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Tìm liên hệ",
     "clearContact": "Xóa liên hệ",
     "copyThing": "Sao chép {{label}}",
+    "openThing": "Mở {{label}}",
     "moveUp": "Di chuyển lên",
     "moveDown": "Di chuyển xuống",
     "lockAutomatically": "Tự động khóa",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "dấu vân tay",
+    "face": "khuôn mặt",
+    "iris": "quét mống mắt",
     "generic": "sinh trắc học",
     "lockout": "Mở khóa sinh trắc học đang bị chặn. Hãy mở khóa thiết bị bằng mật mã rồi thử lại."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Dùng địa chỉ này để nhận thanh toán",
     "sendBitcoinHere": "Gửi Bitcoin tới địa chỉ này để tự động chuyển đổi sang Lightning",
     "generatingBitcoin": "Đang tạo địa chỉ Bitcoin...",
+    "generatingThing": "Đang tạo {{thing}}...",
+    "sparkAddressFailed": "Không tạo được địa chỉ Spark: {{error}}",
+    "bitcoinAddressFailed": "Không tạo được địa chỉ Bitcoin: {{error}}",
+    "invoiceFailed": "Không tạo được hóa đơn: {{error}}",
     "generatingSpark": "Đang tạo địa chỉ Spark...",
     "loadingLightningAddress": "Đang tải địa chỉ Lightning...",
     "confirmUsernameChange": "Xác nhận đổi tên người dùng",
@@ -370,7 +380,7 @@
     "generateInvoice": "Tạo hóa đơn",
     "descriptionPlaceholder": "Khoản này để làm gì?",
     "amount": "Số tiền",
-    "specificAmount": "Tạo hóa đơn với số tiền cụ thể >",
+    "specificAmount": "Tạo hóa đơn với số tiền cụ thể",
     "lightningAddress": "Địa chỉ Lightning",
     "createAddressPrompt": "Tạo một địa chỉ Lightning để nhận thanh toán dễ dàng",
     "createLightningAddress": "Tạo địa chỉ Lightning",
@@ -477,7 +487,8 @@
     "authFailed": "Xác thực thất bại"
   },
   "stableBalance": {
-    "disclaimerTitle": "Số dư ổn định"
+    "disclaimerTitle": "Số dư ổn định",
+    "notConverted": "Chưa chuyển đổi"
   },
   "send": {
     "destination": "Đích đến",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "Bạn có thể đóng cái này. Hãy mở Glow thường xuyên cho đến khi quá trình thu hồi xong.",
     "movedToSafety_exit": "Một phần tiền của bạn đã được chuyển lên on-chain cho an toàn. Hãy cập nhật quá trình thoát đơn phương để thu hồi toàn bộ tiền của bạn.",
     "movedToSafety_recover": "Một phần tiền của bạn đã được chuyển lên on-chain cho an toàn. Hãy cập nhật quá trình thu hồi để thu hồi toàn bộ tiền của bạn.",
+    "unverifiedStep_exit": "Glow không kiểm tra được một phần quá trình thoát của bạn trên on-chain. Hãy cập nhật quá trình thoát đơn phương để tiếp tục.",
+    "unverifiedStep_recover": "Glow không kiểm tra được một phần quá trình thu hồi của bạn trên on-chain. Hãy cập nhật quá trình thu hồi để tiếp tục.",
     "quotedJustNow": "vừa tính xong",
     "quotedMinutesAgo_one": "tính cách đây {{count}} phút",
     "quotedMinutesAgo_other": "tính cách đây {{count}} phút",

@@ -49,6 +49,8 @@
     "total": "Toplam",
     "genericError": "Bir hata oluştu",
     "amount": "Tutar",
+    "amountAtLeast": "Tutar en az ₿{{amount}} olmalı",
+    "amountAtMost": "Tutar en fazla ₿{{amount}} olmalı",
     "networkFee": "Ağ ücreti",
     "unknownError": "Bilinmeyen hata",
     "mainnetOnly": "Yalnızca mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Kişilerde ara",
     "clearContact": "Kişiyi kaldır",
     "copyThing": "{{label}} kopyala",
+    "openThing": "{{label}} aç",
     "moveUp": "Yukarı taşı",
     "moveDown": "Aşağı taşı",
     "lockAutomatically": "Otomatik kilitle",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "parmak izi",
+    "face": "yüz",
+    "iris": "iris taraması",
     "generic": "biyometrik",
     "lockout": "Biyometrik kilit açma engellendi. Cihazını şifrenle aç ve tekrar dene."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Ödeme almak için bu adresi kullan",
     "sendBitcoinHere": "Otomatik Lightning dönüşümü için bu adrese Bitcoin gönder",
     "generatingBitcoin": "Bitcoin adresi oluşturuluyor...",
+    "generatingThing": "{{thing}} oluşturuluyor...",
+    "sparkAddressFailed": "Spark adresi oluşturulamadı: {{error}}",
+    "bitcoinAddressFailed": "Bitcoin adresi oluşturulamadı: {{error}}",
+    "invoiceFailed": "Fatura oluşturulamadı: {{error}}",
     "generatingSpark": "Spark adresi oluşturuluyor...",
     "loadingLightningAddress": "Lightning adresi yükleniyor...",
     "confirmUsernameChange": "Kullanıcı adı değişikliğini onayla",
@@ -370,7 +380,7 @@
     "generateInvoice": "Fatura üret",
     "descriptionPlaceholder": "Ne için?",
     "amount": "Tutar",
-    "specificAmount": "Belirli bir tutarla fatura oluştur →",
+    "specificAmount": "Belirli bir tutarla fatura oluştur",
     "lightningAddress": "Lightning adresi",
     "createAddressPrompt": "Ödemeleri daha kolay almak için bir Lightning adresi oluştur",
     "createLightningAddress": "Lightning adresi oluştur",
@@ -477,7 +487,8 @@
     "authFailed": "Kimlik doğrulama başarısız"
   },
   "stableBalance": {
-    "disclaimerTitle": "Sabit bakiye"
+    "disclaimerTitle": "Sabit bakiye",
+    "notConverted": "Dönüştürülmedi"
   },
   "send": {
     "destination": "Hedef",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "Bunu kapatabilirsin. Geri alma bitene kadar Glow'u düzenli olarak aç.",
     "movedToSafety_exit": "Paranın bir kısmı güvende kalması için on-chain taşındı. Tüm paranı geri almak için tek taraflı çıkışını güncelle.",
     "movedToSafety_recover": "Paranın bir kısmı güvende kalması için on-chain taşındı. Tüm paranı geri almak için geri alma işlemini güncelle.",
+    "unverifiedStep_exit": "Glow, çıkışının bir kısmını on-chain doğrulayamadı. Devam etmek için tek taraflı çıkışını güncelle.",
+    "unverifiedStep_recover": "Glow, geri alma işleminin bir kısmını on-chain doğrulayamadı. Devam etmek için geri alma işlemini güncelle.",
     "quotedJustNow": "az önce belirlendi",
     "quotedMinutesAgo_one": "{{count}} dk önce belirlendi",
     "quotedMinutesAgo_other": "{{count}} dk önce belirlendi",

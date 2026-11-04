@@ -49,6 +49,8 @@
     "total": "รวม",
     "genericError": "เกิดข้อผิดพลาด",
     "amount": "จำนวน",
+    "amountAtLeast": "จำนวนต้องไม่น้อยกว่า ₿{{amount}}",
+    "amountAtMost": "จำนวนต้องไม่เกิน ₿{{amount}}",
     "networkFee": "ค่าธรรมเนียมเครือข่าย",
     "unknownError": "ข้อผิดพลาดที่ไม่รู้จัก",
     "mainnetOnly": "mainnet เท่านั้น",
@@ -78,6 +80,7 @@
     "searchContacts": "ค้นหารายชื่อ",
     "clearContact": "ล้างรายชื่อ",
     "copyThing": "คัดลอก {{label}}",
+    "openThing": "เปิด {{label}}",
     "moveUp": "เลื่อนขึ้น",
     "moveDown": "เลื่อนลง",
     "lockAutomatically": "ล็อกอัตโนมัติ",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "ลายนิ้วมือ",
+    "face": "ใบหน้า",
+    "iris": "สแกนม่านตา",
     "generic": "ไบโอเมตริก",
     "lockout": "การปลดล็อกด้วยไบโอเมตริกถูกล็อกอยู่ ปลดล็อกอุปกรณ์ด้วยรหัสผ่านของคุณแล้วลองอีกครั้ง"
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "ใช้ที่อยู่นี้เพื่อรับการชำระเงิน",
     "sendBitcoinHere": "ส่ง Bitcoin มาที่ที่อยู่นี้เพื่อแปลงเป็น Lightning อัตโนมัติ",
     "generatingBitcoin": "กำลังสร้างที่อยู่ Bitcoin...",
+    "generatingThing": "กำลังสร้าง {{thing}}...",
+    "sparkAddressFailed": "สร้างที่อยู่ Spark ไม่ได้: {{error}}",
+    "bitcoinAddressFailed": "สร้างที่อยู่ Bitcoin ไม่ได้: {{error}}",
+    "invoiceFailed": "สร้างใบแจ้งหนี้ไม่ได้: {{error}}",
     "generatingSpark": "กำลังสร้างที่อยู่ Spark...",
     "loadingLightningAddress": "กำลังโหลดที่อยู่ Lightning...",
     "confirmUsernameChange": "ยืนยันการเปลี่ยนชื่อผู้ใช้",
@@ -370,7 +380,7 @@
     "generateInvoice": "สร้างใบแจ้งหนี้",
     "descriptionPlaceholder": "รายการนี้สำหรับอะไร?",
     "amount": "จำนวน",
-    "specificAmount": "สร้างใบแจ้งหนี้ด้วยจำนวนที่ระบุ >",
+    "specificAmount": "สร้างใบแจ้งหนี้ด้วยจำนวนที่ระบุ",
     "lightningAddress": "ที่อยู่ Lightning",
     "createAddressPrompt": "สร้างที่อยู่ Lightning เพื่อรับการชำระเงินได้ง่าย",
     "createLightningAddress": "สร้างที่อยู่ Lightning",
@@ -477,7 +487,8 @@
     "authFailed": "ยืนยันตัวตนไม่สำเร็จ"
   },
   "stableBalance": {
-    "disclaimerTitle": "ยอดคงเหลือแบบคงที่"
+    "disclaimerTitle": "ยอดคงเหลือแบบคงที่",
+    "notConverted": "ยังไม่ได้แปลง"
   },
   "send": {
     "destination": "ปลายทาง",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "คุณปิดหน้านี้ได้ เปิด Glow เป็นระยะจนกว่าการดึงเงินกลับจะเสร็จ",
     "movedToSafety_exit": "เงินของคุณบางส่วนถูกย้ายไป on-chain เพื่อความปลอดภัย โปรดอัปเดตการออกฝ่ายเดียวของคุณเพื่อดึงเงินทั้งหมดกลับ",
     "movedToSafety_recover": "เงินของคุณบางส่วนถูกย้ายไป on-chain เพื่อความปลอดภัย โปรดอัปเดตการดึงเงินกลับของคุณเพื่อดึงเงินทั้งหมดกลับ",
+    "unverifiedStep_exit": "Glow ตรวจสอบการออกของคุณบางส่วนบน on-chain ไม่ได้ โปรดอัปเดตการออกฝ่ายเดียวของคุณเพื่อดำเนินต่อ",
+    "unverifiedStep_recover": "Glow ตรวจสอบการดึงเงินกลับของคุณบางส่วนบน on-chain ไม่ได้ โปรดอัปเดตการดึงเงินกลับของคุณเพื่อดำเนินต่อ",
     "quotedJustNow": "คำนวณเมื่อสักครู่",
     "quotedMinutesAgo_one": "คำนวณเมื่อ {{count}} นาทีที่แล้ว",
     "quotedMinutesAgo_other": "คำนวณเมื่อ {{count}} นาทีที่แล้ว",

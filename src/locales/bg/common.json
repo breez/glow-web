@@ -49,6 +49,8 @@
     "total": "Общо",
     "genericError": "Възникна грешка",
     "amount": "Сума",
+    "amountAtLeast": "Сумата трябва да е поне ₿{{amount}}",
+    "amountAtMost": "Сумата трябва да е най-много ₿{{amount}}",
     "networkFee": "Мрежова такса",
     "unknownError": "Непозната грешка",
     "mainnetOnly": "Само mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Търсене в контактите",
     "clearContact": "Премахване на контакта",
     "copyThing": "Копиране на {{label}}",
+    "openThing": "Отваряне на {{label}}",
     "moveUp": "Преместване нагоре",
     "moveDown": "Преместване надолу",
     "lockAutomatically": "Автоматично заключване",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "пръстов отпечатък",
+    "face": "лице",
+    "iris": "сканиране на ирис",
     "generic": "биометрия",
     "lockout": "Биометричното отключване е заключено. Отключи устройството с кода си и опитай отново."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Използвайте този адрес, за да получавате плащания",
     "sendBitcoinHere": "Изпратете Bitcoin на този адрес за автоматично преобразуване към Lightning",
     "generatingBitcoin": "Създава се Bitcoin адрес...",
+    "generatingThing": "Създава се {{thing}}...",
+    "sparkAddressFailed": "Spark адресът не можа да се създаде: {{error}}",
+    "bitcoinAddressFailed": "Bitcoin адресът не можа да се създаде: {{error}}",
+    "invoiceFailed": "Фактурата не можа да се създаде: {{error}}",
     "generatingSpark": "Създава се Spark адрес...",
     "loadingLightningAddress": "Зарежда се Lightning адресът...",
     "confirmUsernameChange": "Потвърдете промяната на потребителското име",
@@ -370,7 +380,7 @@
     "generateInvoice": "Генериране на фактура",
     "descriptionPlaceholder": "За какво е?",
     "amount": "Сума",
-    "specificAmount": "Създаване на фактура с определена сума →",
+    "specificAmount": "Създаване на фактура с определена сума",
     "lightningAddress": "Lightning адрес",
     "createAddressPrompt": "Създайте Lightning адрес, за да получавате плащания по-лесно",
     "createLightningAddress": "Създаване на Lightning адрес",
@@ -477,7 +487,8 @@
     "authFailed": "Удостоверяването не бе успешно"
   },
   "stableBalance": {
-    "disclaimerTitle": "Стабилен баланс"
+    "disclaimerTitle": "Стабилен баланс",
+    "notConverted": "Неконвертирано"
   },
   "send": {
     "destination": "Получател",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "Можете да затворите това. Отваряйте Glow редовно, докато спасяването завърши.",
     "movedToSafety_exit": "Част от средствата ви бяха преместени on-chain, за да са в безопасност. Обновете едностранното си излизане, за да спасите всичките си средства.",
     "movedToSafety_recover": "Част от средствата ви бяха преместени on-chain, за да са в безопасност. Обновете спасяването си, за да спасите всичките си средства.",
+    "unverifiedStep_exit": "Glow не можа да провери част от излизането ви on-chain. Обновете едностранното си излизане, за да продължите.",
+    "unverifiedStep_recover": "Glow не можа да провери част от спасяването ви on-chain. Обновете спасяването си, за да продължите.",
     "quotedJustNow": "изчислено току-що",
     "quotedMinutesAgo_one": "изчислено преди {{count}} мин",
     "quotedMinutesAgo_other": "изчислено преди {{count}} мин",

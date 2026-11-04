@@ -124,7 +124,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
     try {
       // Confirm the user can actually pass the prompt before enabling,
       // mirroring Misty's enable flow.
-      await authenticateBiometric(t('security.enableBiometricReason', { method: biometry?.label ?? t('biometry.generic') }));
+      await authenticateBiometric(t('security.enableBiometricReason', { method: biometry ? t(biometry.labelKey) : t('biometry.generic') }));
       await setBiometricGateEnabled(true);
       setBiometricGate(true);
     } catch (e) {
@@ -280,7 +280,7 @@ const SecurityPage: React.FC<SecurityPageProps> = ({ onBack }) => {
                     ? <FaceIdIcon size="md" className="text-spark-text-secondary" />
                     : <FingerprintIcon size="md" className="text-spark-text-secondary" />}
                   <span className="text-sm font-medium text-spark-text-primary">
-                    {t('security.enableBiometric', { method: biometry.label.replace(/\b\w/g, (c) => c.toUpperCase()) })}
+                    {t('security.enableBiometric', { method: t(biometry.labelKey) })}
                   </span>
                 </div>
                 <Switch checked={biometricGate} onChange={() => { void handleToggleBiometric(); }} />

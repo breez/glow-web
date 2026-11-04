@@ -49,6 +49,8 @@
     "total": "Spolu",
     "genericError": "Došlo k chybe",
     "amount": "Suma",
+    "amountAtLeast": "Suma musí byť aspoň ₿{{amount}}",
+    "amountAtMost": "Suma musí byť najviac ₿{{amount}}",
     "networkFee": "Sieťový poplatok",
     "unknownError": "Neznáma chyba",
     "mainnetOnly": "Len mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Hľadať v kontaktoch",
     "clearContact": "Odobrať kontakt",
     "copyThing": "Kopírovať {{label}}",
+    "openThing": "Otvoriť {{label}}",
     "moveUp": "Posunúť nahor",
     "moveDown": "Posunúť nadol",
     "lockAutomatically": "Zamykať automaticky",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "odtlačok prsta",
+    "face": "tvár",
+    "iris": "sken dúhovky",
     "generic": "biometria",
     "lockout": "Biometrické odomknutie je zablokované. Odomkni zariadenie kódom a skús to znova."
   },
@@ -366,6 +372,10 @@
     "useThisAddress": "Použi túto adresu na prijímanie platieb",
     "sendBitcoinHere": "Pošli Bitcoin na túto adresu pre automatický prevod na Lightning",
     "generatingBitcoin": "Vytvára sa Bitcoin adresa...",
+    "generatingThing": "Vytvára sa {{thing}}...",
+    "sparkAddressFailed": "Spark adresu sa nepodarilo vytvoriť: {{error}}",
+    "bitcoinAddressFailed": "Bitcoin adresu sa nepodarilo vytvoriť: {{error}}",
+    "invoiceFailed": "Faktúru sa nepodarilo vytvoriť: {{error}}",
     "generatingSpark": "Vytvára sa Spark adresa...",
     "loadingLightningAddress": "Načítava sa Lightning adresa...",
     "confirmUsernameChange": "Potvrď zmenu používateľského mena",
@@ -374,7 +384,7 @@
     "generateInvoice": "Vygenerovať faktúru",
     "descriptionPlaceholder": "Za čo to je?",
     "amount": "Suma",
-    "specificAmount": "Vytvoriť faktúru s konkrétnou sumou →",
+    "specificAmount": "Vytvoriť faktúru s konkrétnou sumou",
     "lightningAddress": "Lightning adresa",
     "createAddressPrompt": "Vytvor si Lightning adresu, aby si prijímal platby ľahšie",
     "createLightningAddress": "Vytvoriť Lightning adresu",
@@ -481,7 +491,8 @@
     "authFailed": "Overenie sa nepodarilo"
   },
   "stableBalance": {
-    "disclaimerTitle": "Stabilný zostatok"
+    "disclaimerTitle": "Stabilný zostatok",
+    "notConverted": "Neprevedené"
   },
   "send": {
     "destination": "Príjemca",
@@ -757,6 +768,8 @@
     "closeAndReturn_recover": "Môžeš to zavrieť. Otváraj Glow pravidelne, kým záchrana neskončí.",
     "movedToSafety_exit": "Časť tvojich prostriedkov sa pre bezpečnosť presunula on-chain. Aktualizuj svoj jednostranný odchod, nech získaš všetky svoje prostriedky.",
     "movedToSafety_recover": "Časť tvojich prostriedkov sa pre bezpečnosť presunula on-chain. Aktualizuj svoju záchranu, nech získaš všetky svoje prostriedky.",
+    "unverifiedStep_exit": "Glow nemohol skontrolovať časť tvojho odchodu on-chain. Pre pokračovanie aktualizuj svoj jednostranný odchod.",
+    "unverifiedStep_recover": "Glow nemohol skontrolovať časť tvojej záchrany on-chain. Pre pokračovanie aktualizuj svoju záchranu.",
     "quotedJustNow": "vypočítané práve teraz",
     "quotedMinutesAgo_one": "vypočítané pred {{count}} min",
     "quotedMinutesAgo_other": "vypočítané pred {{count}} min",

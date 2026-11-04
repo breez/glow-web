@@ -49,6 +49,8 @@
     "total": "कुल",
     "genericError": "एक त्रुटि हुई",
     "amount": "राशि",
+    "amountAtLeast": "राशि कम से कम ₿{{amount}} होनी चाहिए",
+    "amountAtMost": "राशि अधिकतम ₿{{amount}} होनी चाहिए",
     "networkFee": "नेटवर्क शुल्क",
     "unknownError": "अज्ञात त्रुटि",
     "mainnetOnly": "केवल mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "संपर्क खोजें",
     "clearContact": "संपर्क मिटाएँ",
     "copyThing": "{{label}} कॉपी करें",
+    "openThing": "{{label}} खोलें",
     "moveUp": "ऊपर ले जाएँ",
     "moveDown": "नीचे ले जाएँ",
     "lockAutomatically": "अपने आप लॉक करें",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "फ़िंगरप्रिंट",
+    "face": "चेहरा",
+    "iris": "आइरिस स्कैन",
     "generic": "बायोमेट्रिक",
     "lockout": "बायोमेट्रिक अनलॉक लॉक हो गया है। अपने डिवाइस को पासकोड से अनलॉक करें और फिर कोशिश करें।"
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "भुगतान पाने के लिए यह पता इस्तेमाल करें",
     "sendBitcoinHere": "अपने आप Lightning में रूपांतरण के लिए इस पते पर Bitcoin भेजें",
     "generatingBitcoin": "Bitcoin पता बन रहा है...",
+    "generatingThing": "{{thing}} बन रहा है...",
+    "sparkAddressFailed": "Spark पता नहीं बन सका: {{error}}",
+    "bitcoinAddressFailed": "Bitcoin पता नहीं बन सका: {{error}}",
+    "invoiceFailed": "इनवॉइस नहीं बन सकी: {{error}}",
     "generatingSpark": "Spark पता बन रहा है...",
     "loadingLightningAddress": "Lightning पता लोड हो रहा है...",
     "confirmUsernameChange": "उपयोगकर्ता नाम बदलने की पुष्टि करें",
@@ -370,7 +380,7 @@
     "generateInvoice": "इनवॉइस तैयार करें",
     "descriptionPlaceholder": "यह किस लिए है?",
     "amount": "राशि",
-    "specificAmount": "तय राशि के साथ इनवॉइस बनाएँ >",
+    "specificAmount": "तय राशि के साथ इनवॉइस बनाएँ",
     "lightningAddress": "Lightning पता",
     "createAddressPrompt": "आसानी से भुगतान पाने के लिए एक Lightning पता बनाएँ",
     "createLightningAddress": "Lightning पता बनाएँ",
@@ -477,7 +487,8 @@
     "authFailed": "प्रमाणीकरण विफल हुआ"
   },
   "stableBalance": {
-    "disclaimerTitle": "स्थिर बैलेंस"
+    "disclaimerTitle": "स्थिर बैलेंस",
+    "notConverted": "बदला नहीं गया"
   },
   "send": {
     "destination": "गंतव्य",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "आप इसे बंद कर सकते हैं। बचाव पूरा होने तक Glow नियमित रूप से खोलें।",
     "movedToSafety_exit": "आपकी कुछ धनराशि सुरक्षित रखने के लिए on-chain ले जाई गई। पूरी धनराशि बचाने के लिए कृपया अपनी एकपक्षीय निकासी अपडेट करें।",
     "movedToSafety_recover": "आपकी कुछ धनराशि सुरक्षित रखने के लिए on-chain ले जाई गई। पूरी धनराशि बचाने के लिए कृपया अपना बचाव अपडेट करें।",
+    "unverifiedStep_exit": "Glow आपकी निकासी का कुछ हिस्सा on-chain जाँच नहीं सका। जारी रखने के लिए कृपया अपनी एकपक्षीय निकासी अपडेट करें।",
+    "unverifiedStep_recover": "Glow आपके बचाव का कुछ हिस्सा on-chain जाँच नहीं सका। जारी रखने के लिए कृपया अपना बचाव अपडेट करें।",
     "quotedJustNow": "अभी-अभी आँका गया",
     "quotedMinutesAgo_one": "{{count}} मिनट पहले आँका गया",
     "quotedMinutesAgo_other": "{{count}} मिनट पहले आँका गया",

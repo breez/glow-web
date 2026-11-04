@@ -87,7 +87,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
       setIsWaiting(false);
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'LNURL withdraw failed', { error: formatError(err) });
-      setError(`Withdraw failed: ${formatError(err)}`);
+      setError(t('send.withdraw.failed', { error: formatError(err) }));
       setIsWaiting(false);
     }
   };
@@ -131,7 +131,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
             inputMode="numeric"
             value={amount}
             onChange={(e) => { setAmount(e.target.value); setError(null); }}
-            placeholder={`Between ${formatWithSpaces(minSats)} and ${formatWithSpaces(maxSats)} sats`}
+            placeholder={t('send.amountRange', { min: formatWithSpaces(minSats), max: formatWithSpaces(maxSats) })}
             className={`${AMOUNT_FIELD_CLASS} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
             min={minSats}
             max={maxSats}

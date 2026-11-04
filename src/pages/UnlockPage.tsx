@@ -78,7 +78,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
   const unlockLabel = isPasskeyUnlock
     ? t('common:unlock.withPasskey')
     : !isBiometricTier ? t('common:actions.tryAgain')
-      : biometry ? t('common:unlock.withMethod', { method: biometry.label }) : t('common:unlock.unlock');
+      : biometry ? t('common:unlock.withMethod', { method: t(`common:${biometry.labelKey}`) }) : t('common:unlock.unlock');
   // No line for the passkey: the button under it already says to unlock
   // with the passkey, and the error card above it says why this screen
   // is here at all.

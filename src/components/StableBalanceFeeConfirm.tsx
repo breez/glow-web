@@ -78,7 +78,7 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
 
               {!isEstimating && feeText && (
                 <p className="text-sm text-spark-text-secondary mb-4">
-                  Conversion fee: <span className="font-mono text-spark-text-primary">{feeText}</span>
+                  {t('stableBalance.conversionFee')} <span className="font-mono text-spark-text-primary">{feeText}</span>
                 </p>
               )}
 
@@ -90,7 +90,7 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
 
               {!isEstimating && !feeText && !error && !info && (
                 <p className="text-sm text-spark-text-muted mb-4">
-                  Couldn't estimate fee
+                  {t('stableBalance.feeUnavailable')}
                 </p>
               )}
 

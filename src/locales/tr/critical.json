@@ -33,7 +33,7 @@
     "conversionFee": "Dönüşüm ücreti:",
     "feeUnavailable": "Ücret tahmin edilemedi",
     "disclaimerBody": "Bakiyen USD olarak tutulur. Gelen BTC otomatik olarak USD'ye, giden ödemeler ise tekrar BTC'ye çevrilir. Dönüşüm eşiğinin altındaki tutarlar birikene kadar bozuk para olarak kalır.",
-    "balanceTooLow": "Bakiye dönüştürmek için çok düşük — bozuk para olarak kalacak",
+    "balanceTooLow": "Bakiye dönüştürmek için çok düşük: bozuk para olarak kalacak",
     "switchToUsdFailed": "USD moduna geçilemedi. Tekrar dene.",
     "switchToBtcFailed": "BTC moduna geçilemedi. Tekrar dene.",
     "restoreTitle": "USD bakiyesi algılandı",
@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Bu çekim bağlantısında Glow'un alabileceği geçerli bir tutar yok.",
-      "wholeSats": "Sats olarak tam sayı gir"
+      "wholeSats": "Sats olarak tam sayı gir",
+      "failed": "Çekim başarısız: {{error}}"
     },
     "enterAmountIn": "Tutarı {{currency}} olarak gir",
     "amountRange": "{{min}} ile {{max}} sats arasında",

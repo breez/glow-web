@@ -199,8 +199,8 @@ const TransactionList: React.FC<TransactionListProps> = ({
     const isProcessing = !needsAction && deposit?.isMature === true;
     const isConfirming = deposit?.isMature === false;
     const outcomeLabel = crossChainOutcome === 'refunded' || isRefunded
-      ? 'Refunded'
-      : isFailed || crossChainOutcome ? 'Failed' : null;
+      ? t('paymentDetails.refunded')
+      : isFailed || crossChainOutcome ? t('transactions.failed') : null;
     const subtitle = needsAction
       ? t('transactions.tapToClaim')
       : deposit

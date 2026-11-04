@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Kiungo hiki cha kutoa hakina kiasi sahihi ambacho Glow inaweza kupokea.",
-      "wholeSats": "Weka sats kwa namba kamili"
+      "wholeSats": "Weka sats kwa namba kamili",
+      "failed": "Kutoa hakufanikiwa: {{error}}"
     },
     "enterAmountIn": "Weka kiasi kwa {{currency}}",
     "amountRange": "Kati ya {{min}} na {{max}} sats",

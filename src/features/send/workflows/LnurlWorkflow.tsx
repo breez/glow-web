@@ -196,11 +196,11 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
     // (token mode without stable balance) computes exact sats, so check it.
     if (!isTokenMode || !isStableBalanceActive) {
       if (minSats && sats < minSats) {
-        setError(`Amount must be at least ₿${formatWithSpaces(minSats)}`);
+        setError(t('common:labels.amountAtLeast', { amount: formatWithSpaces(minSats) }));
         return;
       }
       if (maxSats && sats > maxSats) {
-        setError(`Amount must be at most ₿${formatWithSpaces(maxSats)}`);
+        setError(t('common:labels.amountAtMost', { amount: formatWithSpaces(maxSats) }));
         return;
       }
     }

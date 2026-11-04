@@ -49,6 +49,8 @@
     "total": "الإجمالي",
     "genericError": "حدث خطأ",
     "amount": "المبلغ",
+    "amountAtLeast": "يجب أن يكون المبلغ ₿{{amount}} على الأقل",
+    "amountAtMost": "يجب أن يكون المبلغ ₿{{amount}} على الأكثر",
     "networkFee": "رسوم الشبكة",
     "unknownError": "خطأ غير معروف",
     "mainnetOnly": "mainnet فقط",
@@ -78,6 +80,7 @@
     "searchContacts": "البحث في جهات الاتصال",
     "clearContact": "محو جهة الاتصال",
     "copyThing": "نسخ {{label}}",
+    "openThing": "فتح {{label}}",
     "moveUp": "نقل للأعلى",
     "moveDown": "نقل للأسفل",
     "lockAutomatically": "القفل تلقائياً",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "بصمة الإصبع",
+    "face": "الوجه",
+    "iris": "مسح القزحية",
     "generic": "القياسات الحيوية",
     "lockout": "فتح القفل بالقياسات الحيوية مقفل. افتح قفل جهازك برمز المرور ثم أعد المحاولة."
   },
@@ -368,6 +374,10 @@
     "useThisAddress": "استخدم هذا العنوان لاستلام المدفوعات",
     "sendBitcoinHere": "أرسل Bitcoin إلى هذا العنوان للتحويل التلقائي إلى Lightning",
     "generatingBitcoin": "جارٍ إنشاء عنوان Bitcoin...",
+    "generatingThing": "جارٍ إنشاء {{thing}}...",
+    "sparkAddressFailed": "تعذّر إنشاء عنوان Spark: {{error}}",
+    "bitcoinAddressFailed": "تعذّر إنشاء عنوان Bitcoin: {{error}}",
+    "invoiceFailed": "تعذّر إنشاء الفاتورة: {{error}}",
     "generatingSpark": "جارٍ إنشاء عنوان Spark...",
     "loadingLightningAddress": "جارٍ تحميل عنوان Lightning...",
     "confirmUsernameChange": "تأكيد تغيير اسم المستخدم",
@@ -376,7 +386,7 @@
     "generateInvoice": "توليد فاتورة",
     "descriptionPlaceholder": "ما الغرض من هذا؟",
     "amount": "المبلغ",
-    "specificAmount": "إنشاء فاتورة بمبلغ محدّد >",
+    "specificAmount": "إنشاء فاتورة بمبلغ محدّد",
     "lightningAddress": "عنوان Lightning",
     "createAddressPrompt": "أنشئ عنوان Lightning لاستلام المدفوعات بسهولة",
     "createLightningAddress": "إنشاء عنوان Lightning",
@@ -483,7 +493,8 @@
     "authFailed": "فشل التحقق"
   },
   "stableBalance": {
-    "disclaimerTitle": "الرصيد المستقر"
+    "disclaimerTitle": "الرصيد المستقر",
+    "notConverted": "غير محوَّل"
   },
   "send": {
     "destination": "الجهة",
@@ -761,6 +772,8 @@
     "closeAndReturn_recover": "يمكنك إغلاق هذا. افتح Glow بانتظام حتى ينتهي الإنقاذ.",
     "movedToSafety_exit": "نُقل جزء من أموالك إلى on-chain للحفاظ عليها. يُرجى تحديث خروجك الأحادي لإنقاذ كل أموالك.",
     "movedToSafety_recover": "نُقل جزء من أموالك إلى on-chain للحفاظ عليها. يُرجى تحديث الإنقاذ لإنقاذ كل أموالك.",
+    "unverifiedStep_exit": "لم يتمكّن Glow من التحقّق من جزء من خروجك على on-chain. يُرجى تحديث خروجك الأحادي للمتابعة.",
+    "unverifiedStep_recover": "لم يتمكّن Glow من التحقّق من جزء من الإنقاذ على on-chain. يُرجى تحديث الإنقاذ للمتابعة.",
     "quotedJustNow": "حُسب قبل قليل",
     "quotedMinutesAgo_one": "حُسب قبل {{count}} د",
     "quotedMinutesAgo_other": "حُسب قبل {{count}} د",

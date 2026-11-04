@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "لا يحتوي رابط السحب هذا على مبلغ صحيح يمكن لـ Glow استلامه.",
-      "wholeSats": "أدخل عدداً صحيحاً من sats"
+      "wholeSats": "أدخل عدداً صحيحاً من sats",
+      "failed": "فشل السحب: {{error}}"
     },
     "enterAmountIn": "أدخل المبلغ بـ {{currency}}",
     "amountRange": "بين {{min}} و {{max}} sats",

@@ -311,8 +311,8 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
                 {mnemonic
                   ? t('backup.reveal.hintRevealed')
                   : isLoading
-                    ? t('common:backup.reveal.hintBiometricBusy', { method: biometry?.label ?? t('common:backup.reveal.methodFallbackShort') })
-                    : t('common:backup.reveal.hintBiometric', { method: biometry?.label ?? t('common:backup.reveal.methodFallback') })}
+                    ? t('common:backup.reveal.hintBiometricBusy', { method: biometry ? t(`common:${biometry.labelKey}`) : t('common:backup.reveal.methodFallbackShort') })
+                    : t('common:backup.reveal.hintBiometric', { method: biometry ? t(`common:${biometry.labelKey}`) : t('common:backup.reveal.methodFallback') })}
               </span>
             </button>
           )}
@@ -347,8 +347,8 @@ const BackupPage: React.FC<BackupPageProps> = ({ onBack, closeStyle = 'close' })
                 {fallbackTier === 'device'
                   ? t('backup.reveal.hintDeviceStored')
                   : isLoading
-                    ? t('common:backup.reveal.hintBiometricBusy', { method: biometry?.label ?? t('common:backup.reveal.methodFallbackShort') })
-                    : t('common:backup.reveal.hintBiometric', { method: biometry?.label ?? t('common:backup.reveal.methodFallback') })}
+                    ? t('common:backup.reveal.hintBiometricBusy', { method: biometry ? t(`common:${biometry.labelKey}`) : t('common:backup.reveal.methodFallbackShort') })
+                    : t('common:backup.reveal.hintBiometric', { method: biometry ? t(`common:${biometry.labelKey}`) : t('common:backup.reveal.methodFallback') })}
               </span>
             </button>
           )}

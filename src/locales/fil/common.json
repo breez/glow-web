@@ -49,6 +49,8 @@
     "total": "Kabuuan",
     "genericError": "May naganap na error",
     "amount": "Halaga",
+    "amountAtLeast": "Dapat hindi bababa sa ₿{{amount}} ang halaga",
+    "amountAtMost": "Dapat hindi lalampas sa ₿{{amount}} ang halaga",
     "networkFee": "Bayarin sa network",
     "unknownError": "Hindi kilalang error",
     "mainnetOnly": "Mainnet lamang",
@@ -78,6 +80,7 @@
     "searchContacts": "Maghanap ng contact",
     "clearContact": "I-clear ang contact",
     "copyThing": "Kopyahin ang {{label}}",
+    "openThing": "Buksan ang {{label}}",
     "moveUp": "Itaas",
     "moveDown": "Ibaba",
     "lockAutomatically": "I-lock nang automatiko",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "fingerprint",
+    "face": "mukha",
+    "iris": "iris scan",
     "generic": "biometriko",
     "lockout": "Naka-lock ang biometric unlock. I-unlock ang device mo sa passcode mo at subukan muli."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Gamitin ang address na ito para tumanggap ng bayad",
     "sendBitcoinHere": "Magpadala ng Bitcoin sa address na ito para sa automatikong conversion sa Lightning",
     "generatingBitcoin": "Gumagawa ng Bitcoin address...",
+    "generatingThing": "Gumagawa ng {{thing}}...",
+    "sparkAddressFailed": "Hindi makagawa ng Spark address: {{error}}",
+    "bitcoinAddressFailed": "Hindi makagawa ng Bitcoin address: {{error}}",
+    "invoiceFailed": "Hindi makagawa ng invoice: {{error}}",
     "generatingSpark": "Gumagawa ng Spark address...",
     "loadingLightningAddress": "Nilo-load ang Lightning Address...",
     "confirmUsernameChange": "Kumpirmahin ang Pagpalit ng Username",
@@ -370,7 +380,7 @@
     "generateInvoice": "Bumuo ng Invoice",
     "descriptionPlaceholder": "Para saan ito?",
     "amount": "Halaga",
-    "specificAmount": "Gumawa ng invoice na may tiyak na halaga >",
+    "specificAmount": "Gumawa ng invoice na may tiyak na halaga",
     "lightningAddress": "Lightning Address",
     "createAddressPrompt": "Gumawa ng Lightning Address para madaling tumanggap ng bayad",
     "createLightningAddress": "Gumawa ng Lightning Address",
@@ -477,7 +487,8 @@
     "authFailed": "Hindi matagumpay ang pag-authenticate"
   },
   "stableBalance": {
-    "disclaimerTitle": "Stable na Balanse"
+    "disclaimerTitle": "Stable na Balanse",
+    "notConverted": "Hindi na-convert"
   },
   "send": {
     "destination": "Patutunguhan",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "Maaari mo nang isara ito. Buksan ang Glow nang regular hanggang matapos ang pagsalba.",
     "movedToSafety_exit": "Inilipat on-chain ang bahagi ng pera mo para maging ligtas. I-update ang unilateral na paglabas mo para maisalba ang lahat ng pera mo.",
     "movedToSafety_recover": "Inilipat on-chain ang bahagi ng pera mo para maging ligtas. I-update ang pagsalba mo para maisalba ang lahat ng pera mo.",
+    "unverifiedStep_exit": "Hindi na-check ng Glow ang bahagi ng paglabas mo on-chain. I-update ang unilateral na paglabas mo para magpatuloy.",
+    "unverifiedStep_recover": "Hindi na-check ng Glow ang bahagi ng pagsalba mo on-chain. I-update ang pagsalba mo para magpatuloy.",
     "quotedJustNow": "kakatantya lang",
     "quotedMinutesAgo_one": "tinantya {{count}} min ang nakalipas",
     "quotedMinutesAgo_other": "tinantya {{count}} min ang nakalipas",

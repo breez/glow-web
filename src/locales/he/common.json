@@ -49,6 +49,8 @@
     "total": "סך הכול",
     "genericError": "אירעה שגיאה",
     "amount": "סכום",
+    "amountAtLeast": "הסכום חייב להיות ₿{{amount}} לפחות",
+    "amountAtMost": "הסכום חייב להיות ₿{{amount}} לכל היותר",
     "networkFee": "עמלת רשת",
     "unknownError": "שגיאה לא מזוהה",
     "mainnetOnly": "mainnet בלבד",
@@ -78,6 +80,7 @@
     "searchContacts": "חיפוש באנשי קשר",
     "clearContact": "ניקוי איש הקשר",
     "copyThing": "העתקת {{label}}",
+    "openThing": "פתיחת {{label}}",
     "moveUp": "הזזה למעלה",
     "moveDown": "הזזה למטה",
     "lockAutomatically": "נעילה אוטומטית",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "טביעת אצבע",
+    "face": "פנים",
+    "iris": "סריקת קשתית",
     "generic": "ביומטרי",
     "lockout": "שחרור הנעילה בזיהוי ביומטרי חסום. שחרר את נעילת המכשיר בקוד הגישה ונסה שוב."
   },
@@ -364,6 +370,10 @@
     "useThisAddress": "השתמש בכתובת הזו כדי לקבל תשלומים",
     "sendBitcoinHere": "שלח Bitcoin לכתובת הזו להמרה אוטומטית ל-Lightning",
     "generatingBitcoin": "יוצר כתובת Bitcoin...",
+    "generatingThing": "יוצר {{thing}}...",
+    "sparkAddressFailed": "לא ניתן ליצור כתובת Spark: {{error}}",
+    "bitcoinAddressFailed": "לא ניתן ליצור כתובת Bitcoin: {{error}}",
+    "invoiceFailed": "לא ניתן ליצור חשבונית: {{error}}",
     "generatingSpark": "יוצר כתובת Spark...",
     "loadingLightningAddress": "טוען את כתובת ה-Lightning...",
     "confirmUsernameChange": "אישור שינוי שם המשתמש",
@@ -372,7 +382,7 @@
     "generateInvoice": "הפקת חשבונית",
     "descriptionPlaceholder": "בשביל מה זה?",
     "amount": "סכום",
-    "specificAmount": "יצירת חשבונית בסכום מסוים >",
+    "specificAmount": "יצירת חשבונית בסכום מסוים",
     "lightningAddress": "כתובת Lightning",
     "createAddressPrompt": "צור כתובת Lightning כדי לקבל תשלומים בקלות",
     "createLightningAddress": "יצירת כתובת Lightning",
@@ -479,7 +489,8 @@
     "authFailed": "האימות נכשל"
   },
   "stableBalance": {
-    "disclaimerTitle": "יתרה יציבה"
+    "disclaimerTitle": "יתרה יציבה",
+    "notConverted": "לא הומר"
   },
   "send": {
     "destination": "יעד",
@@ -755,6 +766,8 @@
     "closeAndReturn_recover": "אתה יכול לסגור את זה. פתח את Glow באופן קבוע עד שהחילוץ יסתיים.",
     "movedToSafety_exit": "חלק מהכספים שלך הועבר ל-on-chain כדי לשמור עליהם. עדכן את היציאה החד-צדדית שלך כדי לחלץ את כל הכספים.",
     "movedToSafety_recover": "חלק מהכספים שלך הועבר ל-on-chain כדי לשמור עליהם. עדכן את החילוץ שלך כדי לחלץ את כל הכספים.",
+    "unverifiedStep_exit": "Glow לא הצליח לבדוק חלק מהיציאה שלך on-chain. עדכן את היציאה החד-צדדית שלך כדי להמשיך.",
+    "unverifiedStep_recover": "Glow לא הצליח לבדוק חלק מהחילוץ שלך on-chain. עדכן את החילוץ שלך כדי להמשיך.",
     "quotedJustNow": "חושב ממש עכשיו",
     "quotedMinutesAgo_one": "חושב לפני {{count}} דק'",
     "quotedMinutesAgo_other": "חושב לפני {{count}} דק'",

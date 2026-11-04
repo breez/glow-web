@@ -49,6 +49,8 @@
     "total": "合計",
     "genericError": "エラーが発生しました",
     "amount": "金額",
+    "amountAtLeast": "金額は ₿{{amount}} 以上にしてください",
+    "amountAtMost": "金額は ₿{{amount}} 以下にしてください",
     "networkFee": "ネットワーク手数料",
     "unknownError": "不明なエラー",
     "mainnetOnly": "mainnet のみ",
@@ -78,6 +80,7 @@
     "searchContacts": "連絡先を検索",
     "clearContact": "連絡先を消去",
     "copyThing": "{{label}}をコピー",
+    "openThing": "{{label}}を開く",
     "moveUp": "上へ移動",
     "moveDown": "下へ移動",
     "lockAutomatically": "自動でロック",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "指紋",
+    "face": "顔",
+    "iris": "虹彩スキャン",
     "generic": "生体認証",
     "lockout": "生体認証によるロック解除が無効になっています。パスコードでデバイスのロックを解除してから、もう一度お試しください。"
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "このアドレスを使って支払いを受け取る",
     "sendBitcoinHere": "自動で Lightning に変換するには、このアドレスに Bitcoin を送ってください",
     "generatingBitcoin": "Bitcoin アドレスを生成中...",
+    "generatingThing": "{{thing}}を生成中...",
+    "sparkAddressFailed": "Spark アドレスを生成できませんでした: {{error}}",
+    "bitcoinAddressFailed": "Bitcoin アドレスを生成できませんでした: {{error}}",
+    "invoiceFailed": "インボイスを生成できませんでした: {{error}}",
     "generatingSpark": "Spark アドレスを生成中...",
     "loadingLightningAddress": "Lightning アドレスを読み込み中...",
     "confirmUsernameChange": "ユーザー名の変更を確認",
@@ -370,7 +380,7 @@
     "generateInvoice": "インボイスを生成",
     "descriptionPlaceholder": "何のための支払いですか？",
     "amount": "金額",
-    "specificAmount": "金額を指定してインボイスを作成 >",
+    "specificAmount": "金額を指定してインボイスを作成",
     "lightningAddress": "Lightning アドレス",
     "createAddressPrompt": "Lightning アドレスを作成すると、支払いを簡単に受け取れます",
     "createLightningAddress": "Lightning アドレスを作成",
@@ -477,7 +487,8 @@
     "authFailed": "認証に失敗しました"
   },
   "stableBalance": {
-    "disclaimerTitle": "ステーブル残高"
+    "disclaimerTitle": "ステーブル残高",
+    "notConverted": "未変換"
   },
   "send": {
     "destination": "送信先",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "これは閉じてかまいません。救出が完了するまで Glow を定期的に開いてください。",
     "movedToSafety_exit": "資金の一部を安全のため on-chain へ移しました。すべての資金を救出するため、一方的な退出を更新してください。",
     "movedToSafety_recover": "資金の一部を安全のため on-chain へ移しました。すべての資金を救出するため、救出を更新してください。",
+    "unverifiedStep_exit": "Glow は退出の一部を on-chain で確認できませんでした。続けるには一方的な退出を更新してください。",
+    "unverifiedStep_recover": "Glow は救出の一部を on-chain で確認できませんでした。続けるには救出を更新してください。",
     "quotedJustNow": "たった今計算",
     "quotedMinutesAgo_one": "{{count}} 分前に計算",
     "quotedMinutesAgo_other": "{{count}} 分前に計算",

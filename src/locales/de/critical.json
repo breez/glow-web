@@ -33,7 +33,7 @@
     "conversionFee": "Umwandlungsgebühr:",
     "feeUnavailable": "Gebühr konnte nicht geschätzt werden",
     "disclaimerBody": "Dein Guthaben wird in USD gehalten. Eingehende BTC werden automatisch in USD umgewandelt, ausgehende Zahlungen zurück in BTC. Beträge unterhalb der Umwandlungsschwelle bleiben als Restbetrag, bis sie sich ansammeln.",
-    "balanceTooLow": "Das Guthaben ist zu niedrig zum Umwandeln — es bleibt als Restbetrag",
+    "balanceTooLow": "Das Guthaben ist zu niedrig zum Umwandeln: es bleibt als Restbetrag",
     "switchToUsdFailed": "Der Wechsel zu USD ist fehlgeschlagen. Versuche es erneut.",
     "switchToBtcFailed": "Der Wechsel zu BTC ist fehlgeschlagen. Versuche es erneut.",
     "restoreTitle": "USD-Guthaben erkannt",
@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Dieser Auszahlungslink enthält keinen gültigen Betrag, den Glow empfangen kann.",
-      "wholeSats": "Gib eine ganze Zahl in Sats ein"
+      "wholeSats": "Gib eine ganze Zahl in Sats ein",
+      "failed": "Auszahlung fehlgeschlagen: {{error}}"
     },
     "enterAmountIn": "Betrag in {{currency}} eingeben",
     "amountRange": "Zwischen {{min}} und {{max}} Sats",

@@ -395,7 +395,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 type="button"
                 onClick={handleSuffixTap}
                 disabled={stableBalance.isToggling}
-                aria-label={t('a11y.switchBalance', { currency: stableBalance.isActive ? 'Bitcoin' : 'USD' })}
+                aria-label={t('a11y.switchBalance', { currency: stableBalance.isActive ? t('header.bitcoin') : 'USD' })}
                 className="group inline-flex items-center cursor-pointer transition-colors disabled:opacity-50 font-display text-xs font-medium uppercase"
               >
                 <span className="mx-1.5 tracking-widest">·</span>
@@ -465,7 +465,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 {/* In USD mode the line above already shows these sats. */}
                 {conversionFailure.kind === 'deactivation' && <span>{unconvertedAmount}</span>}
                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-spark-primary/15 text-spark-primary font-sans text-[10px] font-medium uppercase">
-                  Not converted
+                  {t('stableBalance.notConverted')}
                   <ChevronRightIcon size="xs" className="w-2.5 h-2.5" />
                 </span>
               </button>

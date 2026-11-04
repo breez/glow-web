@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "この出金リンクには Glow が受け取れる有効な金額がありません。",
-      "wholeSats": "sats は整数で入力してください"
+      "wholeSats": "sats は整数で入力してください",
+      "failed": "出金に失敗しました: {{error}}"
     },
     "enterAmountIn": "金額を {{currency}} で入力",
     "amountRange": "{{min}} から {{max}} sats のあいだ",

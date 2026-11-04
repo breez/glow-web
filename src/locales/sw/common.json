@@ -49,6 +49,8 @@
     "total": "Jumla",
     "genericError": "Hitilafu imetokea",
     "amount": "Kiasi",
+    "amountAtLeast": "Kiasi lazima kiwe angalau ₿{{amount}}",
+    "amountAtMost": "Kiasi lazima kiwe ₿{{amount}} au pungufu",
     "networkFee": "Ada ya mtandao",
     "unknownError": "Hitilafu isiyojulikana",
     "mainnetOnly": "Mainnet pekee",
@@ -78,6 +80,7 @@
     "searchContacts": "Tafuta anwani",
     "clearContact": "Futa anwani",
     "copyThing": "Nakili {{label}}",
+    "openThing": "Fungua {{label}}",
     "moveUp": "Sogeza juu",
     "moveDown": "Sogeza chini",
     "lockAutomatically": "Funga kiotomatiki",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "alama ya kidole",
+    "face": "uso",
+    "iris": "skani ya iris",
     "generic": "baiometriki",
     "lockout": "Ufunguaji wa baiometriki umefungwa. Fungua kifaa chako kwa nambari ya siri kisha jaribu tena."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Tumia anwani hii ili kupokea malipo",
     "sendBitcoinHere": "Tuma Bitcoin kwenye anwani hii kwa ubadilishaji wa Lightning kiotomatiki",
     "generatingBitcoin": "Inatengeneza anwani ya Bitcoin...",
+    "generatingThing": "Inatengeneza {{thing}}...",
+    "sparkAddressFailed": "Haikuweza kutengeneza anwani ya Spark: {{error}}",
+    "bitcoinAddressFailed": "Haikuweza kutengeneza anwani ya Bitcoin: {{error}}",
+    "invoiceFailed": "Haikuweza kutengeneza ankara: {{error}}",
     "generatingSpark": "Inatengeneza anwani ya Spark...",
     "loadingLightningAddress": "Inapakia Anwani ya Lightning...",
     "confirmUsernameChange": "Thibitisha Kubadilisha Jina la Mtumiaji",
@@ -370,7 +380,7 @@
     "generateInvoice": "Zalisha Ankara",
     "descriptionPlaceholder": "Hii ni ya nini?",
     "amount": "Kiasi",
-    "specificAmount": "Tengeneza ankara yenye kiasi maalum >",
+    "specificAmount": "Tengeneza ankara yenye kiasi maalum",
     "lightningAddress": "Anwani ya Lightning",
     "createAddressPrompt": "Tengeneza Anwani ya Lightning ili kupokea malipo kwa urahisi",
     "createLightningAddress": "Tengeneza Anwani ya Lightning",
@@ -477,7 +487,8 @@
     "authFailed": "Imeshindwa kuthibitisha"
   },
   "stableBalance": {
-    "disclaimerTitle": "Salio Imara"
+    "disclaimerTitle": "Salio Imara",
+    "notConverted": "Hakibadilishwa"
   },
   "send": {
     "destination": "Lengo",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "Unaweza kufunga hii. Fungua Glow mara kwa mara hadi uokoaji ukamilike.",
     "movedToSafety_exit": "Sehemu ya fedha zako ilihamishwa on-chain ili kuziweka salama. Tafadhali sasisha kuondoka kwako kwa upande mmoja ili kuokoa fedha zako zote.",
     "movedToSafety_recover": "Sehemu ya fedha zako ilihamishwa on-chain ili kuziweka salama. Tafadhali sasisha uokoaji wako ili kuokoa fedha zako zote.",
+    "unverifiedStep_exit": "Glow haikuweza kuthibitisha sehemu ya kuondoka kwako on-chain. Tafadhali sasisha kuondoka kwako kwa upande mmoja ili kuendelea.",
+    "unverifiedStep_recover": "Glow haikuweza kuthibitisha sehemu ya uokoaji wako on-chain. Tafadhali sasisha uokoaji wako ili kuendelea.",
     "quotedJustNow": "imekadiriwa sasa hivi",
     "quotedMinutesAgo_one": "imekadiriwa dakika {{count}} zilizopita",
     "quotedMinutesAgo_other": "imekadiriwa dakika {{count}} zilizopita",

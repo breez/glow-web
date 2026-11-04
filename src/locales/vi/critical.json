@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Liên kết rút này không có số tiền hợp lệ nào Glow có thể nhận.",
-      "wholeSats": "Hãy nhập số sats là số nguyên"
+      "wholeSats": "Hãy nhập số sats là số nguyên",
+      "failed": "Rút tiền thất bại: {{error}}"
     },
     "enterAmountIn": "Nhập số tiền bằng {{currency}}",
     "amountRange": "Từ {{min}} đến {{max}} sats",

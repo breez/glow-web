@@ -33,7 +33,7 @@
     "conversionFee": "Växlingsavgift:",
     "feeUnavailable": "Avgiften kunde inte uppskattas",
     "disclaimerBody": "Ditt saldo hålls i USD. Inkommande BTC växlas automatiskt till USD, och utgående betalningar växlas tillbaka till BTC. Belopp under växlingsgränsen ligger kvar som växel tills de samlas ihop.",
-    "balanceTooLow": "Saldot är för lågt för att växlas — det blir kvar som växel",
+    "balanceTooLow": "Saldot är för lågt för att växlas: det blir kvar som växel",
     "switchToUsdFailed": "Det gick inte att byta till USD. Försök igen.",
     "switchToBtcFailed": "Det gick inte att byta till BTC. Försök igen.",
     "restoreTitle": "USD-saldo upptäckt",
@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Den här uttagslänken saknar ett giltigt belopp som Glow kan ta emot.",
-      "wholeSats": "Ange ett helt antal sats"
+      "wholeSats": "Ange ett helt antal sats",
+      "failed": "Uttaget misslyckades: {{error}}"
     },
     "enterAmountIn": "Ange beloppet i {{currency}}",
     "amountRange": "Mellan {{min}} och {{max}} sats",

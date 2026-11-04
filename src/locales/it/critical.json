@@ -33,7 +33,7 @@
     "conversionFee": "Commissione di conversione:",
     "feeUnavailable": "Impossibile stimare la commissione",
     "disclaimerBody": "Il tuo saldo è mantenuto in USD. I BTC in entrata vengono convertiti automaticamente in USD e i pagamenti in uscita vengono riconvertiti in BTC. Gli importi sotto la soglia di conversione restano come resto finché non si accumulano.",
-    "balanceTooLow": "Il saldo è troppo basso per la conversione — resterà come resto",
+    "balanceTooLow": "Il saldo è troppo basso per la conversione: resterà come resto",
     "switchToUsdFailed": "Non è stato possibile passare a USD. Riprova.",
     "switchToBtcFailed": "Non è stato possibile passare a BTC. Riprova.",
     "restoreTitle": "Rilevato saldo in USD",
@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Questo link di prelievo non ha un importo valido che Glow possa ricevere.",
-      "wholeSats": "Inserisci un numero intero di sats"
+      "wholeSats": "Inserisci un numero intero di sats",
+      "failed": "Prelievo non riuscito: {{error}}"
     },
     "enterAmountIn": "Inserisci l'importo in {{currency}}",
     "amountRange": "Tra {{min}} e {{max}} sats",

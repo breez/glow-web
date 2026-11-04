@@ -222,6 +222,7 @@ export const CodeValue: React.FC<{ label: string; value: string; href?: string; 
   href,
   copyable = false,
 }) => {
+  const { t } = useTranslation('common');
   const [copied, setCopied] = React.useState(false);
   const handleCopy = () => {
     copyToClipboard(value)
@@ -251,7 +252,7 @@ export const CodeValue: React.FC<{ label: string; value: string; href?: string; 
             });
           })}
           className="shrink-0 p-1 rounded-md hover:bg-white/5 transition-colors group"
-          aria-label={`Open ${label}`}
+          aria-label={t('a11y.openThing', { label })}
         >
           <ExternalLinkIcon className="w-3.5 h-3.5 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" />
         </button>
@@ -260,7 +261,7 @@ export const CodeValue: React.FC<{ label: string; value: string; href?: string; 
         <button
           onClick={handleCopy}
           className="shrink-0 p-1 rounded-md hover:bg-white/5 transition-colors"
-          aria-label={`Copy ${label}`}
+          aria-label={t('a11y.copyThing', { label })}
         >
           {copied
             ? <CheckIcon size="sm" className="text-spark-success" />
@@ -302,6 +303,7 @@ export const CopyableRow: React.FC<{
   display?: string;
   'data-testid'?: string;
 }> = ({ label, value, display, 'data-testid': testId }) => {
+  const { t } = useTranslation('common');
   const [copied, setCopied] = React.useState(false);
   const handleCopy = () => {
     copyToClipboard(value)
@@ -329,7 +331,7 @@ export const CopyableRow: React.FC<{
       <button
         onClick={handleCopy}
         className="shrink-0 p-1.5 rounded-md hover:bg-white/5 transition-colors"
-        aria-label={`Copy ${label}`}
+        aria-label={t('a11y.copyThing', { label })}
       >
         {copied
           ? <CheckIcon size="sm" className="text-spark-success" />
@@ -408,7 +410,7 @@ export const CopyableText: React.FC<{
               : 'bg-spark-primary text-white hover:bg-spark-primary-light'
             }
           `}
-          title={`Copy ${label}`}
+          title={t('a11y.copyThing', { label })}
           data-testid="copy-button"
         >
           <CopyIcon size="sm" />

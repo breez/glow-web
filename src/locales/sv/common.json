@@ -49,6 +49,8 @@
     "total": "Totalt",
     "genericError": "Ett fel uppstod",
     "amount": "Belopp",
+    "amountAtLeast": "Beloppet måste vara minst ₿{{amount}}",
+    "amountAtMost": "Beloppet får vara högst ₿{{amount}}",
     "networkFee": "Nätverksavgift",
     "unknownError": "Okänt fel",
     "mainnetOnly": "Endast mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Sök kontakter",
     "clearContact": "Ta bort kontakten",
     "copyThing": "Kopiera {{label}}",
+    "openThing": "Öppna {{label}}",
     "moveUp": "Flytta upp",
     "moveDown": "Flytta ner",
     "lockAutomatically": "Lås automatiskt",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "fingeravtryck",
+    "face": "ansikte",
+    "iris": "irisskanning",
     "generic": "biometrisk",
     "lockout": "Biometrisk upplåsning är låst. Lås upp enheten med din kod och försök igen."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Använd den här adressen för att ta emot betalningar",
     "sendBitcoinHere": "Skicka bitcoin till den här adressen för automatisk växling till Lightning",
     "generatingBitcoin": "Skapar Bitcoin-adress...",
+    "generatingThing": "Skapar {{thing}}...",
+    "sparkAddressFailed": "Kunde inte skapa Spark-adress: {{error}}",
+    "bitcoinAddressFailed": "Kunde inte skapa Bitcoin-adress: {{error}}",
+    "invoiceFailed": "Kunde inte skapa faktura: {{error}}",
     "generatingSpark": "Skapar Spark-adress...",
     "loadingLightningAddress": "Laddar Lightning-adressen...",
     "confirmUsernameChange": "Bekräfta ändringen av användarnamn",
@@ -370,7 +380,7 @@
     "generateInvoice": "Generera faktura",
     "descriptionPlaceholder": "Vad gäller det?",
     "amount": "Belopp",
-    "specificAmount": "Skapa en faktura med ett bestämt belopp →",
+    "specificAmount": "Skapa en faktura med ett bestämt belopp",
     "lightningAddress": "Lightning-adress",
     "createAddressPrompt": "Skapa en Lightning-adress för att ta emot betalningar enklare",
     "createLightningAddress": "Skapa Lightning-adress",
@@ -477,7 +487,8 @@
     "authFailed": "Autentiseringen misslyckades"
   },
   "stableBalance": {
-    "disclaimerTitle": "Stabilt saldo"
+    "disclaimerTitle": "Stabilt saldo",
+    "notConverted": "Inte växlat"
   },
   "send": {
     "destination": "Mottagare",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "Du kan stänga det här. Öppna Glow regelbundet till återtagningen är klar.",
     "movedToSafety_exit": "En del av dina pengar flyttades on-chain för att hållas säkra. Uppdatera din ensidiga exit för att få tillbaka allt.",
     "movedToSafety_recover": "En del av dina pengar flyttades on-chain för att hållas säkra. Uppdatera din återtagning för att få tillbaka allt.",
+    "unverifiedStep_exit": "Glow kunde inte kontrollera en del av din exit on-chain. Uppdatera din ensidiga exit för att fortsätta.",
+    "unverifiedStep_recover": "Glow kunde inte kontrollera en del av din återtagning on-chain. Uppdatera din återtagning för att fortsätta.",
     "quotedJustNow": "beräknat just nu",
     "quotedMinutesAgo_one": "beräknat för {{count}} min sedan",
     "quotedMinutesAgo_other": "beräknat för {{count}} min sedan",

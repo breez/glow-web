@@ -33,7 +33,7 @@
     "conversionFee": "Muunnosmaksu:",
     "feeUnavailable": "Maksua ei voitu arvioida",
     "disclaimerBody": "Saldoasi pidetään dollareissa. Saapuva BTC muunnetaan automaattisesti dollareiksi ja lähtevät maksut takaisin bitcoineiksi. Muunnosrajan alle jäävät summat jäävät vaihtorahaksi, kunnes niitä kertyy tarpeeksi.",
-    "balanceTooLow": "Saldo on liian pieni muunnettavaksi — se jää vaihtorahaksi",
+    "balanceTooLow": "Saldo on liian pieni muunnettavaksi: se jää vaihtorahaksi",
     "switchToUsdFailed": "Vaihto USD:hen epäonnistui. Yritä uudelleen.",
     "switchToBtcFailed": "Vaihto BTC:hen epäonnistui. Yritä uudelleen.",
     "restoreTitle": "USD-saldo havaittu",
@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Tässä nostolinkissä ei ole kelvollista summaa, jonka Glow voisi vastaanottaa.",
-      "wholeSats": "Anna kokonaisluku sateina"
+      "wholeSats": "Anna kokonaisluku sateina",
+      "failed": "Nosto epäonnistui: {{error}}"
     },
     "enterAmountIn": "Anna summa valuutassa {{currency}}",
     "amountRange": "{{min}} ja {{max}} satin väliltä",

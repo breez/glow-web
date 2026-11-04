@@ -33,7 +33,7 @@
     "conversionFee": "Poplatek za převod:",
     "feeUnavailable": "Poplatek nelze odhadnout",
     "disclaimerBody": "Tvůj zůstatek je držen v USD. Příchozí BTC se automaticky převádí na USD a odchozí platby zpět na BTC. Částky pod prahem převodu zůstávají jako drobné, dokud se nenashromáždí.",
-    "balanceTooLow": "Zůstatek je příliš nízký na převod — zůstane jako drobné",
+    "balanceTooLow": "Zůstatek je příliš nízký na převod: zůstane jako drobné",
     "switchToUsdFailed": "Přepnutí na USD se nezdařilo. Zkus to znovu.",
     "switchToBtcFailed": "Přepnutí na BTC se nezdařilo. Zkus to znovu.",
     "restoreTitle": "Zjištěn USD zůstatek",
@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Tento odkaz pro výběr neobsahuje platnou částku, kterou může Glow přijmout.",
-      "wholeSats": "Zadej celé číslo v sats"
+      "wholeSats": "Zadej celé číslo v sats",
+      "failed": "Výběr se nezdařil: {{error}}"
     },
     "enterAmountIn": "Zadej částku v {{currency}}",
     "amountRange": "Mezi {{min}} a {{max}} sats",

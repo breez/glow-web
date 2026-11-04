@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Este link de retirada não tem um valor válido que o Glow possa receber.",
-      "wholeSats": "Digite um número inteiro de sats"
+      "wholeSats": "Digite um número inteiro de sats",
+      "failed": "A retirada falhou: {{error}}"
     },
     "enterAmountIn": "Digite o valor em {{currency}}",
     "amountRange": "Entre {{min}} e {{max}} sats",

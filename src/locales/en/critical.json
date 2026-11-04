@@ -33,7 +33,7 @@
     "conversionFee": "Conversion fee:",
     "feeUnavailable": "Couldn't estimate fee",
     "disclaimerBody": "Your balance is held in USD. Incoming BTC is automatically converted to USD, and outgoing payments are converted back to BTC. Amounts under the conversion threshold remain as change until they accumulate.",
-    "balanceTooLow": "Balance too low to convert — it will remain as change",
+    "balanceTooLow": "Balance too low to convert: it will remain as change",
     "switchToUsdFailed": "Could not switch to USD. Please try again.",
     "switchToBtcFailed": "Could not switch to BTC. Please try again.",
     "restoreTitle": "USD Balance Detected",
@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "This withdraw link has no valid amount Glow can receive.",
-      "wholeSats": "Enter a whole number of sats"
+      "wholeSats": "Enter a whole number of sats",
+      "failed": "Withdraw failed: {{error}}"
     },
     "enterAmountIn": "Enter amount in {{currency}}",
     "amountRange": "Between {{min}} and {{max}} sats",

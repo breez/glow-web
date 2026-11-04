@@ -49,6 +49,8 @@
     "total": "合计",
     "genericError": "出现错误",
     "amount": "金额",
+    "amountAtLeast": "金额至少为 ₿{{amount}}",
+    "amountAtMost": "金额最多为 ₿{{amount}}",
     "networkFee": "网络费用",
     "unknownError": "未知错误",
     "mainnetOnly": "仅 mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "搜索联系人",
     "clearContact": "清除联系人",
     "copyThing": "复制{{label}}",
+    "openThing": "打开{{label}}",
     "moveUp": "上移",
     "moveDown": "下移",
     "lockAutomatically": "自动锁定",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "指纹",
+    "face": "人脸",
+    "iris": "虹膜扫描",
     "generic": "生物识别",
     "lockout": "生物识别解锁已被锁定。请用密码解锁设备后重试。"
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "用这个地址来收款",
     "sendBitcoinHere": "把 Bitcoin 发到这个地址，会自动兑换为 Lightning",
     "generatingBitcoin": "正在生成 Bitcoin 地址...",
+    "generatingThing": "正在生成 {{thing}}...",
+    "sparkAddressFailed": "无法生成 Spark 地址：{{error}}",
+    "bitcoinAddressFailed": "无法生成 Bitcoin 地址：{{error}}",
+    "invoiceFailed": "无法生成账单：{{error}}",
     "generatingSpark": "正在生成 Spark 地址...",
     "loadingLightningAddress": "正在加载 Lightning 地址...",
     "confirmUsernameChange": "确认更改用户名",
@@ -370,7 +380,7 @@
     "generateInvoice": "生成账单",
     "descriptionPlaceholder": "这笔款项是做什么的？",
     "amount": "金额",
-    "specificAmount": "创建指定金额的账单 >",
+    "specificAmount": "创建指定金额的账单",
     "lightningAddress": "Lightning 地址",
     "createAddressPrompt": "创建一个 Lightning 地址，收款更方便",
     "createLightningAddress": "创建 Lightning 地址",
@@ -477,7 +487,8 @@
     "authFailed": "验证失败"
   },
   "stableBalance": {
-    "disclaimerTitle": "稳定余额"
+    "disclaimerTitle": "稳定余额",
+    "notConverted": "未兑换"
   },
   "send": {
     "destination": "目标",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "你可以关掉这里。在找回完成前，请经常打开 Glow。",
     "movedToSafety_exit": "你的部分资金已转到 on-chain 以保安全。请更新你的单方退出，把全部资金找回。",
     "movedToSafety_recover": "你的部分资金已转到 on-chain 以保安全。请更新你的找回，把全部资金找回。",
+    "unverifiedStep_exit": "Glow 无法在 on-chain 核对你退出的一部分。请更新你的单方退出以继续。",
+    "unverifiedStep_recover": "Glow 无法在 on-chain 核对你找回的一部分。请更新你的找回以继续。",
     "quotedJustNow": "刚刚算出",
     "quotedMinutesAgo_one": "{{count}} 分钟前算出",
     "quotedMinutesAgo_other": "{{count}} 分钟前算出",

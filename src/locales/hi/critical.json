@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "इस निकासी लिंक में ऐसी कोई मान्य राशि नहीं है जो Glow ले सके।",
-      "wholeSats": "sats की पूरी संख्या डालें"
+      "wholeSats": "sats की पूरी संख्या डालें",
+      "failed": "निकासी विफल: {{error}}"
     },
     "enterAmountIn": "राशि {{currency}} में डालें",
     "amountRange": "{{min}} और {{max}} sats के बीच",

@@ -49,6 +49,8 @@
     "total": "Total",
     "genericError": "An error occurred",
     "amount": "Amount",
+    "amountAtLeast": "Amount must be at least ₿{{amount}}",
+    "amountAtMost": "Amount must be at most ₿{{amount}}",
     "networkFee": "Network fee",
     "unknownError": "Unknown error",
     "mainnetOnly": "Mainnet only",
@@ -78,6 +80,7 @@
     "searchContacts": "Search contacts",
     "clearContact": "Clear contact",
     "copyThing": "Copy {{label}}",
+    "openThing": "Open {{label}}",
     "moveUp": "Move up",
     "moveDown": "Move down",
     "lockAutomatically": "Lock automatically",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "fingerprint",
+    "face": "face",
+    "iris": "iris scan",
     "generic": "biometric",
     "lockout": "Biometric unlock is locked. Unlock your device with your passcode and try again."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Use this address to receive payments",
     "sendBitcoinHere": "Send Bitcoin to this address for automatic Lightning conversion",
     "generatingBitcoin": "Generating Bitcoin address...",
+    "generatingThing": "Generating {{thing}}...",
+    "sparkAddressFailed": "Failed to generate Spark address: {{error}}",
+    "bitcoinAddressFailed": "Failed to generate Bitcoin address: {{error}}",
+    "invoiceFailed": "Failed to generate invoice: {{error}}",
     "generatingSpark": "Generating Spark address...",
     "loadingLightningAddress": "Loading Lightning Address...",
     "confirmUsernameChange": "Confirm Username Change",
@@ -370,7 +380,7 @@
     "generateInvoice": "Generate Invoice",
     "descriptionPlaceholder": "What's this for?",
     "amount": "Amount",
-    "specificAmount": "Create invoice with specific amount →",
+    "specificAmount": "Create invoice with specific amount",
     "lightningAddress": "Lightning Address",
     "createAddressPrompt": "Create a Lightning Address to receive payments easily",
     "createLightningAddress": "Create Lightning Address",
@@ -477,7 +487,8 @@
     "authFailed": "Failed to authenticate"
   },
   "stableBalance": {
-    "disclaimerTitle": "Stable Balance"
+    "disclaimerTitle": "Stable Balance",
+    "notConverted": "Not converted"
   },
   "send": {
     "destination": "Destination",

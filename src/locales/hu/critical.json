@@ -33,7 +33,7 @@
     "conversionFee": "Átváltási díj:",
     "feeUnavailable": "A díj nem becsülhető meg",
     "disclaimerBody": "Az egyenleged USD-ben van tartva. A beérkező BTC automatikusan USD-re váltódik, a kimenő fizetések pedig vissza BTC-re. Az átváltási küszöb alatti összegek visszajáróként maradnak, amíg fel nem gyűlnek.",
-    "balanceTooLow": "Az egyenleg túl alacsony az átváltáshoz — visszajáróként marad",
+    "balanceTooLow": "Az egyenleg túl alacsony az átváltáshoz: visszajáróként marad",
     "switchToUsdFailed": "Az USD-re váltás nem sikerült. Próbáld újra.",
     "switchToBtcFailed": "A BTC-re váltás nem sikerült. Próbáld újra.",
     "restoreTitle": "USD-egyenleg észlelve",
@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Ez a kifizetési link nem tartalmaz olyan érvényes összeget, amelyet a Glow fogadni tud.",
-      "wholeSats": "Egész számot adj meg satsban"
+      "wholeSats": "Egész számot adj meg satsban",
+      "failed": "A kifizetés nem sikerült: {{error}}"
     },
     "enterAmountIn": "Add meg az összeget ebben: {{currency}}",
     "amountRange": "{{min}} és {{max}} sats között",

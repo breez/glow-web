@@ -33,7 +33,7 @@
     "conversionFee": "Opłata za przewalutowanie:",
     "feeUnavailable": "Nie udało się oszacować opłaty",
     "disclaimerBody": "Twoje saldo jest utrzymywane w USD. Przychodzące BTC są automatycznie przeliczane na USD, a płatności wychodzące z powrotem na BTC. Kwoty poniżej progu przewalutowania pozostają jako reszta, dopóki się nie uzbierają.",
-    "balanceTooLow": "Saldo jest zbyt niskie do konwersji — pozostanie jako reszta",
+    "balanceTooLow": "Saldo jest zbyt niskie do konwersji: pozostanie jako reszta",
     "switchToUsdFailed": "Nie udało się przełączyć na USD. Spróbuj ponownie.",
     "switchToBtcFailed": "Nie udało się przełączyć na BTC. Spróbuj ponownie.",
     "restoreTitle": "Wykryto saldo USD",
@@ -67,7 +67,8 @@
     },
     "withdraw": {
       "noValidAmount": "Ten link do wypłaty nie zawiera prawidłowej kwoty, którą Glow może przyjąć.",
-      "wholeSats": "Podaj liczbę całkowitą w sats"
+      "wholeSats": "Podaj liczbę całkowitą w sats",
+      "failed": "Wypłata się nie udała: {{error}}"
     },
     "enterAmountIn": "Podaj kwotę w {{currency}}",
     "amountRange": "Od {{min}} do {{max}} sats",

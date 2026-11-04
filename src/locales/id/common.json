@@ -49,6 +49,8 @@
     "total": "Total",
     "genericError": "Terjadi kesalahan",
     "amount": "Jumlah",
+    "amountAtLeast": "Jumlah minimal harus ₿{{amount}}",
+    "amountAtMost": "Jumlah maksimal harus ₿{{amount}}",
     "networkFee": "Biaya jaringan",
     "unknownError": "Kesalahan tidak diketahui",
     "mainnetOnly": "Hanya mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Cari kontak",
     "clearContact": "Hapus kontak",
     "copyThing": "Salin {{label}}",
+    "openThing": "Buka {{label}}",
     "moveUp": "Pindah ke atas",
     "moveDown": "Pindah ke bawah",
     "lockAutomatically": "Kunci otomatis",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "sidik jari",
+    "face": "wajah",
+    "iris": "pemindaian iris",
     "generic": "biometrik",
     "lockout": "Pembukaan biometrik terkunci. Buka kunci perangkat Anda dengan kode sandi lalu coba lagi."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Gunakan alamat ini untuk menerima pembayaran",
     "sendBitcoinHere": "Kirim Bitcoin ke alamat ini untuk konversi Lightning otomatis",
     "generatingBitcoin": "Membuat alamat Bitcoin...",
+    "generatingThing": "Membuat {{thing}}...",
+    "sparkAddressFailed": "Alamat Spark tidak dapat dibuat: {{error}}",
+    "bitcoinAddressFailed": "Alamat Bitcoin tidak dapat dibuat: {{error}}",
+    "invoiceFailed": "Faktur tidak dapat dibuat: {{error}}",
     "generatingSpark": "Membuat alamat Spark...",
     "loadingLightningAddress": "Memuat Alamat Lightning...",
     "confirmUsernameChange": "Konfirmasi Perubahan Nama Pengguna",
@@ -370,7 +380,7 @@
     "generateInvoice": "Buat Faktur",
     "descriptionPlaceholder": "Untuk apa ini?",
     "amount": "Jumlah",
-    "specificAmount": "Buat faktur dengan jumlah tertentu >",
+    "specificAmount": "Buat faktur dengan jumlah tertentu",
     "lightningAddress": "Alamat Lightning",
     "createAddressPrompt": "Buat Alamat Lightning agar lebih mudah menerima pembayaran",
     "createLightningAddress": "Buat Alamat Lightning",
@@ -477,7 +487,8 @@
     "authFailed": "Gagal mengautentikasi"
   },
   "stableBalance": {
-    "disclaimerTitle": "Saldo Stabil"
+    "disclaimerTitle": "Saldo Stabil",
+    "notConverted": "Belum dikonversi"
   },
   "send": {
     "destination": "Tujuan",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "Anda bisa menutup ini. Buka Glow secara berkala sampai penyelamatan selesai.",
     "movedToSafety_exit": "Sebagian dana Anda dipindahkan ke on-chain agar aman. Perbarui keluar sepihak Anda untuk menyelamatkan seluruh dana Anda.",
     "movedToSafety_recover": "Sebagian dana Anda dipindahkan ke on-chain agar aman. Perbarui penyelamatan Anda untuk menyelamatkan seluruh dana Anda.",
+    "unverifiedStep_exit": "Glow tidak dapat memeriksa sebagian proses keluar Anda di on-chain. Perbarui keluar sepihak Anda untuk melanjutkan.",
+    "unverifiedStep_recover": "Glow tidak dapat memeriksa sebagian penyelamatan Anda di on-chain. Perbarui penyelamatan Anda untuk melanjutkan.",
     "quotedJustNow": "dihitung baru saja",
     "quotedMinutesAgo_one": "dihitung {{count}} mnt lalu",
     "quotedMinutesAgo_other": "dihitung {{count}} mnt lalu",

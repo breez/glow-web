@@ -51,7 +51,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
       className={`${className} show-amount-panel-button`}
       data-testid="show-amount-panel-button"
     >
-      Create invoice with specific amount →
+      {t('receive.specificAmount')}
     </TextButton>
   );
   // A message in the QR slot takes the card's width, so the dock and caption stay put.
@@ -61,7 +61,7 @@ const LightningAddressDisplay: React.FC<LightningAddressDisplayProps> = ({
     return section === 'qr' ? slot(
       <AlertCard variant="info" title={t('receive.lightningUnavailable')} className="w-full text-start">
         <p className="text-spark-text-secondary text-sm" data-testid="lightning-address-unsupported">
-          They&apos;re not supported in this environment.
+          {t('receive.addressUnavailable')}
         </p>
       </AlertCard>,
     ) : (

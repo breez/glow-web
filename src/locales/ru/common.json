@@ -49,6 +49,8 @@
     "total": "Итого",
     "genericError": "Произошла ошибка",
     "amount": "Сумма",
+    "amountAtLeast": "Сумма должна быть не меньше ₿{{amount}}",
+    "amountAtMost": "Сумма должна быть не больше ₿{{amount}}",
     "networkFee": "Комиссия сети",
     "unknownError": "Неизвестная ошибка",
     "mainnetOnly": "Только mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Поиск контактов",
     "clearContact": "Очистить контакт",
     "copyThing": "Копировать {{label}}",
+    "openThing": "Открыть {{label}}",
     "moveUp": "Переместить вверх",
     "moveDown": "Переместить вниз",
     "lockAutomatically": "Блокировать автоматически",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "отпечаток пальца",
+    "face": "лицо",
+    "iris": "сканирование радужки",
     "generic": "биометрия",
     "lockout": "Разблокировка по биометрии заблокирована. Разблокируйте устройство паролем и повторите попытку."
   },
@@ -366,6 +372,10 @@
     "useThisAddress": "Используйте этот адрес, чтобы получать платежи",
     "sendBitcoinHere": "Отправьте Bitcoin на этот адрес для автоматической конвертации в Lightning",
     "generatingBitcoin": "Создание адреса Bitcoin...",
+    "generatingThing": "Создание {{thing}}...",
+    "sparkAddressFailed": "Не удалось создать адрес Spark: {{error}}",
+    "bitcoinAddressFailed": "Не удалось создать адрес Bitcoin: {{error}}",
+    "invoiceFailed": "Не удалось создать инвойс: {{error}}",
     "generatingSpark": "Создание адреса Spark...",
     "loadingLightningAddress": "Загрузка адреса Lightning...",
     "confirmUsernameChange": "Подтвердите смену имени пользователя",
@@ -374,7 +384,7 @@
     "generateInvoice": "Сформировать инвойс",
     "descriptionPlaceholder": "За что это?",
     "amount": "Сумма",
-    "specificAmount": "Создать инвойс на точную сумму >",
+    "specificAmount": "Создать инвойс на точную сумму",
     "lightningAddress": "Адрес Lightning",
     "createAddressPrompt": "Создайте адрес Lightning, чтобы получать платежи проще",
     "createLightningAddress": "Создать адрес Lightning",
@@ -481,7 +491,8 @@
     "authFailed": "Не удалось пройти аутентификацию"
   },
   "stableBalance": {
-    "disclaimerTitle": "Стабильный баланс"
+    "disclaimerTitle": "Стабильный баланс",
+    "notConverted": "Не конвертировано"
   },
   "send": {
     "destination": "Назначение",
@@ -758,6 +769,8 @@
     "closeAndReturn_recover": "Это можно закрыть. Открывайте Glow регулярно, пока спасение не завершится.",
     "movedToSafety_exit": "Часть ваших средств переведена on-chain для сохранности. Обновите односторонний выход, чтобы спасти все средства.",
     "movedToSafety_recover": "Часть ваших средств переведена on-chain для сохранности. Обновите спасение, чтобы спасти все средства.",
+    "unverifiedStep_exit": "Glow не смог проверить часть вашего выхода on-chain. Обновите односторонний выход, чтобы продолжить.",
+    "unverifiedStep_recover": "Glow не смог проверить часть вашего спасения on-chain. Обновите спасение, чтобы продолжить.",
     "quotedJustNow": "рассчитано только что",
     "quotedMinutesAgo_one": "рассчитано {{count}} мин назад",
     "quotedMinutesAgo_other": "рассчитано {{count}} мин назад",

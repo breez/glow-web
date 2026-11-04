@@ -49,6 +49,8 @@
     "total": "Σύνολο",
     "genericError": "Παρουσιάστηκε σφάλμα",
     "amount": "Ποσό",
+    "amountAtLeast": "Το ποσό πρέπει να είναι τουλάχιστον ₿{{amount}}",
+    "amountAtMost": "Το ποσό πρέπει να είναι το ανώτερο ₿{{amount}}",
     "networkFee": "Χρέωση δικτύου",
     "unknownError": "Άγνωστο σφάλμα",
     "mainnetOnly": "Μόνο mainnet",
@@ -78,6 +80,7 @@
     "searchContacts": "Αναζήτηση επαφών",
     "clearContact": "Αφαίρεση επαφής",
     "copyThing": "Αντιγραφή {{label}}",
+    "openThing": "Άνοιγμα {{label}}",
     "moveUp": "Μετακίνηση επάνω",
     "moveDown": "Μετακίνηση κάτω",
     "lockAutomatically": "Αυτόματο κλείδωμα",
@@ -86,6 +89,9 @@
   "biometry": {
     "faceId": "Face ID",
     "touchId": "Touch ID",
+    "fingerprint": "δακτυλικό αποτύπωμα",
+    "face": "πρόσωπο",
+    "iris": "σάρωση ίριδας",
     "generic": "βιομετρικά",
     "lockout": "Το βιομετρικό ξεκλείδωμα είναι κλειδωμένο. Ξεκλείδωσε τη συσκευή με τον κωδικό σου και δοκίμασε ξανά."
   },
@@ -362,6 +368,10 @@
     "useThisAddress": "Χρησιμοποιήστε αυτήν τη διεύθυνση για να λαμβάνετε πληρωμές",
     "sendBitcoinHere": "Στείλτε Bitcoin σε αυτήν τη διεύθυνση για αυτόματη μετατροπή σε Lightning",
     "generatingBitcoin": "Δημιουργία διεύθυνσης Bitcoin...",
+    "generatingThing": "Δημιουργία {{thing}}...",
+    "sparkAddressFailed": "Δεν ήταν δυνατή η δημιουργία της διεύθυνσης Spark: {{error}}",
+    "bitcoinAddressFailed": "Δεν ήταν δυνατή η δημιουργία της διεύθυνσης Bitcoin: {{error}}",
+    "invoiceFailed": "Δεν ήταν δυνατή η δημιουργία του τιμολογίου: {{error}}",
     "generatingSpark": "Δημιουργία διεύθυνσης Spark...",
     "loadingLightningAddress": "Φόρτωση διεύθυνσης Lightning...",
     "confirmUsernameChange": "Επιβεβαίωση αλλαγής ονόματος χρήστη",
@@ -370,7 +380,7 @@
     "generateInvoice": "Δημιουργία τιμολογίου",
     "descriptionPlaceholder": "Για ποιον λόγο;",
     "amount": "Ποσό",
-    "specificAmount": "Δημιουργία τιμολογίου με συγκεκριμένο ποσό →",
+    "specificAmount": "Δημιουργία τιμολογίου με συγκεκριμένο ποσό",
     "lightningAddress": "Διεύθυνση Lightning",
     "createAddressPrompt": "Δημιουργήστε διεύθυνση Lightning για να λαμβάνετε πληρωμές πιο εύκολα",
     "createLightningAddress": "Δημιουργία διεύθυνσης Lightning",
@@ -477,7 +487,8 @@
     "authFailed": "Η ταυτοποίηση απέτυχε"
   },
   "stableBalance": {
-    "disclaimerTitle": "Σταθερό υπόλοιπο"
+    "disclaimerTitle": "Σταθερό υπόλοιπο",
+    "notConverted": "Δεν μετατράπηκε"
   },
   "send": {
     "destination": "Προορισμός",
@@ -752,6 +763,8 @@
     "closeAndReturn_recover": "Μπορείτε να το κλείσετε. Ανοίγετε το Glow τακτικά μέχρι να τελειώσει η διάσωση.",
     "movedToSafety_exit": "Μέρος των χρημάτων σας μετακινήθηκε on-chain για να είναι ασφαλές. Ενημερώστε τη μονομερή έξοδό σας για να διασώσετε όλα τα χρήματά σας.",
     "movedToSafety_recover": "Μέρος των χρημάτων σας μετακινήθηκε on-chain για να είναι ασφαλές. Ενημερώστε τη διάσωσή σας για να διασώσετε όλα τα χρήματά σας.",
+    "unverifiedStep_exit": "Το Glow δεν μπόρεσε να ελέγξει μέρος της εξόδου σας on-chain. Ενημερώστε τη μονομερή έξοδό σας για να συνεχίσετε.",
+    "unverifiedStep_recover": "Το Glow δεν μπόρεσε να ελέγξει μέρος της διάσωσής σας on-chain. Ενημερώστε τη διάσωσή σας για να συνεχίσετε.",
     "quotedJustNow": "υπολογίστηκε μόλις τώρα",
     "quotedMinutesAgo_one": "υπολογίστηκε πριν {{count}} λεπτό",
     "quotedMinutesAgo_other": "υπολογίστηκε πριν {{count}} λεπτά",
