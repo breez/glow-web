@@ -388,10 +388,10 @@
     "editAddress": "Muokkaa osoitetta",
     "createAddress": "Luo Lightning-osoite",
     "addressUnavailable": "Lightning-osoitteet eivät ole käytettävissä tässä ympäristössä.",
-    "loadAddressFailed": "Lightning-osoitteen lataus epäonnistui",
+    "loadAddressFailed": "Lightning-osoitteen lataus epäonnistui. Yritä uudelleen.",
     "enterUsername": "Anna käyttäjänimi",
     "usernameUnavailable": "Tämä käyttäjänimi ei ole vapaana",
-    "saveAddressFailed": "Lightning-osoitteen tallennus epäonnistui",
+    "saveAddressFailed": "Lightning-osoitteen tallennus epäonnistui. Yritä uudelleen.",
     "invalidAmount": "Virheellinen summa",
     "invalidAmountEntry": "Anna kelvollinen summa",
     "enterAmountSats": "Anna summa sateina",
@@ -626,6 +626,7 @@
     "refundFailed": "Talletuksen hyvitys epäonnistui",
     "getRefund": "Hae hyvitys",
     "readingFeeRates": "Luetaan nykyisiä maksuja...",
+    "feeRatesFailed": "Nykyisten maksujen luku epäonnistui. Palaa takaisin ja yritä uudelleen.",
     "loading": "Ladataan hylättyjä talletuksia..."
   },
   "deposit": {

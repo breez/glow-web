@@ -388,10 +388,10 @@
     "editAddress": "Adresi düzenle",
     "createAddress": "Lightning adresi oluştur",
     "addressUnavailable": "Bu ortamda Lightning adresleri kullanılamıyor.",
-    "loadAddressFailed": "Lightning adresi yüklenemedi",
+    "loadAddressFailed": "Lightning adresi yüklenemedi. Tekrar dene.",
     "enterUsername": "Bir kullanıcı adı gir",
     "usernameUnavailable": "Bu kullanıcı adı kullanılamıyor",
-    "saveAddressFailed": "Lightning adresi kaydedilemedi",
+    "saveAddressFailed": "Lightning adresi kaydedilemedi. Tekrar dene.",
     "invalidAmount": "Geçersiz tutar",
     "invalidAmountEntry": "Geçerli bir tutar gir",
     "enterAmountSats": "Tutarı sats olarak gir",
@@ -626,6 +626,7 @@
     "refundFailed": "Yatırma geri ödenemedi",
     "getRefund": "Geri ödeme al",
     "readingFeeRates": "Güncel ücretler okunuyor...",
+    "feeRatesFailed": "Güncel ücretler okunamadı. Geri dönüp tekrar dene.",
     "loading": "Reddedilen yatırmalar yükleniyor..."
   },
   "deposit": {

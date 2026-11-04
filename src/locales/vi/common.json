@@ -388,10 +388,10 @@
     "editAddress": "Sửa địa chỉ",
     "createAddress": "Tạo địa chỉ Lightning",
     "addressUnavailable": "Địa chỉ Lightning không khả dụng trong môi trường này.",
-    "loadAddressFailed": "Không tải được địa chỉ Lightning",
+    "loadAddressFailed": "Không tải được địa chỉ Lightning. Vui lòng thử lại.",
     "enterUsername": "Vui lòng nhập tên người dùng",
     "usernameUnavailable": "Tên người dùng này không khả dụng",
-    "saveAddressFailed": "Không lưu được địa chỉ Lightning",
+    "saveAddressFailed": "Không lưu được địa chỉ Lightning. Vui lòng thử lại.",
     "invalidAmount": "Số tiền không hợp lệ",
     "invalidAmountEntry": "Vui lòng nhập số tiền hợp lệ",
     "enterAmountSats": "Nhập số tiền bằng sats",
@@ -626,6 +626,7 @@
     "refundFailed": "Không hoàn được khoản nạp",
     "getRefund": "Nhận hoàn tiền",
     "readingFeeRates": "Đang đọc mức phí hiện tại...",
+    "feeRatesFailed": "Không đọc được mức phí hiện tại. Hãy quay lại và thử lại.",
     "loading": "Đang tải các khoản nạp bị từ chối..."
   },
   "deposit": {

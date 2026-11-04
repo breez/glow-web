@@ -388,10 +388,10 @@
     "editAddress": "Modifica indirizzo",
     "createAddress": "Crea indirizzo Lightning",
     "addressUnavailable": "Gli indirizzi Lightning non sono disponibili in questo ambiente.",
-    "loadAddressFailed": "Impossibile caricare l'indirizzo Lightning",
+    "loadAddressFailed": "Impossibile caricare l'indirizzo Lightning. Riprova.",
     "enterUsername": "Inserisci un nome utente",
     "usernameUnavailable": "Questo nome utente non è disponibile",
-    "saveAddressFailed": "Impossibile salvare l'indirizzo Lightning",
+    "saveAddressFailed": "Impossibile salvare l'indirizzo Lightning. Riprova.",
     "invalidAmount": "Importo non valido",
     "invalidAmountEntry": "Inserisci un importo valido",
     "enterAmountSats": "Inserisci l'importo in sats",
@@ -626,6 +626,7 @@
     "refundFailed": "Rimborso del deposito non riuscito",
     "getRefund": "Ottieni rimborso",
     "readingFeeRates": "Lettura delle commissioni attuali...",
+    "feeRatesFailed": "Impossibile leggere le commissioni attuali. Torna indietro e riprova.",
     "loading": "Caricamento dei depositi rifiutati..."
   },
   "deposit": {

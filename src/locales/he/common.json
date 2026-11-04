@@ -390,10 +390,10 @@
     "editAddress": "עריכת הכתובת",
     "createAddress": "יצירת כתובת Lightning",
     "addressUnavailable": "כתובות Lightning אינן זמינות בסביבה הזו.",
-    "loadAddressFailed": "לא ניתן לטעון את כתובת ה-Lightning",
+    "loadAddressFailed": "לא ניתן לטעון את כתובת ה-Lightning. נסה שוב.",
     "enterUsername": "הזן שם משתמש",
     "usernameUnavailable": "שם המשתמש הזה אינו זמין",
-    "saveAddressFailed": "לא ניתן לשמור את כתובת ה-Lightning",
+    "saveAddressFailed": "לא ניתן לשמור את כתובת ה-Lightning. נסה שוב.",
     "invalidAmount": "סכום לא תקין",
     "invalidAmountEntry": "הזן סכום תקין",
     "enterAmountSats": "הזן סכום ב-sats",
@@ -628,6 +628,7 @@
     "refundFailed": "לא ניתן להחזיר את ההפקדה",
     "getRefund": "קבלת החזר",
     "readingFeeRates": "קורא את תעריפי העמלה הנוכחיים...",
+    "feeRatesFailed": "לא ניתן לקרוא את תעריפי העמלה הנוכחיים. חזור ונסה שוב.",
     "loading": "טוען את ההפקדות שנדחו..."
   },
   "deposit": {

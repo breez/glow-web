@@ -394,10 +394,10 @@
     "editAddress": "تعديل العنوان",
     "createAddress": "إنشاء عنوان Lightning",
     "addressUnavailable": "عناوين Lightning غير متاحة في هذه البيئة.",
-    "loadAddressFailed": "تعذّر تحميل عنوان Lightning",
+    "loadAddressFailed": "تعذّر تحميل عنوان Lightning. يُرجى إعادة المحاولة.",
     "enterUsername": "يُرجى إدخال اسم مستخدم",
     "usernameUnavailable": "اسم المستخدم هذا غير متاح",
-    "saveAddressFailed": "تعذّر حفظ عنوان Lightning",
+    "saveAddressFailed": "تعذّر حفظ عنوان Lightning. يُرجى إعادة المحاولة.",
     "invalidAmount": "مبلغ غير صحيح",
     "invalidAmountEntry": "يُرجى إدخال مبلغ صحيح",
     "enterAmountSats": "أدخل المبلغ بـ sats",
@@ -632,6 +632,7 @@
     "refundFailed": "تعذّر استرداد الإيداع",
     "getRefund": "طلب استرداد",
     "readingFeeRates": "جارٍ قراءة معدّلات الرسوم الحالية...",
+    "feeRatesFailed": "تعذّر قراءة معدّلات الرسوم الحالية. ارجع وأعد المحاولة.",
     "loading": "جارٍ تحميل الإيداعات المرفوضة..."
   },
   "deposit": {

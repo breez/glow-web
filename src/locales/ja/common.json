@@ -388,10 +388,10 @@
     "editAddress": "アドレスを編集",
     "createAddress": "Lightning アドレスを作成",
     "addressUnavailable": "この環境では Lightning アドレスを使用できません。",
-    "loadAddressFailed": "Lightning アドレスを読み込めませんでした",
+    "loadAddressFailed": "Lightning アドレスを読み込めませんでした。もう一度お試しください。",
     "enterUsername": "ユーザー名を入力してください",
     "usernameUnavailable": "このユーザー名は使用できません",
-    "saveAddressFailed": "Lightning アドレスを保存できませんでした",
+    "saveAddressFailed": "Lightning アドレスを保存できませんでした。もう一度お試しください。",
     "invalidAmount": "金額が正しくありません",
     "invalidAmountEntry": "有効な金額を入力してください",
     "enterAmountSats": "金額を sats で入力",
@@ -626,6 +626,7 @@
     "refundFailed": "入金を返金できませんでした",
     "getRefund": "返金を受ける",
     "readingFeeRates": "現在の手数料レートを読み込み中...",
+    "feeRatesFailed": "現在の手数料レートを読み込めませんでした。戻ってもう一度お試しください。",
     "loading": "拒否された入金を読み込み中..."
   },
   "deposit": {

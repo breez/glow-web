@@ -388,10 +388,10 @@
     "editAddress": "แก้ไขที่อยู่",
     "createAddress": "สร้างที่อยู่ Lightning",
     "addressUnavailable": "ที่อยู่ Lightning ใช้งานไม่ได้ในสภาพแวดล้อมนี้",
-    "loadAddressFailed": "โหลดที่อยู่ Lightning ไม่สำเร็จ",
+    "loadAddressFailed": "โหลดที่อยู่ Lightning ไม่สำเร็จ โปรดลองอีกครั้ง",
     "enterUsername": "โปรดใส่ชื่อผู้ใช้",
     "usernameUnavailable": "ชื่อผู้ใช้นี้ใช้ไม่ได้",
-    "saveAddressFailed": "บันทึกที่อยู่ Lightning ไม่สำเร็จ",
+    "saveAddressFailed": "บันทึกที่อยู่ Lightning ไม่สำเร็จ โปรดลองอีกครั้ง",
     "invalidAmount": "จำนวนไม่ถูกต้อง",
     "invalidAmountEntry": "โปรดใส่จำนวนที่ถูกต้อง",
     "enterAmountSats": "ใส่จำนวนเป็น sats",
@@ -626,6 +626,7 @@
     "refundFailed": "คืนเงินฝากไม่สำเร็จ",
     "getRefund": "ขอคืนเงิน",
     "readingFeeRates": "กำลังอ่านอัตราค่าธรรมเนียมปัจจุบัน...",
+    "feeRatesFailed": "อ่านอัตราค่าธรรมเนียมปัจจุบันไม่สำเร็จ ย้อนกลับแล้วลองอีกครั้ง",
     "loading": "กำลังโหลดเงินฝากที่ถูกปฏิเสธ..."
   },
   "deposit": {

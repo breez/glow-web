@@ -388,10 +388,10 @@
     "editAddress": "Edit Address",
     "createAddress": "Create Lightning Address",
     "addressUnavailable": "Lightning addresses are not available in this environment.",
-    "loadAddressFailed": "Failed to load Lightning address",
+    "loadAddressFailed": "Couldn't load your Lightning address. Please try again.",
     "enterUsername": "Please enter a username",
     "usernameUnavailable": "This username is not available",
-    "saveAddressFailed": "Failed to save Lightning address",
+    "saveAddressFailed": "Couldn't save your Lightning address. Please try again.",
     "invalidAmount": "Invalid amount",
     "invalidAmountEntry": "Please enter a valid amount",
     "enterAmountSats": "Enter amount in sats",
@@ -626,6 +626,7 @@
     "refundFailed": "Failed to refund deposit",
     "getRefund": "Get Refund",
     "readingFeeRates": "Reading current fee rates...",
+    "feeRatesFailed": "Couldn't read the current fee rates. Go back and try again.",
     "loading": "Loading rejected deposits..."
   },
   "deposit": {

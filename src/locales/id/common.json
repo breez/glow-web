@@ -388,10 +388,10 @@
     "editAddress": "Ubah Alamat",
     "createAddress": "Buat Alamat Lightning",
     "addressUnavailable": "Alamat Lightning tidak tersedia di lingkungan ini.",
-    "loadAddressFailed": "Gagal memuat alamat Lightning",
+    "loadAddressFailed": "Gagal memuat alamat Lightning. Silakan coba lagi.",
     "enterUsername": "Masukkan nama pengguna",
     "usernameUnavailable": "Nama pengguna ini tidak tersedia",
-    "saveAddressFailed": "Gagal menyimpan alamat Lightning",
+    "saveAddressFailed": "Gagal menyimpan alamat Lightning. Silakan coba lagi.",
     "invalidAmount": "Jumlah tidak valid",
     "invalidAmountEntry": "Masukkan jumlah yang valid",
     "enterAmountSats": "Masukkan jumlah dalam sats",
@@ -626,6 +626,7 @@
     "refundFailed": "Gagal mengembalikan setoran",
     "getRefund": "Ambil Pengembalian",
     "readingFeeRates": "Membaca tarif biaya saat ini...",
+    "feeRatesFailed": "Gagal membaca tarif biaya saat ini. Kembali dan coba lagi.",
     "loading": "Memuat setoran yang ditolak..."
   },
   "deposit": {

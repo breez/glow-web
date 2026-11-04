@@ -388,10 +388,10 @@
     "editAddress": "पता बदलें",
     "createAddress": "Lightning पता बनाएँ",
     "addressUnavailable": "इस परिवेश में Lightning पते उपलब्ध नहीं हैं।",
-    "loadAddressFailed": "Lightning पता लोड नहीं हो सका",
+    "loadAddressFailed": "Lightning पता लोड नहीं हो सका। कृपया फिर कोशिश करें।",
     "enterUsername": "कृपया एक उपयोगकर्ता नाम डालें",
     "usernameUnavailable": "यह उपयोगकर्ता नाम उपलब्ध नहीं है",
-    "saveAddressFailed": "Lightning पता सेव नहीं हो सका",
+    "saveAddressFailed": "Lightning पता सेव नहीं हो सका। कृपया फिर कोशिश करें।",
     "invalidAmount": "राशि मान्य नहीं है",
     "invalidAmountEntry": "कृपया एक मान्य राशि डालें",
     "enterAmountSats": "राशि sats में डालें",
@@ -626,6 +626,7 @@
     "refundFailed": "जमा का रिफ़ंड नहीं हो सका",
     "getRefund": "रिफ़ंड पाएँ",
     "readingFeeRates": "मौजूदा शुल्क दरें पढ़ी जा रही हैं...",
+    "feeRatesFailed": "मौजूदा शुल्क दरें पढ़ी नहीं जा सकीं। पीछे जाकर फिर कोशिश करें।",
     "loading": "अस्वीकृत जमा लोड हो रही हैं..."
   },
   "deposit": {

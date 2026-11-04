@@ -390,10 +390,10 @@
     "editAddress": "Editează adresa",
     "createAddress": "Creează adresă Lightning",
     "addressUnavailable": "Adresele Lightning nu sunt disponibile în acest mediu.",
-    "loadAddressFailed": "Adresa Lightning nu a putut fi încărcată",
+    "loadAddressFailed": "Adresa Lightning nu a putut fi încărcată. Încearcă din nou.",
     "enterUsername": "Introdu un nume de utilizator",
     "usernameUnavailable": "Acest nume de utilizator nu este disponibil",
-    "saveAddressFailed": "Adresa Lightning nu a putut fi salvată",
+    "saveAddressFailed": "Adresa Lightning nu a putut fi salvată. Încearcă din nou.",
     "invalidAmount": "Sumă nevalidă",
     "invalidAmountEntry": "Introdu o sumă validă",
     "enterAmountSats": "Introdu suma în sats",
@@ -628,6 +628,7 @@
     "refundFailed": "Depunerea nu a putut fi rambursată",
     "getRefund": "Obține rambursare",
     "readingFeeRates": "Se citesc ratele actuale ale comisioanelor...",
+    "feeRatesFailed": "Ratele actuale ale comisioanelor nu au putut fi citite. Revino și încearcă din nou.",
     "loading": "Se încarcă depunerile respinse..."
   },
   "deposit": {

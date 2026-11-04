@@ -196,7 +196,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
       logger.error(LogCategory.PAYMENT, 'Failed to read fee rates for a refund', {
         error: e instanceof Error ? e.message : String(e),
       });
-      setFeeRatesError("Couldn't read the current fee rates. Go back and try again.");
+      setFeeRatesError(t('common:refund.feeRatesFailed'));
     }
   };
 

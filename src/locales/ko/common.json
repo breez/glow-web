@@ -388,10 +388,10 @@
     "editAddress": "주소 편집",
     "createAddress": "Lightning 주소 만들기",
     "addressUnavailable": "이 환경에서는 Lightning 주소를 사용할 수 없습니다.",
-    "loadAddressFailed": "Lightning 주소를 불러오지 못했습니다",
+    "loadAddressFailed": "Lightning 주소를 불러오지 못했습니다. 다시 시도해 주세요.",
     "enterUsername": "사용자 이름을 입력해 주세요",
     "usernameUnavailable": "이 사용자 이름은 사용할 수 없습니다",
-    "saveAddressFailed": "Lightning 주소를 저장하지 못했습니다",
+    "saveAddressFailed": "Lightning 주소를 저장하지 못했습니다. 다시 시도해 주세요.",
     "invalidAmount": "금액이 올바르지 않습니다",
     "invalidAmountEntry": "올바른 금액을 입력해 주세요",
     "enterAmountSats": "금액을 sats로 입력",
@@ -626,6 +626,7 @@
     "refundFailed": "입금을 환불하지 못했습니다",
     "getRefund": "환불 받기",
     "readingFeeRates": "현재 수수료율을 읽는 중...",
+    "feeRatesFailed": "현재 수수료율을 읽지 못했습니다. 뒤로 가서 다시 시도해 주세요.",
     "loading": "거부된 입금을 불러오는 중..."
   },
   "deposit": {

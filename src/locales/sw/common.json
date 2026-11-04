@@ -388,10 +388,10 @@
     "editAddress": "Badilisha Anwani",
     "createAddress": "Tengeneza Anwani ya Lightning",
     "addressUnavailable": "Anwani za Lightning hazipatikani katika mazingira haya.",
-    "loadAddressFailed": "Imeshindwa kupakia anwani ya Lightning",
+    "loadAddressFailed": "Imeshindwa kupakia anwani ya Lightning. Tafadhali jaribu tena.",
     "enterUsername": "Tafadhali weka jina la mtumiaji",
     "usernameUnavailable": "Jina hili la mtumiaji hapatikani",
-    "saveAddressFailed": "Imeshindwa kuhifadhi anwani ya Lightning",
+    "saveAddressFailed": "Imeshindwa kuhifadhi anwani ya Lightning. Tafadhali jaribu tena.",
     "invalidAmount": "Kiasi si sahihi",
     "invalidAmountEntry": "Tafadhali weka kiasi sahihi",
     "enterAmountSats": "Weka kiasi kwa sats",
@@ -626,6 +626,7 @@
     "refundFailed": "Imeshindwa kurejesha amana",
     "getRefund": "Pata Marejesho",
     "readingFeeRates": "Inasoma viwango vya ada vya sasa...",
+    "feeRatesFailed": "Imeshindwa kusoma viwango vya ada vya sasa. Rudi na ujaribu tena.",
     "loading": "Inapakia amana zilizokataliwa..."
   },
   "deposit": {

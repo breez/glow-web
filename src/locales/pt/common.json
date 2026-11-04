@@ -388,10 +388,10 @@
     "editAddress": "Editar endereço",
     "createAddress": "Criar endereço Lightning",
     "addressUnavailable": "Os endereços Lightning não estão disponíveis neste ambiente.",
-    "loadAddressFailed": "Não foi possível carregar o endereço Lightning",
+    "loadAddressFailed": "Não foi possível carregar o endereço Lightning. Tente de novo.",
     "enterUsername": "Digite um nome de usuário",
     "usernameUnavailable": "Este nome de usuário não está disponível",
-    "saveAddressFailed": "Não foi possível salvar o endereço Lightning",
+    "saveAddressFailed": "Não foi possível salvar o endereço Lightning. Tente de novo.",
     "invalidAmount": "Valor inválido",
     "invalidAmountEntry": "Digite um valor válido",
     "enterAmountSats": "Digite o valor em sats",
@@ -626,6 +626,7 @@
     "refundFailed": "Falha ao reembolsar o depósito",
     "getRefund": "Obter reembolso",
     "readingFeeRates": "A ler as taxas atuais...",
+    "feeRatesFailed": "Não foi possível ler as taxas atuais. Volte e tente de novo.",
     "loading": "A carregar depósitos rejeitados..."
   },
   "deposit": {

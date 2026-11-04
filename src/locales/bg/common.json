@@ -388,10 +388,10 @@
     "editAddress": "Редактиране на адреса",
     "createAddress": "Създаване на Lightning адрес",
     "addressUnavailable": "Lightning адресите не са налични в тази среда.",
-    "loadAddressFailed": "Lightning адресът не можа да се зареди",
+    "loadAddressFailed": "Lightning адресът не можа да се зареди. Опитайте отново.",
     "enterUsername": "Въведете потребителско име",
     "usernameUnavailable": "Това потребителско име не е налично",
-    "saveAddressFailed": "Lightning адресът не можа да бъде запазен",
+    "saveAddressFailed": "Lightning адресът не можа да бъде запазен. Опитайте отново.",
     "invalidAmount": "Невалидна сума",
     "invalidAmountEntry": "Въведете валидна сума",
     "enterAmountSats": "Въведете сумата в sats",
@@ -626,6 +626,7 @@
     "refundFailed": "Възстановяването на депозита не бе успешно",
     "getRefund": "Върни средства",
     "readingFeeRates": "Отчитане на текущите такси...",
+    "feeRatesFailed": "Текущите такси не можаха да бъдат отчетени. Върнете се и опитайте отново.",
     "loading": "Зареждане на отхвърлените депозити..."
   },
   "deposit": {

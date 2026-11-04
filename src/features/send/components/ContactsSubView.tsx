@@ -310,7 +310,9 @@ const ContactsSubView: React.FC<ContactsSubViewProps> = ({ onSelect, onBack }) =
               autoCorrect="off"
               autoComplete="off"
               spellCheck={false}
-              placeholder={CASHTAGS_ENABLED ? 'user@domain.com / $cashtag' : 'user@domain.com'}
+              placeholder={CASHTAGS_ENABLED
+                ? `${t('contacts.addressPlaceholder')} / $cashtag`
+                : t('contacts.addressPlaceholder')}
               disabled={isSaving}
             />
           </div>

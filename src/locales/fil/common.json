@@ -388,10 +388,10 @@
     "editAddress": "I-edit ang Address",
     "createAddress": "Gumawa ng Lightning Address",
     "addressUnavailable": "Hindi available ang mga Lightning address sa environment na ito.",
-    "loadAddressFailed": "Hindi ma-load ang Lightning address",
+    "loadAddressFailed": "Hindi ma-load ang Lightning address. Subukan muli.",
     "enterUsername": "Maglagay ng username",
     "usernameUnavailable": "Hindi available ang username na ito",
-    "saveAddressFailed": "Hindi ma-save ang Lightning address",
+    "saveAddressFailed": "Hindi ma-save ang Lightning address. Subukan muli.",
     "invalidAmount": "Hindi tamang halaga",
     "invalidAmountEntry": "Maglagay ng tamang halaga",
     "enterAmountSats": "Ilagay ang halaga sa sats",
@@ -626,6 +626,7 @@
     "refundFailed": "Hindi ma-refund ang deposito",
     "getRefund": "Kumuha ng Refund",
     "readingFeeRates": "Binabasa ang kasalukuyang fee rate...",
+    "feeRatesFailed": "Hindi mabasa ang kasalukuyang fee rate. Bumalik at subukan muli.",
     "loading": "Nilo-load ang mga tinanggihang deposito..."
   },
   "deposit": {

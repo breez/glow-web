@@ -388,10 +388,10 @@
     "editAddress": "Adresse bearbeiten",
     "createAddress": "Lightning-Adresse erstellen",
     "addressUnavailable": "Lightning-Adressen sind in dieser Umgebung nicht verfügbar.",
-    "loadAddressFailed": "Lightning-Adresse konnte nicht geladen werden",
+    "loadAddressFailed": "Lightning-Adresse konnte nicht geladen werden. Bitte versuche es erneut.",
     "enterUsername": "Bitte gib einen Benutzernamen ein",
     "usernameUnavailable": "Dieser Benutzername ist nicht verfügbar",
-    "saveAddressFailed": "Lightning-Adresse konnte nicht gespeichert werden",
+    "saveAddressFailed": "Lightning-Adresse konnte nicht gespeichert werden. Bitte versuche es erneut.",
     "invalidAmount": "Ungültiger Betrag",
     "invalidAmountEntry": "Bitte gib einen gültigen Betrag ein",
     "enterAmountSats": "Betrag in Sats eingeben",
@@ -626,6 +626,7 @@
     "refundFailed": "Rückerstattung der Einzahlung fehlgeschlagen",
     "getRefund": "Rückerstattung erhalten",
     "readingFeeRates": "Aktuelle Gebührensätze werden gelesen...",
+    "feeRatesFailed": "Die aktuellen Gebührensätze konnten nicht gelesen werden. Gehe zurück und versuche es erneut.",
     "loading": "Abgelehnte Einzahlungen werden geladen..."
   },
   "deposit": {

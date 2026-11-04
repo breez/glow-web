@@ -25,7 +25,7 @@ export interface InputStepProps {
 }
 
 const PLACEHOLDER = [
-  'lnbc...', 'bc1...', 'spark1...', 'user@domain.com',
+  'lnbc...', 'bc1...', 'spark1...', i18n.t('common:contacts.addressPlaceholder'),
   ...(CASHTAGS_ENABLED ? ['$cashtag'] : []),
   i18n.t('common:send.inputHint.contact'), i18n.t('common:send.inputHint.stablecoin'),
 ].join(' / ');

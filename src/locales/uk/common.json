@@ -392,10 +392,10 @@
     "editAddress": "Змінити адресу",
     "createAddress": "Створити адресу Lightning",
     "addressUnavailable": "Адреси Lightning недоступні в цьому середовищі.",
-    "loadAddressFailed": "Не вдалося завантажити адресу Lightning",
+    "loadAddressFailed": "Не вдалося завантажити адресу Lightning. Спробуйте ще раз.",
     "enterUsername": "Введіть ім’я користувача",
     "usernameUnavailable": "Це ім’я користувача недоступне",
-    "saveAddressFailed": "Не вдалося зберегти адресу Lightning",
+    "saveAddressFailed": "Не вдалося зберегти адресу Lightning. Спробуйте ще раз.",
     "invalidAmount": "Невірна сума",
     "invalidAmountEntry": "Введіть правильну суму",
     "enterAmountSats": "Введіть суму в sats",
@@ -630,6 +630,7 @@
     "refundFailed": "Не вдалося повернути депозит",
     "getRefund": "Отримати повернення",
     "readingFeeRates": "Читання поточних ставок комісії...",
+    "feeRatesFailed": "Не вдалося прочитати поточні ставки комісії. Повернітеся і спробуйте ще раз.",
     "loading": "Завантаження відхилених депозитів..."
   },
   "deposit": {

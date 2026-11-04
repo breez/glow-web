@@ -392,10 +392,10 @@
     "editAddress": "Upraviť adresu",
     "createAddress": "Vytvoriť Lightning adresu",
     "addressUnavailable": "Lightning adresy nie sú v tomto prostredí dostupné.",
-    "loadAddressFailed": "Lightning adresu sa nepodarilo načítať",
+    "loadAddressFailed": "Lightning adresu sa nepodarilo načítať. Skús to znova.",
     "enterUsername": "Zadaj používateľské meno",
     "usernameUnavailable": "Toto používateľské meno nie je dostupné",
-    "saveAddressFailed": "Lightning adresu sa nepodarilo uložiť",
+    "saveAddressFailed": "Lightning adresu sa nepodarilo uložiť. Skús to znova.",
     "invalidAmount": "Neplatná suma",
     "invalidAmountEntry": "Zadaj platnú sumu",
     "enterAmountSats": "Zadaj sumu v sats",
@@ -630,6 +630,7 @@
     "refundFailed": "Vrátenie vkladu zlyhalo",
     "getRefund": "Získať vrátenie",
     "readingFeeRates": "Načítavajú sa aktuálne poplatky...",
+    "feeRatesFailed": "Aktuálne poplatky sa nepodarilo načítať. Vráť sa a skús to znova.",
     "loading": "Načítavajú sa odmietnuté vklady..."
   },
   "deposit": {

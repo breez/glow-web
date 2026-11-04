@@ -388,10 +388,10 @@
     "editAddress": "Επεξεργασία διεύθυνσης",
     "createAddress": "Δημιουργία διεύθυνσης Lightning",
     "addressUnavailable": "Οι διευθύνσεις Lightning δεν είναι διαθέσιμες σε αυτό το περιβάλλον.",
-    "loadAddressFailed": "Δεν ήταν δυνατή η φόρτωση της διεύθυνσης Lightning",
+    "loadAddressFailed": "Δεν ήταν δυνατή η φόρτωση της διεύθυνσης Lightning. Δοκιμάστε ξανά.",
     "enterUsername": "Εισαγάγετε όνομα χρήστη",
     "usernameUnavailable": "Αυτό το όνομα χρήστη δεν είναι διαθέσιμο",
-    "saveAddressFailed": "Δεν ήταν δυνατή η αποθήκευση της διεύθυνσης Lightning",
+    "saveAddressFailed": "Δεν ήταν δυνατή η αποθήκευση της διεύθυνσης Lightning. Δοκιμάστε ξανά.",
     "invalidAmount": "Μη έγκυρο ποσό",
     "invalidAmountEntry": "Εισαγάγετε έγκυρο ποσό",
     "enterAmountSats": "Εισαγάγετε το ποσό σε sats",
@@ -626,6 +626,7 @@
     "refundFailed": "Αποτυχία επιστροφής κατάθεσης",
     "getRefund": "Λήψη επιστροφής",
     "readingFeeRates": "Ανάγνωση τρεχουσών χρεώσεων...",
+    "feeRatesFailed": "Δεν ήταν δυνατή η ανάγνωση των τρεχουσών χρεώσεων. Επιστρέψτε και δοκιμάστε ξανά.",
     "loading": "Φόρτωση απορριφθεισών καταθέσεων..."
   },
   "deposit": {

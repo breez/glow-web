@@ -388,10 +388,10 @@
     "editAddress": "编辑地址",
     "createAddress": "创建 Lightning 地址",
     "addressUnavailable": "此环境中无法使用 Lightning 地址。",
-    "loadAddressFailed": "加载 Lightning 地址失败",
+    "loadAddressFailed": "加载 Lightning 地址失败。请重试。",
     "enterUsername": "请输入用户名",
     "usernameUnavailable": "这个用户名不可用",
-    "saveAddressFailed": "保存 Lightning 地址失败",
+    "saveAddressFailed": "保存 Lightning 地址失败。请重试。",
     "invalidAmount": "金额无效",
     "invalidAmountEntry": "请输入有效的金额",
     "enterAmountSats": "以 sats 输入金额",
@@ -626,6 +626,7 @@
     "refundFailed": "退回存入失败",
     "getRefund": "申请退款",
     "readingFeeRates": "正在读取当前费率...",
+    "feeRatesFailed": "无法读取当前费率。请返回后重试。",
     "loading": "正在加载被拒存入..."
   },
   "deposit": {

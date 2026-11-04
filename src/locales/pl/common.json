@@ -392,10 +392,10 @@
     "editAddress": "Edytuj adres",
     "createAddress": "Utwórz adres Lightning",
     "addressUnavailable": "Adresy Lightning nie są dostępne w tym środowisku.",
-    "loadAddressFailed": "Nie udało się wczytać adresu Lightning",
+    "loadAddressFailed": "Nie udało się wczytać adresu Lightning. Spróbuj ponownie.",
     "enterUsername": "Podaj nazwę użytkownika",
     "usernameUnavailable": "Ta nazwa użytkownika jest niedostępna",
-    "saveAddressFailed": "Nie udało się zapisać adresu Lightning",
+    "saveAddressFailed": "Nie udało się zapisać adresu Lightning. Spróbuj ponownie.",
     "invalidAmount": "Nieprawidłowa kwota",
     "invalidAmountEntry": "Podaj prawidłową kwotę",
     "enterAmountSats": "Podaj kwotę w sats",
@@ -630,6 +630,7 @@
     "refundFailed": "Nie udało się zwrócić depozytu",
     "getRefund": "Uzyskaj zwrot",
     "readingFeeRates": "Odczytywanie bieżących opłat...",
+    "feeRatesFailed": "Nie udało się odczytać bieżących opłat. Wróć i spróbuj ponownie.",
     "loading": "Wczytywanie odrzuconych depozytów..."
   },
   "deposit": {

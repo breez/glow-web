@@ -388,10 +388,10 @@
     "editAddress": "Redigera adress",
     "createAddress": "Skapa Lightning-adress",
     "addressUnavailable": "Lightning-adresser är inte tillgängliga i den här miljön.",
-    "loadAddressFailed": "Lightning-adressen kunde inte laddas",
+    "loadAddressFailed": "Lightning-adressen kunde inte laddas. Försök igen.",
     "enterUsername": "Ange ett användarnamn",
     "usernameUnavailable": "Det användarnamnet är inte tillgängligt",
-    "saveAddressFailed": "Lightning-adressen kunde inte sparas",
+    "saveAddressFailed": "Lightning-adressen kunde inte sparas. Försök igen.",
     "invalidAmount": "Ogiltigt belopp",
     "invalidAmountEntry": "Ange ett giltigt belopp",
     "enterAmountSats": "Ange beloppet i sats",
@@ -626,6 +626,7 @@
     "refundFailed": "Det gick inte att återbetala insättningen",
     "getRefund": "Få återbetalning",
     "readingFeeRates": "Läser aktuella avgifter...",
+    "feeRatesFailed": "De aktuella avgifterna kunde inte läsas. Gå tillbaka och försök igen.",
     "loading": "Läser in avvisade insättningar..."
   },
   "deposit": {

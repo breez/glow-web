@@ -388,10 +388,10 @@
     "editAddress": "Cím szerkesztése",
     "createAddress": "Lightning-cím létrehozása",
     "addressUnavailable": "A Lightning-címek nem érhetők el ebben a környezetben.",
-    "loadAddressFailed": "Nem sikerült betölteni a Lightning-címet",
+    "loadAddressFailed": "Nem sikerült betölteni a Lightning-címet. Próbáld újra.",
     "enterUsername": "Adj meg egy felhasználónevet",
     "usernameUnavailable": "Ez a felhasználónév nem érhető el",
-    "saveAddressFailed": "Nem sikerült menteni a Lightning-címet",
+    "saveAddressFailed": "Nem sikerült menteni a Lightning-címet. Próbáld újra.",
     "invalidAmount": "Érvénytelen összeg",
     "invalidAmountEntry": "Adj meg érvényes összeget",
     "enterAmountSats": "Add meg az összeget satsban",
@@ -626,6 +626,7 @@
     "refundFailed": "A befizetés visszatérítése nem sikerült",
     "getRefund": "Visszatérítés kérése",
     "readingFeeRates": "Aktuális díjszabás beolvasása...",
+    "feeRatesFailed": "Nem sikerült beolvasni az aktuális díjszabást. Lépj vissza, és próbáld újra.",
     "loading": "Elutasított befizetések betöltése..."
   },
   "deposit": {

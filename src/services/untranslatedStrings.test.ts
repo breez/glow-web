@@ -102,8 +102,10 @@ const DOUBLE_QUOTED = /"([^"\n]{4,200})"/g;
 /** Two or more capitalised words with sentence punctuation and nothing else.
  *  Class names, CSS, paths and identifiers all fail it, so what is left reads
  *  as copy wherever it sits, including inside a {ternary}. A word may end in
- *  a full stop, so a two-sentence string is caught rather than skipped. */
-const READS_AS_PROSE = /^[A-Z][A-Za-z0-9]*(?:[ ][A-Za-z0-9'’(),:!?.-]+){1,25}[.!?]?$/;
+ *  a full stop, so a two-sentence string is caught rather than skipped. The
+ *  first word may carry an apostrophe: without it a sentence opening on a
+ *  contraction reads as an identifier and slips through. */
+const READS_AS_PROSE = /^[A-Z][A-Za-z0-9'’]*(?:[ ][A-Za-z0-9'’(),:!?.-]+){1,25}[.!?]?$/;
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {

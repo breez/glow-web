@@ -388,10 +388,10 @@
     "editAddress": "Adres bewerken",
     "createAddress": "Lightning-adres aanmaken",
     "addressUnavailable": "Lightning-adressen zijn niet beschikbaar in deze omgeving.",
-    "loadAddressFailed": "Lightning-adres kon niet worden geladen",
+    "loadAddressFailed": "Lightning-adres kon niet worden geladen. Probeer het opnieuw.",
     "enterUsername": "Voer een gebruikersnaam in",
     "usernameUnavailable": "Deze gebruikersnaam is niet beschikbaar",
-    "saveAddressFailed": "Lightning-adres kon niet worden opgeslagen",
+    "saveAddressFailed": "Lightning-adres kon niet worden opgeslagen. Probeer het opnieuw.",
     "invalidAmount": "Ongeldig bedrag",
     "invalidAmountEntry": "Voer een geldig bedrag in",
     "enterAmountSats": "Voer het bedrag in sats in",
@@ -626,6 +626,7 @@
     "refundFailed": "Terugbetaling van storting mislukt",
     "getRefund": "Terugbetaling ophalen",
     "readingFeeRates": "Huidige tarieven lezen...",
+    "feeRatesFailed": "De huidige tarieven konden niet worden gelezen. Ga terug en probeer het opnieuw.",
     "loading": "Geweigerde stortingen laden..."
   },
   "deposit": {
