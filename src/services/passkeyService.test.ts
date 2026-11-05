@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
+  isPasskeyCheckDue,
   recordMigrationCredentialPair,
   getMigrationCounterpartCredentialIdBytes,
   clearMigrationCredentialPairs,
@@ -102,5 +103,30 @@ describe('passkey RP pin', () => {
     setPasskeyRpId(SHARED);
     resetPasskeyMigrationState();
     expect(getPasskeyRpId()).toBe(LEGACY_RP_ID);
+  });
+});
+
+const DAY = 24 * 60 * 60 * 1000;
+const NOW = 1_700_000_000_000;
+
+describe('isPasskeyCheckDue', () => {
+  it('asks when nothing on this device proves the passkey works', () => {
+    expect(isPasskeyCheckDue(undefined, 0, NOW)).toBe(true);
+  });
+
+  it('stays quiet while a recent sign-in still counts', () => {
+    expect(isPasskeyCheckDue(NOW - 29 * DAY, 0, NOW)).toBe(false);
+  });
+
+  it('asks once a month has passed since the last ceremony', () => {
+    expect(isPasskeyCheckDue(NOW - 31 * DAY, 0, NOW)).toBe(true);
+  });
+
+  it('stays quiet while put off, however overdue', () => {
+    expect(isPasskeyCheckDue(NOW - 400 * DAY, NOW + DAY, NOW)).toBe(false);
+  });
+
+  it('asks again once the snooze runs out', () => {
+    expect(isPasskeyCheckDue(NOW - 400 * DAY, NOW - DAY, NOW)).toBe(true);
   });
 });
