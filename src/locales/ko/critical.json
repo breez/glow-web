@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "이 기기에 저장된 Glow 데이터가 모두 삭제됩니다. 복구 문구를 저장했는지 확인하세요. 자금에 다시 접근하려면 필요합니다."
   },
   "refund": {
-    "refund": "환불",
     "amount": "금액",
     "networkFee": "네트워크 수수료"
   },

@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "這會刪除這部裝置上儲存的所有 Glow 資料。請確認您已儲存復原片語：再次取用資金時會用到它。"
   },
   "refund": {
-    "refund": "退款",
     "amount": "金額",
     "networkFee": "網路手續費"
   },

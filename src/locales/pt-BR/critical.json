@@ -66,9 +66,9 @@
       "rateDrift": "Valor pequeno demais para esta rede. Tente um valor maior ou outra rede."
     },
     "withdraw": {
-      "noValidAmount": "Este link de retirada não tem um valor válido que o Glow possa receber.",
+      "noValidAmount": "Este link de saque não tem um valor válido que o Glow possa receber.",
       "wholeSats": "Digite um número inteiro de sats",
-      "failed": "A retirada falhou: {{error}}"
+      "failed": "O saque falhou: {{error}}"
     },
     "enterAmountIn": "Digite o valor em {{currency}}",
     "amountRange": "Entre {{min}} e {{max}} sats",
@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Isso apaga todos os dados do Glow guardados neste dispositivo. Confirme que você salvou a sua frase de recuperação: você vai precisar dela para acessar os seus fundos de novo."
   },
   "refund": {
-    "refund": "Reembolso",
     "amount": "Valor",
     "networkFee": "Taxa de rede"
   },

@@ -204,6 +204,45 @@ describe('every referenced key exists', () => {
     }
     expect(missing, `unresolved keys:\n${missing.join('\n')}`).toEqual([]);
   });
+
+  it('has no key the source never reaches', () => {
+    // The other direction. A key nothing renders is copy that reads as shipped
+    // and is not, and it costs a translation in every language on every pass.
+    // Three ways a key is reached without its full text sitting in the source:
+    // a template prefix, a plural or context suffix i18next resolves from the
+    // base key, and a `ns:` qualifier the bundle path does not carry. A key
+    // that is also the start of a longer one needs the lookahead, or
+    // `refund.refund` rides along on `refund.refundFailed`.
+    const blob = Object.entries(sources)
+      .filter(([path]) => !path.includes('.test.') && !path.includes('/locales/'))
+      .map(([, raw]) => raw as string)
+      .join('\n');
+    const bare = (ref: string) => ref.replace(/^(?:common|critical):/, '');
+    const mentioned = new Set(
+      [...blob.matchAll(/['"`]((?:common:|critical:)?[a-zA-Z][\w-]*(?:\.[\w-]+)+)['"`]/g)]
+        .map((m) => bare(m[1]!)),
+    );
+    const prefixes = [...blob.matchAll(/['"`]((?:common:|critical:)?[a-zA-Z][\w.-]*?)\$\{/g)]
+      .map((m) => bare(m[1]!))
+      .filter(Boolean);
+    const reaches = (key: string) =>
+      mentioned.has(key) || prefixes.some((p) => key.startsWith(p));
+    const reached = (key: string) => {
+      if (reaches(key)) return true;
+      const leaf = key.slice(key.lastIndexOf('.') + 1);
+      return leaf.includes('_') && reaches(key.slice(0, key.lastIndexOf('_')));
+    };
+
+    const orphans = [...known]
+      .filter((full) => full.includes(':'))
+      .filter((full) => !reached(full.slice(full.indexOf(':') + 1)))
+      .sort();
+    expect(
+      orphans,
+      `keys nothing reaches:\n${orphans.join('\n')}\n\nDelete them, or wire ` +
+        `the screen that was meant to show them.`,
+    ).toEqual([]);
+  });
 });
 
 describe('what the picker may offer', () => {

@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Damit werden alle auf diesem Gerät gespeicherten Glow-Daten gelöscht. Stelle sicher, dass du deine Wiederherstellungsphrase gesichert hast: Du brauchst sie, um wieder auf dein Guthaben zuzugreifen."
   },
   "refund": {
-    "refund": "Rückerstatten",
     "amount": "Betrag",
     "networkFee": "Netzwerkgebühr"
   },

@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Asta șterge toate datele Glow stocate pe acest dispozitiv. Asigură-te că ți-ai salvat fraza de recuperare: vei avea nevoie de ea pentru a-ți accesa fondurile din nou."
   },
   "refund": {
-    "refund": "Rambursare",
     "amount": "Sumă",
     "networkFee": "Comision de rețea"
   },

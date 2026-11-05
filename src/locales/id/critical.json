@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Ini menghapus semua data Glow yang tersimpan di perangkat ini. Pastikan Anda sudah menyimpan frasa pemulihan Anda: Anda akan membutuhkannya untuk mengakses dana Anda lagi."
   },
   "refund": {
-    "refund": "Pengembalian",
     "amount": "Jumlah",
     "networkFee": "Biaya jaringan"
   },

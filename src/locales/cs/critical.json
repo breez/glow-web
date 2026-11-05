@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Tímto smažeš všechna data Glow uložená v tomto zařízení. Ujisti se, že máš uloženou obnovovací frázi: budeš ji potřebovat k opětovnému přístupu ke svým prostředkům."
   },
   "refund": {
-    "refund": "Vrátit",
     "amount": "Částka",
     "networkFee": "Síťový poplatek"
   },

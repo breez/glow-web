@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Det här raderar alla Glow-data som finns på den här enheten. Se till att du har sparat din återställningsfras: du behöver den för att komma åt dina pengar igen."
   },
   "refund": {
-    "refund": "Återbetala",
     "amount": "Belopp",
     "networkFee": "Nätverksavgift"
   },

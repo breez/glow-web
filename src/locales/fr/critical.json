@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Cette action supprime toutes les données Glow stockées sur cet appareil. Assurez-vous d'avoir sauvegardé votre phrase de récupération : vous en aurez besoin pour accéder à nouveau à vos fonds."
   },
   "refund": {
-    "refund": "Rembourser",
     "amount": "Montant",
     "networkFee": "Frais de réseau"
   },
