@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Breez SDK ile çalışır",
     "somethingWrong": "Bir şeyler ters gitti",
     "couldNotOpen": "Glow açılamadı",
@@ -34,8 +33,6 @@
     "export": "Dışa aktar",
     "exporting": "Dışa aktarılıyor...",
     "preparing": "Hazırlanıyor...",
-    "approve": "Onayla",
-    "reject": "Reddet",
     "retry": "Yeniden dene",
     "goBack": "Geri dön",
     "edit": "Düzenle",
@@ -202,7 +199,6 @@
     "title": "Kişiler",
     "name": "Ad",
     "namePlaceholder": "Kişi adı",
-    "lightningAddress": "Lightning adresi",
     "searchPlaceholder": "Kişilerde ara...",
     "deleteTitle": "Kişiyi sil",
     "noMatches": "Sonuç yok",
@@ -365,9 +361,6 @@
     "sparkAddress": "Spark adresi",
     "bitcoinAddress": "Bitcoin adresi",
     "scanToPay": "Bu Lightning faturasını ödemek için tara",
-    "useThisAddress": "Ödeme almak için bu adresi kullan",
-    "sendBitcoinHere": "Otomatik Lightning dönüşümü için bu adrese Bitcoin gönder",
-    "generatingBitcoin": "Bitcoin adresi oluşturuluyor...",
     "generatingThing": "{{thing}} oluşturuluyor...",
     "sparkAddressFailed": "Spark adresi oluşturulamadı: {{error}}",
     "bitcoinAddressFailed": "Bitcoin adresi oluşturulamadı: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "Ne için?",
     "amount": "Tutar",
     "specificAmount": "Belirli bir tutarla fatura oluştur",
-    "lightningAddress": "Lightning adresi",
-    "createAddressPrompt": "Ödemeleri daha kolay almak için bir Lightning adresi oluştur",
-    "createLightningAddress": "Lightning adresi oluştur",
     "editLightningAddress": "Lightning adresini düzenle",
     "editAddress": "Adresi düzenle",
     "createAddress": "Lightning adresi oluştur",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Bitcoin al",
-    "withCashApp": "Cash App ile al",
     "cashAppLink": "Cash App bağlantısı",
     "cashAppNote": "Cash App tutarın yerel para birimindeki karşılığını gösterir ve Cash ya da BTC bakiyenden düşer.",
-    "scanWithCashApp": "Bu kodu Cash App ile tara",
     "amount": "Tutar",
     "invalidAmount": "Geçersiz tutar",
     "invoiceFailed": "Fatura oluşturulamadı. Tekrar dene.",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Glow günlükleri",
-    "shareDialogTitle": "Günlükleri paylaş",
     "dbShareTitle": "Glow SDK veritabanı dışa aktarımı"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "Ödeme gönderildi!",
     "failed": "Ödeme başarısız",
     "authenticated": "Doğrulandı!",
-    "authFailed": "Kimlik doğrulama başarısız",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / kullanici@alanadi.com / kişi / USDC veya USDT adresi",
     "feeRate": {
       "title": "Ücret oranını seç",
       "slow": "Yavaş",
@@ -512,7 +497,6 @@
       "gettingQuote": "Teklif alınıyor...",
       "receiving": "Aldığın",
       "fee": "Ücret",
-      "changeAmount": "Tutarı değiştir",
       "send": "Gönder",
       "noRoutes": "Bu adres için desteklenen stablecoin rotası yok",
       "chain": "Zincir",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "Alınacak tutar",
-      "receive": "Al",
       "timedOut": "Ödeme zamanında ulaşmadı. Tekrar dene."
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "Alıcı"
     },
     "noDestination": "Bir ödeme hedefi gir",
-    "prepareFailed": "Ödeme hazırlanamadı {{error}}",
     "paymentFailed": "Ödeme başarısız: {{error}}",
     "operationFailed": "İşlem başarısız: {{error}}",
     "processingPhase": {
-      "authenticating": "Doğrulanıyor...",
       "waitingForPayment": "Ödeme bekleniyor...",
       "converting": "Dönüştürülüyor...",
       "sending": "Gönderiliyor...",
-      "authBody": "Kimliğini doğrularken lütfen bekle...",
       "withdrawBody": "Transfer tamamlanıyor. Bu biraz sürebilir...",
       "convertBody": "Tutarı dönüştürürken lütfen bekle...",
       "sendBody": "İşlemini işlerken lütfen bekle..."
     },
     "result": {
-      "authSuccessBody": "Hizmette kimliğin başarıyla doğrulandı.",
       "sentBody": "Ödemen alıcıya başarıyla gönderildi.",
-      "authFailBody": "Kimlik doğrulama sırasında bir hata oluştu. Tekrar dene.",
       "failBody": "Ödemen işlenirken bir hata oluştu. Tekrar dene.",
       "refundSent": "Geri ödeme gönderildi!",
       "refundFailed": "Geri ödeme başarısız",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "Tekrar hoş geldin",
-    "lockedPasskey": "Glow kilitli. Devam etmek için geçiş anahtarınla aç.",
     "lockedBiometric": "Glow kilitli. Devam etmek için biyometrinle aç.",
     "couldNotStartBody": "Glow başlatılamadı. Tekrar dene.",
     "unlockFailed": "Kilit açılamadı",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "Her şey tamam!",
     "nonePending": "İade bekleyen reddedilmiş yatırım yok.",
-    "destination": "Hedef",
     "title": "Bitcoin olarak iade",
     "broadcasting": "Yayınlanıyor",
     "broadcast": "İade yayınlandı",
-    "sent": "İade gönderildi",
-    "broadcastBody": "İaden Bitcoin ağına gönderildi.",
     "failed": "İade başarısız",
-    "processing": "İade işleniyor...",
-    "errorBody": "İaden işlenirken bir hata oluştu.",
     "txId": "İade işlem kimliği",
     "loadFailed": "Reddedilen yatırmalar yüklenemedi",
     "notOnchainAddress": "Bu bir on-chain Bitcoin adresi değil",
@@ -633,7 +605,6 @@
     "title": "BTC transferi",
     "claimFailed": "Talep başarısız",
     "autoClaimFailed": "Otomatik talep başarısız",
-    "waitingConfirmations": "3 onay bekleniyor.",
     "autoClaim": "Bu transfer otomatik olarak talep edilecek.",
     "speed": "Hız",
     "standardDelivery": "Standart teslimat",
@@ -663,8 +634,6 @@
     "reconnectFailed": "Yeniden bağlanılamadı. Tekrar dene.",
     "mnemonicConnectFailed": "Kayıtlı ifadeyle bağlanılamadı. Tekrar dene.",
     "listenersFailed": "Olay dinleyicileri kurulamadı.",
-    "missingApiKey": "API anahtarı eksik",
-    "missingApiKeyBody": ".env dosyana VITE_BREEZ_API_KEY ekle",
     "saveFailed": "Bu cihaza kaydedilemedi",
     "saveFailedBody": "Glow'u bir dahaki açışında yeniden oturum açman istenebilir."
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "Talep edilmemiş yatırımlar",
     "openUnclaimedDeposits": "Talep edilmemiş yatırımları aç",
     "notNow": "Şimdi değil",
-    "lightningAddress": "Lightning adresi",
     "labelFailed": "“{{label}}” etiketi taşınamadı. Tekrar dene.",
     "currentLabel": "(geçerli)",
     "probeFailed": "Mevcut geçiş anahtarı kontrol edilemedi. Tekrar dene.",

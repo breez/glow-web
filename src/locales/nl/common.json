@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Mogelijk gemaakt door Breez SDK",
     "somethingWrong": "Er is iets misgegaan",
     "couldNotOpen": "Glow kon niet worden geopend",
@@ -34,8 +33,6 @@
     "export": "Exporteren",
     "exporting": "Bezig met exporteren...",
     "preparing": "Bezig met voorbereiden...",
-    "approve": "Goedkeuren",
-    "reject": "Afwijzen",
     "retry": "Opnieuw",
     "goBack": "Terug",
     "edit": "Bewerken",
@@ -202,7 +199,6 @@
     "title": "Contacten",
     "name": "Naam",
     "namePlaceholder": "Naam van contact",
-    "lightningAddress": "Lightning-adres",
     "searchPlaceholder": "Contacten zoeken...",
     "deleteTitle": "Contact verwijderen",
     "noMatches": "Geen resultaten",
@@ -365,9 +361,6 @@
     "sparkAddress": "Spark-adres",
     "bitcoinAddress": "Bitcoin-adres",
     "scanToPay": "Scan om deze Lightning-factuur te betalen",
-    "useThisAddress": "Gebruik dit adres om betalingen te ontvangen",
-    "sendBitcoinHere": "Stuur Bitcoin naar dit adres voor automatische omzetting naar Lightning",
-    "generatingBitcoin": "Bitcoin-adres wordt aangemaakt...",
     "generatingThing": "{{thing}} wordt aangemaakt...",
     "sparkAddressFailed": "Spark-adres kon niet worden aangemaakt: {{error}}",
     "bitcoinAddressFailed": "Bitcoin-adres kon niet worden aangemaakt: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "Waarvoor is dit?",
     "amount": "Bedrag",
     "specificAmount": "Factuur met een specifiek bedrag aanmaken",
-    "lightningAddress": "Lightning-adres",
-    "createAddressPrompt": "Maak een Lightning-adres aan om makkelijker betalingen te ontvangen",
-    "createLightningAddress": "Lightning-adres aanmaken",
     "editLightningAddress": "Lightning-adres bewerken",
     "editAddress": "Adres bewerken",
     "createAddress": "Lightning-adres aanmaken",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Bitcoin kopen",
-    "withCashApp": "Kopen met Cash App",
     "cashAppLink": "Cash App-link",
     "cashAppNote": "Cash App toont het overeenkomstige bedrag in je lokale valuta en belast je Cash- of BTC-saldo.",
-    "scanWithCashApp": "Scan deze code met Cash App",
     "amount": "Bedrag",
     "invalidAmount": "Ongeldig bedrag",
     "invoiceFailed": "Factuur kon niet worden aangemaakt. Probeer het opnieuw.",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Glow-logboeken",
-    "shareDialogTitle": "Logboeken delen",
     "dbShareTitle": "Export van de Glow SDK-database"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "Betaling verstuurd!",
     "failed": "Betaling mislukt",
     "authenticated": "Geverifieerd!",
-    "authFailed": "Verificatie mislukt",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / naam@domein.com / contact / USDC- of USDT-adres",
     "feeRate": {
       "title": "Kies het kostentarief",
       "slow": "Langzaam",
@@ -512,7 +497,6 @@
       "gettingQuote": "Offerte wordt opgehaald...",
       "receiving": "Je ontvangt",
       "fee": "Kosten",
-      "changeAmount": "Bedrag wijzigen",
       "send": "Versturen",
       "noRoutes": "Geen ondersteunde stablecoin-route beschikbaar voor dit adres",
       "chain": "Chain",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "Te ontvangen bedrag",
-      "receive": "Ontvangen",
       "timedOut": "De betaling is niet op tijd aangekomen. Probeer het opnieuw."
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "Aan"
     },
     "noDestination": "Voer een betaalbestemming in",
-    "prepareFailed": "Betaling kon niet worden voorbereid {{error}}",
     "paymentFailed": "Betaling mislukt: {{error}}",
     "operationFailed": "Bewerking mislukt: {{error}}",
     "processingPhase": {
-      "authenticating": "Bezig met verifiëren...",
       "waitingForPayment": "Wachten op de betaling...",
       "converting": "Bezig met omzetten...",
       "sending": "Bezig met versturen...",
-      "authBody": "Even geduld terwijl we je identiteit verifiëren...",
       "withdrawBody": "De overdracht wordt afgerond. Dit kan even duren...",
       "convertBody": "Even geduld terwijl we het bedrag omzetten...",
       "sendBody": "Even geduld terwijl we je transactie verwerken..."
     },
     "result": {
-      "authSuccessBody": "Je bent met succes geverifieerd bij de dienst.",
       "sentBody": "Je betaling is met succes naar de ontvanger verstuurd.",
-      "authFailBody": "Er is een fout opgetreden tijdens de verificatie. Probeer het opnieuw.",
       "failBody": "Er is een fout opgetreden bij het verwerken van je betaling. Probeer het opnieuw.",
       "refundSent": "Terugbetaling verzonden!",
       "refundFailed": "Terugbetaling mislukt",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "Welkom terug",
-    "lockedPasskey": "Glow is vergrendeld. Ontgrendel met je passkey om door te gaan.",
     "lockedBiometric": "Glow is vergrendeld. Ontgrendel biometrisch om door te gaan.",
     "couldNotStartBody": "Glow kon niet worden gestart. Probeer het opnieuw.",
     "unlockFailed": "Ontgrendelen mislukt",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "Alles in orde!",
     "nonePending": "Geen afgewezen stortingen die op terugbetaling wachten.",
-    "destination": "Bestemming",
     "title": "Terugbetaling in Bitcoin",
     "broadcasting": "Wordt uitgezonden",
     "broadcast": "Terugbetaling uitgezonden",
-    "sent": "Terugbetaling verstuurd",
-    "broadcastBody": "Je terugbetaling is naar het Bitcoin-netwerk verstuurd.",
     "failed": "Terugbetaling mislukt",
-    "processing": "Terugbetaling wordt verwerkt...",
-    "errorBody": "Er is een fout opgetreden bij het verwerken van je terugbetaling.",
     "txId": "Transactie-ID van de terugbetaling",
     "loadFailed": "Kan geweigerde stortingen niet laden",
     "notOnchainAddress": "Dat is geen on-chain Bitcoin-adres",
@@ -633,7 +605,6 @@
     "title": "BTC-overdracht",
     "claimFailed": "Claimen mislukt",
     "autoClaimFailed": "Automatisch claimen mislukt",
-    "waitingConfirmations": "Wachten op 3 bevestigingen.",
     "autoClaim": "Deze overdracht wordt automatisch geclaimd.",
     "speed": "Snelheid",
     "standardDelivery": "Standaardlevering",
@@ -663,8 +634,6 @@
     "reconnectFailed": "Opnieuw verbinden is niet gelukt. Probeer het opnieuw.",
     "mnemonicConnectFailed": "Verbinden met de opgeslagen zin is mislukt. Probeer het opnieuw.",
     "listenersFailed": "Event listeners konden niet worden ingesteld.",
-    "missingApiKey": "API-sleutel ontbreekt",
-    "missingApiKeyBody": "Voeg VITE_BREEZ_API_KEY toe aan je .env-bestand",
     "saveFailed": "Opslaan op dit apparaat is niet gelukt",
     "saveFailedBody": "Mogelijk wordt je gevraagd opnieuw in te loggen als je Glow de volgende keer opent."
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "Niet-geclaimde stortingen",
     "openUnclaimedDeposits": "Niet-geclaimde stortingen openen",
     "notNow": "Niet nu",
-    "lightningAddress": "Lightning-adres",
     "labelFailed": "Het label “{{label}}” kon niet worden gemigreerd. Probeer het opnieuw.",
     "currentLabel": "(huidig)",
     "probeFailed": "Kan niet controleren of er al een passkey is. Probeer het opnieuw.",

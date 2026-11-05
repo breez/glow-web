@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "مدعوم بـ Breez SDK",
     "somethingWrong": "حدث خطأ ما",
     "couldNotOpen": "تعذّر فتح Glow",
@@ -34,8 +33,6 @@
     "export": "تصدير",
     "exporting": "جارٍ التصدير...",
     "preparing": "جارٍ التحضير...",
-    "approve": "موافقة",
-    "reject": "رفض",
     "retry": "إعادة المحاولة",
     "goBack": "رجوع",
     "edit": "تعديل",
@@ -208,7 +205,6 @@
     "title": "جهات الاتصال",
     "name": "الاسم",
     "namePlaceholder": "اسم جهة الاتصال",
-    "lightningAddress": "عنوان Lightning",
     "searchPlaceholder": "البحث في جهات الاتصال...",
     "deleteTitle": "حذف جهة الاتصال",
     "noMatches": "لا توجد نتائج مطابقة",
@@ -371,9 +367,6 @@
     "sparkAddress": "عنوان Spark",
     "bitcoinAddress": "عنوان Bitcoin",
     "scanToPay": "امسح الرمز لدفع فاتورة Lightning هذه",
-    "useThisAddress": "استخدم هذا العنوان لاستلام المدفوعات",
-    "sendBitcoinHere": "أرسل Bitcoin إلى هذا العنوان للتحويل التلقائي إلى Lightning",
-    "generatingBitcoin": "جارٍ إنشاء عنوان Bitcoin...",
     "generatingThing": "جارٍ إنشاء {{thing}}...",
     "sparkAddressFailed": "تعذّر إنشاء عنوان Spark: {{error}}",
     "bitcoinAddressFailed": "تعذّر إنشاء عنوان Bitcoin: {{error}}",
@@ -387,9 +380,6 @@
     "descriptionPlaceholder": "ما الغرض من هذا؟",
     "amount": "المبلغ",
     "specificAmount": "إنشاء فاتورة بمبلغ محدّد",
-    "lightningAddress": "عنوان Lightning",
-    "createAddressPrompt": "أنشئ عنوان Lightning لاستلام المدفوعات بسهولة",
-    "createLightningAddress": "إنشاء عنوان Lightning",
     "editLightningAddress": "تعديل عنوان Lightning",
     "editAddress": "تعديل العنوان",
     "createAddress": "إنشاء عنوان Lightning",
@@ -424,10 +414,8 @@
   },
   "buy": {
     "title": "شراء Bitcoin",
-    "withCashApp": "الشراء عبر Cash App",
     "cashAppLink": "رابط Cash App",
     "cashAppNote": "سيعرض Cash App المبلغ المكافئ بعملتك المحلية ويخصمه من رصيدك في Cash أو BTC.",
-    "scanWithCashApp": "امسح هذا الرمز بـ Cash App",
     "amount": "المبلغ",
     "invalidAmount": "مبلغ غير صحيح",
     "invoiceFailed": "تعذّر إنشاء الفاتورة. يُرجى إعادة المحاولة.",
@@ -448,7 +436,6 @@
   },
   "logs": {
     "shareTitle": "سجلات Glow",
-    "shareDialogTitle": "مشاركة السجلات",
     "dbShareTitle": "تصدير قاعدة بيانات Glow SDK"
   },
   "startupFailure": {
@@ -504,8 +491,6 @@
     "sent": "تم إرسال الدفعة!",
     "failed": "فشلت الدفعة",
     "authenticated": "تم التحقق!",
-    "authFailed": "فشل التحقق",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / جهة اتصال / عنوان USDC أو USDT",
     "feeRate": {
       "title": "اختر معدّل الرسوم",
       "slow": "بطيء",
@@ -518,7 +503,6 @@
       "gettingQuote": "جارٍ الحصول على عرض السعر...",
       "receiving": "ستستلم",
       "fee": "الرسوم",
-      "changeAmount": "تغيير المبلغ",
       "send": "إرسال",
       "noRoutes": "لا توجد مسارات stablecoin مدعومة لهذا العنوان",
       "chain": "السلسلة",
@@ -533,7 +517,6 @@
     },
     "withdraw": {
       "amountToReceive": "المبلغ المستلم",
-      "receive": "استلام",
       "timedOut": "لم تصل الدفعة في الوقت المحدّد. يُرجى إعادة المحاولة."
     },
     "lnurl": {
@@ -544,23 +527,18 @@
       "to": "إلى"
     },
     "noDestination": "يُرجى إدخال جهة الدفع",
-    "prepareFailed": "تعذّر تحضير الدفعة {{error}}",
     "paymentFailed": "فشلت الدفعة: {{error}}",
     "operationFailed": "فشلت العملية: {{error}}",
     "processingPhase": {
-      "authenticating": "جارٍ التحقق...",
       "waitingForPayment": "بانتظار الدفعة...",
       "converting": "جارٍ التحويل...",
       "sending": "جارٍ الإرسال...",
-      "authBody": "يُرجى الانتظار بينما نتحقق من هويتك...",
       "withdrawBody": "جارٍ إتمام التحويل. قد يستغرق هذا لحظة...",
       "convertBody": "يُرجى الانتظار بينما نحوّل المبلغ...",
       "sendBody": "يُرجى الانتظار بينما نعالج عمليتك..."
     },
     "result": {
-      "authSuccessBody": "تم التحقق من هويتك لدى هذه الخدمة بنجاح.",
       "sentBody": "تم إرسال دفعتك إلى المستلم بنجاح.",
-      "authFailBody": "حدث خطأ أثناء التحقق. يُرجى إعادة المحاولة.",
       "failBody": "حدث خطأ أثناء معالجة دفعتك. يُرجى إعادة المحاولة.",
       "refundSent": "تم إرسال الاسترداد!",
       "refundFailed": "فشل الاسترداد",
@@ -605,7 +583,6 @@
   },
   "unlock": {
     "welcomeBack": "مرحباً بعودتك",
-    "lockedPasskey": "Glow مقفل. افتح القفل بمفتاح مرورك للمتابعة.",
     "lockedBiometric": "Glow مقفل. افتح القفل بقياساتك الحيوية للمتابعة.",
     "couldNotStartBody": "تعذّر تشغيل Glow. يُرجى إعادة المحاولة.",
     "unlockFailed": "فشل فتح القفل",
@@ -617,15 +594,10 @@
   "refund": {
     "allClear": "كل شيء على ما يرام!",
     "nonePending": "لا توجد إيداعات مرفوضة بانتظار الاسترداد.",
-    "destination": "الجهة",
     "title": "الاسترداد إلى Bitcoin",
     "broadcasting": "جارٍ البث",
     "broadcast": "تم بث الاسترداد",
-    "sent": "تم إرسال الاسترداد",
-    "broadcastBody": "تم إرسال استردادك إلى شبكة Bitcoin.",
     "failed": "فشل الاسترداد",
-    "processing": "جارٍ معالجة الاسترداد...",
-    "errorBody": "حدث خطأ أثناء معالجة استردادك.",
     "txId": "معرّف عملية الاسترداد",
     "loadFailed": "تعذّر تحميل الإيداعات المرفوضة",
     "notOnchainAddress": "هذا ليس عنوان Bitcoin on-chain",
@@ -639,7 +611,6 @@
     "title": "تحويل BTC",
     "claimFailed": "فشل الاستلام",
     "autoClaimFailed": "فشل الاستلام التلقائي",
-    "waitingConfirmations": "بانتظار 3 تأكيدات.",
     "autoClaim": "سيُستلم هذا التحويل تلقائياً.",
     "speed": "السرعة",
     "standardDelivery": "تسليم عادي",
@@ -672,8 +643,6 @@
     "reconnectFailed": "تعذّرت إعادة الاتصال. يُرجى إعادة المحاولة.",
     "mnemonicConnectFailed": "تعذّر الاتصال باستخدام mnemonic المحفوظ. يُرجى إعادة المحاولة.",
     "listenersFailed": "تعذّر إعداد مستمعي الأحداث.",
-    "missingApiKey": "مفتاح API مفقود",
-    "missingApiKeyBody": "يُرجى إضافة VITE_BREEZ_API_KEY إلى ملف .env",
     "saveFailed": "تعذّر الحفظ على هذا الجهاز",
     "saveFailedBody": "قد يُطلب منك تسجيل الدخول من جديد في المرة القادمة التي تفتح فيها Glow."
   },
@@ -697,7 +666,6 @@
     "unclaimedDeposits": "إيداعات غير مستلمة",
     "openUnclaimedDeposits": "فتح الإيداعات غير المستلمة",
     "notNow": "ليس الآن",
-    "lightningAddress": "عنوان Lightning",
     "labelFailed": "تعذّر نقل التسمية «{{label}}». يُرجى إعادة المحاولة.",
     "currentLabel": "(الحالية)",
     "probeFailed": "تعذّر التحقق من وجود مفتاح مرور. يُرجى إعادة المحاولة.",

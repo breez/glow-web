@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "这会删除这台设备上保存的所有 Glow 数据。请确认你已保存恢复短语：再次取用资金时会用到它。"
   },
   "refund": {
-    "destinationBody": "请输入你想收到退款的 Bitcoin 地址。",
     "refund": "退款",
     "amount": "金额",
     "networkFee": "网络费用"

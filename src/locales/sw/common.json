@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Inawezeshwa na Breez SDK",
     "somethingWrong": "Kuna kitu kilikwenda vibaya",
     "couldNotOpen": "Glow haikuweza kufunguka",
@@ -34,8 +33,6 @@
     "export": "Hamisha",
     "exporting": "Inahamisha...",
     "preparing": "Inatayarisha...",
-    "approve": "Idhinisha",
-    "reject": "Kataa",
     "retry": "Jaribu tena",
     "goBack": "Rudi Nyuma",
     "edit": "Badilisha",
@@ -202,7 +199,6 @@
     "title": "Anwani",
     "name": "Jina",
     "namePlaceholder": "Jina la anwani",
-    "lightningAddress": "Anwani ya Lightning",
     "searchPlaceholder": "Tafuta anwani...",
     "deleteTitle": "Futa Anwani",
     "noMatches": "Hakuna inayolingana",
@@ -365,9 +361,6 @@
     "sparkAddress": "Anwani ya Spark",
     "bitcoinAddress": "Anwani ya Bitcoin",
     "scanToPay": "Changanua ili kulipa ankara hii ya Lightning",
-    "useThisAddress": "Tumia anwani hii ili kupokea malipo",
-    "sendBitcoinHere": "Tuma Bitcoin kwenye anwani hii kwa ubadilishaji wa Lightning kiotomatiki",
-    "generatingBitcoin": "Inatengeneza anwani ya Bitcoin...",
     "generatingThing": "Inatengeneza {{thing}}...",
     "sparkAddressFailed": "Haikuweza kutengeneza anwani ya Spark: {{error}}",
     "bitcoinAddressFailed": "Haikuweza kutengeneza anwani ya Bitcoin: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "Hii ni ya nini?",
     "amount": "Kiasi",
     "specificAmount": "Tengeneza ankara yenye kiasi maalum",
-    "lightningAddress": "Anwani ya Lightning",
-    "createAddressPrompt": "Tengeneza Anwani ya Lightning ili kupokea malipo kwa urahisi",
-    "createLightningAddress": "Tengeneza Anwani ya Lightning",
     "editLightningAddress": "Badilisha Anwani ya Lightning",
     "editAddress": "Badilisha Anwani",
     "createAddress": "Tengeneza Anwani ya Lightning",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Nunua Bitcoin",
-    "withCashApp": "Nunua kwa Cash App",
     "cashAppLink": "Kiungo cha Cash App",
     "cashAppNote": "Cash App itaonyesha kiasi kinacholingana katika sarafu yako ya nchi na kutoza kwenye salio lako la Cash au BTC.",
-    "scanWithCashApp": "Changanua msimbo huu kwa Cash App",
     "amount": "Kiasi",
     "invalidAmount": "Kiasi si sahihi",
     "invoiceFailed": "Imeshindwa kutengeneza ankara. Tafadhali jaribu tena.",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Kumbukumbu za Glow",
-    "shareDialogTitle": "Shiriki kumbukumbu",
     "dbShareTitle": "Uhamishaji wa Hifadhidata ya Glow SDK"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "Malipo Yametumwa!",
     "failed": "Malipo Yameshindikana",
     "authenticated": "Imethibitishwa!",
-    "authFailed": "Uthibitishaji Umeshindikana",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / anwani / anwani ya USDC au USDT",
     "feeRate": {
       "title": "Chagua Kiwango cha Ada",
       "slow": "Polepole",
@@ -512,7 +497,6 @@
       "gettingQuote": "Inapata bei...",
       "receiving": "Unapokea",
       "fee": "Ada",
-      "changeAmount": "Badilisha Kiasi",
       "send": "Tuma",
       "noRoutes": "Hakuna njia za stablecoin zinazotumika kwa anwani hii",
       "chain": "Mnyororo",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "Kiasi cha kupokea",
-      "receive": "Pokea",
       "timedOut": "Malipo hayakufika kwa wakati. Tafadhali jaribu tena."
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "Kwa"
     },
     "noDestination": "Tafadhali weka lengo la malipo",
-    "prepareFailed": "Imeshindwa kutayarisha malipo {{error}}",
     "paymentFailed": "Malipo yameshindikana: {{error}}",
     "operationFailed": "Utendaji umeshindikana: {{error}}",
     "processingPhase": {
-      "authenticating": "Inathibitisha...",
       "waitingForPayment": "Inasubiri malipo...",
       "converting": "Inabadilisha...",
       "sending": "Inatuma...",
-      "authBody": "Tafadhali subiri tunapothibitisha utambulisho wako...",
       "withdrawBody": "Inakamilisha uhamisho. Hii inaweza kuchukua muda kidogo...",
       "convertBody": "Tafadhali subiri tunapobadilisha kiasi...",
       "sendBody": "Tafadhali subiri tunapochakata muamala wako..."
     },
     "result": {
-      "authSuccessBody": "Umethibitishwa kwa mafanikio kwenye huduma hii.",
       "sentBody": "Malipo yako yametumwa kwa mafanikio kwa mpokeaji.",
-      "authFailBody": "Kulikuwa na hitilafu wakati wa uthibitishaji. Tafadhali jaribu tena.",
       "failBody": "Kulikuwa na hitilafu wakati wa kuchakata malipo yako. Tafadhali jaribu tena.",
       "refundSent": "Marejesho Yametumwa!",
       "refundFailed": "Marejesho Yameshindikana",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "Karibu tena",
-    "lockedPasskey": "Glow imefungwa. Fungua kwa passkey yako ili kuendelea.",
     "lockedBiometric": "Glow imefungwa. Fungua kwa baiometriki yako ili kuendelea.",
     "couldNotStartBody": "Glow haikuweza kuanza. Tafadhali jaribu tena.",
     "unlockFailed": "Kufungua kumeshindikana",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "Kila Kitu Sawa!",
     "nonePending": "Hakuna amana iliyokataliwa inayosubiri marejesho.",
-    "destination": "Lengo",
     "title": "Marejesho kwenda Bitcoin",
     "broadcasting": "Inasambaza",
     "broadcast": "Marejesho Yamesambazwa",
-    "sent": "Marejesho Yametumwa",
-    "broadcastBody": "Marejesho yako yametumwa kwenye mtandao wa Bitcoin.",
     "failed": "Marejesho Yameshindikana",
-    "processing": "Inachakata marejesho...",
-    "errorBody": "Hitilafu imetokea wakati wa kuchakata marejesho yako.",
     "txId": "Kitambulisho cha Muamala wa Marejesho",
     "loadFailed": "Imeshindwa kupakia amana zilizokataliwa",
     "notOnchainAddress": "Hiyo si anwani ya Bitcoin ya on-chain",
@@ -633,7 +605,6 @@
     "title": "Uhamisho wa BTC",
     "claimFailed": "Dai Limeshindikana",
     "autoClaimFailed": "Dai la kiotomatiki limeshindikana",
-    "waitingConfirmations": "Inasubiri uthibitisho 3.",
     "autoClaim": "Uhamisho huu utadaiwa kiotomatiki.",
     "speed": "Kasi",
     "standardDelivery": "Uwasilishaji wa kawaida",
@@ -663,8 +634,6 @@
     "reconnectFailed": "Imeshindwa kuunganisha tena. Tafadhali jaribu tena.",
     "mnemonicConnectFailed": "Imeshindwa kuunganisha kwa mnemonic iliyohifadhiwa. Tafadhali jaribu tena.",
     "listenersFailed": "Imeshindwa kusanidi visikilizi vya matukio.",
-    "missingApiKey": "Ufunguo wa API Haupo",
-    "missingApiKeyBody": "Tafadhali ongeza VITE_BREEZ_API_KEY kwenye faili lako la .env",
     "saveFailed": "Haikuweza kuhifadhi kwenye kifaa hiki",
     "saveFailedBody": "Unaweza kuombwa kuingia tena mara ijayo utakapofungua Glow."
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "Amana zisizodaiwa",
     "openUnclaimedDeposits": "Fungua amana zisizodaiwa",
     "notNow": "Si sasa",
-    "lightningAddress": "Anwani ya Lightning",
     "labelFailed": "Haikuweza kuhamisha lebo “{{label}}”. Tafadhali jaribu tena.",
     "currentLabel": "(ya sasa)",
     "probeFailed": "Haikuweza kuangalia kama passkey ipo. Tafadhali jaribu tena.",

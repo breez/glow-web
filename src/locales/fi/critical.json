@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Tämä poistaa kaikki tälle laitteelle tallennetut Glow-tiedot. Varmista, että olet tallentanut palautuslauseesi: tarvitset sitä päästäksesi taas käsiksi varoihisi."
   },
   "refund": {
-    "destinationBody": "Anna Bitcoin-osoite, johon haluat hyvityksen.",
     "refund": "Hyvitä",
     "amount": "Summa",
     "networkFee": "Verkkomaksu"

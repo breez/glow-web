@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Được cung cấp bởi Breez SDK",
     "somethingWrong": "Đã xảy ra lỗi",
     "couldNotOpen": "Không thể mở Glow",
@@ -34,8 +33,6 @@
     "export": "Xuất",
     "exporting": "Đang xuất...",
     "preparing": "Đang chuẩn bị...",
-    "approve": "Chấp nhận",
-    "reject": "Từ chối",
     "retry": "Thử lại",
     "goBack": "Quay lại",
     "edit": "Sửa",
@@ -202,7 +199,6 @@
     "title": "Liên hệ",
     "name": "Tên",
     "namePlaceholder": "Tên liên hệ",
-    "lightningAddress": "Địa chỉ Lightning",
     "searchPlaceholder": "Tìm liên hệ...",
     "deleteTitle": "Xóa liên hệ",
     "noMatches": "Không có kết quả",
@@ -365,9 +361,6 @@
     "sparkAddress": "Địa chỉ Spark",
     "bitcoinAddress": "Địa chỉ Bitcoin",
     "scanToPay": "Quét để thanh toán hóa đơn Lightning này",
-    "useThisAddress": "Dùng địa chỉ này để nhận thanh toán",
-    "sendBitcoinHere": "Gửi Bitcoin tới địa chỉ này để tự động chuyển đổi sang Lightning",
-    "generatingBitcoin": "Đang tạo địa chỉ Bitcoin...",
     "generatingThing": "Đang tạo {{thing}}...",
     "sparkAddressFailed": "Không tạo được địa chỉ Spark: {{error}}",
     "bitcoinAddressFailed": "Không tạo được địa chỉ Bitcoin: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "Khoản này để làm gì?",
     "amount": "Số tiền",
     "specificAmount": "Tạo hóa đơn với số tiền cụ thể",
-    "lightningAddress": "Địa chỉ Lightning",
-    "createAddressPrompt": "Tạo một địa chỉ Lightning để nhận thanh toán dễ dàng",
-    "createLightningAddress": "Tạo địa chỉ Lightning",
     "editLightningAddress": "Sửa địa chỉ Lightning",
     "editAddress": "Sửa địa chỉ",
     "createAddress": "Tạo địa chỉ Lightning",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Mua Bitcoin",
-    "withCashApp": "Mua bằng Cash App",
     "cashAppLink": "Liên kết Cash App",
     "cashAppNote": "Cash App sẽ hiển thị số tiền tương đương bằng tiền tệ địa phương của bạn và trừ vào số dư Cash hoặc BTC của bạn.",
-    "scanWithCashApp": "Quét mã này bằng Cash App",
     "amount": "Số tiền",
     "invalidAmount": "Số tiền không hợp lệ",
     "invoiceFailed": "Không tạo được hóa đơn. Vui lòng thử lại.",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Log Glow",
-    "shareDialogTitle": "Chia sẻ log",
     "dbShareTitle": "Bản xuất cơ sở dữ liệu Glow SDK"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "Đã gửi thanh toán!",
     "failed": "Thanh toán thất bại",
     "authenticated": "Đã xác thực!",
-    "authFailed": "Xác thực thất bại",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / liên hệ / địa chỉ USDC hoặc USDT",
     "feeRate": {
       "title": "Chọn mức phí",
       "slow": "Chậm",
@@ -512,7 +497,6 @@
       "gettingQuote": "Đang lấy báo giá...",
       "receiving": "Nhận được",
       "fee": "Phí",
-      "changeAmount": "Đổi số tiền",
       "send": "Gửi",
       "noRoutes": "Không có tuyến stablecoin nào được hỗ trợ cho địa chỉ này",
       "chain": "Chuỗi",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "Số tiền sẽ nhận",
-      "receive": "Nhận",
       "timedOut": "Thanh toán không đến kịp. Vui lòng thử lại."
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "Tới"
     },
     "noDestination": "Vui lòng nhập đích thanh toán",
-    "prepareFailed": "Không chuẩn bị được thanh toán {{error}}",
     "paymentFailed": "Thanh toán thất bại: {{error}}",
     "operationFailed": "Thao tác thất bại: {{error}}",
     "processingPhase": {
-      "authenticating": "Đang xác thực...",
       "waitingForPayment": "Đang chờ thanh toán...",
       "converting": "Đang chuyển đổi...",
       "sending": "Đang gửi...",
-      "authBody": "Vui lòng chờ trong khi chúng tôi xác minh danh tính của bạn...",
       "withdrawBody": "Đang hoàn tất chuyển tiền. Việc này có thể mất một lúc...",
       "convertBody": "Vui lòng chờ trong khi chúng tôi chuyển đổi số tiền...",
       "sendBody": "Vui lòng chờ trong khi chúng tôi xử lý giao dịch của bạn..."
     },
     "result": {
-      "authSuccessBody": "Bạn đã xác thực thành công với dịch vụ này.",
       "sentBody": "Thanh toán của bạn đã được gửi thành công tới người nhận.",
-      "authFailBody": "Đã có lỗi trong quá trình xác thực. Vui lòng thử lại.",
       "failBody": "Đã có lỗi khi xử lý thanh toán của bạn. Vui lòng thử lại.",
       "refundSent": "Đã gửi hoàn tiền!",
       "refundFailed": "Hoàn tiền thất bại",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "Chào mừng trở lại",
-    "lockedPasskey": "Glow đang khóa. Hãy mở bằng passkey của bạn để tiếp tục.",
     "lockedBiometric": "Glow đang khóa. Hãy mở bằng sinh trắc học của bạn để tiếp tục.",
     "couldNotStartBody": "Glow không khởi động được. Vui lòng thử lại.",
     "unlockFailed": "Mở khóa thất bại",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "Xong hết!",
     "nonePending": "Không có khoản nạp bị từ chối nào đang chờ hoàn tiền.",
-    "destination": "Đích đến",
     "title": "Hoàn tiền về Bitcoin",
     "broadcasting": "Đang phát",
     "broadcast": "Đã phát khoản hoàn tiền",
-    "sent": "Đã gửi hoàn tiền",
-    "broadcastBody": "Khoản hoàn tiền của bạn đã được gửi tới mạng Bitcoin.",
     "failed": "Hoàn tiền thất bại",
-    "processing": "Đang xử lý hoàn tiền...",
-    "errorBody": "Đã có lỗi khi xử lý khoản hoàn tiền của bạn.",
     "txId": "ID giao dịch hoàn tiền",
     "loadFailed": "Không tải được các khoản nạp bị từ chối",
     "notOnchainAddress": "Đó không phải địa chỉ Bitcoin on-chain",
@@ -633,7 +605,6 @@
     "title": "Chuyển BTC",
     "claimFailed": "Nhận thất bại",
     "autoClaimFailed": "Nhận tự động thất bại",
-    "waitingConfirmations": "Đang chờ 3 xác nhận.",
     "autoClaim": "Khoản chuyển này sẽ được nhận tự động.",
     "speed": "Tốc độ",
     "standardDelivery": "Giao thường",
@@ -663,8 +634,6 @@
     "reconnectFailed": "Không kết nối lại được. Vui lòng thử lại.",
     "mnemonicConnectFailed": "Không kết nối được bằng mnemonic đã lưu. Vui lòng thử lại.",
     "listenersFailed": "Không thiết lập được bộ lắng nghe sự kiện.",
-    "missingApiKey": "Thiếu khóa API",
-    "missingApiKeyBody": "Vui lòng thêm VITE_BREEZ_API_KEY vào tệp .env của bạn",
     "saveFailed": "Không lưu được vào thiết bị này",
     "saveFailedBody": "Bạn có thể phải đăng nhập lại lần tới khi mở Glow."
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "Khoản nạp chưa nhận",
     "openUnclaimedDeposits": "Mở các khoản nạp chưa nhận",
     "notNow": "Để sau",
-    "lightningAddress": "địa chỉ Lightning",
     "labelFailed": "Không chuyển được nhãn “{{label}}”. Vui lòng thử lại.",
     "currentLabel": "(hiện tại)",
     "probeFailed": "Không kiểm tra được xem có passkey nào chưa. Vui lòng thử lại.",

@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Breez SDK द्वारा संचालित",
     "somethingWrong": "कुछ गड़बड़ हो गई",
     "couldNotOpen": "Glow खुल नहीं सका",
@@ -34,8 +33,6 @@
     "export": "एक्सपोर्ट करें",
     "exporting": "एक्सपोर्ट हो रहा है...",
     "preparing": "तैयार हो रहा है...",
-    "approve": "मंज़ूर करें",
-    "reject": "अस्वीकार करें",
     "retry": "फिर कोशिश करें",
     "goBack": "पीछे जाएँ",
     "edit": "बदलें",
@@ -202,7 +199,6 @@
     "title": "संपर्क",
     "name": "नाम",
     "namePlaceholder": "संपर्क का नाम",
-    "lightningAddress": "Lightning पता",
     "searchPlaceholder": "संपर्क खोजें...",
     "deleteTitle": "संपर्क हटाएँ",
     "noMatches": "कोई मेल नहीं",
@@ -365,9 +361,6 @@
     "sparkAddress": "Spark पता",
     "bitcoinAddress": "Bitcoin पता",
     "scanToPay": "यह Lightning इनवॉइस चुकाने के लिए स्कैन करें",
-    "useThisAddress": "भुगतान पाने के लिए यह पता इस्तेमाल करें",
-    "sendBitcoinHere": "अपने आप Lightning में रूपांतरण के लिए इस पते पर Bitcoin भेजें",
-    "generatingBitcoin": "Bitcoin पता बन रहा है...",
     "generatingThing": "{{thing}} बन रहा है...",
     "sparkAddressFailed": "Spark पता नहीं बन सका: {{error}}",
     "bitcoinAddressFailed": "Bitcoin पता नहीं बन सका: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "यह किस लिए है?",
     "amount": "राशि",
     "specificAmount": "तय राशि के साथ इनवॉइस बनाएँ",
-    "lightningAddress": "Lightning पता",
-    "createAddressPrompt": "आसानी से भुगतान पाने के लिए एक Lightning पता बनाएँ",
-    "createLightningAddress": "Lightning पता बनाएँ",
     "editLightningAddress": "Lightning पता बदलें",
     "editAddress": "पता बदलें",
     "createAddress": "Lightning पता बनाएँ",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Bitcoin खरीदें",
-    "withCashApp": "Cash App से खरीदें",
     "cashAppLink": "Cash App लिंक",
     "cashAppNote": "Cash App आपकी स्थानीय मुद्रा में बराबर राशि दिखाएगा और आपके Cash या BTC बैलेंस से काटेगा।",
-    "scanWithCashApp": "यह कोड Cash App से स्कैन करें",
     "amount": "राशि",
     "invalidAmount": "राशि मान्य नहीं है",
     "invoiceFailed": "इनवॉइस नहीं बन सकी। कृपया फिर कोशिश करें।",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Glow लॉग",
-    "shareDialogTitle": "लॉग शेयर करें",
     "dbShareTitle": "Glow SDK डेटाबेस एक्सपोर्ट"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "भुगतान भेजा गया!",
     "failed": "भुगतान विफल",
     "authenticated": "प्रमाणित हुआ!",
-    "authFailed": "प्रमाणीकरण विफल",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / संपर्क / USDC या USDT पता",
     "feeRate": {
       "title": "शुल्क दर चुनें",
       "slow": "धीमी",
@@ -512,7 +497,6 @@
       "gettingQuote": "भाव लिया जा रहा है...",
       "receiving": "मिल रहा है",
       "fee": "शुल्क",
-      "changeAmount": "राशि बदलें",
       "send": "भेजें",
       "noRoutes": "इस पते के लिए कोई समर्थित stablecoin रास्ता नहीं है",
       "chain": "चेन",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "मिलने वाली राशि",
-      "receive": "पाएँ",
       "timedOut": "भुगतान समय पर नहीं पहुँचा। कृपया फिर कोशिश करें।"
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "किसे"
     },
     "noDestination": "कृपया भुगतान का गंतव्य डालें",
-    "prepareFailed": "भुगतान तैयार नहीं हो सका {{error}}",
     "paymentFailed": "भुगतान विफल: {{error}}",
     "operationFailed": "कार्रवाई विफल: {{error}}",
     "processingPhase": {
-      "authenticating": "प्रमाणीकरण हो रहा है...",
       "waitingForPayment": "भुगतान का इंतज़ार...",
       "converting": "बदला जा रहा है...",
       "sending": "भेजा जा रहा है...",
-      "authBody": "कृपया रुकें, हम आपकी पहचान की पुष्टि कर रहे हैं...",
       "withdrawBody": "ट्रांसफ़र पूरा हो रहा है। इसमें थोड़ा समय लग सकता है...",
       "convertBody": "कृपया रुकें, हम राशि बदल रहे हैं...",
       "sendBody": "कृपया रुकें, हम आपका ट्रांज़ैक्शन प्रोसेस कर रहे हैं..."
     },
     "result": {
-      "authSuccessBody": "आप इस सेवा पर सफलतापूर्वक प्रमाणित हो गए।",
       "sentBody": "आपका भुगतान पाने वाले को सफलतापूर्वक भेज दिया गया।",
-      "authFailBody": "प्रमाणीकरण के दौरान एक त्रुटि हुई। कृपया फिर कोशिश करें।",
       "failBody": "आपका भुगतान प्रोसेस करते समय एक त्रुटि हुई। कृपया फिर कोशिश करें।",
       "refundSent": "रिफ़ंड भेजा गया!",
       "refundFailed": "रिफ़ंड विफल",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "फिर स्वागत है",
-    "lockedPasskey": "Glow लॉक है। जारी रखने के लिए अपनी पासकी से अनलॉक करें।",
     "lockedBiometric": "Glow लॉक है। जारी रखने के लिए अपने बायोमेट्रिक से अनलॉक करें।",
     "couldNotStartBody": "Glow शुरू नहीं हो सका। कृपया फिर कोशिश करें।",
     "unlockFailed": "अनलॉक विफल",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "सब ठीक है!",
     "nonePending": "रिफ़ंड के इंतज़ार में कोई अस्वीकृत जमा नहीं है।",
-    "destination": "गंतव्य",
     "title": "Bitcoin में रिफ़ंड",
     "broadcasting": "प्रसारित हो रहा है",
     "broadcast": "रिफ़ंड प्रसारित हुआ",
-    "sent": "रिफ़ंड भेजा गया",
-    "broadcastBody": "आपका रिफ़ंड Bitcoin नेटवर्क पर भेज दिया गया है।",
     "failed": "रिफ़ंड विफल",
-    "processing": "रिफ़ंड प्रोसेस हो रहा है...",
-    "errorBody": "आपका रिफ़ंड प्रोसेस करते समय एक त्रुटि हुई।",
     "txId": "रिफ़ंड ट्रांज़ैक्शन ID",
     "loadFailed": "अस्वीकृत जमा लोड नहीं हो सकीं",
     "notOnchainAddress": "यह on-chain Bitcoin पता नहीं है",
@@ -633,7 +605,6 @@
     "title": "BTC ट्रांसफ़र",
     "claimFailed": "क्लेम विफल",
     "autoClaimFailed": "अपने आप क्लेम विफल हुआ",
-    "waitingConfirmations": "3 पुष्टियों का इंतज़ार।",
     "autoClaim": "यह ट्रांसफ़र अपने आप क्लेम हो जाएगा।",
     "speed": "गति",
     "standardDelivery": "सामान्य डिलीवरी",
@@ -663,8 +634,6 @@
     "reconnectFailed": "दोबारा जुड़ नहीं सके। कृपया फिर कोशिश करें।",
     "mnemonicConnectFailed": "सेव किए गए mnemonic से जुड़ने में विफल। कृपया फिर कोशिश करें।",
     "listenersFailed": "इवेंट लिसनर सेट नहीं हो सके।",
-    "missingApiKey": "API कुंजी नहीं है",
-    "missingApiKeyBody": "कृपया अपनी .env फ़ाइल में VITE_BREEZ_API_KEY जोड़ें",
     "saveFailed": "इस डिवाइस पर सेव नहीं हो सका",
     "saveFailedBody": "अगली बार Glow खोलने पर आपसे दोबारा साइन इन करने को कहा जा सकता है।"
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "बिना क्लेम जमा",
     "openUnclaimedDeposits": "बिना क्लेम जमा खोलें",
     "notNow": "अभी नहीं",
-    "lightningAddress": "Lightning पता",
     "labelFailed": "लेबल “{{label}}” नहीं ले जाया जा सका। कृपया फिर कोशिश करें।",
     "currentLabel": "(मौजूदा)",
     "probeFailed": "पहले से मौजूद पासकी की जाँच नहीं हो सकी। कृपया फिर कोशिश करें।",

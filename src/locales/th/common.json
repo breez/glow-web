@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "ขับเคลื่อนโดย Breez SDK",
     "somethingWrong": "เกิดข้อผิดพลาด",
     "couldNotOpen": "เปิด Glow ไม่ได้",
@@ -34,8 +33,6 @@
     "export": "ส่งออก",
     "exporting": "กำลังส่งออก...",
     "preparing": "กำลังเตรียม...",
-    "approve": "อนุมัติ",
-    "reject": "ปฏิเสธ",
     "retry": "ลองใหม่",
     "goBack": "ย้อนกลับ",
     "edit": "แก้ไข",
@@ -202,7 +199,6 @@
     "title": "รายชื่อ",
     "name": "ชื่อ",
     "namePlaceholder": "ชื่อผู้ติดต่อ",
-    "lightningAddress": "ที่อยู่ Lightning",
     "searchPlaceholder": "ค้นหารายชื่อ...",
     "deleteTitle": "ลบรายชื่อ",
     "noMatches": "ไม่พบรายการที่ตรงกัน",
@@ -365,9 +361,6 @@
     "sparkAddress": "ที่อยู่ Spark",
     "bitcoinAddress": "ที่อยู่ Bitcoin",
     "scanToPay": "สแกนเพื่อชำระใบแจ้งหนี้ Lightning นี้",
-    "useThisAddress": "ใช้ที่อยู่นี้เพื่อรับการชำระเงิน",
-    "sendBitcoinHere": "ส่ง Bitcoin มาที่ที่อยู่นี้เพื่อแปลงเป็น Lightning อัตโนมัติ",
-    "generatingBitcoin": "กำลังสร้างที่อยู่ Bitcoin...",
     "generatingThing": "กำลังสร้าง {{thing}}...",
     "sparkAddressFailed": "สร้างที่อยู่ Spark ไม่ได้: {{error}}",
     "bitcoinAddressFailed": "สร้างที่อยู่ Bitcoin ไม่ได้: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "รายการนี้สำหรับอะไร?",
     "amount": "จำนวน",
     "specificAmount": "สร้างใบแจ้งหนี้ด้วยจำนวนที่ระบุ",
-    "lightningAddress": "ที่อยู่ Lightning",
-    "createAddressPrompt": "สร้างที่อยู่ Lightning เพื่อรับการชำระเงินได้ง่าย",
-    "createLightningAddress": "สร้างที่อยู่ Lightning",
     "editLightningAddress": "แก้ไขที่อยู่ Lightning",
     "editAddress": "แก้ไขที่อยู่",
     "createAddress": "สร้างที่อยู่ Lightning",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "ซื้อ Bitcoin",
-    "withCashApp": "ซื้อด้วย Cash App",
     "cashAppLink": "ลิงก์ Cash App",
     "cashAppNote": "Cash App จะแสดงจำนวนเทียบเท่าในสกุลเงินท้องถิ่นของคุณ และหักจากยอด Cash หรือ BTC ของคุณ",
-    "scanWithCashApp": "สแกนโค้ดนี้ด้วย Cash App",
     "amount": "จำนวน",
     "invalidAmount": "จำนวนไม่ถูกต้อง",
     "invoiceFailed": "สร้างใบแจ้งหนี้ไม่สำเร็จ โปรดลองอีกครั้ง",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "บันทึกของ Glow",
-    "shareDialogTitle": "แชร์บันทึก",
     "dbShareTitle": "การส่งออกฐานข้อมูล Glow SDK"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "ส่งการชำระเงินแล้ว!",
     "failed": "การชำระเงินไม่สำเร็จ",
     "authenticated": "ยืนยันตัวตนแล้ว!",
-    "authFailed": "การยืนยันตัวตนไม่สำเร็จ",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / รายชื่อ / ที่อยู่ USDC หรือ USDT",
     "feeRate": {
       "title": "เลือกอัตราค่าธรรมเนียม",
       "slow": "ช้า",
@@ -512,7 +497,6 @@
       "gettingQuote": "กำลังขอราคา...",
       "receiving": "จะได้รับ",
       "fee": "ค่าธรรมเนียม",
-      "changeAmount": "เปลี่ยนจำนวน",
       "send": "ส่ง",
       "noRoutes": "ไม่มีเส้นทาง stablecoin ที่รองรับสำหรับที่อยู่นี้",
       "chain": "เชน",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "จำนวนที่จะได้รับ",
-      "receive": "รับ",
       "timedOut": "การชำระเงินมาไม่ทันเวลา โปรดลองอีกครั้ง"
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "ถึง"
     },
     "noDestination": "โปรดใส่ปลายทางการชำระเงิน",
-    "prepareFailed": "เตรียมการชำระเงินไม่สำเร็จ {{error}}",
     "paymentFailed": "การชำระเงินไม่สำเร็จ: {{error}}",
     "operationFailed": "การดำเนินการไม่สำเร็จ: {{error}}",
     "processingPhase": {
-      "authenticating": "กำลังยืนยันตัวตน...",
       "waitingForPayment": "กำลังรอการชำระเงิน...",
       "converting": "กำลังแปลง...",
       "sending": "กำลังส่ง...",
-      "authBody": "โปรดรอขณะเราตรวจสอบตัวตนของคุณ...",
       "withdrawBody": "กำลังทำการโอนให้เสร็จ อาจใช้เวลาสักครู่...",
       "convertBody": "โปรดรอขณะเราแปลงจำนวนเงิน...",
       "sendBody": "โปรดรอขณะเราดำเนินการธุรกรรมของคุณ..."
     },
     "result": {
-      "authSuccessBody": "คุณยืนยันตัวตนกับบริการนี้สำเร็จแล้ว",
       "sentBody": "การชำระเงินของคุณถูกส่งถึงผู้รับเรียบร้อยแล้ว",
-      "authFailBody": "เกิดข้อผิดพลาดระหว่างการยืนยันตัวตน โปรดลองอีกครั้ง",
       "failBody": "เกิดข้อผิดพลาดขณะดำเนินการชำระเงินของคุณ โปรดลองอีกครั้ง",
       "refundSent": "ส่งการคืนเงินแล้ว!",
       "refundFailed": "การคืนเงินไม่สำเร็จ",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "ยินดีต้อนรับกลับมา",
-    "lockedPasskey": "Glow ถูกล็อกอยู่ ปลดล็อกด้วยพาสคีย์ของคุณเพื่อดำเนินการต่อ",
     "lockedBiometric": "Glow ถูกล็อกอยู่ ปลดล็อกด้วยไบโอเมตริกของคุณเพื่อดำเนินการต่อ",
     "couldNotStartBody": "Glow เริ่มทำงานไม่ได้ โปรดลองอีกครั้ง",
     "unlockFailed": "ปลดล็อกไม่สำเร็จ",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "เรียบร้อยทั้งหมด!",
     "nonePending": "ไม่มีเงินฝากที่ถูกปฏิเสธรอการคืนเงิน",
-    "destination": "ปลายทาง",
     "title": "คืนเงินเป็น Bitcoin",
     "broadcasting": "กำลังกระจายข้อมูล",
     "broadcast": "กระจายการคืนเงินแล้ว",
-    "sent": "ส่งการคืนเงินแล้ว",
-    "broadcastBody": "การคืนเงินของคุณถูกส่งไปที่เครือข่าย Bitcoin แล้ว",
     "failed": "การคืนเงินไม่สำเร็จ",
-    "processing": "กำลังดำเนินการคืนเงิน...",
-    "errorBody": "เกิดข้อผิดพลาดขณะดำเนินการคืนเงินของคุณ",
     "txId": "รหัสธุรกรรมการคืนเงิน",
     "loadFailed": "โหลดเงินฝากที่ถูกปฏิเสธไม่สำเร็จ",
     "notOnchainAddress": "นั่นไม่ใช่ที่อยู่ Bitcoin แบบ on-chain",
@@ -633,7 +605,6 @@
     "title": "การโอน BTC",
     "claimFailed": "การเคลมไม่สำเร็จ",
     "autoClaimFailed": "การเคลมอัตโนมัติไม่สำเร็จ",
-    "waitingConfirmations": "กำลังรอการยืนยัน 3 ครั้ง",
     "autoClaim": "การโอนนี้จะถูกเคลมอัตโนมัติ",
     "speed": "ความเร็ว",
     "standardDelivery": "การส่งแบบมาตรฐาน",
@@ -663,8 +634,6 @@
     "reconnectFailed": "เชื่อมต่อใหม่ไม่ได้ โปรดลองอีกครั้ง",
     "mnemonicConnectFailed": "เชื่อมต่อด้วย mnemonic ที่บันทึกไว้ไม่สำเร็จ โปรดลองอีกครั้ง",
     "listenersFailed": "ตั้งค่าตัวรับเหตุการณ์ไม่สำเร็จ",
-    "missingApiKey": "ไม่มีคีย์ API",
-    "missingApiKeyBody": "โปรดเพิ่ม VITE_BREEZ_API_KEY ลงในไฟล์ .env ของคุณ",
     "saveFailed": "บันทึกลงอุปกรณ์นี้ไม่ได้",
     "saveFailedBody": "คุณอาจต้องเข้าสู่ระบบอีกครั้งในครั้งถัดไปที่เปิด Glow"
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "เงินฝากที่ยังไม่เคลม",
     "openUnclaimedDeposits": "เปิดเงินฝากที่ยังไม่เคลม",
     "notNow": "ไว้ก่อน",
-    "lightningAddress": "ที่อยู่ Lightning",
     "labelFailed": "ย้ายป้ายชื่อ “{{label}}” ไม่ได้ โปรดลองอีกครั้ง",
     "currentLabel": "(ปัจจุบัน)",
     "probeFailed": "ตรวจสอบว่ามีพาสคีย์อยู่แล้วหรือไม่ไม่ได้ โปรดลองอีกครั้ง",

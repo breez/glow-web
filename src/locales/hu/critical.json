@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Ezzel törlöd az összes Glow-adatot erről az eszközről. Győződj meg róla, hogy elmentetted a helyreállítási kifejezésedet: szükséged lesz rá, hogy újra hozzáférj a pénzedhez."
   },
   "refund": {
-    "destinationBody": "Add meg azt a Bitcoin-címet, amelyre a visszatérítést kéred.",
     "refund": "Visszatérítés",
     "amount": "Összeg",
     "networkFee": "Hálózati díj"

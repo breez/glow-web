@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Việc này xóa toàn bộ dữ liệu Glow lưu trên thiết bị này. Hãy chắc chắn bạn đã lưu cụm từ khôi phục: bạn sẽ cần nó để truy cập lại tiền của mình."
   },
   "refund": {
-    "destinationBody": "Nhập địa chỉ Bitcoin nơi bạn muốn nhận khoản hoàn tiền.",
     "refund": "Hoàn tiền",
     "amount": "Số tiền",
     "networkFee": "Phí mạng"

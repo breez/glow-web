@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Drivs av Breez SDK",
     "somethingWrong": "Något gick fel",
     "couldNotOpen": "Glow kunde inte öppnas",
@@ -34,8 +33,6 @@
     "export": "Exportera",
     "exporting": "Exporterar...",
     "preparing": "Förbereder...",
-    "approve": "Godkänn",
-    "reject": "Avvisa",
     "retry": "Försök igen",
     "goBack": "Tillbaka",
     "edit": "Redigera",
@@ -202,7 +199,6 @@
     "title": "Kontakter",
     "name": "Namn",
     "namePlaceholder": "Kontaktens namn",
-    "lightningAddress": "Lightning-adress",
     "searchPlaceholder": "Sök kontakter...",
     "deleteTitle": "Radera kontakt",
     "noMatches": "Inga träffar",
@@ -365,9 +361,6 @@
     "sparkAddress": "Spark-adress",
     "bitcoinAddress": "Bitcoin-adress",
     "scanToPay": "Skanna för att betala den här Lightning-fakturan",
-    "useThisAddress": "Använd den här adressen för att ta emot betalningar",
-    "sendBitcoinHere": "Skicka bitcoin till den här adressen för automatisk växling till Lightning",
-    "generatingBitcoin": "Skapar Bitcoin-adress...",
     "generatingThing": "Skapar {{thing}}...",
     "sparkAddressFailed": "Kunde inte skapa Spark-adress: {{error}}",
     "bitcoinAddressFailed": "Kunde inte skapa Bitcoin-adress: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "Vad gäller det?",
     "amount": "Belopp",
     "specificAmount": "Skapa en faktura med ett bestämt belopp",
-    "lightningAddress": "Lightning-adress",
-    "createAddressPrompt": "Skapa en Lightning-adress för att ta emot betalningar enklare",
-    "createLightningAddress": "Skapa Lightning-adress",
     "editLightningAddress": "Redigera Lightning-adressen",
     "editAddress": "Redigera adress",
     "createAddress": "Skapa Lightning-adress",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Köp bitcoin",
-    "withCashApp": "Köp med Cash App",
     "cashAppLink": "Cash App-länk",
     "cashAppNote": "Cash App visar motsvarande belopp i din lokala valuta och drar från ditt Cash- eller BTC-saldo.",
-    "scanWithCashApp": "Skanna den här koden med Cash App",
     "amount": "Belopp",
     "invalidAmount": "Ogiltigt belopp",
     "invoiceFailed": "Fakturan kunde inte skapas. Försök igen.",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Glow-loggar",
-    "shareDialogTitle": "Dela loggarna",
     "dbShareTitle": "Export av Glow SDK-databasen"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "Betalning skickad!",
     "failed": "Betalningen misslyckades",
     "authenticated": "Autentiserad!",
-    "authFailed": "Autentiseringen misslyckades",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / namn@domän.com / kontakt / USDC- eller USDT-adress",
     "feeRate": {
       "title": "Välj avgiftssats",
       "slow": "Långsam",
@@ -512,7 +497,6 @@
       "gettingQuote": "Hämtar offert...",
       "receiving": "Du får",
       "fee": "Avgift",
-      "changeAmount": "Ändra beloppet",
       "send": "Skicka",
       "noRoutes": "Ingen stablecoin-rutt stöds för den här adressen",
       "chain": "Kedja",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "Belopp att ta emot",
-      "receive": "Ta emot",
       "timedOut": "Betalningen kom inte fram i tid. Försök igen."
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "Till"
     },
     "noDestination": "Ange en betalningsmottagare",
-    "prepareFailed": "Betalningen kunde inte förberedas {{error}}",
     "paymentFailed": "Betalningen misslyckades: {{error}}",
     "operationFailed": "Åtgärden misslyckades: {{error}}",
     "processingPhase": {
-      "authenticating": "Autentiserar...",
       "waitingForPayment": "Väntar på betalningen...",
       "converting": "Växlar...",
       "sending": "Skickar...",
-      "authBody": "Vänta medan vi verifierar din identitet...",
       "withdrawBody": "Slutför överföringen. Det kan ta ett ögonblick...",
       "convertBody": "Vänta medan vi växlar beloppet...",
       "sendBody": "Vänta medan vi behandlar din transaktion..."
     },
     "result": {
-      "authSuccessBody": "Du har autentiserats hos tjänsten.",
       "sentBody": "Din betalning har skickats till mottagaren.",
-      "authFailBody": "Ett fel uppstod under autentiseringen. Försök igen.",
       "failBody": "Ett fel uppstod när din betalning behandlades. Försök igen.",
       "refundSent": "Återbetalning skickad!",
       "refundFailed": "Återbetalningen misslyckades",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "Välkommen tillbaka",
-    "lockedPasskey": "Glow är låst. Lås upp med din passkey för att fortsätta.",
     "lockedBiometric": "Glow är låst. Lås upp med din biometri för att fortsätta.",
     "couldNotStartBody": "Glow kunde inte starta. Försök igen.",
     "unlockFailed": "Upplåsningen misslyckades",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "Allt klart!",
     "nonePending": "Inga avvisade insättningar väntar på återbetalning.",
-    "destination": "Mottagare",
     "title": "Återbetalning i bitcoin",
     "broadcasting": "Sänder",
     "broadcast": "Återbetalningen har sänts",
-    "sent": "Återbetalning skickad",
-    "broadcastBody": "Din återbetalning har skickats till Bitcoin-nätverket.",
     "failed": "Återbetalningen misslyckades",
-    "processing": "Behandlar återbetalningen...",
-    "errorBody": "Ett fel uppstod när din återbetalning behandlades.",
     "txId": "Återbetalningens transaktions-ID",
     "loadFailed": "Det gick inte att läsa in avvisade insättningar",
     "notOnchainAddress": "Det är inte en on-chain Bitcoin-adress",
@@ -633,7 +605,6 @@
     "title": "BTC-överföring",
     "claimFailed": "Inlösen misslyckades",
     "autoClaimFailed": "Automatisk inlösen misslyckades",
-    "waitingConfirmations": "Väntar på 3 bekräftelser.",
     "autoClaim": "Den här överföringen löses in automatiskt.",
     "speed": "Hastighet",
     "standardDelivery": "Standardleverans",
@@ -663,8 +634,6 @@
     "reconnectFailed": "Det gick inte att återansluta. Försök igen.",
     "mnemonicConnectFailed": "Det gick inte att ansluta med den sparade frasen. Försök igen.",
     "listenersFailed": "Händelselyssnarna kunde inte ställas in.",
-    "missingApiKey": "API-nyckel saknas",
-    "missingApiKeyBody": "Lägg till VITE_BREEZ_API_KEY i din .env-fil",
     "saveFailed": "Det gick inte att spara på den här enheten",
     "saveFailedBody": "Du kan behöva logga in igen nästa gång du öppnar Glow."
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "Ej inlösta insättningar",
     "openUnclaimedDeposits": "Öppna ej inlösta insättningar",
     "notNow": "Inte nu",
-    "lightningAddress": "Lightning-adress",
     "labelFailed": "Etiketten ”{{label}}” kunde inte migreras. Försök igen.",
     "currentLabel": "(aktuell)",
     "probeFailed": "Det gick inte att kontrollera om det finns en passkey. Försök igen.",

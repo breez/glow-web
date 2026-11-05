@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Breez SDK alapokon",
     "somethingWrong": "Valami hiba történt",
     "couldNotOpen": "A Glow nem nyitható meg",
@@ -34,8 +33,6 @@
     "export": "Exportálás",
     "exporting": "Exportálás...",
     "preparing": "Előkészítés...",
-    "approve": "Jóváhagyás",
-    "reject": "Elutasítás",
     "retry": "Újrapróbálás",
     "goBack": "Vissza",
     "edit": "Szerkesztés",
@@ -202,7 +199,6 @@
     "title": "Névjegyek",
     "name": "Név",
     "namePlaceholder": "Névjegy neve",
-    "lightningAddress": "Lightning-cím",
     "searchPlaceholder": "Névjegyek keresése...",
     "deleteTitle": "Névjegy törlése",
     "noMatches": "Nincs találat",
@@ -365,9 +361,6 @@
     "sparkAddress": "Spark-cím",
     "bitcoinAddress": "Bitcoin-cím",
     "scanToPay": "Olvasd be a Lightning-számla kifizetéséhez",
-    "useThisAddress": "Használd ezt a címet fizetések fogadásához",
-    "sendBitcoinHere": "Küldj Bitcoint erre a címre az automatikus Lightning-átváltáshoz",
-    "generatingBitcoin": "Bitcoin-cím létrehozása...",
     "generatingThing": "{{thing}} létrehozása...",
     "sparkAddressFailed": "A Spark-cím létrehozása nem sikerült: {{error}}",
     "bitcoinAddressFailed": "A Bitcoin-cím létrehozása nem sikerült: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "Mire szól?",
     "amount": "Összeg",
     "specificAmount": "Számla létrehozása megadott összeggel",
-    "lightningAddress": "Lightning-cím",
-    "createAddressPrompt": "Hozz létre Lightning-címet, hogy könnyebben fogadhass fizetéseket",
-    "createLightningAddress": "Lightning-cím létrehozása",
     "editLightningAddress": "Lightning-cím szerkesztése",
     "editAddress": "Cím szerkesztése",
     "createAddress": "Lightning-cím létrehozása",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Bitcoin vásárlása",
-    "withCashApp": "Vásárlás a Cash App-pal",
     "cashAppLink": "Cash App-link",
     "cashAppNote": "A Cash App a helyi pénznemedben mutatja meg a megfelelő összeget, és a Cash- vagy BTC-egyenlegedet terheli meg.",
-    "scanWithCashApp": "Olvasd be ezt a kódot a Cash App-pal",
     "amount": "Összeg",
     "invalidAmount": "Érvénytelen összeg",
     "invoiceFailed": "Nem sikerült létrehozni a számlát. Próbáld újra.",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Glow-naplók",
-    "shareDialogTitle": "Naplók megosztása",
     "dbShareTitle": "Glow SDK adatbázis-export"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "Fizetés elküldve!",
     "failed": "A fizetés sikertelen",
     "authenticated": "Hitelesítve!",
-    "authFailed": "A hitelesítés sikertelen",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / felhasznalo@domain.com / névjegy / USDC- vagy USDT-cím",
     "feeRate": {
       "title": "Válassz díjszabást",
       "slow": "Lassú",
@@ -512,7 +497,6 @@
       "gettingQuote": "Ajánlat lekérése...",
       "receiving": "Ennyit kapsz",
       "fee": "Díj",
-      "changeAmount": "Összeg módosítása",
       "send": "Küldés",
       "noRoutes": "Ehhez a címhez nincs támogatott stablecoin-útvonal",
       "chain": "Lánc",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "Fogadandó összeg",
-      "receive": "Fogadás",
       "timedOut": "A fizetés nem érkezett meg időben. Próbáld újra."
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "Címzett"
     },
     "noDestination": "Adj meg egy fizetési célpontot",
-    "prepareFailed": "Nem sikerült előkészíteni a fizetést: {{error}}",
     "paymentFailed": "A fizetés sikertelen: {{error}}",
     "operationFailed": "A művelet sikertelen: {{error}}",
     "processingPhase": {
-      "authenticating": "Hitelesítés...",
       "waitingForPayment": "Várakozás a fizetésre...",
       "converting": "Átváltás...",
       "sending": "Küldés...",
-      "authBody": "Kérlek várj, amíg ellenőrizzük a személyazonosságodat...",
       "withdrawBody": "Az átutalás befejezése. Ez eltarthat egy pillanatig...",
       "convertBody": "Kérlek várj, amíg átváltjuk az összeget...",
       "sendBody": "Kérlek várj, amíg feldolgozzuk a tranzakciódat..."
     },
     "result": {
-      "authSuccessBody": "Sikeresen hitelesítetted magad a szolgáltatásnál.",
       "sentBody": "A fizetésed sikeresen elment a címzettnek.",
-      "authFailBody": "Hiba történt a hitelesítés során. Próbáld újra.",
       "failBody": "Hiba történt a fizetés feldolgozása során. Próbáld újra.",
       "refundSent": "Visszatérítés elküldve!",
       "refundFailed": "A visszatérítés nem sikerült",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "Üdv újra",
-    "lockedPasskey": "A Glow zárolva van. Oldd fel az azonosítókulcsoddal a folytatáshoz.",
     "lockedBiometric": "A Glow zárolva van. Oldd fel biometrikusan a folytatáshoz.",
     "couldNotStartBody": "A Glow nem tudott elindulni. Próbáld újra.",
     "unlockFailed": "A feloldás sikertelen",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "Minden rendben!",
     "nonePending": "Nincs visszatérítésre váró elutasított befizetés.",
-    "destination": "Célpont",
     "title": "Visszatérítés Bitcoinban",
     "broadcasting": "Közvetítés",
     "broadcast": "A visszatérítés közvetítve",
-    "sent": "Visszatérítés elküldve",
-    "broadcastBody": "A visszatérítésed elment a Bitcoin-hálózatra.",
     "failed": "A visszatérítés sikertelen",
-    "processing": "Visszatérítés feldolgozása...",
-    "errorBody": "Hiba történt a visszatérítés feldolgozása során.",
     "txId": "A visszatérítés tranzakcióazonosítója",
     "loadFailed": "Az elutasított befizetések betöltése nem sikerült",
     "notOnchainAddress": "Ez nem on-chain Bitcoin-cím",
@@ -633,7 +605,6 @@
     "title": "BTC-átutalás",
     "claimFailed": "Az igénylés sikertelen",
     "autoClaimFailed": "Az automatikus igénylés sikertelen",
-    "waitingConfirmations": "Várakozás 3 megerősítésre.",
     "autoClaim": "Ez az átutalás automatikusan igényelve lesz.",
     "speed": "Sebesség",
     "standardDelivery": "Normál kézbesítés",
@@ -663,8 +634,6 @@
     "reconnectFailed": "Nem sikerült újracsatlakozni. Próbáld újra.",
     "mnemonicConnectFailed": "Nem sikerült csatlakozni a mentett kifejezéssel. Próbáld újra.",
     "listenersFailed": "Nem sikerült beállítani az eseményfigyelőket.",
-    "missingApiKey": "Hiányzó API-kulcs",
-    "missingApiKeyBody": "Add hozzá a VITE_BREEZ_API_KEY értéket a .env fájlodhoz",
     "saveFailed": "Nem sikerült menteni erre az eszközre",
     "saveFailedBody": "Előfordulhat, hogy a Glow következő megnyitásakor újra be kell jelentkezned."
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "Nem igényelt befizetések",
     "openUnclaimedDeposits": "Nem igényelt befizetések megnyitása",
     "notNow": "Most nem",
-    "lightningAddress": "Lightning-cím",
     "labelFailed": "Nem sikerült migrálni ezt a címkét: „{{label}}”. Próbáld újra.",
     "currentLabel": "(jelenlegi)",
     "probeFailed": "Nem sikerült ellenőrizni, van-e már azonosítókulcs. Próbáld újra.",

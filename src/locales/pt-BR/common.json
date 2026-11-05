@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Com tecnologia Breez SDK",
     "somethingWrong": "Algo deu errado",
     "couldNotOpen": "Não foi possível abrir o Glow",
@@ -34,8 +33,6 @@
     "export": "Exportar",
     "exporting": "Exportando...",
     "preparing": "Preparando...",
-    "approve": "Aprovar",
-    "reject": "Rejeitar",
     "retry": "Tentar novamente",
     "goBack": "Voltar",
     "edit": "Editar",
@@ -202,7 +199,6 @@
     "title": "Contatos",
     "name": "Nome",
     "namePlaceholder": "Nome do contato",
-    "lightningAddress": "Endereço Lightning",
     "searchPlaceholder": "Buscar contatos...",
     "deleteTitle": "Excluir contato",
     "noMatches": "Nenhum resultado",
@@ -365,9 +361,6 @@
     "sparkAddress": "Endereço Spark",
     "bitcoinAddress": "Endereço Bitcoin",
     "scanToPay": "Escaneie para pagar esta fatura Lightning",
-    "useThisAddress": "Use este endereço para receber pagamentos",
-    "sendBitcoinHere": "Envie Bitcoin para este endereço para conversão automática em Lightning",
-    "generatingBitcoin": "Gerando o endereço Bitcoin...",
     "generatingThing": "Gerando {{thing}}...",
     "sparkAddressFailed": "Não foi possível gerar o endereço Spark: {{error}}",
     "bitcoinAddressFailed": "Não foi possível gerar o endereço Bitcoin: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "Para que é isso?",
     "amount": "Valor",
     "specificAmount": "Criar fatura com um valor específico",
-    "lightningAddress": "Endereço Lightning",
-    "createAddressPrompt": "Crie um endereço Lightning para receber pagamentos com facilidade",
-    "createLightningAddress": "Criar endereço Lightning",
     "editLightningAddress": "Editar o endereço Lightning",
     "editAddress": "Editar o endereço",
     "createAddress": "Criar endereço Lightning",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Comprar Bitcoin",
-    "withCashApp": "Comprar com o Cash App",
     "cashAppLink": "Link do Cash App",
     "cashAppNote": "O Cash App vai mostrar o valor equivalente na sua moeda local e debitar do seu saldo em Cash ou BTC.",
-    "scanWithCashApp": "Escaneie este código com o Cash App",
     "amount": "Valor",
     "invalidAmount": "Valor inválido",
     "invoiceFailed": "Não foi possível criar a fatura. Tente novamente.",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Registros do Glow",
-    "shareDialogTitle": "Compartilhar os registros",
     "dbShareTitle": "Exportação do banco de dados do Glow SDK"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "Pagamento enviado!",
     "failed": "O pagamento falhou",
     "authenticated": "Autenticado!",
-    "authFailed": "A autenticação falhou",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / contato / endereço USDC ou USDT",
     "feeRate": {
       "title": "Escolha a taxa",
       "slow": "Lenta",
@@ -512,7 +497,6 @@
       "gettingQuote": "Obtendo a cotação...",
       "receiving": "Você recebe",
       "fee": "Taxa",
-      "changeAmount": "Alterar o valor",
       "send": "Enviar",
       "noRoutes": "Nenhuma rota de stablecoin suportada para este endereço",
       "chain": "Rede",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "Valor a receber",
-      "receive": "Receber",
       "timedOut": "O pagamento não chegou em tempo. Tente novamente."
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "Para"
     },
     "noDestination": "Digite um destino de pagamento",
-    "prepareFailed": "Não foi possível preparar o pagamento {{error}}",
     "paymentFailed": "O pagamento falhou: {{error}}",
     "operationFailed": "A operação falhou: {{error}}",
     "processingPhase": {
-      "authenticating": "Autenticando...",
       "waitingForPayment": "Aguardando o pagamento...",
       "converting": "Convertendo...",
       "sending": "Enviando...",
-      "authBody": "Aguarde enquanto verificamos a sua identidade...",
       "withdrawBody": "Concluindo a transferência. Isso pode levar um instante...",
       "convertBody": "Aguarde enquanto convertemos o valor...",
       "sendBody": "Aguarde enquanto processamos a sua transação..."
     },
     "result": {
-      "authSuccessBody": "Você se autenticou com sucesso neste serviço.",
       "sentBody": "O seu pagamento foi enviado ao destinatário.",
-      "authFailBody": "Ocorreu um erro durante a autenticação. Tente novamente.",
       "failBody": "Ocorreu um erro ao processar o seu pagamento. Tente novamente.",
       "refundSent": "Reembolso enviado!",
       "refundFailed": "O reembolso falhou",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "Bem-vindo de volta",
-    "lockedPasskey": "O Glow está bloqueado. Desbloqueie com a sua passkey para continuar.",
     "lockedBiometric": "O Glow está bloqueado. Desbloqueie com a sua biometria para continuar.",
     "couldNotStartBody": "O Glow não conseguiu iniciar. Tente novamente.",
     "unlockFailed": "O desbloqueio falhou",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "Tudo certo!",
     "nonePending": "Nenhum depósito rejeitado aguardando reembolso.",
-    "destination": "Destino",
     "title": "Reembolso em Bitcoin",
     "broadcasting": "Transmitindo",
     "broadcast": "Reembolso transmitido",
-    "sent": "Reembolso enviado",
-    "broadcastBody": "O seu reembolso foi enviado à rede Bitcoin.",
     "failed": "O reembolso falhou",
-    "processing": "Processando o reembolso...",
-    "errorBody": "Ocorreu um erro ao processar o seu reembolso.",
     "txId": "ID da transação do reembolso",
     "loadFailed": "Não foi possível carregar os depósitos rejeitados",
     "notOnchainAddress": "Este não é um endereço Bitcoin on-chain",
@@ -633,7 +605,6 @@
     "title": "Transferência BTC",
     "claimFailed": "O resgate falhou",
     "autoClaimFailed": "O resgate automático falhou",
-    "waitingConfirmations": "Aguardando 3 confirmações.",
     "autoClaim": "Esta transferência será resgatada automaticamente.",
     "speed": "Velocidade",
     "standardDelivery": "Entrega padrão",
@@ -663,8 +634,6 @@
     "reconnectFailed": "Não foi possível reconectar. Tente novamente.",
     "mnemonicConnectFailed": "Não foi possível conectar com o mnemonic salvo. Tente novamente.",
     "listenersFailed": "Não foi possível configurar os ouvintes de eventos.",
-    "missingApiKey": "Chave de API ausente",
-    "missingApiKeyBody": "Adicione VITE_BREEZ_API_KEY ao seu arquivo .env",
     "saveFailed": "Não foi possível salvar neste dispositivo",
     "saveFailedBody": "Você pode ter que entrar novamente na próxima vez que abrir o Glow."
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "Depósitos não resgatados",
     "openUnclaimedDeposits": "Abrir os depósitos não resgatados",
     "notNow": "Agora não",
-    "lightningAddress": "endereço Lightning",
     "labelFailed": "Não foi possível migrar a etiqueta “{{label}}”. Tente novamente.",
     "currentLabel": "(atual)",
     "probeFailed": "Não foi possível verificar se já existe uma passkey. Tente novamente.",

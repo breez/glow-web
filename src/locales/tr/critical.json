@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Bu işlem bu cihazdaki tüm Glow verilerini siler. Kurtarma ifadeni kaydettiğinden emin ol: paranıza yeniden erişmek için gerekecek."
   },
   "refund": {
-    "destinationBody": "İadeyi almak istediğin Bitcoin adresini gir.",
     "refund": "İade et",
     "amount": "Tutar",
     "networkFee": "Ağ ücreti"

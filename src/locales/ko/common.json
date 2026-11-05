@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Breez SDK 제공",
     "somethingWrong": "문제가 발생했습니다",
     "couldNotOpen": "Glow를 열 수 없습니다",
@@ -34,8 +33,6 @@
     "export": "내보내기",
     "exporting": "내보내는 중...",
     "preparing": "준비 중...",
-    "approve": "승인",
-    "reject": "거부",
     "retry": "다시 시도",
     "goBack": "뒤로 가기",
     "edit": "편집",
@@ -202,7 +199,6 @@
     "title": "연락처",
     "name": "이름",
     "namePlaceholder": "연락처 이름",
-    "lightningAddress": "Lightning 주소",
     "searchPlaceholder": "연락처 검색...",
     "deleteTitle": "연락처 삭제",
     "noMatches": "일치하는 항목이 없습니다",
@@ -365,9 +361,6 @@
     "sparkAddress": "Spark 주소",
     "bitcoinAddress": "Bitcoin 주소",
     "scanToPay": "스캔하여 이 Lightning 인보이스를 결제하세요",
-    "useThisAddress": "이 주소로 결제를 받으세요",
-    "sendBitcoinHere": "자동으로 Lightning으로 전환하려면 이 주소로 Bitcoin을 보내세요",
-    "generatingBitcoin": "Bitcoin 주소를 만드는 중...",
     "generatingThing": "{{thing}}를 만드는 중...",
     "sparkAddressFailed": "Spark 주소를 만들지 못했습니다: {{error}}",
     "bitcoinAddressFailed": "Bitcoin 주소를 만들지 못했습니다: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "무엇에 대한 결제인가요?",
     "amount": "금액",
     "specificAmount": "금액을 지정해 인보이스 만들기",
-    "lightningAddress": "Lightning 주소",
-    "createAddressPrompt": "Lightning 주소를 만들면 결제를 쉽게 받을 수 있습니다",
-    "createLightningAddress": "Lightning 주소 만들기",
     "editLightningAddress": "Lightning 주소 편집",
     "editAddress": "주소 편집",
     "createAddress": "Lightning 주소 만들기",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Bitcoin 구매",
-    "withCashApp": "Cash App으로 구매",
     "cashAppLink": "Cash App 링크",
     "cashAppNote": "Cash App이 현지 통화로 환산한 금액을 보여주고 Cash 또는 BTC 잔액에서 결제합니다.",
-    "scanWithCashApp": "이 코드를 Cash App으로 스캔하세요",
     "amount": "금액",
     "invalidAmount": "금액이 올바르지 않습니다",
     "invoiceFailed": "인보이스를 만들지 못했습니다. 다시 시도해 주세요.",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Glow 로그",
-    "shareDialogTitle": "로그 공유",
     "dbShareTitle": "Glow SDK 데이터베이스 내보내기"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "결제를 보냈습니다!",
     "failed": "결제에 실패했습니다",
     "authenticated": "인증했습니다!",
-    "authFailed": "인증에 실패했습니다",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / 연락처 / USDC 또는 USDT 주소",
     "feeRate": {
       "title": "수수료율 선택",
       "slow": "느림",
@@ -512,7 +497,6 @@
       "gettingQuote": "견적을 받는 중...",
       "receiving": "받는 금액",
       "fee": "수수료",
-      "changeAmount": "금액 변경",
       "send": "보내기",
       "noRoutes": "이 주소에 지원되는 stablecoin 경로가 없습니다",
       "chain": "체인",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "받을 금액",
-      "receive": "받기",
       "timedOut": "결제가 제때 도착하지 않았습니다. 다시 시도해 주세요."
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "받는 곳"
     },
     "noDestination": "결제 받는 곳을 입력해 주세요",
-    "prepareFailed": "결제를 준비하지 못했습니다 {{error}}",
     "paymentFailed": "결제에 실패했습니다: {{error}}",
     "operationFailed": "작업에 실패했습니다: {{error}}",
     "processingPhase": {
-      "authenticating": "인증 중...",
       "waitingForPayment": "결제를 기다리는 중...",
       "converting": "전환 중...",
       "sending": "보내는 중...",
-      "authBody": "신원을 확인하는 동안 잠시 기다려 주세요...",
       "withdrawBody": "전송을 마무리하는 중입니다. 잠시 걸릴 수 있습니다...",
       "convertBody": "금액을 전환하는 동안 잠시 기다려 주세요...",
       "sendBody": "거래를 처리하는 동안 잠시 기다려 주세요..."
     },
     "result": {
-      "authSuccessBody": "이 서비스에서 인증을 마쳤습니다.",
       "sentBody": "결제를 받는 사람에게 보냈습니다.",
-      "authFailBody": "인증 중에 오류가 발생했습니다. 다시 시도해 주세요.",
       "failBody": "결제를 처리하는 중 오류가 발생했습니다. 다시 시도해 주세요.",
       "refundSent": "환불을 보냈습니다!",
       "refundFailed": "환불에 실패했습니다",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "다시 오셨네요",
-    "lockedPasskey": "Glow가 잠겨 있습니다. 계속하려면 패스키로 잠금을 해제하세요.",
     "lockedBiometric": "Glow가 잠겨 있습니다. 계속하려면 생체 인증으로 잠금을 해제하세요.",
     "couldNotStartBody": "Glow를 시작할 수 없습니다. 다시 시도해 주세요.",
     "unlockFailed": "잠금을 해제하지 못했습니다",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "모두 처리되었습니다!",
     "nonePending": "환불을 기다리는 거부된 입금이 없습니다.",
-    "destination": "받는 곳",
     "title": "Bitcoin으로 환불",
     "broadcasting": "브로드캐스트 중",
     "broadcast": "환불을 브로드캐스트했습니다",
-    "sent": "환불을 보냈습니다",
-    "broadcastBody": "환불을 Bitcoin 네트워크로 보냈습니다.",
     "failed": "환불에 실패했습니다",
-    "processing": "환불을 처리하는 중...",
-    "errorBody": "환불을 처리하는 중 오류가 발생했습니다.",
     "txId": "환불 트랜잭션 ID",
     "loadFailed": "거부된 입금을 불러오지 못했습니다",
     "notOnchainAddress": "on-chain Bitcoin 주소가 아닙니다",
@@ -633,7 +605,6 @@
     "title": "BTC 전송",
     "claimFailed": "수령에 실패했습니다",
     "autoClaimFailed": "자동 수령에 실패했습니다",
-    "waitingConfirmations": "승인 3회를 기다리는 중입니다.",
     "autoClaim": "이 전송은 자동으로 수령됩니다.",
     "speed": "속도",
     "standardDelivery": "일반 전달",
@@ -663,8 +634,6 @@
     "reconnectFailed": "다시 연결하지 못했습니다. 다시 시도해 주세요.",
     "mnemonicConnectFailed": "저장된 mnemonic으로 연결하지 못했습니다. 다시 시도해 주세요.",
     "listenersFailed": "이벤트 리스너를 설정하지 못했습니다.",
-    "missingApiKey": "API 키가 없습니다",
-    "missingApiKeyBody": ".env 파일에 VITE_BREEZ_API_KEY를 추가해 주세요",
     "saveFailed": "이 기기에 저장하지 못했습니다",
     "saveFailedBody": "다음에 Glow를 열 때 다시 로그인하라는 안내가 나올 수 있습니다."
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "수령하지 않은 입금",
     "openUnclaimedDeposits": "수령하지 않은 입금 열기",
     "notNow": "나중에",
-    "lightningAddress": "Lightning 주소",
     "labelFailed": "라벨 “{{label}}”을(를) 이전하지 못했습니다. 다시 시도해 주세요.",
     "currentLabel": "(현재)",
     "probeFailed": "기존 패스키가 있는지 확인하지 못했습니다. 다시 시도해 주세요.",

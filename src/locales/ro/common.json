@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Susținut de Breez SDK",
     "somethingWrong": "Ceva nu a mers bine",
     "couldNotOpen": "Glow nu a putut fi deschis",
@@ -34,8 +33,6 @@
     "export": "Exportă",
     "exporting": "Se exportă...",
     "preparing": "Se pregătește...",
-    "approve": "Aprobă",
-    "reject": "Respinge",
     "retry": "Reîncearcă",
     "goBack": "Înapoi",
     "edit": "Editează",
@@ -204,7 +201,6 @@
     "title": "Contacte",
     "name": "Nume",
     "namePlaceholder": "Numele contactului",
-    "lightningAddress": "Adresă Lightning",
     "searchPlaceholder": "Caută contacte...",
     "deleteTitle": "Șterge contactul",
     "noMatches": "Nicio potrivire",
@@ -367,9 +363,6 @@
     "sparkAddress": "Adresă Spark",
     "bitcoinAddress": "Adresă Bitcoin",
     "scanToPay": "Scanează pentru a plăti această factură Lightning",
-    "useThisAddress": "Folosește această adresă pentru a primi plăți",
-    "sendBitcoinHere": "Trimite Bitcoin la această adresă pentru conversie automată în Lightning",
-    "generatingBitcoin": "Se generează adresa Bitcoin...",
     "generatingThing": "Se generează {{thing}}...",
     "sparkAddressFailed": "Adresa Spark nu a putut fi generată: {{error}}",
     "bitcoinAddressFailed": "Adresa Bitcoin nu a putut fi generată: {{error}}",
@@ -383,9 +376,6 @@
     "descriptionPlaceholder": "Pentru ce este?",
     "amount": "Sumă",
     "specificAmount": "Creează o factură cu o sumă anume",
-    "lightningAddress": "Adresă Lightning",
-    "createAddressPrompt": "Creează o adresă Lightning pentru a primi plăți ușor",
-    "createLightningAddress": "Creează adresă Lightning",
     "editLightningAddress": "Editează adresa Lightning",
     "editAddress": "Editează adresa",
     "createAddress": "Creează adresă Lightning",
@@ -420,10 +410,8 @@
   },
   "buy": {
     "title": "Cumpără Bitcoin",
-    "withCashApp": "Cumpără cu Cash App",
     "cashAppLink": "Link Cash App",
     "cashAppNote": "Cash App va afișa suma echivalentă în moneda ta locală și o va reține din soldul tău Cash sau BTC.",
-    "scanWithCashApp": "Scanează acest cod cu Cash App",
     "amount": "Sumă",
     "invalidAmount": "Sumă nevalidă",
     "invoiceFailed": "Factura nu a putut fi creată. Încearcă din nou.",
@@ -444,7 +432,6 @@
   },
   "logs": {
     "shareTitle": "Jurnalele Glow",
-    "shareDialogTitle": "Partajează jurnalele",
     "dbShareTitle": "Export al bazei de date Glow SDK"
   },
   "startupFailure": {
@@ -500,8 +487,6 @@
     "sent": "Plată trimisă!",
     "failed": "Plata a eșuat",
     "authenticated": "Autentificat!",
-    "authFailed": "Autentificarea a eșuat",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / contact / adresă USDC sau USDT",
     "feeRate": {
       "title": "Alege rata comisionului",
       "slow": "Lentă",
@@ -514,7 +499,6 @@
       "gettingQuote": "Se obține cotația...",
       "receiving": "Primești",
       "fee": "Comision",
-      "changeAmount": "Schimbă suma",
       "send": "Trimite",
       "noRoutes": "Nu există rute de stablecoin acceptate pentru această adresă",
       "chain": "Lanț",
@@ -529,7 +513,6 @@
     },
     "withdraw": {
       "amountToReceive": "Suma de primit",
-      "receive": "Primește",
       "timedOut": "Plata nu a ajuns la timp. Încearcă din nou."
     },
     "lnurl": {
@@ -540,23 +523,18 @@
       "to": "Către"
     },
     "noDestination": "Introdu o destinație de plată",
-    "prepareFailed": "Plata nu a putut fi pregătită {{error}}",
     "paymentFailed": "Plata a eșuat: {{error}}",
     "operationFailed": "Operațiunea a eșuat: {{error}}",
     "processingPhase": {
-      "authenticating": "Se autentifică...",
       "waitingForPayment": "Se așteaptă plata...",
       "converting": "Se convertește...",
       "sending": "Se trimite...",
-      "authBody": "Te rugăm să aștepți cât verificăm identitatea ta...",
       "withdrawBody": "Se finalizează transferul. Poate durea un moment...",
       "convertBody": "Te rugăm să aștepți cât convertim suma...",
       "sendBody": "Te rugăm să aștepți cât procesăm tranzacția ta..."
     },
     "result": {
-      "authSuccessBody": "Te-ai autentificat cu succes la acest serviciu.",
       "sentBody": "Plata ta a fost trimisă cu succes destinatarului.",
-      "authFailBody": "A apărut o eroare la autentificare. Încearcă din nou.",
       "failBody": "A apărut o eroare la procesarea plății tale. Încearcă din nou.",
       "refundSent": "Rambursare trimisă!",
       "refundFailed": "Rambursarea a eșuat",
@@ -601,7 +579,6 @@
   },
   "unlock": {
     "welcomeBack": "Bine ai revenit",
-    "lockedPasskey": "Glow este blocat. Deblochează cu cheia ta de acces pentru a continua.",
     "lockedBiometric": "Glow este blocat. Deblochează cu biometria ta pentru a continua.",
     "couldNotStartBody": "Glow nu a putut porni. Încearcă din nou.",
     "unlockFailed": "Deblocarea a eșuat",
@@ -613,15 +590,10 @@
   "refund": {
     "allClear": "Totul e în regulă!",
     "nonePending": "Nicio depunere respinsă nu așteaptă rambursare.",
-    "destination": "Destinație",
     "title": "Rambursare în Bitcoin",
     "broadcasting": "Se difuzează",
     "broadcast": "Rambursare difuzată",
-    "sent": "Rambursare trimisă",
-    "broadcastBody": "Rambursarea ta a fost trimisă în rețeaua Bitcoin.",
     "failed": "Rambursarea a eșuat",
-    "processing": "Se procesează rambursarea...",
-    "errorBody": "A apărut o eroare la procesarea rambursării tale.",
     "txId": "ID tranzacție rambursare",
     "loadFailed": "Depunerile respinse nu au putut fi încărcate",
     "notOnchainAddress": "Aceea nu este o adresă Bitcoin on-chain",
@@ -635,7 +607,6 @@
     "title": "Transfer BTC",
     "claimFailed": "Revendicarea a eșuat",
     "autoClaimFailed": "Revendicarea automată a eșuat",
-    "waitingConfirmations": "Se așteaptă 3 confirmări.",
     "autoClaim": "Acest transfer va fi revendicat automat.",
     "speed": "Viteză",
     "standardDelivery": "Livrare standard",
@@ -666,8 +637,6 @@
     "reconnectFailed": "Reconectarea nu a reușit. Încearcă din nou.",
     "mnemonicConnectFailed": "Conectarea cu mnemonicul salvat a eșuat. Încearcă din nou.",
     "listenersFailed": "Ascultătorii de evenimente nu au putut fi configurați.",
-    "missingApiKey": "Lipsește cheia API",
-    "missingApiKeyBody": "Adaugă VITE_BREEZ_API_KEY în fișierul .env",
     "saveFailed": "Salvarea pe acest dispozitiv nu a reușit",
     "saveFailedBody": "Este posibil să ți se ceară să te conectezi din nou la următoarea deschidere a Glow."
   },
@@ -691,7 +660,6 @@
     "unclaimedDeposits": "Depuneri nerevendicate",
     "openUnclaimedDeposits": "Deschide depunerile nerevendicate",
     "notNow": "Nu acum",
-    "lightningAddress": "Adresă Lightning",
     "labelFailed": "Eticheta „{{label}}” nu a putut fi migrată. Încearcă din nou.",
     "currentLabel": "(actuală)",
     "probeFailed": "Nu s-a putut verifica dacă există deja o cheie de acces. Încearcă din nou.",

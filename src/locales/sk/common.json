@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Postavené na Breez SDK",
     "somethingWrong": "Niečo sa pokazilo",
     "couldNotOpen": "Glow sa nepodarilo otvoriť",
@@ -34,8 +33,6 @@
     "export": "Exportovať",
     "exporting": "Exportuje sa...",
     "preparing": "Pripravuje sa...",
-    "approve": "Schváliť",
-    "reject": "Odmietnuť",
     "retry": "Zopakovať",
     "goBack": "Späť",
     "edit": "Upraviť",
@@ -206,7 +203,6 @@
     "title": "Kontakty",
     "name": "Meno",
     "namePlaceholder": "Meno kontaktu",
-    "lightningAddress": "Lightning adresa",
     "searchPlaceholder": "Hľadať v kontaktoch...",
     "deleteTitle": "Vymazať kontakt",
     "noMatches": "Žiadne výsledky",
@@ -369,9 +365,6 @@
     "sparkAddress": "Spark adresa",
     "bitcoinAddress": "Bitcoin adresa",
     "scanToPay": "Naskenuj na zaplatenie tejto Lightning faktúry",
-    "useThisAddress": "Použi túto adresu na prijímanie platieb",
-    "sendBitcoinHere": "Pošli Bitcoin na túto adresu pre automatický prevod na Lightning",
-    "generatingBitcoin": "Vytvára sa Bitcoin adresa...",
     "generatingThing": "Vytvára sa {{thing}}...",
     "sparkAddressFailed": "Spark adresu sa nepodarilo vytvoriť: {{error}}",
     "bitcoinAddressFailed": "Bitcoin adresu sa nepodarilo vytvoriť: {{error}}",
@@ -385,9 +378,6 @@
     "descriptionPlaceholder": "Za čo to je?",
     "amount": "Suma",
     "specificAmount": "Vytvoriť faktúru s konkrétnou sumou",
-    "lightningAddress": "Lightning adresa",
-    "createAddressPrompt": "Vytvor si Lightning adresu, aby si prijímal platby ľahšie",
-    "createLightningAddress": "Vytvoriť Lightning adresu",
     "editLightningAddress": "Upraviť Lightning adresu",
     "editAddress": "Upraviť adresu",
     "createAddress": "Vytvoriť Lightning adresu",
@@ -422,10 +412,8 @@
   },
   "buy": {
     "title": "Kúpiť Bitcoin",
-    "withCashApp": "Kúpiť cez Cash App",
     "cashAppLink": "Odkaz Cash App",
     "cashAppNote": "Cash App zobrazí zodpovedajúcu sumu v tvojej miestnej mene a strhne ju z tvojho zostatku v Cash alebo BTC.",
-    "scanWithCashApp": "Naskenuj tento kód v Cash App",
     "amount": "Suma",
     "invalidAmount": "Neplatná suma",
     "invoiceFailed": "Faktúru sa nepodarilo vytvoriť. Skús to znova.",
@@ -446,7 +434,6 @@
   },
   "logs": {
     "shareTitle": "Logy Glow",
-    "shareDialogTitle": "Zdieľať logy",
     "dbShareTitle": "Export databázy Glow SDK"
   },
   "startupFailure": {
@@ -502,8 +489,6 @@
     "sent": "Platba odoslaná!",
     "failed": "Platba sa nepodarila",
     "authenticated": "Overené!",
-    "authFailed": "Overenie sa nepodarilo",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / pouzivatel@domena.com / kontakt / adresa USDC alebo USDT",
     "feeRate": {
       "title": "Vyber sadzbu poplatku",
       "slow": "Pomalá",
@@ -516,7 +501,6 @@
       "gettingQuote": "Získava sa ponuka...",
       "receiving": "Dostaneš",
       "fee": "Poplatok",
-      "changeAmount": "Zmeniť sumu",
       "send": "Poslať",
       "noRoutes": "Pre túto adresu nie je podporovaná stablecoin trasa",
       "chain": "Reťazec",
@@ -531,7 +515,6 @@
     },
     "withdraw": {
       "amountToReceive": "Suma na prijatie",
-      "receive": "Prijať",
       "timedOut": "Platba neprišla načas. Skús to znova."
     },
     "lnurl": {
@@ -542,23 +525,18 @@
       "to": "Komu"
     },
     "noDestination": "Zadaj príjemcu platby",
-    "prepareFailed": "Platbu sa nepodarilo pripraviť {{error}}",
     "paymentFailed": "Platba sa nepodarila: {{error}}",
     "operationFailed": "Operácia sa nepodarila: {{error}}",
     "processingPhase": {
-      "authenticating": "Overuje sa...",
       "waitingForPayment": "Čaká sa na platbu...",
       "converting": "Prevádza sa...",
       "sending": "Odosiela sa...",
-      "authBody": "Počkaj, prosím, overujeme tvoju totožnosť...",
       "withdrawBody": "Dokončuje sa prevod. Môže to chvíľu trvať...",
       "convertBody": "Počkaj, prosím, prevádzame sumu...",
       "sendBody": "Počkaj, prosím, spracúvame tvoju transakciu..."
     },
     "result": {
-      "authSuccessBody": "Úspešne si sa overil v službe.",
       "sentBody": "Tvoja platba bola úspešne odoslaná príjemcovi.",
-      "authFailBody": "Pri overovaní došlo k chybe. Skús to znova.",
       "failBody": "Pri spracovaní platby došlo k chybe. Skús to znova.",
       "refundSent": "Vrátenie odoslané!",
       "refundFailed": "Vrátenie zlyhalo",
@@ -603,7 +581,6 @@
   },
   "unlock": {
     "welcomeBack": "Vitaj späť",
-    "lockedPasskey": "Glow je zamknutý. Odomkni ho svojím passkey a pokračuj.",
     "lockedBiometric": "Glow je zamknutý. Odomkni ho biometriou a pokračuj.",
     "couldNotStartBody": "Glow sa nepodarilo spustiť. Skús to znova.",
     "unlockFailed": "Odomknutie sa nepodarilo",
@@ -615,15 +592,10 @@
   "refund": {
     "allClear": "Všetko v poriadku!",
     "nonePending": "Žiadne odmietnuté vklady nečakajú na vrátenie.",
-    "destination": "Príjemca",
     "title": "Vrátenie v Bitcoine",
     "broadcasting": "Vysiela sa",
     "broadcast": "Vrátenie odoslané do siete",
-    "sent": "Vrátenie odoslané",
-    "broadcastBody": "Tvoje vrátenie bolo odoslané do siete Bitcoin.",
     "failed": "Vrátenie sa nepodarilo",
-    "processing": "Spracúva sa vrátenie...",
-    "errorBody": "Pri spracovaní vrátenia došlo k chybe.",
     "txId": "ID transakcie vrátenia",
     "loadFailed": "Nepodarilo sa načítať odmietnuté vklady",
     "notOnchainAddress": "To nie je on-chain Bitcoin adresa",
@@ -637,7 +609,6 @@
     "title": "Prevod BTC",
     "claimFailed": "Nárok sa nepodaril",
     "autoClaimFailed": "Automatický nárok sa nepodaril",
-    "waitingConfirmations": "Čaká sa na 3 potvrdenia.",
     "autoClaim": "Tento prevod bude nárokovaný automaticky.",
     "speed": "Rýchlosť",
     "standardDelivery": "Štandardné doručenie",
@@ -668,8 +639,6 @@
     "reconnectFailed": "Opätovné pripojenie sa nepodarilo. Skús to znova.",
     "mnemonicConnectFailed": "Pripojenie pomocou uloženej frázy sa nepodarilo. Skús to znova.",
     "listenersFailed": "Poslucháčov udalostí sa nepodarilo nastaviť.",
-    "missingApiKey": "Chýba API kľúč",
-    "missingApiKeyBody": "Pridaj VITE_BREEZ_API_KEY do svojho súboru .env",
     "saveFailed": "Uloženie do tohto zariadenia sa nepodarilo",
     "saveFailedBody": "Pri ďalšom otvorení Glow môžeš byť požiadaný o opätovné prihlásenie."
   },
@@ -693,7 +662,6 @@
     "unclaimedDeposits": "Nenárokované vklady",
     "openUnclaimedDeposits": "Otvoriť nenárokované vklady",
     "notNow": "Teraz nie",
-    "lightningAddress": "Lightning adresa",
     "labelFailed": "Štítok „{{label}}“ sa nepodarilo previesť. Skús to znova.",
     "currentLabel": "(aktuálny)",
     "probeFailed": "Nepodarilo sa overiť existujúci passkey. Skús to znova.",

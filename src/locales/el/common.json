@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Με τεχνολογία Breez SDK",
     "somethingWrong": "Κάτι πήγε στραβά",
     "couldNotOpen": "Δεν ήταν δυνατό να ανοίξει το Glow",
@@ -34,8 +33,6 @@
     "export": "Εξαγωγή",
     "exporting": "Γίνεται εξαγωγή...",
     "preparing": "Γίνεται προετοιμασία...",
-    "approve": "Έγκριση",
-    "reject": "Απόρριψη",
     "retry": "Επανάληψη",
     "goBack": "Πίσω",
     "edit": "Επεξεργασία",
@@ -202,7 +199,6 @@
     "title": "Επαφές",
     "name": "Όνομα",
     "namePlaceholder": "Όνομα επαφής",
-    "lightningAddress": "Διεύθυνση Lightning",
     "searchPlaceholder": "Αναζήτηση επαφών...",
     "deleteTitle": "Διαγραφή επαφής",
     "noMatches": "Κανένα αποτέλεσμα",
@@ -365,9 +361,6 @@
     "sparkAddress": "Διεύθυνση Spark",
     "bitcoinAddress": "Διεύθυνση Bitcoin",
     "scanToPay": "Σαρώστε για να πληρώσετε αυτό το τιμολόγιο Lightning",
-    "useThisAddress": "Χρησιμοποιήστε αυτήν τη διεύθυνση για να λαμβάνετε πληρωμές",
-    "sendBitcoinHere": "Στείλτε Bitcoin σε αυτήν τη διεύθυνση για αυτόματη μετατροπή σε Lightning",
-    "generatingBitcoin": "Δημιουργία διεύθυνσης Bitcoin...",
     "generatingThing": "Δημιουργία {{thing}}...",
     "sparkAddressFailed": "Δεν ήταν δυνατή η δημιουργία της διεύθυνσης Spark: {{error}}",
     "bitcoinAddressFailed": "Δεν ήταν δυνατή η δημιουργία της διεύθυνσης Bitcoin: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "Για ποιον λόγο;",
     "amount": "Ποσό",
     "specificAmount": "Δημιουργία τιμολογίου με συγκεκριμένο ποσό",
-    "lightningAddress": "Διεύθυνση Lightning",
-    "createAddressPrompt": "Δημιουργήστε διεύθυνση Lightning για να λαμβάνετε πληρωμές πιο εύκολα",
-    "createLightningAddress": "Δημιουργία διεύθυνσης Lightning",
     "editLightningAddress": "Επεξεργασία διεύθυνσης Lightning",
     "editAddress": "Επεξεργασία διεύθυνσης",
     "createAddress": "Δημιουργία διεύθυνσης Lightning",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Αγορά Bitcoin",
-    "withCashApp": "Αγορά μέσω Cash App",
     "cashAppLink": "Σύνδεσμος Cash App",
     "cashAppNote": "Το Cash App θα εμφανίσει το αντίστοιχο ποσό στο τοπικό σας νόμισμα και θα χρεώσει το υπόλοιπό σας σε Cash ή BTC.",
-    "scanWithCashApp": "Σαρώστε αυτόν τον κωδικό με το Cash App",
     "amount": "Ποσό",
     "invalidAmount": "Μη έγκυρο ποσό",
     "invoiceFailed": "Δεν ήταν δυνατή η δημιουργία τιμολογίου. Δοκιμάστε ξανά.",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Αρχεία καταγραφής Glow",
-    "shareDialogTitle": "Κοινοποίηση αρχείων καταγραφής",
     "dbShareTitle": "Εξαγωγή βάσης δεδομένων Glow SDK"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "Η πληρωμή στάλθηκε!",
     "failed": "Η πληρωμή απέτυχε",
     "authenticated": "Ταυτοποιήθηκε!",
-    "authFailed": "Η ταυτοποίηση απέτυχε",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / onoma@domain.com / επαφή / διεύθυνση USDC ή USDT",
     "feeRate": {
       "title": "Επιλέξτε συντελεστή χρέωσης",
       "slow": "Αργή",
@@ -512,7 +497,6 @@
       "gettingQuote": "Λήψη προσφοράς...",
       "receiving": "Λαμβάνετε",
       "fee": "Χρέωση",
-      "changeAmount": "Αλλαγή ποσού",
       "send": "Αποστολή",
       "noRoutes": "Δεν υπάρχει υποστηριζόμενη διαδρομή stablecoin για αυτήν τη διεύθυνση",
       "chain": "Αλυσίδα",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "Ποσό προς λήψη",
-      "receive": "Λήψη",
       "timedOut": "Η πληρωμή δεν έφτασε εγκαίρως. Δοκιμάστε ξανά."
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "Προς"
     },
     "noDestination": "Εισαγάγετε προορισμό πληρωμής",
-    "prepareFailed": "Δεν ήταν δυνατή η προετοιμασία της πληρωμής {{error}}",
     "paymentFailed": "Η πληρωμή απέτυχε: {{error}}",
     "operationFailed": "Η ενέργεια απέτυχε: {{error}}",
     "processingPhase": {
-      "authenticating": "Ταυτοποίηση...",
       "waitingForPayment": "Αναμονή πληρωμής...",
       "converting": "Μετατροπή...",
       "sending": "Αποστολή...",
-      "authBody": "Περιμένετε όσο επαληθεύουμε την ταυτότητά σας...",
       "withdrawBody": "Ολοκλήρωση της μεταφοράς. Μπορεί να πάρει λίγο...",
       "convertBody": "Περιμένετε όσο μετατρέπουμε το ποσό...",
       "sendBody": "Περιμένετε όσο επεξεργαζόμαστε τη συναλλαγή σας..."
     },
     "result": {
-      "authSuccessBody": "Ταυτοποιηθήκατε με επιτυχία στην υπηρεσία.",
       "sentBody": "Η πληρωμή σας στάλθηκε με επιτυχία στον παραλήπτη.",
-      "authFailBody": "Παρουσιάστηκε σφάλμα κατά την ταυτοποίηση. Δοκιμάστε ξανά.",
       "failBody": "Παρουσιάστηκε σφάλμα κατά την επεξεργασία της πληρωμής σας. Δοκιμάστε ξανά.",
       "refundSent": "Η επιστροφή στάλθηκε!",
       "refundFailed": "Η επιστροφή απέτυχε",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "Καλώς ήρθατε ξανά",
-    "lockedPasskey": "Το Glow είναι κλειδωμένο. Ξεκλειδώστε με το passkey σας για να συνεχίσετε.",
     "lockedBiometric": "Το Glow είναι κλειδωμένο. Ξεκλειδώστε με βιομετρικά για να συνεχίσετε.",
     "couldNotStartBody": "Το Glow δεν μπόρεσε να ξεκινήσει. Δοκιμάστε ξανά.",
     "unlockFailed": "Το ξεκλείδωμα απέτυχε",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "Όλα εντάξει!",
     "nonePending": "Δεν υπάρχουν απορριφθείσες καταθέσεις σε αναμονή επιστροφής.",
-    "destination": "Προορισμός",
     "title": "Επιστροφή σε Bitcoin",
     "broadcasting": "Μετάδοση",
     "broadcast": "Η επιστροφή μεταδόθηκε",
-    "sent": "Η επιστροφή στάλθηκε",
-    "broadcastBody": "Η επιστροφή σας στάλθηκε στο δίκτυο Bitcoin.",
     "failed": "Η επιστροφή απέτυχε",
-    "processing": "Επεξεργασία της επιστροφής...",
-    "errorBody": "Παρουσιάστηκε σφάλμα κατά την επεξεργασία της επιστροφής σας.",
     "txId": "Αναγνωριστικό συναλλαγής επιστροφής",
     "loadFailed": "Αποτυχία φόρτωσης απορριφθεισών καταθέσεων",
     "notOnchainAddress": "Αυτή δεν είναι διεύθυνση Bitcoin on-chain",
@@ -633,7 +605,6 @@
     "title": "Μεταφορά BTC",
     "claimFailed": "Η διεκδίκηση απέτυχε",
     "autoClaimFailed": "Η αυτόματη διεκδίκηση απέτυχε",
-    "waitingConfirmations": "Αναμονή 3 επιβεβαιώσεων.",
     "autoClaim": "Αυτή η μεταφορά θα διεκδικηθεί αυτόματα.",
     "speed": "Ταχύτητα",
     "standardDelivery": "Τυπική παράδοση",
@@ -663,8 +634,6 @@
     "reconnectFailed": "Δεν ήταν δυνατή η επανασύνδεση. Δοκιμάστε ξανά.",
     "mnemonicConnectFailed": "Δεν ήταν δυνατή η σύνδεση με την αποθηκευμένη φράση. Δοκιμάστε ξανά.",
     "listenersFailed": "Δεν ήταν δυνατή η ρύθμιση των ακροατών συμβάντων.",
-    "missingApiKey": "Λείπει το κλειδί API",
-    "missingApiKeyBody": "Προσθέστε το VITE_BREEZ_API_KEY στο αρχείο .env",
     "saveFailed": "Δεν ήταν δυνατή η αποθήκευση σε αυτήν τη συσκευή",
     "saveFailedBody": "Ίσως σας ζητηθεί να συνδεθείτε ξανά την επόμενη φορά που θα ανοίξετε το Glow."
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "Μη διεκδικημένες καταθέσεις",
     "openUnclaimedDeposits": "Άνοιγμα μη διεκδικημένων καταθέσεων",
     "notNow": "Όχι τώρα",
-    "lightningAddress": "Διεύθυνση Lightning",
     "labelFailed": "Δεν ήταν δυνατή η μεταφορά της ετικέτας «{{label}}». Δοκιμάστε ξανά.",
     "currentLabel": "(τρέχουσα)",
     "probeFailed": "Δεν ήταν δυνατός ο έλεγχος για υπάρχον passkey. Δοκίμασε ξανά.",

@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Týmto vymažeš všetky údaje Glow uložené v tomto zariadení. Uisti sa, že máš uloženú obnovovaciu frázu: budeš ju potrebovať na opätovný prístup k svojim prostriedkom."
   },
   "refund": {
-    "destinationBody": "Zadaj bitcoinovú adresu, na ktorú chceš dostať vrátené prostriedky.",
     "refund": "Vrátiť",
     "amount": "Suma",
     "networkFee": "Sieťový poplatok"

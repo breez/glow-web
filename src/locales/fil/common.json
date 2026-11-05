@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Pinapatakbo ng Breez SDK",
     "somethingWrong": "May nangyaring mali",
     "couldNotOpen": "Hindi mabuksan ang Glow",
@@ -34,8 +33,6 @@
     "export": "I-export",
     "exporting": "Ine-export...",
     "preparing": "Inihahanda...",
-    "approve": "Aprubahan",
-    "reject": "Tanggihan",
     "retry": "Subukan muli",
     "goBack": "Bumalik",
     "edit": "I-edit",
@@ -202,7 +199,6 @@
     "title": "Mga Contact",
     "name": "Pangalan",
     "namePlaceholder": "Pangalan ng contact",
-    "lightningAddress": "Lightning Address",
     "searchPlaceholder": "Maghanap ng contact...",
     "deleteTitle": "Burahin ang Contact",
     "noMatches": "Walang tugma",
@@ -365,9 +361,6 @@
     "sparkAddress": "Spark Address",
     "bitcoinAddress": "Bitcoin Address",
     "scanToPay": "I-scan para bayaran ang Lightning invoice na ito",
-    "useThisAddress": "Gamitin ang address na ito para tumanggap ng bayad",
-    "sendBitcoinHere": "Magpadala ng Bitcoin sa address na ito para sa automatikong conversion sa Lightning",
-    "generatingBitcoin": "Gumagawa ng Bitcoin address...",
     "generatingThing": "Gumagawa ng {{thing}}...",
     "sparkAddressFailed": "Hindi makagawa ng Spark address: {{error}}",
     "bitcoinAddressFailed": "Hindi makagawa ng Bitcoin address: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "Para saan ito?",
     "amount": "Halaga",
     "specificAmount": "Gumawa ng invoice na may tiyak na halaga",
-    "lightningAddress": "Lightning Address",
-    "createAddressPrompt": "Gumawa ng Lightning Address para madaling tumanggap ng bayad",
-    "createLightningAddress": "Gumawa ng Lightning Address",
     "editLightningAddress": "I-edit ang Lightning Address",
     "editAddress": "I-edit ang Address",
     "createAddress": "Gumawa ng Lightning Address",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Bumili ng Bitcoin",
-    "withCashApp": "Bumili sa Cash App",
     "cashAppLink": "Link ng Cash App",
     "cashAppNote": "Ipapakita ng Cash App ang katumbas na halaga sa lokal na pera mo at ibabawas sa Cash o BTC na balanse mo.",
-    "scanWithCashApp": "I-scan ang code na ito sa Cash App",
     "amount": "Halaga",
     "invalidAmount": "Hindi tamang halaga",
     "invoiceFailed": "Hindi makagawa ng invoice. Subukan muli.",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Mga Log ng Glow",
-    "shareDialogTitle": "Ibahagi ang mga log",
     "dbShareTitle": "Export ng Database ng Glow SDK"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "Naipadala ang Bayad!",
     "failed": "Hindi Natuloy ang Bayad",
     "authenticated": "Na-authenticate!",
-    "authFailed": "Hindi Natagumpay ang Authentication",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / contact / USDC o USDT address",
     "feeRate": {
       "title": "Pumili ng Fee Rate",
       "slow": "Mabagal",
@@ -512,7 +497,6 @@
       "gettingQuote": "Kumukuha ng quote...",
       "receiving": "Matatanggap",
       "fee": "Bayarin",
-      "changeAmount": "Palitan ang Halaga",
       "send": "Magpadala",
       "noRoutes": "Walang suportadong ruta ng stablecoin para sa address na ito",
       "chain": "Chain",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "Halagang matatanggap",
-      "receive": "Tumanggap",
       "timedOut": "Hindi dumating sa oras ang bayad. Subukan muli."
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "Para kay"
     },
     "noDestination": "Maglagay ng patutunguhan ng bayad",
-    "prepareFailed": "Hindi maihanda ang bayad {{error}}",
     "paymentFailed": "Hindi natuloy ang bayad: {{error}}",
     "operationFailed": "Hindi natuloy ang operasyon: {{error}}",
     "processingPhase": {
-      "authenticating": "Nag-authenticate...",
       "waitingForPayment": "Hinihintay ang bayad...",
       "converting": "Nagko-convert...",
       "sending": "Ipinapadala...",
-      "authBody": "Maghintay lang habang vine-verify namin ang pagkakakilanlan mo...",
       "withdrawBody": "Tinatapos ang transfer. Maaaring tumagal ito ng ilang sandali...",
       "convertBody": "Maghintay lang habang kinoconvert namin ang halaga...",
       "sendBody": "Maghintay lang habang pinoproseso namin ang transaksyon mo..."
     },
     "result": {
-      "authSuccessBody": "Matagumpay kang naka-authenticate sa serbisyo.",
       "sentBody": "Matagumpay na naipadala sa tatanggap ang bayad mo.",
-      "authFailBody": "May error habang nag-authenticate. Subukan muli.",
       "failBody": "May error sa pagproseso ng bayad mo. Subukan muli.",
       "refundSent": "Naipadala ang Refund!",
       "refundFailed": "Hindi Natuloy ang Refund",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "Maligayang pagbabalik",
-    "lockedPasskey": "Naka-lock ang Glow. I-unlock sa passkey mo para magpatuloy.",
     "lockedBiometric": "Naka-lock ang Glow. I-unlock sa biometriko mo para magpatuloy.",
     "couldNotStartBody": "Hindi makapagsimula ang Glow. Subukan muli.",
     "unlockFailed": "Hindi ma-unlock",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "Wala nang Problema!",
     "nonePending": "Walang tinanggihang deposito na naghihintay ng refund.",
-    "destination": "Patutunguhan",
     "title": "I-refund sa Bitcoin",
     "broadcasting": "Ibinobroadcast",
     "broadcast": "Naibroadcast ang Refund",
-    "sent": "Naipadala ang Refund",
-    "broadcastBody": "Naipadala na sa Bitcoin network ang refund mo.",
     "failed": "Hindi Natuloy ang Refund",
-    "processing": "Pinoproseso ang refund...",
-    "errorBody": "May naganap na error habang pinoproseso ang refund mo.",
     "txId": "Transaction ID ng Refund",
     "loadFailed": "Hindi ma-load ang mga tinanggihang deposito",
     "notOnchainAddress": "Hindi iyon on-chain na Bitcoin address",
@@ -633,7 +605,6 @@
     "title": "BTC Transfer",
     "claimFailed": "Hindi Natuloy ang Pag-claim",
     "autoClaimFailed": "Hindi natuloy ang automatikong pag-claim",
-    "waitingConfirmations": "Hinihintay ang 3 kumpirmasyon.",
     "autoClaim": "Automatikong ikukuclaim ang transfer na ito.",
     "speed": "Bilis",
     "standardDelivery": "Karaniwang paghahatid",
@@ -663,8 +634,6 @@
     "reconnectFailed": "Hindi makakonekta muli. Subukan muli.",
     "mnemonicConnectFailed": "Hindi makakonekta sa naka-save na mnemonic. Subukan muli.",
     "listenersFailed": "Hindi maihanda ang mga event listener.",
-    "missingApiKey": "Walang API Key",
-    "missingApiKeyBody": "Idagdag ang VITE_BREEZ_API_KEY sa .env file mo",
     "saveFailed": "Hindi ma-save sa device na ito",
     "saveFailedBody": "Maaaring hilingin sa iyo na mag-sign in muli sa susunod na pagbukas mo ng Glow."
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "Mga di-naclaim na deposito",
     "openUnclaimedDeposits": "Buksan ang mga di-naclaim na deposito",
     "notNow": "Hindi ngayon",
-    "lightningAddress": "Lightning address",
     "labelFailed": "Hindi mailipat ang label na “{{label}}”. Subukan muli.",
     "currentLabel": "(kasalukuyan)",
     "probeFailed": "Hindi masuri kung may kasalukuyang passkey. Subukan muli.",

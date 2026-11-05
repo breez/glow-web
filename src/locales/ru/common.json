@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Работает на Breez SDK",
     "somethingWrong": "Что-то пошло не так",
     "couldNotOpen": "Не удалось открыть Glow",
@@ -34,8 +33,6 @@
     "export": "Экспорт",
     "exporting": "Экспорт...",
     "preparing": "Подготовка...",
-    "approve": "Одобрить",
-    "reject": "Отклонить",
     "retry": "Повторить",
     "goBack": "Вернуться",
     "edit": "Изменить",
@@ -206,7 +203,6 @@
     "title": "Контакты",
     "name": "Имя",
     "namePlaceholder": "Имя контакта",
-    "lightningAddress": "Адрес Lightning",
     "searchPlaceholder": "Поиск контактов...",
     "deleteTitle": "Удалить контакт",
     "noMatches": "Ничего не найдено",
@@ -369,9 +365,6 @@
     "sparkAddress": "Адрес Spark",
     "bitcoinAddress": "Адрес Bitcoin",
     "scanToPay": "Отсканируйте, чтобы оплатить этот инвойс Lightning",
-    "useThisAddress": "Используйте этот адрес, чтобы получать платежи",
-    "sendBitcoinHere": "Отправьте Bitcoin на этот адрес для автоматической конвертации в Lightning",
-    "generatingBitcoin": "Создание адреса Bitcoin...",
     "generatingThing": "Создание {{thing}}...",
     "sparkAddressFailed": "Не удалось создать адрес Spark: {{error}}",
     "bitcoinAddressFailed": "Не удалось создать адрес Bitcoin: {{error}}",
@@ -385,9 +378,6 @@
     "descriptionPlaceholder": "За что это?",
     "amount": "Сумма",
     "specificAmount": "Создать инвойс на точную сумму",
-    "lightningAddress": "Адрес Lightning",
-    "createAddressPrompt": "Создайте адрес Lightning, чтобы получать платежи проще",
-    "createLightningAddress": "Создать адрес Lightning",
     "editLightningAddress": "Изменить адрес Lightning",
     "editAddress": "Изменить адрес",
     "createAddress": "Создать адрес Lightning",
@@ -422,10 +412,8 @@
   },
   "buy": {
     "title": "Купить Bitcoin",
-    "withCashApp": "Купить через Cash App",
     "cashAppLink": "Ссылка Cash App",
     "cashAppNote": "Cash App покажет эквивалент в вашей местной валюте и спишет его с вашего баланса Cash или BTC.",
-    "scanWithCashApp": "Отсканируйте этот код в Cash App",
     "amount": "Сумма",
     "invalidAmount": "Неверная сумма",
     "invoiceFailed": "Не удалось создать инвойс. Повторите попытку.",
@@ -446,7 +434,6 @@
   },
   "logs": {
     "shareTitle": "Логи Glow",
-    "shareDialogTitle": "Поделиться логами",
     "dbShareTitle": "Экспорт базы данных Glow SDK"
   },
   "startupFailure": {
@@ -502,8 +489,6 @@
     "sent": "Платёж отправлен!",
     "failed": "Платёж не прошёл",
     "authenticated": "Аутентификация пройдена!",
-    "authFailed": "Аутентификация не удалась",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / контакт / адрес USDC или USDT",
     "feeRate": {
       "title": "Выберите ставку комиссии",
       "slow": "Медленно",
@@ -516,7 +501,6 @@
       "gettingQuote": "Получение расчёта...",
       "receiving": "Вы получите",
       "fee": "Комиссия",
-      "changeAmount": "Изменить сумму",
       "send": "Отправить",
       "noRoutes": "Для этого адреса нет поддерживаемых маршрутов stablecoin",
       "chain": "Сеть",
@@ -531,7 +515,6 @@
     },
     "withdraw": {
       "amountToReceive": "Сумма к получению",
-      "receive": "Получить",
       "timedOut": "Платёж не пришёл вовремя. Повторите попытку."
     },
     "lnurl": {
@@ -542,23 +525,18 @@
       "to": "Кому"
     },
     "noDestination": "Укажите назначение платежа",
-    "prepareFailed": "Не удалось подготовить платёж {{error}}",
     "paymentFailed": "Платёж не прошёл: {{error}}",
     "operationFailed": "Операция не удалась: {{error}}",
     "processingPhase": {
-      "authenticating": "Аутентификация...",
       "waitingForPayment": "Ожидание платежа...",
       "converting": "Конвертация...",
       "sending": "Отправка...",
-      "authBody": "Подождите, мы проверяем вашу личность...",
       "withdrawBody": "Завершаем перевод. Это может занять немного времени...",
       "convertBody": "Подождите, мы конвертируем сумму...",
       "sendBody": "Подождите, мы обрабатываем вашу транзакцию..."
     },
     "result": {
-      "authSuccessBody": "Вы успешно прошли аутентификацию в этом сервисе.",
       "sentBody": "Ваш платёж успешно отправлен получателю.",
-      "authFailBody": "При аутентификации произошла ошибка. Повторите попытку.",
       "failBody": "При обработке платежа произошла ошибка. Повторите попытку.",
       "refundSent": "Возврат отправлен!",
       "refundFailed": "Возврат не удался",
@@ -603,7 +581,6 @@
   },
   "unlock": {
     "welcomeBack": "С возвращением",
-    "lockedPasskey": "Glow заблокирован. Разблокируйте ключом доступа, чтобы продолжить.",
     "lockedBiometric": "Glow заблокирован. Разблокируйте по биометрии, чтобы продолжить.",
     "couldNotStartBody": "Glow не удалось запустить. Повторите попытку.",
     "unlockFailed": "Не удалось разблокировать",
@@ -615,15 +592,10 @@
   "refund": {
     "allClear": "Всё в порядке!",
     "nonePending": "Нет отклонённых депозитов, ожидающих возврата.",
-    "destination": "Назначение",
     "title": "Возврат в Bitcoin",
     "broadcasting": "Трансляция",
     "broadcast": "Возврат отправлен в сеть",
-    "sent": "Возврат отправлен",
-    "broadcastBody": "Ваш возврат отправлен в сеть Bitcoin.",
     "failed": "Возврат не удался",
-    "processing": "Обработка возврата...",
-    "errorBody": "При обработке возврата произошла ошибка.",
     "txId": "ID транзакции возврата",
     "loadFailed": "Не удалось загрузить отклонённые депозиты",
     "notOnchainAddress": "Это не адрес Bitcoin on-chain",
@@ -637,7 +609,6 @@
     "title": "Перевод BTC",
     "claimFailed": "Не удалось забрать",
     "autoClaimFailed": "Автоматический приём не удался",
-    "waitingConfirmations": "Ожидание 3 подтверждений.",
     "autoClaim": "Этот перевод будет принят автоматически.",
     "speed": "Скорость",
     "standardDelivery": "Обычная доставка",
@@ -669,8 +640,6 @@
     "reconnectFailed": "Не удалось переподключиться. Повторите попытку.",
     "mnemonicConnectFailed": "Не удалось подключиться с сохранённым mnemonic. Повторите попытку.",
     "listenersFailed": "Не удалось настроить обработчики событий.",
-    "missingApiKey": "Нет ключа API",
-    "missingApiKeyBody": "Добавьте VITE_BREEZ_API_KEY в файл .env",
     "saveFailed": "Не удалось сохранить на этом устройстве",
     "saveFailedBody": "При следующем открытии Glow вас могут попросить войти снова."
   },
@@ -694,7 +663,6 @@
     "unclaimedDeposits": "Непринятые депозиты",
     "openUnclaimedDeposits": "Открыть непринятые депозиты",
     "notNow": "Не сейчас",
-    "lightningAddress": "Адрес Lightning",
     "labelFailed": "Не удалось перенести метку «{{label}}». Повторите попытку.",
     "currentLabel": "(текущая)",
     "probeFailed": "Не удалось проверить, есть ли ключ доступа. Повторите попытку.",

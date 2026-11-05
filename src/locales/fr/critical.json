@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Cette action supprime toutes les données Glow stockées sur cet appareil. Assurez-vous d'avoir sauvegardé votre phrase de récupération : vous en aurez besoin pour accéder à nouveau à vos fonds."
   },
   "refund": {
-    "destinationBody": "Saisissez l'adresse Bitcoin sur laquelle vous voulez recevoir le remboursement.",
     "refund": "Rembourser",
     "amount": "Montant",
     "networkFee": "Frais de réseau"

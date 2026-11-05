@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "This deletes all Glow data stored on this device. Make sure you've saved your recovery phrase: you'll need it to access your funds again."
   },
   "refund": {
-    "destinationBody": "Enter the Bitcoin address where you want to receive the refund.",
     "refund": "Refund",
     "amount": "Amount",
     "networkFee": "Network fee"

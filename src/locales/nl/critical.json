@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Hiermee verwijder je alle Glow-gegevens die op dit apparaat zijn opgeslagen. Zorg dat je je herstelzin hebt opgeslagen: je hebt hem nodig om weer bij je geld te komen."
   },
   "refund": {
-    "destinationBody": "Voer het Bitcoin-adres in waarop je de terugbetaling wilt ontvangen.",
     "refund": "Terugbetalen",
     "amount": "Bedrag",
     "networkFee": "Netwerkkosten"

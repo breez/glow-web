@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Taustalla Breez SDK",
     "somethingWrong": "Jokin meni pieleen",
     "couldNotOpen": "Glow'ta ei voitu avata",
@@ -34,8 +33,6 @@
     "export": "Vie",
     "exporting": "Viedään...",
     "preparing": "Valmistellaan...",
-    "approve": "Hyväksy",
-    "reject": "Hylkää",
     "retry": "Yritä uudelleen",
     "goBack": "Takaisin",
     "edit": "Muokkaa",
@@ -202,7 +199,6 @@
     "title": "Yhteystiedot",
     "name": "Nimi",
     "namePlaceholder": "Yhteystiedon nimi",
-    "lightningAddress": "Lightning-osoite",
     "searchPlaceholder": "Hae yhteystietoja...",
     "deleteTitle": "Poista yhteystieto",
     "noMatches": "Ei osumia",
@@ -365,9 +361,6 @@
     "sparkAddress": "Spark-osoite",
     "bitcoinAddress": "Bitcoin-osoite",
     "scanToPay": "Skannaa maksaaksesi tämän Lightning-laskun",
-    "useThisAddress": "Käytä tätä osoitetta maksujen vastaanottamiseen",
-    "sendBitcoinHere": "Lähetä bitcoinia tähän osoitteeseen automaattista Lightning-muunnosta varten",
-    "generatingBitcoin": "Luodaan Bitcoin-osoitetta...",
     "generatingThing": "Luodaan {{thing}}...",
     "sparkAddressFailed": "Spark-osoitteen luonti ei onnistunut: {{error}}",
     "bitcoinAddressFailed": "Bitcoin-osoitteen luonti ei onnistunut: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "Mitä varten?",
     "amount": "Summa",
     "specificAmount": "Luo lasku tietyllä summalla",
-    "lightningAddress": "Lightning-osoite",
-    "createAddressPrompt": "Luo Lightning-osoite ottaaksesi maksuja vastaan helpommin",
-    "createLightningAddress": "Luo Lightning-osoite",
     "editLightningAddress": "Muokkaa Lightning-osoitetta",
     "editAddress": "Muokkaa osoitetta",
     "createAddress": "Luo Lightning-osoite",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Osta bitcoinia",
-    "withCashApp": "Osta Cash Appilla",
     "cashAppLink": "Cash App -linkki",
     "cashAppNote": "Cash App näyttää vastaavan summan paikallisessa valuutassasi ja veloittaa Cash- tai BTC-saldoasi.",
-    "scanWithCashApp": "Skannaa tämä koodi Cash Appilla",
     "amount": "Summa",
     "invalidAmount": "Virheellinen summa",
     "invoiceFailed": "Laskun luonti epäonnistui. Yritä uudelleen.",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Glow-lokit",
-    "shareDialogTitle": "Jaa lokit",
     "dbShareTitle": "Glow SDK -tietokannan vienti"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "Maksu lähetetty!",
     "failed": "Maksu epäonnistui",
     "authenticated": "Tunnistautuminen onnistui!",
-    "authFailed": "Tunnistautuminen epäonnistui",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / nimi@verkkotunnus.com / yhteystieto / USDC- tai USDT-osoite",
     "feeRate": {
       "title": "Valitse maksutaso",
       "slow": "Hidas",
@@ -512,7 +497,6 @@
       "gettingQuote": "Haetaan tarjousta...",
       "receiving": "Saat",
       "fee": "Maksu",
-      "changeAmount": "Muuta summaa",
       "send": "Lähetä",
       "noRoutes": "Tälle osoitteelle ei ole tuettua stablecoin-reittiä",
       "chain": "Ketju",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "Vastaanotettava summa",
-      "receive": "Vastaanota",
       "timedOut": "Maksu ei saapunut ajoissa. Yritä uudelleen."
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "Saaja"
     },
     "noDestination": "Anna maksun kohde",
-    "prepareFailed": "Maksun valmistelu epäonnistui {{error}}",
     "paymentFailed": "Maksu epäonnistui: {{error}}",
     "operationFailed": "Toiminto epäonnistui: {{error}}",
     "processingPhase": {
-      "authenticating": "Tunnistaudutaan...",
       "waitingForPayment": "Odotetaan maksua...",
       "converting": "Muunnetaan...",
       "sending": "Lähetetään...",
-      "authBody": "Odota hetki, vahvistamme henkilöllisyyttäsi...",
       "withdrawBody": "Viimeistellään siirtoa. Tämä voi kestää hetken...",
       "convertBody": "Odota hetki, muunnamme summaa...",
       "sendBody": "Odota hetki, käsittelemme tapahtumaasi..."
     },
     "result": {
-      "authSuccessBody": "Tunnistautuminen palveluun onnistui.",
       "sentBody": "Maksusi lähetettiin vastaanottajalle.",
-      "authFailBody": "Tunnistautumisessa tapahtui virhe. Yritä uudelleen.",
       "failBody": "Maksun käsittelyssä tapahtui virhe. Yritä uudelleen.",
       "refundSent": "Hyvitys lähetetty!",
       "refundFailed": "Hyvitys epäonnistui",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "Tervetuloa takaisin",
-    "lockedPasskey": "Glow on lukittu. Avaa lukitus avainkoodillasi jatkaaksesi.",
     "lockedBiometric": "Glow on lukittu. Avaa lukitus biometrialla jatkaaksesi.",
     "couldNotStartBody": "Glow ei käynnistynyt. Yritä uudelleen.",
     "unlockFailed": "Lukituksen avaus epäonnistui",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "Kaikki kunnossa!",
     "nonePending": "Ei hylättyjä talletuksia hyvitystä odottamassa.",
-    "destination": "Kohde",
     "title": "Hyvitys bitcoineina",
     "broadcasting": "Lähetetään verkkoon",
     "broadcast": "Hyvitys lähetetty verkkoon",
-    "sent": "Hyvitys lähetetty",
-    "broadcastBody": "Hyvityksesi lähetettiin Bitcoin-verkkoon.",
     "failed": "Hyvitys epäonnistui",
-    "processing": "Käsitellään hyvitystä...",
-    "errorBody": "Hyvityksen käsittelyssä tapahtui virhe.",
     "txId": "Hyvityksen tapahtumatunnus",
     "loadFailed": "Hylättyjen talletusten lataus epäonnistui",
     "notOnchainAddress": "Tämä ei ole on-chain Bitcoin-osoite",
@@ -633,7 +605,6 @@
     "title": "BTC-siirto",
     "claimFailed": "Lunastus epäonnistui",
     "autoClaimFailed": "Automaattinen lunastus epäonnistui",
-    "waitingConfirmations": "Odotetaan 3 vahvistusta.",
     "autoClaim": "Tämä siirto lunastetaan automaattisesti.",
     "speed": "Nopeus",
     "standardDelivery": "Vakiotoimitus",
@@ -663,8 +634,6 @@
     "reconnectFailed": "Uudelleenyhdistäminen ei onnistunut. Yritä uudelleen.",
     "mnemonicConnectFailed": "Yhdistäminen tallennetulla lauseella epäonnistui. Yritä uudelleen.",
     "listenersFailed": "Tapahtumakuuntelijoiden määritys epäonnistui.",
-    "missingApiKey": "API-avain puuttuu",
-    "missingApiKeyBody": "Lisää VITE_BREEZ_API_KEY .env-tiedostoosi",
     "saveFailed": "Tallennus tälle laitteelle ei onnistunut",
     "saveFailedBody": "Sinua voidaan pyytää kirjautumaan uudelleen, kun avaat Glow'n seuraavan kerran."
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "Lunastamattomat talletukset",
     "openUnclaimedDeposits": "Avaa lunastamattomat talletukset",
     "notNow": "Ei nyt",
-    "lightningAddress": "Lightning-osoite",
     "labelFailed": "Tunnisteen ”{{label}}” siirto epäonnistui. Yritä uudelleen.",
     "currentLabel": "(nykyinen)",
     "probeFailed": "Olemassa olevan avainkoodin tarkistus epäonnistui. Yritä uudelleen.",

@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Didukung oleh Breez SDK",
     "somethingWrong": "Terjadi kesalahan",
     "couldNotOpen": "Glow tidak dapat dibuka",
@@ -34,8 +33,6 @@
     "export": "Ekspor",
     "exporting": "Mengekspor...",
     "preparing": "Menyiapkan...",
-    "approve": "Setujui",
-    "reject": "Tolak",
     "retry": "Coba lagi",
     "goBack": "Kembali",
     "edit": "Ubah",
@@ -202,7 +199,6 @@
     "title": "Kontak",
     "name": "Nama",
     "namePlaceholder": "Nama kontak",
-    "lightningAddress": "Alamat Lightning",
     "searchPlaceholder": "Cari kontak...",
     "deleteTitle": "Hapus Kontak",
     "noMatches": "Tidak ada yang cocok",
@@ -365,9 +361,6 @@
     "sparkAddress": "Alamat Spark",
     "bitcoinAddress": "Alamat Bitcoin",
     "scanToPay": "Pindai untuk membayar faktur Lightning ini",
-    "useThisAddress": "Gunakan alamat ini untuk menerima pembayaran",
-    "sendBitcoinHere": "Kirim Bitcoin ke alamat ini untuk konversi Lightning otomatis",
-    "generatingBitcoin": "Membuat alamat Bitcoin...",
     "generatingThing": "Membuat {{thing}}...",
     "sparkAddressFailed": "Alamat Spark tidak dapat dibuat: {{error}}",
     "bitcoinAddressFailed": "Alamat Bitcoin tidak dapat dibuat: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "Untuk apa ini?",
     "amount": "Jumlah",
     "specificAmount": "Buat faktur dengan jumlah tertentu",
-    "lightningAddress": "Alamat Lightning",
-    "createAddressPrompt": "Buat Alamat Lightning agar lebih mudah menerima pembayaran",
-    "createLightningAddress": "Buat Alamat Lightning",
     "editLightningAddress": "Ubah Alamat Lightning",
     "editAddress": "Ubah Alamat",
     "createAddress": "Buat Alamat Lightning",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Beli Bitcoin",
-    "withCashApp": "Beli dengan Cash App",
     "cashAppLink": "Tautan Cash App",
     "cashAppNote": "Cash App akan menampilkan jumlah setara dalam mata uang lokal Anda dan membebankannya ke saldo Cash atau BTC Anda.",
-    "scanWithCashApp": "Pindai kode ini dengan Cash App",
     "amount": "Jumlah",
     "invalidAmount": "Jumlah tidak valid",
     "invoiceFailed": "Gagal membuat faktur. Silakan coba lagi.",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Log Glow",
-    "shareDialogTitle": "Bagikan log",
     "dbShareTitle": "Ekspor Basis Data SDK Glow"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "Pembayaran Terkirim!",
     "failed": "Pembayaran Gagal",
     "authenticated": "Terautentikasi!",
-    "authFailed": "Autentikasi Gagal",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / kontak / alamat USDC atau USDT",
     "feeRate": {
       "title": "Pilih Tarif Biaya",
       "slow": "Lambat",
@@ -512,7 +497,6 @@
       "gettingQuote": "Mengambil penawaran...",
       "receiving": "Menerima",
       "fee": "Biaya",
-      "changeAmount": "Ubah Jumlah",
       "send": "Kirim",
       "noRoutes": "Tidak ada rute stablecoin yang didukung untuk alamat ini",
       "chain": "Rantai",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "Jumlah yang diterima",
-      "receive": "Terima",
       "timedOut": "Pembayaran tidak datang tepat waktu. Silakan coba lagi."
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "Kepada"
     },
     "noDestination": "Masukkan tujuan pembayaran",
-    "prepareFailed": "Gagal menyiapkan pembayaran {{error}}",
     "paymentFailed": "Pembayaran gagal: {{error}}",
     "operationFailed": "Operasi gagal: {{error}}",
     "processingPhase": {
-      "authenticating": "Mengautentikasi...",
       "waitingForPayment": "Menunggu pembayaran...",
       "converting": "Mengonversi...",
       "sending": "Mengirim...",
-      "authBody": "Mohon tunggu, kami memverifikasi identitas Anda...",
       "withdrawBody": "Menyelesaikan transfer. Ini bisa memakan waktu sejenak...",
       "convertBody": "Mohon tunggu, kami mengonversi jumlahnya...",
       "sendBody": "Mohon tunggu, kami memproses transaksi Anda..."
     },
     "result": {
-      "authSuccessBody": "Anda berhasil terautentikasi dengan layanan ini.",
       "sentBody": "Pembayaran Anda berhasil dikirim ke penerima.",
-      "authFailBody": "Terjadi kesalahan saat autentikasi. Silakan coba lagi.",
       "failBody": "Terjadi kesalahan saat memproses pembayaran Anda. Silakan coba lagi.",
       "refundSent": "Pengembalian Terkirim!",
       "refundFailed": "Pengembalian Gagal",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "Selamat datang kembali",
-    "lockedPasskey": "Glow terkunci. Buka dengan kunci sandi Anda untuk melanjutkan.",
     "lockedBiometric": "Glow terkunci. Buka dengan biometrik Anda untuk melanjutkan.",
     "couldNotStartBody": "Glow tidak dapat dijalankan. Silakan coba lagi.",
     "unlockFailed": "Gagal membuka kunci",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "Semua Beres!",
     "nonePending": "Tidak ada setoran ditolak yang menunggu pengembalian.",
-    "destination": "Tujuan",
     "title": "Pengembalian ke Bitcoin",
     "broadcasting": "Menyiarkan",
     "broadcast": "Pengembalian Disiarkan",
-    "sent": "Pengembalian Terkirim",
-    "broadcastBody": "Pengembalian Anda sudah dikirim ke jaringan Bitcoin.",
     "failed": "Pengembalian Gagal",
-    "processing": "Memproses pengembalian...",
-    "errorBody": "Terjadi kesalahan saat memproses pengembalian Anda.",
     "txId": "ID Transaksi Pengembalian",
     "loadFailed": "Gagal memuat setoran yang ditolak",
     "notOnchainAddress": "Itu bukan alamat Bitcoin on-chain",
@@ -633,7 +605,6 @@
     "title": "Transfer BTC",
     "claimFailed": "Klaim Gagal",
     "autoClaimFailed": "Klaim otomatis gagal",
-    "waitingConfirmations": "Menunggu 3 konfirmasi.",
     "autoClaim": "Transfer ini akan diklaim otomatis.",
     "speed": "Kecepatan",
     "standardDelivery": "Pengiriman standar",
@@ -663,8 +634,6 @@
     "reconnectFailed": "Tidak dapat menyambung kembali. Silakan coba lagi.",
     "mnemonicConnectFailed": "Gagal menyambung dengan mnemonic yang tersimpan. Silakan coba lagi.",
     "listenersFailed": "Gagal menyiapkan pendengar peristiwa.",
-    "missingApiKey": "Kunci API Tidak Ada",
-    "missingApiKeyBody": "Tambahkan VITE_BREEZ_API_KEY ke file .env Anda",
     "saveFailed": "Tidak dapat menyimpan ke perangkat ini",
     "saveFailedBody": "Anda mungkin diminta masuk lagi saat berikutnya membuka Glow."
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "Setoran belum diklaim",
     "openUnclaimedDeposits": "Buka setoran yang belum diklaim",
     "notNow": "Nanti saja",
-    "lightningAddress": "alamat Lightning",
     "labelFailed": "Label “{{label}}” tidak dapat dimigrasikan. Silakan coba lagi.",
     "currentLabel": "(sekarang)",
     "probeFailed": "Tidak dapat memeriksa apakah ada kunci sandi. Silakan coba lagi.",

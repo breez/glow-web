@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "Hii hufuta data yote ya Glow iliyohifadhiwa kwenye kifaa hiki. Hakikisha umehifadhi kifungu chako cha kurejesha: utakihitaji ili kufikia fedha zako tena."
   },
   "refund": {
-    "destinationBody": "Weka anwani ya Bitcoin ambapo unataka kupokea marejesho.",
     "refund": "Marejesho",
     "amount": "Kiasi",
     "networkFee": "Ada ya mtandao"

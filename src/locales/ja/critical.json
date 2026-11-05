@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "このデバイスに保存された Glow のデータがすべて削除されます。リカバリーフレーズを保存したか確認してください。資金に再びアクセスするには必要になります。"
   },
   "refund": {
-    "destinationBody": "返金を受け取りたい Bitcoin アドレスを入力してください。",
     "refund": "返金",
     "amount": "金額",
     "networkFee": "ネットワーク手数料"

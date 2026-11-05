@@ -101,7 +101,6 @@
     "eraseBodyMnemonic": "To usunie wszystkie dane Glow zapisane na tym urządzeniu. Upewnij się, że masz zapisaną frazę odzyskiwania: będzie potrzebna, aby znów uzyskać dostęp do swoich środków."
   },
   "refund": {
-    "destinationBody": "Podaj adres Bitcoin, na który chcesz otrzymać zwrot.",
     "refund": "Zwróć",
     "amount": "Kwota",
     "networkFee": "Opłata sieciowa"

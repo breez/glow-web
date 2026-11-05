@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "מופעל על ידי Breez SDK",
     "somethingWrong": "משהו השתבש",
     "couldNotOpen": "לא ניתן לפתוח את Glow",
@@ -34,8 +33,6 @@
     "export": "ייצוא",
     "exporting": "מייצא...",
     "preparing": "מכין...",
-    "approve": "אישור",
-    "reject": "דחייה",
     "retry": "נסה שוב",
     "goBack": "חזרה",
     "edit": "עריכה",
@@ -204,7 +201,6 @@
     "title": "אנשי קשר",
     "name": "שם",
     "namePlaceholder": "שם איש הקשר",
-    "lightningAddress": "כתובת Lightning",
     "searchPlaceholder": "חיפוש באנשי קשר...",
     "deleteTitle": "מחיקת איש קשר",
     "noMatches": "אין התאמות",
@@ -367,9 +363,6 @@
     "sparkAddress": "כתובת Spark",
     "bitcoinAddress": "כתובת Bitcoin",
     "scanToPay": "סרוק כדי לשלם את חשבונית ה-Lightning הזו",
-    "useThisAddress": "השתמש בכתובת הזו כדי לקבל תשלומים",
-    "sendBitcoinHere": "שלח Bitcoin לכתובת הזו להמרה אוטומטית ל-Lightning",
-    "generatingBitcoin": "יוצר כתובת Bitcoin...",
     "generatingThing": "יוצר {{thing}}...",
     "sparkAddressFailed": "לא ניתן ליצור כתובת Spark: {{error}}",
     "bitcoinAddressFailed": "לא ניתן ליצור כתובת Bitcoin: {{error}}",
@@ -383,9 +376,6 @@
     "descriptionPlaceholder": "בשביל מה זה?",
     "amount": "סכום",
     "specificAmount": "יצירת חשבונית בסכום מסוים",
-    "lightningAddress": "כתובת Lightning",
-    "createAddressPrompt": "צור כתובת Lightning כדי לקבל תשלומים בקלות",
-    "createLightningAddress": "יצירת כתובת Lightning",
     "editLightningAddress": "עריכת כתובת Lightning",
     "editAddress": "עריכת הכתובת",
     "createAddress": "יצירת כתובת Lightning",
@@ -420,10 +410,8 @@
   },
   "buy": {
     "title": "קניית Bitcoin",
-    "withCashApp": "קנייה דרך Cash App",
     "cashAppLink": "קישור Cash App",
     "cashAppNote": "Cash App יציג את הסכום המקביל במטבע המקומי שלך ויחייב את היתרה שלך ב-Cash או ב-BTC.",
-    "scanWithCashApp": "סרוק את הקוד הזה עם Cash App",
     "amount": "סכום",
     "invalidAmount": "סכום לא תקין",
     "invoiceFailed": "לא ניתן ליצור חשבונית. נסה שוב.",
@@ -444,7 +432,6 @@
   },
   "logs": {
     "shareTitle": "יומני Glow",
-    "shareDialogTitle": "שיתוף היומנים",
     "dbShareTitle": "ייצוא מסד הנתונים של Glow SDK"
   },
   "startupFailure": {
@@ -500,8 +487,6 @@
     "sent": "התשלום נשלח!",
     "failed": "התשלום נכשל",
     "authenticated": "אומת!",
-    "authFailed": "האימות נכשל",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / איש קשר / כתובת USDC או USDT",
     "feeRate": {
       "title": "בחירת תעריף העמלה",
       "slow": "איטי",
@@ -514,7 +499,6 @@
       "gettingQuote": "מקבל הצעת מחיר...",
       "receiving": "תקבל",
       "fee": "עמלה",
-      "changeAmount": "שינוי הסכום",
       "send": "שליחה",
       "noRoutes": "אין מסלולי stablecoin נתמכים לכתובת הזו",
       "chain": "שרשרת",
@@ -529,7 +513,6 @@
     },
     "withdraw": {
       "amountToReceive": "הסכום שתקבל",
-      "receive": "קבלה",
       "timedOut": "התשלום לא הגיע בזמן. נסה שוב."
     },
     "lnurl": {
@@ -540,23 +523,18 @@
       "to": "אל"
     },
     "noDestination": "הזן יעד לתשלום",
-    "prepareFailed": "לא ניתן להכין את התשלום {{error}}",
     "paymentFailed": "התשלום נכשל: {{error}}",
     "operationFailed": "הפעולה נכשלה: {{error}}",
     "processingPhase": {
-      "authenticating": "מאמת...",
       "waitingForPayment": "ממתין לתשלום...",
       "converting": "ממיר...",
       "sending": "שולח...",
-      "authBody": "המתן בבקשה בזמן שאנחנו מאמתים את הזהות שלך...",
       "withdrawBody": "משלים את ההעברה. זה יכול לקחת רגע...",
       "convertBody": "המתן בבקשה בזמן שאנחנו ממירים את הסכום...",
       "sendBody": "המתן בבקשה בזמן שאנחנו מעבדים את העסקה שלך..."
     },
     "result": {
-      "authSuccessBody": "אומתת בהצלחה בשירות הזה.",
       "sentBody": "התשלום שלך נשלח בהצלחה לנמען.",
-      "authFailBody": "אירעה שגיאה במהלך האימות. נסה שוב.",
       "failBody": "אירעה שגיאה בעיבוד התשלום שלך. נסה שוב.",
       "refundSent": "ההחזר נשלח!",
       "refundFailed": "ההחזר נכשל",
@@ -601,7 +579,6 @@
   },
   "unlock": {
     "welcomeBack": "שמחים שחזרת",
-    "lockedPasskey": "Glow נעול. שחרר את הנעילה במפתח הגישה שלך כדי להמשיך.",
     "lockedBiometric": "Glow נעול. שחרר את הנעילה בזיהוי הביומטרי שלך כדי להמשיך.",
     "couldNotStartBody": "Glow לא הצליח לעלות. נסה שוב.",
     "unlockFailed": "שחרור הנעילה נכשל",
@@ -613,15 +590,10 @@
   "refund": {
     "allClear": "הכול בסדר!",
     "nonePending": "אין הפקדות שנדחו וממתינות להחזר.",
-    "destination": "יעד",
     "title": "החזר ל-Bitcoin",
     "broadcasting": "משדר",
     "broadcast": "ההחזר שודר",
-    "sent": "ההחזר נשלח",
-    "broadcastBody": "ההחזר שלך נשלח לרשת Bitcoin.",
     "failed": "ההחזר נכשל",
-    "processing": "מעבד את ההחזר...",
-    "errorBody": "אירעה שגיאה בעיבוד ההחזר שלך.",
     "txId": "מזהה עסקת ההחזר",
     "loadFailed": "לא ניתן לטעון את ההפקדות שנדחו",
     "notOnchainAddress": "זו לא כתובת Bitcoin של on-chain",
@@ -635,7 +607,6 @@
     "title": "העברת BTC",
     "claimFailed": "המימוש נכשל",
     "autoClaimFailed": "המימוש האוטומטי נכשל",
-    "waitingConfirmations": "ממתין ל-3 אישורים.",
     "autoClaim": "ההעברה הזו תמומש אוטומטית.",
     "speed": "מהירות",
     "standardDelivery": "מסירה רגילה",
@@ -666,8 +637,6 @@
     "reconnectFailed": "לא ניתן להתחבר שוב. נסה שוב.",
     "mnemonicConnectFailed": "לא ניתן להתחבר עם ה-mnemonic השמור. נסה שוב.",
     "listenersFailed": "לא ניתן להגדיר את מאזיני האירועים.",
-    "missingApiKey": "חסר מפתח API",
-    "missingApiKeyBody": "הוסף VITE_BREEZ_API_KEY לקובץ ה-.env שלך",
     "saveFailed": "לא ניתן לשמור במכשיר הזה",
     "saveFailedBody": "ייתכן שתתבקש להתחבר שוב בפעם הבאה שתפתח את Glow."
   },
@@ -691,7 +660,6 @@
     "unclaimedDeposits": "הפקדות שלא מומשו",
     "openUnclaimedDeposits": "פתיחת ההפקדות שלא מומשו",
     "notNow": "לא עכשיו",
-    "lightningAddress": "כתובת Lightning",
     "labelFailed": "לא ניתן להעביר את התווית „{{label}}”. נסה שוב.",
     "currentLabel": "(הנוכחית)",
     "probeFailed": "לא ניתן לבדוק אם קיים מפתח גישה. נסה שוב.",

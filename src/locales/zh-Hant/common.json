@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "由 Breez SDK 提供技術",
     "somethingWrong": "發生問題",
     "couldNotOpen": "無法開啟 Glow",
@@ -34,8 +33,6 @@
     "export": "匯出",
     "exporting": "正在匯出...",
     "preparing": "正在準備...",
-    "approve": "核准",
-    "reject": "拒絕",
     "retry": "重試",
     "goBack": "返回",
     "edit": "編輯",
@@ -202,7 +199,6 @@
     "title": "聯絡人",
     "name": "名稱",
     "namePlaceholder": "聯絡人名稱",
-    "lightningAddress": "Lightning 位址",
     "searchPlaceholder": "搜尋聯絡人...",
     "deleteTitle": "刪除聯絡人",
     "noMatches": "沒有符合的項目",
@@ -365,9 +361,6 @@
     "sparkAddress": "Spark 位址",
     "bitcoinAddress": "Bitcoin 位址",
     "scanToPay": "掃描以支付這張 Lightning 帳單",
-    "useThisAddress": "用這個位址來收款",
-    "sendBitcoinHere": "把 Bitcoin 傳到這個位址，會自動兌換為 Lightning",
-    "generatingBitcoin": "正在產生 Bitcoin 位址...",
     "generatingThing": "正在產生 {{thing}}...",
     "sparkAddressFailed": "無法產生 Spark 位址：{{error}}",
     "bitcoinAddressFailed": "無法產生 Bitcoin 位址：{{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "這筆款項是做什麼的？",
     "amount": "金額",
     "specificAmount": "建立指定金額的帳單",
-    "lightningAddress": "Lightning 位址",
-    "createAddressPrompt": "建立一個 Lightning 位址，收款更方便",
-    "createLightningAddress": "建立 Lightning 位址",
     "editLightningAddress": "編輯 Lightning 位址",
     "editAddress": "編輯位址",
     "createAddress": "建立 Lightning 位址",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "購買 Bitcoin",
-    "withCashApp": "用 Cash App 購買",
     "cashAppLink": "Cash App 連結",
     "cashAppNote": "Cash App 會顯示換算成您當地貨幣的金額，並從您的 Cash 或 BTC 餘額扣款。",
-    "scanWithCashApp": "用 Cash App 掃描這個碼",
     "amount": "金額",
     "invalidAmount": "金額無效",
     "invoiceFailed": "無法建立帳單。請重試。",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Glow 記錄檔",
-    "shareDialogTitle": "分享記錄檔",
     "dbShareTitle": "Glow SDK 資料庫匯出"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "款項已送出！",
     "failed": "付款失敗",
     "authenticated": "已驗證！",
-    "authFailed": "驗證失敗",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / 聯絡人 / USDC 或 USDT 位址",
     "feeRate": {
       "title": "選擇費率",
       "slow": "慢",
@@ -512,7 +497,6 @@
       "gettingQuote": "正在取得報價...",
       "receiving": "您會收到",
       "fee": "手續費",
-      "changeAmount": "更改金額",
       "send": "傳送",
       "noRoutes": "這個位址沒有支援的 stablecoin 路徑",
       "chain": "鏈",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "會收到的金額",
-      "receive": "收款",
       "timedOut": "款項沒有及時送達。請重試。"
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "收款方"
     },
     "noDestination": "請輸入付款目標",
-    "prepareFailed": "無法準備付款 {{error}}",
     "paymentFailed": "付款失敗：{{error}}",
     "operationFailed": "操作失敗：{{error}}",
     "processingPhase": {
-      "authenticating": "正在驗證...",
       "waitingForPayment": "正在等待付款...",
       "converting": "正在兌換...",
       "sending": "正在傳送...",
-      "authBody": "正在驗證您的身分，請稍候...",
       "withdrawBody": "正在完成轉帳。這可能需要一點時間...",
       "convertBody": "正在兌換金額，請稍候...",
       "sendBody": "正在處理您的交易，請稍候..."
     },
     "result": {
-      "authSuccessBody": "您已在這項服務上完成驗證。",
       "sentBody": "您的款項已成功送給收款人。",
-      "authFailBody": "驗證過程中發生錯誤。請重試。",
       "failBody": "處理款項時發生錯誤。請重試。",
       "refundSent": "退款已送出！",
       "refundFailed": "退款失敗",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "歡迎回來",
-    "lockedPasskey": "Glow 已鎖定。請用密碼金鑰解鎖以繼續。",
     "lockedBiometric": "Glow 已鎖定。請用生物辨識解鎖以繼續。",
     "couldNotStartBody": "Glow 無法啟動。請重試。",
     "unlockFailed": "解鎖失敗",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "一切就緒！",
     "nonePending": "沒有等待退款的被拒存入。",
-    "destination": "目標",
     "title": "退款到 Bitcoin",
     "broadcasting": "正在廣播",
     "broadcast": "退款已廣播",
-    "sent": "退款已送出",
-    "broadcastBody": "您的退款已送到 Bitcoin 網路。",
     "failed": "退款失敗",
-    "processing": "正在處理退款...",
-    "errorBody": "處理退款時發生錯誤。",
     "txId": "退款交易 ID",
     "loadFailed": "載入被拒存入失敗",
     "notOnchainAddress": "這不是 on-chain 的 Bitcoin 位址",
@@ -633,7 +605,6 @@
     "title": "BTC 轉帳",
     "claimFailed": "領取失敗",
     "autoClaimFailed": "自動領取失敗",
-    "waitingConfirmations": "正在等待 3 個確認。",
     "autoClaim": "這筆轉帳會自動領取。",
     "speed": "速度",
     "standardDelivery": "標準入帳",
@@ -663,8 +634,6 @@
     "reconnectFailed": "無法重新連線。請重試。",
     "mnemonicConnectFailed": "無法用已儲存的 mnemonic 連線。請重試。",
     "listenersFailed": "無法設定事件監聽器。",
-    "missingApiKey": "缺少 API 金鑰",
-    "missingApiKeyBody": "請在 .env 檔案中加入 VITE_BREEZ_API_KEY",
     "saveFailed": "無法儲存到這部裝置",
     "saveFailedBody": "下次開啟 Glow 時，可能需要您重新登入。"
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "未領取的存入",
     "openUnclaimedDeposits": "開啟未領取的存入",
     "notNow": "暫不",
-    "lightningAddress": "Lightning 位址",
     "labelFailed": "無法轉移標籤「{{label}}」。請重試。",
     "currentLabel": "（目前）",
     "probeFailed": "無法檢查是否已有密碼金鑰。請重試。",

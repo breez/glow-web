@@ -1,6 +1,5 @@
 {
   "app": {
-    "name": "Glow",
     "poweredBy": "Powered by Breez SDK",
     "somethingWrong": "Something went wrong",
     "couldNotOpen": "Could not open Glow",
@@ -34,8 +33,6 @@
     "export": "Export",
     "exporting": "Exporting...",
     "preparing": "Preparing...",
-    "approve": "Approve",
-    "reject": "Reject",
     "retry": "Retry",
     "goBack": "Go Back",
     "edit": "Edit",
@@ -202,7 +199,6 @@
     "title": "Contacts",
     "name": "Name",
     "namePlaceholder": "Contact name",
-    "lightningAddress": "Lightning Address",
     "searchPlaceholder": "Search contacts...",
     "deleteTitle": "Delete Contact",
     "noMatches": "No matches",
@@ -365,9 +361,6 @@
     "sparkAddress": "Spark Address",
     "bitcoinAddress": "Bitcoin Address",
     "scanToPay": "Scan to pay this Lightning invoice",
-    "useThisAddress": "Use this address to receive payments",
-    "sendBitcoinHere": "Send Bitcoin to this address for automatic Lightning conversion",
-    "generatingBitcoin": "Generating Bitcoin address...",
     "generatingThing": "Generating {{thing}}...",
     "sparkAddressFailed": "Failed to generate Spark address: {{error}}",
     "bitcoinAddressFailed": "Failed to generate Bitcoin address: {{error}}",
@@ -381,9 +374,6 @@
     "descriptionPlaceholder": "What's this for?",
     "amount": "Amount",
     "specificAmount": "Create invoice with specific amount",
-    "lightningAddress": "Lightning Address",
-    "createAddressPrompt": "Create a Lightning Address to receive payments easily",
-    "createLightningAddress": "Create Lightning Address",
     "editLightningAddress": "Edit Lightning Address",
     "editAddress": "Edit Address",
     "createAddress": "Create Lightning Address",
@@ -418,10 +408,8 @@
   },
   "buy": {
     "title": "Buy Bitcoin",
-    "withCashApp": "Buy with Cash App",
     "cashAppLink": "Cash App link",
     "cashAppNote": "Cash App will show the equivalent amount in your local currency and charge your Cash or BTC balance.",
-    "scanWithCashApp": "Scan this code with Cash App",
     "amount": "Amount",
     "invalidAmount": "Invalid amount",
     "invoiceFailed": "Failed to create invoice. Please try again.",
@@ -442,7 +430,6 @@
   },
   "logs": {
     "shareTitle": "Glow Logs",
-    "shareDialogTitle": "Share logs",
     "dbShareTitle": "Glow SDK Database Export"
   },
   "startupFailure": {
@@ -498,8 +485,6 @@
     "sent": "Payment Sent!",
     "failed": "Payment Failed",
     "authenticated": "Authenticated!",
-    "authFailed": "Authentication Failed",
-    "inputPlaceholder": "lnbc... / bc1... / sp1... / user@domain.com / contact / USDC or USDT address",
     "feeRate": {
       "title": "Select Fee Rate",
       "slow": "Slow",
@@ -512,7 +497,6 @@
       "gettingQuote": "Getting quote...",
       "receiving": "Receiving",
       "fee": "Fee",
-      "changeAmount": "Change Amount",
       "send": "Send",
       "noRoutes": "No supported stablecoin routes available for this address",
       "chain": "Chain",
@@ -527,7 +511,6 @@
     },
     "withdraw": {
       "amountToReceive": "Amount to receive",
-      "receive": "Receive",
       "timedOut": "The payment did not arrive in time. Please try again."
     },
     "lnurl": {
@@ -538,23 +521,18 @@
       "to": "To"
     },
     "noDestination": "Please enter a payment destination",
-    "prepareFailed": "Failed to prepare payment {{error}}",
     "paymentFailed": "Payment failed: {{error}}",
     "operationFailed": "Operation failed: {{error}}",
     "processingPhase": {
-      "authenticating": "Authenticating...",
       "waitingForPayment": "Waiting for payment...",
       "converting": "Converting...",
       "sending": "Sending...",
-      "authBody": "Please wait while we verify your identity...",
       "withdrawBody": "Completing the transfer. This can take a moment...",
       "convertBody": "Please wait while we convert the amount...",
       "sendBody": "Please wait while we process your transaction..."
     },
     "result": {
-      "authSuccessBody": "You have successfully authenticated with the service.",
       "sentBody": "Your payment has been successfully sent to the recipient.",
-      "authFailBody": "There was an error during authentication. Please try again.",
       "failBody": "There was an error processing your payment. Please try again.",
       "refundSent": "Refund Sent!",
       "refundFailed": "Refund Failed",
@@ -599,7 +577,6 @@
   },
   "unlock": {
     "welcomeBack": "Welcome back",
-    "lockedPasskey": "Glow is locked. Unlock with your passkey to continue.",
     "lockedBiometric": "Glow is locked. Unlock with your biometric to continue.",
     "couldNotStartBody": "Glow could not start up. Please try again.",
     "unlockFailed": "Unlock failed",
@@ -611,15 +588,10 @@
   "refund": {
     "allClear": "All Clear!",
     "nonePending": "No rejected deposits pending refund.",
-    "destination": "Destination",
     "title": "Refund to Bitcoin",
     "broadcasting": "Broadcasting",
     "broadcast": "Refund Broadcast",
-    "sent": "Refund Sent",
-    "broadcastBody": "Your refund has been sent to the Bitcoin network.",
     "failed": "Refund Failed",
-    "processing": "Processing refund...",
-    "errorBody": "An error occurred while processing your refund.",
     "txId": "Refund Transaction ID",
     "loadFailed": "Failed to load rejected deposits",
     "notOnchainAddress": "That is not an on-chain Bitcoin address",
@@ -633,7 +605,6 @@
     "title": "BTC Transfer",
     "claimFailed": "Claim Failed",
     "autoClaimFailed": "Automatic claim failed",
-    "waitingConfirmations": "Waiting for 3 confirmations.",
     "autoClaim": "This transfer will be claimed automatically.",
     "speed": "Speed",
     "standardDelivery": "Standard delivery",
@@ -663,8 +634,6 @@
     "reconnectFailed": "Could not reconnect. Please try again.",
     "mnemonicConnectFailed": "Failed to connect with saved mnemonic. Please try again.",
     "listenersFailed": "Failed to set up event listeners.",
-    "missingApiKey": "Missing API Key",
-    "missingApiKeyBody": "Please add VITE_BREEZ_API_KEY to your .env file",
     "saveFailed": "Could not save to this device",
     "saveFailedBody": "You may be asked to sign in again the next time you open Glow."
   },
@@ -688,7 +657,6 @@
     "unclaimedDeposits": "Unclaimed deposits",
     "openUnclaimedDeposits": "Open unclaimed deposits",
     "notNow": "Not now",
-    "lightningAddress": "Lightning address",
     "labelFailed": "Could not migrate the label “{{label}}”. Please try again.",
     "currentLabel": "(current)",
     "probeFailed": "Could not check for an existing passkey. Please try again.",
