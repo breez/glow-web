@@ -1,16 +1,15 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { AppLauncher } from '@capacitor/app-launcher';
-import type { BreezSdk, Network } from '@breeztech/breez-sdk-spark';
+import type { Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '../../../contexts/WalletContext';
-import { useInvoicePaid } from '../../../hooks/useInvoicePaid';
+import { useQuoteReceived } from '../../../hooks/useQuoteReceived';
 import { useAmountInput } from '../../../hooks/useAmountInput';
 import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
 import { fixedQuickAmounts, type TokenDisplayConfig } from '../../../utils/tokenFormatting';
 import { toSdkAmountNumber, type Sats } from '../../../types/sats';
 import {
-  getSettings,
   getBuyProviderSettings,
   filterProvidersByNetwork,
   filterProvidersByPlatform,
@@ -30,19 +29,6 @@ const AMOUNT_STEP: Record<BuyBitcoinProvider, BuyStep> = {
  *  Any amount can still be typed, down to `MIN_CASH_APP_SATS`. */
 const CASH_APP_POINTS_USD = [20, 50, 100];
 const MIN_CASH_APP_SATS: Sats = 1n as Sats;
-
-/** The Cash App buy URL for an invoice of `amountSats`. A memo set in the dev
- *  settings replaces the SDK's own, so the invoice is created here instead. */
-async function createCashAppUrl(sdk: BreezSdk, amountSats: number): Promise<string> {
-  const memo = getSettings().cashAppMemo;
-  if (!memo) {
-    return (await sdk.buyBitcoin({ type: 'cashApp', amountSats })).url;
-  }
-  const { paymentRequest } = await sdk.receivePayment({
-    paymentMethod: { type: 'bolt11Invoice', description: memo, amountSats },
-  });
-  return `https://cash.app/launch/lightning/${paymentRequest}`;
-}
 
 export interface UseBuyBitcoinOptions {
   /** Whether the dialog is open — used to reset state when closed. */
@@ -119,6 +105,7 @@ export function useBuyBitcoin({
   }, [amountInput, amountSats, isTokenMode, btcFiatRate]);
 
   const [cashAppUrl, setCashAppUrl] = useState<string | null>(null);
+  const [quoteId, setQuoteId] = useState<string | null>(null);
   const [generatedAmountSats, setGeneratedAmountSats] = useState<Sats | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -179,7 +166,7 @@ export function useBuyBitcoin({
     setIsGenerating(true);
 
     try {
-      const url = await createCashAppUrl(sdk, amountSatsForSdk);
+      const { url, crossChainInfo } = await sdk.buyBitcoin({ type: 'cashApp', amountSats: amountSatsForSdk });
       setGeneratedAmountSats(amountSats);
       if (Capacitor.isNativePlatform()) {
         // AppLauncher bridges to UIApplication.open, the only iOS API that
@@ -197,6 +184,7 @@ export function useBuyBitcoin({
       // hand an App Link to an app without user activation, which the await
       // above has already spent.
       setCashAppUrl(url);
+      setQuoteId(crossChainInfo?.quoteId ?? null);
       setStep('link');
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to create Cash App buy URL', { error: formatError(e) });
@@ -206,15 +194,9 @@ export function useBuyBitcoin({
     }
   }, [amountSats, sdk, onMobileRedirectComplete]);
 
-  // Cash App URLs are `https://cash.app/launch/lightning/<bolt11>`. Extract the
-  // invoice only while the link is on screen so the bus subscription pauses
-  // once we leave that step.
-  const activeInvoice = useMemo(() => {
-    if (step !== 'link' || !cashAppUrl) return null;
-    return cashAppUrl.split('/').pop() ?? null;
-  }, [step, cashAppUrl]);
-
-  useInvoicePaid(activeInvoice, onInvoicePaid);
+  // The purchase lands as a Spark payment from the conversion provider, not as
+  // a payment of the invoice, so it is matched by quote. Listens only on `link`.
+  useQuoteReceived(step === 'link' ? quoteId : null, onInvoicePaid);
 
   const goBackToSelectFn = useCallback(() => {
     setStep('select');

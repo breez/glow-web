@@ -1,5 +1,5 @@
 import React from 'react';
-import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { WalletProvider } from '@/contexts/WalletContext';
@@ -7,27 +7,30 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import { FiatDataProvider } from '@/contexts/FiatDataContext';
 import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
-import { getSettings, saveSettings } from '@/services/settings';
+import type { SdkEventHandler } from '@/hooks/useBreezSdk';
 import { useBuyBitcoin } from './useBuyBitcoin';
 import BuyBitcoinDialog from '../BuyBitcoinDialog';
 
 const CASH_APP_URL = 'https://cash.app/launch/lightning/lnbc100n1test';
 
-function renderBuy() {
+function renderBuy(onInvoicePaid = vi.fn()) {
   const client = createMockClient({
-    buyBitcoin: vi.fn().mockResolvedValue({ url: CASH_APP_URL }),
+    buyBitcoin: vi.fn().mockResolvedValue({ url: CASH_APP_URL, crossChainInfo: { quoteId: 'q1' } }),
   } as never);
+  const handlers = new Set<SdkEventHandler>();
+  const subscribe = (h: SdkEventHandler) => { handlers.add(h); return () => { handlers.delete(h); }; };
+  const emit = (event: unknown) => handlers.forEach((h) => h(event as never));
   const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <WalletProvider client={client} isConnected>
+    <WalletProvider client={client} isConnected subscribeToSdkEvents={subscribe}>
       <FiatDataProvider>
         <StableBalanceProvider>{children}</StableBalanceProvider>
       </FiatDataProvider>
     </WalletProvider>
   );
-  return { client, ...renderHook(() => useBuyBitcoin({
+  return { client, emit, ...renderHook(() => useBuyBitcoin({
     isOpen: true,
     onMobileRedirectComplete: vi.fn(),
-    onInvoicePaid: vi.fn(),
+    onInvoicePaid,
   }), { wrapper }) };
 }
 
@@ -49,14 +52,30 @@ describe('Cash App on mobile web', () => {
     expect(open).not.toHaveBeenCalled();
   });
 
-  it('asks the SDK for the Cash App URL when no memo is set', async () => {
+  it('asks the SDK for the Cash App URL', async () => {
     const { client, result } = renderBuy();
 
     act(() => result.current.setAmount('50000'));
     await act(() => result.current.generate());
 
     expect(client.buyBitcoin).toHaveBeenCalledWith({ type: 'cashApp', amountSats: 50000 });
-    expect(client.receivePayment).not.toHaveBeenCalled();
+  });
+
+  it('closes when the Orchestra payment for its quote arrives', async () => {
+    const onInvoicePaid = vi.fn();
+    const { emit, result } = renderBuy(onInvoicePaid);
+
+    act(() => result.current.setAmount('50000'));
+    await act(() => result.current.generate());
+    const received = (quoteId: string) => emit({
+      type: 'paymentSucceeded',
+      payment: { details: { type: 'spark', conversionInfo: { type: 'orchestra', quoteId } } },
+    });
+
+    act(() => received('other'));
+    expect(onInvoicePaid).not.toHaveBeenCalled();
+    act(() => received('q1'));
+    expect(onInvoicePaid).toHaveBeenCalledOnce();
   });
 
   it('stays on the amount step when the invoice fails', async () => {
@@ -68,43 +87,6 @@ describe('Cash App on mobile web', () => {
 
     await waitFor(() => expect(result.current.error).toBeTruthy());
     expect(result.current.cashAppUrl).toBeNull();
-  });
-});
-
-describe('a Cash App memo from the dev settings', () => {
-  beforeEach(() => vi.clearAllMocks());
-  afterEach(() => saveSettings({ ...getSettings(), cashAppMemo: undefined }));
-
-  const setMemo = (cashAppMemo: string) => saveSettings({ ...getSettings(), cashAppMemo });
-
-  it('creates the invoice with that memo and builds the Cash App URL from it', async () => {
-    setMemo('Glow');
-    const { client, result } = renderBuy();
-    vi.mocked(client.receivePayment).mockResolvedValue({ paymentRequest: 'lnbc1memo', fee: 0n } as never);
-
-    act(() => result.current.setAmount('50000'));
-    await act(() => result.current.generate());
-
-    expect(client.receivePayment).toHaveBeenCalledWith({
-      paymentMethod: { type: 'bolt11Invoice', description: 'Glow', amountSats: 50000 },
-    });
-    expect(client.buyBitcoin).not.toHaveBeenCalled();
-    expect(result.current.cashAppUrl).toBe('https://cash.app/launch/lightning/lnbc1memo');
-  });
-
-  it('applies a changed memo to the next buy', async () => {
-    setMemo('first');
-    const { client, result } = renderBuy();
-
-    act(() => result.current.setAmount('50000'));
-    await act(() => result.current.generate());
-    setMemo('second');
-    await act(() => result.current.generate());
-
-    const memos = vi.mocked(client.receivePayment).mock.calls.map(
-      ([request]) => (request.paymentMethod as { description: string }).description,
-    );
-    expect(memos).toEqual(['first', 'second']);
   });
 });
 
