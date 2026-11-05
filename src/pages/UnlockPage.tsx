@@ -136,7 +136,7 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
               disabled={isLoading}
               className="w-full"
             >
-              {t('common:unlock.eraseTitle')}
+              {t('unlock.eraseTitle')}
             </SecondaryButton>
           </div>
         </div>
@@ -145,15 +145,15 @@ const UnlockPage: React.FC<UnlockPageProps> = ({
       <ConfirmDialog
         isOpen={showEraseConfirm}
         variant="danger"
-        title={t('common:unlock.eraseAction')}
+        title={t('unlock.eraseAction')}
         message={isPasskey
-          ? t('common:unlock.eraseBodyPasskey')
-          : t('common:unlock.eraseBodyMnemonic')}
-        confirmLabel={t('common:unlock.erase')}
+          ? t('unlock.eraseBodyPasskey')
+          : t('unlock.eraseBodyMnemonic')}
+        confirmLabel={t('unlock.erase')}
         // Device-owner prompt on top of the confirm, as on the lock
         // screen. The dialog stays up on a cancelled prompt.
         onConfirm={() => {
-          void confirmDeviceOwner(t('common:unlock.eraseReason')).then((confirmed) => {
+          void confirmDeviceOwner(t('unlock.eraseReason')).then((confirmed) => {
             if (!confirmed) return;
             setShowEraseConfirm(false);
             void onAbandon();

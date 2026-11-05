@@ -1286,7 +1286,7 @@ export function useBreezSdk(
             // vault, which still holds the seed.
             refused = true;
             setPasskeyRefused(true);
-            setError(t('common:startup.passkeyAuthFailed'));
+            setError(t('common:passkey.signInFailed'));
             setStartupState('native-locked');
             setIsLoading(false);
           }
