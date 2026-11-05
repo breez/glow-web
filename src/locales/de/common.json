@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "Glow",
-    "poweredBy": "Powered by Breez SDK",
+    "poweredBy": "Basiert auf Breez SDK",
     "somethingWrong": "Etwas ist schiefgelaufen",
     "couldNotOpen": "Glow konnte nicht geöffnet werden",
     "stoppedWorking": "Glow funktioniert nicht mehr",
