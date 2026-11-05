@@ -23,8 +23,9 @@ import { NavigationBar } from '@capgo/capacitor-navigation-bar';
  * STATUS_BAR_SURFACE (#151520) when their flat background needs to
  * match the system bars.
  *
- * On iOS / web / Android 15+ edge-to-edge the native calls are no-ops
- * and .catch()-silenced — the stack is still maintained so consumer
+ * On iOS and web the native calls are no-ops and .catch()-silenced. On
+ * Android 15+ edge-to-edge the bar colors are ignored, but the nav
+ * button style still applies. The stack is still maintained so consumer
  * code stays pure across platforms.
  */
 
@@ -81,7 +82,12 @@ function applyNavBar(): void {
     navBarStack.length > 0
       ? navBarStack[navBarStack.length - 1].color
       : STATUS_BAR_WALLET_GLASS;
-  NavigationBar.setNavigationBarColor({ color }).catch(() => {
+  NavigationBar.setNavigationBarColor({
+    color,
+    // The plugin draws dark buttons unless told otherwise, and every
+    // color on this stack is dark.
+    darkButtons: false,
+  }).catch(() => {
     /* unsupported platform or Android 15+ edge-to-edge — ignore */
   });
 }
