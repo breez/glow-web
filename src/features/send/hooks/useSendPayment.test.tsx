@@ -165,14 +165,6 @@ describe('an expired invoice (#543)', () => {
     expect(client.prepareSendPayment).not.toHaveBeenCalled();
   });
 
-  it('says so as soon as one is pasted, before Continue', async () => {
-    const { result } = renderSendPayment(async (input) => expiredDetails(input, 10_000));
-
-    await act(() => result.current.processInput(BOLT11, { requireReview: true }));
-
-    expect(result.current.error).toBe(EXPIRED_MESSAGE);
-  });
-
   it('does not fall back to the address in a unified BIP21', async () => {
     const { client, result } = renderSendPayment(
       async (uri) =>

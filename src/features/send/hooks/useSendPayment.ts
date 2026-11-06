@@ -52,13 +52,6 @@ const BALANCE_SETTLING = /Failed to select leaves/;
 export type SendStep ='input' | 'amount' | 'workflow' | 'processing' | 'result';
 export type ProcessingPhase = 'sending' | 'converting';
 
-export interface ProcessInputOptions {
-  /** Set by callers that submit an input the user did not type: a scan or a
-   *  paste. A destination carrying its own amount skips both the input and
-   *  amount steps, which are the only ones that pause for the user. */
-  requireReview?: boolean;
-}
-
 export interface UseSendPaymentReturn {
   // State
   currentStep: SendStep;
@@ -80,7 +73,7 @@ export interface UseSendPaymentReturn {
   // Actions
   clearError: () => void;
   reset: () => void;
-  processInput: (input?: string | null, opts?: ProcessInputOptions) => Promise<void>;
+  processInput: (input?: string | null) => Promise<void>;
   onAmountNext: (amount: bigint, includeFees?: boolean, tokenIdentifier?: string, conversionOptions?: ConversionOptions) => Promise<void>;
   handleSend: (options?: SendPaymentOptions) => Promise<void>;
   handleRun: (runner: () => Promise<void>, hasConversion?: boolean) => Promise<void>;
@@ -165,7 +158,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     }
   }, [wallet]);
 
-  const processInput = useCallback(async (input: string | null = null, opts?: ProcessInputOptions) => {
+  const processInput = useCallback(async (input: string | null = null) => {
     const currentInput = (input || paymentInput?.rawInput)?.trim();
     if (!currentInput) {
       setError('Please enter a payment destination');
@@ -243,13 +236,6 @@ export function useSendPayment(): UseSendPaymentReturn {
         effective.type === 'sparkAddress';
 
       if (isPayableAmountType && fixedSats !== undefined) {
-        // Stay on the input step so the scanned or pasted destination is on
-        // screen and Continue is a deliberate tap. Continue re-enters here
-        // without the flag and prepares as usual.
-        if (opts?.requireReview) {
-          setCurrentStep('input');
-          return;
-        }
         setAmountFixed(true);
         setAmount(String(fixedSats));
         await prepareSend(paymentRequest, BigInt(fixedSats), undefined, undefined, undefined, 'workflow');

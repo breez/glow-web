@@ -17,7 +17,7 @@ export interface InputStepProps {
   isLoading: boolean;
   error: string | null;
   onClearError?: () => void;
-  onContinue: (paymentInput: string, opts?: { requireReview?: boolean }) => void;
+  onContinue: (paymentInput: string) => void;
   onScanQr?: () => void;
   onOpenContacts?: () => void;
 }
@@ -66,7 +66,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
       if (text?.trim()) {
         setLocalPaymentInput(text);
         setSelectedContact(null);
-        onContinue(text, { requireReview: true });
+        onContinue(text);
       }
     } catch (err) {
       logger.error(LogCategory.UI, 'Failed to read clipboard contents', {
@@ -140,7 +140,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
                   e.preventDefault();
                   setLocalPaymentInput(text);
                   setSelectedContact(null);
-                  onContinue(text, { requireReview: true });
+                  onContinue(text);
                 }
               }}
               onFocus={() => setIsInputFocused(true)}
