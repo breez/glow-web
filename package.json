@@ -31,7 +31,7 @@
     "regtest:release": "node local-regtest/btc.mjs release"
   },
   "dependencies": {
-    "@breeztech/breez-sdk-spark": "0.27.3-dev",
+    "@breeztech/breez-sdk-spark": "0.28.0",
     "@capacitor/app": "^8.1.0",
     "@capacitor/app-launcher": "^8.0.1",
     "@capacitor/browser": "^8.0.3",
