@@ -123,32 +123,12 @@ export const exportDatabaseState = async (identityPubkey: string, network: strin
       objectStores,
     }, null, 2);
 
-    const blob = new Blob([json], { type: 'application/json' });
     const timestamp = Math.floor(Date.now() / 1000);
-    const filename = `${timestamp}_sdk_state.json`;
-
-    if (canShareFiles()) {
-      const file = new File([blob], filename, { type: 'application/json' });
-      if (navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: 'Glow SDK Database Export' });
-          return;
-        } catch (e) {
-          if (isShareCancel(e)) return;
-        }
-      }
-    }
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      a.remove();
-      URL.revokeObjectURL(url);
-    }, 1000);
+    await shareOrDownloadFile(
+      new Blob([json], { type: 'application/json' }),
+      `${timestamp}_sdk_state.json`,
+      'Glow SDK Database Export',
+    );
   } finally {
     db.close();
   }
@@ -175,7 +155,7 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
   });
 };
 
-// Write the zip to the app cache directory and hand its URI to the
+// Write the file to the app cache directory and hand its URI to the
 // native system share sheet. Used on iOS + Android via Capacitor.
 const shareFileNative = async (blob: Blob, filename: string, title: string): Promise<void> => {
   const base64 = await blobToBase64(blob);
@@ -191,7 +171,7 @@ const shareFileNative = async (blob: Blob, filename: string, title: string): Pro
   });
 };
 
-export const shareOrDownloadZip = async (
+export const shareOrDownloadFile = async (
   blob: Blob,
   filename: string,
   title: string,
@@ -218,7 +198,7 @@ export const shareOrDownloadZip = async (
   }
 
   if (canShareFiles()) {
-    const file = new File([blob], filename, { type: 'application/zip' });
+    const file = new File([blob], filename, { type: blob.type });
     if (navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title });
@@ -246,5 +226,5 @@ export const shareOrDownloadZip = async (
 export const shareOrDownloadLogs = async (): Promise<void> => {
   const blob = await getAllLogsAsZip();
   const timestamp = Math.floor(Date.now() / 1000);
-  await shareOrDownloadZip(blob, `${timestamp}_glow_logs.zip`, 'Glow Logs');
+  await shareOrDownloadFile(blob, `${timestamp}_glow_logs.zip`, 'Glow Logs');
 };

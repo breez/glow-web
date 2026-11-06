@@ -34,7 +34,7 @@ describe('getAllLogsAsZip', () => {
   });
 });
 
-describe('shareOrDownloadZip on a native platform', () => {
+describe('shareOrDownloadFile on a native platform', () => {
   it('stops when the user dismisses the share sheet', async () => {
     vi.doMock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => true } }));
     vi.doMock('@capacitor/filesystem', () => ({
@@ -51,8 +51,8 @@ describe('shareOrDownloadZip on a native platform', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
     vi.resetModules();
-    const { shareOrDownloadZip } = await import('./logExport');
-    await shareOrDownloadZip(new Blob(['z']), 'x.zip', 'Glow');
+    const { shareOrDownloadFile } = await import('./logExport');
+    await shareOrDownloadFile(new Blob(['z']), 'x.zip', 'Glow');
 
     expect(webShare).not.toHaveBeenCalled();
     expect(click).not.toHaveBeenCalled();

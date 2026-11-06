@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import { shareOrDownloadZip } from '@/services/logExport';
+import { shareOrDownloadFile } from '@/services/logExport';
 import type { ExitStateExporter, ExitStateImporter } from './exitState';
 
 const STATE_FILE = 'exit-state.json';
@@ -41,7 +41,7 @@ export async function exportUnilateralExitBackup(
 
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
   const timestamp = Math.floor(Date.now() / 1000);
-  await shareOrDownloadZip(blob, `${timestamp}_glow_unilateral_exit_backup.zip`, 'Glow Unilateral Exit Backup');
+  await shareOrDownloadFile(blob, `${timestamp}_glow_unilateral_exit_backup.zip`, 'Glow Unilateral Exit Backup');
 }
 
 /** What a restored file turned out to hold, once the sdk has read it. */

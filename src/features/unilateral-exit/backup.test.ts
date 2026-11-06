@@ -6,8 +6,8 @@ import {
   UnreadableBackupError,
 } from './backup';
 
-vi.mock('@/services/logExport', () => ({ shareOrDownloadZip: vi.fn(async () => undefined) }));
-const { shareOrDownloadZip } = await import('@/services/logExport');
+vi.mock('@/services/logExport', () => ({ shareOrDownloadFile: vi.fn(async () => undefined) }));
+const { shareOrDownloadFile } = await import('@/services/logExport');
 
 const STATE = '{"leaves":[{"id":"leaf-1"}]}';
 
@@ -32,7 +32,7 @@ describe('exportUnilateralExitBackup', () => {
     const sdk = { exportUnilateralExitState: vi.fn(async () => ({ exitState: STATE })) };
     await exportUnilateralExitBackup(sdk);
 
-    const calls = vi.mocked(shareOrDownloadZip).mock.calls;
+    const calls = vi.mocked(shareOrDownloadFile).mock.calls;
     const [blob, filename] = calls[calls.length - 1];
     expect(filename).toMatch(/glow_unilateral_exit_backup\.zip$/);
     const zip = await JSZip.loadAsync(blob);
@@ -46,7 +46,7 @@ describe('exportUnilateralExitBackup', () => {
     await exportUnilateralExitBackup(sdk, STATE);
     expect(sdk.exportUnilateralExitState).not.toHaveBeenCalled();
 
-    const calls = vi.mocked(shareOrDownloadZip).mock.calls;
+    const calls = vi.mocked(shareOrDownloadFile).mock.calls;
     const [blob] = calls[calls.length - 1];
     const zip = await JSZip.loadAsync(blob);
     await expect(zip.file('exit-state.json')?.async('string')).resolves.toBe(STATE);
