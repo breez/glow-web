@@ -141,12 +141,14 @@ export function useAppLock(): AppLockState {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const arm = () => {
       clearTimeout(timer);
-      if (!isPinEnabledSync()) return;
       // 'Immediately' (0) is a rule about backgrounding. Read as an idle
       // timeout it would lock the screen the user is looking at, so it
       // takes the shortest real option instead.
       const seconds = getAutoLockSecondsSync() || 30;
       timer = setTimeout(() => {
+        // Read at expiry, not when arming: the tap that turns the PIN on
+        // or off arms the timer before the change lands.
+        if (!isPinEnabledSync()) return;
         // A suppressing screen is up (a receive QR mid-scan). Re-arm
         // rather than lock, so the lock lands on the first expiry after
         // it goes away instead of waiting for the user to touch
