@@ -284,7 +284,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                   leave="transition transform ease-in duration-150"
                   leaveFrom="opacity-100 scale-100"
                   leaveTo="opacity-0 scale-95"
-                  className="w-full max-w-sm bg-spark-surface border border-spark-border rounded-2xl p-6 shadow-glass-lg"
+                  className="inset-safe-x w-full max-w-sm bg-spark-surface border border-spark-border rounded-2xl p-6 shadow-glass-lg"
                 >
                   {/* Warning Icon */}
                   <div className="flex justify-center mb-4">

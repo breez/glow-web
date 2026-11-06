@@ -91,7 +91,7 @@ export const DialogCard = forwardRef<HTMLDivElement, DialogCardProps>(
     return (
       <div
         ref={ref}
-        className={`glass-card w-full ${widthClass} overflow-hidden relative p-6 ${className}`}
+        className={`glass-card inset-safe-x w-full ${widthClass} overflow-hidden relative p-6 ${className}`}
       >
         {children}
       </div>

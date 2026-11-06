@@ -880,6 +880,8 @@ video::-webkit-media-controls-panel {
   border-top: 1px solid var(--spark-border);
   gap: 0.625rem;
   padding: 0.75rem 1rem;
+  padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(1rem + env(safe-area-inset-right, 0px));
   padding-bottom: calc(0.75rem + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
 }
 
@@ -1246,9 +1248,24 @@ html.keyboard-visible .react-modal-sheet-root {
   padding-right: env(safe-area-inset-right, 0px);
   /* Top/bottom safe area handled by individual components */
   /* `relative` so sibling overlay SlideInPages with `absolute inset-0`
-     stack against this container (respecting the max-w-4xl column
-     and horizontal safe-area padding) rather than the viewport. */
+     stack against this container (the max-w-4xl column, padding
+     included) rather than the viewport. */
   position: relative;
+}
+
+/* Side insets (the iPhone Duo's status rail, a landscape notch). A surface
+   whose background must reach the screen edge cancels .page-layout's
+   padding with .bleed-safe-x, and its content rows take the inset back
+   with .inset-safe-x. Margins, not padding, so a row's absolutely
+   positioned buttons move in with it. */
+.bleed-safe-x {
+  margin-left: calc(-1 * env(safe-area-inset-left, 0px));
+  margin-right: calc(-1 * env(safe-area-inset-right, 0px));
+}
+
+.inset-safe-x {
+  margin-left: env(safe-area-inset-left, 0px);
+  margin-right: env(safe-area-inset-right, 0px);
 }
 
 /* ============================================
