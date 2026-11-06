@@ -9,7 +9,7 @@ const exportUnilateralExitState = vi.fn(async () => ({ exitState: '{"leaves":[]}
 vi.mock('@/contexts/WalletContext', () => ({
   useWallet: () => ({ exportUnilateralExitState, importUnilateralExitState }),
 }));
-vi.mock('@/services/logExport', () => ({ shareOrDownloadZip: vi.fn(async () => undefined) }));
+vi.mock('@/services/logExport', () => ({ shareOrDownloadFile: vi.fn(async () => undefined) }));
 
 const imported = (over = {}) => ({
   importedLeaves: 0,
