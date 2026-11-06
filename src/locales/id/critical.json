@@ -1,0 +1,153 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "Frasa pemulihan Anda diturunkan dari kunci sandi Anda. Untuk memulihkan di perangkat lain, gunakan kunci sandi Anda atau frasa pemulihan di bawah ini."
+    },
+    "passkeyUnavailable": {
+      "body": "Frasa pemulihan Anda diturunkan dari kunci sandi Anda. Tanpa itu, frasanya tidak bisa diambil di perangkat ini. Masuklah di perangkat yang masih punya kunci sandi itu untuk melihatnya."
+    },
+    "notFound": {
+      "body": "Frasa pemulihan tidak ditemukan di perangkat ini."
+    },
+    "reveal": {
+      "hintRevealed": "Pastikan tidak ada yang melihat",
+      "hintDeviceStored": "Tersimpan dengan aman di perangkat ini"
+    },
+    "phraseLabel": "Frasa Pemulihan"
+  },
+  "logout": {
+    "confirmPasskey": "Keluar akan menghapus semua data Glow yang tersimpan di perangkat ini. Anda akan butuh kunci sandi Anda untuk mengakses dana Anda lagi.",
+    "confirmMnemonic": "Keluar akan menghapus semua data Glow yang tersimpan di perangkat ini. Pastikan Anda sudah menyimpan frasa pemulihan Anda: Anda akan membutuhkannya untuk mengakses dana Anda lagi."
+  },
+  "pinReset": {
+    "bodyPasskey": "PIN tidak bisa dipulihkan. Satu-satunya jalan masuk kembali adalah menghapus semua data Glow di perangkat ini lalu masuk lagi dengan kunci sandi Anda.",
+    "bodyMnemonic": "PIN tidak bisa dipulihkan. Satu-satunya jalan masuk kembali adalah menghapus semua data Glow di perangkat ini lalu memulihkan dari frasa pemulihan Anda. Pastikan Anda sudah menyimpannya.",
+    "confirm": "Hapus",
+    "deviceOwnerReason": "Hapus semua data Glow"
+  },
+  "stableBalance": {
+    "toUsd": "Saldo BTC Anda akan dikonversi ke USD.",
+    "toBtc": "Saldo USD Anda akan dikonversi kembali ke BTC.",
+    "convertToUsd": "Konversi ke USD",
+    "convertToBtc": "Konversi ke BTC",
+    "conversionFee": "Biaya konversi:",
+    "feeUnavailable": "Biaya tidak dapat diperkirakan",
+    "disclaimerBody": "Saldo Anda disimpan dalam USD. BTC yang masuk otomatis dikonversi ke USD, dan pembayaran keluar dikonversi kembali ke BTC. Jumlah di bawah batas konversi tetap menjadi kembalian sampai terkumpul.",
+    "balanceTooLow": "Saldo terlalu kecil untuk dikonversi: akan tetap menjadi kembalian",
+    "switchToUsdFailed": "Tidak dapat beralih ke USD. Silakan coba lagi.",
+    "switchToBtcFailed": "Tidak dapat beralih ke BTC. Silakan coba lagi.",
+    "restoreTitle": "Saldo USD Terdeteksi",
+    "restoreBody": "Kami mendeteksi dana USD. Apakah Anda ingin beralih ke mode USD?\n\nSaldo Anda akan disimpan dalam USD. BTC yang masuk otomatis dikonversi ke USD, dan pembayaran keluar dikonversi kembali ke BTC.",
+    "switchedNotConverted": "Sudah beralih ke {{currency}}, tapi saldo Anda belum dikonversi. Glow akan mencoba lagi otomatis."
+  },
+  "send": {
+    "sendAll": "Kirim Semua",
+    "enterAmount": "Masukkan jumlah dalam sats",
+    "exceedsBalance": "Jumlah melebihi saldo yang tersedia",
+    "balanceUpdating": "Saldo sedang diperbarui. Coba lagi sebentar.",
+    "invalidAmount": "Masukkan jumlah yang valid",
+    "invalidDestination": "Tujuan pembayaran tidak valid",
+    "youAreSending": "Anda mengirim",
+    "recipientGets": "Penerima mendapat",
+    "insufficientFunds": "Dana tidak cukup",
+    "conversionAmount": "Jumlah konversi",
+    "conversionFee": "Biaya konversi",
+    "toAddress": "Ke alamat",
+    "toSparkAddress": "Ke alamat Spark",
+    "toSparkInvoice": "Ke faktur Spark",
+    "toInvoice": "Ke faktur",
+    "crossChain": {
+      "amountTooSmall": "Jumlah terlalu kecil untuk rute ini.",
+      "amountTooLarge": "Jumlah terlalu besar untuk rute ini.",
+      "amountTooSmallHint": "Jumlah ini terlalu kecil untuk rute yang tersedia. Coba kirim jumlah yang lebih besar.",
+      "amountTooLargeHint": "Jumlah ini terlalu besar untuk rute yang tersedia. Coba kirim jumlah yang lebih kecil.",
+      "networkUnavailable": "Jaringan ini sementara tidak tersedia. Coba lagi sebentar.",
+      "networkNotSupported": "Jaringan ini tidak tersedia. Coba jaringan lain.",
+      "rateDrift": "Jumlah terlalu kecil untuk jaringan ini. Coba jumlah lebih besar atau jaringan lain."
+    },
+    "withdraw": {
+      "noValidAmount": "Tautan penarikan ini tidak punya jumlah valid yang bisa diterima Glow.",
+      "wholeSats": "Masukkan sats dalam bilangan bulat",
+      "failed": "Penarikan gagal: {{error}}"
+    },
+    "enterAmountIn": "Masukkan jumlah dalam {{currency}}",
+    "amountRange": "Antara {{min}} dan {{max}} sats",
+    "result": {
+      "notSentBody": "Pembayaran tidak berhasil. Dana Anda tidak terkirim."
+    },
+    "alreadyPaid": "Faktur ini sudah dibayar.",
+    "invoiceExpired": "Faktur ini sudah kedaluwarsa. Minta yang baru dari penerima.",
+    "balanceSettling": "Pembayaran tidak dapat disiapkan saat saldo Anda sedang diselesaikan. Coba lagi dalam beberapa menit."
+  },
+  "generate": {
+    "title": "Simpan Rahasia Ini",
+    "body": "Tulis kata-kata ini sesuai urutannya. Ini satu-satunya cadangan Anda untuk memulihkan dana Anda.",
+    "warning": "Jangan pernah membagikan frasa pemulihan Anda. Siapa pun yang punya kata-kata ini bisa mengakses dana Anda.",
+    "copyToClipboard": "Salin ke Papan Klip",
+    "saved": "Saya Sudah Menyimpan Frasa Saya"
+  },
+  "restore": {
+    "body": "Masukkan frasa pemulihan 12 atau 24 kata Anda untuk memulihkan Glow. Kata-kata dipisahkan dengan spasi.",
+    "placeholder": "kata1 kata2 kata3 ...",
+    "invalidLength": "Masukkan frasa pemulihan 12 atau 24 kata yang valid",
+    "invalidPhrase": "Frasa pemulihan tidak valid. Periksa kata-kata Anda lalu coba lagi."
+  },
+  "unlock": {
+    "eraseTitle": "Hapus dan Mulai dari Awal",
+    "eraseAction": "Hapus dan mulai dari awal",
+    "erase": "Hapus",
+    "eraseReason": "Hapus semua data Glow",
+    "eraseBodyPasskey": "Ini menghapus semua data Glow yang tersimpan di perangkat ini. Anda akan butuh kunci sandi Anda untuk mengakses dana Anda lagi.",
+    "eraseBodyMnemonic": "Ini menghapus semua data Glow yang tersimpan di perangkat ini. Pastikan Anda sudah menyimpan frasa pemulihan Anda: Anda akan membutuhkannya untuk mengakses dana Anda lagi."
+  },
+  "refund": {
+    "amount": "Jumlah",
+    "networkFee": "Biaya jaringan"
+  },
+  "deposit": {
+    "amount": "Jumlah",
+    "networkFee": "Biaya jaringan",
+    "feeChanged": "Biaya jaringan berubah",
+    "approveOrReject": "Setujui untuk mengklaim transfer ini, atau tolak untuk memproses pengembalian.",
+    "canReject": "Anda bisa menolak untuk memproses pengembalian.",
+    "feeRose": "Biaya naik ke <amount/> saat Anda sedang mengonfirmasi. Setujui untuk mengklaim dengan biaya baru.",
+    "deliveryFee": "Biaya pengiriman",
+    "youReceive": "Anda menerima",
+    "claim": "Klaim",
+    "approve": "Setujui",
+    "reject": "Tolak",
+    "claimFeeChanged": "Klaim Anda tidak berhasil: biayanya berubah dari <amount/>.",
+    "tooSmall": "Transfer ini terlalu kecil untuk menutup biaya klaimnya."
+  },
+  "passkey": {
+    "confirmDeleted": "Saya memastikan kunci sandi ini sudah dihapus.",
+    "confirmDeletedHint": "Opsional. Lanjutkan tanpa mencentang jika tidak yakin.",
+    "isHowYouAccess": "Kunci sandi Anda adalah cara Anda mengakses dana Anda",
+    "deletionWarning": "Menghapus kunci sandi Anda dari perangkat, browser, atau pengelola kata sandi bisa membuat dana Anda tidak dapat diakses selamanya."
+  },
+  "migration": {
+    "switchFailed": "Kami tidak dapat menyelesaikan peralihan ke kunci sandi baru Anda. Dana Anda aman. Silakan coba lagi.",
+    "keepWindowOpen": "Biarkan jendela ini terbuka",
+    "verifyMultipleTimes": "Anda akan diminta memverifikasi identitas Anda beberapa kali selama migrasi: sekali untuk setiap label yang dimigrasikan, lalu beberapa kali lagi untuk membuat kunci sandi baru Anda. Biarkan jendela ini terbuka sampai migrasinya selesai.",
+    "explainBody": "Kami akan membuat kunci sandi baru dan memindahkan dana Anda secara otomatis. Anda akan diminta memverifikasi identitas Anda beberapa kali selama prosesnya.",
+    "singleTransaction": "Dana Anda akan dipindahkan dalam satu transaksi. Riwayat pembayaran Anda tidak ikut berpindah.",
+    "doneBody": "Dana Anda sudah dipindahkan ke kunci sandi baru Anda.",
+    "addressPending_one": "Alamat Lightning ini tidak dapat dipindahkan:",
+    "addressPending_other": "Alamat Lightning ini tidak dapat dipindahkan:",
+    "addressPendingBody_one": "Pembayaran yang dikirim ke alamat itu akan terus masuk ke kunci sandi lama Anda sampai pemindahannya selesai.",
+    "addressPendingBody_other": "Pembayaran yang dikirim ke alamat-alamat itu akan terus masuk ke kunci sandi lama Anda sampai pemindahannya selesai.",
+    "explainFirstTime": "Jika Anda membuat kunci sandi dengan versi Glow yang lebih lama, kami akan membuat yang baru dan memindahkan dana Anda secara otomatis. Jika ini kali pertama Anda memakai Glow, pilih <skip/> untuk melanjutkan.",
+    "migrateLabels_one": "Kami akan memigrasikan label Anda ke kunci sandi baru Anda.",
+    "migrateLabels_other": "Kami akan memigrasikan semua {{count}} label ke kunci sandi baru Anda."
+  },
+  "webNotice": {
+    "preferPasskey": "Untuk keamanan Anda, kami menyarankan memakai kunci sandi.",
+    "preferApp": "Untuk keamanan Anda, kami menyarankan aplikasi Glow.",
+    "risk": "Frasa pemulihan di web kurang aman, dan ada kemungkinan uang Anda hilang. Pakai frasa pemulihan di web hanya jika Anda bersedia menerima risiko ini."
+  },
+  "conversion": {
+    "nextAttempt": "Percobaan Berikutnya",
+    "balanceToConvert": "Saldo untuk Dikonversi",
+    "notConvertedYet": "Jumlah ini belum dikonversi ke {{currency}}. Glow akan mencoba lagi otomatis."
+  }
+}

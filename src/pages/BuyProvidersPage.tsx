@@ -5,6 +5,7 @@ import { ChevronUpIcon, ChevronDownIcon, DragHandleIcon, MoonPayIcon, CashAppIco
 import SlideInPage from '../components/layout/SlideInPage';
 import { getBuyProviderSettings, saveBuyProviderSettings, filterProvidersByPlatform, buyCopy, ALL_BUY_PROVIDERS, type BuyBitcoinProvider } from '../services/settings';
 import { useCashAppInstalled } from '../hooks/useCashAppInstalled';
+import { useTranslation } from 'react-i18next';
 
 interface BuyProvidersPageProps {
   onBack: () => void;
@@ -29,6 +30,7 @@ const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.React
 // Reached only via Settings → Buy Bitcoin, so the presentation is
 // fixed drill-in nav: slide in from the right, < back affordance.
 const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, network }) => {
+  const { t } = useTranslation('common');
   const isMainnet = network === 'mainnet';
   const cashAppInstalled = useCashAppInstalled();
   // Stored state stays whole; the platform filter applies on display only, so
@@ -99,7 +101,7 @@ const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, network }) 
   }, []);
 
   return (
-    <SlideInPage title={buyCopy('Buy Bitcoin')} closeStyle="back" onClose={onBack} slideFrom="right">
+    <SlideInPage title={buyCopy(t('pages.buyBitcoin'))} closeStyle="back" onClose={onBack} slideFrom="right">
       <div className="p-4 space-y-2">
         {/* Enabled providers — reorderable */}
         {enabledProviders.map((provider, index) => {
@@ -119,7 +121,7 @@ const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, network }) 
                 <div className="flex flex-col">
                   <span className="font-display font-semibold text-spark-text-primary">{meta.name}</span>
                   {provider === 'cashApp' && !isMainnet && (
-                    <span className="text-xs text-spark-text-muted">Mainnet only</span>
+                    <span className="text-xs text-spark-text-muted">{t('labels.mainnetOnly')}</span>
                   )}
                 </div>
               </div>
@@ -128,7 +130,7 @@ const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, network }) 
                   onClick={() => handleMoveUp(provider)}
                   disabled={index === 0}
                   className="p-1 text-spark-text-muted hover:text-spark-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
-                  aria-label="Move up"
+                  aria-label={t('a11y.moveUp')}
                 >
                   <ChevronUpIcon />
                 </button>
@@ -136,7 +138,7 @@ const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, network }) 
                   onClick={() => handleMoveDown(provider)}
                   disabled={index === enabledProviders.length - 1}
                   className="p-1 text-spark-text-muted hover:text-spark-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
-                  aria-label="Move down"
+                  aria-label={t('a11y.moveDown')}
                 >
                   <ChevronDownIcon />
                 </button>
@@ -162,7 +164,7 @@ const BuyProvidersPage: React.FC<BuyProvidersPageProps> = ({ onBack, network }) 
                 <div className="flex flex-col">
                   <span className="font-display font-medium text-spark-text-secondary">{meta.name}</span>
                   {provider === 'cashApp' && !isMainnet && (
-                    <span className="text-xs text-spark-text-muted">Mainnet only</span>
+                    <span className="text-xs text-spark-text-muted">{t('labels.mainnetOnly')}</span>
                   )}
                 </div>
               </div>

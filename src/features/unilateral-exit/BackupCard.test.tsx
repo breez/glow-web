@@ -41,7 +41,7 @@ describe('BackupActions', () => {
 
   it('says a restore lets a recovery start, in its own words', async () => {
     importUnilateralExitState.mockResolvedValue(imported({ importedLeaves: 3 }));
-    await restore(await backupFile(), <BackupActions noun="recovery" />);
+    await restore(await backupFile(), <BackupActions mode="recover" />);
     await waitFor(() =>
       expect(screen.getByTestId('unilateral-exit-backup-result')).toHaveTextContent(/^Restored 3 leaves\. You can start the recovery\.$/),
     );
@@ -49,15 +49,15 @@ describe('BackupActions', () => {
 
   it('offers no start once the exit has started', async () => {
     importUnilateralExitState.mockResolvedValue(imported({ importedLeaves: 1 }));
-    await restore(await backupFile(), <BackupActions noun="recovery" started />);
+    await restore(await backupFile(), <BackupActions mode="recover" started />);
     await waitFor(() => expect(screen.getByTestId('unilateral-exit-backup-result')).toHaveTextContent(/^Restored 1 leaf\.$/));
   });
 
-  it('names the real reason when the backup is another wallet’s', async () => {
+  it('names the real reason when the backup is another phrase’s', async () => {
     importUnilateralExitState.mockResolvedValue(imported({ skippedForeignLeaves: 4 }));
     await restore(await backupFile());
     await waitFor(() =>
-      expect(screen.getByTestId('unilateral-exit-backup-result')).toHaveTextContent('different wallet'),
+      expect(screen.getByTestId('unilateral-exit-backup-result')).toHaveTextContent('different recovery phrase'),
     );
   });
 

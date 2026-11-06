@@ -1,0 +1,153 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "你的恢复短语由通行密钥推导而来。要在别的设备上恢复，请使用你的通行密钥或下面的恢复短语。"
+    },
+    "passkeyUnavailable": {
+      "body": "你的恢复短语由通行密钥推导而来。没有它，这台设备上取不到这个短语。请在通行密钥仍然可用的设备上登录来查看。"
+    },
+    "notFound": {
+      "body": "这台设备上没有找到恢复短语。"
+    },
+    "reveal": {
+      "hintRevealed": "请确认没有人在看",
+      "hintDeviceStored": "已安全保存在这台设备上"
+    },
+    "phraseLabel": "恢复短语"
+  },
+  "logout": {
+    "confirmPasskey": "退出登录会删除这台设备上保存的所有 Glow 数据。要再次取用你的资金，你需要你的通行密钥。",
+    "confirmMnemonic": "退出登录会删除这台设备上保存的所有 Glow 数据。请确认你已保存恢复短语：再次取用资金时会用到它。"
+  },
+  "pinReset": {
+    "bodyPasskey": "PIN 无法找回。唯一的办法是删除这台设备上所有 Glow 数据，再用你的通行密钥重新登录。",
+    "bodyMnemonic": "PIN 无法找回。唯一的办法是删除这台设备上所有 Glow 数据，再用你的恢复短语恢复。请确认你已经保存好了。",
+    "confirm": "删除",
+    "deviceOwnerReason": "删除所有 Glow 数据"
+  },
+  "stableBalance": {
+    "toUsd": "你的 BTC 余额将兑换为 USD。",
+    "toBtc": "你的 USD 余额将兑换回 BTC。",
+    "convertToUsd": "兑换为 USD",
+    "convertToBtc": "兑换为 BTC",
+    "conversionFee": "兑换费用：",
+    "feeUnavailable": "无法估算费用",
+    "disclaimerBody": "你的余额以 USD 保存。收到的 BTC 会自动兑换为 USD，发出的付款则兑换回 BTC。低于兑换门槛的金额会先作为零头留着，攒够了再兑换。",
+    "balanceTooLow": "余额太少，无法兑换：会作为零头留着",
+    "switchToUsdFailed": "无法切换到 USD。请重试。",
+    "switchToBtcFailed": "无法切换到 BTC。请重试。",
+    "restoreTitle": "检测到 USD 余额",
+    "restoreBody": "我们检测到 USD 资金。要切换到 USD 模式吗？\n\n你的余额会以 USD 保存。收到的 BTC 会自动兑换为 USD，发出的付款则兑换回 BTC。",
+    "switchedNotConverted": "已切换到 {{currency}}，但你的余额还没有兑换。Glow 会自动重试。"
+  },
+  "send": {
+    "sendAll": "全部发送",
+    "enterAmount": "以 sats 输入金额",
+    "exceedsBalance": "金额超过可用余额",
+    "balanceUpdating": "余额正在更新。请稍后再试。",
+    "invalidAmount": "请输入有效的金额",
+    "invalidDestination": "付款目标无效",
+    "youAreSending": "你发送",
+    "recipientGets": "收款人收到",
+    "insufficientFunds": "资金不足",
+    "conversionAmount": "兑换金额",
+    "conversionFee": "兑换费用",
+    "toAddress": "发送到地址",
+    "toSparkAddress": "发送到 Spark 地址",
+    "toSparkInvoice": "发送到 Spark 账单",
+    "toInvoice": "发送到账单",
+    "crossChain": {
+      "amountTooSmall": "金额对这条路径来说太小了。",
+      "amountTooLarge": "金额对这条路径来说太大了。",
+      "amountTooSmallHint": "对可用的路径来说这个金额太小了。试试发送更大的金额。",
+      "amountTooLargeHint": "对可用的路径来说这个金额太大了。试试发送更小的金额。",
+      "networkUnavailable": "这个网络暂时不可用。请稍后再试。",
+      "networkNotSupported": "这个网络不可用。请换一个网络。",
+      "rateDrift": "金额对这个网络来说太小了。试试更大的金额或换一个网络。"
+    },
+    "withdraw": {
+      "noValidAmount": "这个提取链接里没有 Glow 能接收的有效金额。",
+      "wholeSats": "请输入整数的 sats",
+      "failed": "提取失败：{{error}}"
+    },
+    "enterAmountIn": "以 {{currency}} 输入金额",
+    "amountRange": "{{min}} 到 {{max}} sats 之间",
+    "result": {
+      "notSentBody": "付款没有成功。你的资金没有发出。"
+    },
+    "alreadyPaid": "这张账单已经付过了。",
+    "invoiceExpired": "这张账单已过期。请向收款人要一张新的。",
+    "balanceSettling": "你的余额正在结算，无法准备付款。请几分钟后重试。"
+  },
+  "generate": {
+    "title": "请妥善保密",
+    "body": "按顺序把这些词抄下来。这是你找回资金的唯一备份。",
+    "warning": "绝不要把恢复短语告诉别人。任何拿到这些词的人都能取用你的资金。",
+    "copyToClipboard": "复制到剪贴板",
+    "saved": "我已保存我的短语"
+  },
+  "restore": {
+    "body": "请输入你的 12 个或 24 个词的恢复短语来恢复 Glow。词之间用空格分开。",
+    "placeholder": "词1 词2 词3 ...",
+    "invalidLength": "请输入有效的 12 个或 24 个词的恢复短语",
+    "invalidPhrase": "恢复短语无效。请检查你的词后重试。"
+  },
+  "unlock": {
+    "eraseTitle": "清除并重新开始",
+    "eraseAction": "清除并重新开始",
+    "erase": "清除",
+    "eraseReason": "删除所有 Glow 数据",
+    "eraseBodyPasskey": "这会删除这台设备上保存的所有 Glow 数据。要再次取用你的资金，你需要你的通行密钥。",
+    "eraseBodyMnemonic": "这会删除这台设备上保存的所有 Glow 数据。请确认你已保存恢复短语：再次取用资金时会用到它。"
+  },
+  "refund": {
+    "amount": "金额",
+    "networkFee": "网络费用"
+  },
+  "deposit": {
+    "amount": "金额",
+    "networkFee": "网络费用",
+    "feeChanged": "网络费用有变化",
+    "approveOrReject": "批准即领取这笔转账，拒绝则办理退款。",
+    "canReject": "你也可以拒绝来办理退款。",
+    "feeRose": "你在确认的时候费用涨到了 <amount/>。批准即按新费用领取。",
+    "deliveryFee": "到账费用",
+    "youReceive": "你将收到",
+    "claim": "领取",
+    "approve": "批准",
+    "reject": "拒绝",
+    "claimFeeChanged": "你的领取没有成功：费用从 <amount/> 变了。",
+    "tooSmall": "这笔转账太小，抵不上领取它的费用。"
+  },
+  "passkey": {
+    "confirmDeleted": "我确认这个通行密钥已被删除。",
+    "confirmDeletedHint": "可选。不确定的话可以不勾选直接继续。",
+    "isHowYouAccess": "通行密钥是你取用资金的方式",
+    "deletionWarning": "从设备、浏览器或密码管理工具中删除通行密钥，可能会让你的资金永久无法取用。"
+  },
+  "migration": {
+    "switchFailed": "我们没能完成切换到你的新通行密钥。你的资金是安全的。请重试。",
+    "keepWindowOpen": "请保持这个窗口打开",
+    "verifyMultipleTimes": "迁移过程中会多次请你验证身份：每个要迁移的标签一次，之后为创建新通行密钥再几次。请在迁移完成前保持这个窗口打开。",
+    "explainBody": "我们会创建一个新的通行密钥，并自动转移你的资金。过程中会请你验证几次身份。",
+    "singleTransaction": "你的资金会在一笔交易里转移。付款记录不会一起转过去。",
+    "doneBody": "你的资金已转移到新的通行密钥。",
+    "addressPending_one": "这个 Lightning 地址无法转移：",
+    "addressPending_other": "这些 Lightning 地址无法转移：",
+    "addressPendingBody_one": "发到它的付款在转移完成前仍会进入你的旧通行密钥。",
+    "addressPendingBody_other": "发到它们的付款在转移完成前仍会进入你的旧通行密钥。",
+    "explainFirstTime": "如果你的通行密钥是用更早版本的 Glow 创建的，我们会创建一个新的并自动转移你的资金。如果你是第一次使用 Glow，请选择 <skip/> 继续。",
+    "migrateLabels_one": "我们会把你的标签迁移到新的通行密钥。",
+    "migrateLabels_other": "我们会把全部 {{count}} 个标签迁移到新的通行密钥。"
+  },
+  "webNotice": {
+    "preferPasskey": "为了你的安全，我们建议改用通行密钥。",
+    "preferApp": "为了你的安全，我们建议使用 Glow 应用。",
+    "risk": "在网页上使用恢复短语安全性较低，有可能让你丢钱。只有在你愿意承担这个风险时，才在网页上使用恢复短语。"
+  },
+  "conversion": {
+    "nextAttempt": "下次尝试",
+    "balanceToConvert": "待兑换的余额",
+    "notConvertedYet": "这笔金额还没有兑换为 {{currency}}。Glow 会自动重试。"
+  }
+}

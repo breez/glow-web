@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import i18n from 'i18next';
 import type { BreezSdk, InputType, PrepareRecoverFundsResponse } from '@breeztech/breez-sdk-spark';
 import type { ChainClient, FeeRates } from '@/services/chain';
 import { logger, LogCategory } from '@/services/logger';
@@ -37,13 +38,13 @@ function useDestination(wallet: BreezSdk, saved: string, goTo: (phase: Unilatera
   const submitDestination = useCallback(async () => {
     const trimmed = destination.trim();
     if (!trimmed) {
-      setError('Enter a Bitcoin address');
+      setError(i18n.t('common:exit.enterAddress'));
       return;
     }
     const parsed = await wallet.parse(trimmed).catch(e => e as unknown);
     const address = parsed instanceof Error ? undefined : destinationAddressOf(parsed as InputType);
     if (!address) {
-      setError(destinationErrorMessage(parsed, 'That is not an on-chain Bitcoin address'));
+      setError(destinationErrorMessage(parsed, i18n.t('common:exit.notOnchainAddress')));
       return;
     }
     setDestination(address);

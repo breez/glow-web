@@ -1,28 +1,27 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CollapsibleSection } from '@/components/ui';
 import { SimpleAlert } from '@/components/AlertCard';
 import { BackupActions } from '../BackupCard';
 
-const requirements = [
-  'Pay exit fees using another on-chain wallet',
-  'A bitcoin destination address for the receiving funds',
-  'Days of waiting for the process to complete due to on-chain timelocks',
-];
-
 export const IntroStep: React.FC = () => {
+  const { t } = useTranslation('common');
   const [advanced, setAdvanced] = useState(false);
+  // Three keys rather than one list: the translation files hold strings only,
+  // so nothing in the pipeline can turn a list into an object behind our back.
+  // Read per render, not at module load, which is before i18next has a language.
+  const requirements = [t('exit.requirementFee'), t('exit.requirementAddress'), t('exit.requirementWait')];
 
   return (
     <div className="space-y-4">
       {/* Repeats the warning under the settings button on purpose. */}
       <SimpleAlert variant="warning" hideIcon>
-        Move your balance on-chain without Spark operators. Use this only if Spark stops
-        operating. This is a last-resort action.
+        {t('exit.summary')} {t('exit.lastResort')}
       </SimpleAlert>
 
       <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
         <h3 className="font-display font-semibold text-spark-text-primary text-sm mb-3">
-          What you need
+          {t('exit.whatYouNeed')}
         </h3>
         <ul className="space-y-3">
           {requirements.map(item => (
@@ -35,7 +34,7 @@ export const IntroStep: React.FC = () => {
       </div>
 
       <CollapsibleSection
-        label="Advanced"
+        label={t('exit.advanced')}
         isVisible={advanced}
         onToggle={() => setAdvanced(v => !v)}
         bare
