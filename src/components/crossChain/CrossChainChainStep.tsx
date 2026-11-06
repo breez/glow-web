@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { CrossChainRoutePair } from '@breeztech/breez-sdk-spark';
 import { PrimaryButton } from '../ui';
 import CryptoIcon from '../CryptoIcon';
-import { ChevronDownIcon, CopyIcon, CheckIcon } from '../Icons';
 import { crossChainCardClass } from '../../utils/crossChainRoutes';
 import { formatChainName } from '../../utils/crossChainFormat';
-import { copyToClipboard } from '../../utils/clipboard';
 import { useSheetBack, useSheetFullSnap, useSheetOwnsScroll } from '../ui/sheets/BottomSheetCardContext';
 
 interface CrossChainChainStepProps {
@@ -23,8 +21,7 @@ interface CrossChainChainStepProps {
   error?: string | null;
 }
 
-/** Network-selection step shared by the cross-chain send and receive workflows.
- *  Expand/copy state for the contract-address disclosure is local to the step. */
+/** Network-selection step shared by the cross-chain send and receive workflows. */
 export const CrossChainChainStep: React.FC<CrossChainChainStepProps> = ({
   chains,
   chainGroupKey,
@@ -35,8 +32,6 @@ export const CrossChainChainStep: React.FC<CrossChainChainStepProps> = ({
   onContinue,
   error,
 }) => {
-  const [expandedChain, setExpandedChain] = useState<string | null>(null);
-  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const isSheetFull = useSheetFullSnap();
   useSheetBack(onBack);
   useSheetOwnsScroll();
@@ -57,50 +52,19 @@ export const CrossChainChainStep: React.FC<CrossChainChainStepProps> = ({
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-none touch-pan-y space-y-2 pr-1">
         {chains.map(r => {
           const key = chainGroupKey(r);
-          const isExpanded = expandedChain === key;
-          const isCopied = copiedAddress === key;
           return (
-            <div
+            <button
               key={key}
               onClick={() => onPendingChange(key)}
-              className={`${crossChainCardClass(pending === key)} cursor-pointer`}
+              className={crossChainCardClass(pending === key)}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CryptoIcon chain={r.chain} size={32} />
-                  <span className="font-display font-medium text-spark-text-primary">
-                    {formatChainName(r.chain)}
-                  </span>
-                </div>
-                {r.contractAddress && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setExpandedChain(isExpanded ? null : key); }}
-                    className="p-1 text-spark-primary hover:text-spark-primary-light transition-colors"
-                  >
-                    <ChevronDownIcon size="sm" className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                  </button>
-                )}
+              <div className="flex items-center gap-3">
+                <CryptoIcon chain={r.chain} size={32} />
+                <span className="font-display font-medium text-spark-text-primary">
+                  {formatChainName(r.chain)}
+                </span>
               </div>
-              {isExpanded && r.contractAddress && (
-                <div className="mt-2 bg-spark-surface border border-spark-border/50 rounded-lg p-2.5 flex items-center justify-between gap-2">
-                  <code className="text-spark-text-secondary font-mono text-xs break-all">{r.contractAddress}</code>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void copyToClipboard(r.contractAddress!);
-                      setCopiedAddress(key);
-                      setTimeout(() => setCopiedAddress(null), 2000);
-                    }}
-                    className="shrink-0 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                  >
-                    {isCopied
-                      ? <CheckIcon size="sm" className="text-spark-success" />
-                      : <CopyIcon size="sm" className="text-spark-text-secondary" />
-                    }
-                  </button>
-                </div>
-              )}
-            </div>
+            </button>
           );
         })}
       </div>
