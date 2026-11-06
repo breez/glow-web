@@ -25,7 +25,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
   useStatusBarColor(STATUS_BAR_SURFACE);
 
   return (
-    <div className="min-h-dvh h-dvh w-full flex flex-col bg-spark-surface relative">
+    <div className="bleed-safe-x min-h-dvh h-dvh flex flex-col bg-spark-surface relative">
       {showHeader && (
         <header
           className="relative z-10 shrink-0 border-b border-spark-border bg-spark-surface/80 backdrop-blur-sm"
@@ -34,7 +34,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
           {/* Fixed h-14 (56dp) Material toolbar height, matching the
               wallet page CollapsingWalletHeader top row so the back button
               lands at the same screen y coordinate when navigating. */}
-          <div className="relative px-4 h-14 flex items-center justify-center">
+          <div className="inset-safe-x relative px-4 h-14 flex items-center justify-center">
             <h1 className="text-center font-display text-xl font-bold text-spark-text-primary">
               {title || "Glow"}
             </h1>
@@ -53,7 +53,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
 
       {/* Scrollable content area */}
       <main 
-        className="relative z-10 flex-1 w-full overflow-y-auto p-4"
+        className="inset-safe-x relative z-10 flex-1 overflow-y-auto p-4"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {children}
@@ -65,7 +65,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
           className="relative z-10 shrink-0 w-full border-t border-spark-border bg-spark-surface/80 backdrop-blur-sm"
           style={{ paddingBottom: safeAreaBottom }}
         >
-          <div className="px-4 py-4">
+          <div className="inset-safe-x px-4 py-4">
             {footer}
           </div>
         </footer>

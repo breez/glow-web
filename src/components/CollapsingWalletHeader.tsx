@@ -306,7 +306,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           to a fixed 0.5rem gap on Android native (where env() is
           unreliable) and to env(safe-area-inset-top) on iOS / web. */}
       <div
-        className="relative z-10 px-4 pb-2"
+        className="inset-safe-x relative z-10 px-4 pb-2"
         style={{ paddingTop: safeAreaTop }}
       >
         {/* Top bar with menu and network. Fixed h-14 (56dp) matches the

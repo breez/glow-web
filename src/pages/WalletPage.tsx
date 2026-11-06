@@ -290,7 +290,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100dvh)] relative overflow-hidden">
+    <div className="bleed-safe-x flex flex-col h-[calc(100dvh)] relative overflow-hidden">
       {/* Atmospheric background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-gradient-radial from-spark-primary/15 via-spark-primary/5 to-transparent blur-3xl" />
@@ -316,7 +316,7 @@ const WalletPage: React.FC<WalletPageProps> = ({
       {/* Scrollable transaction list */}
       <div
         ref={transactionsContainerRef}
-        className="grow overflow-y-auto relative z-0 scrollbar-hidden"
+        className="inset-safe-x grow overflow-y-auto relative z-0 scrollbar-hidden"
         onScroll={handleScroll}
       >
         <PullToRefresh scrollerRef={transactionsContainerRef} onRefresh={syncNow} />

@@ -105,7 +105,7 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
                 wallet page CollapsingWalletHeader top row so the back /
                 close buttons land at the same screen y coordinate when
                 navigating between screens. */}
-            <div className="relative px-4 h-14 flex items-center justify-center">
+            <div className="inset-safe-x relative px-4 h-14 flex items-center justify-center">
               <h1 className="text-center font-display text-lg font-semibold text-spark-text-primary">
                 {title}
               </h1>
@@ -137,7 +137,7 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
               footer the footer owns that inset and padding here would
               only add dead scroll space above it. */}
           <div
-            className="flex-1 overflow-y-auto min-h-0"
+            className="inset-safe-x flex-1 overflow-y-auto min-h-0"
             style={{
               WebkitOverflowScrolling: 'touch',
               paddingBottom: footer ? undefined : safeAreaBottom,
@@ -152,7 +152,7 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
               className="shrink-0 border-t border-spark-border bg-spark-surface"
               style={{ paddingBottom: safeAreaBottom }}
             >
-              <div className="p-4">
+              <div className="inset-safe-x p-4">
                 <div className="max-w-xl mx-auto">
                   {footer}
                 </div>

@@ -693,7 +693,7 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
               if (typeof ref === 'function') ref(el);
               else if (ref) ref.current = el;
             }}
-            className={`bottom-sheet-content-pad px-6 pt-3 ${className}`}
+            className={`bottom-sheet-content-pad inset-safe-x px-6 pt-3 ${className}`}
           >
             <BottomSheetCardContext.Provider value={cardEl}>
               <SetSheetOwnsScrollContext.Provider value={registerOwnScroller}>

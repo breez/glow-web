@@ -78,7 +78,13 @@ const LockScreen: React.FC<LockScreenProps> = ({
     // z above .toast-container (99999): the lock must cover toasts too,
     // both to keep the PIN screen clean and because a payment-received
     // toast over the lock would leak amounts on a locked device.
-    <div className="fixed inset-0 z-[100000] bg-spark-surface flex flex-col">
+    <div
+      className="fixed inset-0 z-[100000] bg-spark-surface flex flex-col"
+      style={{
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
+        paddingRight: 'env(safe-area-inset-right, 0px)',
+      }}
+    >
       {padVisible || !biometricGate ? (
         // Safe-area insets live on this branch only: the pad anchors to
         // the screen edges (1/3 / 2/3 split), while the pending branch
