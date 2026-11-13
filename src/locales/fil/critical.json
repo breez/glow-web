@@ -1,0 +1,153 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "Ang parirala sa pagbawi mo ay nagmumula sa passkey mo. Para maibalik sa ibang device, gamitin ang passkey mo o ang parirala sa pagbawi sa ibaba."
+    },
+    "passkeyUnavailable": {
+      "body": "Ang parirala sa pagbawi mo ay nagmumula sa passkey mo. Kung wala ito, hindi makukuha ang parirala sa device na ito. Mag-sign in sa device kung saan available pa ang passkey para matingnan ito."
+    },
+    "notFound": {
+      "body": "Walang nakitang parirala sa pagbawi sa device na ito."
+    },
+    "reveal": {
+      "hintRevealed": "Tiyaking walang nakatingin",
+      "hintDeviceStored": "Ligtas na nakaimbak sa device na ito"
+    },
+    "phraseLabel": "Parirala sa Pagbawi"
+  },
+  "logout": {
+    "confirmPasskey": "Ang pag-log out ay magbubura sa lahat ng data ng Glow na nakaimbak sa device na ito. Kakailanganin mo ang passkey mo para makuha muli ang pera mo.",
+    "confirmMnemonic": "Ang pag-log out ay magbubura sa lahat ng data ng Glow na nakaimbak sa device na ito. Tiyaking nai-save mo na ang parirala sa pagbawi mo: kakailanganin mo ito para makuha muli ang pera mo."
+  },
+  "pinReset": {
+    "bodyPasskey": "Hindi na mababawi ang PIN. Ang tanging paraan para makabalik ay burahin lahat ng data ng Glow sa device na ito at mag-sign in muli sa passkey mo.",
+    "bodyMnemonic": "Hindi na mababawi ang PIN. Ang tanging paraan para makabalik ay burahin lahat ng data ng Glow sa device na ito at ibalik mula sa parirala sa pagbawi mo. Tiyaking nai-save mo ito.",
+    "confirm": "Burahin",
+    "deviceOwnerReason": "Burahin lahat ng data ng Glow"
+  },
+  "stableBalance": {
+    "toUsd": "Iko-convert sa USD ang BTC na balanse mo.",
+    "toBtc": "Iko-convert pabalik sa BTC ang USD na balanse mo.",
+    "convertToUsd": "I-convert sa USD",
+    "convertToBtc": "I-convert sa BTC",
+    "conversionFee": "Bayarin sa conversion:",
+    "feeUnavailable": "Hindi matantya ang bayarin",
+    "disclaimerBody": "Nasa USD ang balanse mo. Automatikong iko-convert sa USD ang papasok na BTC, at iko-convert pabalik sa BTC ang mga papalabas na bayad. Ang mga halagang mas mababa sa threshold ng conversion ay mananatiling sukli hanggang maipon.",
+    "balanceTooLow": "Masyadong mababa ang balanse para i-convert: mananatili itong sukli",
+    "switchToUsdFailed": "Hindi makapalit sa USD. Subukan muli.",
+    "switchToBtcFailed": "Hindi makapalit sa BTC. Subukan muli.",
+    "restoreTitle": "Nakitang may USD na Balanse",
+    "restoreBody": "Nakita naming may perang USD. Gusto mo bang lumipat sa USD mode?\n\nNasa USD ang balanse mo. Automatikong iko-convert sa USD ang papasok na BTC, at iko-convert pabalik sa BTC ang mga papalabas na bayad.",
+    "switchedNotConverted": "Lumipat na sa {{currency}}, pero hindi pa na-convert ang balanse mo. Automatikong susubok muli ang Glow."
+  },
+  "send": {
+    "sendAll": "Ipadala Lahat",
+    "enterAmount": "Ilagay ang halaga sa sats",
+    "exceedsBalance": "Lumalampas ang halaga sa available na balanse",
+    "balanceUpdating": "Nag-a-update ang balanse. Subukan muli maya-maya.",
+    "invalidAmount": "Maglagay ng tamang halaga",
+    "invalidDestination": "Hindi balidong patutunguhan ng bayad",
+    "youAreSending": "Nagpapadala ka ng",
+    "recipientGets": "Matatanggap ng tatanggap",
+    "insufficientFunds": "Kulang ang pera",
+    "conversionAmount": "Halaga ng conversion",
+    "conversionFee": "Bayarin sa conversion",
+    "toAddress": "Sa address",
+    "toSparkAddress": "Sa Spark address",
+    "toSparkInvoice": "Sa Spark invoice",
+    "toInvoice": "Sa invoice",
+    "crossChain": {
+      "amountTooSmall": "Masyadong maliit ang halaga para sa rutang ito.",
+      "amountTooLarge": "Masyadong malaki ang halaga para sa rutang ito.",
+      "amountTooSmallHint": "Masyadong maliit ang halagang ito para sa mga available na ruta. Subukang magpadala ng mas malaki.",
+      "amountTooLargeHint": "Masyadong malaki ang halagang ito para sa mga available na ruta. Subukang magpadala ng mas maliit.",
+      "networkUnavailable": "Pansamantalang hindi available ang network na ito. Subukan muli maya-maya.",
+      "networkNotSupported": "Hindi available ang network na ito. Subukan ang ibang network.",
+      "rateDrift": "Masyadong maliit ang halaga para sa network na ito. Subukan ang mas malaking halaga o ibang network."
+    },
+    "withdraw": {
+      "noValidAmount": "Walang balidong halaga ang withdraw link na ito na matatanggap ng Glow.",
+      "wholeSats": "Maglagay ng buong bilang ng sats",
+      "failed": "Hindi natuloy ang withdraw: {{error}}"
+    },
+    "enterAmountIn": "Ilagay ang halaga sa {{currency}}",
+    "amountRange": "Sa pagitan ng {{min}} at {{max}} sats",
+    "result": {
+      "notSentBody": "Hindi natuloy ang bayad. Hindi naipadala ang pera mo."
+    },
+    "alreadyPaid": "Nabayaran na ang invoice na ito.",
+    "invoiceExpired": "Expired na ang invoice na ito. Humingi ng bago sa tatanggap.",
+    "balanceSettling": "Hindi maihanda ang bayad habang nag-settle ang balanse mo. Subukan muli sa loob ng ilang minuto."
+  },
+  "generate": {
+    "title": "Itago Mo Ito",
+    "body": "Isulat ang mga salitang ito sa tamang pagkakasunod-sunod. Ito lang ang backup mo para mabawi ang pera mo.",
+    "warning": "Huwag kailanman ibahagi ang parirala sa pagbawi mo. Sinumang may hawak ng mga salitang ito ay makakakuha ng pera mo.",
+    "copyToClipboard": "Kopyahin sa Clipboard",
+    "saved": "Nai-save Ko Na ang Parirala Ko"
+  },
+  "restore": {
+    "body": "Ilagay ang 12 o 24 na salitang parirala sa pagbawi mo para maibalik ang Glow. Dapat may pagitan ang mga salita.",
+    "placeholder": "salita1 salita2 salita3 ...",
+    "invalidLength": "Maglagay ng balidong 12 o 24 na salitang parirala sa pagbawi",
+    "invalidPhrase": "Hindi balidong parirala sa pagbawi. Suriin ang mga salita mo at subukan muli."
+  },
+  "unlock": {
+    "eraseTitle": "Burahin at Magsimula Muli",
+    "eraseAction": "Burahin at magsimula muli",
+    "erase": "Burahin",
+    "eraseReason": "Burahin lahat ng data ng Glow",
+    "eraseBodyPasskey": "Buburahin nito lahat ng data ng Glow na nakaimbak sa device na ito. Kakailanganin mo ang passkey mo para makuha muli ang pera mo.",
+    "eraseBodyMnemonic": "Buburahin nito lahat ng data ng Glow na nakaimbak sa device na ito. Tiyaking nai-save mo na ang parirala sa pagbawi mo: kakailanganin mo ito para makuha muli ang pera mo."
+  },
+  "refund": {
+    "amount": "Halaga",
+    "networkFee": "Bayarin sa network"
+  },
+  "deposit": {
+    "amount": "Halaga",
+    "networkFee": "Bayarin sa network",
+    "feeChanged": "Nagbago ang bayarin sa network",
+    "approveOrReject": "Aprubahan para i-claim ang transfer na ito, o tanggihan para magproseso ng refund.",
+    "canReject": "Maaari kang tumanggi para magproseso ng refund.",
+    "feeRose": "Tumaas sa <amount/> ang bayarin habang kinukumpirma mo. Aprubahan para i-claim sa bagong bayarin.",
+    "deliveryFee": "Bayarin sa paghahatid",
+    "youReceive": "Matatanggap mo",
+    "claim": "I-claim",
+    "approve": "Aprubahan",
+    "reject": "Tanggihan",
+    "claimFeeChanged": "Hindi natuloy ang claim mo: nagbago ang bayarin mula sa <amount/>.",
+    "tooSmall": "Masyadong maliit ang transfer na ito para sulitin ang bayarin sa pag-claim nito."
+  },
+  "passkey": {
+    "confirmDeleted": "Kinukumpirma ko na nabura na ang passkey na ito.",
+    "confirmDeletedHint": "Opsyonal. Magpatuloy nang hindi tumitik kung hindi sigurado.",
+    "isHowYouAccess": "Ang passkey mo ang paraan mo para makuha ang pera mo",
+    "deletionWarning": "Ang pagbura ng passkey mo sa device, browser, o password manager mo ay maaaring gawing permanenteng hindi maaabot ang pera mo."
+  },
+  "migration": {
+    "switchFailed": "Hindi namin natapos ang paglipat sa bagong passkey mo. Ligtas ang pera mo. Subukan muli.",
+    "keepWindowOpen": "Huwag isara ang window na ito",
+    "verifyMultipleTimes": "Hihilingin sa iyo na i-verify ang pagkakakilanlan mo nang maraming beses habang naglilipat: isang beses para sa bawat label na inililipat, at ilan pang beses para makagawa ng bagong passkey mo. Huwag isara ang window na ito hanggang matapos ang paglilipat.",
+    "explainBody": "Gagawa kami ng bagong passkey at automatikong ililipat ang pera mo. Hihilingin sa iyo na i-verify ang pagkakakilanlan mo nang ilang beses habang nagpoproseso.",
+    "singleTransaction": "Ililipat ang pera mo sa isang transaksyon. Hindi kasama ang kasaysayan ng mga bayad mo.",
+    "doneBody": "Nailipat na sa bagong passkey mo ang pera mo.",
+    "addressPending_one": "Hindi mailipat ang Lightning address na ito:",
+    "addressPending_other": "Hindi mailipat ang mga Lightning address na ito:",
+    "addressPendingBody_one": "Patuloy na papasok sa dating passkey mo ang mga bayad na ipinadala dito hanggang matapos ang paglipat.",
+    "addressPendingBody_other": "Patuloy na papasok sa dating passkey mo ang mga bayad na ipinadala sa kanila hanggang matapos ang mga paglipat.",
+    "explainFirstTime": "Kung gumawa ka ng passkey mo sa mas lumang bersyon ng Glow, gagawa kami ng bago at automatikong ililipat ang pera mo. Kung unang beses mo pa lang gumamit ng Glow, piliin ang <skip/> para magpatuloy.",
+    "migrateLabels_one": "Ililipat namin ang label mo sa bagong passkey mo.",
+    "migrateLabels_other": "Ililipat namin lahat ng {{count}} label sa bagong passkey mo."
+  },
+  "webNotice": {
+    "preferPasskey": "Para sa kaligtasan mo, inirerekomenda naming gumamit ng passkey.",
+    "preferApp": "Para sa kaligtasan mo, inirerekomenda namin ang Glow app.",
+    "risk": "Hindi gaanong ligtas ang parirala sa pagbawi sa web, at may tiyansang mawala ang pera mo. Gumamit lang ng parirala sa pagbawi sa web kung handa kang tanggapin ang panganib na ito."
+  },
+  "conversion": {
+    "nextAttempt": "Susunod na Pagtatangka",
+    "balanceToConvert": "Balanseng Iko-convert",
+    "notConvertedYet": "Hindi pa na-convert sa {{currency}} ang halagang ito. Automatikong susubok muli ang Glow."
+  }
+}

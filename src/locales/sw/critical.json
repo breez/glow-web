@@ -1,0 +1,153 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "Kifungu chako cha kurejesha kinatokana na passkey yako. Ili kurejesha kwenye kifaa kingine, tumia passkey yako au kifungu cha kurejesha kilicho chini."
+    },
+    "passkeyUnavailable": {
+      "body": "Kifungu chako cha kurejesha kinatokana na passkey yako. Bila hiyo, kifungu hakiwezi kupatikana kwenye kifaa hiki. Ingia kwenye kifaa ambacho passkey bado ipo ili kukiona."
+    },
+    "notFound": {
+      "body": "Haikuweza kupata kifungu cha kurejesha kwenye kifaa hiki."
+    },
+    "reveal": {
+      "hintRevealed": "Hakikisha hakuna mtu anayetazama",
+      "hintDeviceStored": "Imehifadhiwa kwa usalama kwenye kifaa hiki"
+    },
+    "phraseLabel": "Kifungu cha Kurejesha"
+  },
+  "logout": {
+    "confirmPasskey": "Kuondoka hufuta data yote ya Glow iliyohifadhiwa kwenye kifaa hiki. Utahitaji passkey yako ili kufikia fedha zako tena.",
+    "confirmMnemonic": "Kuondoka hufuta data yote ya Glow iliyohifadhiwa kwenye kifaa hiki. Hakikisha umehifadhi kifungu chako cha kurejesha: utakihitaji ili kufikia fedha zako tena."
+  },
+  "pinReset": {
+    "bodyPasskey": "PIN haiwezi kupatikana tena. Njia pekee ya kurudi ni kufuta data yote ya Glow kwenye kifaa hiki na kuingia tena kwa passkey yako.",
+    "bodyMnemonic": "PIN haiwezi kupatikana tena. Njia pekee ya kurudi ni kufuta data yote ya Glow kwenye kifaa hiki na kurejesha kutoka kifungu chako cha kurejesha. Hakikisha umekihifadhi.",
+    "confirm": "Futa",
+    "deviceOwnerReason": "Futa data yote ya Glow"
+  },
+  "stableBalance": {
+    "toUsd": "Salio lako la BTC litabadilishwa kuwa USD.",
+    "toBtc": "Salio lako la USD litabadilishwa kurudi kuwa BTC.",
+    "convertToUsd": "Badilisha kuwa USD",
+    "convertToBtc": "Badilisha kuwa BTC",
+    "conversionFee": "Ada ya ubadilishaji:",
+    "feeUnavailable": "Haikuweza kukadiria ada",
+    "disclaimerBody": "Salio lako linahifadhiwa kwa USD. BTC inayoingia hubadilishwa kiotomatiki kuwa USD, na malipo yanayotoka hubadilishwa kurudi kuwa BTC. Kiasi kilicho chini ya kikomo cha ubadilishaji hubaki kama chenji hadi kikusanyike.",
+    "balanceTooLow": "Salio ni dogo mno kubadilishwa: litabaki kama chenji",
+    "switchToUsdFailed": "Haikuweza kubadili kwenda USD. Tafadhali jaribu tena.",
+    "switchToBtcFailed": "Haikuweza kubadili kwenda BTC. Tafadhali jaribu tena.",
+    "restoreTitle": "Salio la USD Limetambuliwa",
+    "restoreBody": "Tumetambua fedha za USD. Ungependa kubadili kwenda hali ya USD?\n\nSalio lako litahifadhiwa kwa USD. BTC inayoingia hubadilishwa kiotomatiki kuwa USD, na malipo yanayotoka hubadilishwa kurudi kuwa BTC.",
+    "switchedNotConverted": "Imebadilishwa kwenda {{currency}}, lakini salio lako halijabadilishwa bado. Glow itajaribu tena kiotomatiki."
+  },
+  "send": {
+    "sendAll": "Tuma Zote",
+    "enterAmount": "Weka kiasi kwa sats",
+    "exceedsBalance": "Kiasi kinazidi salio lililopo",
+    "balanceUpdating": "Salio linasasishwa. Jaribu tena baada ya muda mfupi.",
+    "invalidAmount": "Tafadhali weka kiasi sahihi",
+    "invalidDestination": "Lengo la malipo si sahihi",
+    "youAreSending": "Unatuma",
+    "recipientGets": "Mpokeaji anapata",
+    "insufficientFunds": "Fedha hazitoshi",
+    "conversionAmount": "Kiasi cha ubadilishaji",
+    "conversionFee": "Ada ya ubadilishaji",
+    "toAddress": "Kwenda anwani",
+    "toSparkAddress": "Kwenda anwani ya Spark",
+    "toSparkInvoice": "Kwenda ankara ya Spark",
+    "toInvoice": "Kwenda ankara",
+    "crossChain": {
+      "amountTooSmall": "Kiasi ni kidogo mno kwa njia hii.",
+      "amountTooLarge": "Kiasi ni kikubwa mno kwa njia hii.",
+      "amountTooSmallHint": "Kiasi hiki ni kidogo mno kwa njia zilizopo. Jaribu kutuma kiasi kikubwa zaidi.",
+      "amountTooLargeHint": "Kiasi hiki ni kikubwa mno kwa njia zilizopo. Jaribu kutuma kiasi kidogo zaidi.",
+      "networkUnavailable": "Mtandao huu haupatikani kwa muda. Jaribu tena baada ya muda mfupi.",
+      "networkNotSupported": "Mtandao huu haupatikani. Jaribu mtandao mwingine.",
+      "rateDrift": "Kiasi ni kidogo mno kwa mtandao huu. Jaribu kiasi kikubwa zaidi au mtandao mwingine."
+    },
+    "withdraw": {
+      "noValidAmount": "Kiungo hiki cha kutoa hakina kiasi sahihi ambacho Glow inaweza kupokea.",
+      "wholeSats": "Weka sats kwa namba kamili",
+      "failed": "Kutoa hakufanikiwa: {{error}}"
+    },
+    "enterAmountIn": "Weka kiasi kwa {{currency}}",
+    "amountRange": "Kati ya {{min}} na {{max}} sats",
+    "result": {
+      "notSentBody": "Malipo hayakupita. Fedha zako hazikutumwa."
+    },
+    "alreadyPaid": "Ankara hii imelipwa tayari.",
+    "invoiceExpired": "Ankara hii imepitwa na wakati. Omba mpokeaji akupe mpya.",
+    "balanceSettling": "Haikuweza kutayarisha malipo wakati salio lako linakamilika. Tafadhali jaribu tena baada ya dakika kadhaa."
+  },
+  "generate": {
+    "title": "Hifadhi Siri Hii",
+    "body": "Andika maneno haya kwa mpangilio. Hii ni hifadhi rudufu yako pekee ya kurejesha fedha zako.",
+    "warning": "Usishiriki kifungu chako cha kurejesha kamwe. Mtu yeyote aliye na maneno haya anaweza kufikia fedha zako.",
+    "copyToClipboard": "Nakili kwenye Ubao wa Kunakili",
+    "saved": "Nimehifadhi Kifungu Changu"
+  },
+  "restore": {
+    "body": "Weka kifungu chako cha kurejesha cha maneno 12 au 24 ili kurejesha Glow. Maneno yanatenganishwa kwa nafasi.",
+    "placeholder": "neno1 neno2 neno3 ...",
+    "invalidLength": "Tafadhali weka kifungu sahihi cha kurejesha cha maneno 12 au 24",
+    "invalidPhrase": "Kifungu cha kurejesha si sahihi. Angalia maneno yako kisha jaribu tena."
+  },
+  "unlock": {
+    "eraseTitle": "Futa na Anza Upya",
+    "eraseAction": "Futa na anza upya",
+    "erase": "Futa",
+    "eraseReason": "Futa data yote ya Glow",
+    "eraseBodyPasskey": "Hii hufuta data yote ya Glow iliyohifadhiwa kwenye kifaa hiki. Utahitaji passkey yako ili kufikia fedha zako tena.",
+    "eraseBodyMnemonic": "Hii hufuta data yote ya Glow iliyohifadhiwa kwenye kifaa hiki. Hakikisha umehifadhi kifungu chako cha kurejesha: utakihitaji ili kufikia fedha zako tena."
+  },
+  "refund": {
+    "amount": "Kiasi",
+    "networkFee": "Ada ya mtandao"
+  },
+  "deposit": {
+    "amount": "Kiasi",
+    "networkFee": "Ada ya mtandao",
+    "feeChanged": "Ada ya mtandao imebadilika",
+    "approveOrReject": "Idhinisha ili kudai uhamisho huu, au kataa ili kuchakata marejesho.",
+    "canReject": "Unaweza kukataa ili kuchakata marejesho badala yake.",
+    "feeRose": "Ada ilipanda kuwa <amount/> wakati ulikuwa unathibitisha. Idhinisha ili kudai kwa ada mpya.",
+    "deliveryFee": "Ada ya uwasilishaji",
+    "youReceive": "Unapokea",
+    "claim": "Dai",
+    "approve": "Idhinisha",
+    "reject": "Kataa",
+    "claimFeeChanged": "Dai lako halikupita: ada ilibadilika kutoka <amount/>.",
+    "tooSmall": "Uhamisho huu ni mdogo mno kulipia ada ya kuudai."
+  },
+  "passkey": {
+    "confirmDeleted": "Nathibitisha kwamba passkey hii ilifutwa.",
+    "confirmDeletedHint": "Si lazima. Endelea bila kuweka alama kama huna uhakika.",
+    "isHowYouAccess": "Passkey yako ni njia unayotumia kufikia fedha zako",
+    "deletionWarning": "Kufuta passkey yako kutoka kwenye kifaa, kivinjari, au kidhibiti cha manenosiri kunaweza kufanya fedha zako zisifikike kabisa."
+  },
+  "migration": {
+    "switchFailed": "Hatukuweza kukamilisha kubadili kwenda passkey yako mpya. Fedha zako ni salama. Tafadhali jaribu tena.",
+    "keepWindowOpen": "Acha dirisha hili likiwa wazi",
+    "verifyMultipleTimes": "Utaombwa kuthibitisha utambulisho wako mara kadhaa wakati wa uhamishaji: mara moja kwa kila lebo inayohamishwa, kisha mara kadhaa zaidi ili kutengeneza passkey yako mpya. Tafadhali acha dirisha hili likiwa wazi hadi uhamishaji ukamilike.",
+    "explainBody": "Tutatengeneza passkey mpya na kuhamisha fedha zako kiotomatiki. Utaombwa kuthibitisha utambulisho wako mara kadhaa wakati wa mchakato.",
+    "singleTransaction": "Fedha zako zitahamishwa kwa muamala mmoja. Historia ya malipo yako haitahamishwa.",
+    "doneBody": "Fedha zako zimehamishwa kwenda passkey yako mpya.",
+    "addressPending_one": "Anwani hii ya Lightning haikuweza kuhamishwa:",
+    "addressPending_other": "Anwani hizi za Lightning hazikuweza kuhamishwa:",
+    "addressPendingBody_one": "Malipo yanayotumwa kwake yataendelea kufika kwenye passkey yako ya zamani hadi uhamisho ukamilike.",
+    "addressPendingBody_other": "Malipo yanayotumwa kwazo yataendelea kufika kwenye passkey yako ya zamani hadi uhamisho ukamilike.",
+    "explainFirstTime": "Kama ulitengeneza passkey yako kwa toleo la zamani la Glow, tutatengeneza mpya na kuhamisha fedha zako kiotomatiki. Kama hii ni mara yako ya kwanza kutumia Glow, chagua <skip/> ili kuendelea.",
+    "migrateLabels_one": "Tutahamisha lebo yako kwenda passkey yako mpya.",
+    "migrateLabels_other": "Tutahamisha lebo zote {{count}} kwenda passkey yako mpya."
+  },
+  "webNotice": {
+    "preferPasskey": "Kwa usalama wako, tunapendekeza kutumia passkey.",
+    "preferApp": "Kwa usalama wako, tunapendekeza programu ya Glow.",
+    "risk": "Kifungu cha kurejesha kwenye wavuti ni hatari zaidi, na kuna uwezekano fedha zako zikapotea. Tumia kifungu cha kurejesha kwenye wavuti tu kama uko tayari kuchukua hatari hii."
+  },
+  "conversion": {
+    "nextAttempt": "Jaribio Lifuatalo",
+    "balanceToConvert": "Salio la Kubadilisha",
+    "notConvertedYet": "Kiasi hiki hakijabadilishwa kuwa {{currency}} bado. Glow itajaribu tena kiotomatiki."
+  }
+}
