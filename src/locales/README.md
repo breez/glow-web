@@ -77,7 +77,11 @@ npm run translate -- --dry-run         print the plan and the cost
 It needs `ANTHROPIC_API_KEY`. The prompt is
 [`scripts/translate/prompt.md`](../../scripts/translate/prompt.md) and the
 roster is [`languages.json`](languages.json), so
-improving a translation is a prompt edit and a re-run. The roster sits beside
+improving a translation is a prompt edit and a re-run. A language that ships
+owes every English key, and `i18n.test.ts` fails until it has them, so new copy
+cannot reach a reader as English in a language that otherwise reads fine. A
+language still being drafted is exempt, since it is not in `shipping.json` yet.
+The roster sits beside
 the bundles rather than with the harness because the app reads it too, for the
 picker, the writing direction and the font warmup: one list, so a language
 cannot be offered before it can be translated or mirrored before it is marked. The harness refuses any

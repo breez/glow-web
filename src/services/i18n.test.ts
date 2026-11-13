@@ -61,15 +61,19 @@ describe('bundle shape', () => {
     return mod ? flatten(mod.default) : null;
   };
 
+  // English defines the namespaces: a new one is a new file in en/.
+  const NAMESPACES = Object.keys(bundles)
+    .filter((path) => path.includes('/en/'))
+    .map((path) => path.split('/').pop()!.replace('.json', ''));
+
   // Plural suffixes are language-specific: Polish needs _few and _many where
   // English has only _one and _other, so a suffix is stripped before comparing.
   // Without this the guard would reject a correct Slavic translation.
   const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/;
   const base = (key: string) => key.replace(PLURAL_SUFFIX, '');
 
-  // A translation may lag English: that is normal for volunteer work, and the
-  // missing keys fall back. Carrying a key English does not have is a typo or a
-  // one-sided rename, and renders as nothing.
+  // Carrying a key English does not have is a typo or a one-sided rename, and
+  // renders as nothing.
   it('has no key in a translation that English does not define', () => {
     for (const path of Object.keys(bundles)) {
       const [, , lang, file] = path.split('/');
@@ -85,6 +89,38 @@ describe('bundle shape', () => {
         ).toContain(base(key));
       }
     }
+  });
+
+  // The other direction. English is the source, and the harness regenerates a
+  // whole bundle in one command, so a shipping language missing a key is new
+  // copy nobody translated rather than a volunteer falling behind. i18next
+  // falls back silently, so the symptom is English on one screen of an app
+  // that otherwise reads fine. A language still being drafted may lag: the
+  // gate is shipping it, not having started it.
+  it('gives every shipping language every English key', () => {
+    const missing: string[] = [];
+    for (const lang of SHIPPING_LANGUAGES) {
+      if (lang === 'en') continue;
+      for (const ns of NAMESPACES) {
+        const keys = keysOf(lang, ns);
+        if (!keys) {
+          missing.push(`${lang}/${ns}.json is absent`);
+          continue;
+        }
+        // Compared on the base, so a language selecting fewer plural categories
+        // than English still counts as complete. The check below covers which
+        // forms it owes.
+        const have = new Set(keys.map(base));
+        for (const key of keysOf('en', ns)!) {
+          if (!have.has(base(key))) missing.push(`${lang}/${ns} ${key}`);
+        }
+      }
+    }
+    expect(
+      missing,
+      `keys English has and these do not:\n${missing.join('\n')}\n\nRun ` +
+        '`npm run translate` to fill them.',
+    ).toEqual([]);
   });
 
   // Every plural category the language actually uses for a small count must be

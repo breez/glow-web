@@ -298,6 +298,9 @@ argue them as preferences: a citation adds nothing here.
   voice: "Could not create the invoice. Please try again." Not "Failed to
   create invoice", which is the system reporting its own state and leaves
   them nowhere to go.
+- Copy lives in `src/locales/en/`, never as a literal in the component.
+  See "Strings: every one is a key" below for the namespace to use and
+  the one command that fills the other languages.
 
 **Chrome**
 
@@ -450,6 +453,68 @@ import { MyIcon } from '../components/Icons';
 - To grow the area when the sheet is dragged to full, read **`useSheetFullSnap()`** and raise the cap; a freeze guard in the container stops the growing content from flipping the snap ladder.
 
 The funded send/cross-chain flow isn't reachable locally; debug sheet layout with a throwaway `?sheettest` harness in `main.tsx` + browser measurement.
+
+## Strings: every one is a key
+
+No user-facing string is written in place. The English goes in
+`src/locales/en/`, and the screen reads it through `t()`. A literal in
+JSX is a string no other language can reach, and
+`src/services/untranslatedStrings.test.ts` fails the build on one.
+
+**Adding copy**
+
+1. Put the English in `src/locales/en/common.json`, or in
+   `critical.json` when a mistranslation could cost someone money or
+   trigger something irreversible. `critical.json` is small on purpose so
+   it stays reviewable; `src/locales/README.md` has the membership test.
+2. Read it in the component:
+
+   ```tsx
+   const { t } = useTranslation('common');
+   ...
+   t('receive.saveAddressFailed')
+   ```
+
+   Use `i18n.t(...)` outside React, and `<Trans>` for copy with inline
+   markup. A component that mostly reads `critical` takes
+   `useTranslation(['critical', 'common'])`: bare keys resolve there, and
+   the rest carry a `common:` prefix.
+3. Fill in every other language:
+
+   ```bash
+   npm run translate
+   ```
+
+   It translates only what is missing, so re-running it is cheap. It needs
+   `ANTHROPIC_API_KEY`, and `i18n.test.ts` fails while a shipping language
+   is missing a key, so this step is not optional. Without a key, ask
+   somebody who has one to run it on the branch, or translate the strings
+   directly against `scripts/translate/prompt.md` and apply them through
+   the harness's exported `write()` and `problems()`.
+
+**Rewording in place is the trap.** Edit the English under a key that
+already exists and every translation of the old sentence stays behind. No
+test catches it, because the keys are all present, so the stale text is
+what gets served. Either rename the key, or re-translate that one:
+
+```bash
+npm run translate -- --keys receive.saveAddressFailed --all
+```
+
+**What stays English**: log messages, errors thrown for developers,
+strings matched against SDK error text, and the screens behind the
+five-tap developer gesture. `src/locales/README.md` gives the reasoning
+for each.
+
+Two more tests hold the rest of the line, both in `src/services`:
+`i18n.test.ts` (every key a `t()` names exists, no key sits in the bundles
+with nothing rendering it, and every shipping language defines every
+English key) and `rtl.test.ts` (logical CSS properties only, so Arabic and
+Hebrew mirror).
+
+`src/locales/README.md` is the full reference: the namespace split, the
+harness flags, plurals, the language picker, and where translation length
+breaks the layout.
 
 ## Logging Practices
 
