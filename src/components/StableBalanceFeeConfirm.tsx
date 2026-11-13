@@ -3,6 +3,7 @@ import { DialogContainer, DialogCard } from './ui';
 import { SpinnerIcon } from './Icons';
 import { formatTokenAmount, type TokenDisplayConfig } from '../utils/tokenFormatting';
 import type { ConversionEstimate } from '@breeztech/breez-sdk-spark';
+import { useTranslation } from 'react-i18next';
 
 interface StableBalanceFeeConfirmProps {
   isOpen: boolean;
@@ -35,12 +36,13 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
   onCancel,
   onDone,
 }) => {
+  const { t } = useTranslation(['critical', 'common']);
   if (!isOpen) return null;
 
-  const title = direction === 'toToken' ? 'Convert to USD' : 'Convert to BTC';
+  const title = direction === 'toToken' ? t('stableBalance.convertToUsd') : t('stableBalance.convertToBtc');
   const description = direction === 'toToken'
-    ? 'Your BTC balance will be converted to USD.'
-    : 'Your USD balance will be converted back to BTC.';
+    ? t('stableBalance.toUsd')
+    : t('stableBalance.toBtc');
 
   const feeText = conversionEstimate && displayConfig
     ? formatTokenAmount(conversionEstimate.fee, displayConfig, { fullPrecision: true })
@@ -60,10 +62,10 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
           {notConverted ? (
             <>
               <p className="text-sm text-spark-primary mb-4">
-                {direction === 'toToken' ? 'Switched to USD' : 'Switched to BTC'}, but your balance hasn't converted yet. Glow will retry automatically.
+                {t('stableBalance.switchedNotConverted', { currency: direction === 'toToken' ? 'USD' : 'BTC' })}
               </p>
               <button onClick={onDone} className="button w-full py-2.5">
-                OK
+                {t('common:actions.ok')}
               </button>
             </>
           ) : (
@@ -76,7 +78,7 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
 
               {!isEstimating && feeText && (
                 <p className="text-sm text-spark-text-secondary mb-4">
-                  Conversion fee: <span className="font-mono text-spark-text-primary">{feeText}</span>
+                  {t('stableBalance.conversionFee')} <span className="font-mono text-spark-text-primary">{feeText}</span>
                 </p>
               )}
 
@@ -88,7 +90,7 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
 
               {!isEstimating && !feeText && !error && !info && (
                 <p className="text-sm text-spark-text-muted mb-4">
-                  Couldn't estimate fee
+                  {t('stableBalance.feeUnavailable')}
                 </p>
               )}
 

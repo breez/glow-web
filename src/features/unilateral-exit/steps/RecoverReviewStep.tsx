@@ -1,4 +1,5 @@
 import React from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { AlertCard, SimpleAlert } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
 import type { QuoteFigures } from '../quote';
@@ -33,47 +34,47 @@ export const RecoverReviewStep: React.FC<{
   /** What of the exit fee the recovery under way still needs. */
   exitFeeDueSat?: number | null;
 }> = ({ figures, destination, error = null, underWay = false, paused = false, feeHeld = false, exitFeeDueSat }) => {
+  const { t } = useTranslation('common');
   const notWorthIt = (
-    <Verdict variant="warning" title="Nothing is worth recovering right now">
-      At this fee rate these funds would cost more to move on-chain than they are worth. Try a lower fee rate, or wait for
-      the network to get cheaper.
+    <Verdict variant="warning" title={t('exit.nothingWorth_recover')}>
+      {t('exit.notWorthRecover')}
     </Verdict>
   );
 
   if (figures.isEmpty) {
     if (paused) {
       return (
-        <Verdict variant="info" title="Nothing to rebuild right now">
-          Please update your recovery to continue.
+        <Verdict variant="info" title={t('exit.nothingToRebuild')}>
+          {t('exit.pleaseUpdateRecovery')}
         </Verdict>
       );
     }
     if (underWay) {
       return (
-        <Verdict variant="info" title="Nothing to rebuild right now">
-          Glow keeps your recovery moving on its own.
+        <Verdict variant="info" title={t('exit.nothingToRebuild')}>
+          {t('exit.keepsMovingRecovery')}
         </Verdict>
       );
     }
     switch (figures.leftOutReason) {
       case null:
         return (
-          <Verdict variant="info" title="Nothing left to recover">
-            These funds were already recovered.
+          <Verdict variant="info" title={t('exit.nothingLeftToRecover')}>
+            {t('exit.alreadyRecovered')}
           </Verdict>
         );
       case 'unavailable':
         return (
-          <Verdict variant="warning" title="Nothing can be recovered right now">
-            Try again later.
+          <Verdict variant="warning" title={t('exit.unavailable_recover')}>
+            {t('exit.tryAgainLater')}
           </Verdict>
         );
       case 'fees':
         return notWorthIt;
       case 'notRecoverable':
         return (
-          <Verdict variant="info" title="Nothing left to recover">
-            These funds can&apos;t be recovered.
+          <Verdict variant="info" title={t('exit.nothingLeftToRecover')}>
+            {t('exit.cannotBeRecovered')}
           </Verdict>
         );
     }
@@ -87,8 +88,8 @@ export const RecoverReviewStep: React.FC<{
       <DestinationRow address={destination} />
       <ReviewBreakdown
         figures={figures}
-        amounts={[{ label: 'Funds', value: figures.fundsSat }]}
-        feeLabel="Network fee"
+        amounts={[{ label: t('exit.funds'), value: figures.fundsSat }]}
+        feeLabel={t('labels.networkFee')}
         exitFeeDueSat={exitFeeDueSat}
       />
 
@@ -96,29 +97,31 @@ export const RecoverReviewStep: React.FC<{
       {figures.needsFunding && !underWay && !feeHeld && (
         <SimpleAlert variant="warning" hideIcon>
           {figures.isCooperative ? (
-            <>
-              <SatAmount sats={figures.recoverableReceiveSat} /> goes to this address now. The other{' '}
-              <SatAmount sats={figures.balanceReceiveSat} /> needs the exit fee from another wallet, then
-              takes several days.
-            </>
+            <Trans
+              i18nKey="common:exit.cooperativeSplitNotice"
+              components={{
+                now: <SatAmount sats={figures.recoverableReceiveSat} />,
+                later: <SatAmount sats={figures.balanceReceiveSat} />,
+              }}
+            />
           ) : (
-            <>
-              To start the recovery you need to pay the exit fee from another wallet. These are the mining fees that
-              move your funds on-chain, which takes several days.
-            </>
+            t('exit.payExitFeeRecoverNotice')
           )}
         </SimpleAlert>
       )}
 
       {figures.leftOutSat > 0 && (
-        <LeftOutCard title="Some funds stay behind">
-          <SatAmount sats={figures.leftOutSat} /> is left out of this recovery.
+        <LeftOutCard title={t('exit.fundsStayBehind')}>
+          <Trans
+            i18nKey="common:exit.staysBehindRecovery"
+            components={{ amount: <SatAmount sats={figures.leftOutSat} /> }}
+          />
         </LeftOutCard>
       )}
 
       {error && (
         <ErrorCard
-          title={underWay ? 'Could not continue the recovery' : 'Could not recover the funds'}
+          title={underWay ? t('exit.couldNotContinue_recover') : t('exit.couldNotRecoverFunds')}
           error={error}
           testId="unilateral-exit-recover-error"
         />

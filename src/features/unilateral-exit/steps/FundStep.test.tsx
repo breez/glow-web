@@ -79,22 +79,22 @@ describe('FundStep', () => {
 
   describe('for a recovery', () => {
     it('asks for more exit fee in its own words', () => {
-      render(<FundStep {...props} networkFloorFeeRate={24} topUp={topUp} noun="recovery" />);
+      render(<FundStep {...props} networkFloorFeeRate={24} topUp={topUp} mode="recover" />);
       expect(screen.getByText('The recovery needs more')).toBeInTheDocument();
       expect(screen.getByText('At 42 sat/vB, the recovery needs more funds at its fee address.')).toBeInTheDocument();
     });
 
     it('says the recovery started at the lower rate when fees went up', () => {
-      render(<FundStep {...props} topUp={topUp} noun="recovery" />);
+      render(<FundStep {...props} topUp={topUp} mode="recover" />);
       expect(screen.getByText(/^Your recovery started at 24 sat\/vB/)).toBeInTheDocument();
     });
 
     it('names the recovery before its build, where to pay, and when the build fails', () => {
-      const { rerender } = render(<FundStep {...props} noun="recovery" />);
+      const { rerender } = render(<FundStep {...props} mode="recover" />);
       expect(screen.getByText('Continue the recovery at 42 sat/vB.')).toBeInTheDocument();
-      rerender(<FundStep {...props} topUp={topUp} isPaying noun="recovery" />);
+      rerender(<FundStep {...props} topUp={topUp} isPaying mode="recover" />);
       expect(screen.getByText('Send to Continue Recovery')).toBeInTheDocument();
-      rerender(<FundStep {...props} error="signing failed" noun="recovery" />);
+      rerender(<FundStep {...props} error="signing failed" mode="recover" />);
       expect(screen.getByText('Could not continue the recovery')).toBeInTheDocument();
     });
   });
@@ -196,7 +196,7 @@ describe('PendingExitStep', () => {
 
   describe('for a recovery', () => {
     it('names the recovery while it builds, while the fee confirms, and when the start fails', () => {
-      const { rerender } = step({ coins: [coin(5_898)], isStarting: true, noun: 'recovery' });
+      const { rerender } = step({ coins: [coin(5_898)], isStarting: true, mode: 'recover' });
       expect(screen.getByText('Building and signing the recovery...')).toBeInTheDocument();
       rerender(
         <PendingExitStep
@@ -206,7 +206,7 @@ describe('PendingExitStep', () => {
           isStarting={false}
           startError={null}
           onCancel={() => {}}
-          noun="recovery"
+          mode="recover"
         />,
       );
       expect(screen.getByText('You can close this. Come back to start the recovery once the fee confirms.')).toBeInTheDocument();
@@ -218,14 +218,14 @@ describe('PendingExitStep', () => {
           isStarting={false}
           startError="chain service unreachable"
           onCancel={() => {}}
-          noun="recovery"
+          mode="recover"
         />,
       );
       expect(screen.getByText('Could not start the recovery')).toBeInTheDocument();
     });
 
     it('says the funds, not the balance, are not worth recovering, and cancels the recovery', () => {
-      step({ coins: [coin(5_898)], nothingToExit: { reason: 'fees' }, noun: 'recovery' });
+      step({ coins: [coin(5_898)], nothingToExit: { reason: 'fees' }, mode: 'recover' });
       expect(screen.getByText('Nothing is worth recovering right now')).toBeInTheDocument();
       expect(
         screen.getByText(
@@ -237,7 +237,7 @@ describe('PendingExitStep', () => {
     });
 
     it('says a restore lets the recovery start', async () => {
-      step({ noun: 'recovery' });
+      step({ mode: 'recover' });
       fireEvent.click(screen.getByText('Advanced'));
       fireEvent.change(screen.getByTestId('unilateral-exit-backup-file'), {
         target: { files: [new File(['{"leaves":[]}'], 'exit-state.json')] },

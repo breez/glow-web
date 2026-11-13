@@ -156,7 +156,7 @@ const PasskeyLocalStatePage: React.FC<PasskeyLocalStatePageProps> = ({ onBack, o
             key={item.kind}
             type="button"
             onClick={() => setConfirm(item.kind)}
-            className="w-full flex items-center gap-3 p-4 bg-spark-dark border border-spark-border rounded-2xl text-left hover:border-spark-border-light hover:bg-white/5 transition-colors"
+            className="w-full flex items-center gap-3 p-4 bg-spark-dark border border-spark-border rounded-2xl text-start hover:border-spark-border-light hover:bg-white/5 transition-colors"
           >
             <div className="w-10 h-10 rounded-xl bg-spark-primary/10 flex items-center justify-center shrink-0">
               <TrashIcon size="sm" className="text-spark-primary-light" />

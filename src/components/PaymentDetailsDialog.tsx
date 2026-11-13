@@ -12,6 +12,7 @@ import { useContactsContext } from '../contexts/ContactsContext';
 import { getPaymentDescription, getProviderDisplayName, isCrossChainPayment, isRefundedConversion } from '../utils/paymentDescription';
 import { formatChainName, getCrossChainDestination, getCrossChainOutcome, formatReceiveAmount } from '../utils/crossChainFormat';
 import { explorerTxUrl, chainExplorerTxUrl } from '../utils/explorer';
+import { useTranslation } from 'react-i18next';
 
 interface PaymentDetailsDialogProps {
   optionalPayment: Payment | null;
@@ -40,6 +41,7 @@ const getDefaultVisibleFields = () => ({
 });
 
 const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPayment, onClose }) => {
+  const { t } = useTranslation('common');
   // Parent unmounts/remounts this component on payment selection change
   // (`{selectedPayment && <PaymentDetailsDialog ... />}`), so lazy init is
   // sufficient — no reset-in-effect needed.
@@ -147,7 +149,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   // until that leg broadcasts, and only orchestra reports it.
   const externalTxRow = dest?.externalTxHash ? (
     <CollapsibleCodeField
-      label="Transaction ID"
+      label={t('paymentDetails.transactionId')}
       value={dest.externalTxHash}
       isVisible={visibleFields.externalTxHash}
       onToggle={() => toggleField('externalTxHash')}
@@ -160,7 +162,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   // so it gets no link.
   const refundTxRow = dest?.refundTxHash ? (
     <CollapsibleCodeField
-      label="Refund Transaction ID"
+      label={t('paymentDetails.refundTransactionId')}
       value={dest.refundTxHash}
       isVisible={visibleFields.refundTxHash}
       onToggle={() => toggleField('refundTxHash')}
@@ -170,7 +172,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
 
   const conversionIdRow = showConversionId ? (
     <CollapsibleCodeField
-      label="Conversion ID"
+      label={t('paymentDetails.conversionId')}
       value={orchestraInfo.quoteId}
       isVisible={visibleFields.conversionId}
       onToggle={() => toggleField('conversionId')}
@@ -185,28 +187,28 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
           {/* General Payment Information */}
           <PaymentInfoCard>
             <PaymentInfoRow
-              label="Amount"
+              label={t('paymentDetails.amount')}
               value={amountDisplay}
             />
 
             {/* Cross-chain fee lives in the Conversion Details dropdown. */}
             {!dest && feeDisplay && (
               <PaymentInfoRow
-                label="Fee"
+                label={t('paymentDetails.fee')}
                 value={feeDisplay}
               />
             )}
 
             {isRefunded && (
               <PaymentInfoRow
-                label="Status"
-                value="Refunded"
+                label={t('paymentDetails.status')}
+                value={t('paymentDetails.refunded')}
                 valueColor="text-spark-primary"
               />
             )}
 
             <PaymentInfoRow
-              label="Date & Time"
+              label={t('paymentDetails.dateTime')}
               value={formatDateTime(payment.timestamp)}
             />
 
@@ -215,10 +217,10 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
             {dest && isReceive && (
               <>
                 {crossChainSource && (
-                  <PaymentInfoRow label="Sent Amount" value={crossChainSource} />
+                  <PaymentInfoRow label={t('paymentDetails.sentAmount')} value={crossChainSource} />
                 )}
                 {dest.chainName && (
-                  <PaymentInfoRow label="Network" value={formatChainName(dest.chainName)} />
+                  <PaymentInfoRow label={t('paymentDetails.network')} value={formatChainName(dest.chainName)} />
                 )}
                 {externalTxRow}
                 {refundTxRow}
@@ -230,16 +232,16 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                 {/* The fallback is the quote's estimate, which never arrived. */}
                 {!crossChainOutcome && dest.deliveredAmount !== undefined && dest.assetDecimals !== undefined && dest.assetTicker && (
                   <PaymentInfoRow
-                    label="Received Amount"
+                    label={t('paymentDetails.receivedAmount')}
                     value={`~${formatReceiveAmount(dest.deliveredAmount, dest.assetDecimals)} ${dest.assetTicker}`}
                   />
                 )}
                 {dest.chainName && (
-                  <PaymentInfoRow label="Network" value={formatChainName(dest.chainName)} />
+                  <PaymentInfoRow label={t('paymentDetails.network')} value={formatChainName(dest.chainName)} />
                 )}
                 {dest.recipientAddress && (
                   <CollapsibleCodeField
-                    label="Recipient Address"
+                    label={t('paymentDetails.recipientAddress')}
                     value={dest.recipientAddress}
                     isVisible={visibleFields.recipientAddress}
                     onToggle={() => toggleField('recipientAddress')}
@@ -255,14 +257,14 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
             {!dest && payment.details?.type === 'lightning' && payment.details.description && (
               payment.details.description.length > LONG_TEXT_THRESHOLD ? (
                 <CollapsibleCodeField
-                  label="Description"
+                  label={t('paymentDetails.description')}
                   value={payment.details.description}
                   isVisible={visibleFields.description}
                   onToggle={() => toggleField('description')}
                 />
               ) : (
                 <PaymentInfoRow
-                  label="Description"
+                  label={t('paymentDetails.description')}
                   value={payment.details.description}
                 />
               )
@@ -271,14 +273,14 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
             {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo?.lnAddress && (
               payment.details.lnurlPayInfo.lnAddress.length > LONG_TEXT_THRESHOLD ? (
                 <CollapsibleCodeField
-                  label="Lightning Address"
+                  label={t('paymentDetails.lightningAddress')}
                   value={payment.details.lnurlPayInfo.lnAddress}
                   isVisible={visibleFields.lnAddress}
                   onToggle={() => toggleField('lnAddress')}
                 />
               ) : (
                 <PaymentInfoRow
-                  label="Lightning Address"
+                  label={t('paymentDetails.lightningAddress')}
                   value={payment.details.lnurlPayInfo.lnAddress}
                 />
               )
@@ -287,14 +289,14 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
             {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo && !payment.details.lnurlPayInfo.lnAddress && payment.details.lnurlPayInfo.domain && (
               payment.details.lnurlPayInfo.domain.length > LONG_TEXT_THRESHOLD ? (
                 <CollapsibleCodeField
-                  label="LNURL Payment"
+                  label={t('paymentDetails.lnurlPayment')}
                   value={payment.details.lnurlPayInfo.domain}
                   isVisible={visibleFields.lnurlDomain}
                   onToggle={() => toggleField('lnurlDomain')}
                 />
               ) : (
                 <PaymentInfoRow
-                  label="LNURL Payment"
+                  label={t('paymentDetails.lnurlPayment')}
                   value={payment.details.lnurlPayInfo.domain}
                 />
               )
@@ -306,14 +308,14 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               if (!comment) return null;
               return comment.length > LONG_TEXT_THRESHOLD ? (
                 <CollapsibleCodeField
-                  label="Comment"
+                  label={t('paymentDetails.comment')}
                   value={comment}
                   isVisible={visibleFields.comment}
                   onToggle={() => toggleField('comment')}
                 />
               ) : (
                 <PaymentInfoRow
-                  label="Comment"
+                  label={t('paymentDetails.comment')}
                   value={comment}
                 />
               );
@@ -322,14 +324,14 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
             {payment.details?.type === 'lightning' && payment.details.lnurlReceiveMetadata?.lightningAddress && (
               payment.details.lnurlReceiveMetadata.lightningAddress.length > LONG_TEXT_THRESHOLD ? (
                 <CollapsibleCodeField
-                  label="Address"
+                  label={t('labels.address')}
                   value={payment.details.lnurlReceiveMetadata.lightningAddress}
                   isVisible={visibleFields.lnAddress}
                   onToggle={() => toggleField('lnAddress')}
                 />
               ) : (
                 <PaymentInfoRow
-                  label="Address"
+                  label={t('labels.address')}
                   value={payment.details.lnurlReceiveMetadata.lightningAddress}
                 />
               )
@@ -337,7 +339,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
 
             {payment.details?.type === 'lightning' && payment.details.invoice && (
               <CollapsibleCodeField
-                label="Invoice"
+                label={t('paymentDetails.invoice')}
                 value={payment.details.invoice}
                 isVisible={visibleFields.invoice}
                 onToggle={() => toggleField('invoice')}
@@ -346,7 +348,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
 
             {!dest && payment.details?.type === 'lightning' && payment.details.htlcDetails?.preimage && (
               <CollapsibleCodeField
-                label="Payment Preimage"
+                label={t('paymentDetails.preimage')}
                 value={payment.details.htlcDetails.preimage}
                 isVisible={visibleFields.preimage}
                 onToggle={() => toggleField('preimage')}
@@ -355,7 +357,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
 
             {!dest && payment.details?.type === 'lightning' && payment.details.destinationPubkey && (
               <CollapsibleCodeField
-                label="Destination Public Key"
+                label={t('paymentDetails.destinationPubkey')}
                 value={payment.details.destinationPubkey}
                 isVisible={visibleFields.destinationPubkey}
                 onToggle={() => toggleField('destinationPubkey')}
@@ -365,21 +367,21 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
             {payment.details?.type === 'lightning' && payment.details.lnurlPayInfo?.rawSuccessAction && (
               <>
                 <PaymentInfoRow
-                  label="Success Action"
-                  value={payment.details.lnurlPayInfo.rawSuccessAction.type || 'Unknown'}
+                  label={t('paymentDetails.successAction')}
+                  value={payment.details.lnurlPayInfo.rawSuccessAction.type || t('labels.unknown')}
                 />
                 {payment.details.lnurlPayInfo.rawSuccessAction.type === 'message' && 
                   payment.details.lnurlPayInfo.rawSuccessAction.data && (
                   (payment.details.lnurlPayInfo.rawSuccessAction.data.message || '').length > LONG_TEXT_THRESHOLD ? (
                     <CollapsibleCodeField
-                      label="Message"
+                      label={t('paymentDetails.message')}
                       value={payment.details.lnurlPayInfo.rawSuccessAction.data.message || ''}
                       isVisible={visibleFields.message}
                       onToggle={() => toggleField('message')}
                     />
                   ) : (
                     <PaymentInfoRow
-                      label="Message"
+                      label={t('paymentDetails.message')}
                       value={payment.details.lnurlPayInfo.rawSuccessAction.data.message || ''}
                     />
                   )
@@ -388,14 +390,14 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                   payment.details.lnurlPayInfo.rawSuccessAction.data && (
                   (payment.details.lnurlPayInfo.rawSuccessAction.data.url || '').length > LONG_TEXT_THRESHOLD ? (
                     <CollapsibleCodeField
-                      label="URL"
+                      label={t('paymentDetails.url')}
                       value={payment.details.lnurlPayInfo.rawSuccessAction.data.url || ''}
                       isVisible={visibleFields.url}
                       onToggle={() => toggleField('url')}
                     />
                   ) : (
                     <PaymentInfoRow
-                      label="URL"
+                      label={t('paymentDetails.url')}
                       value={payment.details.lnurlPayInfo.rawSuccessAction.data.url || ''}
                     />
                   )
@@ -406,7 +408,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
             {(payment.details?.type === 'deposit' || payment.details?.type === 'withdraw') && payment.details.txId && (
               <div className="mt-4">
                 <CollapsibleCodeField
-                  label="Transaction ID"
+                  label={t('paymentDetails.transactionId')}
                   value={payment.details.txId}
                   isVisible={visibleFields.txId}
                   onToggle={() => toggleField('txId')}
@@ -421,7 +423,7 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
               if (!conversions?.length) return null;
               return (
               <CollapsibleSection
-                label="Conversion Details"
+                label={t('paymentDetails.conversionDetails')}
                 isVisible={visibleFields.conversionDetails}
                 onToggle={() => toggleField('conversionDetails')}
                 bare
@@ -441,23 +443,23 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                         className="bg-spark-surface border border-spark-border/50 rounded-lg px-3"
                       >
                         <PaymentInfoRow
-                          label="Provider"
+                          label={t('paymentDetails.provider')}
                           value={getProviderDisplayName(conv.provider)}
                         />
                         <PaymentInfoRow
-                          label="Initial Amount"
+                          label={t('paymentDetails.initialAmount')}
                           value={formatSideValue(conv.from)}
                         />
                         {/* A conversion that did not go through converted nothing:
                             its `to` side is the refund, or nothing at all. */}
                         {conv.status !== 'refunded' && conv.status !== 'failed' && (
                           <PaymentInfoRow
-                            label="Converted Amount"
+                            label={t('paymentDetails.convertedAmount')}
                             value={formatSideValue(conv.to)}
                           />
                         )}
                         {feeValue && (
-                          <PaymentInfoRow label="Fee" value={feeValue} />
+                          <PaymentInfoRow label={t('paymentDetails.fee')} value={feeValue} />
                         )}
                       </div>
                     );

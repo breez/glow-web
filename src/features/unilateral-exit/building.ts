@@ -33,6 +33,7 @@ import {
   type StoppedSince,
 } from './quote';
 import { leavingSkips, quoteFresh, stillNamed, withDropped, type ExitSdk } from './quoting';
+import { GENERIC_RETRY } from './exitFee';
 
 /**
  * A build that came back with no transactions: every co-signed leaf failed, or
@@ -42,7 +43,7 @@ import { leavingSkips, quoteFresh, stillNamed, withDropped, type ExitSdk } from 
 export class EmptyRecoveryError extends Error {
   readonly failed: CooperativeRecoveryFailure[];
 
-  constructor(failed: CooperativeRecoveryFailure[], message = 'Please try again.') {
+  constructor(failed: CooperativeRecoveryFailure[], message = GENERIC_RETRY) {
     super(message);
     this.name = 'EmptyRecoveryError';
     this.failed = failed;
@@ -58,6 +59,7 @@ export class RebuildLaterError extends Error {
   readonly stoppedSince?: StoppedSince;
 
   constructor(stoppedSince?: StoppedSince) {
+    // Caught in useContinueExit and never rendered, so it stays English.
     super('Nothing is left to rebuild. The exit updates on its next check.');
     this.name = 'RebuildLaterError';
     this.stoppedSince = stoppedSince;

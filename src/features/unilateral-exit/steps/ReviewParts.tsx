@@ -4,25 +4,30 @@ import { AlertCard } from '@/components/AlertCard';
 import { FeeBreakdownCard, type FeeBreakdownItem } from '@/components/FeeBreakdownCard';
 import { SatAmount } from '@/components/SatAmount';
 import { truncateAddress } from '@/utils/crossChainFormat';
-import { retryAdvice } from '../exitFee';
+import { useTranslation } from 'react-i18next';
+import { isFeeFailure, isOwnAdvice } from '../exitFee';
 import type { QuoteFigures } from '../quote';
 
 // The pieces the Unilateral Exit and Recover Funds screens share. Each flow
 // keeps its own wording; the figures come from the quote module.
 
-export const ReceiveHero: React.FC<{ figures: QuoteFigures }> = ({ figures }) => (
+export const ReceiveHero: React.FC<{ figures: QuoteFigures }> = ({ figures }) => {
+  const { t } = useTranslation('common');
+  return (
   <div className="text-center py-2">
-    <p className="text-spark-text-muted text-sm mb-2">You&apos;ll receive</p>
+    <p className="text-spark-text-muted text-sm mb-2">{t('exit.youWillReceive')}</p>
     <SatAmount
       sats={figures.willReceiveSat}
       className="text-4xl font-bold text-spark-text-primary"
     />
   </div>
-);
+  );
+};
 
-export const DestinationRow: React.FC<{ address: string; testId?: string }> = ({ address, testId }) => (
-  <CopyableRow label="To address" value={address} display={truncateAddress(address, 32)} data-testid={testId} />
-);
+export const DestinationRow: React.FC<{ address: string; testId?: string }> = ({ address, testId }) => {
+  const { t } = useTranslation('common');
+  return <CopyableRow label={t('exit.toAddress')} value={address} display={truncateAddress(address, 32)} data-testid={testId} />;
+};
 
 /**
  * What the quote moves, then what it costs: the fee off it, and the exit fee
@@ -35,13 +40,14 @@ export const ReviewBreakdown: React.FC<{
   feeLabel: string;
   exitFeeDueSat?: number | null;
 }> = ({ figures, amounts, feeLabel, exitFeeDueSat }) => {
+  const { t } = useTranslation('common');
   const exitFeeSat = exitFeeDueSat ?? figures.exitFeeSat;
   return (
     <FeeBreakdownCard
       items={[
         ...amounts,
         { label: feeLabel, value: figures.networkFeeSat },
-        ...(figures.needsFunding ? [{ label: 'Exit fee', value: exitFeeSat, highlight: exitFeeSat > 0 }] : []),
+        ...(figures.needsFunding ? [{ label: t('exit.exitFee'), value: exitFeeSat, highlight: exitFeeSat > 0 }] : []),
       ]}
     />
   );
@@ -55,10 +61,11 @@ export const LeftOutCard: React.FC<{ title: string; children: React.ReactNode }>
 
 /** The node's or the SDK's own words, folded away: support needs them, the user rarely does. */
 export const ErrorDetails: React.FC<{ text: string; testId: string }> = ({ text, testId }) => {
+  const { t } = useTranslation('common');
   const [open, setOpen] = useState(false);
   return (
     <div className="mt-2" data-testid={testId}>
-      <CollapsibleCodeField label="Details" value={text} isVisible={open} onToggle={() => setOpen(v => !v)} />
+      <CollapsibleCodeField label={t('exit.details')} value={text} isVisible={open} onToggle={() => setOpen(v => !v)} />
     </div>
   );
 };
@@ -69,11 +76,12 @@ export const ErrorDetails: React.FC<{ text: string; testId: string }> = ({ text,
  * wrote is already the body.
  */
 export const ErrorCard: React.FC<{ title: string; error: string; testId: string }> = ({ title, error, testId }) => {
-  const advice = retryAdvice(error);
+  const { t } = useTranslation('common');
+  const advice = isFeeFailure(error) ? t('exit.retryFee') : t('exit.retryGeneric');
   return (
     <AlertCard variant="error" title={title}>
       <p className="text-sm">{advice}</p>
-      {error !== advice && <ErrorDetails text={error} testId={testId} />}
+      {!isOwnAdvice(error) && <ErrorDetails text={error} testId={testId} />}
     </AlertCard>
   );
 };

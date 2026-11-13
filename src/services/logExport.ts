@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { isShareCancel } from '@/utils/share';
+import i18n from 'i18next';
 
 const getAllLogs = (): string => {
   return logger.getLogsAsString();
@@ -127,7 +128,7 @@ export const exportDatabaseState = async (identityPubkey: string, network: strin
     await shareOrDownloadFile(
       new Blob([json], { type: 'application/json' }),
       `${timestamp}_sdk_state.json`,
-      'Glow SDK Database Export',
+      i18n.t('logs.dbShareTitle'),
     );
   } finally {
     db.close();
@@ -226,5 +227,5 @@ export const shareOrDownloadFile = async (
 export const shareOrDownloadLogs = async (): Promise<void> => {
   const blob = await getAllLogsAsZip();
   const timestamp = Math.floor(Date.now() / 1000);
-  await shareOrDownloadFile(blob, `${timestamp}_glow_logs.zip`, 'Glow Logs');
+  await shareOrDownloadFile(blob, `${timestamp}_glow_logs.zip`, i18n.t('logs.shareTitle'));
 };

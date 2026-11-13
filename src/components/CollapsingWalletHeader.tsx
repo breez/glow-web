@@ -13,6 +13,7 @@ import { USDB_TOKEN_IDENTIFIER } from '../constants/stableBalance';
 import StableBalanceToggleFlow from './StableBalanceToggleFlow';
 import ConversionFailureSheet from './ConversionFailureSheet';
 import { useRestoreStableBalancePrompt } from '../hooks/useRestoreStableBalancePrompt';
+import { useTranslation } from 'react-i18next';
 
 // Module-level flag: once the balance count-up has played, skip it on remount.
 // Resets on full page reload.
@@ -39,6 +40,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
   hasRejectedDeposits,
   onOpenGetRefund,
 }) => {
+  const { t } = useTranslation('common');
   const { fiatRates, fiatCurrencies } = useFiatData();
   const stableBalance = useStableBalance();
   // Persisted rather than a plain index: the receive amount input reads the
@@ -317,8 +319,8 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
           {/* Menu button */}
           <button
             onClick={onOpenMenu}
-            className="p-2 -ml-2 text-spark-text-secondary hover:text-spark-text-primary transition-colors rounded-xl hover:bg-white/5"
-            aria-label="Open menu"
+            className="p-2 -ms-2 text-spark-text-secondary hover:text-spark-text-primary transition-colors rounded-xl hover:bg-white/5"
+            aria-label={t('a11y.openMenu')}
             data-testid="menu-button"
           >
             <MenuIcon size="lg" />
@@ -334,14 +336,14 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 className="flex items-center gap-1 h-9 px-3 rounded-xl text-spark-warning border border-spark-warning/20 hover:border-spark-warning/40 hover:bg-spark-warning/5 transition-colors text-xs font-medium"
               >
                 <AlertTriangleIcon size="xs" />
-                Refund
+                {t('header.refund')}
               </button>
             )}
             {/* Buy Bitcoin */}
             {onOpenBuyBitcoin && (
               <button
                 type="button"
-                aria-label={buyCopy('Buy')}
+                aria-label={buyCopy(t('header.buy'))}
                 className={`flex items-center justify-center gap-1.5 h-9 rounded-xl transition-colors text-sm font-medium ${
                   isBuyIconOnly()
                     ? 'w-9 bg-[#00D632] hover:bg-[#00bf2d] border border-black/15 hover:border-black/25'
@@ -357,7 +359,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 ) : (
                   <CurrencyIcon size="sm" />
                 )}
-                {!isBuyIconOnly() && <span>{buyCopy('Buy')}</span>}
+                {!isBuyIconOnly() && <span>{buyCopy(t('header.buy'))}</span>}
               </button>
             )}
           </div>
@@ -373,7 +375,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-spark-primary animate-pulse" />
-              Syncing
+              {t('header.syncing')}
             </span>
             {/* inline-flex + items-center keeps the suffix pill on the
                 same vertical axis as the BALANCE text (inline baseline
@@ -383,7 +385,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 isSyncing ? 'opacity-0' : 'opacity-100'
               }`}
             >
-              Balance
+              {t('labels.balance')}
               {/* Amber chip + swap glyph so the suffix reads as a
                   currency-switch control, not part of the label (#300).
                   Hover never fires on touch; active: is the mobile
@@ -393,7 +395,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 type="button"
                 onClick={handleSuffixTap}
                 disabled={stableBalance.isToggling}
-                aria-label={`Switch balance to ${stableBalance.isActive ? 'Bitcoin' : 'USD'}`}
+                aria-label={t('a11y.switchBalance', { currency: stableBalance.isActive ? t('header.bitcoin') : 'USD' })}
                 className="group inline-flex items-center cursor-pointer transition-colors disabled:opacity-50 font-display text-xs font-medium uppercase"
               >
                 <span className="mx-1.5 tracking-widest">·</span>
@@ -413,7 +415,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
             <span className="balance-display">
               {formattedPrimaryBalance}
             </span>
-            {displayBalance > 0 && <span className="absolute right-full top-1/2 -translate-y-1/2 mr-0.5 text-3xl text-spark-text-secondary opacity-70 font-mono">{currencySymbol}</span>}
+            {displayBalance > 0 && <span className="absolute end-full top-1/2 -translate-y-1/2 me-0.5 text-3xl text-spark-text-secondary opacity-70 font-mono">{currencySymbol}</span>}
           </div>
 
           {/* Secondary line - fiat value or BTC as fiat equivalent */}
@@ -432,7 +434,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 stableSecondarySats ? (
                   <span className="inline-flex items-center">
                     <SatAmount sats={stableSecondarySats} />
-                    <span className="ml-1">change</span>
+                    <span className="ms-1">change</span>
                   </span>
                 ) : (
                   <span className="invisible">$0.00</span>
@@ -463,7 +465,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 {/* In USD mode the line above already shows these sats. */}
                 {conversionFailure.kind === 'deactivation' && <span>{unconvertedAmount}</span>}
                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-spark-primary/15 text-spark-primary font-sans text-[10px] font-medium uppercase">
-                  Not converted
+                  {t('stableBalance.notConverted')}
                   <ChevronRightIcon size="xs" className="w-2.5 h-2.5" />
                 </span>
               </button>

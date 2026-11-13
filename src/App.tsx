@@ -289,9 +289,7 @@ const AppContent: React.FC = () => {
     // effect would have produced.
     if (sdk.startupState === 'native-unlocking') {
       return (
-        <UnlockingPage
-          message={sdk.passkeyCheckRunning ? 'Verifying your passkey' : undefined}
-        />
+        <UnlockingPage verifying={sdk.passkeyCheckRunning} />
       );
     }
     if (sdk.startupState === 'passkey-check-failed') {

@@ -167,6 +167,7 @@
     "successAction": "Success Action",
     "message": "Message",
     "transactionId": "Transaction ID",
+    "refundTransactionId": "Refund Transaction ID",
     "conversionDetails": "Conversion Details",
     "provider": "Provider",
     "initialAmount": "Initial Amount",
@@ -632,7 +633,8 @@
     "mnemonicConnectFailed": "Failed to connect with saved mnemonic. Please try again.",
     "listenersFailed": "Failed to set up event listeners.",
     "saveFailed": "Could not save to this device",
-    "saveFailedBody": "You may be asked to sign in again the next time you open Glow."
+    "saveFailedBody": "You may be asked to sign in again the next time you open Glow.",
+    "authenticating": "Authenticating..."
   },
   "migration": {
     "upgradePasskey": "Upgrade passkey",
@@ -840,5 +842,9 @@
     "fundsSent": "Funds sent",
     "amountOnItsWay": "<amount/> on its way",
     "getQuote": "Get Quote"
+  },
+  "passkeyCheck": {
+    "verifying": "Verifying your passkey",
+    "continue": "Continue to Glow"
   }
 }

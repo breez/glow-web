@@ -29,14 +29,22 @@ export const CloseIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) 
   </svg>
 );
 
+/**
+ * The three icons that point along the reading direction rather than at
+ * something fixed. `rtl:` reads the document's `dir`, which i18n.ts sets from
+ * the language, so these flip with the layout and every caller inherits it.
+ * Up, down and the swap arrows are not direction-dependent and stay put.
+ */
+const MIRRORED = 'rtl:rotate-180';
+
 export const BackIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) => (
-  <svg className={`${sizeClasses[size]} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg className={`${sizeClasses[size]} ${MIRRORED} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
   </svg>
 );
 
 export const ChevronRightIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) => (
-  <svg className={`${sizeClasses[size]} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg className={`${sizeClasses[size]} ${MIRRORED} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
   </svg>
 );
@@ -149,7 +157,7 @@ export const FingerprintIcon: React.FC<IconProps> = ({ className = '', size = 'm
 );
 
 export const BackspaceIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) => (
-  <svg className={`${sizeClasses[size]} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+  <svg className={`${sizeClasses[size]} ${MIRRORED} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM18 9l-6 6M12 9l6 6" />
   </svg>
 );

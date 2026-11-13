@@ -59,6 +59,7 @@ export function deriveFundingKey(mnemonic: string, network: string, index: numbe
   };
 }
 
+/** Thrown for the caller, not the reader: English, as the log lines are. */
 export class MnemonicUnavailableError extends Error {
   constructor() {
     super("This wallet's recovery phrase is not on this device.");

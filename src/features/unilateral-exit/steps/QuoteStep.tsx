@@ -1,7 +1,9 @@
 import { LoadingSpinner } from '@/components/ui';
 import React from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { AlertCard, SimpleAlert } from '@/components/AlertCard';
 import { SatAmount } from '@/components/SatAmount';
+import type { ExitMode } from '../model/plan';
 import type { QuoteFields } from '../hooks/useUnilateralExitFlow';
 import { DestinationRow, ErrorCard, LeftOutCard, ReceiveHero, ReviewBreakdown } from './ReviewParts';
 
@@ -11,17 +13,18 @@ export const QuoteStep: React.FC<
     underWay?: boolean;
     /** That exit waits on the update tap rather than rebuilding by itself. */
     paused?: boolean;
-    noun?: string;
+    mode?: ExitMode;
     /** The fee address already holds the exit fee, so nothing needs paying from another wallet. */
     feeHeld?: boolean;
     /** What of the exit fee the exit under way still needs. */
     exitFeeDueSat?: number | null;
   }
-> = ({ quote, figures, isQuoting, error, underWay = false, paused = false, noun = 'exit', feeHeld = false, exitFeeDueSat }) => {
+> = ({ quote, figures, isQuoting, error, underWay = false, paused = false, mode = 'exit', feeHeld = false, exitFeeDueSat }) => {
+  const { t } = useTranslation('common');
   if (isQuoting) {
     return (
       <div className="py-16 flex justify-center">
-        <LoadingSpinner text={`Working out what can be ${noun === 'exit' ? 'exited' : 'recovered'}...`} />
+        <LoadingSpinner text={t(`exit.workingOut_${mode}`)} />
       </div>
     );
   }
@@ -29,18 +32,16 @@ export const QuoteStep: React.FC<
   if (error) {
     return (
       <div className="space-y-6">
-        <ErrorCard title={`Could not quote the ${noun}`} error={error} testId="unilateral-exit-quote-error" />
+        <ErrorCard title={t(`exit.couldNotQuote_${mode}`)} error={error} testId="unilateral-exit-quote-error" />
       </div>
     );
   }
 
   const notWorthIt = (
     <div className="space-y-6">
-      <AlertCard variant="warning" title="Nothing is worth exiting right now">
+      <AlertCard variant="warning" title={t('exit.nothingWorth_exit')}>
         <p className="text-sm">
-          {underWay
-            ? 'At this fee rate what is left of your exit would cost more to move on-chain than it is worth. Try a lower fee rate, or wait for the network to get cheaper.'
-            : 'At this fee rate every part of your balance would cost more to move on-chain than it is worth. Try a lower fee rate, or wait for the network to get cheaper.'}
+          {underWay ? t('exit.notWorthRemaining') : t('exit.notWorthWhole')}
         </p>
       </AlertCard>
     </div>
@@ -50,9 +51,9 @@ export const QuoteStep: React.FC<
     if (underWay) {
       return (
         <div className="space-y-6">
-          <AlertCard variant="info" title="Nothing to rebuild right now">
+          <AlertCard variant="info" title={t('exit.nothingToRebuild')}>
             <p className="text-sm">
-              {paused ? 'Please update your unilateral exit to continue.' : 'Glow keeps your exit moving on its own.'}
+              {paused ? t('exit.pleaseUpdateExit') : t('exit.keepsMovingItself')}
             </p>
           </AlertCard>
         </div>
@@ -61,11 +62,8 @@ export const QuoteStep: React.FC<
     if (figures?.leftOutReason === 'fees') return notWorthIt;
     return (
       <div className="space-y-6">
-        <AlertCard variant="warning" title="Nothing here to exit">
-          <p className="text-sm">
-            This wallet holds no funds on Spark that can be moved on-chain. If you were expecting
-            some, the leaf data this needs may be missing from this device.
-          </p>
+        <AlertCard variant="warning" title={t('exit.nothingHereToExit')}>
+          <p className="text-sm">{t('exit.nothingHereToExitBody')}</p>
         </AlertCard>
       </div>
     );
@@ -84,18 +82,17 @@ export const QuoteStep: React.FC<
       <ReviewBreakdown
         figures={figures}
         amounts={[
-          { label: 'Balance', value: figures.balanceSat },
-          ...(figures.recoverableSat > 0 ? [{ label: 'Recoverable Funds', value: figures.recoverableSat }] : []),
+          { label: t('labels.balance'), value: figures.balanceSat },
+          ...(figures.recoverableSat > 0 ? [{ label: t('exit.recoverableFunds'), value: figures.recoverableSat }] : []),
         ]}
-        feeLabel={figures.isCooperative ? 'Network fee' : 'Sweep fee'}
+        feeLabel={figures.isCooperative ? t('labels.networkFee') : t('exit.sweepFee')}
         exitFeeDueSat={exitFeeDueSat}
       />
 
       {/* Under way, the build spends what the fee address holds first, so this may cost nothing. */}
       {figures.needsFunding && !underWay && !feeHeld && (
         <SimpleAlert variant="warning" hideIcon>
-          To start the process you need to pay the exit fee. These are the mining fees required to
-          move the Spark tree on-chain.
+          {t('exit.payExitFeeNotice')}
         </SimpleAlert>
       )}
 
@@ -103,13 +100,18 @@ export const QuoteStep: React.FC<
           Glow names a reason only when every one is that the fee eats it. */}
       {figures.leftOutSat > 0 &&
         (figures.leftOutForFees ? (
-          <LeftOutCard title="Some of your balance stays behind">
-            <SatAmount sats={figures.leftOutSat} /> sits in pieces too small to be worth their own
-            on-chain fee at this rate, so they are left out of this exit.
+          <LeftOutCard title={t('exit.balanceStaysBehind')}>
+            <Trans
+              i18nKey="common:exit.staysBehindForFees"
+              components={{ amount: <SatAmount sats={figures.leftOutSat} /> }}
+            />
           </LeftOutCard>
         ) : (
-          <LeftOutCard title="Some funds stay behind">
-            <SatAmount sats={figures.leftOutSat} /> is left out of this exit.
+          <LeftOutCard title={t('exit.fundsStayBehind')}>
+            <Trans
+              i18nKey="common:exit.staysBehindPlain"
+              components={{ amount: <SatAmount sats={figures.leftOutSat} /> }}
+            />
           </LeftOutCard>
         ))}
 

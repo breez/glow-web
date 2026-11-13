@@ -149,5 +149,9 @@
     "nextAttempt": "Next Attempt",
     "balanceToConvert": "Balance to Convert",
     "notConvertedYet": "This amount hasn't converted to {{currency}} yet. Glow will retry automatically."
+  },
+  "passkeyCheck": {
+    "title": "Couldn't verify your passkey",
+    "body": "Make sure your recovery phrase is written down and stored safely. Check that your passkey is working so you can access Glow if you lose this device."
   }
 }

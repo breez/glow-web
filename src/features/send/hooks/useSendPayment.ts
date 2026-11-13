@@ -7,6 +7,8 @@ import { getTokenBalance } from '../../../utils/tokenFormatting';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
 import { destinationErrorMessage } from '@/utils/destinationAddress';
+import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 
 /** The destination string inside a parsed input, or null for the types that
  *  are paid through their own workflow rather than a prepared destination. */
@@ -31,14 +33,16 @@ function isExpired(invoice: Bolt11InvoiceDetails): boolean {
  *  that is not a destination at all. */
 const BAD_LOGIN_CODE = /lnurl (missing|contains invalid) k1|lnurl contains unsupported action/;
 
-const ALREADY_PAID = 'This invoice has already been paid.';
+/** Resolved per call: the module loads before i18next has a language. */
+const alreadyPaid = (): string => i18n.t('critical:send.alreadyPaid');
 
 /** The Spark operators' refusal of a second send to a payment hash: the
  *  invoice was already paid. The SDK accepts it at prepare, so only the send
  *  reports it. Matches the gRPC status, which is stable, not its message. */
 const ALREADY_EXISTS = /status: AlreadyExists/;
 
-const INVOICE_EXPIRED = 'This invoice has expired. Ask the recipient for a new one.';
+/** Resolved per call, for the same reason as alreadyPaid. */
+const invoiceExpired = (): string => i18n.t('critical:send.invoiceExpired');
 
 /** The SDK's refusal of an invoice past its expiry. It checks at prepare and
  *  again at send, and an invoice can expire after the parse-time check. */
@@ -82,6 +86,7 @@ export interface UseSendPaymentReturn {
 }
 
 export function useSendPayment(): UseSendPaymentReturn {
+  const { t } = useTranslation('critical');
   const wallet = useWallet();
   const walletInfo = useWalletInfo();
   const stableBalance = useStableBalance();
@@ -122,7 +127,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     errorStep: SendStep = 'amount',
   ) => {
     if (amount <= 0n) {
-      setError('Please enter a valid amount');
+      setError(t('send.invalidAmount'));
       return;
     }
     setIsLoading(true);
@@ -143,9 +148,9 @@ export function useSendPayment(): UseSendPaymentReturn {
       const expired = EXPIRED.test(message);
       setError(
         expired
-          ? INVOICE_EXPIRED
+          ? invoiceExpired()
           : BALANCE_SETTLING.test(message)
-            ? 'Could not prepare the payment while your balance settles. Please try again in a few minutes.'
+            ? t('critical:send.balanceSettling')
             : `Failed to prepare payment: ${message}`,
       );
       // Clear any stale response so the confirm step renders its prepare-failed
@@ -156,12 +161,12 @@ export function useSendPayment(): UseSendPaymentReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [wallet]);
+  }, [wallet, t]);
 
   const processInput = useCallback(async (input: string | null = null) => {
     const currentInput = (input || paymentInput?.rawInput)?.trim();
     if (!currentInput) {
-      setError('Please enter a payment destination');
+      setError(t('common:send.noDestination'));
       return;
     }
 
@@ -191,7 +196,7 @@ export function useSendPayment(): UseSendPaymentReturn {
           .map((type) => parseResult.paymentMethods.find((m) => m.type === type))
           .find(Boolean);
         if (!method) {
-          setError('Invalid payment destination');
+          setError(t('send.invalidDestination'));
           setCurrentStep('input');
           return;
         }
@@ -201,7 +206,7 @@ export function useSendPayment(): UseSendPaymentReturn {
 
       // A BIP21 with an expired invoice stops here too, rather than paying its address.
       if (effective.type === 'bolt11Invoice' && isExpired(effective)) {
-        setError(INVOICE_EXPIRED);
+        setError(invoiceExpired());
         setCurrentStep('input');
         return;
       }
@@ -252,18 +257,18 @@ export function useSendPayment(): UseSendPaymentReturn {
       ) {
         setCurrentStep('workflow');
       } else {
-        setError('Invalid payment destination');
+        setError(t('send.invalidDestination'));
         setCurrentStep('input');
       }
     } catch (err) {
       logger.warn(LogCategory.PAYMENT, 'Failed to parse payment input', { error: formatError(err) });
       setError(destinationErrorMessage(err, BAD_LOGIN_CODE.test(formatError(err))
-        ? 'This login code is not valid. Refresh the site for a new one.'
-        : 'Invalid payment destination'));
+        ? t('common:send.loginCodeInvalid')
+        : t('send.invalidDestination')));
     } finally {
       setIsLoading(false);
     }
-  }, [wallet, paymentInput?.rawInput, prepareSend]);
+  }, [wallet, paymentInput?.rawInput, prepareSend, t]);
 
   const parsedInputType = paymentInput?.parsedInput.type;
   const onAmountNext = useCallback(async (
@@ -273,7 +278,7 @@ export function useSendPayment(): UseSendPaymentReturn {
     conversionOptions?: ConversionOptions,
   ) => {
     if (amount <= 0n) {
-      setError('Please enter a valid amount');
+      setError(t('send.invalidAmount'));
       return;
     }
     setFeesIncluded(!!includeFees);
@@ -293,7 +298,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       tokenIdentifier,
       conversionOptions,
     );
-  }, [paymentInput?.paymentRequest, parsedInputType, prepareSend]);
+  }, [paymentInput?.paymentRequest, parsedInputType, prepareSend, t]);
 
   const handleSend = useCallback(async (options?: SendPaymentOptions) => {
     if (!prepareResponse) return;
@@ -339,10 +344,10 @@ export function useSendPayment(): UseSendPaymentReturn {
       logger.error(LogCategory.PAYMENT, 'Payment failed', { error: formatError(err) });
       const message = formatError(err);
       setError(ALREADY_EXISTS.test(message)
-        ? ALREADY_PAID
+        ? alreadyPaid()
         : EXPIRED.test(message)
-          ? INVOICE_EXPIRED
-          : `Payment failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          ? invoiceExpired()
+          : t('common:send.paymentFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
       setPaymentResult('failure');
     } finally {
       if (listenerId) {
@@ -352,7 +357,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setIsLoading(false);
       setCurrentStep('result');
     }
-  }, [wallet, prepareResponse]);
+  }, [wallet, prepareResponse, t]);
 
   const handleRun = useCallback(async (runner: () => Promise<void>, hasConversion?: boolean) => {
     setProcessingPhase(hasConversion ? 'converting' : 'sending');
@@ -390,7 +395,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setPaymentResult('success');
     } catch (err) {
       logger.error(LogCategory.PAYMENT, 'Operation failed during payment flow', { error: formatError(err) });
-      setError(`Operation failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(t('common:send.operationFailed', { error: err instanceof Error ? err.message : t('common:labels.unknownError') }));
       setPaymentResult('failure');
     } finally {
       if (listenerId) {
@@ -400,7 +405,7 @@ export function useSendPayment(): UseSendPaymentReturn {
       setIsLoading(false);
       setCurrentStep('result');
     }
-  }, [wallet]);
+  }, [wallet, t]);
 
   const reset = useCallback(() => {
     setCurrentStep('input');
