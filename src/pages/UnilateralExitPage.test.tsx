@@ -599,7 +599,7 @@ describe('a pending start that found nothing to move', () => {
   it.each([
     ['funds a recovery cannot recover', 'recover' as const, 'notRecoverable' as const, 'Nothing left to recover', "These funds can't be recovered."],
     ['funds already recovered', 'recover' as const, null, 'Nothing left to recover', 'These funds were already recovered.'],
-    ['an exit with nothing it can move', undefined, 'notRecoverable' as const, 'Nothing here to exit', /This wallet holds no funds on Spark/],
+    ['an exit with nothing it can move', undefined, 'notRecoverable' as const, 'Nothing here to exit', /Glow holds no funds on Spark/],
   ])('leaves only a cancel for %s', async (_, mode, reason, title, body) => {
     await open(pendingFlow(mode, [coin(5_898)], { reason }));
     expect(screen.getByText(title)).toBeInTheDocument();

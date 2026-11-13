@@ -814,8 +814,10 @@ class NoopSecureStorage implements SecureStorage {
 export type BiometryKind = 'face' | 'fingerprint';
 
 export interface BiometryInfo {
-  /** User-facing name, e.g. "Face ID", "Touch ID", "fingerprint". */
-  label: string;
+  /** Translation key for the method's name, under `common:biometry`. A key
+   *  rather than the name itself, because this resolves once at mount and the
+   *  language can change after that. */
+  labelKey: string;
   kind: BiometryKind;
 }
 
@@ -853,15 +855,15 @@ export async function getBiometryStatus(): Promise<BiometryStatus> {
     }
     switch (result.biometryType) {
       case 'faceId':
-        return { info: { label: 'Face ID', kind: 'face' }, lockedOut: false };
+        return { info: { labelKey: 'biometry.faceId', kind: 'face' }, lockedOut: false };
       case 'touchId':
-        return { info: { label: 'Touch ID', kind: 'fingerprint' }, lockedOut: false };
+        return { info: { labelKey: 'biometry.touchId', kind: 'fingerprint' }, lockedOut: false };
       case 'fingerprint':
-        return { info: { label: 'fingerprint', kind: 'fingerprint' }, lockedOut: false };
+        return { info: { labelKey: 'biometry.fingerprint', kind: 'fingerprint' }, lockedOut: false };
       case 'face':
-        return { info: { label: 'face', kind: 'face' }, lockedOut: false };
+        return { info: { labelKey: 'biometry.face', kind: 'face' }, lockedOut: false };
       case 'iris':
-        return { info: { label: 'iris scan', kind: 'face' }, lockedOut: false };
+        return { info: { labelKey: 'biometry.iris', kind: 'face' }, lockedOut: false };
       default:
         logger.warn(LogCategory.AUTH, 'checkBiometry: unrecognized biometryType', {
           biometryType: result.biometryType,

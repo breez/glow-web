@@ -1,0 +1,153 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "복구 문구는 패스키에서 만들어집니다. 다른 기기에서 복원하려면 패스키나 아래의 복구 문구를 사용하세요."
+    },
+    "passkeyUnavailable": {
+      "body": "복구 문구는 패스키에서 만들어집니다. 패스키가 없으면 이 기기에서는 문구를 가져올 수 없습니다. 패스키가 아직 있는 기기에서 로그인해 확인하세요."
+    },
+    "notFound": {
+      "body": "이 기기에서 복구 문구를 찾지 못했습니다."
+    },
+    "reveal": {
+      "hintRevealed": "아무도 보고 있지 않은지 확인하세요",
+      "hintDeviceStored": "이 기기에 안전하게 저장되어 있습니다"
+    },
+    "phraseLabel": "복구 문구"
+  },
+  "logout": {
+    "confirmPasskey": "로그아웃하면 이 기기에 저장된 Glow 데이터가 모두 삭제됩니다. 자금에 다시 접근하려면 패스키가 필요합니다.",
+    "confirmMnemonic": "로그아웃하면 이 기기에 저장된 Glow 데이터가 모두 삭제됩니다. 복구 문구를 저장했는지 확인하세요. 자금에 다시 접근하려면 필요합니다."
+  },
+  "pinReset": {
+    "bodyPasskey": "PIN은 복구할 수 없습니다. 다시 들어오는 방법은 이 기기의 Glow 데이터를 모두 지우고 패스키로 다시 로그인하는 것뿐입니다.",
+    "bodyMnemonic": "PIN은 복구할 수 없습니다. 다시 들어오는 방법은 이 기기의 Glow 데이터를 모두 지우고 복구 문구로 복원하는 것뿐입니다. 문구를 저장해 두었는지 확인하세요.",
+    "confirm": "지우기",
+    "deviceOwnerReason": "Glow 데이터를 모두 지우기"
+  },
+  "stableBalance": {
+    "toUsd": "BTC 잔액이 USD로 전환됩니다.",
+    "toBtc": "USD 잔액이 다시 BTC로 전환됩니다.",
+    "convertToUsd": "USD로 전환",
+    "convertToBtc": "BTC로 전환",
+    "conversionFee": "전환 수수료:",
+    "feeUnavailable": "수수료를 추산하지 못했습니다",
+    "disclaimerBody": "잔액은 USD로 보관됩니다. 들어오는 BTC는 자동으로 USD로 전환되고, 나가는 결제는 다시 BTC로 전환됩니다. 전환 기준보다 적은 금액은 모일 때까지 잔돈으로 남습니다.",
+    "balanceTooLow": "잔액이 너무 적어 전환할 수 없습니다: 잔돈으로 남습니다",
+    "switchToUsdFailed": "USD로 전환하지 못했습니다. 다시 시도해 주세요.",
+    "switchToBtcFailed": "BTC로 전환하지 못했습니다. 다시 시도해 주세요.",
+    "restoreTitle": "USD 잔액을 찾았습니다",
+    "restoreBody": "USD 자금을 찾았습니다. USD 모드로 전환하시겠습니까?\n\n잔액은 USD로 보관됩니다. 들어오는 BTC는 자동으로 USD로 전환되고, 나가는 결제는 다시 BTC로 전환됩니다.",
+    "switchedNotConverted": "{{currency}}로 전환했지만 잔액은 아직 전환되지 않았습니다. Glow가 자동으로 다시 시도합니다."
+  },
+  "send": {
+    "sendAll": "전액 보내기",
+    "enterAmount": "금액을 sats로 입력",
+    "exceedsBalance": "금액이 사용 가능한 잔액을 넘습니다",
+    "balanceUpdating": "잔액을 업데이트하는 중입니다. 잠시 뒤에 다시 시도해 주세요.",
+    "invalidAmount": "올바른 금액을 입력해 주세요",
+    "invalidDestination": "결제 받는 곳이 올바르지 않습니다",
+    "youAreSending": "보내는 금액",
+    "recipientGets": "받는 사람이 받는 금액",
+    "insufficientFunds": "자금이 부족합니다",
+    "conversionAmount": "전환 금액",
+    "conversionFee": "전환 수수료",
+    "toAddress": "받는 주소",
+    "toSparkAddress": "받는 Spark 주소",
+    "toSparkInvoice": "받는 Spark 인보이스",
+    "toInvoice": "받는 인보이스",
+    "crossChain": {
+      "amountTooSmall": "이 경로에는 금액이 너무 적습니다.",
+      "amountTooLarge": "이 경로에는 금액이 너무 많습니다.",
+      "amountTooSmallHint": "사용 가능한 경로에 비해 금액이 너무 적습니다. 더 많은 금액으로 보내 보세요.",
+      "amountTooLargeHint": "사용 가능한 경로에 비해 금액이 너무 많습니다. 더 적은 금액으로 보내 보세요.",
+      "networkUnavailable": "이 네트워크는 일시적으로 사용할 수 없습니다. 잠시 뒤에 다시 시도해 주세요.",
+      "networkNotSupported": "이 네트워크는 사용할 수 없습니다. 다른 네트워크를 시도해 주세요.",
+      "rateDrift": "이 네트워크에는 금액이 너무 적습니다. 더 많은 금액이나 다른 네트워크를 시도해 주세요."
+    },
+    "withdraw": {
+      "noValidAmount": "이 출금 링크에는 Glow가 받을 수 있는 유효한 금액이 없습니다.",
+      "wholeSats": "sats는 정수로 입력하세요",
+      "failed": "출금에 실패했습니다: {{error}}"
+    },
+    "enterAmountIn": "금액을 {{currency}}로 입력",
+    "amountRange": "{{min}}에서 {{max}} sats 사이",
+    "result": {
+      "notSentBody": "결제가 완료되지 않았습니다. 자금은 보내지지 않았습니다."
+    },
+    "alreadyPaid": "이 인보이스는 이미 결제되었습니다.",
+    "invoiceExpired": "이 인보이스는 만료되었습니다. 받는 사람에게 새 인보이스를 요청하세요.",
+    "balanceSettling": "잔액이 정산되는 동안에는 결제를 준비할 수 없었습니다. 몇 분 뒤에 다시 시도해 주세요."
+  },
+  "generate": {
+    "title": "아무에게도 알리지 마세요",
+    "body": "이 단어들을 순서대로 적어 두세요. 자금을 되찾을 수 있는 유일한 백업입니다.",
+    "warning": "복구 문구는 절대 공유하지 마세요. 이 단어를 아는 사람은 누구나 자금에 접근할 수 있습니다.",
+    "copyToClipboard": "클립보드에 복사",
+    "saved": "문구를 저장했습니다"
+  },
+  "restore": {
+    "body": "Glow를 복원하려면 12개 또는 24개 단어로 된 복구 문구를 입력하세요. 단어는 공백으로 구분합니다.",
+    "placeholder": "단어1 단어2 단어3 ...",
+    "invalidLength": "12개 또는 24개 단어로 된 올바른 복구 문구를 입력해 주세요",
+    "invalidPhrase": "복구 문구가 올바르지 않습니다. 단어를 확인한 뒤 다시 시도해 주세요."
+  },
+  "unlock": {
+    "eraseTitle": "지우고 처음부터 시작",
+    "eraseAction": "지우고 처음부터 시작",
+    "erase": "지우기",
+    "eraseReason": "Glow 데이터를 모두 지우기",
+    "eraseBodyPasskey": "이 기기에 저장된 Glow 데이터가 모두 삭제됩니다. 자금에 다시 접근하려면 패스키가 필요합니다.",
+    "eraseBodyMnemonic": "이 기기에 저장된 Glow 데이터가 모두 삭제됩니다. 복구 문구를 저장했는지 확인하세요. 자금에 다시 접근하려면 필요합니다."
+  },
+  "refund": {
+    "amount": "금액",
+    "networkFee": "네트워크 수수료"
+  },
+  "deposit": {
+    "amount": "금액",
+    "networkFee": "네트워크 수수료",
+    "feeChanged": "네트워크 수수료가 바뀌었습니다",
+    "approveOrReject": "승인하면 이 전송을 수령하고, 거부하면 환불을 처리합니다.",
+    "canReject": "대신 거부하여 환불을 처리할 수도 있습니다.",
+    "feeRose": "확인하는 동안 수수료가 <amount/>까지 올랐습니다. 새 수수료로 수령하려면 승인하세요.",
+    "deliveryFee": "전달 수수료",
+    "youReceive": "받는 금액",
+    "claim": "수령",
+    "approve": "승인",
+    "reject": "거부",
+    "claimFeeChanged": "수령이 완료되지 않았습니다: 수수료가 <amount/>에서 바뀌었습니다.",
+    "tooSmall": "이 전송은 너무 적어서 수령 수수료를 감당할 수 없습니다."
+  },
+  "passkey": {
+    "confirmDeleted": "이 패스키를 삭제했음을 확인합니다.",
+    "confirmDeletedHint": "선택 사항입니다. 확실하지 않으면 체크하지 않고 계속하세요.",
+    "isHowYouAccess": "패스키는 자금에 접근하는 수단입니다",
+    "deletionWarning": "기기, 브라우저, 비밀번호 관리 서비스에서 패스키를 삭제하면 자금에 영구히 접근할 수 없게 될 수 있습니다."
+  },
+  "migration": {
+    "switchFailed": "새 패스키로 전환을 마치지 못했습니다. 자금은 안전합니다. 다시 시도해 주세요.",
+    "keepWindowOpen": "이 창을 열어 두세요",
+    "verifyMultipleTimes": "이전하는 동안 신원 확인을 여러 번 요청합니다. 이전하는 라벨마다 한 번, 그리고 새 패스키를 만들기 위해 몇 번 더입니다. 이전이 끝날 때까지 이 창을 열어 두세요.",
+    "explainBody": "새 패스키를 만들고 자금을 자동으로 옮깁니다. 진행하는 동안 신원 확인을 몇 번 요청합니다.",
+    "singleTransaction": "자금은 한 번의 트랜잭션으로 옮겨집니다. 결제 내역은 함께 넘어가지 않습니다.",
+    "doneBody": "자금을 새 패스키로 옮겼습니다.",
+    "addressPending_one": "이 Lightning 주소는 옮기지 못했습니다:",
+    "addressPending_other": "이 Lightning 주소들은 옮기지 못했습니다:",
+    "addressPendingBody_one": "그 주소로 보낸 결제는 이전이 끝날 때까지 기존 패스키로 계속 들어옵니다.",
+    "addressPendingBody_other": "그 주소들로 보낸 결제는 이전이 끝날 때까지 기존 패스키로 계속 들어옵니다.",
+    "explainFirstTime": "이전 버전의 Glow에서 패스키를 만들었다면, 새 패스키를 만들고 자금을 자동으로 옮깁니다. Glow를 처음 쓰신다면 <skip/>을 선택해 계속하세요.",
+    "migrateLabels_one": "라벨을 새 패스키로 이전합니다.",
+    "migrateLabels_other": "라벨 {{count}}개 전부를 새 패스키로 이전합니다."
+  },
+  "webNotice": {
+    "preferPasskey": "안전을 위해 패스키를 쓰시는 편이 좋습니다.",
+    "preferApp": "안전을 위해 Glow 앱을 권합니다.",
+    "risk": "웹에서 복구 문구를 쓰는 것은 덜 안전하고, 돈을 잃을 가능성이 있습니다. 이 위험을 받아들일 수 있을 때만 웹에서 복구 문구를 사용하세요."
+  },
+  "conversion": {
+    "nextAttempt": "다음 시도",
+    "balanceToConvert": "전환할 잔액",
+    "notConvertedYet": "이 금액은 아직 {{currency}}로 전환되지 않았습니다. Glow가 자동으로 다시 시도합니다."
+  }
+}

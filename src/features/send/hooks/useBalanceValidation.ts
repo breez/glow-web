@@ -3,6 +3,7 @@ import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { fiatToSats, satsToFiat, parseAmountToSats, type TokenDisplayConfig } from '../../../utils/tokenFormatting';
 import type { Sats } from '../../../types/sats';
 import type { ConversionEstimate } from '@breeztech/breez-sdk-spark';
+import i18n from 'i18next';
 
 interface BalanceValidation {
   isTokenMode: boolean;
@@ -93,7 +94,7 @@ export function useBalanceValidation(
 
   const validateAmount = (input: string, feesIncluded?: boolean): string | null => {
     const parsed = parseInputToSats(input);
-    if (parsed === null) return 'Please enter a valid amount';
+    if (parsed === null) return i18n.t('critical:send.invalidAmount');
 
     // displayAmount represents the user-typed value (fiat in token mode,
     // sats in sats mode). exceedsBalance handles both shapes.
@@ -102,7 +103,7 @@ export function useBalanceValidation(
     if (isSendAll) return null;
 
     if (exceedsBalance(displayAmount)) {
-      return 'Amount exceeds available balance';
+      return i18n.t('critical:send.exceedsBalance');
     }
     return null;
   };

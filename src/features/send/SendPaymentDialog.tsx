@@ -25,6 +25,7 @@ import { formatError } from '@/utils/formatError';
 import { ArrowUpIcon, ArrowDownIcon } from '@/components/Icons';
 import { useSendPayment } from './hooks/useSendPayment';
 import { getPaymentMethodName, getLnurlPayRequestDetails, getSendLightningAddress, getLnurlAuthRequestDetails, getLnurlWithdrawRequestDetails } from './utils';
+import { useTranslation } from 'react-i18next';
 
 interface SendPaymentDialogProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ interface SendPaymentDialogProps {
 }
 
 const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, initialRawInput, onScanQr, onSuccessfulSend }) => {
+  const { t } = useTranslation('common');
   const wallet = useWallet();
   const send = useSendPayment();
   const { findContactByAddress } = useContactsContext();
@@ -109,7 +111,7 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
   };
 
   const dialogTitle = send.currentStep === 'input'
-    ? 'Send BTC or USD'
+    ? t('send.title')
     : getPaymentMethodName(send.paymentInput);
 
   // Same resolver as the save prompt, so a scanned LNURL names its recipient

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DialogContainer, DialogCard, FormInput, PrimaryButton, FormError } from './ui';
 import { hideSplash } from '../main';
 import { LockIcon } from './Icons';
+import { useTranslation } from 'react-i18next';
 
 const STAGING_AUTH_KEY = 'staging_authenticated';
 
@@ -16,6 +17,7 @@ interface StagingGateProps {
  * - User has entered the correct password (stored in sessionStorage)
  */
 const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
+  const { t } = useTranslation('common');
   const stagingPassword = import.meta.env.VITE_STAGING_PASSWORD;
 
   // Read the persisted auth flag synchronously during initial render so we
@@ -47,7 +49,7 @@ const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
       sessionStorage.setItem(STAGING_AUTH_KEY, 'true');
       setIsAuthenticated(true);
     } else {
-      setError('Incorrect password');
+      setError(t('staging.incorrect'));
       setPassword('');
     }
   };
@@ -68,10 +70,10 @@ const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
                 <LockIcon size="xl" className="text-spark-warning" />
               </div>
               <h2 className="font-display text-xl font-bold text-spark-text-primary">
-                Staging Environment
+                {t('staging.title')}
               </h2>
               <p className="text-sm text-spark-text-muted mt-2">
-                This is a development build. Enter the password to continue.
+                {t('staging.body')}
               </p>
             </div>
 
@@ -81,7 +83,7 @@ const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
+                placeholder={t('staging.placeholder')}
               />
               <FormError error={error} />
             </div>
@@ -91,7 +93,7 @@ const StagingGate: React.FC<StagingGateProps> = ({ children }) => {
               disabled={!password}
               className="w-full"
             >
-              Continue
+              {t('actions.continue')}
             </PrimaryButton>
           </form>
         </DialogCard>

@@ -1,0 +1,153 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "リカバリーフレーズはパスキーから導き出されます。別のデバイスで復元するには、パスキーまたは下のリカバリーフレーズをお使いください。"
+    },
+    "passkeyUnavailable": {
+      "body": "リカバリーフレーズはパスキーから導き出されます。パスキーがないと、このデバイスではフレーズを取得できません。パスキーがまだ使えるデバイスでサインインしてご確認ください。"
+    },
+    "notFound": {
+      "body": "このデバイスにリカバリーフレーズが見つかりませんでした。"
+    },
+    "reveal": {
+      "hintRevealed": "誰にも見られていないことを確認してください",
+      "hintDeviceStored": "このデバイスに安全に保存されています"
+    },
+    "phraseLabel": "リカバリーフレーズ"
+  },
+  "logout": {
+    "confirmPasskey": "ログアウトすると、このデバイスに保存された Glow のデータがすべて削除されます。資金に再びアクセスするにはパスキーが必要です。",
+    "confirmMnemonic": "ログアウトすると、このデバイスに保存された Glow のデータがすべて削除されます。リカバリーフレーズを保存したか確認してください。資金に再びアクセスするには必要になります。"
+  },
+  "pinReset": {
+    "bodyPasskey": "PIN は復元できません。再び入るには、このデバイスの Glow のデータをすべて消去し、パスキーでもう一度サインインするしかありません。",
+    "bodyMnemonic": "PIN は復元できません。再び入るには、このデバイスの Glow のデータをすべて消去し、リカバリーフレーズから復元するしかありません。保存してあるか確認してください。",
+    "confirm": "消去",
+    "deviceOwnerReason": "Glow のデータをすべて消去"
+  },
+  "stableBalance": {
+    "toUsd": "BTC の残高が USD に変換されます。",
+    "toBtc": "USD の残高が BTC に戻されます。",
+    "convertToUsd": "USD に変換",
+    "convertToBtc": "BTC に変換",
+    "conversionFee": "変換手数料:",
+    "feeUnavailable": "手数料を見積もれませんでした",
+    "disclaimerBody": "残高は USD で保持されます。受け取った BTC は自動で USD に変換され、送金は BTC に戻されます。変換のしきい値を下回る額は、たまるまでお釣りとして残ります。",
+    "balanceTooLow": "残高が少なすぎて変換できません: お釣りとして残ります",
+    "switchToUsdFailed": "USD に切り替えられませんでした。もう一度お試しください。",
+    "switchToBtcFailed": "BTC に切り替えられませんでした。もう一度お試しください。",
+    "restoreTitle": "USD の残高が見つかりました",
+    "restoreBody": "USD の資金が見つかりました。USD モードに切り替えますか？\n\n残高は USD で保持されます。受け取った BTC は自動で USD に変換され、送金は BTC に戻されます。",
+    "switchedNotConverted": "{{currency}} に切り替えましたが、残高はまだ変換されていません。Glow が自動で再試行します。"
+  },
+  "send": {
+    "sendAll": "全額送る",
+    "enterAmount": "金額を sats で入力",
+    "exceedsBalance": "金額が利用可能な残高を超えています",
+    "balanceUpdating": "残高を更新しています。少し待ってからもう一度お試しください。",
+    "invalidAmount": "有効な金額を入力してください",
+    "invalidDestination": "支払いの送信先が正しくありません",
+    "youAreSending": "送る金額",
+    "recipientGets": "受取人が受け取る金額",
+    "insufficientFunds": "資金が足りません",
+    "conversionAmount": "変換する金額",
+    "conversionFee": "変換手数料",
+    "toAddress": "送信先アドレス",
+    "toSparkAddress": "送信先 Spark アドレス",
+    "toSparkInvoice": "送信先 Spark インボイス",
+    "toInvoice": "送信先インボイス",
+    "crossChain": {
+      "amountTooSmall": "この経路には金額が少なすぎます。",
+      "amountTooLarge": "この経路には金額が多すぎます。",
+      "amountTooSmallHint": "利用できる経路に対して金額が少なすぎます。もっと多い金額でお試しください。",
+      "amountTooLargeHint": "利用できる経路に対して金額が多すぎます。もっと少ない金額でお試しください。",
+      "networkUnavailable": "このネットワークは一時的に利用できません。少し待ってからお試しください。",
+      "networkNotSupported": "このネットワークは利用できません。別のネットワークをお試しください。",
+      "rateDrift": "このネットワークには金額が少なすぎます。もっと多い金額か、別のネットワークをお試しください。"
+    },
+    "withdraw": {
+      "noValidAmount": "この出金リンクには Glow が受け取れる有効な金額がありません。",
+      "wholeSats": "sats は整数で入力してください",
+      "failed": "出金に失敗しました: {{error}}"
+    },
+    "enterAmountIn": "金額を {{currency}} で入力",
+    "amountRange": "{{min}} から {{max}} sats のあいだ",
+    "result": {
+      "notSentBody": "支払いは完了しませんでした。資金は送られていません。"
+    },
+    "alreadyPaid": "このインボイスはすでに支払われています。",
+    "invoiceExpired": "このインボイスは期限切れです。受取人に新しいものを依頼してください。",
+    "balanceSettling": "残高の確定中は支払いを準備できませんでした。数分後にもう一度お試しください。"
+  },
+  "generate": {
+    "title": "他人に見せないでください",
+    "body": "これらの単語を順番に書き留めてください。資金を取り戻せる唯一のバックアップです。",
+    "warning": "リカバリーフレーズは決して共有しないでください。この単語を知る人は誰でも資金にアクセスできます。",
+    "copyToClipboard": "クリップボードにコピー",
+    "saved": "フレーズを保存しました"
+  },
+  "restore": {
+    "body": "Glow を復元するには、12 語または 24 語のリカバリーフレーズを入力してください。単語はスペースで区切ります。",
+    "placeholder": "単語1 単語2 単語3 ...",
+    "invalidLength": "12 語または 24 語の有効なリカバリーフレーズを入力してください",
+    "invalidPhrase": "リカバリーフレーズが正しくありません。単語を確認して、もう一度お試しください。"
+  },
+  "unlock": {
+    "eraseTitle": "消去して最初から始める",
+    "eraseAction": "消去して最初から始める",
+    "erase": "消去",
+    "eraseReason": "Glow のデータをすべて消去",
+    "eraseBodyPasskey": "このデバイスに保存された Glow のデータがすべて削除されます。資金に再びアクセスするにはパスキーが必要です。",
+    "eraseBodyMnemonic": "このデバイスに保存された Glow のデータがすべて削除されます。リカバリーフレーズを保存したか確認してください。資金に再びアクセスするには必要になります。"
+  },
+  "refund": {
+    "amount": "金額",
+    "networkFee": "ネットワーク手数料"
+  },
+  "deposit": {
+    "amount": "金額",
+    "networkFee": "ネットワーク手数料",
+    "feeChanged": "ネットワーク手数料が変わりました",
+    "approveOrReject": "承認するとこの送金を受領し、拒否すると返金を処理します。",
+    "canReject": "代わりに拒否して返金を処理することもできます。",
+    "feeRose": "確認中に手数料が <amount/> まで上がりました。新しい手数料で受領するには承認してください。",
+    "deliveryFee": "受け取り手数料",
+    "youReceive": "受取額",
+    "claim": "受領",
+    "approve": "承認",
+    "reject": "拒否",
+    "claimFeeChanged": "受領は完了しませんでした: 手数料が <amount/> から変わりました。",
+    "tooSmall": "この送金は少なすぎて、受領の手数料に見合いません。"
+  },
+  "passkey": {
+    "confirmDeleted": "このパスキーを削除したことを確認します。",
+    "confirmDeletedHint": "任意です。わからない場合はチェックせずに続けてください。",
+    "isHowYouAccess": "パスキーは資金にアクセスするための手段です",
+    "deletionWarning": "デバイス、ブラウザ、パスワード管理サービスからパスキーを削除すると、資金に永久にアクセスできなくなる可能性があります。"
+  },
+  "migration": {
+    "switchFailed": "新しいパスキーへの切り替えを完了できませんでした。資金は安全です。もう一度お試しください。",
+    "keepWindowOpen": "このウィンドウを開いたままにしてください",
+    "verifyMultipleTimes": "移行中に本人確認を何度か求められます。移行するラベルごとに 1 回、さらに新しいパスキーの作成のために数回です。移行が完了するまでこのウィンドウを開いたままにしてください。",
+    "explainBody": "新しいパスキーを作成し、資金を自動で移します。手続きの途中で本人確認を数回求められます。",
+    "singleTransaction": "資金は 1 回のトランザクションで移されます。支払いの履歴は引き継がれません。",
+    "doneBody": "資金を新しいパスキーへ移しました。",
+    "addressPending_one": "この Lightning アドレスは移せませんでした:",
+    "addressPending_other": "これらの Lightning アドレスは移せませんでした:",
+    "addressPendingBody_one": "そこへの支払いは、移行が完了するまで以前のパスキーに届き続けます。",
+    "addressPendingBody_other": "それらへの支払いは、移行が完了するまで以前のパスキーに届き続けます。",
+    "explainFirstTime": "以前のバージョンの Glow でパスキーを作成した場合は、新しいものを作成して資金を自動で移します。Glow を初めてお使いの場合は、<skip/> を選んで続けてください。",
+    "migrateLabels_one": "ラベルを新しいパスキーへ移行します。",
+    "migrateLabels_other": "{{count}} 件すべてのラベルを新しいパスキーへ移行します。"
+  },
+  "webNotice": {
+    "preferPasskey": "安全のため、パスキーのご利用をおすすめします。",
+    "preferApp": "安全のため、Glow アプリをおすすめします。",
+    "risk": "ウェブでのリカバリーフレーズは安全性が低く、資金を失う可能性があります。この危険を受け入れられる場合にのみ、ウェブでリカバリーフレーズをお使いください。"
+  },
+  "conversion": {
+    "nextAttempt": "次の試行",
+    "balanceToConvert": "変換する残高",
+    "notConvertedYet": "この金額はまだ {{currency}} に変換されていません。Glow が自動で再試行します。"
+  }
+}

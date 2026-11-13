@@ -5,6 +5,7 @@ import CryptoIcon from '../CryptoIcon';
 import { crossChainCardClass } from '../../utils/crossChainRoutes';
 import { formatChainName } from '../../utils/crossChainFormat';
 import { useSheetBack, useSheetFullSnap, useSheetOwnsScroll } from '../ui/sheets/BottomSheetCardContext';
+import { useTranslation } from 'react-i18next';
 
 interface CrossChainChainStepProps {
   /** One representative route per chain group, in display order. */
@@ -32,6 +33,7 @@ export const CrossChainChainStep: React.FC<CrossChainChainStepProps> = ({
   onContinue,
   error,
 }) => {
+  const { t } = useTranslation('common');
   const isSheetFull = useSheetFullSnap();
   useSheetBack(onBack);
   useSheetOwnsScroll();
@@ -47,9 +49,9 @@ export const CrossChainChainStep: React.FC<CrossChainChainStepProps> = ({
         </div>
       )}
       <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">
-        Select Network for {selectedAsset}
+        {t('send.crossChain.selectNetwork', { asset: selectedAsset })}
       </label>
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-none touch-pan-y space-y-2 pr-1">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-none touch-pan-y space-y-2 pe-1">
         {chains.map(r => {
           const key = chainGroupKey(r);
           return (

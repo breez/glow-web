@@ -1,0 +1,153 @@
+{
+  "backup": {
+    "passkeyProtected": {
+      "body": "Cụm từ khôi phục của bạn được tạo ra từ passkey của bạn. Để khôi phục trên một thiết bị khác, hãy dùng passkey hoặc cụm từ khôi phục bên dưới."
+    },
+    "passkeyUnavailable": {
+      "body": "Cụm từ khôi phục của bạn được tạo ra từ passkey của bạn. Không có passkey thì không thể lấy được cụm từ trên thiết bị này. Hãy đăng nhập trên thiết bị vẫn còn passkey đó để xem."
+    },
+    "notFound": {
+      "body": "Không tìm thấy cụm từ khôi phục trên thiết bị này."
+    },
+    "reveal": {
+      "hintRevealed": "Hãy chắc chắn không có ai đang nhìn",
+      "hintDeviceStored": "Được lưu an toàn trên thiết bị này"
+    },
+    "phraseLabel": "Cụm từ khôi phục"
+  },
+  "logout": {
+    "confirmPasskey": "Đăng xuất sẽ xóa toàn bộ dữ liệu Glow lưu trên thiết bị này. Bạn sẽ cần passkey để truy cập lại tiền của mình.",
+    "confirmMnemonic": "Đăng xuất sẽ xóa toàn bộ dữ liệu Glow lưu trên thiết bị này. Hãy chắc chắn bạn đã lưu cụm từ khôi phục: bạn sẽ cần nó để truy cập lại tiền của mình."
+  },
+  "pinReset": {
+    "bodyPasskey": "Mã PIN không thể lấy lại được. Cách duy nhất để vào lại là xóa toàn bộ dữ liệu Glow trên thiết bị này rồi đăng nhập lại bằng passkey của bạn.",
+    "bodyMnemonic": "Mã PIN không thể lấy lại được. Cách duy nhất để vào lại là xóa toàn bộ dữ liệu Glow trên thiết bị này rồi khôi phục từ cụm từ khôi phục của bạn. Hãy chắc chắn bạn đã lưu nó.",
+    "confirm": "Xóa",
+    "deviceOwnerReason": "Xóa toàn bộ dữ liệu Glow"
+  },
+  "stableBalance": {
+    "toUsd": "Số dư BTC của bạn sẽ được chuyển đổi sang USD.",
+    "toBtc": "Số dư USD của bạn sẽ được chuyển đổi trở lại thành BTC.",
+    "convertToUsd": "Chuyển đổi sang USD",
+    "convertToBtc": "Chuyển đổi sang BTC",
+    "conversionFee": "Phí chuyển đổi:",
+    "feeUnavailable": "Không tính được phí",
+    "disclaimerBody": "Số dư của bạn được giữ bằng USD. BTC nhận vào sẽ tự động chuyển đổi sang USD, và các khoản thanh toán đi được chuyển đổi trở lại thành BTC. Những khoản dưới ngưỡng chuyển đổi sẽ ở lại dạng tiền lẻ cho đến khi tích lũy đủ.",
+    "balanceTooLow": "Số dư quá thấp để chuyển đổi: nó sẽ ở lại dạng tiền lẻ",
+    "switchToUsdFailed": "Không chuyển sang USD được. Vui lòng thử lại.",
+    "switchToBtcFailed": "Không chuyển sang BTC được. Vui lòng thử lại.",
+    "restoreTitle": "Đã phát hiện số dư USD",
+    "restoreBody": "Chúng tôi phát hiện có tiền USD. Bạn có muốn chuyển sang chế độ USD không?\n\nSố dư của bạn sẽ được giữ bằng USD. BTC nhận vào sẽ tự động chuyển đổi sang USD, và các khoản thanh toán đi được chuyển đổi trở lại thành BTC.",
+    "switchedNotConverted": "Đã chuyển sang {{currency}}, nhưng số dư của bạn chưa được chuyển đổi. Glow sẽ tự động thử lại."
+  },
+  "send": {
+    "sendAll": "Gửi tất cả",
+    "enterAmount": "Nhập số tiền bằng sats",
+    "exceedsBalance": "Số tiền vượt quá số dư khả dụng",
+    "balanceUpdating": "Số dư đang được cập nhật. Hãy thử lại sau một lát.",
+    "invalidAmount": "Vui lòng nhập số tiền hợp lệ",
+    "invalidDestination": "Đích thanh toán không hợp lệ",
+    "youAreSending": "Bạn đang gửi",
+    "recipientGets": "Người nhận được",
+    "insufficientFunds": "Không đủ tiền",
+    "conversionAmount": "Số tiền chuyển đổi",
+    "conversionFee": "Phí chuyển đổi",
+    "toAddress": "Tới địa chỉ",
+    "toSparkAddress": "Tới địa chỉ Spark",
+    "toSparkInvoice": "Tới hóa đơn Spark",
+    "toInvoice": "Tới hóa đơn",
+    "crossChain": {
+      "amountTooSmall": "Số tiền quá nhỏ cho tuyến này.",
+      "amountTooLarge": "Số tiền quá lớn cho tuyến này.",
+      "amountTooSmallHint": "Số tiền này quá nhỏ cho các tuyến hiện có. Hãy thử gửi số tiền lớn hơn.",
+      "amountTooLargeHint": "Số tiền này quá lớn cho các tuyến hiện có. Hãy thử gửi số tiền nhỏ hơn.",
+      "networkUnavailable": "Mạng này tạm thời không khả dụng. Hãy thử lại sau một lát.",
+      "networkNotSupported": "Mạng này không khả dụng. Hãy thử mạng khác.",
+      "rateDrift": "Số tiền quá nhỏ cho mạng này. Hãy thử số tiền lớn hơn hoặc mạng khác."
+    },
+    "withdraw": {
+      "noValidAmount": "Liên kết rút này không có số tiền hợp lệ nào Glow có thể nhận.",
+      "wholeSats": "Hãy nhập số sats là số nguyên",
+      "failed": "Rút tiền thất bại: {{error}}"
+    },
+    "enterAmountIn": "Nhập số tiền bằng {{currency}}",
+    "amountRange": "Từ {{min}} đến {{max}} sats",
+    "result": {
+      "notSentBody": "Thanh toán không thành công. Tiền của bạn chưa bị gửi đi."
+    },
+    "alreadyPaid": "Hóa đơn này đã được thanh toán.",
+    "invoiceExpired": "Hóa đơn này đã hết hạn. Hãy xin người nhận một hóa đơn mới.",
+    "balanceSettling": "Không chuẩn bị được thanh toán trong lúc số dư của bạn đang được quyết toán. Hãy thử lại sau vài phút."
+  },
+  "generate": {
+    "title": "Hãy giữ kín",
+    "body": "Hãy ghi lại những từ này theo đúng thứ tự. Đây là bản sao lưu duy nhất để khôi phục tiền của bạn.",
+    "warning": "Đừng bao giờ chia sẻ cụm từ khôi phục của bạn. Bất cứ ai có những từ này đều có thể truy cập tiền của bạn.",
+    "copyToClipboard": "Sao chép vào bộ nhớ tạm",
+    "saved": "Tôi đã lưu cụm từ của mình"
+  },
+  "restore": {
+    "body": "Nhập cụm từ khôi phục 12 hoặc 24 từ của bạn để khôi phục Glow. Các từ cách nhau bằng dấu cách.",
+    "placeholder": "từ1 từ2 từ3 ...",
+    "invalidLength": "Vui lòng nhập cụm từ khôi phục 12 hoặc 24 từ hợp lệ",
+    "invalidPhrase": "Cụm từ khôi phục không hợp lệ. Hãy kiểm tra lại các từ rồi thử lại."
+  },
+  "unlock": {
+    "eraseTitle": "Xóa và bắt đầu lại",
+    "eraseAction": "Xóa và bắt đầu lại",
+    "erase": "Xóa",
+    "eraseReason": "Xóa toàn bộ dữ liệu Glow",
+    "eraseBodyPasskey": "Việc này xóa toàn bộ dữ liệu Glow lưu trên thiết bị này. Bạn sẽ cần passkey để truy cập lại tiền của mình.",
+    "eraseBodyMnemonic": "Việc này xóa toàn bộ dữ liệu Glow lưu trên thiết bị này. Hãy chắc chắn bạn đã lưu cụm từ khôi phục: bạn sẽ cần nó để truy cập lại tiền của mình."
+  },
+  "refund": {
+    "amount": "Số tiền",
+    "networkFee": "Phí mạng"
+  },
+  "deposit": {
+    "amount": "Số tiền",
+    "networkFee": "Phí mạng",
+    "feeChanged": "Phí mạng đã thay đổi",
+    "approveOrReject": "Chấp nhận để nhận khoản chuyển này, hoặc từ chối để xử lý hoàn tiền.",
+    "canReject": "Bạn có thể từ chối để xử lý hoàn tiền.",
+    "feeRose": "Phí đã tăng lên <amount/> trong lúc bạn đang xác nhận. Hãy chấp nhận để nhận với mức phí mới.",
+    "deliveryFee": "Phí giao",
+    "youReceive": "Bạn nhận được",
+    "claim": "Nhận",
+    "approve": "Chấp nhận",
+    "reject": "Từ chối",
+    "claimFeeChanged": "Yêu cầu nhận của bạn không thành công: phí đã thay đổi so với <amount/>.",
+    "tooSmall": "Khoản chuyển này quá nhỏ để bù phí nhận nó."
+  },
+  "passkey": {
+    "confirmDeleted": "Tôi xác nhận passkey này đã bị xóa.",
+    "confirmDeletedHint": "Không bắt buộc. Nếu không chắc, hãy tiếp tục mà không chọn.",
+    "isHowYouAccess": "Passkey là cách bạn truy cập tiền của mình",
+    "deletionWarning": "Xóa passkey khỏi thiết bị, trình duyệt hoặc trình quản lý mật khẩu có thể làm tiền của bạn không thể truy cập được mãi mãi."
+  },
+  "migration": {
+    "switchFailed": "Chúng tôi không hoàn tất được việc chuyển sang passkey mới của bạn. Tiền của bạn vẫn an toàn. Vui lòng thử lại.",
+    "keepWindowOpen": "Hãy để cửa sổ này mở",
+    "verifyMultipleTimes": "Bạn sẽ được yêu cầu xác minh danh tính nhiều lần trong quá trình chuyển đổi: một lần cho mỗi nhãn được chuyển, rồi vài lần nữa để tạo passkey mới của bạn. Hãy để cửa sổ này mở cho đến khi chuyển đổi hoàn tất.",
+    "explainBody": "Chúng tôi sẽ tạo một passkey mới và chuyển tiền của bạn tự động. Bạn sẽ được yêu cầu xác minh danh tính vài lần trong quá trình này.",
+    "singleTransaction": "Tiền của bạn sẽ được chuyển trong một giao dịch duy nhất. Lịch sử thanh toán của bạn sẽ không được mang theo.",
+    "doneBody": "Tiền của bạn đã được chuyển sang passkey mới.",
+    "addressPending_one": "Không chuyển được địa chỉ Lightning này:",
+    "addressPending_other": "Không chuyển được các địa chỉ Lightning này:",
+    "addressPendingBody_one": "Các khoản thanh toán gửi tới đó sẽ tiếp tục vào passkey cũ của bạn cho đến khi việc chuyển hoàn tất.",
+    "addressPendingBody_other": "Các khoản thanh toán gửi tới chúng sẽ tiếp tục vào passkey cũ của bạn cho đến khi việc chuyển hoàn tất.",
+    "explainFirstTime": "Nếu bạn đã tạo passkey bằng một phiên bản Glow cũ hơn, chúng tôi sẽ tạo một cái mới và chuyển tiền của bạn tự động. Nếu đây là lần đầu bạn dùng Glow, hãy chọn <skip/> để tiếp tục.",
+    "migrateLabels_one": "Chúng tôi sẽ chuyển nhãn của bạn sang passkey mới.",
+    "migrateLabels_other": "Chúng tôi sẽ chuyển cả {{count}} nhãn sang passkey mới của bạn."
+  },
+  "webNotice": {
+    "preferPasskey": "Vì an toàn của bạn, chúng tôi khuyên dùng passkey.",
+    "preferApp": "Vì an toàn của bạn, chúng tôi khuyên dùng ứng dụng Glow.",
+    "risk": "Dùng cụm từ khôi phục trên web kém an toàn hơn, và có khả năng bạn mất tiền. Chỉ dùng cụm từ khôi phục trên web nếu bạn sẵn sàng nhận rủi ro này."
+  },
+  "conversion": {
+    "nextAttempt": "Lần thử tiếp theo",
+    "balanceToConvert": "Số dư cần chuyển đổi",
+    "notConvertedYet": "Số tiền này chưa được chuyển đổi sang {{currency}}. Glow sẽ tự động thử lại."
+  }
+}

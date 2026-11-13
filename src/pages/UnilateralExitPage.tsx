@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import {
   BottomSheetCard,
   BottomSheetContainer,
@@ -42,9 +43,12 @@ interface UnilateralExitPageProps {
 }
 
 const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, bumpTxid, onBack, onFinished }) => {
+  const { t } = useTranslation('common');
   const flow = useUnilateralExitFlow(network, mode, bumpTxid);
   const recovering = flow.mode === 'recover';
-  const noun = recovering ? 'recovery' : 'exit';
+  // Each line is worded for its own flow rather than built around a noun:
+  // "the ${noun}" cannot be declined, and title-casing one is English-only.
+  const flowMode = recovering ? 'recover' : 'exit';
 
   // Reading the recovery phrase is gated on a PIN where one is set. Where none
   // is, the step passes straight through.
@@ -150,7 +154,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
             className="w-full"
             data-testid="unilateral-exit-get-quote"
           >
-            Get Quote
+            {t('exit.getQuote')}
           </PrimaryButton>
         );
       case 'quote': {
@@ -162,14 +166,10 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
         const sendsNow = recovering && !underWay && !!figures?.recoverableSat;
         const label =
           figures?.needsFunding && !sendsNow
-            ? 'Continue'
-            : recovering
-              ? underWay
-                ? 'Continue Recovery'
-                : 'Recover Funds'
-              : underWay
-                ? 'Continue Exit'
-                : 'Exit Spark';
+            ? t('actions.continue')
+            : underWay
+              ? t(`exit.continueCta_${flowMode}`)
+              : t(`exit.startCta_${flowMode}`);
         return (
           <PrimaryButton
             onClick={() => void flow.continueFromQuote()}
@@ -191,7 +191,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
             className="w-full"
             data-testid="unilateral-exit-start-exit"
           >
-            {recovering ? 'Recover Funds' : 'Exit Spark'}
+            {t(`exit.startCta_${flowMode}`)}
           </PrimaryButton>
         );
       }
@@ -214,7 +214,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
               className="w-full"
               data-testid="unilateral-exit-build"
             >
-              {flow.isContinuing ? 'Updating...' : recovering ? 'Continue Recovery' : 'Continue Exit'}
+              {flow.isContinuing ? t('exit.updating') : t(`exit.continueCta_${flowMode}`)}
             </PrimaryButton>
           </>
         );
@@ -227,7 +227,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
             onRebuild={flow.rebuild}
             isContinuing={flow.isContinuing}
             continueError={flow.continueError}
-            noun={noun}
+            mode={flowMode}
           />
         );
       case 'unlock':
@@ -235,7 +235,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
         if (!flow.unlockError) return null;
         return (
           <PrimaryButton onClick={() => void unlock()} className="w-full" data-testid="unilateral-exit-unlock-retry">
-            Try Again
+            {t('actions.tryAgain')}
           </PrimaryButton>
         );
       case 'sent':
@@ -258,7 +258,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
           <DialogHeader
             // Names the flow, not the step: each step already labels its own
             // field, and the send sheet titles itself the same way.
-            title={recovering ? 'Recover Funds' : 'Unilateral Exit'}
+            title={t(`exit.sheetTitle_${flowMode}`)}
             onClose={onBack}
             onBack={canGoBack ? back : undefined}
           />
@@ -305,13 +305,13 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                     {...flow.quote}
                     underWay={!!plan}
                     paused={paused}
-                    noun={noun}
+                    mode={flowMode}
                     feeHeld={flow.feeAlreadyHeld}
                     exitFeeDueSat={flow.exitFeeDueSat}
                   />
                   {flow.startError && (
                     <ErrorCard
-                      title={flow.engine.plan ? 'Could not continue the exit' : 'Could not start the exit'}
+                      title={flow.engine.plan ? t('exit.couldNotContinue_exit') : t('exit.couldNotStart_exit')}
                       error={flow.startError}
                       testId="unilateral-exit-start-error"
                     />
@@ -324,7 +324,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                 {/* Passed once, so a retry after a failed read asks for no PIN again. */}
                 {gate === 'pin' && (
                   <PinGate
-                    reason={recovering ? 'Recover funds' : 'Unilateral exit'}
+                    reason={t(`exit.pinReason_${flowMode}`)}
                     onUnlocked={() => {
                       setGate(null);
                       void flow.unlock();
@@ -332,7 +332,7 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                   />
                 )}
                 {flow.unlockError && (
-                  <ErrorCard title="Sign-in failed" error={flow.unlockError} testId="unilateral-exit-unlock-error" />
+                  <ErrorCard title={t('exit.signInFailed')} error={flow.unlockError} testId="unilateral-exit-unlock-error" />
                 )}
               </>
             )}
@@ -345,29 +345,29 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                 isStarting={flow.engine.isStarting}
                 startError={flow.engine.startError}
                 onCancel={cancelPending}
-                noun={noun}
+                mode={flowMode}
               />
             )}
 
             {(flow.phase === 'fund' || flow.phase === 'topUp') && flow.funding && (
-              <>
+<>
                 <FundStep
                   {...flow.funding}
                   error={flow.buildError}
                   isPaying={flow.phase === 'topUp'}
                   onTopUp={() => flow.goTo('topUp')}
-                  noun={noun}
+                  mode={flowMode}
                 />
                 {/* FundStep shows no error beside a top-up, so a leftover's failed build says so here. */}
                 {flow.engine.plan?.status.type === 'needsExitFee' && flow.continueError && (
-                  <ErrorCard title={`Could not continue the ${noun}`} error={flow.continueError} testId="unilateral-exit-leftover-error" />
+                  <ErrorCard title={t(`exit.couldNotContinue_${flowMode}`)} error={flow.continueError} testId="unilateral-exit-leftover-error" />
                 )}
               </>
             )}
 
             {flow.phase === 'building' && (
               <div className="py-16 flex justify-center">
-                <LoadingSpinner text={`Building and signing the ${noun}...`} />
+                <LoadingSpinner text={t(`exit.buildingAndSigning_${flowMode}`)} />
               </div>
             )}
 
@@ -379,14 +379,17 @@ const UnilateralExitPage: React.FC<UnilateralExitPageProps> = ({ network, mode, 
                 onRebuild={flow.rebuild}
                 continueError={flow.continueError}
                 justStarted={!openedOnTracker}
-                noun={noun}
+                mode={flowMode}
               />
             )}
 
             {flow.phase === 'sent' && (
-              <Receipt title={bumping ? 'Fee raised' : 'Funds sent'}>
+              <Receipt title={bumping ? t('exit.feeRaised') : t('exit.fundsSent')}>
                 <Status>
-                  <SatAmount sats={flow.sentSat} /> on its way
+                  <Trans
+                    i18nKey="common:exit.amountOnItsWay"
+                    components={{ amount: <SatAmount sats={flow.sentSat} /> }}
+                  />
                 </Status>
               </Receipt>
             )}
