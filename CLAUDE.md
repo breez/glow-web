@@ -289,7 +289,11 @@ argue them as preferences: a citation adds nothing here.
   wallet" or "your account": "Move your funds out of Glow", not "Move
   your wallet balance". "Wallet" is fine for someone else's ("from
   another wallet"). Code identifiers (`useWallet`, `WalletContext`) are
-  exempt.
+  exempt. So is the settings page's Account section, its row out to the
+  deletion guide, and the guide itself: App Review reads that section to
+  satisfy guideline 5.1.1(v), and Glow was rejected under it once
+  already. An account someone holds on another site ("link your account
+  on {{domain}}") is theirs to name, not ours.
 - An error names what the user was doing and what to do next, in one
   voice: "Could not create the invoice. Please try again." Not "Failed to
   create invoice", which is the system reporting its own state and leaves
@@ -356,7 +360,8 @@ argue them as preferences: a citation adds nothing here.
   keeps the full width at the bottom of the screen, where the thumb is
   (Fitts, 1954; Apple HIG; WCAG 2.5.5).
 - Some positions are fixed: on the settings page the Account section
-  stays last, above the version line. New sections go above it.
+  stays last, above the version line. New sections go above it. It keeps
+  that name for App Review; see the copy rules above.
 
 **Reuse**
 
