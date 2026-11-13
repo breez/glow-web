@@ -4,6 +4,7 @@ import { BottomSheetContainer, BottomSheetCard, DialogHeader, FormError, Loading
 import { LightningBoltIcon } from '../../components/Icons';
 import { dismissKeyboard } from '../../utils/keyboard';
 import { LNURL_DOMAIN } from '../../constants/receive';
+import { useTranslation } from 'react-i18next';
 
 interface LightningAddressEditSheetProps {
   isOpen: boolean;
@@ -26,11 +27,13 @@ const LightningAddressEditSheet: React.FC<LightningAddressEditSheetProps> = ({
   onEditValueChange,
   onSave,
   onClose,
-}) => (
+}) => {
+  const { t } = useTranslation('common');
+  return (
   <BottomSheetContainer isOpen={isOpen} onClose={onClose} showBackdrop>
     <BottomSheetCard>
       <DialogHeader
-        title={address ? 'Edit Address' : 'Create Address'}
+        title={address ? t('receive.editAddress') : t('receive.createAddressShort')}
         onClose={onClose}
         icon={<LightningBoltIcon />}
       />
@@ -84,11 +87,12 @@ const LightningAddressEditSheet: React.FC<LightningAddressEditSheetProps> = ({
           className="w-full"
           data-testid="save-address-button"
         >
-          {isLoading ? <LoadingSpinner size="small" /> : 'Save'}
+          {isLoading ? <LoadingSpinner size="small" /> : t('actions.save')}
         </PrimaryButton>
       </div>
     </BottomSheetCard>
   </BottomSheetContainer>
-);
+  );
+};
 
 export default LightningAddressEditSheet;

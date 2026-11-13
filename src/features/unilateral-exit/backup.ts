@@ -4,6 +4,12 @@ import type { ExitStateExporter, ExitStateImporter } from './exitState';
 
 const STATE_FILE = 'exit-state.json';
 
+/**
+ * Stays English, deliberately. This is a rescue document: it is read outside
+ * the app, on a machine that may not have Glow on it, often by whoever is
+ * helping. Restore steps that a translation garbled are worse than English
+ * ones, and the same reasoning keeps log lines English. See locales/README.md.
+ */
 const README = [
   'Glow unilateral exit backup',
   '',
@@ -55,6 +61,7 @@ export interface RestoredExitState {
 
 export class UnreadableBackupError extends Error {
   constructor() {
+    // BackupCard maps this type to a translated message; the text is for logs.
     super('That file is not a Glow unilateral exit backup');
     this.name = 'UnreadableBackupError';
   }

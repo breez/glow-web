@@ -201,7 +201,7 @@ const LabelsPage: React.FC<LabelsPageProps> = ({ onBack, onSwitchLabel }) => {
               <div className="space-y-2">
                 {labels.map((label) => {
                   const isActive = label === activeLabel;
-                  const cardClasses = `flex items-center gap-3 p-4 rounded-2xl border w-full text-left transition-colors ${
+                  const cardClasses = `flex items-center gap-3 p-4 rounded-2xl border w-full text-start transition-colors ${
                     isActive
                       ? 'bg-spark-primary/10 border-spark-primary'
                       : 'bg-spark-dark border-spark-border hover:border-spark-border-light hover:bg-white/5'

@@ -182,9 +182,9 @@ describe('QuoteStep', () => {
   });
 
   it('speaks of a recovery while it quotes one, and when that quote fails', () => {
-    const { rerender } = render(<QuoteStep {...fields()} isQuoting noun="recovery" />);
+    const { rerender } = render(<QuoteStep {...fields()} isQuoting mode="recover" />);
     expect(screen.getByText('Working out what can be recovered...')).toBeInTheDocument();
-    rerender(<QuoteStep {...fields(quote(), { error: 'operators unreachable' })} noun="recovery" />);
+    rerender(<QuoteStep {...fields(quote(), { error: 'operators unreachable' })} mode="recover" />);
     expect(screen.getByText('Could not quote the recovery')).toBeInTheDocument();
   });
 });

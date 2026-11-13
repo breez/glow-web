@@ -18,6 +18,7 @@ import { useFiatData } from '../../contexts/FiatDataContext';
 import type { Sats } from '../../types/sats';
 import { dismissKeyboard } from '../../utils/keyboard';
 import { LIGHTNING_INVOICE_MIN_SATS } from '../../constants/receive';
+import { useTranslation } from 'react-i18next';
 
 interface AmountPanelProps {
   isOpen: boolean;
@@ -54,6 +55,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
   onClose,
   resetCount,
 }) => {
+  const { t } = useTranslation('common');
   // Fiat entry without a stable-balance token: the typed amount is converted to
   // sats client-side (#356). Starts in the currency the balance header shows;
   // null follows the header, set once the user steps to another currency.
@@ -162,7 +164,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
     <BottomSheetContainer isOpen={isOpen} onClose={onClose} showBackdrop>
       <BottomSheetCard>
         <DialogHeader
-          title="Create Invoice"
+          title={t('receive.createInvoice')}
           onClose={onClose}
           icon={<LightningBoltIcon />}
         />
@@ -191,7 +193,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                 placeholder={isTokenMode ? '0.00' : '0'}
                 disabled={isLoading}
                 rows={1}
-                className={`${AMOUNT_FIELD_CLASS} resize-none pr-16 font-mono`}
+                className={`${AMOUNT_FIELD_CLASS} resize-none pe-16 font-mono`}
                 data-testid="invoice-amount-input"
               />
               {tokenSymbol && (
@@ -231,7 +233,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-spark-text-primary mb-2">Description (optional)</label>
+            <label className="block text-sm font-medium text-spark-text-primary mb-2">{t('receive.description')}</label>
             <textarea
               ref={descriptionInputRef}
               enterKeyHint="done"
@@ -249,14 +251,14 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
                   }
                 }
               }}
-              placeholder="What's this for?"
+              placeholder={t('receive.descriptionPlaceholder')}
               disabled={isLoading}
               rows={1}
               className={`${AMOUNT_FIELD_CLASS} resize-none`}
             />
           </div>
 
-          <FormError error={amountTooLarge ? 'Invalid amount' : error} data-testid="invoice-error-message" />
+          <FormError error={amountTooLarge ? t('receive.invalidAmount') : error} data-testid="invoice-error-message" />
 
           {/* Generate Button */}
           <PrimaryButton
@@ -272,7 +274,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
             className="w-full"
             data-testid="generate-invoice-button"
           >
-            {isLoading ? <LoadingSpinner size="small" /> : 'Generate Invoice'}
+            {isLoading ? <LoadingSpinner size="small" /> : t('receive.generateInvoice')}
           </PrimaryButton>
         </div>
       </BottomSheetCard>
