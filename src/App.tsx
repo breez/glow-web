@@ -27,6 +27,7 @@ import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
 import BuyProvidersPage from './pages/BuyProvidersPage';
 import UnlockPage from './pages/UnlockPage';
 import UnlockingPage from './pages/UnlockingPage';
+import PasskeyCheckPage from './pages/PasskeyCheckPage';
 // Dev-gated Passkey & Labels hub + the AAGUID lookup database it pulls
 // in (~245 KB JSON). Code-split so neither the main bundle nor any
 // non-dev user pays the parse cost; loads on first navigation into the
@@ -117,6 +118,7 @@ const AppContent: React.FC = () => {
   // while locked; rendered last in the tree so it stacks on top.
   const appLock = useAppLock();
 
+
   // An in-flight recovery has to keep moving even when its page is
   // closed: each step only becomes broadcastable once the one before it
   // confirms, and those waits run for days.
@@ -131,6 +133,8 @@ const AppContent: React.FC = () => {
   const currentScreen: Screen = useMemo(() => {
     if (sdk.startupState === 'native-unlocking') return 'unlocking';
     if (sdk.startupState === 'native-locked') return 'unlock';
+    // A startup screen like the lock screen, so Back is absorbed.
+    if (sdk.startupState === 'passkey-check-failed') return 'unlock';
     if (sdk.isConnected && userScreen === 'home') return 'wallet';
     return userScreen;
   }, [sdk.startupState, sdk.isConnected, userScreen]);
@@ -284,7 +288,20 @@ const AppContent: React.FC = () => {
     // the state change, not on the tick-later commit that a routing
     // effect would have produced.
     if (sdk.startupState === 'native-unlocking') {
-      return <UnlockingPage />;
+      return (
+        <UnlockingPage
+          message={sdk.passkeyCheckRunning ? 'Verifying your passkey' : undefined}
+        />
+      );
+    }
+    if (sdk.startupState === 'passkey-check-failed') {
+      return (
+        <PasskeyCheckPage
+          isLoading={sdk.isLoading}
+          onRetry={sdk.retryPasskeyCheck}
+          onContinue={sdk.continueAfterPasskeyCheck}
+        />
+      );
     }
     if (sdk.startupState === 'native-locked') {
       return (
