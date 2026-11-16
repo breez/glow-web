@@ -18,7 +18,12 @@ import React, { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { logger, LogCategory } from '../services/logger';
 
-const UnlockingPage: React.FC = () => {
+interface UnlockingPageProps {
+  /** Replaces "Authenticating…" when the prompt is not the usual unlock. */
+  message?: string;
+}
+
+const UnlockingPage: React.FC<UnlockingPageProps> = ({ message = 'Authenticating…' }) => {
   useEffect(() => {
     logger.info(LogCategory.UI, 'UnlockingPage:mounted');
     // Second effect runs after paint (via rAF) so we can distinguish
@@ -50,7 +55,7 @@ const UnlockingPage: React.FC = () => {
 
           <div className="flex items-center justify-center gap-3 text-spark-text-secondary text-sm">
             <div className="w-5 h-5 rounded-full border-2 border-spark-primary border-t-transparent animate-spin" />
-            <span>Authenticating…</span>
+            <span>{message}</span>
           </div>
         </div>
       </div>
