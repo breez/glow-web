@@ -71,6 +71,8 @@ export interface CrossChainDestination {
   assetDecimals?: number;
   /** Tx hash on the external chain, once that leg has broadcast. Orchestra only. */
   externalTxHash?: string;
+  /** Tx hash of the refund to the payer, once refunded. Orchestra only. */
+  refundTxHash?: string;
 }
 
 /**
@@ -97,7 +99,10 @@ export function getCrossChainDestination(payment: Payment): CrossChainDestinatio
     dest.assetDecimals = convInfo.assetDecimals;
     const delivered = convInfo.deliveredAmount ?? convInfo.estimatedOut;
     if (delivered !== undefined) dest.deliveredAmount = delivered;
-    if (convInfo.type === 'orchestra') dest.externalTxHash = convInfo.externalTxHash;
+    if (convInfo.type === 'orchestra') {
+      dest.externalTxHash = convInfo.externalTxHash;
+      dest.refundTxHash = convInfo.refundTxHash;
+    }
   }
 
   // Prefer the final conversion's destination side — it carries the settled
@@ -116,12 +121,12 @@ export function getCrossChainDestination(payment: Payment): CrossChainDestinatio
 }
 
 /**
- * How an Orchestra send ended when it did not deliver, or null while it is in
- * flight or once it completes. The Spark payment can still read `completed`
- * here: the deposit reached Orchestra, and a refund lands as its own payment.
+ * How an Orchestra order ended when it did not deliver, or null while it is in
+ * flight or once it completes. A send's Spark payment can still read
+ * `completed` here: the deposit reached Orchestra, and a refund lands as its
+ * own payment. A receive that did not deliver is itself a failed payment.
  */
-export function getCrossChainSendOutcome(payment: Payment): 'failed' | 'refunded' | null {
-  if (payment.paymentType !== 'send') return null;
+export function getCrossChainOutcome(payment: Payment): 'failed' | 'refunded' | null {
   const details = payment.details;
   const convInfo = details && 'conversionInfo' in details ? details.conversionInfo : undefined;
   if (convInfo?.type !== 'orchestra') return null;

@@ -9,7 +9,7 @@ import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
 import { formatTokenAmount, buildTokenDisplayConfig, tokenAmountDisplaysAsZero, withAssetDecimals } from '../utils/tokenFormatting';
 import { getPaymentDescription, isRefundedConversion } from '../utils/paymentDescription';
-import { getCrossChainSendOutcome } from '../utils/crossChainFormat';
+import { getCrossChainOutcome } from '../utils/crossChainFormat';
 import type { UnilateralExitEntry } from '../features/unilateral-exit/listEntries';
 
 // Hoisted static JSX elements (rendering-hoist-jsx optimization)
@@ -182,7 +182,9 @@ const TransactionList: React.FC<TransactionListProps> = ({
     const isRefunded = isRefundedConversion(tx);
     const isReceive = tx.paymentType === 'receive' && !isRefunded;
     const isFailed = tx.status === 'failed';
-    const crossChainOutcome = isFailed ? null : getCrossChainSendOutcome(tx);
+    // A refunded cross-chain receive is a failed payment, and its chip says
+    // where the deposit went.
+    const crossChainOutcome = getCrossChainOutcome(tx);
     const isPending = !isFailed && (tx.status === 'pending' || tx.conversionDetails?.status === 'pending');
     const needsAction = depositNeedsAction(tx);
     // An unclaimed deposit has no time of its own, so the row says where it

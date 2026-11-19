@@ -404,6 +404,9 @@ export function useBreezSdk(
       if (event.payment.paymentType === 'send' && !isSendSheetOpen()) {
         showToastRef.current('error', 'Payment Failed', 'The payment did not go through. Your funds were not sent.');
       }
+      // A cross-chain receive the provider refunded or failed is first reported
+      // here, so the list reads it now rather than at the next sync.
+      refreshWalletData(false);
     } else if (event.type === 'paymentMetadataUpdated') {
       // A cross-chain receive lands as a plain Spark transfer and is marked as
       // cross-chain once the provider confirms the order, so the row needs
