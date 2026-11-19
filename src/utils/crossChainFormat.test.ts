@@ -4,7 +4,7 @@ import {
   parseCrossChainAmount,
   formatCrossChainAmount,
   getCrossChainDestination,
-  getCrossChainSendOutcome,
+  getCrossChainOutcome,
 } from './crossChainFormat';
 
 describe('parseCrossChainAmount', () => {
@@ -80,6 +80,12 @@ describe('getCrossChainDestination', () => {
     expect(getCrossChainDestination(crossChainPayment(orchestra)).externalTxHash).toBeUndefined();
   });
 
+  it('surfaces the refund tx hash once refunded', () => {
+    const dest = getCrossChainDestination(crossChainPayment({ ...orchestra, status: 'refunded', refundTxHash: '0x2707' }));
+    expect(dest.refundTxHash).toBe('0x2707');
+    expect(getCrossChainDestination(crossChainPayment(orchestra)).refundTxHash).toBeUndefined();
+  });
+
   // Boltz has no such field, so the rest of the destination must still resolve.
   it('leaves it undefined for boltz', () => {
     const dest = getCrossChainDestination(crossChainPayment({
@@ -95,7 +101,7 @@ describe('getCrossChainDestination', () => {
   });
 });
 
-describe('getCrossChainSendOutcome', () => {
+describe('getCrossChainOutcome', () => {
   const orchestra = {
     type: 'orchestra',
     chain: 'Base',
@@ -107,20 +113,28 @@ describe('getCrossChainSendOutcome', () => {
   };
 
   it('reports a failed or refunded order on a completed payment', () => {
-    expect(getCrossChainSendOutcome(crossChainPayment({ ...orchestra, status: 'failed' }))).toBe('failed');
-    expect(getCrossChainSendOutcome(crossChainPayment({ ...orchestra, status: 'refunded' }))).toBe('refunded');
+    expect(getCrossChainOutcome(crossChainPayment({ ...orchestra, status: 'failed' }))).toBe('failed');
+    expect(getCrossChainOutcome(crossChainPayment({ ...orchestra, status: 'refunded' }))).toBe('refunded');
+  });
+
+  it('reports a receive recorded as a failed payment', () => {
+    const receive = (status: string) => ({
+      ...crossChainPayment({ ...orchestra, status }),
+      paymentType: 'receive',
+      status: 'failed',
+    } as Payment);
+    expect(getCrossChainOutcome(receive('refunded'))).toBe('refunded');
+    expect(getCrossChainOutcome(receive('failed'))).toBe('failed');
   });
 
   // A legacy refundNeeded row is still waiting on Orchestra, like pending.
   it('is null while in flight or once delivered', () => {
     for (const status of ['pending', 'refundNeeded', 'completed']) {
-      expect(getCrossChainSendOutcome(crossChainPayment({ ...orchestra, status }))).toBeNull();
+      expect(getCrossChainOutcome(crossChainPayment({ ...orchestra, status }))).toBeNull();
     }
   });
 
-  it('ignores receives and other providers', () => {
-    const receive = { ...crossChainPayment({ ...orchestra, status: 'failed' }), paymentType: 'receive' } as Payment;
-    expect(getCrossChainSendOutcome(receive)).toBeNull();
-    expect(getCrossChainSendOutcome(crossChainPayment({ ...orchestra, type: 'boltz', status: 'failed' }))).toBeNull();
+  it('ignores other providers', () => {
+    expect(getCrossChainOutcome(crossChainPayment({ ...orchestra, type: 'boltz', status: 'failed' }))).toBeNull();
   });
 });

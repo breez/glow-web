@@ -10,7 +10,7 @@ import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig, 
 import { useFiatData } from '../contexts/FiatDataContext';
 import { useContactsContext } from '../contexts/ContactsContext';
 import { getPaymentDescription, getProviderDisplayName, isCrossChainPayment, isRefundedConversion } from '../utils/paymentDescription';
-import { formatChainName, getCrossChainDestination, getCrossChainSendOutcome, formatReceiveAmount } from '../utils/crossChainFormat';
+import { formatChainName, getCrossChainDestination, getCrossChainOutcome, formatReceiveAmount } from '../utils/crossChainFormat';
 import { explorerTxUrl, chainExplorerTxUrl } from '../utils/explorer';
 
 interface PaymentDetailsDialogProps {
@@ -35,6 +35,7 @@ const getDefaultVisibleFields = () => ({
   conversionDetails: false,
   recipientAddress: false,
   externalTxHash: false,
+  refundTxHash: false,
   conversionId: false,
 });
 
@@ -124,11 +125,12 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   // the destination (recipient + delivered amount); for a receive it's the
   // source the sender deposited. Null for all non-cross-chain payments.
   const dest = isCrossChainPayment(payment) ? getCrossChainDestination(payment) : null;
-  const crossChainOutcome = getCrossChainSendOutcome(payment);
-  // Support traces an order by its quote, and a delivered one can still be rejected by the recipient's exchange.
+  const crossChainOutcome = getCrossChainOutcome(payment);
+  // Support traces an order by its quote: any send, since a delivered one can
+  // still be rejected by the recipient's exchange, and a receive that did not deliver.
   const orchestraInfo = payment.details && 'conversionInfo' in payment.details
     && payment.details.conversionInfo?.type === 'orchestra' ? payment.details.conversionInfo : undefined;
-  const showConversionId = !isReceive && !!orchestraInfo?.quoteId;
+  const showConversionId = (!isReceive || !!crossChainOutcome) && !!orchestraInfo?.quoteId;
   const conversions = payment.conversionDetails?.conversions;
 
   // Receive: the amount the sender deposited on the external chain (the `from`
@@ -150,6 +152,28 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
       isVisible={visibleFields.externalTxHash}
       onToggle={() => toggleField('externalTxHash')}
       href={dest.chainName ? chainExplorerTxUrl(dest.chainName, dest.externalTxHash) : undefined}
+    />
+  ) : null;
+
+  // A receive's refund goes back on the chain the sender deposited from. A
+  // send's comes back over Spark or Lightning, which `chainName` does not name,
+  // so it gets no link.
+  const refundTxRow = dest?.refundTxHash ? (
+    <CollapsibleCodeField
+      label="Refund Transaction ID"
+      value={dest.refundTxHash}
+      isVisible={visibleFields.refundTxHash}
+      onToggle={() => toggleField('refundTxHash')}
+      href={isReceive && dest.chainName ? chainExplorerTxUrl(dest.chainName, dest.refundTxHash) : undefined}
+    />
+  ) : null;
+
+  const conversionIdRow = showConversionId ? (
+    <CollapsibleCodeField
+      label="Conversion ID"
+      value={orchestraInfo.quoteId}
+      isVisible={visibleFields.conversionId}
+      onToggle={() => toggleField('conversionId')}
     />
   ) : null;
 
@@ -197,6 +221,8 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                   <PaymentInfoRow label="Network" value={formatChainName(dest.chainName)} />
                 )}
                 {externalTxRow}
+                {refundTxRow}
+                {conversionIdRow}
               </>
             )}
             {dest && !isReceive && (
@@ -220,14 +246,8 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
                   />
                 )}
                 {externalTxRow}
-                {showConversionId && (
-                  <CollapsibleCodeField
-                    label="Conversion ID"
-                    value={orchestraInfo.quoteId}
-                    isVisible={visibleFields.conversionId}
-                    onToggle={() => toggleField('conversionId')}
-                  />
-                )}
+                {refundTxRow}
+                {conversionIdRow}
               </>
             )}
 
