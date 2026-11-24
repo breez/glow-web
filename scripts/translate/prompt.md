@@ -35,6 +35,18 @@ language would meet in Apple's or Google's own interface.
 - passkey: the platform credential. Translate it only if Apple and Google
   translate it in your language; otherwise keep the English word.
 - label: a name for one Glow identity under a passkey
+- recovery phrase, seed phrase, mnemonic: one concept. Use the term the
+  language's wallet apps use for the 12 or 24 words, never a literal "recovery"
+  calque if it reads as something else.
+- transaction ID, conversion ID: use the everyday word for a reference number,
+  not a calque of "identity".
+- logs: the diagnostic files a user shares with support. Use the word a
+  non-technical reader knows, not the sysadmin term.
+- sync: use the common loanword where the language has one.
+- Technical terms support staff quote in English (pubkey, preimage) may stay in
+  English inside a short translated phrase.
+- Where a note says the app will restart, say only that it restarts. Do not add
+  that it reloads or reconnects.
 - balance, funds, fee, network fee, delivery fee
 - claim: taking receipt of an on-chain transfer
 - recoverable funds: money retrievable without the Spark operators

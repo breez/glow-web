@@ -1,27 +1,27 @@
 {
   "backup": {
     "passkeyProtected": {
-      "body": "Kurtarma ifaden geçiş anahtarından türetilir. Başka bir cihazda geri yüklemek için geçiş anahtarını veya aşağıdaki kurtarma ifadesini kullan."
+      "body": "Anımsatıcı ifaden geçiş anahtarından türetilir. Başka bir cihazda geri yüklemek için geçiş anahtarını veya aşağıdaki anımsatıcı ifadeyi kullan."
     },
     "passkeyUnavailable": {
-      "body": "Kurtarma ifaden geçiş anahtarından türetilir. O olmadan ifade bu cihazda geri alınamaz. Görüntülemek için geçiş anahtarının hâlâ bulunduğu bir cihazda oturum aç."
+      "body": "Anımsatıcı ifaden geçiş anahtarından türetilir. O olmadan ifade bu cihazda geri alınamaz. Görüntülemek için geçiş anahtarının hâlâ bulunduğu bir cihazda oturum aç."
     },
     "notFound": {
-      "body": "Bu cihazda kurtarma ifadesi bulunamadı."
+      "body": "Bu cihazda anımsatıcı ifade bulunamadı."
     },
     "reveal": {
       "hintRevealed": "Kimsenin baktığından emin olma",
       "hintDeviceStored": "Bu cihazda güvenle saklanıyor"
     },
-    "phraseLabel": "Kurtarma ifadesi"
+    "phraseLabel": "Anımsatıcı ifade"
   },
   "logout": {
     "confirmPasskey": "Çıkış yapmak bu cihazdaki tüm Glow verilerini siler. Paranıza yeniden erişmek için geçiş anahtarına ihtiyacın olacak.",
-    "confirmMnemonic": "Çıkış yapmak bu cihazdaki tüm Glow verilerini siler. Kurtarma ifadeni kaydettiğinden emin ol: paranıza yeniden erişmek için gerekecek."
+    "confirmMnemonic": "Çıkış yapmak bu cihazdaki tüm Glow verilerini siler. Anımsatıcı ifadeni kaydettiğinden emin ol: paranıza yeniden erişmek için gerekecek."
   },
   "pinReset": {
     "bodyPasskey": "PIN kurtarılamaz. Geri dönmenin tek yolu bu cihazdaki tüm Glow verilerini silmek ve geçiş anahtarınla yeniden oturum açmak.",
-    "bodyMnemonic": "PIN kurtarılamaz. Geri dönmenin tek yolu bu cihazdaki tüm Glow verilerini silmek ve kurtarma ifadenden geri yüklemek. Kaydettiğinden emin ol.",
+    "bodyMnemonic": "PIN kurtarılamaz. Geri dönmenin tek yolu bu cihazdaki tüm Glow verilerini silmek ve anımsatıcı ifadenden geri yüklemek. Kaydettiğinden emin ol.",
     "confirm": "Sil",
     "deviceOwnerReason": "Tüm Glow verilerini sil"
   },
@@ -82,15 +82,15 @@
   "generate": {
     "title": "Gizli tut",
     "body": "Bu kelimeleri sırayla yaz. Paranı geri almak için tek yedeğin bu.",
-    "warning": "Kurtarma ifadeni asla paylaşma. Bu kelimelere sahip olan herkes paranıza erişebilir.",
+    "warning": "Anımsatıcı ifadeni asla paylaşma. Bu kelimelere sahip olan herkes paranıza erişebilir.",
     "copyToClipboard": "Panoya kopyala",
     "saved": "İfademi kaydettim"
   },
   "restore": {
-    "body": "Glow'u geri yüklemek için 12 veya 24 kelimelik kurtarma ifadeni gir. Kelimeler boşlukla ayrılmalı.",
+    "body": "Glow'u geri yüklemek için 12 veya 24 kelimelik anımsatıcı ifadeni gir. Kelimeler boşlukla ayrılmalı.",
     "placeholder": "kelime1 kelime2 kelime3 ...",
-    "invalidLength": "Geçerli bir 12 veya 24 kelimelik kurtarma ifadesi gir",
-    "invalidPhrase": "Geçersiz kurtarma ifadesi. Kelimeleri kontrol edip tekrar dene."
+    "invalidLength": "Geçerli bir 12 veya 24 kelimelik anımsatıcı ifade gir",
+    "invalidPhrase": "Geçersiz anımsatıcı ifade. Kelimeleri kontrol edip tekrar dene."
   },
   "unlock": {
     "eraseTitle": "Sil ve baştan başla",
@@ -98,7 +98,7 @@
     "erase": "Sil",
     "eraseReason": "Tüm Glow verilerini sil",
     "eraseBodyPasskey": "Bu işlem bu cihazdaki tüm Glow verilerini siler. Paranıza yeniden erişmek için geçiş anahtarına ihtiyacın olacak.",
-    "eraseBodyMnemonic": "Bu işlem bu cihazdaki tüm Glow verilerini siler. Kurtarma ifadeni kaydettiğinden emin ol: paranıza yeniden erişmek için gerekecek."
+    "eraseBodyMnemonic": "Bu işlem bu cihazdaki tüm Glow verilerini siler. Anımsatıcı ifadeni kaydettiğinden emin ol: paranıza yeniden erişmek için gerekecek."
   },
   "refund": {
     "amount": "Tutar",
@@ -143,7 +143,7 @@
   "webNotice": {
     "preferPasskey": "Güvenliğin için bunun yerine geçiş anahtarı kullanmanı öneririz.",
     "preferApp": "Güvenliğin için Glow uygulamasını öneririz.",
-    "risk": "Web üzerindeki kurtarma ifadesi daha az güvenlidir ve paranın kaybolma ihtimali vardır. Web’de kurtarma ifadesini yalnızca bu riski göze alıyorsan kullan."
+    "risk": "Web üzerindeki anımsatıcı ifade daha az güvenlidir ve paranın kaybolma ihtimali vardır. Web’de anımsatıcı ifadeyi yalnızca bu riski göze alıyorsan kullan."
   },
   "conversion": {
     "nextAttempt": "Sıradaki deneme",
@@ -152,6 +152,6 @@
   },
   "passkeyCheck": {
     "title": "Geçiş anahtarın doğrulanamadı",
-    "body": "Kurtarma ifadenin yazılı ve güvenli bir yerde durduğundan emin ol. Bu cihazı kaybedersen Glow'a girebilmek için geçiş anahtarının çalıştığını kontrol et."
+    "body": "Anımsatıcı ifadenin yazılı ve güvenli bir yerde durduğundan emin ol. Bu cihazı kaybedersen Glow'a girebilmek için geçiş anahtarının çalıştığını kontrol et."
   }
 }
