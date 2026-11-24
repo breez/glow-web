@@ -283,7 +283,7 @@
     "exportDatabaseGate": "データベースを書き出す",
     "exportDatabaseBody": "インボイスや連絡先を含む支払い履歴のすべてを、共有できるファイルに保存します。求められた場合だけ実行し、信頼できる相手にのみ送ってください。",
     "network": "ネットワーク",
-    "networkChangeNote": "ネットワークを変更すると、アプリが再読み込みされ、接続し直します。",
+    "networkChangeNote": "ネットワークを変更すると、アプリが再起動します。",
     "preferSpark": "Spark を優先",
     "preferSparkBody": "利用できる場合は Lightning インボイスより Spark アドレスを使う",
     "syncSettings": "設定を同期",

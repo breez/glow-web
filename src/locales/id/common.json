@@ -283,7 +283,7 @@
     "exportDatabaseGate": "Ekspor basis data",
     "exportDatabaseBody": "Ini menyimpan seluruh riwayat pembayaran Anda, termasuk faktur dan kontak, ke sebuah file yang bisa Anda bagikan. Lakukan ini hanya jika diminta, dan kirimkan hanya kepada orang yang Anda percaya.",
     "network": "Jaringan",
-    "networkChangeNote": "Mengubah jaringan akan memuat ulang aplikasi dan menyambung kembali.",
+    "networkChangeNote": "Mengubah jaringan akan memulai ulang aplikasi.",
     "preferSpark": "Utamakan Spark",
     "preferSparkBody": "Gunakan alamat Spark daripada faktur Lightning bila tersedia",
     "syncSettings": "Sinkronkan Pengaturan",

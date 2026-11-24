@@ -283,7 +283,7 @@
     "exportDatabaseGate": "Datenbank exportieren",
     "exportDatabaseBody": "Damit wird dein vollständiger Zahlungsverlauf einschließlich Rechnungen und Kontakten in eine Datei gespeichert, die du teilen kannst. Tu das nur, wenn du dazu aufgefordert wurdest, und sende sie nur an jemanden, dem du vertraust.",
     "network": "Netzwerk",
-    "networkChangeNote": "Ein Netzwerkwechsel lädt die App neu und stellt die Verbindung wieder her.",
+    "networkChangeNote": "Ein Netzwerkwechsel startet die App neu.",
     "preferSpark": "Spark bevorzugen",
     "preferSparkBody": "Spark-Adresse statt Lightning-Rechnung verwenden, wenn verfügbar",
     "syncSettings": "Synchronisierungseinstellungen",

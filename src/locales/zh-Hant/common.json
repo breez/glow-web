@@ -283,7 +283,7 @@
     "exportDatabaseGate": "匯出資料庫",
     "exportDatabaseBody": "這會把您完整的付款紀錄，包含帳單與聯絡人，儲存成一個可以分享的檔案。只有在別人要求時才這麼做，而且只傳給您信任的人。",
     "network": "網路",
-    "networkChangeNote": "更改網路會重新載入應用程式並重新連線。",
+    "networkChangeNote": "更改網路會重新啟動應用程式。",
     "preferSpark": "優先使用 Spark",
     "preferSparkBody": "可用時使用 Spark 位址，而不是 Lightning 帳單",
     "syncSettings": "同步設定",

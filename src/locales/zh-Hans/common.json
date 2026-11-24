@@ -283,7 +283,7 @@
     "exportDatabaseGate": "导出数据库",
     "exportDatabaseBody": "这会把你的完整付款记录，包括账单和联系人，保存到一个可以分享的文件里。只在别人要求时才这么做，并且只发给你信任的人。",
     "network": "网络",
-    "networkChangeNote": "更改网络会重新加载应用并重新连接。",
+    "networkChangeNote": "更改网络会重启应用。",
     "preferSpark": "优先使用 Spark",
     "preferSparkBody": "可用时使用 Spark 地址，而不是 Lightning 账单",
     "syncSettings": "同步设置",

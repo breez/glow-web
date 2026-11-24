@@ -283,7 +283,7 @@
     "exportDatabaseGate": "Exportar base de datos",
     "exportDatabaseBody": "Esto guarda todo tu historial de pagos, incluidas facturas y contactos, en un archivo que puedes compartir. Hazlo solo si te lo han pedido, y envíalo solo a alguien de confianza.",
     "network": "Red",
-    "networkChangeNote": "Cambiar de red recargará la aplicación y volverá a conectar.",
+    "networkChangeNote": "Cambiar de red reiniciará la aplicación.",
     "preferSpark": "Preferir Spark",
     "preferSparkBody": "Usar la dirección Spark en lugar de la factura Lightning cuando esté disponible",
     "syncSettings": "Ajustes de sincronización",
