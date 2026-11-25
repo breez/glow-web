@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BottomSheetCard,
   BottomSheetContainer,
@@ -25,7 +26,8 @@ export const ArchivedExitDialog: React.FC<{
   onClose: () => void;
   subtitle?: string;
   exitedLabel?: string;
-}> = ({ exit, onClose, subtitle = 'Unilateral Exit', exitedLabel = 'Balance Exited' }) => {
+}> = ({ exit, onClose, subtitle, exitedLabel }) => {
+  const { t } = useTranslation('common');
   const [shown, setShown] = useState({ destination: false, exitFeeAddress: false, txids: false });
   const toggle = (field: keyof typeof shown) => setShown(current => ({ ...current, [field]: !current[field] }));
 
@@ -35,25 +37,27 @@ export const ArchivedExitDialog: React.FC<{
   return (
     <BottomSheetContainer isOpen onClose={onClose}>
       <BottomSheetCard>
-        <DialogHeader title="BTC Transfer" onClose={onClose} />
-        <p className="-mt-3 mb-4 text-center text-sm text-spark-text-muted">{subtitle}</p>
+        <DialogHeader title={t('exit.btcTransfer')} onClose={onClose} />
+        <p className="-mt-3 mb-4 text-center text-sm text-spark-text-muted">
+          {subtitle ?? t('exit.unilateralExit')}
+        </p>
         <div className="space-y-4 overflow-y-auto" data-testid="unilateral-exit-details">
           <PaymentInfoCard>
             {exit.exitedSat !== undefined && (
               <PaymentInfoRow
-                label={exitedLabel}
+                label={exitedLabel ?? t('exit.balanceExited')}
                 value={<SatAmount sats={Math.max(0, exit.exitedSat - (exit.recoverableFundsSat ?? 0))} />}
               />
             )}
             {!!exit.recoverableFundsSat && (
-              <PaymentInfoRow label="Recoverable Funds" value={<SatAmount sats={exit.recoverableFundsSat} />} />
+              <PaymentInfoRow label={t('exit.recoverableFunds')} value={<SatAmount sats={exit.recoverableFundsSat} />} />
             )}
             {exit.exitFeePaidSat !== undefined && (
-              <PaymentInfoRow label="Exit Fee Paid" value={<SatAmount sats={exit.exitFeePaidSat} />} />
+              <PaymentInfoRow label={t('exit.exitFeePaid')} value={<SatAmount sats={exit.exitFeePaidSat} />} />
             )}
             {!!exit.networkFeeSat && (
               <PaymentInfoRow
-                label="Network Fees"
+                label={t('exit.networkFees')}
                 value={
                   <span className="inline-flex items-center">
                     -<SatAmount sats={exit.networkFeeSat} />
@@ -63,7 +67,7 @@ export const ArchivedExitDialog: React.FC<{
             )}
             {!!exit.unspentExitFeeSat && (
               <PaymentInfoRow
-                label="Unspent Exit Fee"
+                label={t('exit.unspentExitFee')}
                 value={
                   <span className="inline-flex items-center">
                     -<SatAmount sats={exit.unspentExitFeeSat} />
@@ -71,9 +75,9 @@ export const ArchivedExitDialog: React.FC<{
                 }
               />
             )}
-            <PaymentInfoRow label="Received" value={<SatAmount sats={exit.deliveredSat} />} />
+            <PaymentInfoRow label={t('exit.receivedLabel')} value={<SatAmount sats={exit.deliveredSat} />} />
             <PaymentInfoRow
-              label="Date & Time"
+              label={t('paymentDetails.dateTime')}
               value={new Date(exit.completedAt).toLocaleString(undefined, {
                 year: 'numeric',
                 month: 'numeric',
@@ -85,14 +89,14 @@ export const ArchivedExitDialog: React.FC<{
           </PaymentInfoCard>
 
           <CollapsibleCodeField
-            label="Recipient Address"
+            label={t('paymentDetails.recipientAddress')}
             value={exit.destination}
             isVisible={shown.destination}
             onToggle={() => toggle('destination')}
           />
           {exitFeeAddress && (
             <CollapsibleCodeField
-              label="Exit Fee Address"
+              label={t('exit.exitFeeAddressLabel')}
               value={exitFeeAddress}
               isVisible={shown.exitFeeAddress}
               onToggle={() => toggle('exitFeeAddress')}
@@ -102,7 +106,7 @@ export const ArchivedExitDialog: React.FC<{
               field, as the list shows them as one transfer. */}
           {txids.length === 1 && (
             <CollapsibleCodeField
-              label="Transaction ID"
+              label={t('labels.transactionId')}
               value={txids[0]}
               isVisible={shown.txids}
               onToggle={() => toggle('txids')}
@@ -110,11 +114,11 @@ export const ArchivedExitDialog: React.FC<{
             />
           )}
           {txids.length > 1 && (
-            <CollapsibleSection label="Transaction IDs" isVisible={shown.txids} onToggle={() => toggle('txids')}>
+            <CollapsibleSection label={t('exit.transactionIds')} isVisible={shown.txids} onToggle={() => toggle('txids')}>
               <div className="divide-y divide-spark-border/50">
                 {txids.map(txid => (
                   <div key={txid} className="py-3 first:pt-0 last:pb-0">
-                    <CodeValue label="Transaction ID" value={txid} href={explorerTxUrl(txid)} />
+                    <CodeValue label={t('labels.transactionId')} value={txid} href={explorerTxUrl(txid)} />
                   </div>
                 ))}
               </div>

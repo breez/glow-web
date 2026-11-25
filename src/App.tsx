@@ -4,6 +4,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 import PaymentCelebration from './components/PaymentCelebration';
 import InstallPrompt from './components/InstallPrompt';
 import OfflineBanner from './components/OfflineBanner';
+import TranslationFeedback from './components/TranslationFeedback';
 import StagingGate from './components/StagingGate';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
@@ -289,9 +290,7 @@ const AppContent: React.FC = () => {
     // effect would have produced.
     if (sdk.startupState === 'native-unlocking') {
       return (
-        <UnlockingPage
-          message={sdk.passkeyCheckRunning ? 'Verifying your passkey' : undefined}
-        />
+        <UnlockingPage verifying={sdk.passkeyCheckRunning} />
       );
     }
     if (sdk.startupState === 'passkey-check-failed') {
@@ -668,6 +667,7 @@ const AppContent: React.FC = () => {
               )}
               <InstallPrompt />
               <OfflineBanner />
+              <TranslationFeedback />
               {appLock.locked && (
                 <LockScreen
                   biometricGate={appLock.biometricGate}

@@ -1,6 +1,25 @@
 import '@testing-library/jest-dom';
 import { vi, beforeEach, afterEach } from 'vitest';
 
+// Tests assert on the English interface, so i18next has to be live or every
+// t() call returns its key. Synchronous and English-only on purpose: the real
+// init resolves the language over the Capacitor bridge, which tests have no
+// business waiting on.
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import enCommon from '../locales/en/common.json';
+import enCritical from '../locales/en/critical.json';
+
+void i18n.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  ns: ['common', 'critical'],
+  defaultNS: 'common',
+  resources: { en: { common: enCommon, critical: enCritical } },
+  interpolation: { escapeValue: false },
+  returnNull: false,
+});
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};

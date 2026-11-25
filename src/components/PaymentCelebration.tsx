@@ -7,6 +7,7 @@ import { useFiatData } from '../contexts/FiatDataContext';
 import { getTokenAmountFromPayment, formatTokenAmount, buildTokenDisplayConfig, withAssetDecimals } from '../utils/tokenFormatting';
 import GlowLogo from './GlowLogo';
 import { hapticLight } from '@/utils/haptics';
+import { useTranslation } from 'react-i18next';
 
 interface PaymentCelebrationProps {
   payment: Payment;
@@ -14,6 +15,7 @@ interface PaymentCelebrationProps {
 }
 
 const PaymentCelebration: React.FC<PaymentCelebrationProps> = ({ payment, onClose }) => {
+  const { t } = useTranslation('common');
   // Sends only reach here when the send sheet was dismissed mid-payment,
   // so this is the only report the user gets of the outcome.
   const isSent = payment.paymentType === 'send';
@@ -87,7 +89,7 @@ const PaymentCelebration: React.FC<PaymentCelebrationProps> = ({ payment, onClos
 
         {/* Title */}
         <h2 className="text-2xl font-display font-bold text-spark-text-primary mb-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-          {isSent ? 'Payment Sent' : 'Payment Received'}
+          {isSent ? t('celebration.sent') : t('celebration.received')}
         </h2>
 
         {/* Amount with brand glow */}
@@ -111,7 +113,7 @@ const PaymentCelebration: React.FC<PaymentCelebrationProps> = ({ payment, onClos
 
         {/* Tap to dismiss hint */}
         <p className="mt-10 text-spark-text-muted text-sm animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-          Tap anywhere to dismiss
+          {t('celebration.dismiss')}
         </p>
       </div>
     </div>,

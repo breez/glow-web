@@ -1,6 +1,7 @@
 import React, { useEffect, useState, type RefObject } from 'react';
 import { RefreshIcon, SpinnerIcon } from './Icons';
 import { useLatest } from '../hooks/useLatest';
+import { useTranslation } from 'react-i18next';
 
 /** Pull distance, after the drag's resistance, that refreshes on release. */
 export const PULL_TRIGGER_PX = 64;
@@ -18,6 +19,7 @@ const PullToRefresh: React.FC<{
   scrollerRef: RefObject<HTMLElement | null>;
   onRefresh: () => Promise<unknown>;
 }> = ({ scrollerRef, onRefresh }) => {
+  const { t } = useTranslation('common');
   const [pull, setPull] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const onRefreshRef = useLatest(onRefresh);
@@ -87,7 +89,7 @@ const PullToRefresh: React.FC<{
       className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center"
       style={{ transform: `translateY(${refreshing ? 16 : pull - 40}px)` }}
       role="status"
-      aria-label={refreshing ? 'Refreshing' : ready ? 'Release to refresh' : 'Pull to refresh'}
+      aria-label={refreshing ? t('refresh.refreshing') : ready ? t('refresh.release') : t('refresh.pull')}
     >
       <span className="w-10 h-10 rounded-full bg-spark-surface border border-spark-border flex items-center justify-center text-spark-primary">
         {refreshing ? (

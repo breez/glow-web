@@ -7,6 +7,7 @@ import { useQuoteReceived } from '../../../hooks/useQuoteReceived';
 import { useAmountInput } from '../../../hooks/useAmountInput';
 import { logger, LogCategory } from '../../../services/logger';
 import { formatError } from '../../../utils/formatError';
+import { formatWithSpaces } from '../../../utils/formatNumber';
 import { fixedQuickAmounts, type TokenDisplayConfig } from '../../../utils/tokenFormatting';
 import { toSdkAmountNumber, type Sats } from '../../../types/sats';
 import {
@@ -16,6 +17,7 @@ import {
   type BuyBitcoinProvider,
 } from '../../../services/settings';
 import { useCashAppInstalled } from '../../../hooks/useCashAppInstalled';
+import { useTranslation } from 'react-i18next';
 
 export type BuyStep = 'select' | 'cashAppAmount' | 'moonpayAmount' | 'link';
 
@@ -74,6 +76,7 @@ export function useBuyBitcoin({
   onMobileRedirectComplete,
   onInvoicePaid,
 }: UseBuyBitcoinOptions): UseBuyBitcoinReturn {
+  const { t } = useTranslation('common');
   const sdk = useWallet();
 
   const input = useAmountInput();
@@ -154,12 +157,12 @@ export function useBuyBitcoin({
 
   const generate = useCallback(async () => {
     if (amountSats === null || amountSats < MIN_CASH_APP_SATS) {
-      setError(`Amount must be at least ₿${MIN_CASH_APP_SATS.toString()}`);
+      setError(t('labels.amountAtLeast', { amount: formatWithSpaces(MIN_CASH_APP_SATS) }));
       return;
     }
     const amountSatsForSdk = toSdkAmountNumber(amountSats);
     if (amountSatsForSdk === null) {
-      setError('Invalid amount');
+      setError(t('buy.invalidAmount'));
       return;
     }
     setError(null);
@@ -188,11 +191,11 @@ export function useBuyBitcoin({
       setStep('link');
     } catch (e) {
       logger.error(LogCategory.SDK, 'Failed to create Cash App buy URL', { error: formatError(e) });
-      setError('Failed to create invoice. Please try again.');
+      setError(t('buy.invoiceFailed'));
     } finally {
       setIsGenerating(false);
     }
-  }, [amountSats, sdk, onMobileRedirectComplete]);
+  }, [amountSats, sdk, onMobileRedirectComplete, t]);
 
   // The purchase lands as a Spark payment from the conversion provider, not as
   // a payment of the invoice, so it is matched by quote. Listens only on `link`.
@@ -216,7 +219,7 @@ export function useBuyBitcoin({
     && amountSats >= MIN_CASH_APP_SATS
     && !amountTooLarge;
 
-  const displayedError = error ?? (amountTooLarge ? 'Invalid amount' : null);
+  const displayedError = error ?? (amountTooLarge ? t('buy.invalidAmount') : null);
 
   // Buying adds funds, so there is no balance to scale against: fixed points of
   // value, held there by the rate. One set covers both denominations, since a

@@ -2,7 +2,7 @@
  * UnlockingPage — branded placeholder shown on cold launch while the
  * auto-triggered system BiometricPrompt is visible.
  *
- * Pure status screen: Glow logo + "Authenticating…" spinner, no
+ * Pure status screen: Glow logo + an authenticating spinner, no
  * interactive controls. Content is top-aligned with a generous
  * safe-area-aware padding because on some OEM skins the system
  * biometric dialog occupies roughly the bottom half of the
@@ -15,15 +15,18 @@
  */
 
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
 import { logger, LogCategory } from '../services/logger';
 
 interface UnlockingPageProps {
-  /** Replaces "Authenticating…" when the prompt is not the usual unlock. */
-  message?: string;
+  /** Names the passkey check instead of the usual unlock. */
+  verifying?: boolean;
 }
 
-const UnlockingPage: React.FC<UnlockingPageProps> = ({ message = 'Authenticating…' }) => {
+const UnlockingPage: React.FC<UnlockingPageProps> = ({ verifying = false }) => {
+  const { t } = useTranslation('common');
+
   useEffect(() => {
     logger.info(LogCategory.UI, 'UnlockingPage:mounted');
     // Second effect runs after paint (via rAF) so we can distinguish
@@ -55,7 +58,7 @@ const UnlockingPage: React.FC<UnlockingPageProps> = ({ message = 'Authenticating
 
           <div className="flex items-center justify-center gap-3 text-spark-text-secondary text-sm">
             <div className="w-5 h-5 rounded-full border-2 border-spark-primary border-t-transparent animate-spin" />
-            <span>{message}</span>
+            <span>{verifying ? t('passkeyCheck.verifying') : t('startup.authenticating')}</span>
           </div>
         </div>
       </div>

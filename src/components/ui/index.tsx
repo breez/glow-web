@@ -19,6 +19,7 @@ import {
 } from '../Icons';
 import { AlertCard } from '../AlertCard';
 import { SheetBackContext } from './sheets/BottomSheetCardContext';
+import { useTranslation } from 'react-i18next';
 import { useBackButton } from '../../hooks/useBackButton';
 import { useStatusBarColor } from '../../hooks/useStatusBarColor';
 import { STATUS_BAR_DIALOG_SCRIM } from '../../utils/statusBarManager';
@@ -107,6 +108,7 @@ export const DialogHeader: React.FC<{
   onBack?: () => void;
   icon?: ReactNode;
 }> = ({ title, onClose, onBack, icon }) => {
+  const { t } = useTranslation('common');
   // Without an explicit onBack, the step on screen can lend one (useSheetBack).
   const stepBack = useContext(SheetBackContext);
   const back = onBack ?? stepBack;
@@ -115,8 +117,8 @@ export const DialogHeader: React.FC<{
       {back && (
         <button
           onClick={back}
-          aria-label="Back"
-          className="absolute left-0 top-1/2 -translate-y-1/2 py-2 pl-6 pr-2 -ml-6 text-spark-text-muted hover:text-spark-text-primary transition-colors rounded-lg hover:bg-white/5"
+          aria-label={t('actions.back')}
+          className="absolute start-0 top-1/2 -translate-y-1/2 py-2 ps-6 pe-2 -ms-6 text-spark-text-muted hover:text-spark-text-primary transition-colors rounded-lg hover:bg-white/5"
         >
           <BackIcon />
         </button>
@@ -128,8 +130,8 @@ export const DialogHeader: React.FC<{
       </div>
       <button
         onClick={onClose}
-        aria-label="Close"
-        className="absolute right-0 top-1/2 -translate-y-1/2 py-2 pl-2 pr-6 -mr-6 text-spark-text-muted hover:text-spark-primary-light transition-colors rounded-lg hover:bg-white/5"
+        aria-label={t('actions.close')}
+        className="absolute end-0 top-1/2 -translate-y-1/2 py-2 ps-2 pe-6 -me-6 text-spark-text-muted hover:text-spark-primary-light transition-colors rounded-lg hover:bg-white/5"
       >
         <CloseIcon />
       </button>
@@ -194,7 +196,7 @@ export const CollapsibleSection: React.FC<{
       onClick={onToggle}
       // py-2 for a 44px target, pulled back by -my-2 so the row occupies the
       // height it always did. Same trick as DialogHeader's close control.
-      className="flex justify-between items-center w-full text-left py-2 -my-2"
+      className="flex justify-between items-center w-full text-start py-2 -my-2"
     >
       <span className="text-spark-text-secondary text-sm">{label}</span>
       <span className="text-spark-primary hover:text-spark-primary-light flex items-center transition-colors p-1">
@@ -220,6 +222,7 @@ export const CodeValue: React.FC<{ label: string; value: string; href?: string; 
   href,
   copyable = false,
 }) => {
+  const { t } = useTranslation('common');
   const [copied, setCopied] = React.useState(false);
   const handleCopy = () => {
     copyToClipboard(value)
@@ -249,7 +252,7 @@ export const CodeValue: React.FC<{ label: string; value: string; href?: string; 
             });
           })}
           className="shrink-0 p-1 rounded-md hover:bg-white/5 transition-colors group"
-          aria-label={`Open ${label}`}
+          aria-label={t('a11y.openThing', { label })}
         >
           <ExternalLinkIcon className="w-3.5 h-3.5 text-spark-primary opacity-70 group-hover:opacity-100 transition-opacity" />
         </button>
@@ -258,7 +261,7 @@ export const CodeValue: React.FC<{ label: string; value: string; href?: string; 
         <button
           onClick={handleCopy}
           className="shrink-0 p-1 rounded-md hover:bg-white/5 transition-colors"
-          aria-label={`Copy ${label}`}
+          aria-label={t('a11y.copyThing', { label })}
         >
           {copied
             ? <CheckIcon size="sm" className="text-spark-success" />
@@ -300,6 +303,7 @@ export const CopyableRow: React.FC<{
   display?: string;
   'data-testid'?: string;
 }> = ({ label, value, display, 'data-testid': testId }) => {
+  const { t } = useTranslation('common');
   const [copied, setCopied] = React.useState(false);
   const handleCopy = () => {
     copyToClipboard(value)
@@ -327,7 +331,7 @@ export const CopyableRow: React.FC<{
       <button
         onClick={handleCopy}
         className="shrink-0 p-1.5 rounded-md hover:bg-white/5 transition-colors"
-        aria-label={`Copy ${label}`}
+        aria-label={t('a11y.copyThing', { label })}
       >
         {copied
           ? <CheckIcon size="sm" className="text-spark-success" />
@@ -351,7 +355,9 @@ export const CopyableText: React.FC<{
   textToShare?: string;
   shareLabel?: string;
   'data-testid'?: string;
-}> = ({ text, truncate = false, hideText = false, showShare = false, onCopied, onShareError, label = 'Address', additionalActions, textColor = 'text-spark-text-muted', textToCopy, textToShare, shareLabel, 'data-testid': testId }) => {
+}> = ({ text, truncate = false, hideText = false, showShare = false, onCopied, onShareError, label, additionalActions, textColor = 'text-spark-text-muted', textToCopy, textToShare, shareLabel, 'data-testid': testId }) => {
+  const { t } = useTranslation('common');
+  const resolvedLabel = label ?? t('labels.address');
   const [copied, setCopied] = React.useState(false);
   const [shareAvailable] = React.useState(canShare);
 
@@ -371,7 +377,7 @@ export const CopyableText: React.FC<{
   };
 
   const handleShare = () => {
-    shareText(shareLabel || label, textToShare || text).catch(() => onShareError?.());
+    shareText(shareLabel || resolvedLabel, textToShare || text).catch(() => onShareError?.());
   };
 
   // Truncate text for display if requested
@@ -386,7 +392,7 @@ export const CopyableText: React.FC<{
         <button
           onClick={handleCopy}
           className={`text-center font-mono text-xs sm:text-sm break-all hover:opacity-80 transition-opacity ${textColor}`}
-          title="Tap to copy"
+          title={t('actions.tapToCopy')}
           data-testid="copyable-text-content"
         >
           {displayText}
@@ -404,21 +410,21 @@ export const CopyableText: React.FC<{
               : 'bg-spark-primary text-white hover:bg-spark-primary-light'
             }
           `}
-          title={`Copy ${label}`}
+          title={t('a11y.copyThing', { label })}
           data-testid="copy-button"
         >
           <CopyIcon size="sm" />
-          {copied ? 'Copied!' : 'Copy'}
+          {copied ? t('actions.copied') : t('actions.copy')}
         </button>
 
         {showShare && shareAvailable && (
           <button
             onClick={handleShare}
             className="flex items-center gap-2 px-4 py-2 border border-spark-border text-spark-text-secondary rounded-xl font-medium text-sm hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
-            title={`Share ${label}`}
+            title={t('actions.shareThing', { label: resolvedLabel })}
           >
             <ShareIcon />
-            Share
+            {t('actions.share')}
           </button>
         )}
 
@@ -469,7 +475,9 @@ export const ErrorMessageBox: React.FC<{
   title?: string;
   error: string;
   className?: string;
-}> = ({ title = 'Error', error, className = "" }) => {
+}> = ({ title, error, className = "" }) => {
+  const { t } = useTranslation('common');
+  const resolvedTitle = title ?? t('labels.error');
   // Try to separate main message from stack trace
   // Stack traces often contain patterns like "at function" or "wasm-function"
   const stackTracePatterns = [
@@ -501,11 +509,11 @@ export const ErrorMessageBox: React.FC<{
   // Clean up the main message (remove trailing colons, etc.)
   mainMessage = mainMessage.replace(/:\s*$/, '').trim();
   if (!mainMessage) {
-    mainMessage = 'An error occurred';
+    mainMessage = t('labels.genericError');
   }
 
   return (
-    <AlertCard variant="error" title={title} className={className}>
+    <AlertCard variant="error" title={resolvedTitle} className={className}>
       <p className="text-sm">{mainMessage}</p>
       {stackTrace && (
         <div className="mt-3 bg-spark-dark/50 border border-spark-border rounded-xl p-3 max-h-32 overflow-auto">
@@ -601,13 +609,14 @@ export const ConfirmDialog: React.FC<{
   title,
   message,
   extra,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   variant = 'default',
   zClassName = 'z-[70]',
   onConfirm,
   onCancel,
 }) => {
+    const { t } = useTranslation('common');
     // Android hardware back button dismisses the confirm dialog (maps
     // to "Cancel" — the safer of the two options). This is placed
     // BEFORE the early-return so the hook order stays stable across
@@ -653,14 +662,14 @@ export const ConfirmDialog: React.FC<{
                 className="flex-1 py-3 font-display font-semibold text-spark-text-secondary border border-spark-border rounded-xl hover:text-spark-text-primary hover:border-spark-border-light transition-colors"
                 data-testid="confirm-dialog-cancel"
               >
-                {cancelLabel}
+                {cancelLabel ?? t('actions.cancel')}
               </button>
               <button
                 onClick={onConfirm}
                 className={`flex-1 py-3 font-display font-semibold rounded-xl transition-colors ${confirmButtonStyles[variant]}`}
                 data-testid="confirm-dialog-confirm"
               >
-                {confirmLabel}
+                {confirmLabel ?? t('actions.confirm')}
               </button>
             </div>
           </div>

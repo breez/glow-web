@@ -20,6 +20,7 @@ import { formatQuickAmount } from '../../utils/tokenFormatting';
 import { useBuyBitcoin } from './hooks/useBuyBitcoin';
 import MoonpayAmountStep from './MoonpayAmountStep';
 import { holdIdleLock } from '@/services/appLock';
+import { Trans, useTranslation } from 'react-i18next';
 
 const providerMeta: Record<BuyBitcoinProvider, { name: string; icon: React.ReactNode }> = {
   moonpay: {
@@ -59,6 +60,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
   onBuyMoonpay,
   network,
 }) => {
+  const { t } = useTranslation('common');
   const { showToast } = useToast();
 
   const buy = useBuyBitcoin({
@@ -82,7 +84,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
         {buy.step === 'select' && (
           <>
             <DialogHeader
-              title={buyCopy('Buy Bitcoin')}
+              title={buyCopy(t('buy.title'))}
               onClose={onClose}
               icon={<CurrencyIcon size="md" />}
             />
@@ -93,7 +95,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                   <button
                     key={provider}
                     onClick={() => buy.selectProvider(provider)}
-                    className="w-full flex items-center gap-4 p-4 rounded-2xl border border-spark-border hover:border-spark-primary/40 hover:bg-spark-primary/5 transition-all text-left"
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl border border-spark-border hover:border-spark-primary/40 hover:bg-spark-primary/5 transition-all text-start"
                   >
                     {meta.icon}
                     <span className="font-display font-semibold text-spark-text-primary text-sm">
@@ -126,7 +128,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-spark-text-primary mb-2">
-                  Amount
+                  {t('buy.amount')}
                 </label>
                 <div className="relative">
                   <input
@@ -137,11 +139,11 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                     placeholder={
                       buy.isTokenMode && buy.tokenConfig
                         ? `Enter amount in ${buy.tokenConfig.currencyCode}`
-                        : 'Enter amount in sats'
+                        : t('receive.enterAmountSats')
                     }
                     disabled={buy.isGenerating}
                     min={buy.isTokenMode ? undefined : 1}
-                    className={`${AMOUNT_FIELD_CLASS} pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                    className={`${AMOUNT_FIELD_CLASS} pe-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                     data-testid="cashapp-amount-input"
                   />
                   {/* Always named, never absent: without a stable balance there
@@ -175,7 +177,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
               </div>
 
               <p className="text-xs text-spark-text-muted">
-                Cash App will show the equivalent amount in your local currency and charge your Cash or BTC balance.
+                {t('buy.cashAppNote')}
               </p>
 
               <FormError error={buy.error} />
@@ -186,7 +188,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                 className="w-full"
                 data-testid="cashapp-continue-button"
               >
-                {buy.isGenerating ? <LoadingSpinner size="small" /> : 'Continue'}
+                {buy.isGenerating ? <LoadingSpinner size="small" /> : t('actions.continue')}
               </PrimaryButton>
             </div>
           </>
@@ -208,23 +210,27 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                   behind it, which an installed PWA has no other way back
                   from. */}
               <p className="text-center text-sm text-spark-text-secondary">
-                <a
-                  href={buy.cashAppUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-spark-primary underline underline-offset-4 hover:text-spark-primary/80 transition-colors"
-                  data-testid="cashapp-open-link"
-                >
-                  Open Cash App
-                </a>
-                , or scan from another device.
+                <Trans
+                  i18nKey="common:buy.cashAppOpenNotice"
+                  components={{
+                    open: (
+                      <a
+                        href={buy.cashAppUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-spark-primary underline underline-offset-4 hover:text-spark-primary/80 transition-colors"
+                        data-testid="cashapp-open-link"
+                      />
+                    ),
+                  }}
+                />
               </p>
 
               <a
                 href={buy.cashAppUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Open Cash App"
+                aria-label={t('buy.openCashApp')}
                 className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spark-primary"
                 data-testid="cashapp-open-qr"
               >
@@ -235,9 +241,9 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                 text={buy.cashAppUrl}
                 hideText
                 showShare
-                label="Cash App link"
-                onCopied={() => showToast('success', 'Copied!')}
-                onShareError={() => showToast('error', 'Failed to share')}
+                label={t('buy.cashAppLink')}
+                onCopied={() => showToast('success', t('actions.copied'))}
+                onShareError={() => showToast('error', t('labels.shareFailed'))}
               />
             </div>
           </>

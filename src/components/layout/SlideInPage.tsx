@@ -4,6 +4,7 @@ import { CloseIcon, BackIcon } from '../Icons';
 import { safeAreaTop, safeAreaBottom } from '../../utils/safeAreaInsets';
 import { useStatusBarColor } from '../../hooks/useStatusBarColor';
 import { STATUS_BAR_SURFACE } from '../../utils/statusBarManager';
+import { useTranslation } from 'react-i18next';
 
 type SlideDirection = 'left' | 'right' | 'up' | 'down';
 
@@ -42,6 +43,7 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
   slideFrom = 'left',
   footer,
 }) => {
+  const { t } = useTranslation('common');
   const [isOpen, setIsOpen] = useState(true);
 
   // Slide-in pages (Settings, Backup, Buy Providers, etc.) use a
@@ -113,16 +115,16 @@ const SlideInPage: React.FC<SlideInPageProps> = ({
               {closeStyle === 'back' ? (
                 <button
                   onClick={handleClose}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
-                  aria-label="Go back"
+                  className="absolute start-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
+                  aria-label={t('a11y.goBack')}
                 >
                   <BackIcon size="md" />
                 </button>
               ) : (
                 <button
                   onClick={handleClose}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
-                  aria-label="Close"
+                  className="absolute end-4 top-1/2 -translate-y-1/2 p-2 text-spark-text-muted hover:text-spark-text-primary rounded-lg hover:bg-white/5 transition-colors"
+                  aria-label={t('actions.close')}
                 >
                   <CloseIcon size="md" />
                 </button>

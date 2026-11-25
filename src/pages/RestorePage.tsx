@@ -4,6 +4,7 @@ import { PrimaryButton, FIELD_BASE_CLASS } from '../components/ui';
 import { SimpleAlert } from '../components/AlertCard';
 import { WebSecurityNotice } from '../components/WebSecurityNotice';
 import { useScreenCaptureProtection } from '@/utils/screenSecurity';
+import { useTranslation } from 'react-i18next';
 
 interface RestorePageProps {
   onConnect: (mnemonic: string) => Promise<void>;
@@ -18,6 +19,7 @@ const RestorePage: React.FC<RestorePageProps> = ({
   onClearError,
   isLoading = false,
 }) => {
+  const { t } = useTranslation(['critical', 'common']);
   const [mnemonic, setMnemonic] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +35,7 @@ const RestorePage: React.FC<RestorePageProps> = ({
     const wordCount = cleaned.split(' ').length;
 
     if (wordCount !== 12 && wordCount !== 24) {
-      setError('Please enter a valid 12 or 24-word recovery phrase');
+      setError(t('restore.invalidLength'));
       return;
     }
 
@@ -41,7 +43,7 @@ const RestorePage: React.FC<RestorePageProps> = ({
     try {
       await onConnect(cleaned);
     } catch {
-      setError('Invalid recovery phrase. Please check your words and try again.');
+      setError(t('restore.invalidPhrase'));
     }
   };
 
@@ -53,16 +55,16 @@ const RestorePage: React.FC<RestorePageProps> = ({
         className="w-full"
         data-testid="restore-confirm-button"
       >
-        {isLoading ? 'Restoring...' : 'Restore'}
+        {isLoading ? t('common:restore.restoring') : t('common:restore.restore')}
       </PrimaryButton>
     </div>
   );
 
   return (
-    <PageLayout footer={footer} onBack={onBack} title="Restore from Backup" onClearError={onClearError}>
+    <PageLayout footer={footer} onBack={onBack} title={t('common:pages.restoreFromBackup')} onClearError={onClearError}>
        <div className="max-w-xl mx-auto w-full space-y-4">
         <p className="text-spark-text-secondary text-center mb-6">
-          Enter your 12 or 24-word recovery phrase to restore Glow. Words should be separated by spaces.
+          {t('restore.body')}
         </p>
 
         <div className="relative">
@@ -70,7 +72,7 @@ const RestorePage: React.FC<RestorePageProps> = ({
             value={mnemonic}
             onChange={(e) => setMnemonic(e.target.value)}
             className={`${FIELD_BASE_CLASS} h-36 px-4 py-3 resize-none font-mono text-sm`}
-            placeholder="word1 word2 word3 ..."
+            placeholder={t('restore.placeholder')}
             // A mobile keyboard otherwise sentence-cases and autocorrects
             // BIP39 words into something the SDK rejects.
             autoCapitalize="none"

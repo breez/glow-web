@@ -227,11 +227,11 @@ describe('TrackerView', () => {
     expect(screen.getByText(moved)).toBeInTheDocument();
   });
 
-  it.each([
+it.each([
     ['a diverged one', signIn, 'Some of your funds were moved on-chain to keep them safe. Please update your recovery to recover all your funds.'],
     ['one over a step it could not read', unverified, "Glow couldn't check part of your recovery on-chain. Please update your recovery to continue."],
   ] as const)('names a recovery in the update it asks for on %s', (_, status, text) => {
-    render(<TrackerView plan={plan([tx({ txid: 'a' })], { status })} tipHeight={1000} isAdvancing={false} noun="recovery" />);
+    render(<TrackerView plan={plan([tx({ txid: 'a' })], { status })} tipHeight={1000} isAdvancing={false} mode="recover" />);
     expect(screen.getByText(text)).toBeInTheDocument();
   });
 
@@ -314,7 +314,7 @@ describe('TrackerView', () => {
         plan={plan([tx({ txid: 'c1', kind: 'cooperative' })], { mode: 'recover' })}
         tipHeight={1000}
         isAdvancing={false}
-        noun="recovery"
+        mode="recover"
       />,
     );
     expect(screen.queryByText('Advanced')).not.toBeInTheDocument();

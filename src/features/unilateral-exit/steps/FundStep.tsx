@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 import { AlertCard } from '@/components/AlertCard';
 import { FeeBreakdownCard } from '@/components/FeeBreakdownCard';
 import { CollapsibleSection, CopyableText, LoadingSpinner, PrimaryButton, QRCodeContainer } from '@/components/ui';
@@ -7,7 +9,7 @@ import { CheckIcon, ClockIcon, CloseIcon } from '@/components/Icons';
 import { useToast } from '@/contexts/ToastContext';
 import type { ChainUtxo } from '@/services/chain';
 import { isPendingFunded, pendingTopUp, type TopUp } from '../exitFee';
-import type { PendingExit } from '../model/plan';
+import type { ExitMode, PendingExit } from '../model/plan';
 import type { UnilateralExitEngineState } from '../engine/state';
 import { BackupActions, ExitActionRow } from '../BackupCard';
 import { ErrorCard } from './ReviewParts';
@@ -17,12 +19,15 @@ const QUOTE_AGE_TICK_MS = 30_000;
 
 const quoteAge = (quotedAt: number): string => {
   const minutes = Math.floor((Date.now() - quotedAt) / 60_000);
-  if (minutes < 1) return 'quoted just now';
-  return minutes < 60 ? `quoted ${minutes}m ago` : `quoted ${Math.floor(minutes / 60)}h ago`;
+  if (minutes < 1) return i18n.t('common:exit.quotedJustNow');
+  return minutes < 60
+    ? i18n.t('common:exit.quotedMinutesAgo', { count: minutes })
+    : i18n.t('common:exit.quotedHoursAgo', { count: Math.floor(minutes / 60) });
 };
 
 /** A top-up still waiting for coins. The page keeps it by the action, where it stays on screen as it changes. */
 export const FundingStatus: React.FC<Pick<FundingFields, 'quotedAt'>> = ({ quotedAt }) => {
+  const { t } = useTranslation('common');
   // The quote's age is the one figure here that goes stale on its own.
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -33,7 +38,7 @@ export const FundingStatus: React.FC<Pick<FundingFields, 'quotedAt'>> = ({ quote
     <div className="flex items-center justify-center gap-2" data-testid="unilateral-exit-funding-status">
       <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-spark-warning animate-pulse" />
       <p className="text-sm text-spark-text-secondary">
-        Watching the address
+        {t('exit.watchingAddress')}
         {quotedAt !== null && ` · ${quoteAge(quotedAt)}`}
       </p>
     </div>
@@ -48,6 +53,7 @@ const Ask: React.FC<{ label: string; sat: number }> = ({ label, sat }) => (
 );
 
 const PaymentTarget: React.FC<{ address: string; amountSat: number }> = ({ address, amountSat }) => {
+  const { t } = useTranslation('common');
   const { showToast } = useToast();
   // BIP21 so the paying wallet fills the amount in as well as the address:
   // this is money sent from somewhere else, and the figure has to be exact.
@@ -66,9 +72,9 @@ const PaymentTarget: React.FC<{ address: string; amountSat: number }> = ({ addre
         text={address}
         truncate
         showShare
-        label="Exit fee address"
-        onCopied={() => showToast('success', 'Copied!')}
-        onShareError={() => showToast('error', 'Failed to share')}
+        label={t('exit.exitFeeAddress')}
+        onCopied={() => showToast('success', t('actions.copied'))}
+        onShareError={() => showToast('error', t('labels.shareFailed'))}
         data-testid="unilateral-exit-funding-address"
       />
     </div>
@@ -79,7 +85,7 @@ const PaymentTarget: React.FC<{ address: string; amountSat: number }> = ({ addre
 // is paid, so the step becomes the receipt instead. What it waits on sits
 // under the title, as a result's detail line does.
 export const Receipt: React.FC<{ title?: string; children?: React.ReactNode }> = ({
-  title = 'Exit fee received',
+  title,
   children,
 }) => (
   <div className="pt-6 flex flex-col items-center">
@@ -89,20 +95,25 @@ export const Receipt: React.FC<{ title?: string; children?: React.ReactNode }> =
         <CheckIcon className="w-10 h-10 text-spark-success" />
       </div>
     </div>
-    <h3 className="font-display text-xl font-bold text-spark-text-primary">{title}</h3>
+    <h3 className="font-display text-xl font-bold text-spark-text-primary">
+      {title ?? i18n.t('common:exit.exitFeeReceived')}
+    </h3>
     {children && <div className="mt-2 space-y-2">{children}</div>}
   </div>
 );
 
-const Breakdown: React.FC<{ topUp: TopUp; feeRate: number }> = ({ topUp, feeRate }) => (
+const Breakdown: React.FC<{ topUp: TopUp; feeRate: number }> = ({ topUp, feeRate }) => {
+  const { t } = useTranslation('common');
+  return (
   <FeeBreakdownCard
     items={[
-      { label: `Exit fee at ${feeRate} sat/vB`, value: topUp.neededSat },
-      { label: "You've already sent", value: topUp.sentSat, subtract: true },
-      { label: 'Still to send', value: topUp.stillToSendSat, highlight: true },
+      { label: t('exit.exitFeeAtRate', { rate: feeRate }), value: topUp.neededSat },
+      { label: t('exit.alreadySent'), value: topUp.sentSat, subtract: true },
+      { label: t('exit.stillToSend'), value: topUp.stillToSendSat, highlight: true },
     ]}
   />
-);
+  );
+};
 
 export const Status: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="flex items-center justify-center gap-2" data-testid="unilateral-exit-pending-status">
@@ -118,17 +129,18 @@ export const FundStep: React.FC<
     /** A top-up opens on what it costs, and shows where to pay once asked. */
     isPaying: boolean;
     onTopUp: () => void;
-    noun?: string;
+    mode?: ExitMode;
   }
-> = ({ address, topUp, waitsForConfirmation, feeRate, currentFeeRate, networkFloorFeeRate, error, isPaying, onTopUp, noun = 'exit' }) => {
+> = ({ address, topUp, waitsForConfirmation, feeRate, currentFeeRate, networkFloorFeeRate, error, isPaying, onTopUp, mode = 'exit' }) => {
+  const { t } = useTranslation('common');
   // The build is tried before anything is asked for, so without a top-up there
   // is nothing to pay here: only a failure to explain.
   if (!topUp) {
     return error ? (
-      <ErrorCard title={`Could not continue the ${noun}`} error={error} testId="unilateral-exit-build-error" />
+      <ErrorCard title={t(`exit.couldNotContinue_${mode}`)} error={error} testId="unilateral-exit-build-error" />
     ) : (
       <p className="text-sm text-spark-text-secondary text-center">
-        Continue the {noun} at {feeRate} sat/vB.
+        {t(`exit.continueAtRate_${mode}`, { rate: feeRate })}
       </p>
     );
   }
@@ -136,8 +148,8 @@ export const FundStep: React.FC<
   // Says why Continue Exit is not yet open, as the pending exit's receipt does.
   if (topUp.stillToSendSat === 0) {
     return waitsForConfirmation ? (
-      <Receipt title="Exit fee sent">
-        <Status>Waiting for a confirmation</Status>
+      <Receipt title={t('exit.exitFeeSent')}>
+        <Status>{t('exit.waitingConfirmation')}</Status>
       </Receipt>
     ) : (
       <Receipt />
@@ -154,15 +166,15 @@ export const FundStep: React.FC<
     return (
       <div className="space-y-4">
         <Breakdown topUp={topUp} feeRate={feeRate} />
-        <AlertCard variant="warning" title={feesRose ? 'Network fees went up' : `The ${noun} needs more`}>
+        <AlertCard variant="warning" title={feesRose ? t('exit.feesWentUp') : t(`exit.needsMore_${mode}`)}>
           <p className="text-sm">
             {feesRose
-              ? `Your ${noun} started at ${currentFeeRate} sat/vB and continues on its own once fees drop, but they can also keep rising. To continue now at ${feeRate} sat/vB, top up the exit fee address.`
-              : `At ${feeRate} sat/vB, the ${noun} needs more funds at its fee address.`}
+              ? t(`exit.feesRoseBody_${mode}`, { started: currentFeeRate, rate: feeRate })
+              : t(`exit.needsMoreBody_${mode}`, { rate: feeRate })}
           </p>
           <div className="mt-3">
             <PrimaryButton onClick={onTopUp} className="w-full" data-testid="unilateral-exit-top-up">
-              Top Up to Continue
+              {t('exit.topUpToContinue')}
             </PrimaryButton>
           </div>
         </AlertCard>
@@ -172,7 +184,7 @@ export const FundStep: React.FC<
 
   return (
     <div className="space-y-4">
-      <Ask label={`Send to Continue ${noun.charAt(0).toUpperCase()}${noun.slice(1)}`} sat={topUp.stillToSendSat} />
+      <Ask label={t(`exit.sendToContinue_${mode}`)} sat={topUp.stillToSendSat} />
       <PaymentTarget address={address} amountSat={topUp.stillToSendSat} />
     </div>
   );
@@ -186,15 +198,16 @@ export const PendingExitStep: React.FC<{
   isStarting: boolean;
   startError: string | null;
   onCancel: () => void;
-  noun?: string;
-}> = ({ pending, coins, nothingToExit, isStarting, startError, onCancel, noun = 'exit' }) => {
+  mode?: ExitMode;
+}> = ({ pending, coins, nothingToExit, isStarting, startError, onCancel, mode = 'exit' }) => {
+  const { t } = useTranslation('common');
   const [advanced, setAdvanced] = useState(false);
   const topUp = pendingTopUp(pending, coins);
 
   if (isStarting) {
     return (
       <div className="py-16 flex justify-center">
-        <LoadingSpinner text={`Building and signing the ${noun}...`} />
+        <LoadingSpinner text={t(`exit.buildingAndSigning_${mode}`)} />
       </div>
     );
   }
@@ -205,49 +218,48 @@ export const PendingExitStep: React.FC<{
       return (
         <AlertCard
           variant="warning"
-          title={noun === 'exit' ? 'Nothing is worth exiting right now' : 'Nothing is worth recovering right now'}
+          title={t(`exit.nothingWorth_${mode}`)}
         >
           <p className="text-sm">
-            {noun === 'exit'
-              ? `At ${pending.feeRateSatPerVbyte} sat/vB your balance would cost more to move on-chain than it is worth. Cancel it under Advanced and start again at a lower rate. The fee you sent counts toward it.`
-              : `At ${pending.feeRateSatPerVbyte} sat/vB these funds would cost more to move on-chain than they are worth. Cancel the ${noun} under Advanced and start again at a lower rate. The fee you sent counts toward it.`}
+            {t(`exit.nothingWorthBody_${mode}`, { rate: pending.feeRateSatPerVbyte })}
           </p>
         </AlertCard>
       );
     }
     // The fresh quote's words for the same verdict.
     if (nothingToExit && reason !== 'unavailable') {
-      return noun === 'exit' ? (
-        <AlertCard variant="warning" title="Nothing here to exit">
-          <p className="text-sm">
-            This wallet holds no funds on Spark that can be moved on-chain. If you were expecting
-            some, the leaf data this needs may be missing from this device.
-          </p>
+      return mode === 'exit' ? (
+        <AlertCard variant="warning" title={t('exit.nothingHereToExit')}>
+          <p className="text-sm">{t('exit.nothingHereToExitBody')}</p>
         </AlertCard>
       ) : (
-        <AlertCard variant="info" title="Nothing left to recover">
-          <p className="text-sm">{reason === null ? 'These funds were already recovered.' : "These funds can't be recovered."}</p>
+        <AlertCard variant="info" title={t('exit.nothingLeftToRecover')}>
+          <p className="text-sm">{reason === null ? t('exit.alreadyRecovered') : t('exit.cannotBeRecovered')}</p>
         </AlertCard>
       );
     }
     if (topUp.stillToSendSat > 0) {
       return (
         <>
-          <Ask label="Send from another wallet" sat={topUp.stillToSendSat} />
+          <Ask label={t('exit.sendFromElsewhere')} sat={topUp.stillToSendSat} />
           <PaymentTarget address={pending.fundingAddress} amountSat={topUp.stillToSendSat} />
           <Status>
-            {topUp.sentSat > 0 ? <><SatAmount sats={topUp.sentSat} /> received</> : 'Waiting for your payment'}
+            {topUp.sentSat > 0 ? (
+              <Trans i18nKey="common:exit.amountReceived" components={{ amount: <SatAmount sats={topUp.sentSat} /> }} />
+            ) : (
+              t('exit.waitingForPayment')
+            )}
           </Status>
         </>
       );
     }
     if (!isPendingFunded(pending, coins)) {
       return (
-        <Receipt title="Exit fee sent">
-          <Status>Waiting for a confirmation</Status>
+        <Receipt title={t('exit.exitFeeSent')}>
+          <Status>{t('exit.waitingConfirmation')}</Status>
           {/* Paid is where the wait is, so it is where closing needs saying. */}
           <p className="text-spark-text-muted text-xs text-center text-balance">
-            You can close this. Come back to start the {noun} once the fee confirms.
+            {t(`exit.closeComeBack_${mode}`)}
           </p>
         </Receipt>
       );
@@ -256,11 +268,11 @@ export const PendingExitStep: React.FC<{
       <>
         <Receipt />
         {reason === 'unavailable' ? (
-          <AlertCard variant="warning" title={noun === 'exit' ? 'Could not start the exit' : 'Nothing can be recovered right now'}>
-            <p className="text-sm">Try again later.</p>
+          <AlertCard variant="warning" title={t(`exit.unavailable_${mode}`)}>
+            <p className="text-sm">{t('exit.tryAgainLater')}</p>
           </AlertCard>
         ) : (
-          startError && <ErrorCard title={`Could not start the ${noun}`} error={startError} testId="unilateral-exit-start-error" />
+          startError && <ErrorCard title={t(`exit.couldNotStart_${mode}`)} error={startError} testId="unilateral-exit-start-error" />
         )}
       </>
     );
@@ -271,9 +283,9 @@ export const PendingExitStep: React.FC<{
       {body}
       {/* Out of the way, as on the intro and the tracker. Nothing is lost by
           cancelling: coins already sent count toward the next exit. */}
-      <CollapsibleSection label="Advanced" isVisible={advanced} onToggle={() => setAdvanced(v => !v)} bare>
-        <BackupActions noun={noun}>
-          <ExitActionRow label={`Cancel ${noun}`} icon={<CloseIcon size="md" />} onClick={onCancel} testId="unilateral-exit-cancel" />
+      <CollapsibleSection label={t('exit.advanced')} isVisible={advanced} onToggle={() => setAdvanced(v => !v)} bare>
+        <BackupActions mode={mode}>
+          <ExitActionRow label={t(`exit.cancel_${mode}`)} icon={<CloseIcon size="md" />} onClick={onCancel} testId="unilateral-exit-cancel" />
         </BackupActions>
       </CollapsibleSection>
     </div>

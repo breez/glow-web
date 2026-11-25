@@ -7,7 +7,7 @@ const BreezLogo: React.FC<{ className?: string }> = ({ className = '' }) => {
         width="96"
         height="96"
         src='/assets/logo-breez-header.svg'
-        className="mr-2"
+        className="me-2"
       >
       </img>
     </div>
