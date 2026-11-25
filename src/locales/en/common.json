@@ -287,6 +287,7 @@
     "preferSpark": "Prefer Spark",
     "preferSparkBody": "Use Spark address over Lightning invoice when available",
     "syncSettings": "Sync Settings",
+    "syncInterval": "Sync interval (seconds)",
     "customDomain": "Custom domain",
     "account": "Account",
     "deleteAccountGuide": "How to delete your account",

@@ -291,6 +291,7 @@
     "preferSpark": "Предпочитать Spark",
     "preferSparkBody": "Использовать адрес Spark вместо инвойса Lightning, когда это возможно",
     "syncSettings": "Синхронизировать настройки",
+    "syncInterval": "Интервал синхронизации (секунды)",
     "customDomain": "Свой домен",
     "account": "Аккаунт",
     "deleteAccountGuide": "Как удалить аккаунт",

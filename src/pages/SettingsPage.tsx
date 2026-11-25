@@ -448,7 +448,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               <h3 className="font-display font-semibold text-spark-text-primary mb-3">{t('settings.syncSettings')}</h3>
               <FormGroup>
                 <label htmlFor="sync-interval" className="block text-sm text-spark-text-secondary mb-1">
-                  Sync interval (seconds)
+                  {t('settings.syncInterval')}
                 </label>
                 <FormInput
                   id="sync-interval"
@@ -456,7 +456,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                   min={0}
                   value={syncIntervalSecs}
                   onChange={(e) => setSyncIntervalSecs(e.target.value)}
-                  placeholder="e.g. 30"
+                  placeholder="30"
                 />
               </FormGroup>
             </div>

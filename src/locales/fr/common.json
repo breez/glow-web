@@ -287,6 +287,7 @@
     "preferSpark": "Préférer Spark",
     "preferSparkBody": "Utiliser l'adresse Spark plutôt que la facture Lightning lorsque c'est possible",
     "syncSettings": "Réglages de synchronisation",
+    "syncInterval": "Intervalle de synchronisation (secondes)",
     "customDomain": "Domaine personnalisé",
     "account": "Compte",
     "deleteAccountGuide": "Comment supprimer votre compte",

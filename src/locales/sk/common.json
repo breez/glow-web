@@ -291,6 +291,7 @@
     "preferSpark": "Uprednostniť Spark",
     "preferSparkBody": "Používať adresu Spark namiesto Lightning faktúry, ak je k dispozícii",
     "syncSettings": "Nastavenia synchronizácie",
+    "syncInterval": "Interval synchronizácie (sekundy)",
     "customDomain": "Vlastná doména",
     "account": "Účet",
     "deleteAccountGuide": "Ako vymazať svoj účet",

@@ -287,6 +287,7 @@
     "preferSpark": "ใช้ Spark ก่อน",
     "preferSparkBody": "ใช้ที่อยู่ Spark แทนใบแจ้งหนี้ Lightning เมื่อใช้ได้",
     "syncSettings": "ซิงค์การตั้งค่า",
+    "syncInterval": "ช่วงเวลาซิงค์ (วินาที)",
     "customDomain": "โดเมนที่กำหนดเอง",
     "account": "บัญชี",
     "deleteAccountGuide": "วิธีลบบัญชีของคุณ",

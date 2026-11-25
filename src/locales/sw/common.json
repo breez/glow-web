@@ -287,6 +287,7 @@
     "preferSpark": "Pendelea Spark",
     "preferSparkBody": "Tumia anwani ya Spark badala ya ankara ya Lightning inapopatikana",
     "syncSettings": "Sawazisha Mipangilio",
+    "syncInterval": "Muda wa kusawazisha (sekunde)",
     "customDomain": "Kikoa maalum",
     "account": "Akaunti",
     "deleteAccountGuide": "Jinsi ya kufuta akaunti yako",

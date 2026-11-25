@@ -287,6 +287,7 @@
     "preferSpark": "Spark verkiezen",
     "preferSparkBody": "Gebruik het Spark-adres in plaats van een Lightning-factuur wanneer dat beschikbaar is",
     "syncSettings": "Synchronisatie-instellingen",
+    "syncInterval": "Synchronisatie-interval (seconden)",
     "customDomain": "Eigen domein",
     "account": "Account",
     "deleteAccountGuide": "Zo verwijder je je account",

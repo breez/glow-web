@@ -287,6 +287,7 @@
     "preferSpark": "Spark'ı tercih et",
     "preferSparkBody": "Mümkün olduğunda Lightning faturası yerine Spark adresini kullan",
     "syncSettings": "Senkronizasyon ayarları",
+    "syncInterval": "Senkronizasyon aralığı (saniye)",
     "customDomain": "Özel alan adı",
     "account": "Hesap",
     "deleteAccountGuide": "Hesabını nasıl silersin",
