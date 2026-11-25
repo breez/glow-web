@@ -287,6 +287,7 @@
     "preferSpark": "Spark を優先",
     "preferSparkBody": "利用できる場合は Lightning インボイスより Spark アドレスを使う",
     "syncSettings": "設定を同期",
+    "syncInterval": "同期間隔（秒）",
     "customDomain": "カスタムドメイン",
     "account": "アカウント",
     "deleteAccountGuide": "アカウントを削除する方法",

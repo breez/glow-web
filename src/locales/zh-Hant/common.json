@@ -287,6 +287,7 @@
     "preferSpark": "優先使用 Spark",
     "preferSparkBody": "可用時使用 Spark 位址，而不是 Lightning 帳單",
     "syncSettings": "同步設定",
+    "syncInterval": "同步間隔（秒）",
     "customDomain": "自訂網域",
     "account": "帳戶",
     "deleteAccountGuide": "如何刪除您的帳戶",

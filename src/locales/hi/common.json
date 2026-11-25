@@ -287,6 +287,7 @@
     "preferSpark": "Spark को प्राथमिकता दें",
     "preferSparkBody": "उपलब्ध होने पर Lightning इनवॉइस की जगह Spark पता इस्तेमाल करें",
     "syncSettings": "सेटिंग सिंक करें",
+    "syncInterval": "सिंक अंतराल (सेकंड)",
     "customDomain": "कस्टम डोमेन",
     "account": "खाता",
     "deleteAccountGuide": "अपना खाता कैसे हटाएँ",

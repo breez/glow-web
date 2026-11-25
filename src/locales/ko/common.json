@@ -287,6 +287,7 @@
     "preferSpark": "Spark 우선",
     "preferSparkBody": "가능하면 Lightning 인보이스보다 Spark 주소를 사용합니다",
     "syncSettings": "설정 동기화",
+    "syncInterval": "동기화 간격(초)",
     "customDomain": "사용자 지정 도메인",
     "account": "계정",
     "deleteAccountGuide": "계정을 삭제하는 방법",

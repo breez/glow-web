@@ -287,6 +287,7 @@
     "preferSpark": "Unahin ang Spark",
     "preferSparkBody": "Gamitin ang Spark address kaysa Lightning invoice kapag available",
     "syncSettings": "I-sync ang Mga Setting",
+    "syncInterval": "Pagitan ng pag-sync (segundo)",
     "customDomain": "Custom na domain",
     "account": "Account",
     "deleteAccountGuide": "Paano burahin ang account mo",

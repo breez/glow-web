@@ -293,6 +293,7 @@
     "preferSpark": "تفضيل Spark",
     "preferSparkBody": "استخدام عنوان Spark بدلاً من فاتورة Lightning عند توفّره",
     "syncSettings": "مزامنة الإعدادات",
+    "syncInterval": "فترة المزامنة (بالثواني)",
     "customDomain": "نطاق مخصّص",
     "account": "الحساب",
     "deleteAccountGuide": "كيفية حذف حسابك",

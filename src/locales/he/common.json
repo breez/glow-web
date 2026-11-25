@@ -289,6 +289,7 @@
     "preferSpark": "עדיפות ל-Spark",
     "preferSparkBody": "שימוש בכתובת Spark במקום בחשבונית Lightning כשאפשר",
     "syncSettings": "סנכרון ההגדרות",
+    "syncInterval": "מרווח סנכרון (שניות)",
     "customDomain": "דומיין מותאם",
     "account": "חשבון",
     "deleteAccountGuide": "איך למחוק את החשבון שלך",

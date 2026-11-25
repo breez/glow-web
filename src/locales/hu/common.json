@@ -287,6 +287,7 @@
     "preferSpark": "Spark előnyben részesítése",
     "preferSparkBody": "Ha elérhető, Spark-címet használjon Lightning-számla helyett",
     "syncSettings": "Szinkronizálási beállítások",
+    "syncInterval": "Szinkronizálási időköz (másodperc)",
     "customDomain": "Egyéni domain",
     "account": "Fiók",
     "deleteAccountGuide": "Hogyan töröld a fiókodat",

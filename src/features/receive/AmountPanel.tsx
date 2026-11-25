@@ -173,7 +173,7 @@ const AmountPanel: React.FC<AmountPanelProps> = ({
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-spark-text-primary mb-2">
-              Amount
+              {t('labels.amount')}
             </label>
             <div className="relative">
               <textarea

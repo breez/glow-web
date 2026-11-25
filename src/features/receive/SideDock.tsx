@@ -48,7 +48,7 @@ export const SideCaption: React.FC<{ shown: BtcMode; mode: BtcMode; onChange: (m
     aria-label={i18n.t('receive.switchTo', { mode: label(other(mode)) })}
     className="flex w-11 items-center justify-center self-stretch rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-spark-primary/60"
   >
-    <span className="-mb-[0.1em] text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase [writing-mode:vertical-rl]">
+    <span lang="en" className="-mb-[0.1em] text-spark-text-muted text-xs font-display font-medium tracking-widest uppercase [writing-mode:vertical-rl]">
       {label(shown)}
     </span>
   </button>

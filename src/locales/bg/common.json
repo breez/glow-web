@@ -287,6 +287,7 @@
     "preferSpark": "Предпочитане на Spark",
     "preferSparkBody": "Използване на Spark адрес вместо Lightning фактура, когато е възможно",
     "syncSettings": "Настройки за синхронизация",
+    "syncInterval": "Интервал на синхронизация (секунди)",
     "customDomain": "Собствен домейн",
     "account": "Акаунт",
     "deleteAccountGuide": "Как да изтриете акаунта си",

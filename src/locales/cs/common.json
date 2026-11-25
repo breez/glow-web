@@ -291,6 +291,7 @@
     "preferSpark": "Upřednostnit Spark",
     "preferSparkBody": "Používat adresu Spark místo Lightning faktury, pokud je k dispozici",
     "syncSettings": "Nastavení synchronizace",
+    "syncInterval": "Interval synchronizace (sekundy)",
     "customDomain": "Vlastní doména",
     "account": "Účet",
     "deleteAccountGuide": "Jak smazat svůj účet",
