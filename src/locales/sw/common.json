@@ -846,5 +846,11 @@
   "passkeyCheck": {
     "verifying": "Inathibitisha passkey yako",
     "continue": "Endelea kwenda Glow"
+  },
+  "translationReport": {
+    "title": "Ripoti Tafsiri",
+    "suggestion": "Maneno yanayopendekezwa",
+    "send": "Tuma Ripoti",
+    "currentText": "Maandishi ya sasa"
   }
 }

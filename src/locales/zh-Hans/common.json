@@ -846,5 +846,11 @@
   "passkeyCheck": {
     "verifying": "正在验证通行密钥",
     "continue": "进入 Glow"
+  },
+  "translationReport": {
+    "title": "报告翻译问题",
+    "suggestion": "建议的措辞",
+    "send": "发送报告",
+    "currentText": "当前文本"
   }
 }

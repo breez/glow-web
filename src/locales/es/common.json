@@ -846,5 +846,11 @@
   "passkeyCheck": {
     "verifying": "Verificando tu passkey",
     "continue": "Continuar a Glow"
+  },
+  "translationReport": {
+    "title": "Informar de la traducción",
+    "suggestion": "Redacción sugerida",
+    "send": "Enviar informe",
+    "currentText": "Texto actual"
   }
 }

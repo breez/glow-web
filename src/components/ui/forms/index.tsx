@@ -121,6 +121,7 @@ export const FormInput: React.FC<FormInputProps> = ({
 );
 
 export interface FormTextareaProps {
+  id?: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   placeholder?: string;
@@ -130,6 +131,7 @@ export interface FormTextareaProps {
 }
 
 export const FormTextarea: React.FC<FormTextareaProps> = ({
+  id,
   value,
   onChange,
   placeholder,
@@ -138,6 +140,7 @@ export const FormTextarea: React.FC<FormTextareaProps> = ({
   rows = 3,
 }) => (
   <textarea
+    id={id}
     value={value}
     onChange={onChange}
     className={`w-full bg-spark-dark border border-spark-border rounded-xl px-4 py-3 text-spark-text-primary placeholder-spark-text-muted focus:border-spark-primary focus:ring-0 transition-all resize-none ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}

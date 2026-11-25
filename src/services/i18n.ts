@@ -1,3 +1,4 @@
+import { keyRecorder } from './translationReport';
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { Device } from '@capacitor/device';
@@ -206,7 +207,9 @@ export function warmupSample(): string {
 export async function initI18n(): Promise<string> {
   const language = await resolveLanguage();
 
-  await i18next.use(initReactI18next).init({
+  await i18next.use(initReactI18next).use(keyRecorder).init({
+    postProcess: ['recordKey'],
+    postProcessPassResolved: true,
     lng: language,
     fallbackLng: FALLBACK_LANGUAGE,
     // Every language with files, not the shipping list: dev mode can widen the

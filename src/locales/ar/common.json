@@ -867,5 +867,11 @@
   "passkeyCheck": {
     "verifying": "جارٍ التحقق من مفتاح المرور",
     "continue": "المتابعة إلى Glow"
+  },
+  "translationReport": {
+    "title": "الإبلاغ عن الترجمة",
+    "suggestion": "الصياغة المقترحة",
+    "send": "إرسال البلاغ",
+    "currentText": "النص الحالي"
   }
 }

@@ -860,5 +860,11 @@
   "passkeyCheck": {
     "verifying": "Sprawdzanie Twojego passkey",
     "continue": "Przejdź do Glow"
+  },
+  "translationReport": {
+    "title": "Zgłoś tłumaczenie",
+    "suggestion": "Proponowane brzmienie",
+    "send": "Wyślij zgłoszenie",
+    "currentText": "Obecny tekst"
   }
 }

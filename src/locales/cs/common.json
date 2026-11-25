@@ -855,5 +855,11 @@
   "passkeyCheck": {
     "verifying": "Ověřuje se tvůj passkey",
     "continue": "Pokračovat do Glow"
+  },
+  "translationReport": {
+    "title": "Nahlásit překlad",
+    "suggestion": "Navrhované znění",
+    "send": "Odeslat hlášení",
+    "currentText": "Současný text"
   }
 }

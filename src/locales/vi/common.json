@@ -846,5 +846,11 @@
   "passkeyCheck": {
     "verifying": "Đang kiểm tra passkey của bạn",
     "continue": "Tiếp tục vào Glow"
+  },
+  "translationReport": {
+    "title": "Báo cáo bản dịch",
+    "suggestion": "Cách diễn đạt đề xuất",
+    "send": "Gửi báo cáo",
+    "currentText": "Văn bản hiện tại"
   }
 }

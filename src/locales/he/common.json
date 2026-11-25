@@ -853,5 +853,11 @@
   "passkeyCheck": {
     "verifying": "מאמת את מפתח הגישה שלך",
     "continue": "המשך ל-Glow"
+  },
+  "translationReport": {
+    "title": "דיווח על תרגום",
+    "suggestion": "ניסוח מוצע",
+    "send": "שליחת הדיווח",
+    "currentText": "הטקסט הנוכחי"
   }
 }

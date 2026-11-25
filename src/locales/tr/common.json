@@ -846,5 +846,11 @@
   "passkeyCheck": {
     "verifying": "Geçiş anahtarın doğrulanıyor",
     "continue": "Glow'a devam et"
+  },
+  "translationReport": {
+    "title": "Çeviriyi Bildir",
+    "suggestion": "Önerilen ifade",
+    "send": "Bildirimi Gönder",
+    "currentText": "Mevcut metin"
   }
 }

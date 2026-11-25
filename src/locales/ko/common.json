@@ -846,5 +846,11 @@
   "passkeyCheck": {
     "verifying": "패스키 확인 중",
     "continue": "Glow로 계속"
+  },
+  "translationReport": {
+    "title": "번역 신고",
+    "suggestion": "제안하는 표현",
+    "send": "신고 보내기",
+    "currentText": "현재 텍스트"
   }
 }

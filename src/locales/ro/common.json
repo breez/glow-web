@@ -853,5 +853,11 @@
   "passkeyCheck": {
     "verifying": "Se verifică cheia ta de acces",
     "continue": "Continuă în Glow"
+  },
+  "translationReport": {
+    "title": "Raportează traducerea",
+    "suggestion": "Formulare sugerată",
+    "send": "Trimite raportul",
+    "currentText": "Text actual"
   }
 }

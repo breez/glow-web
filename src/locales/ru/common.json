@@ -860,5 +860,11 @@
   "passkeyCheck": {
     "verifying": "Проверка ключа доступа",
     "continue": "Перейти в Glow"
+  },
+  "translationReport": {
+    "title": "Сообщить о переводе",
+    "suggestion": "Предлагаемая формулировка",
+    "send": "Отправить сообщение",
+    "currentText": "Текущий текст"
   }
 }

@@ -846,5 +846,11 @@
   "passkeyCheck": {
     "verifying": "Проверка на твоя passkey",
     "continue": "Напред към Glow"
+  },
+  "translationReport": {
+    "title": "Докладване на превод",
+    "suggestion": "Предложена формулировка",
+    "send": "Изпращане на доклада",
+    "currentText": "Текущ текст"
   }
 }

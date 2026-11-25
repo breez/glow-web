@@ -846,5 +846,11 @@
   "passkeyCheck": {
     "verifying": "Sinusuri ang passkey mo",
     "continue": "Magpatuloy sa Glow"
+  },
+  "translationReport": {
+    "title": "I-report ang Pagsasalin",
+    "suggestion": "Iminumungkahing pananalita",
+    "send": "Ipadala ang Report",
+    "currentText": "Kasalukuyang teksto"
   }
 }

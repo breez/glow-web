@@ -846,5 +846,11 @@
   "passkeyCheck": {
     "verifying": "パスキーを確認中",
     "continue": "Glow に進む"
+  },
+  "translationReport": {
+    "title": "翻訳を報告",
+    "suggestion": "修正案",
+    "send": "報告を送信",
+    "currentText": "現在のテキスト"
   }
 }

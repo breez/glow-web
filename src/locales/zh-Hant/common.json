@@ -846,5 +846,11 @@
   "passkeyCheck": {
     "verifying": "正在驗證密碼金鑰",
     "continue": "進入 Glow"
+  },
+  "translationReport": {
+    "title": "回報翻譯問題",
+    "suggestion": "建議的措辭",
+    "send": "傳送回報",
+    "currentText": "目前文字"
   }
 }

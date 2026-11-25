@@ -846,5 +846,11 @@
   "passkeyCheck": {
     "verifying": "आपकी पासकी जाँची जा रही है",
     "continue": "Glow पर जारी रखें"
+  },
+  "translationReport": {
+    "title": "अनुवाद की रिपोर्ट करें",
+    "suggestion": "सुझाया गया शब्दांकन",
+    "send": "रिपोर्ट भेजें",
+    "currentText": "वर्तमान पाठ"
   }
 }

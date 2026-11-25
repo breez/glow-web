@@ -846,5 +846,11 @@
   "passkeyCheck": {
     "verifying": "Je passkey wordt gecontroleerd",
     "continue": "Doorgaan naar Glow"
+  },
+  "translationReport": {
+    "title": "Vertaling melden",
+    "suggestion": "Voorgestelde formulering",
+    "send": "Melding versturen",
+    "currentText": "Huidige tekst"
   }
 }

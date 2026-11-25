@@ -846,5 +846,11 @@
   "passkeyCheck": {
     "verifying": "Kontrollerar din passkey",
     "continue": "Fortsätt till Glow"
+  },
+  "translationReport": {
+    "title": "Rapportera översättning",
+    "suggestion": "Föreslagen formulering",
+    "send": "Skicka rapport",
+    "currentText": "Nuvarande text"
   }
 }
