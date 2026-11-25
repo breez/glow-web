@@ -14,7 +14,7 @@ import {
 import { FlagIcon } from './Icons';
 import { findTranslatedText, sendFeedback } from '@/services/translationFeedback';
 
-const HOLD_MS = 3000;
+const HOLD_MS = 2000;
 const MOVE_TOLERANCE = 8;
 
 interface Target {
@@ -131,7 +131,7 @@ const TranslationFeedback: React.FC = () => {
           </span>
         </button>
       )}
-      <BottomSheetContainer isOpen={target !== null} onClose={close} showBackdrop>
+      <BottomSheetContainer isOpen={target !== null} onClose={close} showBackdrop zIndex={210}>
         <BottomSheetCard>
           <div data-translation-feedback>
             <DialogHeader title={t('translationFeedback.title')} onClose={close} />
