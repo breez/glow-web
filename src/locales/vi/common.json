@@ -242,7 +242,9 @@
     "namedTransfer": "Chuyển {{name}}",
     "usdTransfer": "Chuyển USD",
     "btcTransfer": "Chuyển BTC",
-    "conversionTo": "Chuyển đổi sang {{asset}}"
+    "conversionTo": "Chuyển đổi sang {{asset}}",
+    "conversionFrom": "Chuyển đổi từ {{asset}}",
+    "payTo": "Thanh toán cho {{recipient}}"
   },
   "security": {
     "gateReason": "Mở cài đặt Màn Hình Khóa",

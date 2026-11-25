@@ -242,7 +242,9 @@
     "namedTransfer": "{{name}} 转账",
     "usdTransfer": "USD 转账",
     "btcTransfer": "BTC 转账",
-    "conversionTo": "兑换为 {{asset}}"
+    "conversionTo": "兑换为 {{asset}}",
+    "conversionFrom": "从 {{asset}} 兑换",
+    "payTo": "支付给 {{recipient}}"
   },
   "security": {
     "gateReason": "打开锁定屏幕设置",

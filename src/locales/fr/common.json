@@ -242,7 +242,9 @@
     "namedTransfer": "Transfert {{name}}",
     "usdTransfer": "Transfert USD",
     "btcTransfer": "Transfert BTC",
-    "conversionTo": "Conversion en {{asset}}"
+    "conversionTo": "Conversion en {{asset}}",
+    "conversionFrom": "Conversion depuis {{asset}}",
+    "payTo": "Payer {{recipient}}"
   },
   "security": {
     "gateReason": "Déverrouiller les réglages de l'écran de verrouillage",

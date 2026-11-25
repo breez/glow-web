@@ -75,8 +75,8 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
       if (payment.details.lnurlPayInfo?.lnAddress) {
         const contact = findContactByAddress?.(payment.details.lnurlPayInfo.lnAddress);
         const isSend = payment.paymentType === 'send';
-        if (contact) return isSend ? `Pay to ${contact.name}` : contact.name;
-        return isSend ? `Pay to ${paymentIdentifierLabel(payment.details.lnurlPayInfo.lnAddress)}` : payment.details.lnurlPayInfo.lnAddress;
+        if (contact) return isSend ? i18n.t('methods.payTo', { recipient: contact.name }) : contact.name;
+        return isSend ? i18n.t('methods.payTo', { recipient: paymentIdentifierLabel(payment.details.lnurlPayInfo.lnAddress) }) : payment.details.lnurlPayInfo.lnAddress;
       }
       return payment.details?.description || i18n.t('methods.lightningPayment');
     }
@@ -85,8 +85,7 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
   if (payment.method === 'spark') {
     if (isCrossChain(convInfo)) return i18n.t('methods.usdTransfer');
     if (convInfo) {
-      const dir = payment.paymentType === 'send' ? 'from' : 'to';
-      return `Conversion ${dir} Bitcoin`;
+      return i18n.t(payment.paymentType === 'send' ? 'methods.conversionFrom' : 'methods.conversionTo', { asset: 'Bitcoin' });
     }
     return i18n.t('methods.sparkTransfer');
   }
@@ -95,8 +94,7 @@ export function getPaymentDescription(payment: Payment, findContactByAddress?: C
     const displayName = (ticker ? tickerToDisplayName(ticker) : null) || fiatCurrencyName;
     if (isCrossChain(convInfo)) return displayName ? i18n.t('methods.namedTransfer', { name: displayName }) : i18n.t('methods.tokenTransfer');
     if (convInfo) {
-      const dir = payment.paymentType === 'send' ? 'from' : 'to';
-      return `Conversion ${dir} ${displayName}`;
+      return i18n.t(payment.paymentType === 'send' ? 'methods.conversionFrom' : 'methods.conversionTo', { asset: displayName });
     }
     return displayName ? i18n.t('methods.namedTransfer', { name: displayName }) : i18n.t('methods.tokenTransfer');
   }

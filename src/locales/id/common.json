@@ -242,7 +242,9 @@
     "namedTransfer": "Transfer {{name}}",
     "usdTransfer": "Transfer USD",
     "btcTransfer": "Transfer BTC",
-    "conversionTo": "Konversi ke {{asset}}"
+    "conversionTo": "Konversi ke {{asset}}",
+    "conversionFrom": "Konversi dari {{asset}}",
+    "payTo": "Bayar ke {{recipient}}"
   },
   "security": {
     "gateReason": "Buka pengaturan Layar Kunci",

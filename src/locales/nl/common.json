@@ -242,7 +242,9 @@
     "namedTransfer": "{{name}}-overdracht",
     "usdTransfer": "USD-overboeking",
     "btcTransfer": "BTC-overboeking",
-    "conversionTo": "Omzetting naar {{asset}}"
+    "conversionTo": "Omzetting naar {{asset}}",
+    "conversionFrom": "Omzetting van {{asset}}",
+    "payTo": "Betaling aan {{recipient}}"
   },
   "security": {
     "gateReason": "Instellingen van het vergrendelscherm ontgrendelen",

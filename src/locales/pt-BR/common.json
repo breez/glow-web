@@ -242,7 +242,9 @@
     "namedTransfer": "Transferência {{name}}",
     "usdTransfer": "Transferência USD",
     "btcTransfer": "Transferência BTC",
-    "conversionTo": "Conversão para {{asset}}"
+    "conversionTo": "Conversão para {{asset}}",
+    "conversionFrom": "Conversão de {{asset}}",
+    "payTo": "Pagar para {{recipient}}"
   },
   "security": {
     "gateReason": "Abrir as configurações da tela de bloqueio",

@@ -242,7 +242,9 @@
     "namedTransfer": "{{name}} transferi",
     "usdTransfer": "USD transferi",
     "btcTransfer": "BTC transferi",
-    "conversionTo": "{{asset}} dönüşümü"
+    "conversionTo": "{{asset}} cinsine dönüşüm",
+    "conversionFrom": "{{asset}} cinsinden dönüşüm",
+    "payTo": "Alıcı: {{recipient}}"
   },
   "security": {
     "gateReason": "Kilit ekranı ayarlarının kilidini aç",

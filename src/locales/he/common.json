@@ -244,7 +244,9 @@
     "namedTransfer": "העברת {{name}}",
     "usdTransfer": "העברת USD",
     "btcTransfer": "העברת BTC",
-    "conversionTo": "המרה ל-{{asset}}"
+    "conversionTo": "המרה ל-{{asset}}",
+    "conversionFrom": "המרה מ-{{asset}}",
+    "payTo": "תשלום ל{{recipient}}"
   },
   "security": {
     "gateReason": "פתיחת הגדרות מסך הנעילה",

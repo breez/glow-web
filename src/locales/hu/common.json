@@ -242,7 +242,9 @@
     "namedTransfer": "{{name}}-átutalás",
     "usdTransfer": "USD-átutalás",
     "btcTransfer": "BTC-átutalás",
-    "conversionTo": "Átváltás erre: {{asset}}"
+    "conversionTo": "Átváltás erre: {{asset}}",
+    "conversionFrom": "Átváltás innen: {{asset}}",
+    "payTo": "Fizetés ide: {{recipient}}"
   },
   "security": {
     "gateReason": "A zárolási képernyő beállításainak feloldása",

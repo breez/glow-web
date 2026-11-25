@@ -246,7 +246,9 @@
     "namedTransfer": "Transfer {{name}}",
     "usdTransfer": "Przelew USD",
     "btcTransfer": "Przelew BTC",
-    "conversionTo": "Przewalutowanie na {{asset}}"
+    "conversionTo": "Przewalutowanie na {{asset}}",
+    "conversionFrom": "Przewalutowanie z {{asset}}",
+    "payTo": "Płatność dla {{recipient}}"
   },
   "security": {
     "gateReason": "Odblokuj ustawienia ekranu blokady",

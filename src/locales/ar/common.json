@@ -248,7 +248,9 @@
     "namedTransfer": "تحويل {{name}}",
     "usdTransfer": "تحويل USD",
     "btcTransfer": "تحويل BTC",
-    "conversionTo": "التحويل إلى {{asset}}"
+    "conversionTo": "التحويل إلى {{asset}}",
+    "conversionFrom": "التحويل من {{asset}}",
+    "payTo": "الدفع إلى {{recipient}}"
   },
   "security": {
     "gateReason": "فتح إعدادات شاشة القفل",

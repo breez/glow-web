@@ -242,7 +242,9 @@
     "namedTransfer": "{{name}}-Transfer",
     "usdTransfer": "USD-Transfer",
     "btcTransfer": "BTC-Transfer",
-    "conversionTo": "Umwandlung in {{asset}}"
+    "conversionTo": "Umwandlung in {{asset}}",
+    "conversionFrom": "Umwandlung von {{asset}}",
+    "payTo": "Zahlung an {{recipient}}"
   },
   "security": {
     "gateReason": "Einstellungen des Sperrbildschirms entsperren",
