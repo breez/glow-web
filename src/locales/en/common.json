@@ -846,5 +846,13 @@
   "passkeyCheck": {
     "verifying": "Verifying your passkey",
     "continue": "Continue to Glow"
+  },
+  "translationFeedback": {
+    "title": "Translation Feedback",
+    "suggestion": "Suggested wording",
+    "send": "Send Feedback",
+    "currentText": "Current text",
+    "sent": "Feedback sent. Thank you.",
+    "failed": "Could not send the feedback. Please try again."
   }
 }

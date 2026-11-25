@@ -855,5 +855,13 @@
   "passkeyCheck": {
     "verifying": "Ověřuje se tvůj passkey",
     "continue": "Pokračovat do Glow"
+  },
+  "translationFeedback": {
+    "title": "Zpětná vazba k překladu",
+    "suggestion": "Navrhované znění",
+    "send": "Odeslat zpětnou vazbu",
+    "currentText": "Současný text",
+    "sent": "Zpětná vazba odeslána. Děkujeme.",
+    "failed": "Zpětnou vazbu se nepodařilo odeslat. Zkuste to prosím znovu."
   }
 }

@@ -70,7 +70,8 @@ describe('useSheetOwnsScroll', () => {
     expect(scrollerTouchAction()).toBe('pan-y');
 
     fireEvent.click(screen.getByRole('button', { name: 'leave' }));
-    await waitFor(() => expect(scrollerTouchAction()).toBe('pan-down'));
+    // Nothing overflows in jsdom, so the body hands vertical drags to the sheet.
+    await waitFor(() => expect(scrollerTouchAction()).toBe('pan-x'));
   });
 });
 

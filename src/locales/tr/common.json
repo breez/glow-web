@@ -846,5 +846,13 @@
   "passkeyCheck": {
     "verifying": "Geçiş anahtarın doğrulanıyor",
     "continue": "Glow'a devam et"
+  },
+  "translationFeedback": {
+    "title": "Çeviri Geri Bildirimi",
+    "suggestion": "Önerilen ifade",
+    "send": "Geri Bildirim Gönder",
+    "currentText": "Mevcut metin",
+    "sent": "Geri bildirim gönderildi. Teşekkürler.",
+    "failed": "Geri bildirim gönderilemedi. Lütfen tekrar deneyin."
   }
 }

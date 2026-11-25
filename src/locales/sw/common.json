@@ -846,5 +846,13 @@
   "passkeyCheck": {
     "verifying": "Inathibitisha passkey yako",
     "continue": "Endelea kwenda Glow"
+  },
+  "translationFeedback": {
+    "title": "Maoni kuhusu Tafsiri",
+    "suggestion": "Maneno yanayopendekezwa",
+    "send": "Tuma Maoni",
+    "currentText": "Maandishi ya sasa",
+    "sent": "Maoni yametumwa. Asante.",
+    "failed": "Imeshindikana kutuma maoni. Tafadhali jaribu tena."
   }
 }

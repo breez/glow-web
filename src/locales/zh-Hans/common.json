@@ -846,5 +846,13 @@
   "passkeyCheck": {
     "verifying": "正在验证通行密钥",
     "continue": "进入 Glow"
+  },
+  "translationFeedback": {
+    "title": "翻译反馈",
+    "suggestion": "建议的措辞",
+    "send": "发送反馈",
+    "currentText": "当前文本",
+    "sent": "反馈已发送。谢谢。",
+    "failed": "无法发送反馈。请重试。"
   }
 }

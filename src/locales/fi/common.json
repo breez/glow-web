@@ -846,5 +846,13 @@
   "passkeyCheck": {
     "verifying": "Tarkistetaan avainkoodiasi",
     "continue": "Jatka Glowiin"
+  },
+  "translationFeedback": {
+    "title": "Palaute käännöksestä",
+    "suggestion": "Ehdotettu sanamuoto",
+    "send": "Lähetä palaute",
+    "currentText": "Nykyinen teksti",
+    "sent": "Palaute lähetetty. Kiitos.",
+    "failed": "Palautteen lähettäminen epäonnistui. Yritä uudelleen."
   }
 }

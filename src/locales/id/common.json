@@ -846,5 +846,13 @@
   "passkeyCheck": {
     "verifying": "Memverifikasi kunci sandi Anda",
     "continue": "Lanjutkan ke Glow"
+  },
+  "translationFeedback": {
+    "title": "Masukan Terjemahan",
+    "suggestion": "Usulan kata-kata",
+    "send": "Kirim Masukan",
+    "currentText": "Teks saat ini",
+    "sent": "Masukan terkirim. Terima kasih.",
+    "failed": "Masukan tidak dapat dikirim. Silakan coba lagi."
   }
 }

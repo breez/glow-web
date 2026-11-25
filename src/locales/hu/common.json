@@ -846,5 +846,13 @@
   "passkeyCheck": {
     "verifying": "Azonosítókulcs ellenőrzése",
     "continue": "Tovább a Glow-ra"
+  },
+  "translationFeedback": {
+    "title": "Visszajelzés a fordításról",
+    "suggestion": "Javasolt megfogalmazás",
+    "send": "Visszajelzés küldése",
+    "currentText": "Jelenlegi szöveg",
+    "sent": "A visszajelzés elküldve. Köszönjük.",
+    "failed": "A visszajelzést nem sikerült elküldeni. Kérjük, próbálja újra."
   }
 }

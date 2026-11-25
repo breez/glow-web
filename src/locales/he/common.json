@@ -853,5 +853,13 @@
   "passkeyCheck": {
     "verifying": "מאמת את מפתח הגישה שלך",
     "continue": "המשך ל-Glow"
+  },
+  "translationFeedback": {
+    "title": "משוב על התרגום",
+    "suggestion": "ניסוח מוצע",
+    "send": "שליחת המשוב",
+    "currentText": "הטקסט הנוכחי",
+    "sent": "המשוב נשלח. תודה.",
+    "failed": "לא ניתן היה לשלוח את המשוב. נא לנסות שוב."
   }
 }

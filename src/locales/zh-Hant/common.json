@@ -846,5 +846,13 @@
   "passkeyCheck": {
     "verifying": "正在驗證密碼金鑰",
     "continue": "進入 Glow"
+  },
+  "translationFeedback": {
+    "title": "翻譯意見回饋",
+    "suggestion": "建議的措辭",
+    "send": "傳送意見回饋",
+    "currentText": "目前文字",
+    "sent": "意見回饋已傳送。謝謝。",
+    "failed": "無法傳送意見回饋。請再試一次。"
   }
 }

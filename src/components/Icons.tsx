@@ -435,3 +435,9 @@ export const CashAppIcon: React.FC<IconProps> = ({ className = '', size = 'lg' }
   </svg>
 );
 
+
+export const FlagIcon: React.FC<IconProps> = ({ className = '', size = 'md' }) => (
+  <svg className={`${sizeClasses[size]} ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 21V4m0 0c3-2 6 2 9 0s6 2 9 0v10c-3 2-6-2-9 0s-6-2-9 0" />
+  </svg>
+);

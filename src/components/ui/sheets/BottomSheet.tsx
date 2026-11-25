@@ -575,6 +575,7 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
     );
     const reportHeight = useContext(ContentMeasureContext);
     const clearancePx = useContext(KeyboardClearanceContext);
+    const [overflows, setOverflows] = useState(false);
     const handleRef = useRef<HTMLDivElement | null>(null);
     const scrollerRef = useRef<HTMLDivElement | null>(null);
 
@@ -629,7 +630,13 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
     // down on the first keystroke instead of settling in one motion.
     useEffect(() => {
       if (!cardEl) return;
-      const observer = new ResizeObserver(() => measure(cardEl));
+      const observer = new ResizeObserver(() => {
+        measure(cardEl);
+        const scroller = scrollerRef.current;
+        if (scroller) {
+          setOverflows(scroller.scrollHeight > scroller.clientHeight + 2);
+        }
+      });
       observer.observe(cardEl, { box: 'border-box' });
       return () => {
         observer.disconnect();
@@ -675,6 +682,13 @@ export const BottomSheetCard = forwardRef<HTMLDivElement, BottomSheetCardProps>(
             // the directional value, WebKit ignores it, which is why this
             // reads as flaky on iOS and immovable on Android.
             ...(ownScrollers > 0 ? { touchAction: 'pan-y' } : null),
+            // With nothing to scroll, the library's pan-down makes Chromium
+            // cancel an upward drag on the body, so the sheet cannot be
+            // pulled up from it (#573). pan-x keeps inner horizontal
+            // scrollers working and hands vertical drags to the sheet.
+            ...(ownScrollers === 0 && !overflows
+              ? { touchAction: 'pan-x' }
+              : null),
           }}
         >
           <div

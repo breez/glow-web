@@ -846,5 +846,13 @@
   "passkeyCheck": {
     "verifying": "パスキーを確認中",
     "continue": "Glow に進む"
+  },
+  "translationFeedback": {
+    "title": "翻訳のフィードバック",
+    "suggestion": "修正案",
+    "send": "フィードバックを送信",
+    "currentText": "現在のテキスト",
+    "sent": "フィードバックを送信しました。ありがとうございます。",
+    "failed": "フィードバックを送信できませんでした。もう一度お試しください。"
   }
 }

@@ -860,5 +860,13 @@
   "passkeyCheck": {
     "verifying": "Sprawdzanie Twojego passkey",
     "continue": "Przejdź do Glow"
+  },
+  "translationFeedback": {
+    "title": "Opinia o tłumaczeniu",
+    "suggestion": "Proponowane brzmienie",
+    "send": "Wyślij opinię",
+    "currentText": "Obecny tekst",
+    "sent": "Opinia wysłana. Dziękujemy.",
+    "failed": "Nie udało się wysłać opinii. Spróbuj ponownie."
   }
 }
