@@ -159,18 +159,12 @@ number. Czech and Slovak need `_few`. A test checks this per language against
 
 ## Reading a translation in the app
 
-The language normally comes from the device and cannot be changed in Glow. For
-review there is a picker, behind the same developer gesture as the rest of the
-diagnostic surfaces:
-
-1. Open **Settings** and tap the version line at the bottom five times.
-2. A **Language** section appears above **Passkey**.
-3. Pick a language. Unreviewed ones are marked, and the choice survives a
-   restart while developer mode stays on.
-
-It lists only languages that have files, so a language nobody has started
-cannot be selected and mistaken for a broken translation. Turning developer
-mode back off returns the app to the device language on the next launch.
+The language normally comes from the device. **Settings** has a **Language**
+section to change it inside Glow. It lists the shipping languages. Developer
+mode (tap the version line at the bottom five times) widens it to every
+language that has files, with unreviewed ones marked, so a translation can be
+read before it ships. A language nobody has started is never listed, so it
+cannot be mistaken for a broken translation.
 
 ## Where translations break the layout
 
