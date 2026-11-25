@@ -242,7 +242,9 @@
     "namedTransfer": "{{name}} 전송",
     "usdTransfer": "USD 전송",
     "btcTransfer": "BTC 전송",
-    "conversionTo": "{{asset}}(으)로 전환"
+    "conversionTo": "{{asset}}(으)로 전환",
+    "conversionFrom": "{{asset}}에서 전환",
+    "payTo": "{{recipient}}에게 결제"
   },
   "security": {
     "gateReason": "잠금 화면 설정 열기",

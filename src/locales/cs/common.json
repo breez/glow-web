@@ -246,7 +246,9 @@
     "namedTransfer": "Převod {{name}}",
     "usdTransfer": "USD převod",
     "btcTransfer": "BTC převod",
-    "conversionTo": "Převod na {{asset}}"
+    "conversionTo": "Převod na {{asset}}",
+    "conversionFrom": "Převod z {{asset}}",
+    "payTo": "Platba pro {{recipient}}"
   },
   "security": {
     "gateReason": "Odemknout nastavení zamykací obrazovky",

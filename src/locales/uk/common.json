@@ -246,7 +246,9 @@
     "namedTransfer": "Переказ {{name}}",
     "usdTransfer": "Переказ USD",
     "btcTransfer": "Переказ BTC",
-    "conversionTo": "Конвертація в {{asset}}"
+    "conversionTo": "Конвертація в {{asset}}",
+    "conversionFrom": "Конвертація з {{asset}}",
+    "payTo": "Платіж: {{recipient}}"
   },
   "security": {
     "gateReason": "Відкрити налаштування екрана блокування",

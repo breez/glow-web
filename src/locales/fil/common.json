@@ -242,7 +242,9 @@
     "namedTransfer": "{{name}} Transfer",
     "usdTransfer": "USD Transfer",
     "btcTransfer": "BTC Transfer",
-    "conversionTo": "Conversion sa {{asset}}"
+    "conversionTo": "Conversion sa {{asset}}",
+    "conversionFrom": "Conversion mula sa {{asset}}",
+    "payTo": "Bayad kay {{recipient}}"
   },
   "security": {
     "gateReason": "Buksan ang mga setting ng Lock Screen",

@@ -11,7 +11,6 @@ import { dismissKeyboard } from '../../../utils/keyboard';
 import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
 import { useTranslation } from 'react-i18next';
-import i18n from 'i18next';
 
 export interface InputStepProps {
   paymentInput: string;
@@ -24,17 +23,17 @@ export interface InputStepProps {
   onOpenContacts?: () => void;
 }
 
-const PLACEHOLDER = [
-  'lnbc...', 'bc1...', 'spark1...', i18n.t('common:contacts.addressPlaceholder'),
-  ...(CASHTAGS_ENABLED ? ['$cashtag'] : []),
-  i18n.t('common:send.inputHint.contact'), i18n.t('common:send.inputHint.stablecoin'),
-].join(' / ');
-
 // Parent (SendPaymentDialog) keys this on `selectedContactAddress` so
 // a fresh contact pick remounts and lazy-init re-reads the props.
 const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddress, isLoading, error, onClearError, onContinue, onScanQr, onOpenContacts }) => {
   const { t } = useTranslation(['critical', 'common']);
   const { contacts } = useContactsContext();
+  // Built per render: a module-level lookup runs before the language bundles load and reads empty.
+  const placeholder = [
+    'lnbc...', 'bc1...', 'spark1...', t('common:contacts.addressPlaceholder'),
+    ...(CASHTAGS_ENABLED ? ['$cashtag'] : []),
+    t('common:send.inputHint.contact'), t('common:send.inputHint.stablecoin'),
+  ].join(' / ');
   const [localPaymentInput, setLocalPaymentInput] = useState<string>(() =>
     selectedContactAddress || paymentInput || ''
   );
@@ -168,7 +167,7 @@ const InputStep: React.FC<InputStepProps> = ({ paymentInput, selectedContactAddr
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
-              placeholder={PLACEHOLDER}
+              placeholder={placeholder}
               className={`${FIELD_BASE_CLASS} h-full p-4 resize-none font-mono text-sm outline-hidden`}
               disabled={isLoading}
               data-testid="payment-input"

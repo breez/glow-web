@@ -242,7 +242,9 @@
     "namedTransfer": "Μεταφορά {{name}}",
     "usdTransfer": "Μεταφορά USD",
     "btcTransfer": "Μεταφορά BTC",
-    "conversionTo": "Μετατροπή σε {{asset}}"
+    "conversionTo": "Μετατροπή σε {{asset}}",
+    "conversionFrom": "Μετατροπή από {{asset}}",
+    "payTo": "Πληρωμή προς {{recipient}}"
   },
   "security": {
     "gateReason": "Ξεκλείδωμα ρυθμίσεων οθόνης κλειδώματος",

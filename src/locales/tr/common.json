@@ -147,7 +147,7 @@
     "processing": "İşleniyor",
     "pendingConfirmation": "Onay bekliyor",
     "pendingApproval": "Onay bekliyor",
-    "tapToClaim": "Onaylamak için dokun",
+    "tapToClaim": "Tahsil etmek için dokun",
     "confirming": "Onaylanıyor"
   },
   "paymentDetails": {
@@ -242,7 +242,9 @@
     "namedTransfer": "{{name}} transferi",
     "usdTransfer": "USD transferi",
     "btcTransfer": "BTC transferi",
-    "conversionTo": "{{asset}} dönüşümü"
+    "conversionTo": "{{asset}} cinsine dönüşüm",
+    "conversionFrom": "{{asset}} cinsinden dönüşüm",
+    "payTo": "Alıcı: {{recipient}}"
   },
   "security": {
     "gateReason": "Kilit ekranı ayarlarının kilidini aç",
@@ -268,8 +270,8 @@
     "backup": "Yedek",
     "recoveryPhrase": "Anımsatıcı ifade",
     "display": "Görünüm",
-    "automaticClaims": "Transferleri otomatik onayla",
-    "automaticClaimsBody": "Ağ ücreti bu sınırın altında kaldığı sürece gelen on-chain transferler otomatik olarak onaylanır.",
+    "automaticClaims": "Transferleri otomatik tahsil et",
+    "automaticClaimsBody": "Ağ ücreti bu sınırın altında kaldığı sürece gelen on-chain transferler otomatik olarak tahsil edilir.",
     "maxFeeType": "Azami ücret türü",
     "feeFixed": "Sabit",
     "feeRate": "Oran",
@@ -602,9 +604,9 @@
   },
   "deposit": {
     "title": "BTC transferi",
-    "claimFailed": "Onay başarısız",
-    "autoClaimFailed": "Otomatik onay başarısız",
-    "autoClaim": "Bu transfer otomatik olarak onaylanacak.",
+    "claimFailed": "Tahsilat başarısız",
+    "autoClaimFailed": "Otomatik tahsilat başarısız",
+    "autoClaim": "Bu transfer otomatik olarak tahsil edilecek.",
     "speed": "Hız",
     "standardDelivery": "Standart teslimat",
     "instantDelivery": "Anında teslimat",
@@ -612,15 +614,15 @@
     "claimedAutomatically": "Otomatik olarak alınır",
     "arrivesInSeconds": "Saniyeler içinde ulaşır",
     "unlocksIn": "{{wait}} içinde açılır",
-    "beingClaimed": "Bu transfer onaylanıyor.",
+    "beingClaimed": "Bu transfer tahsil ediliyor.",
     "claimDeferred": "Bu transfer henüz alınamadı. Tekrar dene.",
     "claimFailedGeneric": "Transfer alınamadı",
     "earlyUnavailable": "Erken teslimat şu anda kullanılamıyor, bu yüzden bu transfer otomatik olarak alınacak.",
     "setupFailed": "Bu transfer alınmak üzere hazırlanamadı. Tekrar dene.",
     "checkingOptions": "Teslimat seçenekleri kontrol ediliyor",
-    "countNotClaimed_one": "{{count}} transfer onaylanamadı",
-    "countNotClaimed_other": "{{count}} transfer onaylanamadı",
-    "claimSubmitted": "Onay gönderildi. Para kısa süre içinde ulaşacak."
+    "countNotClaimed_one": "{{count}} transfer tahsil edilemedi",
+    "countNotClaimed_other": "{{count}} transfer tahsil edilemedi",
+    "claimSubmitted": "Tahsilat gönderildi. Para kısa süre içinde ulaşacak."
   },
   "startup": {
     "refreshFailed": "Verilerin yenilenemedi.",
@@ -654,8 +656,8 @@
     "failed": "Taşıma başarısız",
     "failedBody": "Bir şeyler ters gitti.",
     "createNewPasskey": "Yeni geçiş anahtarı oluştur",
-    "unclaimedDeposits": "Onaylanmamış transferler",
-    "openUnclaimedDeposits": "Onaylanmamış transferleri aç",
+    "unclaimedDeposits": "Tahsil edilmemiş transferler",
+    "openUnclaimedDeposits": "Tahsil edilmemiş transferleri aç",
     "notNow": "Şimdi değil",
     "labelFailed": "“{{label}}” etiketi taşınamadı. Tekrar dene.",
     "currentLabel": "(geçerli)",

@@ -242,7 +242,9 @@
     "namedTransfer": "Превод {{name}}",
     "usdTransfer": "USD превод",
     "btcTransfer": "BTC превод",
-    "conversionTo": "Преобразуване в {{asset}}"
+    "conversionTo": "Преобразуване в {{asset}}",
+    "conversionFrom": "Преобразуване от {{asset}}",
+    "payTo": "Плащане към {{recipient}}"
   },
   "security": {
     "gateReason": "Отключване на настройките на заключения екран",

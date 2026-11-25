@@ -242,7 +242,9 @@
     "namedTransfer": "{{name}} 轉帳",
     "usdTransfer": "USD 轉帳",
     "btcTransfer": "BTC 轉帳",
-    "conversionTo": "兌換為 {{asset}}"
+    "conversionTo": "兌換為 {{asset}}",
+    "conversionFrom": "從 {{asset}} 兌換",
+    "payTo": "支付給 {{recipient}}"
   },
   "security": {
     "gateReason": "開啟鎖定畫面設定",

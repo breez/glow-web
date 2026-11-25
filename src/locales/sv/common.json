@@ -242,7 +242,9 @@
     "namedTransfer": "{{name}}-överföring",
     "usdTransfer": "USD-överföring",
     "btcTransfer": "BTC-överföring",
-    "conversionTo": "Växling till {{asset}}"
+    "conversionTo": "Växling till {{asset}}",
+    "conversionFrom": "Växling från {{asset}}",
+    "payTo": "Betala till {{recipient}}"
   },
   "security": {
     "gateReason": "Lås upp låsskärmens inställningar",

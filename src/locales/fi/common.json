@@ -242,7 +242,9 @@
     "namedTransfer": "{{name}}-siirto",
     "usdTransfer": "USD-siirto",
     "btcTransfer": "BTC-siirto",
-    "conversionTo": "Muunnos valuuttaan {{asset}}"
+    "conversionTo": "Muunnos valuuttaan {{asset}}",
+    "conversionFrom": "Muunnos valuutasta {{asset}}",
+    "payTo": "Maksu: {{recipient}}"
   },
   "security": {
     "gateReason": "Avaa lukitusnäytön asetukset",

@@ -244,7 +244,9 @@
     "namedTransfer": "Transfer {{name}}",
     "usdTransfer": "Transfer USD",
     "btcTransfer": "Transfer BTC",
-    "conversionTo": "Conversie în {{asset}}"
+    "conversionTo": "Conversie în {{asset}}",
+    "conversionFrom": "Conversie din {{asset}}",
+    "payTo": "Plată către {{recipient}}"
   },
   "security": {
     "gateReason": "Deschide setările ecranului de blocare",

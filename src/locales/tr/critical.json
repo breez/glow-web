@@ -108,16 +108,16 @@
     "amount": "Tutar",
     "networkFee": "Ağ ücreti",
     "feeChanged": "Ağ ücreti değişti",
-    "approveOrReject": "Bu transferi talep etmek için onayla, ya da iade başlatmak için reddet.",
+    "approveOrReject": "Bu transferi tahsil etmek için onayla, ya da iade başlatmak için reddet.",
     "canReject": "Bunun yerine iade başlatmak için reddedebilirsin.",
-    "feeRose": "Sen onaylarken ücret <amount/> tutarına yükseldi. Yeni ücretle talep etmek için onayla.",
+    "feeRose": "Sen onaylarken ücret <amount/> tutarına yükseldi. Yeni ücretle tahsil etmek için onayla.",
     "deliveryFee": "Teslimat ücreti",
     "youReceive": "Alacağın",
-    "claim": "Al",
+    "claim": "Tahsil et",
     "approve": "Onayla",
     "reject": "Reddet",
-    "claimFeeChanged": "Talebin geçmedi: ücret <amount/> değerinden değişti.",
-    "tooSmall": "Bu transfer, talep etme ücretini karşılayamayacak kadar küçük."
+    "claimFeeChanged": "Tahsilat gerçekleşmedi: ücret <amount/> değerinden değişti.",
+    "tooSmall": "Bu transfer, tahsil etme ücretini karşılayamayacak kadar küçük."
   },
   "passkey": {
     "confirmDeleted": "Bu geçiş anahtarının silindiğini onaylıyorum.",

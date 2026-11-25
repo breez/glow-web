@@ -242,7 +242,9 @@
     "namedTransfer": "การโอน {{name}}",
     "usdTransfer": "การโอน USD",
     "btcTransfer": "การโอน BTC",
-    "conversionTo": "การแปลงเป็น {{asset}}"
+    "conversionTo": "การแปลงเป็น {{asset}}",
+    "conversionFrom": "การแปลงจาก {{asset}}",
+    "payTo": "ชำระให้ {{recipient}}"
   },
   "security": {
     "gateReason": "เปิดการตั้งค่าหน้าจอล็อก",

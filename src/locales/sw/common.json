@@ -242,7 +242,9 @@
     "namedTransfer": "Uhamisho wa {{name}}",
     "usdTransfer": "Uhamisho wa USD",
     "btcTransfer": "Uhamisho wa BTC",
-    "conversionTo": "Ubadilishaji kwenda {{asset}}"
+    "conversionTo": "Ubadilishaji kwenda {{asset}}",
+    "conversionFrom": "Ubadilishaji kutoka {{asset}}",
+    "payTo": "Lipa kwa {{recipient}}"
   },
   "security": {
     "gateReason": "Fungua mipangilio ya Skrini ya Kufunga",

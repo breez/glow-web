@@ -242,7 +242,9 @@
     "namedTransfer": "{{name}} 送金",
     "usdTransfer": "USD 送金",
     "btcTransfer": "BTC 送金",
-    "conversionTo": "{{asset}}への変換"
+    "conversionTo": "{{asset}}への変換",
+    "conversionFrom": "{{asset}}からの変換",
+    "payTo": "{{recipient}}への支払い"
   },
   "security": {
     "gateReason": "ロック画面の設定を開く",

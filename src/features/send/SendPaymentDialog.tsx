@@ -122,8 +122,8 @@ const SendPaymentDialog: React.FC<SendPaymentDialogProps> = ({ isOpen, onClose, 
     const address = getSendLightningAddress(send.paymentInput);
     if (!address) return undefined;
     const contact = findContactByAddress(address);
-    return contact ? `Pay to ${contact.name}` : `Pay to ${paymentIdentifierLabel(address)}`;
-  }, [send.paymentInput, findContactByAddress]);
+    return t('methods.payTo', { recipient: contact ? contact.name : paymentIdentifierLabel(address) });
+  }, [send.paymentInput, findContactByAddress, t]);
 
   // The input step is always the send entry point, so it keeps the send icon
   // even when a scanned LNURL is still in paymentInput (e.g. after Back). Past

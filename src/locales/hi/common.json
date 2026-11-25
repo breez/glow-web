@@ -242,7 +242,9 @@
     "namedTransfer": "{{name}} ट्रांसफ़र",
     "usdTransfer": "USD ट्रांसफ़र",
     "btcTransfer": "BTC ट्रांसफ़र",
-    "conversionTo": "{{asset}} में रूपांतरण"
+    "conversionTo": "{{asset}} में रूपांतरण",
+    "conversionFrom": "{{asset}} से रूपांतरण",
+    "payTo": "{{recipient}} को भुगतान"
   },
   "security": {
     "gateReason": "लॉक स्क्रीन सेटिंग खोलें",
