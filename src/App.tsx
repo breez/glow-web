@@ -4,7 +4,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 import PaymentCelebration from './components/PaymentCelebration';
 import InstallPrompt from './components/InstallPrompt';
 import OfflineBanner from './components/OfflineBanner';
-import TranslationReporter from './components/TranslationReporter';
+import TranslationFeedback from './components/TranslationFeedback';
 import StagingGate from './components/StagingGate';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
@@ -667,7 +667,7 @@ const AppContent: React.FC = () => {
               )}
               <InstallPrompt />
               <OfflineBanner />
-              <TranslationReporter />
+              <TranslationFeedback />
               {appLock.locked && (
                 <LockScreen
                   biometricGate={appLock.biometricGate}

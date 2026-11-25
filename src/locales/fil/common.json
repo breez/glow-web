@@ -847,10 +847,12 @@
     "verifying": "Sinusuri ang passkey mo",
     "continue": "Magpatuloy sa Glow"
   },
-  "translationReport": {
-    "title": "I-report ang Pagsasalin",
+  "translationFeedback": {
+    "title": "Feedback sa Pagsasalin",
     "suggestion": "Iminumungkahing pananalita",
-    "send": "Ipadala ang Report",
-    "currentText": "Kasalukuyang teksto"
+    "send": "Ipadala ang Feedback",
+    "currentText": "Kasalukuyang teksto",
+    "sent": "Naipadala ang feedback. Salamat.",
+    "failed": "Hindi naipadala ang feedback. Pakisubukan muli."
   }
 }

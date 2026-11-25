@@ -847,10 +847,12 @@
     "verifying": "Verificando tu passkey",
     "continue": "Continuar a Glow"
   },
-  "translationReport": {
-    "title": "Informar de la traducción",
+  "translationFeedback": {
+    "title": "Comentarios sobre la traducción",
     "suggestion": "Redacción sugerida",
-    "send": "Enviar informe",
-    "currentText": "Texto actual"
+    "send": "Enviar comentarios",
+    "currentText": "Texto actual",
+    "sent": "Comentarios enviados. Gracias.",
+    "failed": "No se pudieron enviar los comentarios. Inténtalo de nuevo."
   }
 }

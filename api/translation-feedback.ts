@@ -1,0 +1,79 @@
+// Forwards a translation feedback to Slack so the webhook URL stays out of the app bundle.
+const ALLOWED_ORIGINS = new Set([
+  'https://glow-app.co',
+  'https://breez-glow-staging.vercel.app',
+  'capacitor://localhost',
+  'https://localhost',
+  'http://localhost',
+]);
+
+// ponytail: per-instance counter, a shared store if abuse shows up
+const WINDOW_MS = 60_000;
+const MAX_PER_WINDOW = 10;
+let windowStart = 0;
+let count = 0;
+
+const clip = (v: unknown, max: number): string => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+const escapeSlack = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function cors(origin: string | null): Record<string, string> {
+  const headers: Record<string, string> = { Vary: 'Origin' };
+  const allowed = origin && (ALLOWED_ORIGINS.has(origin) || /^http:\/\/localhost:\d+$/.test(origin));
+  if (allowed) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
+    headers['Access-Control-Allow-Headers'] = 'Content-Type';
+  }
+  return headers;
+}
+
+export function OPTIONS(request: Request): Response {
+  return new Response(null, { status: 204, headers: cors(request.headers.get('origin')) });
+}
+
+export async function POST(request: Request): Promise<Response> {
+  const headers = cors(request.headers.get('origin'));
+  if (!headers['Access-Control-Allow-Origin']) return new Response('Forbidden', { status: 403, headers });
+
+  const hook = process.env.TRANSLATION_FEEDBACK_SLACK_WEBHOOK_URL;
+  if (!hook) return new Response('Not configured', { status: 503, headers });
+
+  const now = Date.now();
+  if (now - windowStart > WINDOW_MS) {
+    windowStart = now;
+    count = 0;
+  }
+  if (++count > MAX_PER_WINDOW) return new Response('Too many submissions', { status: 429, headers });
+
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response('Bad request', { status: 400, headers });
+  }
+  const language = clip(body.language, 20);
+  const text = clip(body.text, 500);
+  const suggestion = clip(body.suggestion, 1000);
+  const keys = Array.isArray(body.keys)
+    ? body.keys
+        .slice(0, 10)
+        .map((k) => clip(k, 120))
+        .filter(Boolean)
+    : [];
+  if (!language || !text || !suggestion || keys.length === 0)
+    return new Response('Bad request', { status: 400, headers });
+
+  const message = [
+    `*Translation feedback (${escapeSlack(language)})*`,
+    `Keys: ${keys.map((k) => `\`${escapeSlack(k)}\``).join(', ')}`,
+    `Shown text: ${escapeSlack(text)}`,
+    `Suggested wording: ${escapeSlack(suggestion)}`,
+  ].join('\n');
+
+  const res = await fetch(hook, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: message }),
+  });
+  return new Response(null, { status: res.ok ? 204 : 502, headers });
+}

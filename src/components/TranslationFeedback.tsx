@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import i18n from 'i18next';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '@/contexts/ToastContext';
 import {
   BottomSheetContainer,
   BottomSheetCard,
@@ -11,9 +12,9 @@ import {
   PrimaryButton,
 } from './ui';
 import { FlagIcon } from './Icons';
-import { findTranslatedText, reportMailto } from '@/services/translationReport';
+import { findTranslatedText, sendFeedback } from '@/services/translationFeedback';
 
-const HOLD_MS = 600;
+const HOLD_MS = 3000;
 const MOVE_TOLERANCE = 8;
 
 interface Target {
@@ -21,9 +22,11 @@ interface Target {
   keys: string[];
 }
 
-/** Long-press translated text in any non-English language to report it. */
-const TranslationReporter: React.FC = () => {
+/** Long-press translated text in any non-English language to give feedback on it. */
+const TranslationFeedback: React.FC = () => {
   const { t } = useTranslation('common');
+  const { showToast } = useToast();
+  const [sending, setSending] = useState(false);
   const [target, setTarget] = useState<Target | null>(null);
   const [chip, setChip] = useState<(Target & { x: number; y: number }) | null>(null);
   const [suggestion, setSuggestion] = useState('');
@@ -36,8 +39,8 @@ const TranslationReporter: React.FC = () => {
     const onDown = (e: PointerEvent) => {
       cancel();
       const el = e.target as Element | null;
-      if (!el?.closest('[data-translation-report]')) setChip(null);
-      if (i18n.language === 'en' || !el || el.closest('[data-translation-report], input, textarea')) return;
+      if (!el?.closest('[data-translation-feedback]')) setChip(null);
+      if (i18n.language === 'en' || !el || el.closest('[data-translation-feedback], input, textarea')) return;
       start = { x: e.clientX, y: e.clientY };
       timer = window.setTimeout(() => {
         const found = findTranslatedText(document.elementFromPoint(start.x, start.y));
@@ -93,9 +96,17 @@ const TranslationReporter: React.FC = () => {
     setTarget({ text: chip.text, keys: chip.keys });
     setChip(null);
   };
-  const send = () => {
-    if (!target) return;
-    window.location.href = reportMailto({ ...target, suggestion });
+  const send = async () => {
+    if (!target || sending) return;
+    setSending(true);
+    const feedback = { ...target, suggestion };
+    const sent = await sendFeedback(feedback);
+    setSending(false);
+    if (!sent) {
+      showToast('error', t('translationFeedback.failed'));
+      return;
+    }
+    showToast('success', t('translationFeedback.sent'));
     close();
   };
 
@@ -104,7 +115,7 @@ const TranslationReporter: React.FC = () => {
       {chip && (
         <button
           type="button"
-          data-translation-report
+          data-translation-feedback
           onClick={openSheet}
           style={{
             position: 'fixed',
@@ -116,33 +127,33 @@ const TranslationReporter: React.FC = () => {
         >
           <span className="inline-flex items-center gap-2">
             <FlagIcon size="sm" />
-            {t('translationReport.title')}
+            {t('translationFeedback.title')}
           </span>
         </button>
       )}
       <BottomSheetContainer isOpen={target !== null} onClose={close} showBackdrop>
         <BottomSheetCard>
-          <div data-translation-report>
-            <DialogHeader title={t('translationReport.title')} onClose={close} />
+          <div data-translation-feedback>
+            <DialogHeader title={t('translationFeedback.title')} onClose={close} />
             <div className="space-y-4">
               <div>
                 <span className="block text-sm font-medium text-spark-text-primary mb-1">
-                  {t('translationReport.currentText')}
+                  {t('translationFeedback.currentText')}
                 </span>
                 <PaymentInfoCard compact>
                   <p className="text-spark-text-primary break-words">{target?.text}</p>
                 </PaymentInfoCard>
               </div>
               <div>
-                <FormLabel htmlFor="translation-suggestion">{t('translationReport.suggestion')}</FormLabel>
+                <FormLabel htmlFor="translation-suggestion">{t('translationFeedback.suggestion')}</FormLabel>
                 <FormTextarea
                   id="translation-suggestion"
                   value={suggestion}
                   onChange={(e) => setSuggestion(e.target.value)}
                 />
               </div>
-              <PrimaryButton onClick={send} disabled={!suggestion.trim()} className="w-full">
-                {t('translationReport.send')}
+              <PrimaryButton onClick={send} disabled={!suggestion.trim() || sending} className="w-full">
+                {t('translationFeedback.send')}
               </PrimaryButton>
             </div>
           </div>
@@ -152,4 +163,4 @@ const TranslationReporter: React.FC = () => {
   );
 };
 
-export default TranslationReporter;
+export default TranslationFeedback;

@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import i18next from 'i18next';
-import { keyRecorder, findTranslatedText, reportMailto } from './translationReport';
+import { keyRecorder, findTranslatedText } from './translationFeedback';
 
-describe('translation report', () => {
-  it('traces rendered text back to its key and builds the email', async () => {
+describe('translation feedback', () => {
+  it('traces rendered text back to its key', async () => {
     const inst = i18next.createInstance();
     await inst.use(keyRecorder).init({
       lng: 'de',
@@ -19,6 +19,5 @@ describe('translation report', () => {
     el.textContent = text;
     const found = findTranslatedText(el);
     expect(found?.keys).toEqual(['common:send.title']);
-    expect(decodeURIComponent(reportMailto({ ...found!, suggestion: 'X' }))).toContain('Keys: common:send.title');
   });
 });

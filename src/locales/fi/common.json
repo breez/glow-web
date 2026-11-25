@@ -847,10 +847,12 @@
     "verifying": "Tarkistetaan avainkoodiasi",
     "continue": "Jatka Glowiin"
   },
-  "translationReport": {
-    "title": "Ilmoita käännöksestä",
+  "translationFeedback": {
+    "title": "Palaute käännöksestä",
     "suggestion": "Ehdotettu sanamuoto",
-    "send": "Lähetä ilmoitus",
-    "currentText": "Nykyinen teksti"
+    "send": "Lähetä palaute",
+    "currentText": "Nykyinen teksti",
+    "sent": "Palaute lähetetty. Kiitos.",
+    "failed": "Palautteen lähettäminen epäonnistui. Yritä uudelleen."
   }
 }

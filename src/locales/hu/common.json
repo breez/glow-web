@@ -847,10 +847,12 @@
     "verifying": "Azonosítókulcs ellenőrzése",
     "continue": "Tovább a Glow-ra"
   },
-  "translationReport": {
-    "title": "Fordítás jelentése",
+  "translationFeedback": {
+    "title": "Visszajelzés a fordításról",
     "suggestion": "Javasolt megfogalmazás",
-    "send": "Jelentés küldése",
-    "currentText": "Jelenlegi szöveg"
+    "send": "Visszajelzés küldése",
+    "currentText": "Jelenlegi szöveg",
+    "sent": "A visszajelzés elküldve. Köszönjük.",
+    "failed": "A visszajelzést nem sikerült elküldeni. Kérjük, próbálja újra."
   }
 }

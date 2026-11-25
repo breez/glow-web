@@ -847,10 +847,12 @@
     "verifying": "Kontrollerar din passkey",
     "continue": "Fortsätt till Glow"
   },
-  "translationReport": {
-    "title": "Rapportera översättning",
+  "translationFeedback": {
+    "title": "Feedback på översättningen",
     "suggestion": "Föreslagen formulering",
-    "send": "Skicka rapport",
-    "currentText": "Nuvarande text"
+    "send": "Skicka feedback",
+    "currentText": "Nuvarande text",
+    "sent": "Feedback skickad. Tack.",
+    "failed": "Det gick inte att skicka feedbacken. Försök igen."
   }
 }

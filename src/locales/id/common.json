@@ -847,10 +847,12 @@
     "verifying": "Memverifikasi kunci sandi Anda",
     "continue": "Lanjutkan ke Glow"
   },
-  "translationReport": {
-    "title": "Laporkan Terjemahan",
+  "translationFeedback": {
+    "title": "Masukan Terjemahan",
     "suggestion": "Usulan kata-kata",
-    "send": "Kirim Laporan",
-    "currentText": "Teks saat ini"
+    "send": "Kirim Masukan",
+    "currentText": "Teks saat ini",
+    "sent": "Masukan terkirim. Terima kasih.",
+    "failed": "Masukan tidak dapat dikirim. Silakan coba lagi."
   }
 }

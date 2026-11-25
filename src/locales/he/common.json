@@ -854,10 +854,12 @@
     "verifying": "מאמת את מפתח הגישה שלך",
     "continue": "המשך ל-Glow"
   },
-  "translationReport": {
-    "title": "דיווח על תרגום",
+  "translationFeedback": {
+    "title": "משוב על התרגום",
     "suggestion": "ניסוח מוצע",
-    "send": "שליחת הדיווח",
-    "currentText": "הטקסט הנוכחי"
+    "send": "שליחת המשוב",
+    "currentText": "הטקסט הנוכחי",
+    "sent": "המשוב נשלח. תודה.",
+    "failed": "לא ניתן היה לשלוח את המשוב. נא לנסות שוב."
   }
 }

@@ -847,10 +847,12 @@
     "verifying": "Inathibitisha passkey yako",
     "continue": "Endelea kwenda Glow"
   },
-  "translationReport": {
-    "title": "Ripoti Tafsiri",
+  "translationFeedback": {
+    "title": "Maoni kuhusu Tafsiri",
     "suggestion": "Maneno yanayopendekezwa",
-    "send": "Tuma Ripoti",
-    "currentText": "Maandishi ya sasa"
+    "send": "Tuma Maoni",
+    "currentText": "Maandishi ya sasa",
+    "sent": "Maoni yametumwa. Asante.",
+    "failed": "Imeshindikana kutuma maoni. Tafadhali jaribu tena."
   }
 }

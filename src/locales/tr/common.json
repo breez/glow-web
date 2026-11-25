@@ -847,10 +847,12 @@
     "verifying": "Geçiş anahtarın doğrulanıyor",
     "continue": "Glow'a devam et"
   },
-  "translationReport": {
-    "title": "Çeviriyi Bildir",
+  "translationFeedback": {
+    "title": "Çeviri Geri Bildirimi",
     "suggestion": "Önerilen ifade",
-    "send": "Bildirimi Gönder",
-    "currentText": "Mevcut metin"
+    "send": "Geri Bildirim Gönder",
+    "currentText": "Mevcut metin",
+    "sent": "Geri bildirim gönderildi. Teşekkürler.",
+    "failed": "Geri bildirim gönderilemedi. Lütfen tekrar deneyin."
   }
 }

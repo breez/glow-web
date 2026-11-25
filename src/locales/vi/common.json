@@ -847,10 +847,12 @@
     "verifying": "Đang kiểm tra passkey của bạn",
     "continue": "Tiếp tục vào Glow"
   },
-  "translationReport": {
-    "title": "Báo cáo bản dịch",
+  "translationFeedback": {
+    "title": "Phản hồi về bản dịch",
     "suggestion": "Cách diễn đạt đề xuất",
-    "send": "Gửi báo cáo",
-    "currentText": "Văn bản hiện tại"
+    "send": "Gửi phản hồi",
+    "currentText": "Văn bản hiện tại",
+    "sent": "Đã gửi phản hồi. Cảm ơn bạn.",
+    "failed": "Không thể gửi phản hồi. Vui lòng thử lại."
   }
 }

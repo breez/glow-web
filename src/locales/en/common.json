@@ -847,10 +847,12 @@
     "verifying": "Verifying your passkey",
     "continue": "Continue to Glow"
   },
-  "translationReport": {
-    "title": "Report Translation",
+  "translationFeedback": {
+    "title": "Translation Feedback",
     "suggestion": "Suggested wording",
-    "send": "Send Report",
-    "currentText": "Current text"
+    "send": "Send Feedback",
+    "currentText": "Current text",
+    "sent": "Feedback sent. Thank you.",
+    "failed": "Could not send the feedback. Please try again."
   }
 }

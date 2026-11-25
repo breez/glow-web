@@ -854,10 +854,12 @@
     "verifying": "Se verifică cheia ta de acces",
     "continue": "Continuă în Glow"
   },
-  "translationReport": {
-    "title": "Raportează traducerea",
+  "translationFeedback": {
+    "title": "Feedback despre traducere",
     "suggestion": "Formulare sugerată",
-    "send": "Trimite raportul",
-    "currentText": "Text actual"
+    "send": "Trimite feedback",
+    "currentText": "Text actual",
+    "sent": "Feedback trimis. Mulțumim.",
+    "failed": "Feedbackul nu a putut fi trimis. Încearcă din nou."
   }
 }

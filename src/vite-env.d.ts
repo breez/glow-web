@@ -3,7 +3,7 @@
 interface ImportMetaEnv {
   readonly VITE_BREEZ_API_KEY: string;
   readonly VITE_STAGING_PASSWORD?: string;
-  readonly VITE_TRANSLATION_REPORT_EMAIL?: string;
+  readonly VITE_TRANSLATION_FEEDBACK_URL?: string;
   readonly VITE_CONSOLE_LOGGING?: 'true' | 'false';
   /** Esplora API the unilateral exit reads chain state from, overriding the per-network default. */
   readonly VITE_ESPLORA_BASE_URL?: string;

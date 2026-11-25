@@ -861,10 +861,12 @@
     "verifying": "Sprawdzanie Twojego passkey",
     "continue": "Przejdź do Glow"
   },
-  "translationReport": {
-    "title": "Zgłoś tłumaczenie",
+  "translationFeedback": {
+    "title": "Opinia o tłumaczeniu",
     "suggestion": "Proponowane brzmienie",
-    "send": "Wyślij zgłoszenie",
-    "currentText": "Obecny tekst"
+    "send": "Wyślij opinię",
+    "currentText": "Obecny tekst",
+    "sent": "Opinia wysłana. Dziękujemy.",
+    "failed": "Nie udało się wysłać opinii. Spróbuj ponownie."
   }
 }

@@ -847,10 +847,12 @@
     "verifying": "パスキーを確認中",
     "continue": "Glow に進む"
   },
-  "translationReport": {
-    "title": "翻訳を報告",
+  "translationFeedback": {
+    "title": "翻訳のフィードバック",
     "suggestion": "修正案",
-    "send": "報告を送信",
-    "currentText": "現在のテキスト"
+    "send": "フィードバックを送信",
+    "currentText": "現在のテキスト",
+    "sent": "フィードバックを送信しました。ありがとうございます。",
+    "failed": "フィードバックを送信できませんでした。もう一度お試しください。"
   }
 }
