@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ConfirmDialog, FIELD_BASE_CLASS, FormGroup, FormInput, LoadingSpinner, PrimaryButton, Switch } from '../components/ui';
 import { PinGate } from '../components/PinEntry';
-import { getSettings, saveSettings, UserSettings, hasBuyProviderSettings, isDevMode as isDevModeEnabled, setDevMode, buildDepositMaxFee, depositMaxFeeDrafts, depositMaxFeeValue, DepositMaxFeeType } from '../services/settings';
+import { getSettings, saveSettings, UserSettings, hasBuyProviderSettings, isDevMode as isDevModeEnabled, getDisplayFiatCurrency, setDevMode, buildDepositMaxFee, depositMaxFeeDrafts, depositMaxFeeValue, DepositMaxFeeType } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
-import { BitcoinIcon, GlobeIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon, KeyIcon, LockIcon, LogoutIcon, ShieldCheckIcon, TrashIcon, ExternalLinkIcon } from '../components/Icons';
+import { GlobeIcon, ChevronRightIcon, DownloadIcon, KeyIcon, LockIcon, LogoutIcon, ShieldCheckIcon, TrashIcon, ExternalLinkIcon } from '../components/Icons';
 import { ACCOUNT_DELETION_GUIDE_URL } from '@/services/accountDeletion';
 import { openExternalUrl } from '@/utils/externalLink';
 import { isAppLockSupported, isPinEnabled } from '@/services/appLock';
@@ -13,6 +13,7 @@ import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs, exportDatabaseState } from '@/services/logExport';
 import { useSecretTap } from '@/hooks/useSecretTap';
 import { LOCALES } from '@/services/i18n';
+import { fiatSymbol } from '../utils/fiatDisplay';
 import { isPasskeyMode } from '@/services/passkeyService';
 import { getAppVersion } from '@/services/appVersion';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +31,11 @@ interface SettingsPageProps {
 }
 
 const FEE_FIELD_SIZE = 'px-4 py-3 text-sm';
+
+/** A currency or bitcoin symbol in an icon's box, so the row lines up with the ones that carry an icon. */
+const SymbolSlot: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <span className="inline-flex h-5 w-5 items-center justify-center text-lg font-semibold leading-none">{children}</span>
+);
 
 const SettingsPage: React.FC<SettingsPageProps> = ({
   onBack,
@@ -258,7 +264,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 onClick={onOpenFiatCurrencies}
               >
                 <div className="flex items-center gap-3">
-                  <CurrencyIcon size="md" />
+                  <SymbolSlot>{fiatSymbol(getDisplayFiatCurrency(), i18n.language)}</SymbolSlot>
                   <span>{t('pages.fiatCurrencies')}</span>
                 </div>
                 <ChevronRightIcon size="md" />
@@ -270,7 +276,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                   onClick={onOpenBuyProviders}
                 >
                   <div className="flex items-center gap-3">
-                    <BitcoinIcon size="md" />
+                    <SymbolSlot>₿</SymbolSlot>
                     <span>{t('pages.buyBitcoin')}</span>
                   </div>
                   <ChevronRightIcon size="md" />
@@ -285,8 +291,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                   <GlobeIcon size="md" />
                   <span>{t('settings.language')}</span>
                 </div>
-                <div className="flex items-center gap-2 text-spark-text-muted">
-                  <span>{LOCALES[i18n.language]?.name ?? i18n.language}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-spark-text-muted">{LOCALES[i18n.language]?.name ?? i18n.language}</span>
                   <ChevronRightIcon size="md" />
                 </div>
               </button>
