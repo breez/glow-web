@@ -7,6 +7,7 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import { FiatDataProvider } from '@/contexts/FiatDataContext';
 import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
+import { waitForSheetOpen } from '@/test/utils/waitForSheetOpen';
 import type { SdkEventHandler } from '@/hooks/useBreezSdk';
 import { useBuyBitcoin } from './useBuyBitcoin';
 import BuyBitcoinDialog from '../BuyBitcoinDialog';
@@ -111,6 +112,7 @@ describe('the Cash App link', () => {
         </WalletProvider>
       </ToastProvider>,
     );
+    await waitForSheetOpen();
 
     await userEvent.click(await screen.findByText('Cash App'));
     await userEvent.type(screen.getByTestId('cashapp-amount-input'), '50000');
@@ -147,6 +149,7 @@ describe('MoonPay', () => {
   it('opens on the amount when it is the only provider and buys the typed dollars', async () => {
     const onBuyMoonpay = vi.fn().mockResolvedValue(undefined);
     renderMoonpay(onBuyMoonpay);
+    await waitForSheetOpen();
 
     await userEvent.type(await screen.findByTestId('moonpay-amount-input'), '100');
     await userEvent.click(screen.getByTestId('moonpay-continue-button'));
@@ -157,6 +160,7 @@ describe('MoonPay', () => {
   it('asks for at least $20 before opening MoonPay', async () => {
     const onBuyMoonpay = vi.fn().mockResolvedValue(undefined);
     renderMoonpay(onBuyMoonpay);
+    await waitForSheetOpen();
 
     await userEvent.type(await screen.findByTestId('moonpay-amount-input'), '5');
     await userEvent.click(screen.getByTestId('moonpay-continue-button'));
@@ -167,6 +171,7 @@ describe('MoonPay', () => {
 
   it('stays on the amount with an error when MoonPay fails to open', async () => {
     const onClose = renderMoonpay(vi.fn().mockRejectedValue(new Error('nope')));
+    await waitForSheetOpen();
 
     await userEvent.type(await screen.findByTestId('moonpay-amount-input'), '100');
     await userEvent.click(screen.getByTestId('moonpay-continue-button'));
