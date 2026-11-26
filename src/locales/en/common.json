@@ -148,7 +148,8 @@
     "pendingConfirmation": "Pending Confirmation",
     "pendingApproval": "Pending Approval",
     "tapToClaim": "Tap to claim",
-    "confirming": "Confirming"
+    "confirming": "Confirming",
+    "fee": "fee {{amount}}"
   },
   "paymentDetails": {
     "amount": "Amount",

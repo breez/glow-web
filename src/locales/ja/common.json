@@ -148,7 +148,8 @@
     "pendingConfirmation": "承認待ち",
     "pendingApproval": "承認を待っています",
     "tapToClaim": "タップして受領",
-    "confirming": "確認中"
+    "confirming": "確認中",
+    "fee": "手数料 {{amount}}"
   },
   "paymentDetails": {
     "amount": "金額",

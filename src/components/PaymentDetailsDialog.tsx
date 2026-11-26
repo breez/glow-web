@@ -116,9 +116,13 @@ const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({ optionalPay
   // Listed as the send it began as, so the sign matches its row.
   const isRefunded = isRefundedConversion(payment);
   const sign = isReceive && !isRefunded ? '+' : '-';
-  const amountDisplay = hasTokenDisplay
-    ? `${sign} ${formatTokenAmount(tokenInfo.amount, tokenDisplayConfig)}`
-    : <>{sign} <SatAmount sats={payment.amount} /></>;
+  const amountDisplay = (
+    <span dir="ltr">
+      {hasTokenDisplay
+        ? `${sign} ${formatTokenAmount(tokenInfo.amount, tokenDisplayConfig)}`
+        : <>{sign} <SatAmount sats={payment.amount} /></>}
+    </span>
+  );
   const feeDisplay = payment.fees > 0
     ? (isAmountAdjusted ? <SatAmount sats={Number(payment.fees)} /> : formatPaymentFee(BigInt(payment.fees)))
     : null;

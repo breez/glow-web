@@ -150,7 +150,8 @@
     "pendingConfirmation": "În așteptarea confirmării",
     "pendingApproval": "În așteptarea aprobării",
     "tapToClaim": "Atinge pentru a revendica",
-    "confirming": "Se confirmă"
+    "confirming": "Se confirmă",
+    "fee": "comision {{amount}}"
   },
   "paymentDetails": {
     "amount": "Sumă",

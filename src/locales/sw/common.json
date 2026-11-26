@@ -148,7 +148,8 @@
     "pendingConfirmation": "Inasubiri Uthibitisho",
     "pendingApproval": "Inasubiri Idhini",
     "tapToClaim": "Gusa ili kudai",
-    "confirming": "Inathibitisha"
+    "confirming": "Inathibitisha",
+    "fee": "ada {{amount}}"
   },
   "paymentDetails": {
     "amount": "Kiasi",

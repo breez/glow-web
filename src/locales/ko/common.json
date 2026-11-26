@@ -148,7 +148,8 @@
     "pendingConfirmation": "승인 대기 중",
     "pendingApproval": "승인을 기다리는 중",
     "tapToClaim": "탭하여 수령",
-    "confirming": "확인 중"
+    "confirming": "확인 중",
+    "fee": "수수료 {{amount}}"
   },
   "paymentDetails": {
     "amount": "금액",

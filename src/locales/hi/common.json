@@ -148,7 +148,8 @@
     "pendingConfirmation": "पुष्टि बाकी",
     "pendingApproval": "मंज़ूरी बाकी",
     "tapToClaim": "क्लेम करने के लिए टैप करें",
-    "confirming": "पुष्टि हो रही है"
+    "confirming": "पुष्टि हो रही है",
+    "fee": "शुल्क {{amount}}"
   },
   "paymentDetails": {
     "amount": "राशि",

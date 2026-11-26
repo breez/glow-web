@@ -148,7 +148,8 @@
     "pendingConfirmation": "Hinihintay ang Kumpirmasyon",
     "pendingApproval": "Hinihintay ang Pag-apruba",
     "tapToClaim": "I-tap para i-claim",
-    "confirming": "Kinukumpirma"
+    "confirming": "Kinukumpirma",
+    "fee": "bayad {{amount}}"
   },
   "paymentDetails": {
     "amount": "Halaga",

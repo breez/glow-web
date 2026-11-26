@@ -154,7 +154,8 @@
     "pendingConfirmation": "بانتظار التأكيد",
     "pendingApproval": "بانتظار الموافقة",
     "tapToClaim": "انقر للاستلام",
-    "confirming": "جارٍ التأكيد"
+    "confirming": "جارٍ التأكيد",
+    "fee": "الرسوم {{amount}}"
   },
   "paymentDetails": {
     "amount": "المبلغ",

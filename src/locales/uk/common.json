@@ -152,7 +152,8 @@
     "pendingConfirmation": "Очікує підтвердження",
     "pendingApproval": "Очікує схвалення",
     "tapToClaim": "Торкніться, щоб забрати",
-    "confirming": "Підтвердження"
+    "confirming": "Підтвердження",
+    "fee": "комісія {{amount}}"
   },
   "paymentDetails": {
     "amount": "Сума",

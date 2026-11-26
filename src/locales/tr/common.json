@@ -148,7 +148,8 @@
     "pendingConfirmation": "Onay bekliyor",
     "pendingApproval": "Onay bekliyor",
     "tapToClaim": "Tahsil etmek için dokun",
-    "confirming": "Onaylanıyor"
+    "confirming": "Onaylanıyor",
+    "fee": "ücret {{amount}}"
   },
   "paymentDetails": {
     "amount": "Tutar",

@@ -148,7 +148,8 @@
     "pendingConfirmation": "Wacht op bevestiging",
     "pendingApproval": "Wacht op goedkeuring",
     "tapToClaim": "Tik om te claimen",
-    "confirming": "Bevestigen"
+    "confirming": "Bevestigen",
+    "fee": "kosten {{amount}}"
   },
   "paymentDetails": {
     "amount": "Bedrag",

@@ -148,7 +148,8 @@
     "pendingConfirmation": "รอการยืนยัน",
     "pendingApproval": "รอการอนุมัติ",
     "tapToClaim": "แตะเพื่อเคลม",
-    "confirming": "กำลังยืนยัน"
+    "confirming": "กำลังยืนยัน",
+    "fee": "ค่าธรรมเนียม {{amount}}"
   },
   "paymentDetails": {
     "amount": "จำนวน",

@@ -148,7 +148,8 @@
     "pendingConfirmation": "Wartet auf Bestätigung",
     "pendingApproval": "Wartet auf Freigabe",
     "tapToClaim": "Zum Einlösen tippen",
-    "confirming": "Wird bestätigt"
+    "confirming": "Wird bestätigt",
+    "fee": "Gebühr {{amount}}"
   },
   "paymentDetails": {
     "amount": "Betrag",

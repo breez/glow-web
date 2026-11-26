@@ -148,7 +148,8 @@
     "pendingConfirmation": "等待确认",
     "pendingApproval": "等待批准",
     "tapToClaim": "点按即可领取",
-    "confirming": "正在确认"
+    "confirming": "正在确认",
+    "fee": "手续费 {{amount}}"
   },
   "paymentDetails": {
     "amount": "金额",
