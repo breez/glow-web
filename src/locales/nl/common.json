@@ -173,7 +173,7 @@
     "initialAmount": "Oorspronkelijk bedrag",
     "convertedAmount": "Omgezet bedrag",
     "url": "URL",
-    "sentAmount": "Verzonden bedrag",
+    "sentAmount": "Verstuurd bedrag",
     "status": "Status",
     "refunded": "Terugbetaald",
     "conversionId": "Omzettings-ID"
@@ -536,13 +536,13 @@
     "result": {
       "sentBody": "Je betaling is met succes naar de ontvanger verstuurd.",
       "failBody": "Er is een fout opgetreden bij het verwerken van je betaling. Probeer het opnieuw.",
-      "refundSent": "Terugbetaling verzonden!",
+      "refundSent": "Terugbetaling verstuurd!",
       "refundFailed": "Terugbetaling mislukt",
       "refundSuccessBody": "Je terugbetaling is naar het Bitcoin-netwerk gestuurd.",
       "refundFailBody": "Er is een fout opgetreden bij het verwerken van de terugbetaling. Probeer het opnieuw."
     },
     "loginCodeInvalid": "Deze inlogcode is niet geldig. Vernieuw de site voor een nieuwe.",
-    "title": "BTC of USD verzenden",
+    "title": "BTC of USD versturen",
     "lnurlAuth": {
       "freshCode": "Vernieuw de site voor een nieuwe code en probeer het opnieuw.",
       "cta_register": "Registreren",
@@ -622,7 +622,7 @@
     "checkingOptions": "Bezorgopties controleren",
     "countNotClaimed_one": "{{count}} storting kon niet worden geclaimd",
     "countNotClaimed_other": "{{count}} stortingen konden niet worden geclaimd",
-    "claimSubmitted": "Claim verzonden. Het geld komt binnenkort aan."
+    "claimSubmitted": "Claim verstuurd. Het geld komt binnenkort aan."
   },
   "startup": {
     "refreshFailed": "Je gegevens konden niet worden bijgewerkt.",
@@ -799,7 +799,7 @@
     "keepsMovingItself": "Glow houdt je exit vanzelf in beweging.",
     "keepsMovingRecovery": "Glow houdt het terughalen vanzelf in beweging.",
     "recoverableFunds": "Terug te halen geld",
-    "sweepFee": "Verzendkosten",
+    "sweepFee": "Kosten voor overzetten",
     "funds": "Geld",
     "payExitFeeNotice": "Om het proces te starten moet je de exitkosten betalen. Dit zijn de mijnkosten die nodig zijn om de Spark-boom on-chain te verplaatsen.",
     "payExitFeeRecoverNotice": "Om het terughalen te starten moet je de exitkosten vanuit een andere app betalen. Dit zijn de mijnkosten die je geld on-chain verplaatsen, en dat duurt meerdere dagen.",
@@ -853,8 +853,8 @@
   "translationFeedback": {
     "title": "Feedback op de vertaling",
     "suggestion": "Voorgestelde formulering",
+    "context": "Extra context (optioneel)",
     "send": "Feedback versturen",
-    "currentText": "Huidige tekst",
     "sent": "Feedback verstuurd. Bedankt.",
     "failed": "De feedback kon niet worden verstuurd. Probeer het opnieuw."
   }

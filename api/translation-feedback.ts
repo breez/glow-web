@@ -1,4 +1,17 @@
 // Forwards a translation feedback to Slack so the webhook URL stays out of the app bundle.
+import enCommon from '../src/locales/en/common.json';
+import enCritical from '../src/locales/en/critical.json';
+import shipping from '../src/locales/shipping.json';
+
+// Anyone can POST here, so only a shipping language and keys that exist in the English bundles get through.
+const LANGUAGES = new Set((shipping as string[]).filter((l) => l !== 'en'));
+const KEYS = new Set<string>();
+const collect = (ns: string, node: unknown, path: string[] = []) => {
+  if (typeof node === 'string') KEYS.add(`${ns}:${path.join('.')}`.replace(/_(zero|one|two|few|many|other)$/, ''));
+  else if (node && typeof node === 'object') for (const [k, v] of Object.entries(node)) collect(ns, v, [...path, k]);
+};
+collect('common', enCommon);
+collect('critical', enCritical);
 const ALLOWED_ORIGINS = new Set([
   'https://glow-app.co',
   'https://breez-glow-staging.vercel.app',
@@ -54,13 +67,14 @@ export async function POST(request: Request): Promise<Response> {
   const language = clip(body.language, 20);
   const text = clip(body.text, 500);
   const suggestion = clip(body.suggestion, 1000);
+  const context = clip(body.context, 1000);
   const keys = Array.isArray(body.keys)
     ? body.keys
         .slice(0, 10)
         .map((k) => clip(k, 120))
         .filter(Boolean)
     : [];
-  if (!language || !text || !suggestion || keys.length === 0)
+  if (!LANGUAGES.has(language) || !text || !suggestion || keys.length === 0 || !keys.every((k) => KEYS.has(k.replace(/_(zero|one|two|few|many|other)$/, ''))))
     return new Response('Bad request', { status: 400, headers });
 
   const message = [
@@ -68,13 +82,14 @@ export async function POST(request: Request): Promise<Response> {
     `Keys: ${keys.map((k) => `\`${escapeSlack(k)}\``).join(', ')}`,
     `Shown text: ${escapeSlack(text)}`,
     `Suggested wording: ${escapeSlack(suggestion)}`,
+    ...(context ? [`Context: ${escapeSlack(context)}`] : []),
   ].join('\n');
 
   try {
     const res = await fetch(hook, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: message }),
+      body: JSON.stringify({ text: message, unfurl_links: false, unfurl_media: false }),
     });
     return new Response(null, { status: res.ok ? 204 : 502, headers });
   } catch {

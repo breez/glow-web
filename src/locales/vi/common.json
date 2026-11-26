@@ -853,8 +853,8 @@
   "translationFeedback": {
     "title": "Phản hồi về bản dịch",
     "suggestion": "Cách diễn đạt đề xuất",
+    "context": "Ngữ cảnh bổ sung (không bắt buộc)",
     "send": "Gửi phản hồi",
-    "currentText": "Văn bản hiện tại",
     "sent": "Đã gửi phản hồi. Cảm ơn bạn.",
     "failed": "Không thể gửi phản hồi. Vui lòng thử lại."
   }

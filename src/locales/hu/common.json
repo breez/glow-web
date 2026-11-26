@@ -853,8 +853,8 @@
   "translationFeedback": {
     "title": "Visszajelzés a fordításról",
     "suggestion": "Javasolt megfogalmazás",
+    "context": "További háttér (nem kötelező)",
     "send": "Visszajelzés küldése",
-    "currentText": "Jelenlegi szöveg",
     "sent": "A visszajelzés elküldve. Köszönjük.",
     "failed": "A visszajelzést nem sikerült elküldeni. Kérjük, próbálja újra."
   }

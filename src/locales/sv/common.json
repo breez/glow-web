@@ -853,8 +853,8 @@
   "translationFeedback": {
     "title": "Feedback på översättningen",
     "suggestion": "Föreslagen formulering",
+    "context": "Ytterligare sammanhang (valfritt)",
     "send": "Skicka feedback",
-    "currentText": "Nuvarande text",
     "sent": "Feedback skickad. Tack.",
     "failed": "Det gick inte att skicka feedbacken. Försök igen."
   }

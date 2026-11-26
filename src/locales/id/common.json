@@ -853,8 +853,8 @@
   "translationFeedback": {
     "title": "Masukan Terjemahan",
     "suggestion": "Usulan kata-kata",
+    "context": "Konteks tambahan (opsional)",
     "send": "Kirim Masukan",
-    "currentText": "Teks saat ini",
     "sent": "Masukan terkirim. Terima kasih.",
     "failed": "Masukan tidak dapat dikirim. Silakan coba lagi."
   }
