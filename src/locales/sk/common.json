@@ -154,7 +154,8 @@
     "pendingConfirmation": "Čaká na potvrdenie",
     "pendingApproval": "Čaká na schválenie",
     "tapToClaim": "Klepnutím nárokuj",
-    "confirming": "Potvrdzuje sa"
+    "confirming": "Potvrdzuje sa",
+    "fee": "poplatok {{amount}}"
   },
   "paymentDetails": {
     "amount": "Suma",

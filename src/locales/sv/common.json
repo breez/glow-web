@@ -150,7 +150,8 @@
     "pendingConfirmation": "Väntar på bekräftelse",
     "pendingApproval": "Väntar på godkännande",
     "tapToClaim": "Tryck för att lösa in",
-    "confirming": "Bekräftar"
+    "confirming": "Bekräftar",
+    "fee": "avgift {{amount}}"
   },
   "paymentDetails": {
     "amount": "Belopp",

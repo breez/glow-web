@@ -150,7 +150,8 @@
     "pendingConfirmation": "等待確認",
     "pendingApproval": "等待核准",
     "tapToClaim": "點一下即可領取",
-    "confirming": "正在確認"
+    "confirming": "正在確認",
+    "fee": "手續費 {{amount}}"
   },
   "paymentDetails": {
     "amount": "金額",

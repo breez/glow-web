@@ -150,7 +150,8 @@
     "pendingConfirmation": "Odottaa vahvistusta",
     "pendingApproval": "Odottaa hyväksyntää",
     "tapToClaim": "Napauta lunastaaksesi",
-    "confirming": "Vahvistetaan"
+    "confirming": "Vahvistetaan",
+    "fee": "kulu {{amount}}"
   },
   "paymentDetails": {
     "amount": "Summa",

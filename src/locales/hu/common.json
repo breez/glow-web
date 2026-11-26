@@ -150,7 +150,8 @@
     "pendingConfirmation": "Megerősítésre vár",
     "pendingApproval": "Jóváhagyásra vár",
     "tapToClaim": "Koppints az igényléshez",
-    "confirming": "Megerősítés"
+    "confirming": "Megerősítés",
+    "fee": "díj {{amount}}"
   },
   "paymentDetails": {
     "amount": "Összeg",

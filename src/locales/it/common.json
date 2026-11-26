@@ -150,7 +150,8 @@
     "pendingConfirmation": "In attesa di conferma",
     "pendingApproval": "In attesa di approvazione",
     "tapToClaim": "Tocca per richiedere",
-    "confirming": "In conferma"
+    "confirming": "In conferma",
+    "fee": "commissione {{amount}}"
   },
   "paymentDetails": {
     "amount": "Importo",

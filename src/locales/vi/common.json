@@ -150,7 +150,8 @@
     "pendingConfirmation": "Chờ xác nhận",
     "pendingApproval": "Chờ chấp nhận",
     "tapToClaim": "Chạm để nhận",
-    "confirming": "Đang xác nhận"
+    "confirming": "Đang xác nhận",
+    "fee": "phí {{amount}}"
   },
   "paymentDetails": {
     "amount": "Số tiền",

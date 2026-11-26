@@ -150,7 +150,8 @@
     "pendingConfirmation": "Aguardando confirmação",
     "pendingApproval": "Aguardando aprovação",
     "tapToClaim": "Toque para resgatar",
-    "confirming": "Confirmando"
+    "confirming": "Confirmando",
+    "fee": "taxa {{amount}}"
   },
   "paymentDetails": {
     "amount": "Valor",

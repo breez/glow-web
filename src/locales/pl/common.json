@@ -154,7 +154,8 @@
     "pendingConfirmation": "Oczekuje na potwierdzenie",
     "pendingApproval": "Oczekuje na zatwierdzenie",
     "tapToClaim": "Dotknij, aby odebrać",
-    "confirming": "Potwierdzanie"
+    "confirming": "Potwierdzanie",
+    "fee": "opłata {{amount}}"
   },
   "paymentDetails": {
     "amount": "Kwota",

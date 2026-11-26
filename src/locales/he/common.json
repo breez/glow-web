@@ -152,7 +152,8 @@
     "pendingConfirmation": "ממתין לאישור",
     "pendingApproval": "ממתין לאישורך",
     "tapToClaim": "הקש למימוש",
-    "confirming": "מאשר"
+    "confirming": "מאשר",
+    "fee": "עמלה {{amount}}"
   },
   "paymentDetails": {
     "amount": "סכום",

@@ -150,7 +150,8 @@
     "pendingConfirmation": "Чака потвърждение",
     "pendingApproval": "Чака одобрение",
     "tapToClaim": "Докоснете, за да заявите",
-    "confirming": "Потвърждава се"
+    "confirming": "Потвърждава се",
+    "fee": "такса {{amount}}"
   },
   "paymentDetails": {
     "amount": "Сума",

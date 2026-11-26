@@ -150,7 +150,8 @@
     "pendingConfirmation": "En attente de confirmation",
     "pendingApproval": "En attente d'approbation",
     "tapToClaim": "Touchez pour réclamer",
-    "confirming": "Confirmation"
+    "confirming": "Confirmation",
+    "fee": "frais {{amount}}"
   },
   "paymentDetails": {
     "amount": "Montant",

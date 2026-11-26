@@ -150,7 +150,8 @@
     "pendingConfirmation": "Σε αναμονή επιβεβαίωσης",
     "pendingApproval": "Σε αναμονή έγκρισης",
     "tapToClaim": "Πατήστε για διεκδίκηση",
-    "confirming": "Επιβεβαίωση"
+    "confirming": "Επιβεβαίωση",
+    "fee": "προμήθεια {{amount}}"
   },
   "paymentDetails": {
     "amount": "Ποσό",

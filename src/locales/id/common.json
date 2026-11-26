@@ -150,7 +150,8 @@
     "pendingConfirmation": "Menunggu Konfirmasi",
     "pendingApproval": "Menunggu Persetujuan",
     "tapToClaim": "Ketuk untuk mengklaim",
-    "confirming": "Mengonfirmasi"
+    "confirming": "Mengonfirmasi",
+    "fee": "biaya {{amount}}"
   },
   "paymentDetails": {
     "amount": "Jumlah",

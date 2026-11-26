@@ -150,7 +150,8 @@
     "pendingConfirmation": "Pendiente de confirmación",
     "pendingApproval": "Pendiente de aprobación",
     "tapToClaim": "Toca para reclamar",
-    "confirming": "Confirmando"
+    "confirming": "Confirmando",
+    "fee": "comisión {{amount}}"
   },
   "paymentDetails": {
     "amount": "Importe",
