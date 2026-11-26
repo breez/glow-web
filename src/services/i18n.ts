@@ -231,7 +231,11 @@ export async function initI18n(): Promise<string> {
 
 export async function setLanguage(language: string): Promise<void> {
   if (!selectableLanguages().includes(language)) return;
-  await Preferences.set({ key: LANGUAGE_KEY, value: language });
+  try {
+    await Preferences.set({ key: LANGUAGE_KEY, value: language });
+  } catch {
+    // Site data blocked: the choice cannot persist, but it still applies to this session.
+  }
   await loadBundles(language);
   await i18next.changeLanguage(language);
   applyDocumentLanguage(language);
