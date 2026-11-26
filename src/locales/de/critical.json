@@ -54,8 +54,8 @@
     "conversionFee": "Umwandlungsgebühr",
     "toAddress": "An Adresse",
     "toSparkAddress": "An Spark-Adresse",
-    "toSparkInvoice": "An Spark-Rechnung",
-    "toInvoice": "An Rechnung",
+    "toSparkInvoice": "An Spark-Zahlungsanforderung",
+    "toInvoice": "An Zahlungsanforderung",
     "crossChain": {
       "amountTooSmall": "Betrag zu klein für diese Route.",
       "amountTooLarge": "Betrag zu groß für diese Route.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "Die Zahlung ist nicht durchgegangen. Dein Guthaben wurde nicht gesendet."
     },
-    "alreadyPaid": "Diese Rechnung wurde schon bezahlt.",
-    "invoiceExpired": "Diese Rechnung ist abgelaufen. Bitte den Empfänger um eine neue.",
+    "alreadyPaid": "Diese Zahlungsanforderung wurde schon bezahlt.",
+    "invoiceExpired": "Diese Zahlungsanforderung ist abgelaufen. Bitte den Empfänger um eine neue.",
     "balanceSettling": "Die Zahlung konnte nicht vorbereitet werden, während sich dein Guthaben setzt. Versuche es in ein paar Minuten erneut."
   },
   "generate": {

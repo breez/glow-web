@@ -54,8 +54,8 @@
     "conversionFee": "Växlingsavgift",
     "toAddress": "Till adress",
     "toSparkAddress": "Till Spark-adress",
-    "toSparkInvoice": "Till Spark-faktura",
-    "toInvoice": "Till faktura",
+    "toSparkInvoice": "Till Spark-betalningsförfrågan",
+    "toInvoice": "Till betalningsförfrågan",
     "crossChain": {
       "amountTooSmall": "Beloppet är för litet för den här rutten.",
       "amountTooLarge": "Beloppet är för stort för den här rutten.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "Betalningen gick inte igenom. Dina pengar skickades inte."
     },
-    "alreadyPaid": "Den här fakturan är redan betald.",
-    "invoiceExpired": "Den här fakturan har gått ut. Be mottagaren om en ny.",
+    "alreadyPaid": "Den här betalningsförfrågan är redan betald.",
+    "invoiceExpired": "Den här betalningsförfrågan har gått ut. Be mottagaren om en ny.",
     "balanceSettling": "Betalningen kunde inte förberedas medan ditt saldo slutförs. Försök igen om några minuter."
   },
   "generate": {

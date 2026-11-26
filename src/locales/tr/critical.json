@@ -54,8 +54,8 @@
     "conversionFee": "Dönüşüm ücreti",
     "toAddress": "Şu adrese",
     "toSparkAddress": "Şu Spark adresine",
-    "toSparkInvoice": "Şu Spark faturasına",
-    "toInvoice": "Şu faturaya",
+    "toSparkInvoice": "Şu Spark ödeme isteğine",
+    "toInvoice": "Şu ödeme isteğine",
     "crossChain": {
       "amountTooSmall": "Bu rota için tutar çok küçük.",
       "amountTooLarge": "Bu rota için tutar çok büyük.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "Ödeme gerçekleşmedi. Paran gönderilmedi."
     },
-    "alreadyPaid": "Bu fatura zaten ödendi.",
-    "invoiceExpired": "Bu faturanın süresi doldu. Alıcıdan yenisini iste.",
+    "alreadyPaid": "Bu ödeme isteği zaten ödendi.",
+    "invoiceExpired": "Bu ödeme isteğinin süresi doldu. Alıcıdan yenisini iste.",
     "balanceSettling": "Bakiyen kesinleşirken ödeme hazırlanamadı. Birkaç dakika sonra tekrar dene."
   },
   "generate": {

@@ -54,8 +54,8 @@
     "conversionFee": "עמלת המרה",
     "toAddress": "לכתובת",
     "toSparkAddress": "לכתובת Spark",
-    "toSparkInvoice": "לחשבונית Spark",
-    "toInvoice": "לחשבונית",
+    "toSparkInvoice": "לבקשת תשלום Spark",
+    "toInvoice": "לבקשת תשלום",
     "crossChain": {
       "amountTooSmall": "הסכום קטן מדי למסלול הזה.",
       "amountTooLarge": "הסכום גדול מדי למסלול הזה.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "התשלום לא עבר. הכספים שלך לא נשלחו."
     },
-    "alreadyPaid": "החשבונית הזו כבר שולמה.",
-    "invoiceExpired": "תוקף החשבונית הזו פג. בקש מהנמען חשבונית חדשה.",
+    "alreadyPaid": "בקשת התשלום הזו כבר שולמה.",
+    "invoiceExpired": "תוקף בקשת התשלום הזו פג. בקש מהנמען בקשת תשלום חדשה.",
     "balanceSettling": "לא ניתן להכין את התשלום בזמן שהיתרה שלך מתיישבת. נסה שוב בעוד כמה דקות."
   },
   "generate": {

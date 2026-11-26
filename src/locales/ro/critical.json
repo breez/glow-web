@@ -54,8 +54,8 @@
     "conversionFee": "Comision de conversie",
     "toAddress": "Către adresa",
     "toSparkAddress": "Către adresa Spark",
-    "toSparkInvoice": "Către factura Spark",
-    "toInvoice": "Către factură",
+    "toSparkInvoice": "Către cererea de plată Spark",
+    "toInvoice": "Către cererea de plată",
     "crossChain": {
       "amountTooSmall": "Sumă prea mică pentru această rută.",
       "amountTooLarge": "Sumă prea mare pentru această rută.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "Plata nu a trecut. Fondurile tale nu au fost trimise."
     },
-    "alreadyPaid": "Această factură a fost deja plătită.",
-    "invoiceExpired": "Această factură a expirat. Cere destinatarului una nouă.",
+    "alreadyPaid": "Această cerere de plată a fost deja plătită.",
+    "invoiceExpired": "Această cerere de plată a expirat. Cere destinatarului una nouă.",
     "balanceSettling": "Plata nu a putut fi pregătită în timp ce soldul tău se decontează. Încearcă din nou în câteva minute."
   },
   "generate": {

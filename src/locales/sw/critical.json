@@ -54,8 +54,8 @@
     "conversionFee": "Ada ya ubadilishaji",
     "toAddress": "Kwenda anwani",
     "toSparkAddress": "Kwenda anwani ya Spark",
-    "toSparkInvoice": "Kwenda ankara ya Spark",
-    "toInvoice": "Kwenda ankara",
+    "toSparkInvoice": "Kwenda ombi la malipo la Spark",
+    "toInvoice": "Kwenda ombi la malipo",
     "crossChain": {
       "amountTooSmall": "Kiasi ni kidogo mno kwa njia hii.",
       "amountTooLarge": "Kiasi ni kikubwa mno kwa njia hii.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "Malipo hayakupita. Fedha zako hazikutumwa."
     },
-    "alreadyPaid": "Ankara hii imelipwa tayari.",
-    "invoiceExpired": "Ankara hii imepitwa na wakati. Omba mpokeaji akupe mpya.",
+    "alreadyPaid": "Ombi hili la malipo limelipwa tayari.",
+    "invoiceExpired": "Ombi hili la malipo limepitwa na wakati. Omba mpokeaji akupe jipya.",
     "balanceSettling": "Haikuweza kutayarisha malipo wakati salio lako linakamilika. Tafadhali jaribu tena baada ya dakika kadhaa."
   },
   "generate": {

@@ -54,8 +54,8 @@
     "conversionFee": "رسوم التحويل",
     "toAddress": "إلى العنوان",
     "toSparkAddress": "إلى عنوان Spark",
-    "toSparkInvoice": "إلى فاتورة Spark",
-    "toInvoice": "إلى الفاتورة",
+    "toSparkInvoice": "إلى طلب دفع Spark",
+    "toInvoice": "إلى طلب الدفع",
     "crossChain": {
       "amountTooSmall": "المبلغ أصغر من أن يناسب هذا المسار.",
       "amountTooLarge": "المبلغ أكبر من أن يناسب هذا المسار.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "لم تكتمل الدفعة. لم تُرسل أموالك."
     },
-    "alreadyPaid": "هذه الفاتورة مدفوعة بالفعل.",
-    "invoiceExpired": "انتهت صلاحية هذه الفاتورة. اطلب من المستلم فاتورة جديدة.",
+    "alreadyPaid": "طلب الدفع هذا مدفوع بالفعل.",
+    "invoiceExpired": "انتهت صلاحية طلب الدفع هذا. اطلب من المستلم طلب دفع جديداً.",
     "balanceSettling": "تعذّر تحضير الدفعة أثناء تسوية رصيدك. أعد المحاولة بعد بضع دقائق."
   },
   "generate": {

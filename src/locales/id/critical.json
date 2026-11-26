@@ -54,8 +54,8 @@
     "conversionFee": "Biaya konversi",
     "toAddress": "Ke alamat",
     "toSparkAddress": "Ke alamat Spark",
-    "toSparkInvoice": "Ke faktur Spark",
-    "toInvoice": "Ke faktur",
+    "toSparkInvoice": "Ke permintaan pembayaran Spark",
+    "toInvoice": "Ke permintaan pembayaran",
     "crossChain": {
       "amountTooSmall": "Jumlah terlalu kecil untuk rute ini.",
       "amountTooLarge": "Jumlah terlalu besar untuk rute ini.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "Pembayaran tidak berhasil. Dana Anda tidak terkirim."
     },
-    "alreadyPaid": "Faktur ini sudah dibayar.",
-    "invoiceExpired": "Faktur ini sudah kedaluwarsa. Minta yang baru dari penerima.",
+    "alreadyPaid": "Permintaan pembayaran ini sudah dibayar.",
+    "invoiceExpired": "Permintaan pembayaran ini sudah kedaluwarsa. Minta yang baru dari penerima.",
     "balanceSettling": "Pembayaran tidak dapat disiapkan saat saldo Anda sedang diselesaikan. Coba lagi dalam beberapa menit."
   },
   "generate": {
