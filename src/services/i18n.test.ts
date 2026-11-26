@@ -1,9 +1,11 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   LOCALES,
   SHIPPING_LANGUAGES,
   pickLanguage,
+  resolveLanguage,
   selectableLanguages,
+  setLanguage,
   translatedLanguages,
 } from './i18n';
 
@@ -330,5 +332,24 @@ describe('what the picker may offer', () => {
     // rather than against the dev gate: no translated language is unshipped any
     // more, so the gate itself can no longer produce a rejected choice.
     expect(pickLanguage('hu', null, ['en', 'de'])).toBe('en');
+  });
+});
+
+describe('blocked site data', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('still resolves a language when every storage read throws', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError');
+    });
+    await expect(resolveLanguage()).resolves.toBeTypeOf('string');
+  });
+
+  it('still switches language when the choice cannot be saved', async () => {
+    // On web, Preferences is localStorage underneath.
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError');
+    });
+    await expect(setLanguage('en')).resolves.toBeUndefined();
   });
 });

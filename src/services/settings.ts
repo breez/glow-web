@@ -416,7 +416,15 @@ const devModeFromUrl =
   new URLSearchParams(window.location.search).get('dev') === 'true';
 
 export function isDevMode(): boolean {
-  return devModeFromUrl || localStorage.getItem(DEV_MODE_KEY) === 'true';
+  if (devModeFromUrl) return true;
+  // Startup picks the language through this, before any error handling is in
+  // place. With site data blocked the read throws, and that must not take the
+  // whole launch with it: treat it as dev mode off.
+  try {
+    return localStorage.getItem(DEV_MODE_KEY) === 'true';
+  } catch {
+    return false;
+  }
 }
 
 export function setDevMode(enabled: boolean): void {

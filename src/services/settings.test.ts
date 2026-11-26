@@ -61,6 +61,18 @@ describe('dev mode', () => {
     plain.setDevMode(true);
     expect((await load()).isDevMode()).toBe(true);
   });
+
+  it('reads as off when the browser blocks site data', async () => {
+    const settings = await load();
+    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError');
+    });
+    try {
+      expect(settings.isDevMode()).toBe(false);
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
 
 describe('buildConnectConfig', () => {

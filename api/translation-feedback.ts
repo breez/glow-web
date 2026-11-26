@@ -70,10 +70,14 @@ export async function POST(request: Request): Promise<Response> {
     `Suggested wording: ${escapeSlack(suggestion)}`,
   ].join('\n');
 
-  const res = await fetch(hook, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: message }),
-  });
-  return new Response(null, { status: res.ok ? 204 : 502, headers });
+  try {
+    const res = await fetch(hook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: message }),
+    });
+    return new Response(null, { status: res.ok ? 204 : 502, headers });
+  } catch {
+    return new Response(null, { status: 502, headers });
+  }
 }
