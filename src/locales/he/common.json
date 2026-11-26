@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "חזרה",
+    "pinDigits": "הוזנו {{filled}} מתוך {{total}} ספרות",
     "openMenu": "פתיחת התפריט",
     "switchCamera": "החלפת מצלמה",
     "pickImage": "בחירת תמונה מהגלריה",
@@ -107,6 +108,7 @@
     "privacyPolicy": "מדיניות הפרטיות",
     "support": "תמיכה",
     "logout": "התנתקות",
+    "exitInProgress": "יציאה חד-צדדית מתבצעת כעת, והתנתקות מוחקת את מה שנדרש להשלמתה. שמור קודם את נתוני היציאה, מהחלק 'מתקדם' של היציאה.",
     "removePasskeyGuide": "איך להסיר את מפתח הגישה שלך"
   },
   "header": {
@@ -310,6 +312,7 @@
   "wallet": {
     "send": "שליחה",
     "receive": "קבלה",
+    "change": "עודף",
     "saveAsContact": "לשמור כאיש קשר?"
   },
   "passkey": {
@@ -401,8 +404,12 @@
     "addressCopied": "הכתובת הועתקה",
     "copyAmount": "העתקת הסכום",
     "depositAddress": "כתובת להפקדה",
+    "addressChangeConfirm": "'{{address}}' יפסיק לקבל תשלומים.\n\nלהמשיך?",
+    "feeApplied": "עמלה של ₿{{amount}} חלה על העסקה הזו.",
     "crossChain": {
       "createFailed": "לא ניתן ליצור את הבקשה.",
+      "youllReceive": "תקבל <amount/>",
+      "shareMessage": "שלח {{amount}} {{asset}} ברשת {{chain}} אל {{address}}",
       "noRoutes": "אין כרגע מסלולים חוצי-שרשראות זמינים",
       "creating": "יוצר את הבקשה...",
       "enterUsd": "הזן סכום ב-USD",
@@ -497,6 +504,7 @@
     },
     "crossChain": {
       "selectCoin": "בחר מטבע",
+      "selectProvider": "בחר ספק עבור {{asset}} ({{chain}})",
       "quoteFailed": "לא ניתן לקבל הצעת מחיר",
       "gettingQuote": "מקבל הצעת מחיר...",
       "receiving": "תקבל",
@@ -567,13 +575,17 @@
       "unclear_login": "לא ניתן לקרוא את התשובה מ-{{domain}}. בדוק באתר אם התחברת.",
       "unclear_link": "לא ניתן לקרוא את התשובה מ-{{domain}}. בדוק באתר אם הפרופיל שלך קושר.",
       "unclear_auth": "לא ניתן לקרוא את התשובה מ-{{domain}}. בדוק באתר אם אומתת.",
-      "unreachable": "לא ניתן להגיע ל-{{domain}}. בדוק את החיבור שלך ונסה שוב."
+      "unreachable": "לא ניתן להגיע ל-{{domain}}. בדוק את החיבור שלך ונסה שוב.",
+      "missingCors": "ל-{{domain}} חסרה כותרת CORS (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} אישר שזה אתה."
     },
     "inputHint": {
       "contact": "איש קשר",
       "stablecoin": "כתובת USDC או USDT"
     },
-    "changeAmount": "שינוי הסכום"
+    "changeAmount": "שינוי הסכום",
+    "betweenSats": "בין {{min}} ל-{{max}} סאטושי",
+    "enterAmountIn": "הזן סכום ב-{{currency}}"
   },
   "restore": {
     "restoring": "משחזר...",
@@ -660,6 +672,7 @@
     "failedBody": "משהו השתבש.",
     "createNewPasskey": "יצירת מפתח גישה חדש",
     "unclaimedDeposits": "הפקדות שלא מומשו",
+    "blockedDeposits": "הפקדות שלא נתבעו בארנקים שלך: {{count}}. יש לטפל בהן לפני השדרוג. אפשר לחזור ולנסות שוב אחר כך.",
     "openUnclaimedDeposits": "פתיחת ההפקדות שלא מומשו",
     "notNow": "לא עכשיו",
     "labelFailed": "לא ניתן להעביר את התווית „{{label}}”. נסה שוב.",

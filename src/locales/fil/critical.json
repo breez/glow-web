@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Walang balidong halaga ang withdraw link na ito na matatanggap ng Glow.",
       "wholeSats": "Maglagay ng buong bilang ng sats",
+      "range": "{{min}} hanggang {{max}} sats",
+      "fromHost": "mula sa {{host}}",
+      "atMost": "Dapat ay hindi hihigit sa ₿{{amount}} ang halaga",
+      "atLeast": "Dapat ay hindi bababa sa ₿{{amount}} ang halaga",
       "failed": "Hindi natuloy ang withdraw: {{error}}"
     },
     "enterAmountIn": "Ilagay ang halaga sa {{currency}}",

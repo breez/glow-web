@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "이 출금 링크에는 Glow가 받을 수 있는 유효한 금액이 없습니다.",
       "wholeSats": "sats는 정수로 입력하세요",
+      "range": "{{min}}~{{max}} sats",
+      "fromHost": "{{host}}에서",
+      "atMost": "금액은 최대 ₿{{amount}} 이하여야 합니다",
+      "atLeast": "금액은 최소 ₿{{amount}} 이상이어야 합니다",
       "failed": "출금에 실패했습니다: {{error}}"
     },
     "enterAmountIn": "금액을 {{currency}}로 입력",

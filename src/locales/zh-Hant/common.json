@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "返回",
+    "pinDigits": "已輸入 {{filled}}/{{total}} 位數字",
     "openMenu": "開啟選單",
     "switchCamera": "切換相機",
     "pickImage": "從照片圖庫選擇圖片",
@@ -107,6 +108,7 @@
     "privacyPolicy": "隱私權政策",
     "support": "支援",
     "logout": "登出",
+    "exitInProgress": "單方面退出正在進行，登出會刪除完成它所需的資料。請先從該退出的「進階」部分儲存其退出資料。",
     "removePasskeyGuide": "如何移除您的密碼金鑰"
   },
   "header": {
@@ -308,6 +310,7 @@
   "wallet": {
     "send": "傳送",
     "receive": "收款",
+    "change": "找零",
     "saveAsContact": "要儲存為聯絡人嗎？"
   },
   "passkey": {
@@ -399,8 +402,12 @@
     "addressCopied": "已複製位址",
     "copyAmount": "複製金額",
     "depositAddress": "存入位址",
+    "addressChangeConfirm": "「{{address}}」將無法再收款。\n\n要繼續嗎？",
+    "feeApplied": "此交易將收取 ₿{{amount}} 的手續費。",
     "crossChain": {
       "createFailed": "無法建立要求。",
+      "youllReceive": "你將收到 <amount/>",
+      "shareMessage": "在 {{chain}} 上傳送 {{amount}} {{asset}} 到 {{address}}",
       "noRoutes": "目前沒有可用的跨鏈路徑",
       "creating": "正在建立要求...",
       "enterUsd": "以 USD 輸入金額",
@@ -495,6 +502,7 @@
     },
     "crossChain": {
       "selectCoin": "選擇幣種",
+      "selectProvider": "選擇 {{asset}}（{{chain}}）的服務商",
       "quoteFailed": "無法取得報價",
       "gettingQuote": "正在取得報價...",
       "receiving": "您會收到",
@@ -565,13 +573,17 @@
       "unclear_login": "無法讀取 {{domain}} 的回覆。請到網站上確認您是否已登入。",
       "unclear_link": "無法讀取 {{domain}} 的回覆。請到網站上確認您的個人檔案是否已連結。",
       "unclear_auth": "無法讀取 {{domain}} 的回覆。請到網站上確認您是否已完成驗證。",
-      "unreachable": "無法連上 {{domain}}。請檢查連線後重試。"
+      "unreachable": "無法連上 {{domain}}。請檢查連線後重試。",
+      "missingCors": "{{domain}} 缺少 CORS 標頭（<doc>LUD-01</doc>）。",
+      "confirmedYou": "{{domain}} 已確認是你本人。"
     },
     "inputHint": {
       "contact": "聯絡人",
       "stablecoin": "USDC 或 USDT 位址"
     },
-    "changeAmount": "更改金額"
+    "changeAmount": "更改金額",
+    "betweenSats": "介於 {{min}} 到 {{max}} sats 之間",
+    "enterAmountIn": "輸入 {{currency}} 金額"
   },
   "restore": {
     "restoring": "正在回復...",
@@ -657,6 +669,7 @@
     "failedBody": "發生問題。",
     "createNewPasskey": "建立新的密碼金鑰",
     "unclaimedDeposits": "未領取的存入",
+    "blockedDeposits": "你的錢包中未領取的存款：{{count}} 筆。請在升級前處理。完成後你可以回來重試。",
     "openUnclaimedDeposits": "開啟未領取的存入",
     "notNow": "暫不",
     "labelFailed": "無法轉移標籤「{{label}}」。請重試。",

@@ -159,8 +159,8 @@ number. Czech and Slovak need `_few`. A test checks this per language against
 
 ## Reading a translation in the app
 
-The language normally comes from the device. **Settings** has a **Language**
-section to change it inside Glow. It lists the shipping languages. Developer
+The language normally comes from the device. **Settings > Display > Language**
+opens a full-screen list to change it inside Glow. It lists the shipping languages. Developer
 mode (tap the version line at the bottom five times) widens it to every
 language that has files, with unreviewed ones marked, so a translation can be
 read before it ships. A language nobody has started is never listed, so it

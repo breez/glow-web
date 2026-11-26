@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "뒤로 가기",
+    "pinDigits": "{{total}}자리 중 {{filled}}자리 입력됨",
     "openMenu": "메뉴 열기",
     "switchCamera": "카메라 전환",
     "pickImage": "갤러리에서 사진 선택",
@@ -107,6 +108,7 @@
     "privacyPolicy": "개인정보 처리방침",
     "support": "지원",
     "logout": "로그아웃",
+    "exitInProgress": "일방적 출금이 진행 중이며, 로그아웃하면 이를 완료하는 데 필요한 데이터가 삭제됩니다. 먼저 출금의 고급 섹션에서 출금 데이터를 저장하세요.",
     "removePasskeyGuide": "패스키를 삭제하는 방법"
   },
   "header": {
@@ -308,6 +310,7 @@
   "wallet": {
     "send": "보내기",
     "receive": "받기",
+    "change": "잔돈",
     "saveAsContact": "연락처로 저장하시겠습니까?"
   },
   "passkey": {
@@ -399,8 +402,12 @@
     "addressCopied": "주소를 복사했습니다",
     "copyAmount": "금액 복사",
     "depositAddress": "입금 주소",
+    "addressChangeConfirm": "'{{address}}'에서는 더 이상 결제를 받을 수 없습니다.\n\n계속할까요?",
+    "feeApplied": "이 거래에는 ₿{{amount}}의 수수료가 적용됩니다.",
     "crossChain": {
       "createFailed": "요청을 만들지 못했습니다.",
+      "youllReceive": "<amount/>을(를) 받게 됩니다",
+      "shareMessage": "{{chain}}에서 {{amount}} {{asset}}을(를) {{address}}(으)로 보내세요",
       "noRoutes": "지금은 사용할 수 있는 크로스체인 경로가 없습니다",
       "creating": "요청을 만드는 중...",
       "enterUsd": "금액을 USD로 입력",
@@ -495,6 +502,7 @@
     },
     "crossChain": {
       "selectCoin": "코인 선택",
+      "selectProvider": "{{asset}}({{chain}}) 제공업체 선택",
       "quoteFailed": "견적을 받지 못했습니다",
       "gettingQuote": "견적을 받는 중...",
       "receiving": "받는 금액",
@@ -565,13 +573,17 @@
       "unclear_login": "{{domain}}의 응답을 읽지 못했습니다. 로그인되었는지 사이트에서 확인해 주세요.",
       "unclear_link": "{{domain}}의 응답을 읽지 못했습니다. 프로필이 연결되었는지 사이트에서 확인해 주세요.",
       "unclear_auth": "{{domain}}의 응답을 읽지 못했습니다. 인증되었는지 사이트에서 확인해 주세요.",
-      "unreachable": "{{domain}}에 연결할 수 없습니다. 연결을 확인한 뒤 다시 시도해 주세요."
+      "unreachable": "{{domain}}에 연결할 수 없습니다. 연결을 확인한 뒤 다시 시도해 주세요.",
+      "missingCors": "{{domain}}에 CORS 헤더가 없습니다(<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}}에서 본인임을 확인했습니다."
     },
     "inputHint": {
       "contact": "연락처",
       "stablecoin": "USDC 또는 USDT 주소"
     },
-    "changeAmount": "금액 변경"
+    "changeAmount": "금액 변경",
+    "betweenSats": "{{min}}~{{max}} sats 사이",
+    "enterAmountIn": "{{currency}} 금액 입력"
   },
   "restore": {
     "restoring": "복원 중...",
@@ -657,6 +669,7 @@
     "failedBody": "문제가 발생했습니다.",
     "createNewPasskey": "새 패스키 만들기",
     "unclaimedDeposits": "수령하지 않은 입금",
+    "blockedDeposits": "내 지갑의 미수령 입금: {{count}}건. 업그레이드하기 전에 해결해 주세요. 해결한 뒤 다시 시도할 수 있습니다.",
     "openUnclaimedDeposits": "수령하지 않은 입금 열기",
     "notNow": "나중에",
     "labelFailed": "라벨 “{{label}}”을(를) 이전하지 못했습니다. 다시 시도해 주세요.",

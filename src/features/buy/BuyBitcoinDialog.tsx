@@ -138,7 +138,7 @@ const BuyBitcoinDialog: React.FC<BuyBitcoinDialogProps> = ({
                     onChange={(e) => buy.setAmount(e.target.value)}
                     placeholder={
                       buy.isTokenMode && buy.tokenConfig
-                        ? `Enter amount in ${buy.tokenConfig.currencyCode}`
+                        ? t('send.enterAmountIn', { currency: buy.tokenConfig.currencyCode })
                         : t('receive.enterAmountSats')
                     }
                     disabled={buy.isGenerating}

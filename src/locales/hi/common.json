@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "पीछे जाएँ",
+    "pinDigits": "{{total}} में से {{filled}} अंक दर्ज किए गए",
     "openMenu": "मेन्यू खोलें",
     "switchCamera": "कैमरा बदलें",
     "pickImage": "गैलरी से तस्वीर चुनें",
@@ -107,6 +108,7 @@
     "privacyPolicy": "प्राइवेसी नीति",
     "support": "सहायता",
     "logout": "लॉग आउट",
+    "exitInProgress": "एकतरफ़ा एक्ज़िट जारी है, और लॉग आउट करने पर उसे पूरा करने के लिए ज़रूरी डेटा हट जाता है। पहले एक्ज़िट के उन्नत अनुभाग से उसका एक्ज़िट डेटा सहेजें।",
     "removePasskeyGuide": "अपनी पासकी कैसे हटाएँ"
   },
   "header": {
@@ -308,6 +310,7 @@
   "wallet": {
     "send": "भेजें",
     "receive": "पाएँ",
+    "change": "बचा हुआ",
     "saveAsContact": "संपर्क के रूप में सेव करें?"
   },
   "passkey": {
@@ -399,8 +402,12 @@
     "addressCopied": "पता कॉपी हो गया",
     "copyAmount": "राशि कॉपी करें",
     "depositAddress": "जमा का पता",
+    "addressChangeConfirm": "'{{address}}' पर भुगतान मिलना बंद हो जाएगा।\n\nक्या आप आगे बढ़ना चाहते हैं?",
+    "feeApplied": "इस लेन-देन पर ₿{{amount}} का शुल्क लगता है।",
     "crossChain": {
       "createFailed": "अनुरोध नहीं बन सका।",
+      "youllReceive": "आपको <amount/> मिलेगा",
+      "shareMessage": "{{chain}} पर {{amount}} {{asset}} को {{address}} पर भेजें",
       "noRoutes": "अभी कोई cross-chain रास्ता उपलब्ध नहीं है",
       "creating": "अनुरोध बन रहा है...",
       "enterUsd": "राशि USD में डालें",
@@ -495,6 +502,7 @@
     },
     "crossChain": {
       "selectCoin": "सिक्का चुनें",
+      "selectProvider": "{{asset}} ({{chain}}) के लिए प्रदाता चुनें",
       "quoteFailed": "भाव नहीं मिल सका",
       "gettingQuote": "भाव लिया जा रहा है...",
       "receiving": "मिल रहा है",
@@ -565,13 +573,17 @@
       "unclear_login": "{{domain}} का जवाब पढ़ा नहीं जा सका। साइट पर देखें कि आपने लॉग इन किया है या नहीं।",
       "unclear_link": "{{domain}} का जवाब पढ़ा नहीं जा सका। साइट पर देखें कि आपकी प्रोफ़ाइल जुड़ी है या नहीं।",
       "unclear_auth": "{{domain}} का जवाब पढ़ा नहीं जा सका। साइट पर देखें कि आपने प्रमाणीकरण किया है या नहीं।",
-      "unreachable": "{{domain}} तक नहीं पहुँच सके। अपना कनेक्शन देखें और फिर कोशिश करें।"
+      "unreachable": "{{domain}} तक नहीं पहुँच सके। अपना कनेक्शन देखें और फिर कोशिश करें।",
+      "missingCors": "{{domain}} में CORS हेडर नहीं है (<doc>LUD-01</doc>)।",
+      "confirmedYou": "{{domain}} ने पुष्टि की कि यह आप ही हैं।"
     },
     "inputHint": {
       "contact": "संपर्क",
       "stablecoin": "USDC या USDT पता"
     },
-    "changeAmount": "राशि बदलें"
+    "changeAmount": "राशि बदलें",
+    "betweenSats": "{{min}} और {{max}} सैट के बीच",
+    "enterAmountIn": "{{currency}} में राशि दर्ज करें"
   },
   "restore": {
     "restoring": "पुनर्स्थापित हो रहा है...",
@@ -657,6 +669,7 @@
     "failedBody": "कुछ गड़बड़ हो गई।",
     "createNewPasskey": "नई पासकी बनाएँ",
     "unclaimedDeposits": "बिना क्लेम जमा",
+    "blockedDeposits": "आपके वॉलेट में अनक्लेम्ड जमा: {{count}}। अपग्रेड से पहले इन्हें सुलझाएँ। उसके बाद वापस आकर फिर कोशिश कर सकते हैं।",
     "openUnclaimedDeposits": "बिना क्लेम जमा खोलें",
     "notNow": "अभी नहीं",
     "labelFailed": "लेबल “{{label}}” नहीं ले जाया जा सका। कृपया फिर कोशिश करें।",

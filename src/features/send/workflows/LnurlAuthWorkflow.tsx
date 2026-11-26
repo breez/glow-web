@@ -8,6 +8,7 @@ import { formatError } from '../../../utils/formatError';
 import { openExternalUrl } from '../../../utils/externalLink';
 import ResultStep from '../steps/ResultStep';
 import i18n from 'i18next';
+import { Trans } from 'react-i18next';
 
 interface LnurlAuthWorkflowProps {
   parsed: LnurlAuthRequestDetails;
@@ -165,7 +166,7 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
         result="success"
         error={null}
         operationType="auth"
-        description={`${domain} confirmed it's you.`}
+        description={i18n.t('send.lnurlAuth.confirmedYou', { domain })}
         onClose={onClose}
       />
     );
@@ -184,20 +185,25 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
           {/* Indented to the error's text, so it reads as that error's detail line. */}
           {failure.missingCors && (
             <p className="ms-6 text-xs text-spark-text-muted [overflow-wrap:anywhere]">
-              {domain} is missing a CORS header (
-              <a
-                href={LUD_01_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => {
-                  e.preventDefault();
-                  void openExternalUrl(LUD_01_URL);
+              <Trans
+                i18nKey="send.lnurlAuth.missingCors"
+                ns="common"
+                values={{ domain }}
+                components={{
+                  doc: (
+                    <a
+                      href={LUD_01_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        void openExternalUrl(LUD_01_URL);
+                      }}
+                      className="whitespace-nowrap underline underline-offset-4 hover:text-spark-text-secondary transition-colors"
+                    />
+                  ),
                 }}
-                className="whitespace-nowrap underline underline-offset-4 hover:text-spark-text-secondary transition-colors"
-              >
-                LUD-01
-              </a>
-              ).
+              />
             </p>
           )}
         </div>
@@ -207,12 +213,12 @@ const LnurlAuthWorkflow: React.FC<LnurlAuthWorkflowProps> = ({ parsed, onBack, o
           single-use code would only report it as used. */}
       {failure?.missingCors ? (
         <PrimaryButton onClick={onClose} className="w-full">
-          Done
+          {i18n.t('actions.done')}
         </PrimaryButton>
       ) : (
         <div className="flex gap-3">
           <SecondaryButton onClick={onClose} disabled={isLoading} className="flex-1">
-            Cancel
+            {i18n.t('actions.cancel')}
           </SecondaryButton>
           <PrimaryButton onClick={handleAuth} disabled={isLoading} className="flex-1">
             {isLoading ? (

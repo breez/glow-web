@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Este enlace de retiro no tiene un importe válido que Glow pueda recibir.",
       "wholeSats": "Introduce un número entero de sats",
+      "range": "{{min}} a {{max}} sats",
+      "fromHost": "de {{host}}",
+      "atMost": "El importe debe ser de como máximo ₿{{amount}}",
+      "atLeast": "El importe debe ser de al menos ₿{{amount}}",
       "failed": "El retiro falló: {{error}}"
     },
     "enterAmountIn": "Introduce el importe en {{currency}}",

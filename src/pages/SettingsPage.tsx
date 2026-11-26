@@ -4,7 +4,7 @@ import { PinGate } from '../components/PinEntry';
 import { getSettings, saveSettings, UserSettings, hasBuyProviderSettings, isDevMode as isDevModeEnabled, setDevMode, buildDepositMaxFee, depositMaxFeeDrafts, depositMaxFeeValue, DepositMaxFeeType } from '../services/settings';
 import type { Config, Network } from '@breeztech/breez-sdk-spark';
 import { useWallet } from '@/contexts/WalletContext';
-import { BitcoinIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon, KeyIcon, LockIcon, LogoutIcon, ShieldCheckIcon, TrashIcon, ExternalLinkIcon } from '../components/Icons';
+import { BitcoinIcon, GlobeIcon, CurrencyIcon, ChevronRightIcon, DownloadIcon, KeyIcon, LockIcon, LogoutIcon, ShieldCheckIcon, TrashIcon, ExternalLinkIcon } from '../components/Icons';
 import { ACCOUNT_DELETION_GUIDE_URL } from '@/services/accountDeletion';
 import { openExternalUrl } from '@/utils/externalLink';
 import { isAppLockSupported, isPinEnabled } from '@/services/appLock';
@@ -12,7 +12,7 @@ import SlideInPage from '../components/layout/SlideInPage';
 import { logger, LogCategory } from '@/services/logger';
 import { shareOrDownloadLogs, exportDatabaseState } from '@/services/logExport';
 import { useSecretTap } from '@/hooks/useSecretTap';
-import { LOCALES, SHIPPING_LANGUAGES, setLanguage, selectableLanguages } from '@/services/i18n';
+import { LOCALES } from '@/services/i18n';
 import { isPasskeyMode } from '@/services/passkeyService';
 import { getAppVersion } from '@/services/appVersion';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +21,7 @@ interface SettingsPageProps {
   onBack: () => void;
   config: Config | null;
   onOpenFiatCurrencies: () => void;
+  onOpenLanguage: () => void;
   onOpenBuyProviders: () => void;
   onOpenPasskeySettings: () => void;
   onOpenSecurity: () => void;
@@ -34,6 +35,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onBack,
   config,
   onOpenFiatCurrencies,
+  onOpenLanguage,
   onOpenBuyProviders,
   onOpenPasskeySettings,
   onOpenSecurity,
@@ -274,6 +276,20 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                   <ChevronRightIcon size="md" />
                 </button>
               )}
+              <button
+                className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium border border-spark-border rounded-xl text-spark-text-secondary hover:text-spark-text-primary hover:bg-white/5 transition-colors"
+                type="button"
+                onClick={onOpenLanguage}
+              >
+                <div className="flex items-center gap-3">
+                  <GlobeIcon size="md" />
+                  <span>{t('settings.language')}</span>
+                </div>
+                <div className="flex items-center gap-2 text-spark-text-muted">
+                  <span>{LOCALES[i18n.language]?.name ?? i18n.language}</span>
+                  <ChevronRightIcon size="md" />
+                </div>
+              </button>
             </div>
           </div>
 
@@ -323,26 +339,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 <p className="text-xs text-spark-warning">{feeError}</p>
               )}
             </FormGroup>
-          </div>
-
-          {/* Language. Developer mode widens the list to unreviewed languages so a
-              translation can be checked in the app without changing the
-              whole device's language. */}
-          <div className="bg-spark-dark border border-spark-border rounded-2xl p-4">
-            <h3 className="font-display font-semibold text-spark-text-primary mb-3">{t('settings.language')}</h3>
-            <select
-              value={i18n.language}
-              onChange={(e) => { void setLanguage(e.currentTarget.value); }}
-              className="w-full bg-spark-surface border border-spark-border rounded-xl px-3 py-3 text-spark-text-primary text-sm focus:border-spark-primary focus:ring-2 focus:ring-spark-primary/20"
-              aria-label={t('settings.language')}
-            >
-              {selectableLanguages().map((code) => (
-                <option key={code} className="bg-spark-surface" value={code}>
-                  {LOCALES[code]?.name ?? code}
-                  {SHIPPING_LANGUAGES.includes(code) ? '' : ' (unreviewed)'}
-                </option>
-              ))}
-            </select>
           </div>
 
           {/* Passkey & Labels. Every page in the hub acts on the active

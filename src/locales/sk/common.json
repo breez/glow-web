@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Späť",
+    "pinDigits": "Zadaných číslic: {{filled}} z {{total}}",
     "openMenu": "Otvoriť ponuku",
     "switchCamera": "Prepnúť kameru",
     "pickImage": "Vybrať obrázok z galérie",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Zásady ochrany súkromia",
     "support": "Podpora",
     "logout": "Odhlásiť sa",
+    "exitInProgress": "Prebieha jednostranný výstup a odhlásenie vymaže to, čo potrebuje na dokončenie. Najprv uložte údaje výstupu v jeho sekcii Rozšírené.",
     "removePasskeyGuide": "Ako odstrániť svoj passkey"
   },
   "header": {
@@ -312,6 +314,7 @@
   "wallet": {
     "send": "Poslať",
     "receive": "Prijať",
+    "change": "zvyšok",
     "saveAsContact": "Uložiť ako kontakt?"
   },
   "passkey": {
@@ -403,8 +406,12 @@
     "addressCopied": "Adresa skopírovaná",
     "copyAmount": "Kopírovať sumu",
     "depositAddress": "Adresa na vklad",
+    "addressChangeConfirm": "„{{address}}“ prestane prijímať platby.\n\nChcete pokračovať?",
+    "feeApplied": "Za túto transakciu sa účtuje poplatok ₿{{amount}}.",
     "crossChain": {
       "createFailed": "Nepodarilo sa vytvoriť žiadosť.",
+      "youllReceive": "Dostanete <amount/>",
+      "shareMessage": "Pošlite {{amount}} {{asset}} v sieti {{chain}} na {{address}}",
       "noRoutes": "Momentálne nie sú dostupné žiadne cross-chain trasy",
       "creating": "Vytvára sa žiadosť...",
       "enterUsd": "Zadaj sumu v USD",
@@ -499,6 +506,7 @@
     },
     "crossChain": {
       "selectCoin": "Vyber mincu",
+      "selectProvider": "Vyberte poskytovateľa pre {{asset}} ({{chain}})",
       "quoteFailed": "Ponuku sa nepodarilo získať",
       "gettingQuote": "Získava sa ponuka...",
       "receiving": "Dostaneš",
@@ -569,13 +577,17 @@
       "unclear_login": "Nepodarilo sa prečítať odpoveď od {{domain}}. Skontroluj web, či si sa prihlásil.",
       "unclear_link": "Nepodarilo sa prečítať odpoveď od {{domain}}. Skontroluj na webe, či je tvoj profil prepojený.",
       "unclear_auth": "Nepodarilo sa prečítať odpoveď od {{domain}}. Skontroluj web, či si sa overil.",
-      "unreachable": "Nepodarilo sa spojiť s {{domain}}. Skontroluj pripojenie a skús to znova."
+      "unreachable": "Nepodarilo sa spojiť s {{domain}}. Skontroluj pripojenie a skús to znova.",
+      "missingCors": "{{domain}} nemá hlavičku CORS (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} potvrdil, že ste to vy."
     },
     "inputHint": {
       "contact": "kontakt",
       "stablecoin": "adresa USDC alebo USDT"
     },
-    "changeAmount": "Zmeniť sumu"
+    "changeAmount": "Zmeniť sumu",
+    "betweenSats": "Medzi {{min}} a {{max}} sat",
+    "enterAmountIn": "Zadajte sumu v {{currency}}"
   },
   "restore": {
     "restoring": "Obnovuje sa...",
@@ -662,6 +674,7 @@
     "failedBody": "Niečo sa pokazilo.",
     "createNewPasskey": "Vytvoriť nový passkey",
     "unclaimedDeposits": "Nenárokované vklady",
+    "blockedDeposits": "Nevyzdvihnuté vklady vo vašich peňaženkách: {{count}}. Pred aktualizáciou ich prosím vyriešte. Potom sa môžete vrátiť a skúsiť to znova.",
     "openUnclaimedDeposits": "Otvoriť nenárokované vklady",
     "notNow": "Teraz nie",
     "labelFailed": "Štítok „{{label}}“ sa nepodarilo previesť. Skús to znova.",

@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Rudi nyuma",
+    "pinDigits": "Tarakimu {{filled}} kati ya {{total}} zimeingizwa",
     "openMenu": "Fungua menyu",
     "switchCamera": "Badilisha kamera",
     "pickImage": "Chagua picha kutoka kwenye ghala",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Sera ya Faragha",
     "support": "Usaidizi",
     "logout": "Ondoka",
+    "exitInProgress": "Kutoka kwa upande mmoja kunaendelea, na kuondoka kwenye akaunti kunafuta kinachohitajika kukamilisha. Hifadhi kwanza data ya kutoka kutoka sehemu ya Mipangilio ya Juu ya kutoka huko.",
     "removePasskeyGuide": "Jinsi ya kuondoa passkey yako"
   },
   "header": {
@@ -308,6 +310,7 @@
   "wallet": {
     "send": "Tuma",
     "receive": "Pokea",
+    "change": "chenji",
     "saveAsContact": "Hifadhi kama anwani?"
   },
   "passkey": {
@@ -399,8 +402,12 @@
     "addressCopied": "Anwani imenakiliwa",
     "copyAmount": "Nakili kiasi",
     "depositAddress": "Anwani ya Amana",
+    "addressChangeConfirm": "'{{address}}' haitapokea malipo tena.\n\nUngependa kuendelea?",
+    "feeApplied": "Ada ya ₿{{amount}} inatozwa kwenye muamala huu.",
     "crossChain": {
       "createFailed": "Imeshindwa kutengeneza ombi.",
+      "youllReceive": "Utapokea <amount/>",
+      "shareMessage": "Tuma {{amount}} {{asset}} kwenye {{chain}} kwenda {{address}}",
       "noRoutes": "Hakuna njia za kuvuka minyororo zinazopatikana sasa",
       "creating": "Inatengeneza ombi...",
       "enterUsd": "Weka kiasi kwa USD",
@@ -495,6 +502,7 @@
     },
     "crossChain": {
       "selectCoin": "Chagua sarafu",
+      "selectProvider": "Chagua mtoa huduma kwa {{asset}} ({{chain}})",
       "quoteFailed": "Imeshindwa kupata bei",
       "gettingQuote": "Inapata bei...",
       "receiving": "Unapokea",
@@ -565,13 +573,17 @@
       "unclear_login": "Imeshindwa kusoma jibu kutoka {{domain}}. Angalia tovuti ili kuona kama umeingia.",
       "unclear_link": "Imeshindwa kusoma jibu kutoka {{domain}}. Angalia tovuti ili kuona kama wasifu wako umeunganishwa.",
       "unclear_auth": "Imeshindwa kusoma jibu kutoka {{domain}}. Angalia tovuti ili kuona kama umethibitishwa.",
-      "unreachable": "Imeshindwa kufikia {{domain}}. Angalia muunganisho wako kisha jaribu tena."
+      "unreachable": "Imeshindwa kufikia {{domain}}. Angalia muunganisho wako kisha jaribu tena.",
+      "missingCors": "{{domain}} haina kichwa cha CORS (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} imethibitisha kuwa ni wewe."
     },
     "inputHint": {
       "contact": "anwani",
       "stablecoin": "anwani ya USDC au USDT"
     },
-    "changeAmount": "Badilisha Kiasi"
+    "changeAmount": "Badilisha Kiasi",
+    "betweenSats": "Kati ya sats {{min}} na {{max}}",
+    "enterAmountIn": "Weka kiasi katika {{currency}}"
   },
   "restore": {
     "restoring": "Inarejesha...",
@@ -657,6 +669,7 @@
     "failedBody": "Kuna kitu kilikwenda vibaya.",
     "createNewPasskey": "Tengeneza passkey mpya",
     "unclaimedDeposits": "Amana zisizodaiwa",
+    "blockedDeposits": "Amana ambazo hazijadaiwa kwenye pochi zako: {{count}}. Tafadhali zitatue kabla ya kusasisha. Baada ya hapo unaweza kurudi na kujaribu tena.",
     "openUnclaimedDeposits": "Fungua amana zisizodaiwa",
     "notNow": "Si sasa",
     "labelFailed": "Haikuweza kuhamisha lebo “{{label}}”. Tafadhali jaribu tena.",

@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Terug",
+    "pinDigits": "{{filled}} van {{total}} cijfers ingevoerd",
     "openMenu": "Menu openen",
     "switchCamera": "Camera wisselen",
     "pickImage": "Afbeelding uit galerij kiezen",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Privacybeleid",
     "support": "Ondersteuning",
     "logout": "Uitloggen",
+    "exitInProgress": "Er loopt een eenzijdige exit en uitloggen verwijdert wat nodig is om die af te ronden. Sla eerst de exitgegevens op via het onderdeel Geavanceerd van de exit.",
     "removePasskeyGuide": "Zo verwijder je je passkey"
   },
   "header": {
@@ -308,6 +310,7 @@
   "wallet": {
     "send": "Versturen",
     "receive": "Ontvangen",
+    "change": "wisselgeld",
     "saveAsContact": "Opslaan als contact?"
   },
   "passkey": {
@@ -399,8 +402,12 @@
     "addressCopied": "Adres gekopieerd",
     "copyAmount": "Bedrag kopiëren",
     "depositAddress": "Stortingsadres",
+    "addressChangeConfirm": "'{{address}}' ontvangt geen betalingen meer.\n\nWil je doorgaan?",
+    "feeApplied": "Op deze transactie is een fee van ₿{{amount}} van toepassing.",
     "crossChain": {
       "createFailed": "Aanvraag maken mislukt.",
+      "youllReceive": "Je ontvangt <amount/>",
+      "shareMessage": "Verstuur {{amount}} {{asset}} op {{chain}} naar {{address}}",
       "noRoutes": "Er zijn nu geen cross-chain routes beschikbaar",
       "creating": "Aanvraag maken...",
       "enterUsd": "Voer bedrag in USD in",
@@ -495,6 +502,7 @@
     },
     "crossChain": {
       "selectCoin": "Kies een munt",
+      "selectProvider": "Kies een aanbieder voor {{asset}} ({{chain}})",
       "quoteFailed": "Geen offerte ontvangen",
       "gettingQuote": "Offerte wordt opgehaald...",
       "receiving": "Je ontvangt",
@@ -565,13 +573,17 @@
       "unclear_login": "De reactie van {{domain}} kon niet worden gelezen. Controleer op de site of je bent ingelogd.",
       "unclear_link": "De reactie van {{domain}} kon niet worden gelezen. Controleer op de site of je profiel is gekoppeld.",
       "unclear_auth": "De reactie van {{domain}} kon niet worden gelezen. Controleer op de site of je bent geverifieerd.",
-      "unreachable": "{{domain}} is niet bereikbaar. Controleer je verbinding en probeer het opnieuw."
+      "unreachable": "{{domain}} is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
+      "missingCors": "{{domain}} mist een CORS-header (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} heeft bevestigd dat jij het bent."
     },
     "inputHint": {
       "contact": "contact",
       "stablecoin": "USDC- of USDT-adres"
     },
-    "changeAmount": "Bedrag wijzigen"
+    "changeAmount": "Bedrag wijzigen",
+    "betweenSats": "Tussen {{min}} en {{max}} sats",
+    "enterAmountIn": "Voer het bedrag in {{currency}} in"
   },
   "restore": {
     "restoring": "Bezig met herstellen...",
@@ -657,6 +669,7 @@
     "failedBody": "Er is iets misgegaan.",
     "createNewPasskey": "Nieuwe passkey aanmaken",
     "unclaimedDeposits": "Niet-geclaimde stortingen",
+    "blockedDeposits": "Niet-geclaimde stortingen in je wallets: {{count}}. Los ze op voordat je upgradet. Daarna kun je terugkomen en het opnieuw proberen.",
     "openUnclaimedDeposits": "Niet-geclaimde stortingen openen",
     "notNow": "Niet nu",
     "labelFailed": "Het label “{{label}}” kon niet worden gemigreerd. Probeer het opnieuw.",

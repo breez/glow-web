@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Tässä nostolinkissä ei ole kelvollista summaa, jonka Glow voisi vastaanottaa.",
       "wholeSats": "Anna kokonaisluku sateina",
+      "range": "{{min}} - {{max}} satia",
+      "fromHost": "lähde {{host}}",
+      "atMost": "Summan on oltava enintään ₿{{amount}}",
+      "atLeast": "Summan on oltava vähintään ₿{{amount}}",
       "failed": "Nosto epäonnistui: {{error}}"
     },
     "enterAmountIn": "Anna summa valuutassa {{currency}}",

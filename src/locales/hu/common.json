@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Vissza",
+    "pinDigits": "{{filled}} / {{total}} számjegy megadva",
     "openMenu": "Menü megnyitása",
     "switchCamera": "Kamera váltása",
     "pickImage": "Kép választása a galériából",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Adatvédelmi tájékoztató",
     "support": "Támogatás",
     "logout": "Kijelentkezés",
+    "exitInProgress": "Egyoldalú kilépés van folyamatban, és a kijelentkezés törli, ami a befejezéséhez kell. Először mentsd el a kilépés adatait a kilépés Speciális szakaszából.",
     "removePasskeyGuide": "Hogyan távolítsd el az azonosítókulcsodat"
   },
   "header": {
@@ -308,6 +310,7 @@
   "wallet": {
     "send": "Küldés",
     "receive": "Fogadás",
+    "change": "visszajáró",
     "saveAsContact": "Mented névjegyként?"
   },
   "passkey": {
@@ -399,8 +402,12 @@
     "addressCopied": "Cím másolva",
     "copyAmount": "Összeg másolása",
     "depositAddress": "Befizetési cím",
+    "addressChangeConfirm": "A(z) „{{address}}” többé nem fogad fizetéseket.\n\nFolytatod?",
+    "feeApplied": "Erre a tranzakcióra ₿{{amount}} díj vonatkozik.",
     "crossChain": {
       "createFailed": "A kérés létrehozása nem sikerült.",
+      "youllReceive": "<amount/> érkezik",
+      "shareMessage": "Küldj {{amount}} {{asset}} összeget a(z) {{chain}} hálózaton a(z) {{address}} címre",
       "noRoutes": "Jelenleg nincs elérhető láncok közötti útvonal",
       "creating": "Kérés létrehozása...",
       "enterUsd": "Add meg az összeget USD-ben",
@@ -495,6 +502,7 @@
     },
     "crossChain": {
       "selectCoin": "Válassz érmét",
+      "selectProvider": "Válassz szolgáltatót ehhez: {{asset}} ({{chain}})",
       "quoteFailed": "Nem sikerült ajánlatot kérni",
       "gettingQuote": "Ajánlat lekérése...",
       "receiving": "Ennyit kapsz",
@@ -565,13 +573,17 @@
       "unclear_login": "Nem sikerült elolvasni a választ innen: {{domain}}. Nézd meg az oldalon, hogy bejelentkeztél-e.",
       "unclear_link": "Nem sikerült elolvasni a választ innen: {{domain}}. Nézd meg az oldalon, hogy össze van-e kapcsolva a profilod.",
       "unclear_auth": "Nem sikerült elolvasni a választ innen: {{domain}}. Nézd meg az oldalon, hogy hitelesítetted magad-e.",
-      "unreachable": "A(z) {{domain}} nem érhető el. Ellenőrizd a kapcsolatot, és próbáld újra."
+      "unreachable": "A(z) {{domain}} nem érhető el. Ellenőrizd a kapcsolatot, és próbáld újra.",
+      "missingCors": "A(z) {{domain}} oldalról hiányzik a CORS-fejléc (<doc>LUD-01</doc>).",
+      "confirmedYou": "A(z) {{domain}} megerősítette, hogy te vagy az."
     },
     "inputHint": {
       "contact": "névjegy",
       "stablecoin": "USDC- vagy USDT-cím"
     },
-    "changeAmount": "Összeg módosítása"
+    "changeAmount": "Összeg módosítása",
+    "betweenSats": "{{min}} és {{max}} sat között",
+    "enterAmountIn": "Add meg az összeget ebben: {{currency}}"
   },
   "restore": {
     "restoring": "Visszaállítás...",
@@ -657,6 +669,7 @@
     "failedBody": "Valami hiba történt.",
     "createNewPasskey": "Új azonosítókulcs létrehozása",
     "unclaimedDeposits": "Nem igényelt befizetések",
+    "blockedDeposits": "Be nem váltott befizetések a tárcáidban: {{count}}. Kérjük, rendezd őket a frissítés előtt. Utána visszatérhetsz, és újra próbálkozhatsz.",
     "openUnclaimedDeposits": "Nem igényelt befizetések megnyitása",
     "notNow": "Most nem",
     "labelFailed": "Nem sikerült migrálni ezt a címkét: „{{label}}”. Próbáld újra.",

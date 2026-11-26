@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Acest link de retragere nu are nicio sumă validă pe care Glow o poate primi.",
       "wholeSats": "Introdu un număr întreg de sats",
+      "range": "{{min}} până la {{max}} sats",
+      "fromHost": "de la {{host}}",
+      "atMost": "Suma trebuie să fie de cel mult ₿{{amount}}",
+      "atLeast": "Suma trebuie să fie de cel puțin ₿{{amount}}",
       "failed": "Retragerea a eșuat: {{error}}"
     },
     "enterAmountIn": "Introdu suma în {{currency}}",

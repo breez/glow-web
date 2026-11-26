@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Torna indietro",
+    "pinDigits": "{{filled}} cifre su {{total}} inserite",
     "openMenu": "Apri il menu",
     "switchCamera": "Cambia fotocamera",
     "pickImage": "Scegli un'immagine dalla galleria",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Informativa sulla privacy",
     "support": "Assistenza",
     "logout": "Disconnetti",
+    "exitInProgress": "È in corso un'uscita unilaterale, e il logout elimina ciò che serve per completarla. Salva prima i suoi dati di uscita, dalla sezione Avanzate dell'uscita.",
     "removePasskeyGuide": "Come rimuovere il tuo passkey"
   },
   "header": {
@@ -308,6 +310,7 @@
   "wallet": {
     "send": "Invia",
     "receive": "Ricevi",
+    "change": "resto",
     "saveAsContact": "Salvare come contatto?"
   },
   "passkey": {
@@ -399,8 +402,12 @@
     "addressCopied": "Indirizzo copiato",
     "copyAmount": "Copia importo",
     "depositAddress": "Indirizzo di deposito",
+    "addressChangeConfirm": "«{{address}}» non riceverà più pagamenti.\n\nVuoi continuare?",
+    "feeApplied": "A questa transazione si applica una commissione di ₿{{amount}}.",
     "crossChain": {
       "createFailed": "Creazione della richiesta non riuscita.",
+      "youllReceive": "Riceverai <amount/>",
+      "shareMessage": "Invia {{amount}} {{asset}} su {{chain}} a {{address}}",
       "noRoutes": "Nessuna rotta cross-chain disponibile al momento",
       "creating": "Creazione della richiesta...",
       "enterUsd": "Inserisci l’importo in USD",
@@ -495,6 +502,7 @@
     },
     "crossChain": {
       "selectCoin": "Seleziona la moneta",
+      "selectProvider": "Scegli un fornitore per {{asset}} ({{chain}})",
       "quoteFailed": "Impossibile ottenere un preventivo",
       "gettingQuote": "Richiesta del preventivo...",
       "receiving": "Ricevi",
@@ -565,13 +573,17 @@
       "unclear_login": "Non è stato possibile leggere la risposta da {{domain}}. Controlla sul sito se hai effettuato l’accesso.",
       "unclear_link": "Non è stato possibile leggere la risposta da {{domain}}. Controlla sul sito se il tuo profilo è stato collegato.",
       "unclear_auth": "Non è stato possibile leggere la risposta da {{domain}}. Controlla sul sito se hai autenticato.",
-      "unreachable": "Impossibile raggiungere {{domain}}. Controlla la connessione e riprova."
+      "unreachable": "Impossibile raggiungere {{domain}}. Controlla la connessione e riprova.",
+      "missingCors": "A {{domain}} manca un header CORS (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} ha confermato che sei tu."
     },
     "inputHint": {
       "contact": "contatto",
       "stablecoin": "indirizzo USDC o USDT"
     },
-    "changeAmount": "Modifica l'importo"
+    "changeAmount": "Modifica l'importo",
+    "betweenSats": "Tra {{min}} e {{max}} sat",
+    "enterAmountIn": "Inserisci l'importo in {{currency}}"
   },
   "restore": {
     "restoring": "Ripristino...",
@@ -657,6 +669,7 @@
     "failedBody": "Qualcosa è andato storto.",
     "createNewPasskey": "Crea un nuovo passkey",
     "unclaimedDeposits": "Depositi non richiesti",
+    "blockedDeposits": "Depositi non riscossi nei tuoi wallet: {{count}}. Risolvili prima dell'aggiornamento. Poi potrai tornare e riprovare.",
     "openUnclaimedDeposits": "Apri i depositi non richiesti",
     "notNow": "Non ora",
     "labelFailed": "Impossibile migrare l'etichetta “{{label}}”. Riprova.",

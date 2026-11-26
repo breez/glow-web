@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "戻る",
+    "pinDigits": "{{total}} 桁中 {{filled}} 桁を入力済み",
     "openMenu": "メニューを開く",
     "switchCamera": "カメラを切り替える",
     "pickImage": "ギャラリーから画像を選ぶ",
@@ -107,6 +108,7 @@
     "privacyPolicy": "プライバシーポリシー",
     "support": "サポート",
     "logout": "ログアウト",
+    "exitInProgress": "一方的な出金が進行中です。ログアウトすると、完了に必要なデータが削除されます。先に、出金の「詳細設定」からその出金データを保存してください。",
     "removePasskeyGuide": "パスキーを削除する方法"
   },
   "header": {
@@ -308,6 +310,7 @@
   "wallet": {
     "send": "送る",
     "receive": "受け取る",
+    "change": "おつり",
     "saveAsContact": "連絡先として保存しますか？"
   },
   "passkey": {
@@ -399,8 +402,12 @@
     "addressCopied": "アドレスをコピーしました",
     "copyAmount": "金額をコピー",
     "depositAddress": "入金アドレス",
+    "addressChangeConfirm": "「{{address}}」では支払いを受け取れなくなります。\n\n続行しますか？",
+    "feeApplied": "この取引には ₿{{amount}} の手数料がかかります。",
     "crossChain": {
       "createFailed": "リクエストを作成できませんでした。",
+      "youllReceive": "<amount/> を受け取ります",
+      "shareMessage": "{{chain}} で {{amount}} {{asset}} を {{address}} に送金",
       "noRoutes": "現在、利用できるクロスチェーンの経路がありません",
       "creating": "リクエストを作成中...",
       "enterUsd": "金額を USD で入力",
@@ -495,6 +502,7 @@
     },
     "crossChain": {
       "selectCoin": "コインを選択",
+      "selectProvider": "{{asset}}（{{chain}}）のプロバイダーを選択",
       "quoteFailed": "見積もりを取得できませんでした",
       "gettingQuote": "見積もりを取得中...",
       "receiving": "受取額",
@@ -565,13 +573,17 @@
       "unclear_login": "{{domain}} からの応答を読み取れませんでした。ログインできているかサイトで確認してください。",
       "unclear_link": "{{domain}} からの応答を読み取れませんでした。プロフィールが連携されたかサイトで確認してください。",
       "unclear_auth": "{{domain}} からの応答を読み取れませんでした。認証できているかサイトで確認してください。",
-      "unreachable": "{{domain}} に接続できませんでした。接続を確認して、もう一度お試しください。"
+      "unreachable": "{{domain}} に接続できませんでした。接続を確認して、もう一度お試しください。",
+      "missingCors": "{{domain}} に CORS ヘッダーがありません（<doc>LUD-01</doc>）。",
+      "confirmedYou": "{{domain}} があなたであることを確認しました。"
     },
     "inputHint": {
       "contact": "連絡先",
       "stablecoin": "USDC または USDT アドレス"
     },
-    "changeAmount": "金額を変更"
+    "changeAmount": "金額を変更",
+    "betweenSats": "{{min}} から {{max}} sats の間",
+    "enterAmountIn": "{{currency}} で金額を入力"
   },
   "restore": {
     "restoring": "復元中...",
@@ -657,6 +669,7 @@
     "failedBody": "問題が発生しました。",
     "createNewPasskey": "新しいパスキーを作成",
     "unclaimedDeposits": "未受領の入金",
+    "blockedDeposits": "ウォレット全体の未受領の入金：{{count}} 件。アップグレードの前に対処してください。完了後に戻って、もう一度お試しいただけます。",
     "openUnclaimedDeposits": "未受領の入金を開く",
     "notNow": "今はしない",
     "labelFailed": "ラベル「{{label}}」を移行できませんでした。もう一度お試しください。",

@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Go back",
+    "pinDigits": "{{filled}} of {{total}} digits entered",
     "openMenu": "Open menu",
     "switchCamera": "Switch camera",
     "pickImage": "Pick image from gallery",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Privacy Policy",
     "support": "Support",
     "logout": "Logout",
+    "exitInProgress": "A unilateral exit is in progress, and logging out deletes what it needs to finish. Save its exit data first, from the exit's Advanced section.",
     "removePasskeyGuide": "How to remove your passkey"
   },
   "header": {
@@ -308,6 +310,7 @@
   "wallet": {
     "send": "Send",
     "receive": "Receive",
+    "change": "change",
     "saveAsContact": "Save as contact?"
   },
   "passkey": {
@@ -399,8 +402,12 @@
     "addressCopied": "Address copied",
     "copyAmount": "Copy amount",
     "depositAddress": "Deposit Address",
+    "addressChangeConfirm": "'{{address}}' will stop receiving payments.\n\nDo you want to proceed?",
+    "feeApplied": "A fee of ₿{{amount}} is applied to this transaction.",
     "crossChain": {
       "createFailed": "Failed to create request.",
+      "youllReceive": "You'll receive <amount/>",
+      "shareMessage": "Send {{amount}} {{asset}} on {{chain}} to {{address}}",
       "noRoutes": "No cross-chain routes available right now",
       "creating": "Creating request...",
       "enterUsd": "Enter amount in USD",
@@ -495,6 +502,7 @@
     },
     "crossChain": {
       "selectCoin": "Select coin",
+      "selectProvider": "Select provider for {{asset}} ({{chain}})",
       "quoteFailed": "Couldn’t get a quote",
       "gettingQuote": "Getting quote...",
       "receiving": "Receiving",
@@ -565,13 +573,17 @@
       "unclear_login": "Could not read the reply from {{domain}}. Check the site to see if you've logged in.",
       "unclear_link": "Could not read the reply from {{domain}}. Check the site to see if you've linked your account.",
       "unclear_auth": "Could not read the reply from {{domain}}. Check the site to see if you've authenticated.",
-      "unreachable": "Could not reach {{domain}}. Check your connection and try again."
+      "unreachable": "Could not reach {{domain}}. Check your connection and try again.",
+      "missingCors": "{{domain}} is missing a CORS header (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} confirmed it's you."
     },
     "inputHint": {
       "contact": "contact",
       "stablecoin": "USDC or USDT address"
     },
-    "changeAmount": "Change Amount"
+    "changeAmount": "Change Amount",
+    "betweenSats": "Between {{min}} and {{max}} sats",
+    "enterAmountIn": "Enter amount in {{currency}}"
   },
   "restore": {
     "restoring": "Restoring...",
@@ -657,6 +669,7 @@
     "failedBody": "Something went wrong.",
     "createNewPasskey": "Create a new passkey",
     "unclaimedDeposits": "Unclaimed deposits",
+    "blockedDeposits": "Unclaimed deposits across your wallets: {{count}}. Please resolve them before upgrading. You can come back and try again once done.",
     "openUnclaimedDeposits": "Open unclaimed deposits",
     "notNow": "Not now",
     "labelFailed": "Could not migrate the label “{{label}}”. Please try again.",

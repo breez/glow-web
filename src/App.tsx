@@ -25,6 +25,7 @@ import PasskeyPage from './pages/PasskeyPage';
 import type { MigrationEntry, MigrationOutcome } from './features/passkey-migration/types';
 import SettingsPage from './pages/SettingsPage';
 import FiatCurrenciesPage from './pages/FiatCurrenciesPage';
+import LanguagePage from './pages/LanguagePage';
 import BuyProvidersPage from './pages/BuyProvidersPage';
 import UnlockPage from './pages/UnlockPage';
 import UnlockingPage from './pages/UnlockingPage';
@@ -55,7 +56,7 @@ import type { Seed, Payment, BreezSdk } from '@breeztech/breez-sdk-spark';
 
 const PASSKEY_MIGRATION_ENABLED = true;
 
-type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'security' | 'fiatCurrencies' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState' | 'unilateralExit';
+type Screen = 'home' | 'restore' | 'generate' | 'wallet' | 'getRefund' | 'settings' | 'backup' | 'security' | 'fiatCurrencies' | 'language' | 'buyProviders' | 'passkey' | 'unlock' | 'unlocking' | 'passkeySettings' | 'passkeyManagement' | 'labels' | 'passkeyLocalState' | 'unilateralExit';
 
 // Full-screen dim spinner shown while sdk.isLoading is true (logout in
 // progress, SDK reconnect, etc). Wrapped as its own component so the
@@ -246,6 +247,7 @@ const AppContent: React.FC = () => {
       case 'backup':
       case 'security':
       case 'fiatCurrencies':
+      case 'language':
       case 'buyProviders':
       case 'passkeySettings':
         setUserScreen('settings');
@@ -383,6 +385,7 @@ const AppContent: React.FC = () => {
         onBack={() => setUserScreen('wallet')}
         config={sdk.config}
         onOpenFiatCurrencies={() => setUserScreen('fiatCurrencies')}
+        onOpenLanguage={() => setUserScreen('language')}
         onOpenBuyProviders={() => setUserScreen('buyProviders')}
         onOpenPasskeySettings={() => setUserScreen('passkeySettings')}
         onOpenSecurity={() => setUserScreen('security')}
@@ -488,6 +491,15 @@ const AppContent: React.FC = () => {
             {renderWalletPage()}
             {renderSettingsPage()}
             <FiatCurrenciesPage onBack={() => setUserScreen('settings')} />
+          </>
+        );
+
+      case 'language':
+        return (
+          <>
+            {renderWalletPage()}
+            {renderSettingsPage()}
+            <LanguagePage onBack={() => setUserScreen('settings')} />
           </>
         );
 

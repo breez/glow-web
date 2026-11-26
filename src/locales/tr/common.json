@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Geri",
+    "pinDigits": "{{total}} basamaktan {{filled}} tanesi girildi",
     "openMenu": "Menüyü aç",
     "switchCamera": "Kamerayı değiştir",
     "pickImage": "Galeriden görsel seç",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Gizlilik politikası",
     "support": "Destek",
     "logout": "Çıkış yap",
+    "exitInProgress": "Tek taraflı bir çıkış sürüyor ve oturumu kapatmak, tamamlanması için gereken verileri siler. Önce çıkış verilerini, çıkışın Gelişmiş bölümünden kaydet.",
     "removePasskeyGuide": "Geçiş anahtarını nasıl kaldırırsın"
   },
   "header": {
@@ -308,6 +310,7 @@
   "wallet": {
     "send": "Gönder",
     "receive": "Al",
+    "change": "para üstü",
     "saveAsContact": "Kişi olarak kaydedilsin mi?"
   },
   "passkey": {
@@ -399,8 +402,12 @@
     "addressCopied": "Adres kopyalandı",
     "copyAmount": "Tutarı kopyala",
     "depositAddress": "Transfer adresi",
+    "addressChangeConfirm": "'{{address}}' artık ödeme alamayacak.\n\nDevam etmek istiyor musun?",
+    "feeApplied": "Bu işleme ₿{{amount}} ücret uygulanır.",
     "crossChain": {
       "createFailed": "İstek oluşturulamadı.",
+      "youllReceive": "<amount/> alacaksın",
+      "shareMessage": "{{chain}} ağında {{amount}} {{asset}} tutarını {{address}} adresine gönder",
       "noRoutes": "Şu anda kullanılabilir zincirler arası rota yok",
       "creating": "İstek oluşturuluyor...",
       "enterUsd": "USD cinsinden tutar gir",
@@ -495,6 +502,7 @@
     },
     "crossChain": {
       "selectCoin": "Coin seç",
+      "selectProvider": "{{asset}} ({{chain}}) için sağlayıcı seç",
       "quoteFailed": "Teklif alınamadı",
       "gettingQuote": "Teklif getiriliyor...",
       "receiving": "Aldığın",
@@ -565,13 +573,17 @@
       "unclear_login": "{{domain}} sitesinden gelen yanıt okunamadı. giriş yaptığını siteden kontrol et.",
       "unclear_link": "{{domain}} sitesinden gelen yanıt okunamadı. Profilinin bağlandığını siteden kontrol et.",
       "unclear_auth": "{{domain}} sitesinden gelen yanıt okunamadı. doğrulama yaptığını siteden kontrol et.",
-      "unreachable": "{{domain}} sitesine ulaşılamadı. Bağlantını kontrol et ve tekrar dene."
+      "unreachable": "{{domain}} sitesine ulaşılamadı. Bağlantını kontrol et ve tekrar dene.",
+      "missingCors": "{{domain}} sitesinde CORS başlığı yok (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} bunun sen olduğunu doğruladı."
     },
     "inputHint": {
       "contact": "kişi",
       "stablecoin": "USDC veya USDT adresi"
     },
-    "changeAmount": "Tutarı değiştir"
+    "changeAmount": "Tutarı değiştir",
+    "betweenSats": "{{min}} ile {{max}} sat arasında",
+    "enterAmountIn": "Tutarı {{currency}} cinsinden gir"
   },
   "restore": {
     "restoring": "Geri yükleniyor...",
@@ -657,6 +669,7 @@
     "failedBody": "Bir şeyler ters gitti.",
     "createNewPasskey": "Yeni geçiş anahtarı oluştur",
     "unclaimedDeposits": "Tahsil edilmemiş transferler",
+    "blockedDeposits": "Cüzdanlarındaki tahsil edilmemiş transferler: {{count}}. Güncellemeden önce bunları çöz. Sonra geri dönüp yeniden deneyebilirsin.",
     "openUnclaimedDeposits": "Tahsil edilmemiş transferleri aç",
     "notNow": "Şimdi değil",
     "labelFailed": "“{{label}}” etiketi taşınamadı. Tekrar dene.",

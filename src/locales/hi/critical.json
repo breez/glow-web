@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "इस निकासी लिंक में ऐसी कोई मान्य राशि नहीं है जो Glow ले सके।",
       "wholeSats": "sats की पूरी संख्या डालें",
+      "range": "{{min}} से {{max}} सैट",
+      "fromHost": "{{host}} से",
+      "atMost": "राशि अधिकतम ₿{{amount}} होनी चाहिए",
+      "atLeast": "राशि कम से कम ₿{{amount}} होनी चाहिए",
       "failed": "निकासी विफल: {{error}}"
     },
     "enterAmountIn": "राशि {{currency}} में डालें",

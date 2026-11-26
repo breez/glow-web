@@ -318,8 +318,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, onLogout, onOpenSe
                       phrase alone cannot finish it: only saved exit data can. */}
                   {isExitInProgress && (
                     <SimpleAlert variant="warning" hideIcon className="mb-6 text-start">
-                      A unilateral exit is in progress, and logging out deletes what it needs to
-                      finish. Save its exit data first, from the exit&apos;s Advanced section.
+                      {t('common:menu.exitInProgress')}
                     </SimpleAlert>
                   )}
 

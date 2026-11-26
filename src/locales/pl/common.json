@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Wstecz",
+    "pinDigits": "Wpisano {{filled}} z {{total}} cyfr",
     "openMenu": "Otwórz menu",
     "switchCamera": "Przełącz kamerę",
     "pickImage": "Wybierz obraz z galerii",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Polityka prywatności",
     "support": "Pomoc",
     "logout": "Wyloguj się",
+    "exitInProgress": "Trwa jednostronne wyjście, a wylogowanie usuwa to, co jest potrzebne do jego ukończenia. Najpierw zapisz dane wyjścia w jego sekcji Zaawansowane.",
     "removePasskeyGuide": "Jak usunąć swój passkey"
   },
   "header": {
@@ -312,6 +314,7 @@
   "wallet": {
     "send": "Wyślij",
     "receive": "Odbierz",
+    "change": "reszta",
     "saveAsContact": "Zapisać jako kontakt?"
   },
   "passkey": {
@@ -403,8 +406,12 @@
     "addressCopied": "Skopiowano adres",
     "copyAmount": "Kopiuj kwotę",
     "depositAddress": "Adres depozytu",
+    "addressChangeConfirm": "„{{address}}” przestanie przyjmować płatności.\n\nCzy chcesz kontynuować?",
+    "feeApplied": "Za tę transakcję naliczana jest opłata ₿{{amount}}.",
     "crossChain": {
       "createFailed": "Nie udało się utworzyć żądania.",
+      "youllReceive": "Otrzymasz <amount/>",
+      "shareMessage": "Wyślij {{amount}} {{asset}} w sieci {{chain}} na {{address}}",
       "noRoutes": "Brak dostępnych tras cross-chain w tej chwili",
       "creating": "Tworzenie żądania...",
       "enterUsd": "Wpisz kwotę w USD",
@@ -499,6 +506,7 @@
     },
     "crossChain": {
       "selectCoin": "Wybierz monetę",
+      "selectProvider": "Wybierz dostawcę dla {{asset}} ({{chain}})",
       "quoteFailed": "Nie udało się uzyskać wyceny",
       "gettingQuote": "Pobieranie wyceny...",
       "receiving": "Otrzymujesz",
@@ -569,13 +577,17 @@
       "unclear_login": "Nie udało się odczytać odpowiedzi z {{domain}}. Sprawdź na stronie, czy zalogowano.",
       "unclear_link": "Nie udało się odczytać odpowiedzi z {{domain}}. Sprawdź na stronie, czy twój profil został połączony.",
       "unclear_auth": "Nie udało się odczytać odpowiedzi z {{domain}}. Sprawdź na stronie, czy uwierzytelniono.",
-      "unreachable": "Nie można połączyć się z {{domain}}. Sprawdź połączenie i spróbuj ponownie."
+      "unreachable": "Nie można połączyć się z {{domain}}. Sprawdź połączenie i spróbuj ponownie.",
+      "missingCors": "Witryna {{domain}} nie ma nagłówka CORS (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} potwierdził, że to Ty."
     },
     "inputHint": {
       "contact": "kontakt",
       "stablecoin": "adres USDC lub USDT"
     },
-    "changeAmount": "Zmień kwotę"
+    "changeAmount": "Zmień kwotę",
+    "betweenSats": "Od {{min}} do {{max}} sat",
+    "enterAmountIn": "Wpisz kwotę w {{currency}}"
   },
   "restore": {
     "restoring": "Przywracanie...",
@@ -663,6 +675,7 @@
     "failedBody": "Coś poszło nie tak.",
     "createNewPasskey": "Utwórz nowy passkey",
     "unclaimedDeposits": "Nieodebrane depozyty",
+    "blockedDeposits": "Nieodebrane wpłaty w Twoich portfelach: {{count}}. Rozwiąż je przed aktualizacją. Potem możesz wrócić i spróbować ponownie.",
     "openUnclaimedDeposits": "Otwórz nieodebrane depozyty",
     "notNow": "Nie teraz",
     "labelFailed": "Nie udało się zmigrować etykiety „{{label}}”. Spróbuj ponownie.",

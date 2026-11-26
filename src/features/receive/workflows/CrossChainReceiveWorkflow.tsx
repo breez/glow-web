@@ -38,7 +38,7 @@ import { formatWithSpaces } from '../../../utils/formatNumber';
 import { getProviderDisplayName } from '../../../utils/paymentDescription';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 type WorkflowStep = 'amount' | 'loading' | 'asset' | 'chain' | 'provider' | 'generating' | 'result';
 
@@ -268,7 +268,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   // EIP-681 URI so scanners auto-fill the amount; falls back to the URI if the
   // SDK omitted the structured info.
   const resultDepositAddress = resultInfo?.depositAddress ?? receiveResult?.paymentRequest ?? '';
-  const resultShareMessage = `Send ${resultDepositAmount} ${resultAssetName} on ${resultChainName} to ${resultDepositAddress}`;
+  const resultShareMessage = t('receive.crossChain.shareMessage', { amount: resultDepositAmount, asset: resultAssetName, chain: resultChainName, address: resultDepositAddress });
   const copyDepositAmount = () => {
     void copyToClipboard(resultDepositAmount);
     setAmountCopied(true);
@@ -330,7 +330,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
           <div className="space-y-4 pt-6">
             <FormError error={error} />
             <PrimaryButton onClick={() => fetchRoutes()} className="w-full" disabled={!canContinue} data-testid="cross-chain-receive-continue">
-              Continue
+              {t('actions.continue')}
             </PrimaryButton>
           </div>
         </div>
@@ -377,7 +377,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
         <div className="flex flex-col" style={{ maxHeight: isSheetFull ? '85dvh' : '60dvh' }}>
           <div className="mb-4 min-h-0 flex flex-col">
             <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">
-              Select Provider for {selectedAsset} ({formatChainName(routesForSelection[0]?.chain ?? '')})
+              {t('send.crossChain.selectProvider', { asset: selectedAsset, chain: formatChainName(routesForSelection[0]?.chain ?? '') })}
             </label>
             <div className="space-y-2 overflow-y-auto overscroll-y-none touch-pan-y min-h-0 pe-1">
               {routesForSelection.map(r => (
@@ -402,7 +402,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
               className="w-full"
               disabled={!pendingProvider}
             >
-              Continue
+              {t('actions.continue')}
             </PrimaryButton>
           </div>
         </div>
@@ -454,8 +454,12 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
           {/* What lands in the wallet */}
           {resultInfo && (
             <p className="text-sm text-spark-text-muted">
-              You'll receive{' '}
-              <span className="text-spark-text-primary font-mono font-medium">~{formatReceived(resultInfo)}</span>
+              <Trans
+                i18nKey="receive.crossChain.youllReceive"
+                ns="common"
+                values={{ amount: `~${formatReceived(resultInfo)}` }}
+                components={{ amount: <span className="text-spark-text-primary font-mono font-medium" /> }}
+              />
             </p>
           )}
         </div>

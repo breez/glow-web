@@ -64,9 +64,9 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
     : !isInteger
       ? t('send.withdraw.wholeSats')
       : amountNum < minSats
-        ? `Amount must be at least ₿${formatWithSpaces(minSats)}`
+        ? t('send.withdraw.atLeast', { amount: formatWithSpaces(minSats) })
         : amountNum > maxSats
-          ? `Amount must be at most ₿${formatWithSpaces(maxSats)}`
+          ? t('send.withdraw.atMost', { amount: formatWithSpaces(maxSats) })
           : null;
 
   // Reached only with a valid, in-range amount: the Receive button is disabled
@@ -101,7 +101,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
       {(description || sourceHost) && (
         <div className="text-center">
           {description && <p className="text-spark-text-primary font-medium">{description}</p>}
-          {sourceHost && <p className="text-spark-text-secondary text-sm mt-1">from {sourceHost}</p>}
+          {sourceHost && <p className="text-spark-text-secondary text-sm mt-1">{t('send.withdraw.fromHost', { host: sourceHost })}</p>}
         </div>
       )}
 
@@ -112,7 +112,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
           </label>
           {!isFixed && !unserviceable && (
             <span className="text-xs text-spark-text-secondary">
-              {formatWithSpaces(minSats)} to {formatWithSpaces(maxSats)} sats
+              {t('send.withdraw.range', { min: formatWithSpaces(minSats), max: formatWithSpaces(maxSats) })}
             </span>
           )}
         </div>
@@ -142,7 +142,7 @@ const LnurlWithdrawWorkflow: React.FC<LnurlWithdrawWorkflowProps> = ({ parsed, o
       <FormError error={inlineError || error} />
 
       <PrimaryButton onClick={onReceive} disabled={!validAmount} className="w-full">
-        Receive
+        {t('common:wallet.receive')}
       </PrimaryButton>
     </div>
   );

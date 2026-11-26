@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SendPaymentMethod, ConversionEstimate } from '@breeztech/breez-sdk-spark';
 import type { PaymentStep } from '../../../types/domain';
 import { PrimaryButton } from '../../../components/ui';
@@ -20,6 +21,7 @@ interface BitcoinWorkflowProps {
 }
 
 const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, feesIncluded, conversionEstimate, balanceSats, tokenBalance, onBack, onSend }) => {
+  const { t } = useTranslation('common');
   const [step, setStep] = useState<PaymentStep>('fee');
   // Fee selection happens here; processing/result are handled by parent
   const [selectedFeeRate, setSelectedFeeRate] = useState<FeeSpeed | null>(null);
@@ -56,7 +58,7 @@ const BitcoinWorkflow: React.FC<BitcoinWorkflowProps> = ({ method, amountSats, f
             className="w-full"
             disabled={!selectedFeeRate}
           >
-            Continue
+            {t('actions.continue')}
           </PrimaryButton>
         </>
       )}
