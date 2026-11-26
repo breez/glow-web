@@ -92,7 +92,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ paymentData, feeSats, amo
 
         {feeSats > 0 && (
           <Alert type="warning" className="mt-8">
-            <center>A fee of ₿{formatWithSpaces(feeSats)} is applied to this transaction.</center>
+            <center>{t('receive.feeApplied', { amount: formatWithSpaces(feeSats) })}</center>
           </Alert>
         )}
       </div>
@@ -207,7 +207,7 @@ const ReceivePaymentDialog: React.FC<ReceivePaymentDialogProps> = ({ isOpen, onC
     const parts = lightningAddress.lightningAddress.split('@');
     const username = parts[0];
     const domain = parts[1] || LNURL_DOMAIN;
-    return `'${username}@${domain}' will stop receiving payments.\n\nDo you want to proceed?`;
+    return t('receive.addressChangeConfirm', { address: `${username}@${domain}` });
   };
 
   // The BTC tab shows Lightning or on-chain, reusing those two tab states.

@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Ez a kifizetési link nem tartalmaz olyan érvényes összeget, amelyet a Glow fogadni tud.",
       "wholeSats": "Egész számot adj meg satsban",
+      "range": "{{min}} – {{max}} sat",
+      "fromHost": "tőle: {{host}}",
+      "atMost": "Az összeg legfeljebb ₿{{amount}} lehet",
+      "atLeast": "Az összegnek legalább ₿{{amount}}-nek kell lennie",
       "failed": "A kifizetés nem sikerült: {{error}}"
     },
     "enterAmountIn": "Add meg az összeget ebben: {{currency}}",

@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Αυτός ο σύνδεσμος ανάληψης δεν έχει έγκυρο ποσό που μπορεί να λάβει το Glow.",
       "wholeSats": "Εισαγάγετε ακέραιο αριθμό sats",
+      "range": "{{min}} έως {{max}} sats",
+      "fromHost": "από {{host}}",
+      "atMost": "Το ποσό πρέπει να είναι το πολύ ₿{{amount}}",
+      "atLeast": "Το ποσό πρέπει να είναι τουλάχιστον ₿{{amount}}",
       "failed": "Η ανάληψη απέτυχε: {{error}}"
     },
     "enterAmountIn": "Εισαγάγετε το ποσό σε {{currency}}",

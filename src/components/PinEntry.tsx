@@ -13,11 +13,13 @@ import { useBackButton } from '@/hooks/useBackButton';
 import { BackspaceIcon, FaceIdIcon, FingerprintIcon, TrashIcon } from './Icons';
 import { useTranslation } from 'react-i18next';
 
-export const PinDots: React.FC<{ filled: number; error?: boolean }> = ({ filled, error = false }) => (
+export const PinDots: React.FC<{ filled: number; error?: boolean }> = ({ filled, error = false }) => {
+  const { t } = useTranslation('common');
+  return (
   <div
     className={`flex justify-center gap-4 ${error ? 'animate-pin-shake' : ''}`}
     role="status"
-    aria-label={`${filled} of ${PIN_LENGTH} digits entered`}
+    aria-label={t('a11y.pinDigits', { filled, total: PIN_LENGTH })}
   >
     {Array.from({ length: PIN_LENGTH }, (_, i) => (
       <div
@@ -32,7 +34,8 @@ export const PinDots: React.FC<{ filled: number; error?: boolean }> = ({ filled,
       />
     ))}
   </div>
-);
+  );
+};
 
 /**
  * Shared frame for every PIN surface (lock screen, gates, create /

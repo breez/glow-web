@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Tautan penarikan ini tidak punya jumlah valid yang bisa diterima Glow.",
       "wholeSats": "Masukkan sats dalam bilangan bulat",
+      "range": "{{min}} hingga {{max}} sat",
+      "fromHost": "dari {{host}}",
+      "atMost": "Jumlah maksimal ₿{{amount}}",
+      "atLeast": "Jumlah minimal ₿{{amount}}",
       "failed": "Penarikan gagal: {{error}}"
     },
     "enterAmountIn": "Masukkan jumlah dalam {{currency}}",

@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "رجوع",
+    "pinDigits": "تم إدخال {{filled}} من {{total}} أرقام",
     "openMenu": "فتح القائمة",
     "switchCamera": "تبديل الكاميرا",
     "pickImage": "اختيار صورة من المعرض",
@@ -107,6 +108,7 @@
     "privacyPolicy": "سياسة الخصوصية",
     "support": "الدعم",
     "logout": "تسجيل الخروج",
+    "exitInProgress": "هناك خروج أحادي الجانب قيد التنفيذ، وتسجيل الخروج يحذف ما يحتاجه لإكماله. احفظ بيانات الخروج أولاً من قسم «متقدم» في شاشة الخروج.",
     "removePasskeyGuide": "كيفية إزالة مفتاح المرور"
   },
   "header": {
@@ -154,7 +156,8 @@
     "pendingConfirmation": "بانتظار التأكيد",
     "pendingApproval": "بانتظار الموافقة",
     "tapToClaim": "انقر للاستلام",
-    "confirming": "جارٍ التأكيد"
+    "confirming": "جارٍ التأكيد",
+    "fee": "الرسوم {{amount}}"
   },
   "paymentDetails": {
     "amount": "المبلغ",
@@ -314,6 +317,7 @@
   "wallet": {
     "send": "إرسال",
     "receive": "استلام",
+    "change": "الباقي",
     "saveAsContact": "هل تريد الحفظ كجهة اتصال؟"
   },
   "passkey": {
@@ -405,8 +409,12 @@
     "addressCopied": "تم نسخ العنوان",
     "copyAmount": "نسخ المبلغ",
     "depositAddress": "عنوان الإيداع",
+    "addressChangeConfirm": "سيتوقف '{{address}}' عن استلام المدفوعات.\n\nهل تريد المتابعة؟",
+    "feeApplied": "تُطبَّق رسوم قدرها ₿{{amount}} على هذه المعاملة.",
     "crossChain": {
       "createFailed": "تعذّر إنشاء الطلب.",
+      "youllReceive": "ستستلم <amount/>",
+      "shareMessage": "أرسل {{amount}} {{asset}} على {{chain}} إلى {{address}}",
       "noRoutes": "لا توجد مسارات عبر السلاسل متاحة حالياً",
       "creating": "جارٍ إنشاء الطلب...",
       "enterUsd": "أدخل المبلغ بـ USD",
@@ -501,6 +509,7 @@
     },
     "crossChain": {
       "selectCoin": "اختر العملة",
+      "selectProvider": "اختر مزوّد الخدمة لـ {{asset}} ({{chain}})",
       "quoteFailed": "تعذّر الحصول على عرض سعر",
       "gettingQuote": "جارٍ الحصول على عرض السعر...",
       "receiving": "ستستلم",
@@ -571,13 +580,17 @@
       "unclear_login": "تعذّر قراءة الرد من {{domain}}. راجع الموقع لمعرفة ما إذا كنت قد دخلت.",
       "unclear_link": "تعذّر قراءة الرد من {{domain}}. راجع الموقع لمعرفة ما إذا كان ملفك الشخصي قد رُبط.",
       "unclear_auth": "تعذّر قراءة الرد من {{domain}}. راجع الموقع لمعرفة ما إذا كان التحقق قد تم.",
-      "unreachable": "تعذّر الوصول إلى {{domain}}. تحقّق من اتصالك ثم أعد المحاولة."
+      "unreachable": "تعذّر الوصول إلى {{domain}}. تحقّق من اتصالك ثم أعد المحاولة.",
+      "missingCors": "{{domain}} لا يحتوي على ترويسة CORS (<doc>LUD-01</doc>).",
+      "confirmedYou": "أكّد {{domain}} أنك أنت."
     },
     "inputHint": {
       "contact": "جهة اتصال",
       "stablecoin": "عنوان USDC أو USDT"
     },
-    "changeAmount": "تغيير المبلغ"
+    "changeAmount": "تغيير المبلغ",
+    "betweenSats": "بين {{min}} و{{max}} ساتوشي",
+    "enterAmountIn": "أدخل المبلغ بعملة {{currency}}"
   },
   "restore": {
     "restoring": "جارٍ الاستعادة...",
@@ -666,6 +679,7 @@
     "failedBody": "حدث خطأ ما.",
     "createNewPasskey": "إنشاء مفتاح مرور جديد",
     "unclaimedDeposits": "إيداعات غير مستلمة",
+    "blockedDeposits": "الإيداعات غير المستلمة في محافظك: {{count}}. يرجى حلّها قبل الترقية. يمكنك العودة والمحاولة مرة أخرى بعد ذلك.",
     "openUnclaimedDeposits": "فتح الإيداعات غير المستلمة",
     "notNow": "ليس الآن",
     "labelFailed": "تعذّر نقل التسمية «{{label}}». يُرجى إعادة المحاولة.",

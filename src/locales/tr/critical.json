@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Bu çekim bağlantısında Glow'un alabileceği geçerli bir tutar yok.",
       "wholeSats": "Sats olarak tam sayı gir",
+      "range": "{{min}} ile {{max}} sat",
+      "fromHost": "{{host}} kaynağından",
+      "atMost": "Tutar en fazla ₿{{amount}} olmalı",
+      "atLeast": "Tutar en az ₿{{amount}} olmalı",
       "failed": "Çekim başarısız: {{error}}"
     },
     "enterAmountIn": "Tutarı {{currency}} olarak gir",

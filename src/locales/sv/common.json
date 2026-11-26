@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Tillbaka",
+    "pinDigits": "{{filled}} av {{total}} siffror angivna",
     "openMenu": "Öppna menyn",
     "switchCamera": "Byt kamera",
     "pickImage": "Välj en bild från galleriet",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Integritetspolicy",
     "support": "Support",
     "logout": "Logga ut",
+    "exitInProgress": "En ensidig utträde pågår, och utloggning raderar det som behövs för att slutföra det. Spara först utträdets data under Avancerat i utträdet.",
     "removePasskeyGuide": "Så tar du bort din passkey"
   },
   "header": {
@@ -148,7 +150,8 @@
     "pendingConfirmation": "Väntar på bekräftelse",
     "pendingApproval": "Väntar på godkännande",
     "tapToClaim": "Tryck för att lösa in",
-    "confirming": "Bekräftar"
+    "confirming": "Bekräftar",
+    "fee": "avgift {{amount}}"
   },
   "paymentDetails": {
     "amount": "Belopp",
@@ -308,6 +311,7 @@
   "wallet": {
     "send": "Skicka",
     "receive": "Ta emot",
+    "change": "växel",
     "saveAsContact": "Spara som kontakt?"
   },
   "passkey": {
@@ -399,8 +403,12 @@
     "addressCopied": "Adressen kopierad",
     "copyAmount": "Kopiera belopp",
     "depositAddress": "Insättningsadress",
+    "addressChangeConfirm": "”{{address}}” slutar ta emot betalningar.\n\nVill du fortsätta?",
+    "feeApplied": "En avgift på ₿{{amount}} tillämpas på den här transaktionen.",
     "crossChain": {
       "createFailed": "Det gick inte att skapa begäran.",
+      "youllReceive": "Du får <amount/>",
+      "shareMessage": "Skicka {{amount}} {{asset}} på {{chain}} till {{address}}",
       "noRoutes": "Inga cross-chain-rutter är tillgängliga just nu",
       "creating": "Skapar begäran...",
       "enterUsd": "Ange belopp i USD",
@@ -495,6 +503,7 @@
     },
     "crossChain": {
       "selectCoin": "Välj mynt",
+      "selectProvider": "Välj leverantör för {{asset}} ({{chain}})",
       "quoteFailed": "Ingen offert kunde hämtas",
       "gettingQuote": "Hämtar offert...",
       "receiving": "Du får",
@@ -565,13 +574,17 @@
       "unclear_login": "Det gick inte att läsa svaret från {{domain}}. Kontrollera på webbplatsen om du har loggat in.",
       "unclear_link": "Det gick inte att läsa svaret från {{domain}}. Kontrollera på webbplatsen om din profil har länkats.",
       "unclear_auth": "Det gick inte att läsa svaret från {{domain}}. Kontrollera på webbplatsen om du har autentiserat dig.",
-      "unreachable": "Det gick inte att nå {{domain}}. Kontrollera din anslutning och försök igen."
+      "unreachable": "Det gick inte att nå {{domain}}. Kontrollera din anslutning och försök igen.",
+      "missingCors": "{{domain}} saknar en CORS-header (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} bekräftade att det är du."
     },
     "inputHint": {
       "contact": "kontakt",
       "stablecoin": "USDC- eller USDT-adress"
     },
-    "changeAmount": "Ändra beloppet"
+    "changeAmount": "Ändra beloppet",
+    "betweenSats": "Mellan {{min}} och {{max}} sats",
+    "enterAmountIn": "Ange belopp i {{currency}}"
   },
   "restore": {
     "restoring": "Återställer...",
@@ -657,6 +670,7 @@
     "failedBody": "Något gick fel.",
     "createNewPasskey": "Skapa en ny passkey",
     "unclaimedDeposits": "Ej inlösta insättningar",
+    "blockedDeposits": "Ej inlösta insättningar i dina plånböcker: {{count}}. Lös dem före uppgraderingen. Därefter kan du komma tillbaka och försöka igen.",
     "openUnclaimedDeposits": "Öppna ej inlösta insättningar",
     "notNow": "Inte nu",
     "labelFailed": "Etiketten ”{{label}}” kunde inte migreras. Försök igen.",

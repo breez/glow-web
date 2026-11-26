@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "У цьому посиланні на виведення немає правильної суми, яку Glow може отримати.",
       "wholeSats": "Введіть ціле число sats",
+      "range": "від {{min}} до {{max}} сат",
+      "fromHost": "від {{host}}",
+      "atMost": "Сума має бути не більшою за ₿{{amount}}",
+      "atLeast": "Сума має бути не меншою за ₿{{amount}}",
       "failed": "Не вдалося вивести: {{error}}"
     },
     "enterAmountIn": "Введіть суму в {{currency}}",

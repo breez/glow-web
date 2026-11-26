@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Тази връзка за теглене няма валидна сума, която Glow може да получи.",
       "wholeSats": "Въведете цяло число sats",
+      "range": "от {{min}} до {{max}} сата",
+      "fromHost": "от {{host}}",
+      "atMost": "Сумата трябва да е най-много ₿{{amount}}",
+      "atLeast": "Сумата трябва да е поне ₿{{amount}}",
       "failed": "Тегленето не бе успешно: {{error}}"
     },
     "enterAmountIn": "Въведете сумата в {{currency}}",

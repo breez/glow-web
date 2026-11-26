@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Înapoi",
+    "pinDigits": "{{filled}} din {{total}} cifre introduse",
     "openMenu": "Deschide meniul",
     "switchCamera": "Schimbă camera",
     "pickImage": "Alege o imagine din galerie",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Politica de confidențialitate",
     "support": "Asistență",
     "logout": "Deconectare",
+    "exitInProgress": "O ieșire unilaterală este în curs, iar deconectarea șterge ce este necesar pentru a o finaliza. Salvează mai întâi datele ei de ieșire, din secțiunea Avansat a ieșirii.",
     "removePasskeyGuide": "Cum să elimini cheia de acces"
   },
   "header": {
@@ -150,7 +152,8 @@
     "pendingConfirmation": "În așteptarea confirmării",
     "pendingApproval": "În așteptarea aprobării",
     "tapToClaim": "Atinge pentru a revendica",
-    "confirming": "Se confirmă"
+    "confirming": "Se confirmă",
+    "fee": "comision {{amount}}"
   },
   "paymentDetails": {
     "amount": "Sumă",
@@ -310,6 +313,7 @@
   "wallet": {
     "send": "Trimite",
     "receive": "Primește",
+    "change": "rest",
     "saveAsContact": "Salvezi ca contact?"
   },
   "passkey": {
@@ -401,8 +405,12 @@
     "addressCopied": "Adresă copiată",
     "copyAmount": "Copiază suma",
     "depositAddress": "Adresă de depunere",
+    "addressChangeConfirm": "„{{address}}” nu va mai primi plăți.\n\nVrei să continui?",
+    "feeApplied": "La această tranzacție se aplică un comision de ₿{{amount}}.",
     "crossChain": {
       "createFailed": "Cererea nu a putut fi creată.",
+      "youllReceive": "Vei primi <amount/>",
+      "shareMessage": "Trimite {{amount}} {{asset}} pe {{chain}} la {{address}}",
       "noRoutes": "Momentan nu există rute cross-chain disponibile",
       "creating": "Se creează cererea...",
       "enterUsd": "Introdu suma în USD",
@@ -497,6 +505,7 @@
     },
     "crossChain": {
       "selectCoin": "Alege moneda",
+      "selectProvider": "Alege un furnizor pentru {{asset}} ({{chain}})",
       "quoteFailed": "Nu s-a putut obține o cotație",
       "gettingQuote": "Se obține cotația...",
       "receiving": "Primești",
@@ -567,13 +576,17 @@
       "unclear_login": "Răspunsul de la {{domain}} nu a putut fi citit. Verifică pe site dacă te-ai conectat.",
       "unclear_link": "Răspunsul de la {{domain}} nu a putut fi citit. Verifică pe site dacă profilul tău a fost conectat.",
       "unclear_auth": "Răspunsul de la {{domain}} nu a putut fi citit. Verifică pe site dacă te-ai autentificat.",
-      "unreachable": "{{domain}} nu a putut fi contactat. Verifică conexiunea și încearcă din nou."
+      "unreachable": "{{domain}} nu a putut fi contactat. Verifică conexiunea și încearcă din nou.",
+      "missingCors": "{{domain}} nu are un antet CORS (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} a confirmat că ești tu."
     },
     "inputHint": {
       "contact": "contact",
       "stablecoin": "adresă USDC sau USDT"
     },
-    "changeAmount": "Schimbă suma"
+    "changeAmount": "Schimbă suma",
+    "betweenSats": "Între {{min}} și {{max}} sats",
+    "enterAmountIn": "Introdu suma în {{currency}}"
   },
   "restore": {
     "restoring": "Se restaurează...",
@@ -660,6 +673,7 @@
     "failedBody": "Ceva nu a mers bine.",
     "createNewPasskey": "Creează o cheie de acces nouă",
     "unclaimedDeposits": "Depuneri nerevendicate",
+    "blockedDeposits": "Depozite nerevendicate în portofelele tale: {{count}}. Rezolvă-le înainte de actualizare. După aceea poți reveni și încerca din nou.",
     "openUnclaimedDeposits": "Deschide depunerile nerevendicate",
     "notNow": "Nu acum",
     "labelFailed": "Eticheta „{{label}}” nu a putut fi migrată. Încearcă din nou.",

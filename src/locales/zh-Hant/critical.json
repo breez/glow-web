@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "這個提領連結裡沒有 Glow 能接收的有效金額。",
       "wholeSats": "請輸入整數的 sats",
+      "range": "{{min}} 到 {{max}} sats",
+      "fromHost": "來自 {{host}}",
+      "atMost": "金額最多為 ₿{{amount}}",
+      "atLeast": "金額至少為 ₿{{amount}}",
       "failed": "提領失敗：{{error}}"
     },
     "enterAmountIn": "以 {{currency}} 輸入金額",

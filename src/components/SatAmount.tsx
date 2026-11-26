@@ -7,7 +7,8 @@ import { formatWithSpaces } from '../utils/formatNumber';
  * Owns the mono font together with the `word-spacing` that corrects it. Mono
  * gives a space a full character cell, and -0.4em is calibrated against that,
  * so a caller must never be able to set one without the other. Inherits its
- * size, so wrap it to scale.
+ * size, so wrap it to scale. Always left to right: in an RTL layout the ₿ and
+ * the digits would otherwise reorder and strand a neighbouring sign.
  *
  * Two displays stay hand-rolled: the balance header positions ₿ absolutely and
  * tightens via `.balance-display`, and the transaction list's token rows carry
@@ -22,7 +23,7 @@ export const SatAmount: React.FC<{
    */
   approximate?: boolean;
 }> = ({ sats, className = '', approximate = false }) => (
-  <span className={`inline-flex items-center font-mono [word-spacing:-0.4em] ${approximate ? 'relative' : ''} ${className}`}>
+  <span dir="ltr" className={`inline-flex items-center font-mono [word-spacing:-0.4em] ${approximate ? 'relative' : ''} ${className}`}>
     {approximate && <span className="absolute right-full opacity-70">~</span>}
     <span className="text-[0.8em] opacity-70 mr-px">₿</span>
     {formatWithSpaces(sats)}

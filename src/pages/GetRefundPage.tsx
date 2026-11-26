@@ -371,7 +371,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                   disabled={!selectedDeposit || !destination.trim()}
                   className="w-full"
                 >
-                  Continue
+                  {t('common:actions.continue')}
                 </PrimaryButton>
               </>
             )}
@@ -398,7 +398,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                   disabled={!selectedFeeRate || !feeRates}
                   className="w-full"
                 >
-                  Continue
+                  {t('common:actions.continue')}
                 </PrimaryButton>
               </>
             )}
@@ -427,7 +427,7 @@ const GetRefundPage: React.FC<GetRefundPageProps> = ({ onBack, animationDirectio
                   disabled={isProcessing}
                   className="w-full"
                 >
-                  Refund
+                  {t('common:header.refund')}
                 </PrimaryButton>
               </>
             )}

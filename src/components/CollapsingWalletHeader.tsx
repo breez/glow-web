@@ -434,7 +434,7 @@ const CollapsingWalletHeader: React.FC<CollapsingWalletHeaderProps> = ({
                 stableSecondarySats ? (
                   <span className="inline-flex items-center">
                     <SatAmount sats={stableSecondarySats} />
-                    <span className="ms-1">change</span>
+                    <span className="ms-1">{t('wallet.change')}</span>
                   </span>
                 ) : (
                   <span className="invisible">$0.00</span>

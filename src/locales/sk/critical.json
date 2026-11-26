@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Tento odkaz na výber neobsahuje platnú sumu, ktorú môže Glow prijať.",
       "wholeSats": "Zadaj celé číslo v sats",
+      "range": "{{min}} až {{max}} sat",
+      "fromHost": "od {{host}}",
+      "atMost": "Suma môže byť najviac ₿{{amount}}",
+      "atLeast": "Suma musí byť aspoň ₿{{amount}}",
       "failed": "Výber sa nepodaril: {{error}}"
     },
     "enterAmountIn": "Zadaj sumu v {{currency}}",

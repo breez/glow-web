@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Назад",
+    "pinDigits": "Въведени цифри: {{filled}} от {{total}}",
     "openMenu": "Отваряне на менюто",
     "switchCamera": "Смяна на камерата",
     "pickImage": "Избор на изображение от галерията",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Политика за поверителност",
     "support": "Поддръжка",
     "logout": "Изход",
+    "exitInProgress": "В ход е едностранно излизане, а излизането от профила изтрива необходимото за довършването му. Първо запази данните за излизането от раздел „Разширени“ на екрана за излизане.",
     "removePasskeyGuide": "Как да премахнете своя passkey"
   },
   "header": {
@@ -148,7 +150,8 @@
     "pendingConfirmation": "Чака потвърждение",
     "pendingApproval": "Чака одобрение",
     "tapToClaim": "Докоснете, за да заявите",
-    "confirming": "Потвърждава се"
+    "confirming": "Потвърждава се",
+    "fee": "такса {{amount}}"
   },
   "paymentDetails": {
     "amount": "Сума",
@@ -308,6 +311,7 @@
   "wallet": {
     "send": "Изпращане",
     "receive": "Получаване",
+    "change": "ресто",
     "saveAsContact": "Да се запази ли като контакт?"
   },
   "passkey": {
@@ -399,8 +403,12 @@
     "addressCopied": "Адресът е копиран",
     "copyAmount": "Копирай сумата",
     "depositAddress": "Адрес за депозит",
+    "addressChangeConfirm": "„{{address}}“ вече няма да получава плащания.\n\nИскаш ли да продължиш?",
+    "feeApplied": "Към тази транзакция се прилага такса от ₿{{amount}}.",
     "crossChain": {
       "createFailed": "Заявката не бе създадена.",
+      "youllReceive": "Ще получиш <amount/>",
+      "shareMessage": "Изпрати {{amount}} {{asset}} през {{chain}} до {{address}}",
       "noRoutes": "В момента няма достъпни междуверижни маршрути",
       "creating": "Създаване на заявка...",
       "enterUsd": "Въведи сума в USD",
@@ -495,6 +503,7 @@
     },
     "crossChain": {
       "selectCoin": "Изберете монета",
+      "selectProvider": "Избери доставчик за {{asset}} ({{chain}})",
       "quoteFailed": "Не бе получена оферта",
       "gettingQuote": "Получаване на оферта...",
       "receiving": "Получавате",
@@ -565,13 +574,17 @@
       "unclear_login": "Отговорът от {{domain}} не бе прочетен. Провери сайта, за да видиш дали си се влязъл.",
       "unclear_link": "Отговорът от {{domain}} не можа да бъде прочетен. Проверете в сайта дали профилът ви е свързан.",
       "unclear_auth": "Отговорът от {{domain}} не бе прочетен. Провери сайта, за да видиш дали си се удостоверил.",
-      "unreachable": "{{domain}} е недостъпен. Провери връзката си и опитай отново."
+      "unreachable": "{{domain}} е недостъпен. Провери връзката си и опитай отново.",
+      "missingCors": "{{domain}} няма CORS заглавка (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} потвърди, че си ти."
     },
     "inputHint": {
       "contact": "контакт",
       "stablecoin": "USDC или USDT адрес"
     },
-    "changeAmount": "Промяна на сумата"
+    "changeAmount": "Промяна на сумата",
+    "betweenSats": "Между {{min}} и {{max}} сата",
+    "enterAmountIn": "Въведи сума в {{currency}}"
   },
   "restore": {
     "restoring": "Възстановява се...",
@@ -657,6 +670,7 @@
     "failedBody": "Нещо се обърка.",
     "createNewPasskey": "Създаване на нов passkey",
     "unclaimedDeposits": "Незаявени депозити",
+    "blockedDeposits": "Непотвърдени депозити в портфейлите ти: {{count}}. Моля, уреди ги преди надграждането. Можеш да се върнеш и да опиташ отново след това.",
     "openUnclaimedDeposits": "Отваряне на незаявените депозити",
     "notNow": "Не сега",
     "labelFailed": "Етикетът „{{label}}“ не можа да бъде прехвърлен. Опитайте отново.",

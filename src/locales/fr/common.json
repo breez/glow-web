@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Retour",
+    "pinDigits": "{{filled}} chiffres sur {{total}} saisis",
     "openMenu": "Ouvrir le menu",
     "switchCamera": "Changer de caméra",
     "pickImage": "Choisir une image dans la galerie",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Politique de confidentialité",
     "support": "Assistance",
     "logout": "Se déconnecter",
+    "exitInProgress": "Une sortie unilatérale est en cours, et la déconnexion supprime ce dont elle a besoin pour se terminer. Enregistrez d'abord ses données de sortie, depuis la section Avancé de la sortie.",
     "removePasskeyGuide": "Comment supprimer votre passkey"
   },
   "header": {
@@ -148,7 +150,8 @@
     "pendingConfirmation": "En attente de confirmation",
     "pendingApproval": "En attente d'approbation",
     "tapToClaim": "Touchez pour réclamer",
-    "confirming": "Confirmation"
+    "confirming": "Confirmation",
+    "fee": "frais {{amount}}"
   },
   "paymentDetails": {
     "amount": "Montant",
@@ -308,6 +311,7 @@
   "wallet": {
     "send": "Envoyer",
     "receive": "Recevoir",
+    "change": "monnaie rendue",
     "saveAsContact": "Enregistrer comme contact ?"
   },
   "passkey": {
@@ -399,8 +403,12 @@
     "addressCopied": "Adresse copiée",
     "copyAmount": "Copier le montant",
     "depositAddress": "Adresse de dépôt",
+    "addressChangeConfirm": "« {{address}} » ne recevra plus de paiements.\n\nVoulez-vous continuer ?",
+    "feeApplied": "Des frais de ₿{{amount}} s'appliquent à cette transaction.",
     "crossChain": {
       "createFailed": "Échec de la création de la demande.",
+      "youllReceive": "Vous recevrez <amount/>",
+      "shareMessage": "Envoyez {{amount}} {{asset}} sur {{chain}} à {{address}}",
       "noRoutes": "Aucune route cross-chain disponible pour le moment",
       "creating": "Création de la demande...",
       "enterUsd": "Saisis le montant en USD",
@@ -495,6 +503,7 @@
     },
     "crossChain": {
       "selectCoin": "Choisissez la pièce",
+      "selectProvider": "Choisissez un prestataire pour {{asset}} ({{chain}})",
       "quoteFailed": "Aucune cotation obtenue",
       "gettingQuote": "Obtention de la cotation...",
       "receiving": "Vous recevez",
@@ -565,13 +574,17 @@
       "unclear_login": "Impossible de lire la réponse de {{domain}}. Vérifie sur le site si tu t’es connecté.",
       "unclear_link": "Impossible de lire la réponse de {{domain}}. Vérifiez sur le site si votre profil a été associé.",
       "unclear_auth": "Impossible de lire la réponse de {{domain}}. Vérifie sur le site si tu t’es authentifié.",
-      "unreachable": "Impossible de joindre {{domain}}. Vérifie ta connexion et réessaie."
+      "unreachable": "Impossible de joindre {{domain}}. Vérifie ta connexion et réessaie.",
+      "missingCors": "{{domain}} n'envoie pas d'en-tête CORS (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} a confirmé que c'est bien vous."
     },
     "inputHint": {
       "contact": "contact",
       "stablecoin": "adresse USDC ou USDT"
     },
-    "changeAmount": "Modifier le montant"
+    "changeAmount": "Modifier le montant",
+    "betweenSats": "Entre {{min}} et {{max}} sats",
+    "enterAmountIn": "Saisissez le montant en {{currency}}"
   },
   "restore": {
     "restoring": "Restauration...",
@@ -657,6 +670,7 @@
     "failedBody": "Un problème est survenu.",
     "createNewPasskey": "Créer une nouvelle passkey",
     "unclaimedDeposits": "Dépôts non réclamés",
+    "blockedDeposits": "Dépôts non récupérés dans vos portefeuilles : {{count}}. Réglez-les avant la mise à niveau. Vous pourrez ensuite revenir et réessayer.",
     "openUnclaimedDeposits": "Ouvrir les dépôts non réclamés",
     "notNow": "Pas maintenant",
     "labelFailed": "Impossible de migrer l'étiquette « {{label}} ». Réessayez.",

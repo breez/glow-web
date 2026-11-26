@@ -343,7 +343,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
           ) : (
             <div className="mb-4 min-h-0 flex flex-col">
               <label className="block text-sm font-medium text-spark-text-primary mb-2 shrink-0">
-                Select Provider for {selectedAsset} ({formatChainName(routesForSelection[0]?.chain ?? '')})
+                {t('common:send.crossChain.selectProvider', { asset: selectedAsset, chain: formatChainName(routesForSelection[0]?.chain ?? '') })}
               </label>
               <div className="space-y-2 overflow-y-auto overscroll-y-none touch-pan-y min-h-0 pe-1">
                 {visibleProviders.map((pq) => {
@@ -414,7 +414,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
                 className="w-full"
                 disabled={!pendingProvider}
               >
-                Continue
+                {t('common:actions.continue')}
               </PrimaryButton>
             ) : null}
           </div>
@@ -475,7 +475,7 @@ const CrossChainWorkflow: React.FC<CrossChainWorkflowProps> = ({
           )}
 
           <PrimaryButton onClick={handleSend} className="w-full">
-            Send
+            {t('common:send.crossChain.send')}
           </PrimaryButton>
         </>
       )}

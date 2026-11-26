@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "ย้อนกลับ",
+    "pinDigits": "ป้อนแล้ว {{filled}} จาก {{total}} หลัก",
     "openMenu": "เปิดเมนู",
     "switchCamera": "สลับกล้อง",
     "pickImage": "เลือกรูปจากคลังภาพ",
@@ -107,6 +108,7 @@
     "privacyPolicy": "นโยบายความเป็นส่วนตัว",
     "support": "ฝ่ายสนับสนุน",
     "logout": "ออกจากระบบ",
+    "exitInProgress": "กำลังมีการออกจากระบบฝ่ายเดียวอยู่ และการออกจากระบบจะลบข้อมูลที่จำเป็นต่อการทำให้เสร็จสิ้น โปรดบันทึกข้อมูลการออกจากระบบก่อน จากส่วนขั้นสูงของการออกจากระบบนั้น",
     "removePasskeyGuide": "วิธีลบพาสคีย์ของคุณ"
   },
   "header": {
@@ -148,7 +150,8 @@
     "pendingConfirmation": "รอการยืนยัน",
     "pendingApproval": "รอการอนุมัติ",
     "tapToClaim": "แตะเพื่อเคลม",
-    "confirming": "กำลังยืนยัน"
+    "confirming": "กำลังยืนยัน",
+    "fee": "ค่าธรรมเนียม {{amount}}"
   },
   "paymentDetails": {
     "amount": "จำนวน",
@@ -308,6 +311,7 @@
   "wallet": {
     "send": "ส่ง",
     "receive": "รับ",
+    "change": "เงินทอน",
     "saveAsContact": "บันทึกเป็นรายชื่อ?"
   },
   "passkey": {
@@ -399,8 +403,12 @@
     "addressCopied": "คัดลอกที่อยู่แล้ว",
     "copyAmount": "คัดลอกจำนวน",
     "depositAddress": "ที่อยู่เงินฝาก",
+    "addressChangeConfirm": "'{{address}}' จะไม่รับการชำระเงินอีกต่อไป\n\nต้องการดำเนินการต่อหรือไม่",
+    "feeApplied": "ธุรกรรมนี้มีค่าธรรมเนียม ₿{{amount}}",
     "crossChain": {
       "createFailed": "สร้างคำขอไม่สำเร็จ",
+      "youllReceive": "คุณจะได้รับ <amount/>",
+      "shareMessage": "ส่ง {{amount}} {{asset}} บน {{chain}} ไปยัง {{address}}",
       "noRoutes": "ขณะนี้ไม่มีเส้นทางข้ามเชนที่ใช้ได้",
       "creating": "กำลังสร้างคำขอ...",
       "enterUsd": "ใส่จำนวนเป็น USD",
@@ -495,6 +503,7 @@
     },
     "crossChain": {
       "selectCoin": "เลือกเหรียญ",
+      "selectProvider": "เลือกผู้ให้บริการสำหรับ {{asset}} ({{chain}})",
       "quoteFailed": "ขอราคาไม่สำเร็จ",
       "gettingQuote": "กำลังขอราคา...",
       "receiving": "จะได้รับ",
@@ -565,13 +574,17 @@
       "unclear_login": "อ่านคำตอบจาก {{domain}} ไม่ได้ ตรวจดูที่เว็บไซต์ว่าคุณเข้าสู่ระบบแล้วหรือยัง",
       "unclear_link": "อ่านคำตอบจาก {{domain}} ไม่ได้ ตรวจดูที่เว็บไซต์ว่าโปรไฟล์ของคุณเชื่อมแล้วหรือยัง",
       "unclear_auth": "อ่านคำตอบจาก {{domain}} ไม่ได้ ตรวจดูที่เว็บไซต์ว่าคุณยืนยันตัวตนแล้วหรือยัง",
-      "unreachable": "ติดต่อ {{domain}} ไม่ได้ ตรวจสอบการเชื่อมต่อของคุณแล้วลองอีกครั้ง"
+      "unreachable": "ติดต่อ {{domain}} ไม่ได้ ตรวจสอบการเชื่อมต่อของคุณแล้วลองอีกครั้ง",
+      "missingCors": "{{domain}} ไม่มีส่วนหัว CORS (<doc>LUD-01</doc>)",
+      "confirmedYou": "{{domain}} ยืนยันแล้วว่าเป็นคุณ"
     },
     "inputHint": {
       "contact": "รายชื่อ",
       "stablecoin": "ที่อยู่ USDC หรือ USDT"
     },
-    "changeAmount": "เปลี่ยนจำนวน"
+    "changeAmount": "เปลี่ยนจำนวน",
+    "betweenSats": "ระหว่าง {{min}} ถึง {{max}} sats",
+    "enterAmountIn": "ป้อนจำนวนเป็น {{currency}}"
   },
   "restore": {
     "restoring": "กำลังกู้คืน...",
@@ -657,6 +670,7 @@
     "failedBody": "เกิดข้อผิดพลาด",
     "createNewPasskey": "สร้างพาสคีย์ใหม่",
     "unclaimedDeposits": "เงินฝากที่ยังไม่เคลม",
+    "blockedDeposits": "เงินฝากที่ยังไม่ได้รับในกระเป๋าเงินของคุณ: {{count}} รายการ โปรดแก้ไขก่อนอัปเกรด จากนั้นคุณกลับมาลองใหม่ได้",
     "openUnclaimedDeposits": "เปิดเงินฝากที่ยังไม่เคลม",
     "notNow": "ไว้ก่อน",
     "labelFailed": "ย้ายป้ายชื่อ “{{label}}” ไม่ได้ โปรดลองอีกครั้ง",

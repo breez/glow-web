@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Den här uttagslänken saknar ett giltigt belopp som Glow kan ta emot.",
       "wholeSats": "Ange ett helt antal sats",
+      "range": "{{min}} till {{max}} sats",
+      "fromHost": "från {{host}}",
+      "atMost": "Beloppet får vara högst ₿{{amount}}",
+      "atLeast": "Beloppet måste vara minst ₿{{amount}}",
       "failed": "Uttaget misslyckades: {{error}}"
     },
     "enterAmountIn": "Ange beloppet i {{currency}}",

@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "This withdraw link has no valid amount Glow can receive.",
       "wholeSats": "Enter a whole number of sats",
+      "range": "{{min}} to {{max}} sats",
+      "fromHost": "from {{host}}",
+      "atMost": "Amount must be at most ₿{{amount}}",
+      "atLeast": "Amount must be at least ₿{{amount}}",
       "failed": "Withdraw failed: {{error}}"
     },
     "enterAmountIn": "Enter amount in {{currency}}",

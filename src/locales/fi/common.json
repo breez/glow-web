@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Takaisin",
+    "pinDigits": "Syötetty {{filled}} / {{total}} numeroa",
     "openMenu": "Avaa valikko",
     "switchCamera": "Vaihda kameraa",
     "pickImage": "Valitse kuva galleriasta",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Tietosuojakäytäntö",
     "support": "Tuki",
     "logout": "Kirjaudu ulos",
+    "exitInProgress": "Yksipuolinen poistuminen on kesken, ja uloskirjautuminen poistaa sen valmistumiseen tarvittavat tiedot. Tallenna ensin poistumistiedot poistumisen Lisäasetukset-osiosta.",
     "removePasskeyGuide": "Näin poistat avainkoodisi"
   },
   "header": {
@@ -148,7 +150,8 @@
     "pendingConfirmation": "Odottaa vahvistusta",
     "pendingApproval": "Odottaa hyväksyntää",
     "tapToClaim": "Napauta lunastaaksesi",
-    "confirming": "Vahvistetaan"
+    "confirming": "Vahvistetaan",
+    "fee": "kulu {{amount}}"
   },
   "paymentDetails": {
     "amount": "Summa",
@@ -308,6 +311,7 @@
   "wallet": {
     "send": "Lähetä",
     "receive": "Vastaanota",
+    "change": "vaihtoraha",
     "saveAsContact": "Tallennetaanko yhteystiedoksi?"
   },
   "passkey": {
@@ -399,8 +403,12 @@
     "addressCopied": "Osoite kopioitu",
     "copyAmount": "Kopioi määrä",
     "depositAddress": "Talletusosoite",
+    "addressChangeConfirm": "Osoite '{{address}}' lakkaa vastaanottamasta maksuja.\n\nHaluatko jatkaa?",
+    "feeApplied": "Tähän tapahtumaan sovelletaan ₿{{amount}} kulua.",
     "crossChain": {
       "createFailed": "Pyynnön luonti epäonnistui.",
+      "youllReceive": "Saat <amount/>",
+      "shareMessage": "Lähetä {{amount}} {{asset}} verkossa {{chain}} osoitteeseen {{address}}",
       "noRoutes": "Cross-chain-reittejä ei ole juuri nyt saatavilla",
       "creating": "Luodaan pyyntöä...",
       "enterUsd": "Syötä määrä USD:na",
@@ -495,6 +503,7 @@
     },
     "crossChain": {
       "selectCoin": "Valitse kolikko",
+      "selectProvider": "Valitse palveluntarjoaja kohteelle {{asset}} ({{chain}})",
       "quoteFailed": "Tarjousta ei saatu",
       "gettingQuote": "Haetaan tarjousta...",
       "receiving": "Saat",
@@ -565,13 +574,17 @@
       "unclear_login": "Vastausta palvelusta {{domain}} ei voitu lukea. Tarkista sivustolta, oletko kirjautunut sisään.",
       "unclear_link": "Vastausta palvelusta {{domain}} ei voitu lukea. Tarkista sivustolta, onko profiilisi yhdistetty.",
       "unclear_auth": "Vastausta palvelusta {{domain}} ei voitu lukea. Tarkista sivustolta, oletko todentanut.",
-      "unreachable": "Palveluun {{domain}} ei saatu yhteyttä. Tarkista yhteytesi ja yritä uudelleen."
+      "unreachable": "Palveluun {{domain}} ei saatu yhteyttä. Tarkista yhteytesi ja yritä uudelleen.",
+      "missingCors": "Sivustolta {{domain}} puuttuu CORS-otsake (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} vahvisti, että se olet sinä."
     },
     "inputHint": {
       "contact": "yhteystieto",
       "stablecoin": "USDC- tai USDT-osoite"
     },
-    "changeAmount": "Muuta summaa"
+    "changeAmount": "Muuta summaa",
+    "betweenSats": "Välillä {{min}} ja {{max}} satia",
+    "enterAmountIn": "Anna summa valuutassa {{currency}}"
   },
   "restore": {
     "restoring": "Palautetaan...",
@@ -657,6 +670,7 @@
     "failedBody": "Jokin meni pieleen.",
     "createNewPasskey": "Luo uusi avainkoodi",
     "unclaimedDeposits": "Lunastamattomat talletukset",
+    "blockedDeposits": "Lunastamattomia talletuksia lompakoissasi: {{count}}. Selvitä ne ennen päivitystä. Voit palata ja yrittää uudelleen sen jälkeen.",
     "openUnclaimedDeposits": "Avaa lunastamattomat talletukset",
     "notNow": "Ei nyt",
     "labelFailed": "Tunnisteen ”{{label}}” siirto epäonnistui. Yritä uudelleen.",

@@ -277,7 +277,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
               return (
                 <>
                   <span>·</span>
-                  <span>fee {feeText}</span>
+                  <span>{t('transactions.fee', { amount: feeText })}</span>
                 </>
               );
             })()}
@@ -286,6 +286,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
 
         {/* Amount - right aligned */}
         <span
+          dir="ltr"
           className={`font-mono font-semibold text-[15px] shrink-0 inline-flex items-center ${amountClass}`}
           data-testid="transaction-amount"
         >

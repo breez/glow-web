@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "В этой ссылке на вывод нет корректной суммы, которую Glow может получить.",
       "wholeSats": "Введите целое число sats",
+      "range": "от {{min}} до {{max}} сат",
+      "fromHost": "от {{host}}",
+      "atMost": "Сумма должна быть не больше ₿{{amount}}",
+      "atLeast": "Сумма должна быть не меньше ₿{{amount}}",
       "failed": "Не удалось вывести: {{error}}"
     },
     "enterAmountIn": "Введите сумму в {{currency}}",

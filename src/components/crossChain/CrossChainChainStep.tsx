@@ -72,7 +72,7 @@ export const CrossChainChainStep: React.FC<CrossChainChainStepProps> = ({
       </div>
       <div className="shrink-0 pt-2">
         <PrimaryButton onClick={onContinue} className="w-full" disabled={!pending}>
-          Continue
+          {t('actions.continue')}
         </PrimaryButton>
       </div>
     </div>

@@ -104,7 +104,7 @@ const StableBalanceFeeConfirm: React.FC<StableBalanceFeeConfirmProps> = ({
                   disabled={isExecuting}
                   className="flex-1 py-2.5 rounded-xl font-display font-semibold text-sm border border-spark-border text-spark-text-secondary hover:bg-white/5 transition-colors disabled:opacity-50"
                 >
-                  Cancel
+                  {t('common:actions.cancel')}
                 </button>
                 <button
                   onClick={onConfirm}

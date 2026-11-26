@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Volver",
+    "pinDigits": "{{filled}} de {{total}} dígitos introducidos",
     "openMenu": "Abrir el menú",
     "switchCamera": "Cambiar de cámara",
     "pickImage": "Elegir una imagen de la galería",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Política de privacidad",
     "support": "Soporte",
     "logout": "Cerrar sesión",
+    "exitInProgress": "Hay una salida unilateral en curso, y cerrar sesión elimina lo que necesita para terminar. Guarda primero sus datos de salida, en la sección Avanzado de la salida.",
     "removePasskeyGuide": "Cómo eliminar tu passkey"
   },
   "header": {
@@ -148,7 +150,8 @@
     "pendingConfirmation": "Pendiente de confirmación",
     "pendingApproval": "Pendiente de aprobación",
     "tapToClaim": "Toca para reclamar",
-    "confirming": "Confirmando"
+    "confirming": "Confirmando",
+    "fee": "comisión {{amount}}"
   },
   "paymentDetails": {
     "amount": "Importe",
@@ -308,6 +311,7 @@
   "wallet": {
     "send": "Enviar",
     "receive": "Recibir",
+    "change": "cambio",
     "saveAsContact": "¿Guardar como contacto?"
   },
   "passkey": {
@@ -399,8 +403,12 @@
     "addressCopied": "Dirección copiada",
     "copyAmount": "Copiar importe",
     "depositAddress": "Dirección de depósito",
+    "addressChangeConfirm": "'{{address}}' dejará de recibir pagos.\n\n¿Quieres continuar?",
+    "feeApplied": "Se aplica una comisión de ₿{{amount}} a esta transacción.",
     "crossChain": {
       "createFailed": "No se pudo crear la solicitud.",
+      "youllReceive": "Recibirás <amount/>",
+      "shareMessage": "Envía {{amount}} {{asset}} en {{chain}} a {{address}}",
       "noRoutes": "No hay rutas entre cadenas disponibles ahora",
       "creating": "Creando solicitud...",
       "enterUsd": "Introduce el importe en USD",
@@ -495,6 +503,7 @@
     },
     "crossChain": {
       "selectCoin": "Selecciona la moneda",
+      "selectProvider": "Selecciona un proveedor para {{asset}} ({{chain}})",
       "quoteFailed": "No se pudo obtener una cotización",
       "gettingQuote": "Obteniendo la cotización...",
       "receiving": "Recibes",
@@ -565,13 +574,17 @@
       "unclear_login": "No se pudo leer la respuesta de {{domain}}. Comprueba en el sitio si has iniciado sesión.",
       "unclear_link": "No se pudo leer la respuesta de {{domain}}. Comprueba en el sitio si tu perfil se ha vinculado.",
       "unclear_auth": "No se pudo leer la respuesta de {{domain}}. Comprueba en el sitio si has autenticado.",
-      "unreachable": "No se pudo conectar con {{domain}}. Comprueba tu conexión e inténtalo de nuevo."
+      "unreachable": "No se pudo conectar con {{domain}}. Comprueba tu conexión e inténtalo de nuevo.",
+      "missingCors": "A {{domain}} le falta una cabecera CORS (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} confirmó que eres tú."
     },
     "inputHint": {
       "contact": "contacto",
       "stablecoin": "dirección USDC o USDT"
     },
-    "changeAmount": "Cambiar el importe"
+    "changeAmount": "Cambiar el importe",
+    "betweenSats": "Entre {{min}} y {{max}} sats",
+    "enterAmountIn": "Introduce el importe en {{currency}}"
   },
   "restore": {
     "restoring": "Restaurando...",
@@ -657,6 +670,7 @@
     "failedBody": "Algo ha salido mal.",
     "createNewPasskey": "Crear un nuevo passkey",
     "unclaimedDeposits": "Depósitos sin reclamar",
+    "blockedDeposits": "Depósitos sin reclamar en tus billeteras: {{count}}. Resuélvelos antes de actualizar. Después puedes volver e intentarlo de nuevo.",
     "openUnclaimedDeposits": "Abrir los depósitos sin reclamar",
     "notNow": "Ahora no",
     "labelFailed": "No se pudo migrar la etiqueta “{{label}}”. Inténtalo de nuevo.",

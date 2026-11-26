@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Zpět",
+    "pinDigits": "Zadáno číslic: {{filled}} z {{total}}",
     "openMenu": "Otevřít nabídku",
     "switchCamera": "Přepnout kameru",
     "pickImage": "Vybrat obrázek z galerie",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Zásady ochrany soukromí",
     "support": "Podpora",
     "logout": "Odhlásit se",
+    "exitInProgress": "Probíhá jednostranný výstup a odhlášení smaže to, co potřebuje k dokončení. Nejprve uložte data výstupu v jeho sekci Pokročilé.",
     "removePasskeyGuide": "Jak odebrat svůj passkey"
   },
   "header": {
@@ -152,7 +154,8 @@
     "pendingConfirmation": "Čeká na potvrzení",
     "pendingApproval": "Čeká na schválení",
     "tapToClaim": "Klepnutím nárokuj",
-    "confirming": "Potvrzuje se"
+    "confirming": "Potvrzuje se",
+    "fee": "poplatek {{amount}}"
   },
   "paymentDetails": {
     "amount": "Částka",
@@ -312,6 +315,7 @@
   "wallet": {
     "send": "Poslat",
     "receive": "Přijmout",
+    "change": "zbytek",
     "saveAsContact": "Uložit jako kontakt?"
   },
   "passkey": {
@@ -403,8 +407,12 @@
     "addressCopied": "Adresa zkopírována",
     "copyAmount": "Kopírovat částku",
     "depositAddress": "Adresa pro vklad",
+    "addressChangeConfirm": "„{{address}}“ přestane přijímat platby.\n\nChcete pokračovat?",
+    "feeApplied": "Za tuto transakci se účtuje poplatek ₿{{amount}}.",
     "crossChain": {
       "createFailed": "Nepodařilo se vytvořit žádost.",
+      "youllReceive": "Obdržíte <amount/>",
+      "shareMessage": "Pošlete {{amount}} {{asset}} v síti {{chain}} na {{address}}",
       "noRoutes": "Momentálně nejsou dostupné žádné cross-chain trasy",
       "creating": "Vytváření žádosti...",
       "enterUsd": "Zadej částku v USD",
@@ -499,6 +507,7 @@
     },
     "crossChain": {
       "selectCoin": "Vyber minci",
+      "selectProvider": "Vyberte poskytovatele pro {{asset}} ({{chain}})",
       "quoteFailed": "Nabídku se nepodařilo získat",
       "gettingQuote": "Získává se nabídka...",
       "receiving": "Dostaneš",
@@ -569,13 +578,17 @@
       "unclear_login": "Nepodařilo se přečíst odpověď od {{domain}}. Zkontroluj web, jestli ses přihlásil.",
       "unclear_link": "Nepodařilo se přečíst odpověď od {{domain}}. Zkontroluj na webu, jestli je tvůj profil propojený.",
       "unclear_auth": "Nepodařilo se přečíst odpověď od {{domain}}. Zkontroluj web, jestli ses ověřil.",
-      "unreachable": "Nepodařilo se spojit s {{domain}}. Zkontroluj připojení a zkus to znovu."
+      "unreachable": "Nepodařilo se spojit s {{domain}}. Zkontroluj připojení a zkus to znovu.",
+      "missingCors": "{{domain}} nemá hlavičku CORS (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} potvrdil, že jste to vy."
     },
     "inputHint": {
       "contact": "kontakt",
       "stablecoin": "adresa USDC nebo USDT"
     },
-    "changeAmount": "Změnit částku"
+    "changeAmount": "Změnit částku",
+    "betweenSats": "Mezi {{min}} a {{max}} sat",
+    "enterAmountIn": "Zadejte částku v {{currency}}"
   },
   "restore": {
     "restoring": "Obnovuje se...",
@@ -662,6 +675,7 @@
     "failedBody": "Něco se pokazilo.",
     "createNewPasskey": "Vytvořit nový passkey",
     "unclaimedDeposits": "Nenárokované vklady",
+    "blockedDeposits": "Nevyzvednuté vklady napříč vašimi peněženkami: {{count}}. Před aktualizací je prosím vyřešte. Poté se můžete vrátit a zkusit to znovu.",
     "openUnclaimedDeposits": "Otevřít nenárokované vklady",
     "notNow": "Teď ne",
     "labelFailed": "Štítek „{{label}}“ se nepodařilo převést. Zkus to znovu.",

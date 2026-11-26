@@ -14,6 +14,7 @@ const renderSettings = () => render(
     onBack={vi.fn()}
     config={null}
     onOpenFiatCurrencies={vi.fn()}
+    onOpenLanguage={vi.fn()}
     onOpenBuyProviders={vi.fn()}
     onOpenPasskeySettings={vi.fn()}
     onOpenSecurity={vi.fn()}

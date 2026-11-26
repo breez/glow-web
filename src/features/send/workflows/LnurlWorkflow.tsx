@@ -309,8 +309,8 @@ const LnurlWorkflow: React.FC<LnurlWorkflowProps> = ({ parsed, recipientLabel, b
               setFeesIncluded(false);
             }}
             placeholder={isTokenMode && config
-              ? `Enter amount in ${config.currencyCode}`
-              : `Between ${formatWithSpaces(minSats)} and ${formatWithSpaces(maxSats)} sats`
+              ? t('common:send.enterAmountIn', { currency: config.currencyCode })
+              : t('common:send.betweenSats', { min: formatWithSpaces(minSats), max: formatWithSpaces(maxSats) })
             }
             className={`${AMOUNT_FIELD_CLASS} pe-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none read-only:cursor-not-allowed`}
             disabled={isLoading}

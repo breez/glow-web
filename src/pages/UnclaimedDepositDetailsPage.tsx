@@ -830,7 +830,7 @@ const UnclaimedDepositDetailsPage: React.FC<UnclaimedDepositDetailsPageProps> = 
             {/* Only Reject button when claim error is shown */}
             {claimError && (
               <SecondaryButton onClick={handleReject} disabled={isProcessing} className="w-full">
-                Reject
+                {t('deposit.reject')}
               </SecondaryButton>
             )}
           </div>

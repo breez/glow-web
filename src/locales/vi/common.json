@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Quay lại",
+    "pinDigits": "Đã nhập {{filled}}/{{total}} chữ số",
     "openMenu": "Mở menu",
     "switchCamera": "Đổi camera",
     "pickImage": "Chọn ảnh từ thư viện",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Chính sách bảo mật",
     "support": "Hỗ trợ",
     "logout": "Đăng xuất",
+    "exitInProgress": "Một lệnh thoát đơn phương đang diễn ra, và đăng xuất sẽ xóa dữ liệu cần để hoàn tất. Hãy lưu dữ liệu thoát trước, trong mục Nâng cao của lệnh thoát.",
     "removePasskeyGuide": "Cách xóa passkey của bạn"
   },
   "header": {
@@ -148,7 +150,8 @@
     "pendingConfirmation": "Chờ xác nhận",
     "pendingApproval": "Chờ chấp nhận",
     "tapToClaim": "Chạm để nhận",
-    "confirming": "Đang xác nhận"
+    "confirming": "Đang xác nhận",
+    "fee": "phí {{amount}}"
   },
   "paymentDetails": {
     "amount": "Số tiền",
@@ -308,6 +311,7 @@
   "wallet": {
     "send": "Gửi",
     "receive": "Nhận",
+    "change": "tiền thối",
     "saveAsContact": "Lưu thành liên hệ?"
   },
   "passkey": {
@@ -399,8 +403,12 @@
     "addressCopied": "Đã sao chép địa chỉ",
     "copyAmount": "Sao chép số tiền",
     "depositAddress": "Địa chỉ nạp",
+    "addressChangeConfirm": "'{{address}}' sẽ không còn nhận được thanh toán.\n\nBạn có muốn tiếp tục không?",
+    "feeApplied": "Giao dịch này bị tính phí ₿{{amount}}.",
     "crossChain": {
       "createFailed": "Không tạo được yêu cầu.",
+      "youllReceive": "Bạn sẽ nhận được <amount/>",
+      "shareMessage": "Gửi {{amount}} {{asset}} trên {{chain}} đến {{address}}",
       "noRoutes": "Hiện không có tuyến liên chuỗi nào khả dụng",
       "creating": "Đang tạo yêu cầu...",
       "enterUsd": "Nhập số tiền bằng USD",
@@ -495,6 +503,7 @@
     },
     "crossChain": {
       "selectCoin": "Chọn đồng tiền",
+      "selectProvider": "Chọn nhà cung cấp cho {{asset}} ({{chain}})",
       "quoteFailed": "Không lấy được báo giá",
       "gettingQuote": "Đang lấy báo giá...",
       "receiving": "Nhận được",
@@ -565,13 +574,17 @@
       "unclear_login": "Không đọc được phản hồi từ {{domain}}. Hãy kiểm tra trang đó xem bạn đã đăng nhập chưa.",
       "unclear_link": "Không đọc được phản hồi từ {{domain}}. Hãy kiểm tra trang đó xem hồ sơ của bạn đã liên kết chưa.",
       "unclear_auth": "Không đọc được phản hồi từ {{domain}}. Hãy kiểm tra trang đó xem bạn đã xác thực chưa.",
-      "unreachable": "Không liên hệ được với {{domain}}. Hãy kiểm tra kết nối rồi thử lại."
+      "unreachable": "Không liên hệ được với {{domain}}. Hãy kiểm tra kết nối rồi thử lại.",
+      "missingCors": "{{domain}} thiếu tiêu đề CORS (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} đã xác nhận đó là bạn."
     },
     "inputHint": {
       "contact": "liên hệ",
       "stablecoin": "địa chỉ USDC hoặc USDT"
     },
-    "changeAmount": "Đổi số tiền"
+    "changeAmount": "Đổi số tiền",
+    "betweenSats": "Từ {{min}} đến {{max}} sat",
+    "enterAmountIn": "Nhập số tiền bằng {{currency}}"
   },
   "restore": {
     "restoring": "Đang khôi phục...",
@@ -657,6 +670,7 @@
     "failedBody": "Đã xảy ra lỗi.",
     "createNewPasskey": "Tạo một passkey mới",
     "unclaimedDeposits": "Khoản nạp chưa nhận",
+    "blockedDeposits": "Khoản gửi chưa nhận trong các ví của bạn: {{count}}. Hãy xử lý trước khi nâng cấp. Sau đó bạn có thể quay lại và thử lại.",
     "openUnclaimedDeposits": "Mở các khoản nạp chưa nhận",
     "notNow": "Để sau",
     "labelFailed": "Không chuyển được nhãn “{{label}}”. Vui lòng thử lại.",

@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Ten link do wypłaty nie zawiera prawidłowej kwoty, którą Glow może przyjąć.",
       "wholeSats": "Podaj liczbę całkowitą w sats",
+      "range": "{{min}} do {{max}} sat",
+      "fromHost": "od {{host}}",
+      "atMost": "Kwota może wynosić co najwyżej ₿{{amount}}",
+      "atLeast": "Kwota musi wynosić co najmniej ₿{{amount}}",
       "failed": "Wypłata się nie udała: {{error}}"
     },
     "enterAmountIn": "Podaj kwotę w {{currency}}",

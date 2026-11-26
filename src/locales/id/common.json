@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Kembali",
+    "pinDigits": "{{filled}} dari {{total}} digit dimasukkan",
     "openMenu": "Buka menu",
     "switchCamera": "Ganti kamera",
     "pickImage": "Pilih gambar dari galeri",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Kebijakan Privasi",
     "support": "Dukungan",
     "logout": "Keluar",
+    "exitInProgress": "Penarikan sepihak sedang berjalan, dan keluar dari akun akan menghapus data yang diperlukan untuk menyelesaikannya. Simpan dulu data penarikannya dari bagian Lanjutan pada penarikan.",
     "removePasskeyGuide": "Cara menghapus kunci sandi Anda"
   },
   "header": {
@@ -148,7 +150,8 @@
     "pendingConfirmation": "Menunggu Konfirmasi",
     "pendingApproval": "Menunggu Persetujuan",
     "tapToClaim": "Ketuk untuk mengklaim",
-    "confirming": "Mengonfirmasi"
+    "confirming": "Mengonfirmasi",
+    "fee": "biaya {{amount}}"
   },
   "paymentDetails": {
     "amount": "Jumlah",
@@ -308,6 +311,7 @@
   "wallet": {
     "send": "Kirim",
     "receive": "Terima",
+    "change": "kembalian",
     "saveAsContact": "Simpan sebagai kontak?"
   },
   "passkey": {
@@ -399,8 +403,12 @@
     "addressCopied": "Alamat tersalin",
     "copyAmount": "Salin jumlah",
     "depositAddress": "Alamat Setoran",
+    "addressChangeConfirm": "'{{address}}' tidak akan lagi menerima pembayaran.\n\nLanjutkan?",
+    "feeApplied": "Biaya ₿{{amount}} dikenakan pada transaksi ini.",
     "crossChain": {
       "createFailed": "Gagal membuat permintaan.",
+      "youllReceive": "Kamu akan menerima <amount/>",
+      "shareMessage": "Kirim {{amount}} {{asset}} di {{chain}} ke {{address}}",
       "noRoutes": "Tidak ada rute lintas rantai yang tersedia saat ini",
       "creating": "Membuat permintaan...",
       "enterUsd": "Masukkan jumlah dalam USD",
@@ -495,6 +503,7 @@
     },
     "crossChain": {
       "selectCoin": "Pilih koin",
+      "selectProvider": "Pilih penyedia untuk {{asset}} ({{chain}})",
       "quoteFailed": "Penawaran tidak bisa diambil",
       "gettingQuote": "Mengambil penawaran...",
       "receiving": "Menerima",
@@ -565,13 +574,17 @@
       "unclear_login": "Balasan dari {{domain}} tidak terbaca. Periksa situsnya untuk melihat apakah Anda sudah masuk.",
       "unclear_link": "Balasan dari {{domain}} tidak terbaca. Periksa situsnya untuk melihat apakah profil Anda sudah terhubung.",
       "unclear_auth": "Balasan dari {{domain}} tidak terbaca. Periksa situsnya untuk melihat apakah Anda sudah terautentikasi.",
-      "unreachable": "{{domain}} tidak dapat dihubungi. Periksa koneksi Anda lalu coba lagi."
+      "unreachable": "{{domain}} tidak dapat dihubungi. Periksa koneksi Anda lalu coba lagi.",
+      "missingCors": "{{domain}} tidak memiliki header CORS (<doc>LUD-01</doc>).",
+      "confirmedYou": "{{domain}} mengonfirmasi bahwa ini kamu."
     },
     "inputHint": {
       "contact": "kontak",
       "stablecoin": "alamat USDC atau USDT"
     },
-    "changeAmount": "Ubah Jumlah"
+    "changeAmount": "Ubah Jumlah",
+    "betweenSats": "Antara {{min}} dan {{max}} sat",
+    "enterAmountIn": "Masukkan jumlah dalam {{currency}}"
   },
   "restore": {
     "restoring": "Memulihkan...",
@@ -657,6 +670,7 @@
     "failedBody": "Terjadi kesalahan.",
     "createNewPasskey": "Buat kunci sandi baru",
     "unclaimedDeposits": "Setoran belum diklaim",
+    "blockedDeposits": "Deposit belum diklaim di dompetmu: {{count}}. Selesaikan sebelum memperbarui. Setelah itu kamu bisa kembali dan mencoba lagi.",
     "openUnclaimedDeposits": "Buka setoran yang belum diklaim",
     "notNow": "Nanti saja",
     "labelFailed": "Label “{{label}}” tidak dapat dimigrasikan. Silakan coba lagi.",

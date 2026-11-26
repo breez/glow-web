@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "Bumalik",
+    "pinDigits": "{{filled}} sa {{total}} digit ang nailagay",
     "openMenu": "Buksan ang menu",
     "switchCamera": "Palitan ang camera",
     "pickImage": "Pumili ng larawan sa gallery",
@@ -107,6 +108,7 @@
     "privacyPolicy": "Patakaran sa Privacy",
     "support": "Suporta",
     "logout": "Mag-log out",
+    "exitInProgress": "May nagaganap na unilateral exit, at buburahin ng pag-log out ang kailangan para matapos ito. I-save muna ang exit data nito mula sa Advanced na seksyon ng exit.",
     "removePasskeyGuide": "Paano alisin ang passkey mo"
   },
   "header": {
@@ -148,7 +150,8 @@
     "pendingConfirmation": "Hinihintay ang Kumpirmasyon",
     "pendingApproval": "Hinihintay ang Pag-apruba",
     "tapToClaim": "I-tap para i-claim",
-    "confirming": "Kinukumpirma"
+    "confirming": "Kinukumpirma",
+    "fee": "bayad {{amount}}"
   },
   "paymentDetails": {
     "amount": "Halaga",
@@ -308,6 +311,7 @@
   "wallet": {
     "send": "Magpadala",
     "receive": "Tumanggap",
+    "change": "sukli",
     "saveAsContact": "I-save bilang contact?"
   },
   "passkey": {
@@ -399,8 +403,12 @@
     "addressCopied": "Nakopya ang address",
     "copyAmount": "Kopyahin ang halaga",
     "depositAddress": "Address ng Deposito",
+    "addressChangeConfirm": "Hindi na makakatanggap ng bayad ang '{{address}}'.\n\nGusto mo bang magpatuloy?",
+    "feeApplied": "May bayad na ₿{{amount}} sa transaksyong ito.",
     "crossChain": {
       "createFailed": "Hindi makagawa ng kahilingan.",
+      "youllReceive": "Matatanggap mo ang <amount/>",
+      "shareMessage": "Magpadala ng {{amount}} {{asset}} sa {{chain}} papunta sa {{address}}",
       "noRoutes": "Walang available na cross-chain na ruta sa ngayon",
       "creating": "Gumagawa ng kahilingan...",
       "enterUsd": "Ilagay ang halaga sa USD",
@@ -495,6 +503,7 @@
     },
     "crossChain": {
       "selectCoin": "Pumili ng coin",
+      "selectProvider": "Pumili ng provider para sa {{asset}} ({{chain}})",
       "quoteFailed": "Hindi makakuha ng quote",
       "gettingQuote": "Kumukuha ng quote...",
       "receiving": "Matatanggap",
@@ -565,13 +574,17 @@
       "unclear_login": "Hindi mabasa ang sagot mula sa {{domain}}. Tingnan sa site kung naka-log in ka na.",
       "unclear_link": "Hindi mabasa ang sagot mula sa {{domain}}. Tingnan sa site kung naka-link na ang profile mo.",
       "unclear_auth": "Hindi mabasa ang sagot mula sa {{domain}}. Tingnan sa site kung naka-authenticate ka na.",
-      "unreachable": "Hindi maabot ang {{domain}}. Tingnan ang koneksyon mo at subukan muli."
+      "unreachable": "Hindi maabot ang {{domain}}. Tingnan ang koneksyon mo at subukan muli.",
+      "missingCors": "Walang CORS header ang {{domain}} (<doc>LUD-01</doc>).",
+      "confirmedYou": "Kinumpirma ng {{domain}} na ikaw ito."
     },
     "inputHint": {
       "contact": "contact",
       "stablecoin": "USDC o USDT address"
     },
-    "changeAmount": "Palitan ang Halaga"
+    "changeAmount": "Palitan ang Halaga",
+    "betweenSats": "Sa pagitan ng {{min}} at {{max}} sats",
+    "enterAmountIn": "Ilagay ang halaga sa {{currency}}"
   },
   "restore": {
     "restoring": "Ibinabalik...",
@@ -657,6 +670,7 @@
     "failedBody": "May nangyaring mali.",
     "createNewPasskey": "Gumawa ng bagong passkey",
     "unclaimedDeposits": "Mga di-naclaim na deposito",
+    "blockedDeposits": "Mga hindi pa na-claim na deposito sa mga wallet mo: {{count}}. Pakiayos ang mga ito bago mag-upgrade. Maaari kang bumalik at subukan ulit pagkatapos.",
     "openUnclaimedDeposits": "Buksan ang mga di-naclaim na deposito",
     "notNow": "Hindi ngayon",
     "labelFailed": "Hindi mailipat ang label na “{{label}}”. Subukan muli.",

@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Questo link di prelievo non ha un importo valido che Glow possa ricevere.",
       "wholeSats": "Inserisci un numero intero di sats",
+      "range": "da {{min}} a {{max}} sat",
+      "fromHost": "da {{host}}",
+      "atMost": "L'importo deve essere di al massimo ₿{{amount}}",
+      "atLeast": "L'importo deve essere di almeno ₿{{amount}}",
       "failed": "Prelievo non riuscito: {{error}}"
     },
     "enterAmountIn": "Inserisci l'importo in {{currency}}",

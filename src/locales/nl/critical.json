@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Deze opnamelink bevat geen geldig bedrag dat Glow kan ontvangen.",
       "wholeSats": "Voer een heel getal aan sats in",
+      "range": "{{min}} tot {{max}} sats",
+      "fromHost": "van {{host}}",
+      "atMost": "Het bedrag mag maximaal ₿{{amount}} zijn",
+      "atLeast": "Het bedrag moet minimaal ₿{{amount}} zijn",
       "failed": "Opname mislukt: {{error}}"
     },
     "enterAmountIn": "Voer het bedrag in {{currency}} in",

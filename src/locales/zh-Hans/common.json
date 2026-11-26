@@ -66,6 +66,7 @@
   },
   "a11y": {
     "goBack": "返回",
+    "pinDigits": "已输入 {{filled}}/{{total}} 位数字",
     "openMenu": "打开菜单",
     "switchCamera": "切换摄像头",
     "pickImage": "从相册选择图片",
@@ -107,6 +108,7 @@
     "privacyPolicy": "隐私政策",
     "support": "支持",
     "logout": "退出登录",
+    "exitInProgress": "单方面退出正在进行，退出登录会删除完成它所需的数据。请先从该退出的“高级”部分保存其退出数据。",
     "removePasskeyGuide": "如何移除你的通行密钥"
   },
   "header": {
@@ -148,7 +150,8 @@
     "pendingConfirmation": "等待确认",
     "pendingApproval": "等待批准",
     "tapToClaim": "点按即可领取",
-    "confirming": "正在确认"
+    "confirming": "正在确认",
+    "fee": "手续费 {{amount}}"
   },
   "paymentDetails": {
     "amount": "金额",
@@ -308,6 +311,7 @@
   "wallet": {
     "send": "发送",
     "receive": "收款",
+    "change": "找零",
     "saveAsContact": "保存为联系人？"
   },
   "passkey": {
@@ -399,8 +403,12 @@
     "addressCopied": "已复制地址",
     "copyAmount": "复制金额",
     "depositAddress": "存入地址",
+    "addressChangeConfirm": "“{{address}}”将无法再收款。\n\n要继续吗？",
+    "feeApplied": "此交易将收取 ₿{{amount}} 的费用。",
     "crossChain": {
       "createFailed": "无法创建请求。",
+      "youllReceive": "你将收到 <amount/>",
+      "shareMessage": "在 {{chain}} 上发送 {{amount}} {{asset}} 到 {{address}}",
       "noRoutes": "目前没有可用的跨链路径",
       "creating": "正在创建请求...",
       "enterUsd": "以 USD 输入金额",
@@ -495,6 +503,7 @@
     },
     "crossChain": {
       "selectCoin": "选择币种",
+      "selectProvider": "选择 {{asset}}（{{chain}}）的服务商",
       "quoteFailed": "无法获取报价",
       "gettingQuote": "正在获取报价...",
       "receiving": "你将收到",
@@ -565,13 +574,17 @@
       "unclear_login": "无法读取 {{domain}} 的回复。请到网站上确认你是否已登录。",
       "unclear_link": "无法读取 {{domain}} 的回复。请到网站上确认你的资料是否已关联。",
       "unclear_auth": "无法读取 {{domain}} 的回复。请到网站上确认你是否已完成验证。",
-      "unreachable": "无法连接 {{domain}}。请检查连接后重试。"
+      "unreachable": "无法连接 {{domain}}。请检查连接后重试。",
+      "missingCors": "{{domain}} 缺少 CORS 标头（<doc>LUD-01</doc>）。",
+      "confirmedYou": "{{domain}} 已确认是你本人。"
     },
     "inputHint": {
       "contact": "联系人",
       "stablecoin": "USDC 或 USDT 地址"
     },
-    "changeAmount": "更改金额"
+    "changeAmount": "更改金额",
+    "betweenSats": "介于 {{min}} 到 {{max}} sats 之间",
+    "enterAmountIn": "输入 {{currency}} 金额"
   },
   "restore": {
     "restoring": "正在恢复...",
@@ -657,6 +670,7 @@
     "failedBody": "出了点问题。",
     "createNewPasskey": "创建新的通行密钥",
     "unclaimedDeposits": "未领取的存入",
+    "blockedDeposits": "你的钱包中未领取的存款：{{count}} 笔。请在升级前处理。完成后你可以回来重试。",
     "openUnclaimedDeposits": "打开未领取的存入",
     "notNow": "暂不",
     "labelFailed": "无法迁移标签“{{label}}”。请重试。",

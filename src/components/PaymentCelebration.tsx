@@ -96,7 +96,7 @@ const PaymentCelebration: React.FC<PaymentCelebrationProps> = ({ payment, onClos
         <div className="relative animate-fade-in-up text-center" style={{ animationDelay: '0.4s' }}>
           <div className="absolute inset-0 blur-2xl rounded-full" style={{ background: 'rgba(212,165,116,0.35)' }} />
           {displayText ? (
-            <span className="relative text-5xl font-display font-bold text-spark-primary">
+            <span dir="ltr" className="relative text-5xl font-display font-bold text-spark-primary">
               {isSent ? '-' : '+'}{(() => {
                 const match = displayText.match(/^([^\d-]+)(.*)/);
                 if (match) return <><span className="text-3xl opacity-70">{match[1]}</span>{match[2]}</>;

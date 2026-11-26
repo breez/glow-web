@@ -68,6 +68,10 @@
     "withdraw": {
       "noValidAmount": "Dieser Auszahlungslink enthält keinen gültigen Betrag, den Glow empfangen kann.",
       "wholeSats": "Gib eine ganze Zahl in Sats ein",
+      "range": "{{min}} bis {{max}} Sats",
+      "fromHost": "von {{host}}",
+      "atMost": "Der Betrag darf höchstens ₿{{amount}} betragen",
+      "atLeast": "Der Betrag muss mindestens ₿{{amount}} betragen",
       "failed": "Auszahlung fehlgeschlagen: {{error}}"
     },
     "enterAmountIn": "Betrag in {{currency}} eingeben",
