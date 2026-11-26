@@ -853,8 +853,8 @@
   "translationFeedback": {
     "title": "Comentarios sobre la traducción",
     "suggestion": "Redacción sugerida",
+    "context": "Contexto adicional (opcional)",
     "send": "Enviar comentarios",
-    "currentText": "Texto actual",
     "sent": "Comentarios enviados. Gracias.",
     "failed": "No se pudieron enviar los comentarios. Inténtalo de nuevo."
   }

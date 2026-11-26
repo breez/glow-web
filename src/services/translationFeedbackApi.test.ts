@@ -21,6 +21,13 @@ describe('translation feedback endpoint', () => {
     const sent = JSON.parse((fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
     expect(sent.text).toContain('&lt;!channel&gt;');
     expect(sent.text).not.toContain('<!channel>');
+    expect(sent.text).not.toContain('Context:');
+  });
+
+  it('adds the optional context when present', async () => {
+    await POST(req({ ...good, context: 'Button on the send screen' }));
+    const sent = JSON.parse((fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+    expect(sent.text).toContain('Context: Button on the send screen');
   });
 
   it('refuses unknown origins and incomplete feedback', async () => {

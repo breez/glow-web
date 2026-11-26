@@ -8,7 +8,6 @@ import {
   DialogHeader,
   FormLabel,
   FormTextarea,
-  PaymentInfoCard,
   PrimaryButton,
 } from './ui';
 import { FlagIcon } from './Icons';
@@ -30,6 +29,7 @@ const TranslationFeedback: React.FC = () => {
   const [target, setTarget] = useState<Target | null>(null);
   const [chip, setChip] = useState<(Target & { x: number; y: number }) | null>(null);
   const [suggestion, setSuggestion] = useState('');
+  const [context, setContext] = useState('');
 
   useEffect(() => {
     let timer: number | undefined;
@@ -92,14 +92,15 @@ const TranslationFeedback: React.FC = () => {
   const close = () => setTarget(null);
   const openSheet = () => {
     if (!chip) return;
-    setSuggestion('');
+    setSuggestion(chip.text);
+    setContext('');
     setTarget({ text: chip.text, keys: chip.keys });
     setChip(null);
   };
   const send = async () => {
     if (!target || sending) return;
     setSending(true);
-    const feedback = { ...target, suggestion };
+    const feedback = { ...target, suggestion, context };
     const sent = await sendFeedback(feedback);
     setSending(false);
     if (!sent) {
@@ -137,14 +138,6 @@ const TranslationFeedback: React.FC = () => {
             <DialogHeader title={t('translationFeedback.title')} onClose={close} />
             <div className="space-y-4">
               <div>
-                <span className="block text-sm font-medium text-spark-text-primary mb-1">
-                  {t('translationFeedback.currentText')}
-                </span>
-                <PaymentInfoCard compact>
-                  <p className="text-spark-text-primary break-words">{target?.text}</p>
-                </PaymentInfoCard>
-              </div>
-              <div>
                 <FormLabel htmlFor="translation-suggestion">{t('translationFeedback.suggestion')}</FormLabel>
                 <FormTextarea
                   id="translation-suggestion"
@@ -152,7 +145,11 @@ const TranslationFeedback: React.FC = () => {
                   onChange={(e) => setSuggestion(e.target.value)}
                 />
               </div>
-              <PrimaryButton onClick={send} disabled={!suggestion.trim() || sending} className="w-full">
+              <div>
+                <FormLabel htmlFor="translation-context">{t('translationFeedback.context')}</FormLabel>
+                <FormTextarea id="translation-context" value={context} onChange={(e) => setContext(e.target.value)} />
+              </div>
+              <PrimaryButton onClick={send} disabled={!suggestion.trim() || suggestion.trim() === target?.text.trim() || sending} className="w-full">
                 {t('translationFeedback.send')}
               </PrimaryButton>
             </div>

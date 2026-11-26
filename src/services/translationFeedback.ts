@@ -57,12 +57,12 @@ export function findTranslatedText(el: Element | null): { text: string; keys: st
 const FEEDBACK_URL = import.meta.env.VITE_TRANSLATION_FEEDBACK_URL || 'https://glow-app.co/api/translation-feedback';
 
 /** Posts feedback to the server. Resolves false on any failure. */
-export async function sendFeedback(r: { keys: string[]; text: string; suggestion: string }): Promise<boolean> {
+export async function sendFeedback(r: { keys: string[]; text: string; suggestion: string; context: string }): Promise<boolean> {
   try {
     const res = await fetch(FEEDBACK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ language: i18next.language, keys: r.keys, text: r.text, suggestion: r.suggestion.trim() }),
+      body: JSON.stringify({ language: i18next.language, keys: r.keys, text: r.text, suggestion: r.suggestion.trim(), context: r.context.trim() }),
     });
     return res.ok;
   } catch {

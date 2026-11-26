@@ -853,8 +853,8 @@
   "translationFeedback": {
     "title": "Maoni kuhusu Tafsiri",
     "suggestion": "Maneno yanayopendekezwa",
+    "context": "Muktadha wa ziada (si lazima)",
     "send": "Tuma Maoni",
-    "currentText": "Maandishi ya sasa",
     "sent": "Maoni yametumwa. Asante.",
     "failed": "Imeshindikana kutuma maoni. Tafadhali jaribu tena."
   }

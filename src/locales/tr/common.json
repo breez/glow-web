@@ -853,8 +853,8 @@
   "translationFeedback": {
     "title": "Çeviri Geri Bildirimi",
     "suggestion": "Önerilen ifade",
+    "context": "Ek bağlam (isteğe bağlı)",
     "send": "Geri Bildirim Gönder",
-    "currentText": "Mevcut metin",
     "sent": "Geri bildirim gönderildi. Teşekkürler.",
     "failed": "Geri bildirim gönderilemedi. Lütfen tekrar deneyin."
   }

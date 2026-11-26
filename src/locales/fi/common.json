@@ -853,8 +853,8 @@
   "translationFeedback": {
     "title": "Palaute käännöksestä",
     "suggestion": "Ehdotettu sanamuoto",
+    "context": "Lisätietoja (valinnainen)",
     "send": "Lähetä palaute",
-    "currentText": "Nykyinen teksti",
     "sent": "Palaute lähetetty. Kiitos.",
     "failed": "Palautteen lähettäminen epäonnistui. Yritä uudelleen."
   }

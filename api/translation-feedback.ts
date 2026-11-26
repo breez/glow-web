@@ -54,6 +54,7 @@ export async function POST(request: Request): Promise<Response> {
   const language = clip(body.language, 20);
   const text = clip(body.text, 500);
   const suggestion = clip(body.suggestion, 1000);
+  const context = clip(body.context, 1000);
   const keys = Array.isArray(body.keys)
     ? body.keys
         .slice(0, 10)
@@ -68,6 +69,7 @@ export async function POST(request: Request): Promise<Response> {
     `Keys: ${keys.map((k) => `\`${escapeSlack(k)}\``).join(', ')}`,
     `Shown text: ${escapeSlack(text)}`,
     `Suggested wording: ${escapeSlack(suggestion)}`,
+    ...(context ? [`Context: ${escapeSlack(context)}`] : []),
   ].join('\n');
 
   try {

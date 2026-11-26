@@ -853,8 +853,8 @@
   "translationFeedback": {
     "title": "Translation Feedback",
     "suggestion": "Suggested wording",
+    "context": "Additional context (optional)",
     "send": "Send Feedback",
-    "currentText": "Current text",
     "sent": "Feedback sent. Thank you.",
     "failed": "Could not send the feedback. Please try again."
   }

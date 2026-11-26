@@ -853,8 +853,8 @@
   "translationFeedback": {
     "title": "번역 피드백",
     "suggestion": "제안하는 표현",
+    "context": "추가 설명(선택)",
     "send": "피드백 보내기",
-    "currentText": "현재 텍스트",
     "sent": "피드백을 보냈습니다. 감사합니다.",
     "failed": "피드백을 보내지 못했습니다. 다시 시도해 주세요."
   }

@@ -853,8 +853,8 @@
   "translationFeedback": {
     "title": "Feedback op de vertaling",
     "suggestion": "Voorgestelde formulering",
+    "context": "Extra context (optioneel)",
     "send": "Feedback versturen",
-    "currentText": "Huidige tekst",
     "sent": "Feedback verstuurd. Bedankt.",
     "failed": "De feedback kon niet worden verstuurd. Probeer het opnieuw."
   }
