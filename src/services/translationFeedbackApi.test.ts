@@ -4,7 +4,7 @@ import { POST, OPTIONS } from '../../api/translation-feedback';
 // A browser Request drops `origin` (a forbidden header), so the handler gets a stand-in.
 const req = (body: unknown, origin = 'capacitor://localhost') =>
   ({ headers: new Headers({ origin }), json: async () => body }) as unknown as Request;
-const good = { language: 'de', keys: ['common:a.b'], text: 'Hallo <!channel>', suggestion: 'Hi' };
+const good = { language: 'de', keys: ['common:send.title'], text: 'Hallo <!channel>', suggestion: 'Hi' };
 
 describe('translation feedback endpoint', () => {
   beforeEach(() => {
@@ -33,6 +33,13 @@ describe('translation feedback endpoint', () => {
   it('refuses unknown origins and incomplete feedback', async () => {
     expect((await POST(req(good, 'https://evil.example'))).status).toBe(403);
     expect((await POST(req({ ...good, suggestion: '' }))).status).toBe(400);
+  });
+
+  it('refuses made-up keys and languages', async () => {
+    expect((await POST(req({ ...good, keys: ['<script>alert(1)</script>'] }))).status).toBe(400);
+    expect((await POST(req({ ...good, keys: ['common:a'] }))).status).toBe(400);
+    expect((await POST(req({ ...good, language: 'xx' }))).status).toBe(400);
+    expect((await POST(req({ ...good, language: 'en' }))).status).toBe(400);
   });
 
   it('answers the preflight for an allowed origin', () => {
