@@ -54,8 +54,8 @@
     "conversionFee": "Poplatok za prevod",
     "toAddress": "Na adresu",
     "toSparkAddress": "Na adresu Spark",
-    "toSparkInvoice": "Na faktúru Spark",
-    "toInvoice": "Na faktúru",
+    "toSparkInvoice": "Na žiadosť o platbu Spark",
+    "toInvoice": "Na žiadosť o platbu",
     "crossChain": {
       "amountTooSmall": "Suma je pre túto trasu príliš malá.",
       "amountTooLarge": "Suma je pre túto trasu príliš veľká.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "Platba neprebehla. Tvoje prostriedky neboli odoslané."
     },
-    "alreadyPaid": "Táto faktúra už bola zaplatená.",
-    "invoiceExpired": "Táto faktúra vypršala. Požiadaj príjemcu o novú.",
+    "alreadyPaid": "Táto žiadosť o platbu už bola zaplatená.",
+    "invoiceExpired": "Táto žiadosť o platbu vypršala. Požiadaj príjemcu o novú.",
     "balanceSettling": "Platbu sa nepodarilo pripraviť, kým sa tvoj zostatok vyrovnáva. Skús to znova za niekoľko minút."
   },
   "generate": {

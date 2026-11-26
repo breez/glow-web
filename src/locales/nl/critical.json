@@ -54,8 +54,8 @@
     "conversionFee": "Omzettingskosten",
     "toAddress": "Naar adres",
     "toSparkAddress": "Naar Spark-adres",
-    "toSparkInvoice": "Naar Spark-factuur",
-    "toInvoice": "Naar factuur",
+    "toSparkInvoice": "Naar Spark-betaalverzoek",
+    "toInvoice": "Naar betaalverzoek",
     "crossChain": {
       "amountTooSmall": "Bedrag te klein voor deze route.",
       "amountTooLarge": "Bedrag te groot voor deze route.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "De betaling is niet gelukt. Je geld is niet verzonden."
     },
-    "alreadyPaid": "Deze factuur is al betaald.",
-    "invoiceExpired": "Deze factuur is verlopen. Vraag de ontvanger om een nieuwe.",
+    "alreadyPaid": "Dit betaalverzoek is al betaald.",
+    "invoiceExpired": "Dit betaalverzoek is verlopen. Vraag de ontvanger om een nieuw.",
     "balanceSettling": "De betaling kon niet worden voorbereid terwijl je saldo wordt afgewikkeld. Probeer het over een paar minuten opnieuw."
   },
   "generate": {

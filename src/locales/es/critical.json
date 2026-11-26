@@ -54,8 +54,8 @@
     "conversionFee": "Comisión de conversión",
     "toAddress": "A la dirección",
     "toSparkAddress": "A la dirección Spark",
-    "toSparkInvoice": "A la factura Spark",
-    "toInvoice": "A la factura",
+    "toSparkInvoice": "A la solicitud de pago Spark",
+    "toInvoice": "A la solicitud de pago",
     "crossChain": {
       "amountTooSmall": "Importe demasiado pequeño para esta ruta.",
       "amountTooLarge": "Importe demasiado grande para esta ruta.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "El pago no se completó. Tus fondos no se enviaron."
     },
-    "alreadyPaid": "Esta factura ya se ha pagado.",
-    "invoiceExpired": "Esta factura ha caducado. Pide una nueva al destinatario.",
+    "alreadyPaid": "Esta solicitud de pago ya se ha pagado.",
+    "invoiceExpired": "Esta solicitud de pago ha caducado. Pide una nueva al destinatario.",
     "balanceSettling": "No se pudo preparar el pago mientras tu saldo se liquida. Inténtalo de nuevo en unos minutos."
   },
   "generate": {

@@ -54,8 +54,8 @@
     "conversionFee": "Muunnosmaksu",
     "toAddress": "Osoitteeseen",
     "toSparkAddress": "Spark-osoitteeseen",
-    "toSparkInvoice": "Spark-laskuun",
-    "toInvoice": "Laskuun",
+    "toSparkInvoice": "Spark-maksupyyntöön",
+    "toInvoice": "Maksupyyntöön",
     "crossChain": {
       "amountTooSmall": "Summa on liian pieni tälle reitille.",
       "amountTooLarge": "Summa on liian suuri tälle reitille.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "Maksu ei mennyt läpi. Varojasi ei lähetetty."
     },
-    "alreadyPaid": "Tämä lasku on jo maksettu.",
-    "invoiceExpired": "Tämä lasku on vanhentunut. Pyydä saajalta uusi.",
+    "alreadyPaid": "Tämä maksupyyntö on jo maksettu.",
+    "invoiceExpired": "Tämä maksupyyntö on vanhentunut. Pyydä saajalta uusi.",
     "balanceSettling": "Maksua ei voitu valmistella saldon selvityksen aikana. Yritä uudelleen muutaman minuutin kuluttua."
   },
   "generate": {

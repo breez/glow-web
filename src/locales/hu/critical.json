@@ -54,8 +54,8 @@
     "conversionFee": "Átváltási díj",
     "toAddress": "Erre a címre",
     "toSparkAddress": "Erre a Spark-címre",
-    "toSparkInvoice": "Erre a Spark-számlára",
-    "toInvoice": "Erre a számlára",
+    "toSparkInvoice": "Erre a Spark-fizetési kérelemre",
+    "toInvoice": "Erre a fizetési kérelemre",
     "crossChain": {
       "amountTooSmall": "Az összeg túl kicsi ehhez az útvonalhoz.",
       "amountTooLarge": "Az összeg túl nagy ehhez az útvonalhoz.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "A fizetés nem ment át. A pénzed nem lett elküldve."
     },
-    "alreadyPaid": "Ezt a számlát már kifizették.",
-    "invoiceExpired": "Ez a számla lejárt. Kérj a címzettől újat.",
+    "alreadyPaid": "Ezt a fizetési kérelmet már kifizették.",
+    "invoiceExpired": "Ez a fizetési kérelem lejárt. Kérj a címzettől újat.",
     "balanceSettling": "A fizetés nem készíthető elő, amíg az egyenleged rendeződik. Próbáld újra néhány perc múlva."
   },
   "generate": {

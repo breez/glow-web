@@ -54,8 +54,8 @@
     "conversionFee": "Phí chuyển đổi",
     "toAddress": "Tới địa chỉ",
     "toSparkAddress": "Tới địa chỉ Spark",
-    "toSparkInvoice": "Tới hóa đơn Spark",
-    "toInvoice": "Tới hóa đơn",
+    "toSparkInvoice": "Tới yêu cầu thanh toán Spark",
+    "toInvoice": "Tới yêu cầu thanh toán",
     "crossChain": {
       "amountTooSmall": "Số tiền quá nhỏ cho tuyến này.",
       "amountTooLarge": "Số tiền quá lớn cho tuyến này.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "Thanh toán không thành công. Tiền của bạn chưa bị gửi đi."
     },
-    "alreadyPaid": "Hóa đơn này đã được thanh toán.",
-    "invoiceExpired": "Hóa đơn này đã hết hạn. Hãy xin người nhận một hóa đơn mới.",
+    "alreadyPaid": "Yêu cầu thanh toán này đã được thanh toán.",
+    "invoiceExpired": "Yêu cầu thanh toán này đã hết hạn. Hãy xin người nhận một yêu cầu mới.",
     "balanceSettling": "Không chuẩn bị được thanh toán trong lúc số dư của bạn đang được quyết toán. Hãy thử lại sau vài phút."
   },
   "generate": {

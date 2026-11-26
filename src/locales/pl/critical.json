@@ -54,8 +54,8 @@
     "conversionFee": "Opłata za przewalutowanie",
     "toAddress": "Na adres",
     "toSparkAddress": "Na adres Spark",
-    "toSparkInvoice": "Na fakturę Spark",
-    "toInvoice": "Na fakturę",
+    "toSparkInvoice": "Na prośbę o płatność Spark",
+    "toInvoice": "Na prośbę o płatność",
     "crossChain": {
       "amountTooSmall": "Kwota jest za mała dla tej trasy.",
       "amountTooLarge": "Kwota jest za duża dla tej trasy.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "Płatność nie przeszła. Twoje środki nie zostały wysłane."
     },
-    "alreadyPaid": "Ta faktura została już zapłacona.",
-    "invoiceExpired": "Ta faktura wygasła. Poproś odbiorcę o nową.",
+    "alreadyPaid": "Ta prośba o płatność została już opłacona.",
+    "invoiceExpired": "Ta prośba o płatność wygasła. Poproś odbiorcę o nową.",
     "balanceSettling": "Nie udało się przygotować płatności, gdy twoje saldo się rozlicza. Spróbuj ponownie za kilka minut."
   },
   "generate": {

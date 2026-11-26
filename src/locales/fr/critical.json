@@ -54,8 +54,8 @@
     "conversionFee": "Frais de conversion",
     "toAddress": "Vers l'adresse",
     "toSparkAddress": "Vers l'adresse Spark",
-    "toSparkInvoice": "Vers la facture Spark",
-    "toInvoice": "Vers la facture",
+    "toSparkInvoice": "Vers la demande de paiement Spark",
+    "toInvoice": "Vers la demande de paiement",
     "crossChain": {
       "amountTooSmall": "Montant trop faible pour cette route.",
       "amountTooLarge": "Montant trop élevé pour cette route.",
@@ -75,8 +75,8 @@
     "result": {
       "notSentBody": "Le paiement n’a pas abouti. Tes fonds n’ont pas été envoyés."
     },
-    "alreadyPaid": "Cette facture a déjà été payée.",
-    "invoiceExpired": "Cette facture a expiré. Demandez-en une nouvelle au destinataire.",
+    "alreadyPaid": "Cette demande de paiement a déjà été payée.",
+    "invoiceExpired": "Cette demande de paiement a expiré. Demandez-en une nouvelle au destinataire.",
     "balanceSettling": "Impossible de préparer le paiement pendant que votre solde se règle. Réessayez dans quelques minutes."
   },
   "generate": {
