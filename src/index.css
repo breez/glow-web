@@ -67,84 +67,16 @@
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
-/* U+20BF BITCOIN SIGN, the ₿ every sat amount is prefixed with. The latin
-   subsets above stop at U+20AC, so the glyph fell through to whatever the
-   platform supplies: Roboto on Android, SF on iOS, a different shape again in
-   each desktop browser. The latin-ext subsets of both families carry it.
-   Scoped to that single codepoint so the rest of the text keeps coming off the
-   smaller latin files, and so a face is only fetched at the weights a ₿ is
-   actually rendered at. */
-@font-face {
-  font-family: 'Plus Jakarta Sans';
-  font-style: normal;
-  font-weight: 300;
-  font-display: block;
-  unicode-range: U+20BF;
-  src: url('@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-ext-300-normal.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Plus Jakarta Sans';
-  font-style: normal;
-  font-weight: 400;
-  font-display: block;
-  unicode-range: U+20BF;
-  src: url('@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-ext-400-normal.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Plus Jakarta Sans';
-  font-style: normal;
-  font-weight: 500;
-  font-display: block;
-  unicode-range: U+20BF;
-  src: url('@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-ext-500-normal.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Plus Jakarta Sans';
-  font-style: normal;
-  font-weight: 600;
-  font-display: block;
-  unicode-range: U+20BF;
-  src: url('@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-ext-600-normal.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Plus Jakarta Sans';
-  font-style: normal;
-  font-weight: 700;
-  font-display: block;
-  unicode-range: U+20BF;
-  src: url('@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-ext-700-normal.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Plus Jakarta Sans';
-  font-style: normal;
-  font-weight: 800;
-  font-display: block;
-  unicode-range: U+20BF;
-  src: url('@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-ext-800-normal.woff2') format('woff2');
-}
+/* U+20BF BITCOIN SIGN, the ₿ in every sat amount. Plus Jakarta Sans gets it
+   from its latin-ext face above; the mono font ships latin only, so the glyph
+   comes from its latin-ext file, scoped to that one codepoint. */
 @font-face {
   font-family: 'JetBrains Mono';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 200 800;
   font-display: block;
+  src: url('@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-ext-wght-normal.woff2') format('woff2-variations');
   unicode-range: U+20BF;
-  src: url('@fontsource/jetbrains-mono/files/jetbrains-mono-latin-ext-400-normal.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 500;
-  font-display: block;
-  unicode-range: U+20BF;
-  src: url('@fontsource/jetbrains-mono/files/jetbrains-mono-latin-ext-500-normal.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 600;
-  font-display: block;
-  unicode-range: U+20BF;
-  src: url('@fontsource/jetbrains-mono/files/jetbrains-mono-latin-ext-600-normal.woff2') format('woff2');
 }
 
 @custom-variant dark (&:is(.dark *));
