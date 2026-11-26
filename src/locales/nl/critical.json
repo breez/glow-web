@@ -73,7 +73,7 @@
     "enterAmountIn": "Voer het bedrag in {{currency}} in",
     "amountRange": "Tussen {{min}} en {{max}} sats",
     "result": {
-      "notSentBody": "De betaling is niet gelukt. Je geld is niet verzonden."
+      "notSentBody": "De betaling is niet gelukt. Je geld is niet verstuurd."
     },
     "alreadyPaid": "Deze factuur is al betaald.",
     "invoiceExpired": "Deze factuur is verlopen. Vraag de ontvanger om een nieuwe.",

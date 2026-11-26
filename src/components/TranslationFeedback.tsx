@@ -89,6 +89,8 @@ const TranslationFeedback: React.FC = () => {
     return () => window.clearTimeout(id);
   }, [chip]);
 
+  // An unchanged text with an explanation is still feedback: the wording may be fine and the context wrong.
+  const hasChange = suggestion.trim() !== (target?.text.trim() ?? '') ? suggestion.trim() !== '' : context.trim() !== '';
   const close = () => setTarget(null);
   const openSheet = () => {
     if (!chip) return;
@@ -149,7 +151,7 @@ const TranslationFeedback: React.FC = () => {
                 <FormLabel htmlFor="translation-context">{t('translationFeedback.context')}</FormLabel>
                 <FormTextarea id="translation-context" value={context} onChange={(e) => setContext(e.target.value)} />
               </div>
-              <PrimaryButton onClick={send} disabled={!suggestion.trim() || suggestion.trim() === target?.text.trim() || sending} className="w-full">
+              <PrimaryButton onClick={send} disabled={!hasChange || sending} className="w-full">
                 {t('translationFeedback.send')}
               </PrimaryButton>
             </div>
