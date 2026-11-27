@@ -7,13 +7,14 @@ import SlideInPage from '../components/layout/SlideInPage';
 import { ChevronUpIcon, ChevronDownIcon, DragHandleIcon } from '../components/Icons';
 import { logger, LogCategory } from '@/services/logger';
 import { useTranslation } from 'react-i18next';
+import { fiatName } from '../utils/fiatDisplay';
 
 interface FiatCurrenciesPageProps {
   onBack: () => void;
 }
 
 const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const wallet = useWallet();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -173,7 +174,7 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                   )}
                 </div>
                 <p className="text-sm text-spark-text-muted truncate">
-                  {currency.info.name}
+                  {fiatName(currency.id, i18n.language, currency.info.name)}
                 </p>
               </div>
 
@@ -229,7 +230,7 @@ const FiatCurrenciesPage: React.FC<FiatCurrenciesPageProps> = ({ onBack }) => {
                   )}
                 </div>
                 <p className="text-sm text-spark-text-muted truncate">
-                  {currency.info.name}
+                  {fiatName(currency.id, i18n.language, currency.info.name)}
                 </p>
               </div>
 
