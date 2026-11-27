@@ -62,7 +62,10 @@
     "shareFailed": "공유하지 못했습니다",
     "guide": "안내",
     "securityNotice": "보안 안내",
-    "readyNow": "준비 완료"
+    "readyNow": "준비 완료",
+    "approxMinutes": "~{{value}} 분",
+    "approxHours": "~{{value}} 시간",
+    "approxDays": "~{{value}} 일"
   },
   "a11y": {
     "goBack": "뒤로 가기",

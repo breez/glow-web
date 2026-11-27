@@ -62,7 +62,10 @@
     "shareFailed": "Condivisione non riuscita",
     "guide": "Guida",
     "securityNotice": "Avviso di sicurezza",
-    "readyNow": "pronto ora"
+    "readyNow": "pronto ora",
+    "approxMinutes": "~{{value}} min",
+    "approxHours": "~{{value}} h",
+    "approxDays": "~{{value}} g"
   },
   "a11y": {
     "goBack": "Torna indietro",

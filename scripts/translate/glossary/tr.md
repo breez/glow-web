@@ -1,0 +1,9 @@
+- claim: "tahsil" (label "Otomatik tahsil", button "Tahsil et"). Never "talep" or "al".
+- recover, recovery: "kurtar", "kurtarma". Never "geri al". Refund stays "iade".
+- received: "geldi" and "Gelen". Never "alındı".
+- fetching: "getiriliyor". Never "alınıyor".
+- deposit: "transfer" ("Talep edilmemiş" is now "Tahsil edilmemiş transferler"). Never "yatırım", which means investment.
+- invoice: "ödeme isteği".
+- pending approval: "Onay bekliyor".
+- conversion to an asset: "{{asset}} cinsine dönüşüm", because Turkish suffixes depend on the name.
+- A label names the setting briefly. The explanation carries the detail.

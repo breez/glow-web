@@ -62,7 +62,10 @@
     "shareFailed": "Paylaşılamadı",
     "guide": "Rehber",
     "securityNotice": "Güvenlik uyarısı",
-    "readyNow": "şimdi hazır"
+    "readyNow": "şimdi hazır",
+    "approxMinutes": "~{{value}} dk",
+    "approxHours": "~{{value}} sa",
+    "approxDays": "~{{value}} gün"
   },
   "a11y": {
     "goBack": "Geri",

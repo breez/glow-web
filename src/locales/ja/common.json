@@ -62,7 +62,10 @@
     "shareFailed": "共有できませんでした",
     "guide": "ガイド",
     "securityNotice": "セキュリティに関するお知らせ",
-    "readyNow": "準備完了"
+    "readyNow": "準備完了",
+    "approxMinutes": "~{{value}}分",
+    "approxHours": "~{{value}}時間",
+    "approxDays": "~{{value}}日"
   },
   "a11y": {
     "goBack": "戻る",

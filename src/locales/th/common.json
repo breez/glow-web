@@ -62,7 +62,10 @@
     "shareFailed": "แชร์ไม่สำเร็จ",
     "guide": "คู่มือ",
     "securityNotice": "ประกาศด้านความปลอดภัย",
-    "readyNow": "พร้อมแล้ว"
+    "readyNow": "พร้อมแล้ว",
+    "approxMinutes": "~{{value}} นาที",
+    "approxHours": "~{{value}} ชม.",
+    "approxDays": "~{{value}} วัน"
   },
   "a11y": {
     "goBack": "ย้อนกลับ",

@@ -128,11 +128,19 @@ export function problems(key, english, translated) {
 
 // ------------------------------------------------------------------- the call
 
+/** Decisions made after a native speaker's review, kept per language in glossary/<tag>.md. Empty when there are none. */
+export function languageGlossary(tag, dir = join(HERE, 'glossary')) {
+  const file = join(dir, `${tag}.md`);
+  if (!existsSync(file)) return '';
+  return `## Decisions already made for this language\n\nA native speaker reviewed Glow in this language. Keep to these, they override anything above.\n\n${readFileSync(file, 'utf8').trim()}\n`;
+}
+
 function buildSystem(promptTemplate, lang, englishAll) {
   const filled = promptTemplate
     .replaceAll('{{LANGUAGE_NAME}}', lang.name)
     .replaceAll('{{LANGUAGE_ENDONYM}}', lang.endonym)
-    .replaceAll('{{PLURAL_NOTE}}', pluralNote(lang.tag));
+    .replaceAll('{{PLURAL_NOTE}}', pluralNote(lang.tag))
+    .replaceAll('{{LANGUAGE_GLOSSARY}}', languageGlossary(lang.tag));
   // The whole English bundle goes in as context so a key reads in the company
   // of the screen it belongs to. It is identical for every language, so it is
   // the cache prefix and the per-language instructions follow it.

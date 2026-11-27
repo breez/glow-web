@@ -62,7 +62,10 @@
     "shareFailed": "Delningen misslyckades",
     "guide": "Guide",
     "securityNotice": "Säkerhetsmeddelande",
-    "readyNow": "klart nu"
+    "readyNow": "klart nu",
+    "approxMinutes": "~{{value}} min",
+    "approxHours": "~{{value}} tim",
+    "approxDays": "~{{value}} d"
   },
   "a11y": {
     "goBack": "Tillbaka",

@@ -62,7 +62,10 @@
     "shareFailed": "A megosztás nem sikerült",
     "guide": "Útmutató",
     "securityNotice": "Biztonsági megjegyzés",
-    "readyNow": "most azonnal"
+    "readyNow": "most azonnal",
+    "approxMinutes": "~{{value}} perc",
+    "approxHours": "~{{value}} ó",
+    "approxDays": "~{{value}} nap"
   },
   "a11y": {
     "goBack": "Vissza",

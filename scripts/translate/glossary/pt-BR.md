@@ -1,0 +1,1 @@
+- invoice: "pedido de pagamento". "Fatura" is a commercial or fiscal document in Portuguese.

@@ -62,7 +62,10 @@
     "shareFailed": "Η κοινοποίηση απέτυχε",
     "guide": "Οδηγός",
     "securityNotice": "Σημείωση ασφαλείας",
-    "readyNow": "έτοιμο τώρα"
+    "readyNow": "έτοιμο τώρα",
+    "approxMinutes": "~{{value}} λεπ.",
+    "approxHours": "~{{value}} ώρ.",
+    "approxDays": "~{{value}} ημ."
   },
   "a11y": {
     "goBack": "Πίσω",

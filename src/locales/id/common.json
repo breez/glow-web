@@ -62,7 +62,10 @@
     "shareFailed": "Gagal membagikan",
     "guide": "Panduan",
     "securityNotice": "Pemberitahuan Keamanan",
-    "readyNow": "siap sekarang"
+    "readyNow": "siap sekarang",
+    "approxMinutes": "~{{value}} mnt",
+    "approxHours": "~{{value}} jam",
+    "approxDays": "~{{value}} hr"
   },
   "a11y": {
     "goBack": "Kembali",

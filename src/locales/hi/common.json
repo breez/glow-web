@@ -62,7 +62,10 @@
     "shareFailed": "शेयर नहीं हो सका",
     "guide": "गाइड",
     "securityNotice": "सुरक्षा सूचना",
-    "readyNow": "अब तैयार"
+    "readyNow": "अब तैयार",
+    "approxMinutes": "~{{value}} मिनट",
+    "approxHours": "~{{value}} घंटे",
+    "approxDays": "~{{value}} दिन"
   },
   "a11y": {
     "goBack": "पीछे जाएँ",

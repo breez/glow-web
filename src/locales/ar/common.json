@@ -62,7 +62,10 @@
     "shareFailed": "تعذّرت المشاركة",
     "guide": "الدليل",
     "securityNotice": "تنبيه أمني",
-    "readyNow": "جاهز الآن"
+    "readyNow": "جاهز الآن",
+    "approxMinutes": "~{{value}} د",
+    "approxHours": "~{{value}} س",
+    "approxDays": "~{{value}} ي"
   },
   "a11y": {
     "goBack": "رجوع",

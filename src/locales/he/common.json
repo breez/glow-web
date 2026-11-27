@@ -62,7 +62,10 @@
     "shareFailed": "השיתוף נכשל",
     "guide": "מדריך",
     "securityNotice": "הודעת אבטחה",
-    "readyNow": "מוכן עכשיו"
+    "readyNow": "מוכן עכשיו",
+    "approxMinutes": "~{{value}} דק׳",
+    "approxHours": "~{{value}} שע׳",
+    "approxDays": "~{{value}} ימים"
   },
   "a11y": {
     "goBack": "חזרה",

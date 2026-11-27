@@ -62,7 +62,10 @@
     "shareFailed": "Partajarea a eșuat",
     "guide": "Ghid",
     "securityNotice": "Notificare de securitate",
-    "readyNow": "gata acum"
+    "readyNow": "gata acum",
+    "approxMinutes": "~{{value}} min",
+    "approxHours": "~{{value}} h",
+    "approxDays": "~{{value}} z"
   },
   "a11y": {
     "goBack": "Înapoi",
