@@ -18,6 +18,7 @@ import { CrossChainChainStep } from '../../../components/crossChain/CrossChainCh
 import { useWallet } from '../../../contexts/WalletContext';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
 import { useToast } from '../../../contexts/ToastContext';
+import { SatAmount } from '../../../components/SatAmount';
 import { useCrossChainRouteGroups } from '../../../hooks/useCrossChainRouteGroups';
 import { useSheetBack, useSheetFullSnap, useSheetOwnsScroll } from '../../../components/ui/sheets/BottomSheetCardContext';
 import {
@@ -34,7 +35,6 @@ import { formatChainName, formatReceiveAmount, formatCrossChainAmount, parseCros
 import { copyToClipboard } from '../../../utils/clipboard';
 import { normalizeDecimalInput } from '../../../utils/decimalInput';
 import { formatTokenAmount } from '../../../utils/tokenFormatting';
-import { formatWithSpaces } from '../../../utils/formatNumber';
 import { getProviderDisplayName } from '../../../utils/paymentDescription';
 import { logger, LogCategory } from '@/services/logger';
 import { formatError } from '@/utils/formatError';
@@ -240,7 +240,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
   // Received amount lands as a stable token (USDB) or as BTC sats, depending on
   // the SDK's auto-pick. `route.decimals` is the *source* asset, so it can't be
   // reused here — branch on `tokenIdentifier` and format the destination asset.
-  const formatReceived = (info: CrossChainReceiveInfo): string => {
+  const formatReceived = (info: CrossChainReceiveInfo): React.ReactNode => {
     const amount = BigInt(info.expectedReceivedAmount);
     if (info.tokenIdentifier) {
       if (stableBalance.tokenIdentifier === info.tokenIdentifier && stableBalance.displayConfig) {
@@ -248,7 +248,8 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
       }
       return `$${formatReceiveAmount(amount, 6)}`;
     }
-    return `₿${formatWithSpaces(Number(amount))}`;
+    // SatAmount owns the mono spacing that a hand-grouped string lacks.
+    return <SatAmount sats={Number(amount)} />;
   };
 
   const resultInfo = receiveResult?.crossChainInfo;
@@ -457,7 +458,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
               <Trans
                 i18nKey="receive.crossChain.youllReceive"
                 ns="common"
-                components={{ amount: <span className="text-spark-text-primary font-mono font-medium">{`~${formatReceived(resultInfo)}`}</span> }}
+                components={{ amount: <span className="text-spark-text-primary font-mono font-medium">~{formatReceived(resultInfo)}</span> }}
               />
             </p>
           )}
