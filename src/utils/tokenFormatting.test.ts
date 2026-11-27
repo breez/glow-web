@@ -132,6 +132,14 @@ describe('withAssetDecimals', () => {
   });
 });
 
+describe('formatTokenAmount', () => {
+  it('writes no decimal point for a currency without minor units', () => {
+    const yen: TokenDisplayConfig = { ...usdbConfig, symbol: '\u00a5', fractionSize: 0, decimals: 0 };
+    expect(formatTokenAmount(7801n, yen)).toBe('\u00a57801');
+    expect(formatTokenAmount(7801n, yen, { fullPrecision: true })).toBe('\u00a57801');
+  });
+});
+
 // A cross-chain send funded from BTC, delivered as USDT on an 18-decimal
 // chain. `getTokenAmountFromPayment` surfaces the delivered asset so the row
 // reads in USD, which pairs an 18-decimal amount with the 6-decimal stable

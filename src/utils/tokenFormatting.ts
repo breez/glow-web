@@ -150,7 +150,7 @@ export function formatTokenAmount(
     }
   }
 
-  const numberStr = `${isNegative ? '-' : ''}${wholePart}.${fractionalStr}`;
+  const numberStr = `${isNegative ? '-' : ''}${wholePart}${fractionalStr ? `.${fractionalStr}` : ''}`;
 
   if (config.symbolPosition === 'before') {
     // Use a space between symbol and number for multi-char symbols (tickers like USDB)
