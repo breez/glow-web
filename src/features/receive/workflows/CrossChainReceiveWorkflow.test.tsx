@@ -61,6 +61,7 @@ describe('USD receive deposit address', () => {
     fireEvent.click(await screen.findByText('Solana'));
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await screen.findByTestId('cross-chain-deposit-address');
+    expect(screen.getByText(/You'll receive/)).toHaveTextContent('~₿12 298');
 
     fireEvent.click(await screen.findByRole('button', { name: 'Back' }));
 

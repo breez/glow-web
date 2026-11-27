@@ -457,8 +457,7 @@ const CrossChainReceiveWorkflow: React.FC<CrossChainReceiveWorkflowProps> = ({ a
               <Trans
                 i18nKey="receive.crossChain.youllReceive"
                 ns="common"
-                values={{ amount: `~${formatReceived(resultInfo)}` }}
-                components={{ amount: <span className="text-spark-text-primary font-mono font-medium" /> }}
+                components={{ amount: <span className="text-spark-text-primary font-mono font-medium">{`~${formatReceived(resultInfo)}`}</span> }}
               />
             </p>
           )}
