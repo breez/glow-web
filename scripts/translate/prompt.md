@@ -48,9 +48,17 @@ language would meet in Apple's or Google's own interface.
 - Where a note says the app will restart, say only that it restarts. Do not add
   that it reloads or reconnects.
 - balance, funds, fee, network fee, delivery fee
-- claim: taking receipt of an on-chain transfer
+- claim: taking receipt of an on-chain transfer. Pick one verb and use it for
+  every claim string (label, button, error, count). Do not mix near-synonyms.
+- invoice: a Lightning payment request. Where your language's word for
+  "invoice" means a commercial or fiscal document (fattura, facture, Rechnung,
+  fatura), say "payment request" in your language instead.
+- log out: one verb everywhere it appears.
+- erase, delete: a button that destroys data names the object ("Erase data"),
+  never a bare verb that sits beside Cancel and can be misread for it.
 - recoverable funds: money retrievable without the Spark operators
 
+{{LANGUAGE_GLOSSARY}}
 ## Rules
 
 1. **Placeholders.** `{{name}}` must survive spelled exactly as it is. Move it
@@ -73,9 +81,27 @@ language would meet in Apple's or Google's own interface.
    shorter correct form exists, take it. If the only correct form is much
    longer than the English, use it anyway and do not invent an abbreviation.
 8. **Case.** A short label naming a thing takes your language's conventions for
-   a button or title. A sentence stays a sentence.
+   a button or title. A sentence stays a sentence. Do not carry English Title
+   Case into a language that does not use it.
 9. **Ellipses and punctuation.** Keep a trailing `...` if the English has one:
-   it marks work in progress. Use your language's own quotation marks.
+   it marks work in progress. Use your language's own quotation marks, and a
+   straight apostrophe (') where the language writes one.
+10. **One term per concept.** The same idea has the same word in every key of
+    the file. Read your own earlier keys before you pick a word.
+11. **Read like a native.** If a sentence reads as a translation of the English,
+    rewrite it as a speaker would say it. Calques are the most common fault.
+12. **Gender.** Where your language marks the reader's gender (greetings,
+    adjectives, participles), phrase the sentence so it reads right for any
+    reader. For a borrowed term such as passkey, use the gender Apple and Google
+    use in your language.
+13. **Label and explanation.** A setting's label names it in a few words. The
+    explanation beneath it carries the detail, so do not repeat the detail in
+    the label.
+14. **Short slots.** Status chips, header chips and tab labels have very little
+    room. Choose the shortest correct form, and mention in your reply if only a
+    long one is correct.
+15. **Plural `_one`.** It must read correctly for the count 1 and for nothing
+    else, as in "1 secondo", never "1 secondi".
 
 ## Output
 

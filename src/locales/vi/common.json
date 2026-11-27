@@ -62,7 +62,10 @@
     "shareFailed": "Không chia sẻ được",
     "guide": "Hướng dẫn",
     "securityNotice": "Thông báo bảo mật",
-    "readyNow": "đã sẵn sàng"
+    "readyNow": "đã sẵn sàng",
+    "approxMinutes": "~{{value}} phút",
+    "approxHours": "~{{value}} giờ",
+    "approxDays": "~{{value}} ngày"
   },
   "a11y": {
     "goBack": "Quay lại",

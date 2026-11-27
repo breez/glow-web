@@ -149,6 +149,14 @@ A correction is rarely about one language. Before you merge a fix:
 A label names the setting in a few words and its explanation lives in the
 information text beneath it, in every language.
 
+What a correction teaches goes into the next run, so it is not lost:
+
+- A rule for one language goes in `scripts/translate/glossary/<tag>.md`. The
+  harness adds that file to the prompt for that language.
+- A rule that holds in every language goes in `scripts/translate/prompt.md`.
+- `scripts/translate/feedback-judge.md` is the prompt for judging a batch of
+  in-app feedback, and it says how to carry these steps out.
+
 ## Review status
 
 Nothing is gated on this table: every language ships. It records which have
@@ -161,8 +169,9 @@ looked.
 | `nl` Nederlands | queued, sniff test |
 | `pt` Português | queued, sniff test |
 | `de` Deutsch | queued, sniff test |
+| `it` Italiano | yes, reviewed by a native speaker (#586) |
 | `bg` Български | queued, sniff test |
-| the other twenty-six | no |
+| the other twenty-five | no |
 
 ## Plural forms
 
@@ -192,6 +201,8 @@ screens on a narrow device before shipping a language:
 - **The wallet header chips** (refund, buy, syncing). All three grow by 8 or
   more characters in German.
 - **Transaction status chips** (failed, processing, pending confirmation).
+  The Italian reviewer flagged "In attesa di conferma", "In attesa di approvazione"
+  and the header chip "Sincronizzazione" as likely too long. Not yet checked.
 - **Anything reading "..." while busy**: saving, preparing, restoring. German
   turns these into whole clauses (*Wird gespeichert...*).
 

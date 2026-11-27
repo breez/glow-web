@@ -62,7 +62,10 @@
     "shareFailed": "Jakaminen epäonnistui",
     "guide": "Opas",
     "securityNotice": "Turvallisuusilmoitus",
-    "readyNow": "valmis nyt"
+    "readyNow": "valmis nyt",
+    "approxMinutes": "~{{value}} min",
+    "approxHours": "~{{value}} h",
+    "approxDays": "~{{value}} pv"
   },
   "a11y": {
     "goBack": "Takaisin",

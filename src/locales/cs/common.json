@@ -62,7 +62,10 @@
     "shareFailed": "Sdílení se nezdařilo",
     "guide": "Návod",
     "securityNotice": "Bezpečnostní upozornění",
-    "readyNow": "připraveno"
+    "readyNow": "připraveno",
+    "approxMinutes": "~{{value}} min",
+    "approxHours": "~{{value}} h",
+    "approxDays": "~{{value}} d"
   },
   "a11y": {
     "goBack": "Zpět",

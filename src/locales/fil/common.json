@@ -62,7 +62,10 @@
     "shareFailed": "Hindi maibahagi",
     "guide": "Gabay",
     "securityNotice": "Paalala sa Seguridad",
-    "readyNow": "handa na"
+    "readyNow": "handa na",
+    "approxMinutes": "~{{value}} min",
+    "approxHours": "~{{value}} oras",
+    "approxDays": "~{{value}} araw"
   },
   "a11y": {
     "goBack": "Bumalik",

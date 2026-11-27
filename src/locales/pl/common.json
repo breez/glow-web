@@ -62,7 +62,10 @@
     "shareFailed": "Nie udało się udostępnić",
     "guide": "Przewodnik",
     "securityNotice": "Uwaga dotycząca bezpieczeństwa",
-    "readyNow": "gotowe teraz"
+    "readyNow": "gotowe teraz",
+    "approxMinutes": "~{{value}} min",
+    "approxHours": "~{{value}} godz.",
+    "approxDays": "~{{value}} dn."
   },
   "a11y": {
     "goBack": "Wstecz",

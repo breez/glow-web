@@ -62,7 +62,10 @@
     "shareFailed": "Imeshindwa kushiriki",
     "guide": "Mwongozo",
     "securityNotice": "Taarifa ya Usalama",
-    "readyNow": "tayari sasa"
+    "readyNow": "tayari sasa",
+    "approxMinutes": "~{{value}} dak",
+    "approxHours": "~{{value}} saa",
+    "approxDays": "~{{value}} siku"
   },
   "a11y": {
     "goBack": "Rudi nyuma",

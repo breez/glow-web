@@ -62,7 +62,10 @@
     "shareFailed": "Не удалось поделиться",
     "guide": "Руководство",
     "securityNotice": "Уведомление о безопасности",
-    "readyNow": "готово"
+    "readyNow": "готово",
+    "approxMinutes": "~{{value}} мин",
+    "approxHours": "~{{value}} ч",
+    "approxDays": "~{{value}} дн."
   },
   "a11y": {
     "goBack": "Вернуться",

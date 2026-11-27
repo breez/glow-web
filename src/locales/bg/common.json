@@ -62,7 +62,10 @@
     "shareFailed": "Споделянето не бе успешно",
     "guide": "Ръководство",
     "securityNotice": "Бележка за сигурност",
-    "readyNow": "готово сега"
+    "readyNow": "готово сега",
+    "approxMinutes": "~{{value}} мин",
+    "approxHours": "~{{value}} ч",
+    "approxDays": "~{{value}} дн."
   },
   "a11y": {
     "goBack": "Назад",

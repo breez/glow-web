@@ -62,7 +62,10 @@
     "shareFailed": "Не вдалося поділитися",
     "guide": "Посібник",
     "securityNotice": "Повідомлення про безпеку",
-    "readyNow": "готово"
+    "readyNow": "готово",
+    "approxMinutes": "~{{value}} хв",
+    "approxHours": "~{{value}} год",
+    "approxDays": "~{{value}} дн."
   },
   "a11y": {
     "goBack": "Повернутися",

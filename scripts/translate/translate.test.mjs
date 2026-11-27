@@ -4,7 +4,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { flatten, nest, problems, pluralNote, parseArgs, write } from './translate.mjs';
+import { flatten, nest, problems, pluralNote, parseArgs, write, languageGlossary } from './translate.mjs';
 import { mkdtempSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -76,4 +76,10 @@ test('a language that got no translations gets no bundle', () => {
   assert.equal(write('ar', 'common', [['send.amount', 'المبلغ']], root), false);
   // A changed value still lands.
   assert.equal(write('ar', 'common', [['send.amount', 'مبلغ']], root), true);
+});
+
+test('a language glossary reaches the prompt only when one exists', () => {
+  assert.match(languageGlossary('it'), /Decisions already made/);
+  assert.match(languageGlossary('it'), /incassare/);
+  assert.equal(languageGlossary('xx'), '');
 });

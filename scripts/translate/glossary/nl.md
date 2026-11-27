@@ -1,0 +1,2 @@
+- send: "versturen" everywhere. Never "verzenden".
+- invoice: "betaalverzoek".

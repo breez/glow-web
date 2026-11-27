@@ -62,7 +62,10 @@
     "shareFailed": "分享失败",
     "guide": "指南",
     "securityNotice": "安全提示",
-    "readyNow": "已就绪"
+    "readyNow": "已就绪",
+    "approxMinutes": "~{{value}}分钟",
+    "approxHours": "~{{value}}小时",
+    "approxDays": "~{{value}}天"
   },
   "a11y": {
     "goBack": "返回",

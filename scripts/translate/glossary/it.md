@@ -1,0 +1,8 @@
+- passkey is feminine: "la passkey", as iOS and Android write it.
+- claim: always "incassare" / "incasso". Never richiedere, riscuotere or riscattare.
+- log out: "Esci" everywhere. Never "Disconnetti".
+- erase buttons: "Cancella i dati", never a bare "Cancella" beside "Annulla".
+- invoice: "richiesta di pagamento", because "fattura" is a fiscal document.
+- Phrase gendered words for any reader: no "se sei disposto", no "Bentornato".
+- Plural `_one`: "1 secondo", never "1 secondi". Straight apostrophes only.
+- No calques and no English title case.
