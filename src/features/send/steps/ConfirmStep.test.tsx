@@ -1,17 +1,19 @@
-import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { WalletProvider } from '@/contexts/WalletContext';
 import { FiatDataProvider } from '@/contexts/FiatDataContext';
 import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
 import { createMockClient } from '@/test/mocks/mockWalletApi';
+import { saveFiatSettings, setDisplayFiatCurrency } from '@/services/settings';
 import ConfirmStep, { type ConfirmStepProps } from './ConfirmStep';
 
 function renderConfirmStep(
   destination?: { label: string; value: string },
   overrides?: Partial<ConfirmStepProps>,
+  client = createMockClient(),
 ) {
   render(
-    <WalletProvider client={createMockClient()} isConnected>
+    <WalletProvider client={client} isConnected>
       <FiatDataProvider>
         <StableBalanceProvider>
           <ConfirmStep
@@ -63,5 +65,54 @@ describe('ConfirmStep prepare failure', () => {
     expect(screen.getByText(/no route to destination/)).toBeInTheDocument();
     expect(screen.queryByText('Insufficient funds')).toBeNull();
     expect(screen.getByTestId('send-confirm-button')).toBeDisabled();
+  });
+});
+
+describe('ConfirmStep fiat equivalent', () => {
+  afterEach(() => {
+    saveFiatSettings({ selectedCurrencies: ['USD'] });
+    setDisplayFiatCurrency('USD');
+  });
+
+  /** Renders, then lets the fiat data the mock client resolves reach the step. */
+  async function renderWithFiatLoaded(overrides?: Partial<ConfirmStepProps>, client = createMockClient()) {
+    renderConfirmStep(undefined, overrides, client);
+    await waitFor(() => expect(client.listFiatCurrencies).toHaveBeenCalled());
+    await act(async () => {});
+  }
+
+  it('shows the total in the currency the balance header shows', async () => {
+    saveFiatSettings({ selectedCurrencies: ['USD', 'EUR'] });
+    setDisplayFiatCurrency('EUR');
+    await renderWithFiatLoaded();
+
+    // 50,010 sats at 92,000 EUR/BTC = 46.0092 EUR
+    expect(screen.getByTestId('send-fiat-equivalent')).toHaveTextContent('~\u20ac46.01');
+  });
+
+  it('counts the fee once when it is included in the amount', async () => {
+    await renderWithFiatLoaded({ feesIncluded: true });
+
+    // 50,000 sats at 100,000 USD/BTC
+    expect(screen.getByTestId('send-fiat-equivalent')).toHaveTextContent('~$50.00');
+  });
+
+  it('has no fiat line for a total worth less than the smallest unit', async () => {
+    await renderWithFiatLoaded({ amountSats: 3n, feesSat: 1 });
+
+    expect(screen.queryByTestId('send-fiat-equivalent')).toBeNull();
+  });
+
+  it('has no fiat line without a rate', async () => {
+    await renderWithFiatLoaded({}, createMockClient({ listFiatRates: vi.fn().mockResolvedValue({ rates: [] }) }));
+
+    expect(screen.queryByTestId('send-fiat-equivalent')).toBeNull();
+  });
+
+  it('has no fiat line when no currency is enabled', async () => {
+    saveFiatSettings({ selectedCurrencies: [] });
+    await renderWithFiatLoaded();
+
+    expect(screen.queryByTestId('send-fiat-equivalent')).toBeNull();
   });
 });

@@ -5,9 +5,11 @@ import { useSheetBack } from '../../../components/ui/sheets/BottomSheetCardConte
 import { FeeBreakdownCard, SimpleFeeBreakdown } from '../../../components/FeeBreakdownCard';
 import { SpinnerIcon } from '../../../components/Icons';
 import { SatAmount } from '../../../components/SatAmount';
-import { formatTokenAmount } from '../../../utils/tokenFormatting';
+import { formatTokenAmount, satsToFiat } from '../../../utils/tokenFormatting';
 import { truncateAddress } from '../../../utils/crossChainFormat';
 import { useStableBalance } from '../../../contexts/StableBalanceContext';
+import { useFiatOverride } from '../../../hooks/useAmountInput';
+import { getDisplayFiatCurrency, getFiatSettings } from '../../../services/settings';
 import { useBalanceValidation } from '../hooks/useBalanceValidation';
 import { toSats } from '../../../types/sats';
 import type { ConversionEstimate } from '@breeztech/breez-sdk-spark';
@@ -69,6 +71,13 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
     ? formatTokenAmount(BigInt(conversionEstimate!.fee), balance.config, { fullPrecision: true })
     : null;
 
+  // In the currency the balance header shows. Token mode gets none: its
+  // conversion card already states the amounts in fiat.
+  const fiat = useFiatOverride(getDisplayFiatCurrency());
+  const fiatUnits = fiat && !isTokenMode && getFiatSettings().selectedCurrencies.length > 0
+    ? BigInt(Math.round(satsToFiat(total, fiat.btcFiatRate) * 10 ** fiat.config.decimals))
+    : 0n;
+
   return (
     <div className="space-y-6">
       {/* Total amount display — always show sats */}
@@ -79,6 +88,14 @@ const ConfirmStep: React.FC<ConfirmStepProps> = ({ amountSats, feesSat, feesIncl
             <SatAmount sats={total} />
           </span>
         </div>
+        {fiat && fiatUnits > 0n && (
+          <p dir="ltr" className="mt-2 text-spark-text-secondary text-sm font-mono" data-testid="send-fiat-equivalent">
+            <span className="relative inline-block">
+              <span className="absolute right-full">~</span>
+              {formatTokenAmount(fiatUnits, fiat.config)}
+            </span>
+          </p>
+        )}
       </div>
 
       {destination && (
