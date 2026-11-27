@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { WalletProvider } from '@/contexts/WalletContext';
 import { FiatDataProvider } from '@/contexts/FiatDataContext';
 import { StableBalanceProvider } from '@/contexts/StableBalanceContext';
@@ -74,44 +74,44 @@ describe('ConfirmStep fiat equivalent', () => {
     setDisplayFiatCurrency('USD');
   });
 
-  /** Renders, then lets the fiat data the mock client resolves reach the step. */
-  async function renderWithFiatLoaded(overrides?: Partial<ConfirmStepProps>, client = createMockClient()) {
+  // The provider fetches rates on mount. A test that expects no line waits
+  // for that fetch to settle, so it cannot pass just by looking too early.
+  async function renderAfterRates(overrides?: Partial<ConfirmStepProps>, client = createMockClient()) {
     renderConfirmStep(undefined, overrides, client);
-    await waitFor(() => expect(client.listFiatCurrencies).toHaveBeenCalled());
-    await act(async () => {});
+    await waitFor(() => expect(vi.mocked(client.listFiatRates).mock.settledResults[0]?.type).toBe('fulfilled'));
   }
 
   it('shows the total in the currency the balance header shows', async () => {
     saveFiatSettings({ selectedCurrencies: ['USD', 'EUR'] });
     setDisplayFiatCurrency('EUR');
-    await renderWithFiatLoaded();
+    renderConfirmStep();
 
     // 50,010 sats at 92,000 EUR/BTC = 46.0092 EUR
-    expect(screen.getByTestId('send-fiat-equivalent')).toHaveTextContent('~\u20ac46.01');
+    expect(await screen.findByTestId('send-fiat-equivalent')).toHaveTextContent('~\u20ac46.01');
   });
 
   it('counts the fee once when it is included in the amount', async () => {
-    await renderWithFiatLoaded({ feesIncluded: true });
+    renderConfirmStep(undefined, { feesIncluded: true });
 
     // 50,000 sats at 100,000 USD/BTC
-    expect(screen.getByTestId('send-fiat-equivalent')).toHaveTextContent('~$50.00');
+    expect(await screen.findByTestId('send-fiat-equivalent')).toHaveTextContent('~$50.00');
   });
 
   it('has no fiat line for a total worth less than the smallest unit', async () => {
-    await renderWithFiatLoaded({ amountSats: 3n, feesSat: 1 });
+    await renderAfterRates({ amountSats: 3n, feesSat: 1 });
 
     expect(screen.queryByTestId('send-fiat-equivalent')).toBeNull();
   });
 
   it('has no fiat line without a rate', async () => {
-    await renderWithFiatLoaded({}, createMockClient({ listFiatRates: vi.fn().mockResolvedValue({ rates: [] }) }));
+    await renderAfterRates({}, createMockClient({ listFiatRates: vi.fn().mockResolvedValue({ rates: [] }) }));
 
     expect(screen.queryByTestId('send-fiat-equivalent')).toBeNull();
   });
 
   it('has no fiat line when no currency is enabled', async () => {
     saveFiatSettings({ selectedCurrencies: [] });
-    await renderWithFiatLoaded();
+    await renderAfterRates();
 
     expect(screen.queryByTestId('send-fiat-equivalent')).toBeNull();
   });
