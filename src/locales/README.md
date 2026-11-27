@@ -134,6 +134,21 @@ a wallet or an account in any language, because the local word for "wallet" is
 almost always wrong for what Glow is. And the reader is addressed informally
 wherever the language distinguishes it, the way a phone's own interface does.
 
+## Fixing a string reported in one language
+
+A correction is rarely about one language. Before you merge a fix:
+
+1. Read the same key in all 31 languages. A hardcoded English string, a wrong
+   sense of a word, or a label that repeats its explanation hurts every
+   language that has it.
+2. Apply the fix everywhere it holds. A word choice that is only that
+   language's (a Turkish verb, a Dutch compound) stays in that language.
+3. Say in the commit or the PR which languages you changed and which you
+   checked and left alone.
+
+A label names the setting in a few words and its explanation lives in the
+information text beneath it, in every language.
+
 ## Review status
 
 Nothing is gated on this table: every language ships. It records which have

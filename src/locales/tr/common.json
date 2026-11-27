@@ -273,7 +273,7 @@
     "backup": "Yedek",
     "recoveryPhrase": "Anımsatıcı ifade",
     "display": "Görünüm",
-    "automaticClaims": "Transferleri otomatik tahsil et",
+    "automaticClaims": "Otomatik tahsil",
     "automaticClaimsBody": "Ağ ücreti bu sınırın altında kaldığı sürece gelen on-chain transferler otomatik olarak tahsil edilir.",
     "maxFeeType": "Azami ücret türü",
     "feeFixed": "Sabit",
